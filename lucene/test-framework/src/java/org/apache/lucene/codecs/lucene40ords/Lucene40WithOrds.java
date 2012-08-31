@@ -114,7 +114,7 @@ public class Lucene40WithOrds extends PostingsFormat {
       FieldsProducer ret = new BlockTermsReader(indexReader,
                                                 state.dir,
                                                 state.fieldInfos,
-                                                state.segmentInfo.name,
+                                                state.segmentInfo,
                                                 postings,
                                                 state.context,
                                                 TERMS_CACHE_SIZE,

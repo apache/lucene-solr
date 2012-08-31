@@ -314,7 +314,7 @@ public class Lucene40PostingsFormat extends PostingsFormat {
       FieldsProducer ret = new BlockTreeTermsReader(
                                                     state.dir,
                                                     state.fieldInfos,
-                                                    state.segmentInfo.name,
+                                                    state.segmentInfo,
                                                     postings,
                                                     state.context,
                                                     state.segmentSuffix,

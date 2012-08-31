@@ -23,6 +23,7 @@ import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -33,9 +34,9 @@ import org.apache.lucene.store.IndexInput;
  */
 public class AppendingTermsReader extends BlockTreeTermsReader {
 
-  public AppendingTermsReader(Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, 
+  public AppendingTermsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo info, PostingsReaderBase postingsReader, 
       IOContext ioContext, String segmentSuffix, int indexDivisor) throws IOException {
-    super(dir, fieldInfos, segment, postingsReader, ioContext, segmentSuffix, indexDivisor);
+    super(dir, fieldInfos, info, postingsReader, ioContext, segmentSuffix, indexDivisor);
   }
 
   @Override
