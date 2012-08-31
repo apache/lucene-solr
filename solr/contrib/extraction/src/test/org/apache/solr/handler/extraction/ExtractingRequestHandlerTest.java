@@ -145,7 +145,22 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ(req("stream_name:version_control.xml"), "//*[@numFound='1']");
 
-
+    loadLocal("extraction/word2003.doc", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+            "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+            "fmap.Author", "extractedAuthor",
+            "literal.id", "four",
+            "uprefix", "ignored_",
+            "fmap.content", "extractedContent",
+            "fmap.language", "extractedLanguage",
+            "fmap.Last-Modified", "extractedDate"
+    );
+    assertQ(req("title:\"Word 2003 Title\""), "//*[@numFound='0']");
+    // There is already a PDF file with this content:
+    assertQ(req("extractedContent:\"This is a test of PDF and Word extraction in Solr, it is only a test\""), "//*[@numFound='1']");
+    assertU(commit());
+    assertQ(req("title:\"Word 2003 Title\""), "//*[@numFound='1']");
+    // now 2 of them:
+    assertQ(req("extractedContent:\"This is a test of PDF and Word extraction in Solr, it is only a test\""), "//*[@numFound='2']");
   }
 
 
@@ -163,8 +178,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
         //"fmap.content_type", "abcxyz",
         "commit", "true"  // test immediate commit
       );
-      assertTrue(false);
-
+      fail("Should throw SolrException");
     } catch (SolrException e) {
       //do nothing
     } finally {
