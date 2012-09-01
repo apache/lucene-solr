@@ -142,6 +142,9 @@ Other Changes
 * SOLR-3773: Hash based on the external String id rather than the indexed 
   representation for distributed updates. (Michael Garski, yonik, Mark Miller)
 
+* SOLR-3780: Maven build: Make solrj tests run separately from solr-core.
+  (Steve Rowe)
+
 
 ==================  4.0.0-BETA ===================
 
