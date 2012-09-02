@@ -64,8 +64,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.producer", "extractedProducer",
             "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
             "fmap.Creation-Date", "extractedDate",
-            "fmap.AAPL:Keywords", "ignored_a",
-            "fmap.xmpTPg:NPages", "ignored_a",
+            "uprefix", "ignored_",
             "fmap.Author", "extractedAuthor",
             "fmap.content", "extractedContent",
            "literal.id", "one",
@@ -81,6 +80,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.Author", "extractedAuthor",
             "fmap.language", "extractedLanguage",
             "literal.id", "two",
+            "uprefix", "ignored_",
             "fmap.content", "extractedContent",
             "fmap.Last-Modified", "extractedDate"
     );
@@ -136,6 +136,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
             "fmap.Author", "extractedAuthor",
             "literal.id", "three",
+            "uprefix", "ignored_",
             "fmap.content", "extractedContent",
             "fmap.language", "extractedLanguage",
             "fmap.Last-Modified", "extractedDate"
@@ -220,6 +221,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.Author", "extractedAuthor",
             "fmap.content", "extractedContent",
             "literal.id", "one",
+            "uprefix", "ignored_",
             "fmap.language", "extractedLanguage",
             "literal.extractionLiteralMV", "one",
             "literal.extractionLiteralMV", "two",
@@ -388,9 +390,8 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     loadLocal("extraction/arabic.pdf", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
         "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
         "fmap.Creation-Date", "extractedDate",
-        "fmap.AAPL:Keywords", "ignored_a",
-        "fmap.xmpTPg:NPages", "ignored_a",
         "fmap.Author", "extractedAuthor",
+        "uprefix", "ignored_",
         "fmap.content", "wdf_nocase",
        "literal.id", "one",
         "fmap.Last-Modified", "extractedDate");
@@ -418,8 +419,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       loadLocal("extraction/password-is-solrcell.docx", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
           "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
           "fmap.Creation-Date", "extractedDate",
-          "fmap.AAPL:Keywords", "ignored_a",
-          "fmap.xmpTPg:NPages", "ignored_a",
+          "uprefix", "ignored_",
           "fmap.Author", "extractedAuthor",
           "fmap.content", "wdf_nocase",
           "literal.id", "one",
@@ -476,8 +476,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.content", "extractedContent",
             "fmap.language", "extractedLanguage",
             "fmap.Creation-Date", "extractedDate",
-            "fmap.AAPL:Keywords", "ignored_a",
-            "fmap.xmpTPg:NPages", "ignored_a",
+            "uprefix", "ignored_",
             "fmap.Last-Modified", "extractedDate");
 
     // Here the literal value should override the Tika-parsed title:
@@ -492,8 +491,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.content", "extractedContent",
             "fmap.language", "extractedLanguage",
             "fmap.Creation-Date", "extractedDate",
-            "fmap.AAPL:Keywords", "ignored_a",
-            "fmap.xmpTPg:NPages", "ignored_a",
+            "uprefix", "ignored_",
             "fmap.Last-Modified", "extractedDate");
 
     // Here we mimic the old behaviour where literals are added, not overridden
@@ -512,8 +510,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.content", "extractedContent",
             "fmap.language", "extractedLanguage",
             "fmap.Creation-Date", "extractedDate",
-            "fmap.AAPL:Keywords", "ignored_a",
-            "fmap.xmpTPg:NPages", "ignored_a",
+            "uprefix", "ignored_",
             "fmap.Last-Modified", "extractedDate");
 
     assertU(commit());
