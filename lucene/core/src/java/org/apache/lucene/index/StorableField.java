@@ -1,3 +1,5 @@
+package org.apache.lucene.index;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,15 +17,26 @@
  * limitations under the License.
  */
 
-package org.apache.solr.schema;
+import java.io.Reader;
 
-import org.apache.lucene.index.StorableField;
-/**
+import org.apache.lucene.util.BytesRef;
+
+/** Represents a single stored field in lucene document. These fields
+ * are contained in document retrieved from IndexReader.
  *
- */
-public class BCDLongField extends BCDIntField {
-  @Override
-  public Long toObject(StorableField f) {
-    return Long.valueOf( toExternal(f) );
-  }
+ *  @lucene.experimental */
+
+public interface StorableField extends GeneralField {
+
+  /** Non-null if this field has a binary value */
+  public BytesRef binaryValue();
+
+  /** Non-null if this field has a string value */
+  public String stringValue();
+
+  /** Non-null if this field has a Reader value */
+  public Reader readerValue();
+
+  /** Non-null if this field has a numeric value */
+  public Number numericValue(); 
 }

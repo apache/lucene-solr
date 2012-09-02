@@ -122,7 +122,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
           if (i>0) {
             int k = i-1;
             int n = j + k*M;
-            Document prevItereationDoc = reader.document(n);
+            StoredDocument prevItereationDoc = reader.document(n);
             assertNotNull(prevItereationDoc);
             String id = prevItereationDoc.get("id");
             assertEquals(k+"_"+j, id);

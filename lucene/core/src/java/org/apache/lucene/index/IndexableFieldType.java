@@ -31,7 +31,7 @@ public interface IndexableFieldType {
 
   /** True if the field's value should be stored */
   public boolean stored();
-
+  
   /** 
    * True if this field's value should be analyzed by the
    * {@link Analyzer}.
@@ -95,5 +95,5 @@ public interface IndexableFieldType {
    * DocValues {@link DocValues.Type}: if non-null then the field's value
    * will be indexed into docValues.
    */
-  public DocValues.Type docValueType();
+  public DocValues.Type docValueType();  
 }

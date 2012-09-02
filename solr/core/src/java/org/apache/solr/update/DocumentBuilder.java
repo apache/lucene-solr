@@ -22,7 +22,10 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -56,7 +59,7 @@ public class DocumentBuilder {
     // might actually want to map it to something.  If createField()
     // returns null, then we don't store the field.
     if (sfield.isPolyField()) {
-      IndexableField[] fields = sfield.createFields(val, boost);
+      StorableField[] fields = sfield.createFields(val, boost);
       if (fields.length > 0) {
         if (!sfield.multiValued()) {
           String oldValue = map.put(sfield.getName(), val);
@@ -66,12 +69,12 @@ public class DocumentBuilder {
           }
         }
         // Add each field
-        for (IndexableField field : fields) {
-          doc.add(field);
+        for (StorableField field : fields) {
+          doc.add((Field) field);
         }
       }
     } else {
-      IndexableField field = sfield.createField(val, boost);
+      StorableField field = sfield.createField(val, boost);
       if (field != null) {
         if (!sfield.multiValued()) {
           String oldValue = map.put(sfield.getName(), val);
@@ -81,7 +84,7 @@ public class DocumentBuilder {
           }
         }
       }
-      doc.add(field);
+      doc.add((Field) field);
     }
 
   }
@@ -190,13 +193,13 @@ public class DocumentBuilder {
 
   private static void addField(Document doc, SchemaField field, Object val, float boost) {
     if (field.isPolyField()) {
-      IndexableField[] farr = field.getType().createFields(field, val, boost);
-      for (IndexableField f : farr) {
-        if (f != null) doc.add(f); // null fields are not added
+      StorableField[] farr = field.getType().createFields(field, val, boost);
+      for (StorableField f : farr) {
+        if (f != null) doc.add((Field) f); // null fields are not added
       }
     } else {
-      IndexableField f = field.createField(val, boost);
-      if (f != null) doc.add(f);  // null fields are not added
+      StorableField f = field.createField(val, boost);
+      if (f != null) doc.add((Field) f);  // null fields are not added
     }
   }
   

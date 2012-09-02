@@ -342,7 +342,7 @@ public abstract class IndexReader implements Closeable {
   // TODO: we need a separate StoredField, so that the
   // Document returned here contains that class not
   // IndexableField
-  public final Document document(int docID) throws IOException {
+  public final StoredDocument document(int docID) throws IOException {
     final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
     document(docID, visitor);
     return visitor.getDocument();
@@ -353,8 +353,10 @@ public abstract class IndexReader implements Closeable {
    * fields.  Note that this is simply sugar for {@link
    * DocumentStoredFieldVisitor#DocumentStoredFieldVisitor(Set)}.
    */
-  public final Document document(int docID, Set<String> fieldsToLoad) throws IOException {
-    final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(fieldsToLoad);
+  public final StoredDocument document(int docID, Set<String> fieldsToLoad)
+      throws IOException {
+    final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(
+        fieldsToLoad);
     document(docID, visitor);
     return visitor.getDocument();
   }

@@ -22,11 +22,11 @@ import java.io.IOException;
 import org.apache.lucene.codecs.lucene40.values.Bytes.BytesReaderBase;
 import org.apache.lucene.codecs.lucene40.values.Bytes.BytesSourceBase;
 import org.apache.lucene.codecs.lucene40.values.Bytes.BytesWriterBase;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -86,7 +86,7 @@ class VarStraightBytesImpl {
     }
 
     @Override
-    public void add(int docID, IndexableField value) throws IOException {
+    public void add(int docID, StorableField value) throws IOException {
       final BytesRef bytes = value.binaryValue();
       assert bytes != null;
       assert !merge;
@@ -156,7 +156,7 @@ class VarStraightBytesImpl {
     }
     
     @Override
-    protected void mergeDoc(Field scratchField, Source source, int docID, int sourceDoc) throws IOException {
+    protected void mergeDoc(StoredField scratchField, Source source, int docID, int sourceDoc) throws IOException {
       assert merge;
       assert lastDocID < docID;
       source.getBytes(sourceDoc, bytesRef);

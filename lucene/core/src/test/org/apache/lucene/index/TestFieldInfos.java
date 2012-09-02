@@ -47,7 +47,7 @@ public class TestFieldInfos extends LuceneTestCase {
   //Positive test of FieldInfos
     assertTrue(testDoc != null);
     FieldInfos.Builder builder = new FieldInfos.Builder();
-    for (IndexableField field : testDoc) {
+    for (IndexableField field : testDoc.getFields()) {
       builder.addOrUpdate(field.name(), field.fieldType());
     }
     FieldInfos fieldInfos = builder.finish();

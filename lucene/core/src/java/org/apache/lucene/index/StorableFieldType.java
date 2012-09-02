@@ -1,3 +1,5 @@
+package org.apache.lucene.index;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,15 +17,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.schema;
+// TODO: Move some properties from IndexableFieldType here, those regarding stored fields. 
 
-import org.apache.lucene.index.StorableField;
-/**
- *
+/** 
+ * Describes the properties of a stored field.
+ * @lucene.experimental 
  */
-public class BCDLongField extends BCDIntField {
-  @Override
-  public Long toObject(StorableField f) {
-    return Long.valueOf( toExternal(f) );
-  }
+public interface StorableFieldType {
+
+  /** DocValues type; if non-null then the field's value
+   *  will be indexed into docValues */
+  public DocValues.Type docValueType();
 }

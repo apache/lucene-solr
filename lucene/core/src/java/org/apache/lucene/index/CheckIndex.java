@@ -1180,7 +1180,7 @@ public class CheckIndex {
       for (int j = 0; j < info.info.getDocCount(); ++j) {
         // Intentionally pull even deleted documents to
         // make sure they too are not corrupt:
-        Document doc = reader.document(j);
+        StoredDocument doc = reader.document(j);
         if (liveDocs == null || liveDocs.get(j)) {
           status.docCount++;
           status.totFields += doc.getFields().size();

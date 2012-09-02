@@ -26,6 +26,7 @@ import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -126,7 +127,7 @@ class PackedIntValues {
     }
     
     @Override
-    public void add(int docID, IndexableField docValue) throws IOException {
+    public void add(int docID, StorableField docValue) throws IOException {
       final long v = docValue.numericValue().longValue();
       assert lastDocId < docID;
       if (!started) {

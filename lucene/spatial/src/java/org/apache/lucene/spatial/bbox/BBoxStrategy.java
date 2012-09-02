@@ -92,11 +92,11 @@ public class BBoxStrategy extends SpatialStrategy {
   //---------------------------------
 
   @Override
-  public IndexableField[] createIndexableFields(Shape shape) {
+  public Field[] createIndexableFields(Shape shape) {
     Rectangle bbox = shape.getBoundingBox();
     FieldType doubleFieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
     doubleFieldType.setNumericPrecisionStep(precisionStep);
-    IndexableField[] fields = new IndexableField[5];
+    Field[] fields = new Field[5];
     fields[0] = new DoubleField(field_minX, bbox.getMinX(), doubleFieldType);
     fields[1] = new DoubleField(field_maxX, bbox.getMaxX(), doubleFieldType);
     fields[2] = new DoubleField(field_minY, bbox.getMinY(), doubleFieldType);

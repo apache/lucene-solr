@@ -797,7 +797,7 @@ public class _TestUtil {
   // TODO: is there a pre-existing way to do this!!!
   public static Document cloneDocument(Document doc1) {
     final Document doc2 = new Document();
-    for(IndexableField f : doc1) {
+    for(IndexableField f : doc1.getFields()) {
       final Field field1 = (Field) f;
       final Field field2;
       final DocValues.Type dvType = field1.fieldType().docValueType();

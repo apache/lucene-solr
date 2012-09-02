@@ -28,6 +28,7 @@ import org.apache.lucene.search.highlight.TokenSources;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.StoredDocument;
 
 import java.io.IOException;
 
@@ -44,8 +45,8 @@ public class CountingHighlighterTestTask extends SearchTravRetHighlightTask {
   }
 
   @Override
-  protected Document retrieveDoc(IndexReader ir, int id) throws IOException {
-    Document document = ir.document(id);
+  protected StoredDocument retrieveDoc(IndexReader ir, int id) throws IOException {
+    StoredDocument document = ir.document(id);
     if (document != null) {
       numDocsRetrieved++;
     }
@@ -57,7 +58,7 @@ public class CountingHighlighterTestTask extends SearchTravRetHighlightTask {
     highlighter = new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(q));
     return new BenchmarkHighlighter() {
       @Override
-      public int doHighlight(IndexReader reader, int doc, String field, Document document, Analyzer analyzer, String text) throws Exception {
+      public int doHighlight(IndexReader reader, int doc, String field, StoredDocument document, Analyzer analyzer, String text) throws Exception {
         TokenStream ts = TokenSources.getAnyTokenStream(reader, doc, field, document, analyzer);
         TextFragment[] frag = highlighter.getBestTextFragments(ts, text, mergeContiguous, maxFrags);
         numHighlightedResults += frag != null ? frag.length : 0;

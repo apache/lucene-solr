@@ -29,6 +29,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
@@ -173,7 +174,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
       assertEquals("Score doc count"+type, count, sd.length );
-      Document doc=searcher.doc(sd[0].doc);
+      StoredDocument doc=searcher.doc(sd[0].doc);
       assertEquals("First doc"+type, 2*distance+startOffset, doc.getField(field).numericValue().intValue());
       doc=searcher.doc(sd[sd.length-1].doc);
       assertEquals("Last doc"+type, (1+count)*distance+startOffset, doc.getField(field).numericValue().intValue());
@@ -226,7 +227,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
-    Document doc=searcher.doc(sd[0].doc);
+    StoredDocument doc=searcher.doc(sd[0].doc);
     assertEquals("First doc", startOffset, doc.getField(field).numericValue().intValue());
     doc=searcher.doc(sd[sd.length-1].doc);
     assertEquals("Last doc", (count-1)*distance+startOffset, doc.getField(field).numericValue().intValue());
@@ -266,7 +267,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs-count, sd.length );
-    Document doc=searcher.doc(sd[0].doc);
+    StoredDocument doc=searcher.doc(sd[0].doc);
     assertEquals("First doc", count*distance+startOffset, doc.getField(field).numericValue().intValue());
     doc=searcher.doc(sd[sd.length-1].doc);
     assertEquals("Last doc", (noDocs-1)*distance+startOffset, doc.getField(field).numericValue().intValue());

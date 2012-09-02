@@ -35,7 +35,7 @@ import org.apache.lucene.index.DocValues;
  * @see DocValues for further information
  * */
 
-public class IntDocValuesField extends Field {
+public class IntDocValuesField extends StoredField {
 
   /**
    * Type for 32-bit integer DocValues.

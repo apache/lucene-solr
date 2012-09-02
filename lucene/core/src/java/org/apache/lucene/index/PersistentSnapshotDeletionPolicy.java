@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
@@ -67,13 +68,13 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
       int numDocs = r.numDocs();
       // index is allowed to have exactly one document or 0.
       if (numDocs == 1) {
-        Document doc = r.document(r.maxDoc() - 1);
+        StoredDocument doc = r.document(r.maxDoc() - 1);
         if (doc.getField(SNAPSHOTS_ID) == null) {
           throw new IllegalStateException("directory is not a valid snapshots store!");
         }
-        doc.removeField(SNAPSHOTS_ID);
-        for (IndexableField f : doc) {
-          snapshots.put(f.name(), f.stringValue());
+        for (StorableField f : doc) {
+          if (!f.name().equals(SNAPSHOTS_ID))
+            snapshots.put(f.name(), f.stringValue());
         }
       } else if (numDocs != 0) {
         throw new IllegalStateException(
@@ -184,14 +185,12 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
   private void persistSnapshotInfos(String id, String segment) throws IOException {
     writer.deleteAll();
     Document d = new Document();
-    FieldType ft = new FieldType();
-    ft.setStored(true);
-    d.add(new Field(SNAPSHOTS_ID, "", ft));
+    d.add(new StoredField(SNAPSHOTS_ID, ""));
     for (Entry<String, String> e : super.getSnapshots().entrySet()) {
-      d.add(new Field(e.getKey(), e.getValue(), ft));
+      d.add(new StoredField(e.getKey(), e.getValue()));
     }
     if (id != null) {
-      d.add(new Field(id, segment, ft));
+      d.add(new StoredField(id, segment));
     }
     writer.addDocument(d);
     writer.commit();

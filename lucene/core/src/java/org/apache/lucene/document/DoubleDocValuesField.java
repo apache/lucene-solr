@@ -36,7 +36,7 @@ import org.apache.lucene.index.DocValues;
  * @see DocValues for further information
  * */
 
-public class DoubleDocValuesField extends Field {
+public class DoubleDocValuesField extends StoredField {
 
   /**
    * Type for 64-bit double DocValues.

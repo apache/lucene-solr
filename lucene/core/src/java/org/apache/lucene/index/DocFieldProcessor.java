@@ -28,6 +28,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.PerDocConsumer;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
 import org.apache.lucene.index.TypePromoter.TypeCompatibility;
 import org.apache.lucene.store.IOContext;
@@ -218,58 +219,21 @@ final class DocFieldProcessor extends DocConsumer {
     // seen before (eg suddenly turning on norms or
     // vectors, etc.):
 
-    for(IndexableField field : docState.doc) {
+    for(IndexableField field : docState.doc.indexableFields()) {
       final String fieldName = field.name();
+      IndexableFieldType ft = field.fieldType();
 
-      // Make sure we have a PerField allocated
-      final int hashPos = fieldName.hashCode() & hashMask;
-      DocFieldProcessorPerField fp = fieldHash[hashPos];
-      while(fp != null && !fp.fieldInfo.name.equals(fieldName)) {
-        fp = fp.next;
-      }
-
-      if (fp == null) {
-
-        // TODO FI: we need to genericize the "flags" that a
-        // field holds, and, how these flags are merged; it
-        // needs to be more "pluggable" such that if I want
-        // to have a new "thing" my Fields can do, I can
-        // easily add it
-        FieldInfo fi = fieldInfos.addOrUpdate(fieldName, field.fieldType());
-
-        fp = new DocFieldProcessorPerField(this, fi);
-        fp.next = fieldHash[hashPos];
-        fieldHash[hashPos] = fp;
-        totalFieldCount++;
-
-        if (totalFieldCount >= fieldHash.length/2) {
-          rehash();
-        }
-      } else {
-        fieldInfos.addOrUpdate(fp.fieldInfo.name, field.fieldType());
-      }
-
-      if (thisFieldGen != fp.lastGen) {
-
-        // First time we're seeing this field for this doc
-        fp.fieldCount = 0;
-
-        if (fieldCount == fields.length) {
-          final int newSize = fields.length*2;
-          DocFieldProcessorPerField newArray[] = new DocFieldProcessorPerField[newSize];
-          System.arraycopy(fields, 0, newArray, 0, fieldCount);
-          fields = newArray;
-        }
-
-        fields[fieldCount++] = fp;
-        fp.lastGen = thisFieldGen;
-      }
+      DocFieldProcessorPerField fp = processField(fieldInfos, thisFieldGen, fieldName, ft);
 
       fp.addField(field);
+    }
+    for (StorableField field: docState.doc.storableFields()) {
+      final String fieldName = field.name();
+      IndexableFieldType ft = field.fieldType();
 
-      if (field.fieldType().stored()) {
-        fieldsWriter.addField(field, fp.fieldInfo);
-      }
+      DocFieldProcessorPerField fp = processField(fieldInfos, thisFieldGen, fieldName, ft);
+      fieldsWriter.addField(field, fp.fieldInfo);
+      
       final DocValues.Type dvType = field.fieldType().docValueType();
       if (dvType != null) {
         DocValuesConsumerHolder docValuesConsumer = docValuesConsumer(dvType,
@@ -311,6 +275,54 @@ final class DocFieldProcessor extends DocConsumer {
       docState.infoStream.message("IW", "WARNING: document contains at least one immense term (whose UTF8 encoding is longer than the max length " + DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8 + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + docState.maxTermPrefix + "...'");
       docState.maxTermPrefix = null;
     }
+  }
+
+  private DocFieldProcessorPerField processField(FieldInfos.Builder fieldInfos,
+      final int thisFieldGen, final String fieldName, IndexableFieldType ft) {
+    // Make sure we have a PerField allocated
+    final int hashPos = fieldName.hashCode() & hashMask;
+    DocFieldProcessorPerField fp = fieldHash[hashPos];
+    while(fp != null && !fp.fieldInfo.name.equals(fieldName)) {
+      fp = fp.next;
+    }
+
+    if (fp == null) {
+
+      // TODO FI: we need to genericize the "flags" that a
+      // field holds, and, how these flags are merged; it
+      // needs to be more "pluggable" such that if I want
+      // to have a new "thing" my Fields can do, I can
+      // easily add it
+      FieldInfo fi = fieldInfos.addOrUpdate(fieldName, ft);
+
+      fp = new DocFieldProcessorPerField(this, fi);
+      fp.next = fieldHash[hashPos];
+      fieldHash[hashPos] = fp;
+      totalFieldCount++;
+
+      if (totalFieldCount >= fieldHash.length/2) {
+        rehash();
+      }
+    } else {
+      fieldInfos.addOrUpdate(fp.fieldInfo.name, ft);
+    }
+
+    if (thisFieldGen != fp.lastGen) {
+
+      // First time we're seeing this field for this doc
+      fp.fieldCount = 0;
+
+      if (fieldCount == fields.length) {
+        final int newSize = fields.length*2;
+        DocFieldProcessorPerField newArray[] = new DocFieldProcessorPerField[newSize];
+        System.arraycopy(fields, 0, newArray, 0, fieldCount);
+        fields = newArray;
+      }
+
+      fields[fieldCount++] = fp;
+      fp.lastGen = thisFieldGen;
+    }
+    return fp;
   }
 
   private static final Comparator<DocFieldProcessorPerField> fieldsComp = new Comparator<DocFieldProcessorPerField>() {

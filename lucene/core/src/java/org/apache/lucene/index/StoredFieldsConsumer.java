@@ -44,12 +44,12 @@ final class StoredFieldsConsumer {
   }
 
   private int numStoredFields;
-  private IndexableField[] storedFields;
+  private StorableField[] storedFields;
   private FieldInfo[] fieldInfos;
 
   public void reset() {
     numStoredFields = 0;
-    storedFields = new IndexableField[1];
+    storedFields = new StorableField[1];
     fieldInfos = new FieldInfo[1];
   }
 
@@ -126,10 +126,10 @@ final class StoredFieldsConsumer {
     assert docWriter.writer.testPoint("StoredFieldsWriter.finishDocument end");
   }
 
-  public void addField(IndexableField field, FieldInfo fieldInfo) {
+  public void addField(StorableField field, FieldInfo fieldInfo) {
     if (numStoredFields == storedFields.length) {
       int newSize = ArrayUtil.oversize(numStoredFields + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
-      IndexableField[] newArray = new IndexableField[newSize];
+      StorableField[] newArray = new StorableField[newSize];
       System.arraycopy(storedFields, 0, newArray, 0, numStoredFields);
       storedFields = newArray;
       

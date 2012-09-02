@@ -139,13 +139,13 @@ public class RandomIndexWriter implements Closeable {
   
   /**
    * Adds a Document.
-   * @see IndexWriter#addDocument(Iterable)
+   * @see IndexWriter#addDocument(org.apache.lucene.index.IndexDocument)
    */
-  public <T extends IndexableField> void addDocument(final Iterable<T> doc) throws IOException {
+  public <T extends IndexableField> void addDocument(final IndexDocument doc) throws IOException {
     addDocument(doc, w.getAnalyzer());
   }
 
-  public <T extends IndexableField> void addDocument(final Iterable<T> doc, Analyzer a) throws IOException {
+  public <T extends IndexableField> void addDocument(final IndexDocument doc, Analyzer a) throws IOException {
     if (doDocValues && doc instanceof Document) {
       randomPerDocFieldValues((Document) doc);
     }
@@ -154,11 +154,11 @@ public class RandomIndexWriter implements Closeable {
       // (but we need to clone them), and only when
       // getReader, commit, etc. are called, we do an
       // addDocuments?  Would be better testing.
-      w.addDocuments(new Iterable<Iterable<T>>() {
+      w.addDocuments(new Iterable<IndexDocument>() {
 
         @Override
-        public Iterator<Iterable<T>> iterator() {
-          return new Iterator<Iterable<T>>() {
+        public Iterator<IndexDocument> iterator() {
+          return new Iterator<IndexDocument>() {
             boolean done;
             
             @Override
@@ -172,7 +172,7 @@ public class RandomIndexWriter implements Closeable {
             }
 
             @Override
-            public Iterable<T> next() {
+            public IndexDocument next() {
               if (done) {
                 throw new IllegalStateException();
               }
@@ -273,30 +273,30 @@ public class RandomIndexWriter implements Closeable {
     }
   }
   
-  public void addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
+  public void addDocuments(Iterable<? extends IndexDocument> docs) throws IOException {
     w.addDocuments(docs);
     maybeCommit();
   }
 
-  public void updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
+  public void updateDocuments(Term delTerm, Iterable<? extends IndexDocument> docs) throws IOException {
     w.updateDocuments(delTerm, docs);
     maybeCommit();
   }
 
   /**
    * Updates a document.
-   * @see IndexWriter#updateDocument(Term, Iterable)
+   * @see IndexWriter#updateDocument(Term, org.apache.lucene.index.IndexDocument)
    */
-  public <T extends IndexableField> void updateDocument(Term t, final Iterable<T> doc) throws IOException {
+  public <T extends IndexableField> void updateDocument(Term t, final IndexDocument doc) throws IOException {
     if (doDocValues) {
       randomPerDocFieldValues((Document) doc);
     }
     if (r.nextInt(5) == 3) {
-      w.updateDocuments(t, new Iterable<Iterable<T>>() {
+      w.updateDocuments(t, new Iterable<IndexDocument>() {
 
         @Override
-        public Iterator<Iterable<T>> iterator() {
-          return new Iterator<Iterable<T>>() {
+        public Iterator<IndexDocument> iterator() {
+          return new Iterator<IndexDocument>() {
             boolean done;
             
             @Override
@@ -310,7 +310,7 @@ public class RandomIndexWriter implements Closeable {
             }
 
             @Override
-            public Iterable<T> next() {
+            public IndexDocument next() {
               if (done) {
                 throw new IllegalStateException();
               }

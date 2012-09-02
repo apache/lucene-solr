@@ -20,7 +20,8 @@ package org.apache.solr.schema;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.search.QParser;
-import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.GeneralField;
+import org.apache.lucene.index.StorableField;
 import org.apache.solr.util.BCDUtils;
 import org.apache.solr.response.TextResponseWriter;
 
@@ -46,13 +47,13 @@ public class BCDIntField extends PrimitiveFieldType {
   }
 
   @Override
-  public String toExternal(IndexableField f) {
+  public String toExternal(StorableField f) {
     return indexedToReadable(f.stringValue());
   }
   
   // Note, this can't return type 'Integer' because BCDStrField and BCDLong extend it
   @Override
-  public Object toObject(IndexableField f) {
+  public Object toObject(StorableField f) {
     return Integer.valueOf( toExternal(f) );
   }
 
@@ -62,7 +63,7 @@ public class BCDIntField extends PrimitiveFieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
     writer.writeInt(name,toExternal(f));
   }
 }

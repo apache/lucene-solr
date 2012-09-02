@@ -74,7 +74,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     Document doc = new Document();
     doc.add(newTextField("field", "one two three four five", Field.Store.YES));
     doc.add(newTextField("repeated", "this is a repeated field - first part", Field.Store.YES));
-    IndexableField repeatedField = newTextField("repeated", "second part of a repeated field", Field.Store.YES);
+    Field repeatedField = newTextField("repeated", "second part of a repeated field", Field.Store.YES);
     doc.add(repeatedField);
     doc.add(newTextField("palindrome", "one two three two one", Field.Store.YES));
     writer.addDocument(doc);

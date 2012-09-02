@@ -35,7 +35,7 @@ import org.apache.lucene.index.DocValues;
  * @see DocValues for further information
  * */
 
-public class FloatDocValuesField extends Field {
+public class FloatDocValuesField extends StoredField {
 
   /**
    * Type for 32-bit float DocValues.

@@ -67,11 +67,11 @@ public class TestDocumentWriter extends LuceneTestCase {
     //After adding the document, we should be able to read it back in
     SegmentReader reader = new SegmentReader(info, DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
     assertTrue(reader != null);
-    Document doc = reader.document(0);
+    StoredDocument doc = reader.document(0);
     assertTrue(doc != null);
 
     //System.out.println("Document: " + doc);
-    IndexableField [] fields = doc.getFields("textField2");
+    StorableField[] fields = doc.getFields("textField2");
     assertTrue(fields != null && fields.length == 1);
     assertTrue(fields[0].stringValue().equals(DocHelper.FIELD_2_TEXT));
     assertTrue(fields[0].fieldType().storeTermVectors());

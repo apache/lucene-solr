@@ -1,3 +1,5 @@
+package org.apache.lucene.index;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,15 +17,17 @@
  * limitations under the License.
  */
 
-package org.apache.solr.schema;
-
-import org.apache.lucene.index.StorableField;
-/**
+/** Represents a single field in lucene document. Further generalizations
+ * are {@link IndexableField} and {@link StorableField} interfaces.  
  *
- */
-public class BCDLongField extends BCDIntField {
-  @Override
-  public Long toObject(StorableField f) {
-    return Long.valueOf( toExternal(f) );
-  }
+ *  @lucene.experimental */
+
+public interface GeneralField {
+
+  /** Field name */
+  public String name();
+
+  /** {@link IndexableFieldType} describing the properties
+   * of this field. */
+  public IndexableFieldType fieldType();
 }

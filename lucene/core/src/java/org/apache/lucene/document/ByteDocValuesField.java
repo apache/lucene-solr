@@ -36,7 +36,7 @@ import org.apache.lucene.index.DocValues;
  * @see DocValues for further information
  * */
 
-public class ByteDocValuesField extends Field {
+public class ByteDocValuesField extends StoredField {
 
   /**
    * Type for 8-bit byte DocValues.

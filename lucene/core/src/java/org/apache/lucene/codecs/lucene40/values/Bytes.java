@@ -30,6 +30,7 @@ import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -420,7 +421,7 @@ public final class Bytes {
     }
 
     @Override
-    public void add(int docID, IndexableField value) throws IOException {
+    public void add(int docID, StorableField value) throws IOException {
       BytesRef bytes = value.binaryValue();
       assert bytes != null;
       if (bytes.length == 0) { // default value - skip it

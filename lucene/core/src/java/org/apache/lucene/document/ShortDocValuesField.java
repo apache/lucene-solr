@@ -36,7 +36,7 @@ import org.apache.lucene.index.DocValues;
  * @see DocValues for further information
  * */
 
-public class ShortDocValuesField extends Field {
+public class ShortDocValuesField extends StoredField {
 
   /**
    * Type for 16-bit short DocValues.

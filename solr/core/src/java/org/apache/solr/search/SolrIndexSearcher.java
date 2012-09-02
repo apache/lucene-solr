@@ -95,7 +95,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private final boolean cachingEnabled;
   private final SolrCache<Query,DocSet> filterCache;
   private final SolrCache<QueryResultKey,DocList> queryResultCache;
-  private final SolrCache<Integer,Document> documentCache;
+  private final SolrCache<Integer,StoredDocument> documentCache;
   private final SolrCache<String,UnInvertedField> fieldValueCache;
 
   private final LuceneQueryOptimizer optimizer;
@@ -433,7 +433,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   // need to open up access to its Document...
   static class SetNonLazyFieldSelector extends StoredFieldVisitor {
     private Set<String> fieldsToLoad;
-    final Document doc = new Document();
+    final StoredDocument doc = new StoredDocument();
     final LazyDocument lazyDoc;
 
     SetNonLazyFieldSelector(Set<String> toLoad, IndexReader reader, int docID) {
@@ -502,7 +502,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * Retrieve the {@link Document} instance corresponding to the document id.
    */
   @Override
-  public Document doc(int i) throws IOException {
+  public StoredDocument doc(int i) throws IOException {
     return doc(i, (Set<String>)null);
   }
 
@@ -522,9 +522,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * filter is provided, only the provided fields will be loaded (the 
    * remainder will be available lazily).
    */
-  public Document doc(int i, Set<String> fields) throws IOException {
+  public StoredDocument doc(int i, Set<String> fields) throws IOException {
     
-    Document d;
+    StoredDocument d;
     if (documentCache != null) {
       d = documentCache.get(i);
       if (d!=null) return d;
@@ -549,14 +549,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * Takes a list of docs (the doc ids actually), and reads them into an array 
    * of Documents.
    */
-  public void readDocs(Document[] docs, DocList ids) throws IOException {
+  public void readDocs(StoredDocument[] docs, DocList ids) throws IOException {
     readDocs(docs, ids, null);
   }
   /**
    * Takes a list of docs (the doc ids actually) and a set of fields to load,
    * and reads them into an array of Documents.
    */
-  public void readDocs(Document[] docs, DocList ids, Set<String> fields) throws IOException {
+  public void readDocs(StoredDocument[] docs, DocList ids, Set<String> fields) throws IOException {
     DocIterator iter = ids.iterator();
     for (int i=0; i<docs.length; i++) {
       docs[i] = doc(iter.nextDoc(), fields);
@@ -1893,8 +1893,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * Takes a list of docs (the doc ids actually), and returns an array 
    * of Documents containing all of the stored fields.
    */
-  public Document[] readDocs(DocList ids) throws IOException {
-     Document[] docs = new Document[ids.size()];
+  public StoredDocument[] readDocs(DocList ids) throws IOException {
+     StoredDocument[] docs = new StoredDocument[ids.size()];
      readDocs(docs,ids);
      return docs;
   }

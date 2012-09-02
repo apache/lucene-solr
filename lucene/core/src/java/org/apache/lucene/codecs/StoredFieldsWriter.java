@@ -19,13 +19,13 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.index.AtomicReader;
 
 /**
  * Codec API for writing stored fields:
@@ -33,7 +33,7 @@ import org.apache.lucene.util.Bits;
  * <ol>
  *   <li>For every document, {@link #startDocument(int)} is called,
  *       informing the Codec how many fields will be written.
- *   <li>{@link #writeField(FieldInfo, IndexableField)} is called for 
+ *   <li>{@link #writeField(FieldInfo, StorableField)} is called for 
  *       each field in the document.
  *   <li>After all documents have been written, {@link #finish(FieldInfos, int)} 
  *       is called for verification/sanity-checks.
@@ -45,14 +45,14 @@ import org.apache.lucene.util.Bits;
 public abstract class StoredFieldsWriter implements Closeable {
   
   /** Called before writing the stored fields of the document.
-   *  {@link #writeField(FieldInfo, IndexableField)} will be called
+   *  {@link #writeField(FieldInfo, StorableField)} will be called
    *  <code>numStoredFields</code> times. Note that this is
    *  called even if the document has no stored fields, in
    *  this case <code>numStoredFields</code> will be zero. */
   public abstract void startDocument(int numStoredFields) throws IOException;
   
   /** Writes a single stored field. */
-  public abstract void writeField(FieldInfo info, IndexableField field) throws IOException;
+  public abstract void writeField(FieldInfo info, StorableField field) throws IOException;
 
   /** Aborts writing entirely, implementation should remove
    *  any partially-written files, etc. */
@@ -69,7 +69,7 @@ public abstract class StoredFieldsWriter implements Closeable {
   /** Merges in the stored fields from the readers in 
    *  <code>mergeState</code>. The default implementation skips
    *  over deleted documents, and uses {@link #startDocument(int)},
-   *  {@link #writeField(FieldInfo, IndexableField)}, and {@link #finish(FieldInfos, int)},
+   *  {@link #writeField(FieldInfo, StorableField)}, and {@link #finish(FieldInfos, int)},
    *  returning the number of documents that were written.
    *  Implementations can override this method for more sophisticated
    *  merging (bulk-byte copying, etc). */
@@ -89,7 +89,7 @@ public abstract class StoredFieldsWriter implements Closeable {
         // on the fly?
         // NOTE: it's very important to first assign to doc then pass it to
         // fieldsWriter.addDocument; see LUCENE-1282
-        Document doc = reader.document(i);
+        StoredDocument doc = reader.document(i);
         addDocument(doc, mergeState.fieldInfos);
         docCount++;
         mergeState.checkAbort.work(300);
@@ -100,20 +100,16 @@ public abstract class StoredFieldsWriter implements Closeable {
   }
   
   /** sugar method for startDocument() + writeField() for every stored field in the document */
-  protected final void addDocument(Iterable<? extends IndexableField> doc, FieldInfos fieldInfos) throws IOException {
+  protected final void addDocument(Iterable<? extends StorableField> doc, FieldInfos fieldInfos) throws IOException {
     int storedCount = 0;
-    for (IndexableField field : doc) {
-      if (field.fieldType().stored()) {
-        storedCount++;
-      }
+    for (StorableField field : doc) {
+      storedCount++;
     }
     
     startDocument(storedCount);
 
-    for (IndexableField field : doc) {
-      if (field.fieldType().stored()) {
+    for (StorableField field : doc) {
         writeField(fieldInfos.fieldInfo(field.name()), field);
-      }
     }
   }
 }

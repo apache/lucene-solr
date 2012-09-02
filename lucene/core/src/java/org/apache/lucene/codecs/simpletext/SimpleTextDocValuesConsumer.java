@@ -21,7 +21,7 @@ import org.apache.lucene.codecs.DocValuesArraySource;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -72,7 +72,7 @@ public class SimpleTextDocValuesConsumer extends DocValuesConsumer {
   }
 
   @Override
-  public void add(int docID, IndexableField value) throws IOException {
+  public void add(int docID, StorableField value) throws IOException {
     assert docID >= 0;
     final int ord, vSize;
     switch (type) {

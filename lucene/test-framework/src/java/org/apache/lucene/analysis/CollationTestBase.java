@@ -34,6 +34,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -238,8 +240,8 @@ public abstract class CollationTestBase extends LuceneTestCase {
     StringBuilder buff = new StringBuilder(10);
     int n = result.length;
     for (int i = 0 ; i < n ; ++i) {
-      Document doc = searcher.doc(result[i].doc);
-      IndexableField[] v = doc.getFields("tracer");
+      StoredDocument doc = searcher.doc(result[i].doc);
+      StorableField[] v = doc.getFields("tracer");
       for (int j = 0 ; j < v.length ; ++j) {
         buff.append(v[j].stringValue());
       }

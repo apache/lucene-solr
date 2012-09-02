@@ -133,7 +133,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       if( style != null && style != ShowStyle.DOC ) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "missing doc param for doc style");
       }
-      Document doc = null;
+      StoredDocument doc = null;
       try {
         doc = reader.document( docId );
       }
@@ -170,7 +170,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   /**
    * @return a string representing a IndexableField's flags.  
    */
-  private static String getFieldFlags( IndexableField f )
+  private static String getFieldFlags( StorableField f )
   {
     IndexOptions opts = (f == null) ? null : f.fieldType().indexOptions();
 
@@ -239,7 +239,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     return key;
   }
 
-  private static SimpleOrderedMap<Object> getDocumentFieldsInfo( Document doc, int docId, IndexReader reader,
+  private static SimpleOrderedMap<Object> getDocumentFieldsInfo( StoredDocument doc, int docId, IndexReader reader,
                                                                  IndexSchema schema ) throws IOException
   {
     final CharsRef spare = new CharsRef();
@@ -343,13 +343,13 @@ public class LukeRequestHandler extends RequestHandlerBase
       if(sfield != null && sfield.indexed() ) {
         // In the pre-4.0 days, this did a veeeery expensive range query. But we can be much faster now,
         // so just do this all the time.
-        Document doc = getFirstLiveDoc(reader, fieldName, terms);
+        StoredDocument doc = getFirstLiveDoc(reader, fieldName, terms);
 
 
         if( doc != null ) {
           // Found a document with this field
           try {
-            IndexableField fld = doc.getField( fieldName );
+            StorableField fld = doc.getField( fieldName );
             if( fld != null ) {
               fieldMap.add("index", getFieldFlags(fld));
             }
@@ -377,7 +377,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   // Just get a document with the term in it, the first one will do!
   // Is there a better way to do this? Shouldn't actually be very costly
   // to do it this way.
-  private static Document getFirstLiveDoc(AtomicReader reader, String fieldName, Terms terms) throws IOException {
+  private static StoredDocument getFirstLiveDoc(AtomicReader reader, String fieldName, Terms terms) throws IOException {
     DocsEnum docsEnum = null;
     TermsEnum termsEnum = terms.iterator(null);
     BytesRef text;

@@ -26,13 +26,14 @@ import org.apache.lucene.document.LongDocValuesField;
 import org.apache.lucene.document.PackedLongDocValuesField;
 import org.apache.lucene.document.ShortDocValuesField;
 import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Stores the normalization value computed in
+ * Stores the normalization value with {@link StorableField} computed in
  * {@link Similarity#computeNorm(FieldInvertState, Norm)} per field.
  * Normalization values must be consistent within a single field, different
  * value types are not permitted within a single field. All values set must be
@@ -43,13 +44,13 @@ import org.apache.lucene.util.BytesRef;
  * @lucene.internal
  */
 public final class Norm  {
-  private Field field;
+  private StoredField field;
   private BytesRef spare;
   
   /**
-   * Returns the {@link IndexableField} representation for this norm
+   * Returns the {@link StorableField} representation for this norm
    */
-  public IndexableField field() {
+  public StorableField field() {
     return field;
   }
   

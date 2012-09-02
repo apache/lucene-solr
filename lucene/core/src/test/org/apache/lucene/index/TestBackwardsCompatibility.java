@@ -329,13 +329,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     for(int i=0;i<35;i++) {
       if (liveDocs.get(i)) {
-        Document d = reader.document(i);
-        List<IndexableField> fields = d.getFields();
+        StoredDocument d = reader.document(i);
+        List<StorableField> fields = d.getFields();
         boolean isProxDoc = d.getField("content3") == null;
         if (isProxDoc) {
           final int numFields = is40Index ? 7 : 5;
           assertEquals(numFields, fields.size());
-          IndexableField f =  d.getField("id");
+          StorableField f =  d.getField("id");
           assertEquals(""+i, f.stringValue());
 
           f = d.getField("utf8");
@@ -406,7 +406,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term(new String("content"), "aaa")), null, 1000).scoreDocs;
 
     // First document should be #0
-    Document d = searcher.getIndexReader().document(hits[0].doc);
+    StoredDocument d = searcher.getIndexReader().document(hits[0].doc);
     assertEquals("didn't get the right document first", "0", d.get("id"));
 
     doTestHits(hits, 34, searcher.getIndexReader());
@@ -459,7 +459,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     IndexReader reader = DirectoryReader.open(dir);
     IndexSearcher searcher = new IndexSearcher(reader);
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
-    Document d = searcher.getIndexReader().document(hits[0].doc);
+    StoredDocument d = searcher.getIndexReader().document(hits[0].doc);
     assertEquals("wrong first document", "0", d.get("id"));
     doTestHits(hits, 44, searcher.getIndexReader());
     reader.close();
@@ -485,7 +485,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     IndexSearcher searcher = new IndexSearcher(reader);
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 34, hits.length);
-    Document d = searcher.doc(hits[0].doc);
+    StoredDocument d = searcher.doc(hits[0].doc);
     assertEquals("wrong first document", "0", d.get("id"));
     reader.close();
 
@@ -757,7 +757,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       for (int id=10; id<15; id++) {
         ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", 4, Integer.valueOf(id), Integer.valueOf(id), true, true), 100).scoreDocs;
         assertEquals("wrong number of hits", 1, hits.length);
-        Document d = searcher.doc(hits[0].doc);
+        StoredDocument d = searcher.doc(hits[0].doc);
         assertEquals(String.valueOf(id), d.get("id"));
         
         hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", 4, Long.valueOf(id), Long.valueOf(id), true, true), 100).scoreDocs;

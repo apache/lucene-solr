@@ -39,6 +39,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -181,7 +182,7 @@ public class IndexSearcher {
   }
 
   /** Sugar for <code>.getIndexReader().document(docID)</code> */
-  public Document doc(int docID) throws IOException {
+  public StoredDocument doc(int docID) throws IOException {
     return reader.document(docID);
   }
 
@@ -191,7 +192,7 @@ public class IndexSearcher {
   }
 
   /** Sugar for <code>.getIndexReader().document(docID, fieldsToLoad)</code> */
-  public final Document document(int docID, Set<String> fieldsToLoad) throws IOException {
+  public final StoredDocument document(int docID, Set<String> fieldsToLoad) throws IOException {
     return reader.document(docID, fieldsToLoad);
   }
 

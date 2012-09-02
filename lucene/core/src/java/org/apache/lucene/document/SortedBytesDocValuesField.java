@@ -37,7 +37,7 @@ import org.apache.lucene.util.BytesRef;
  * @see DocValues for further information
  * */
 
-public class SortedBytesDocValuesField extends Field {
+public class SortedBytesDocValuesField extends StoredField {
 
   // TODO: ideally indexer figures out var vs fixed on its own!?
   /**

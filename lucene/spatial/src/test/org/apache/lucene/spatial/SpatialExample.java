@@ -124,7 +124,7 @@ public class SpatialExample extends LuceneTestCase {
     //Potentially more than one shape in this field is supported by some
     // strategies; see the javadocs of the SpatialStrategy impl to see.
     for (Shape shape : shapes) {
-      for (IndexableField f : strategy.createIndexableFields(shape)) {
+      for (Field f : strategy.createIndexableFields(shape)) {
         doc.add(f);
       }
       //store it too; the format is up to you

@@ -18,6 +18,7 @@ package org.apache.lucene.document;
  */
 
 import java.io.StringReader;
+import java.util.List;
 
 import org.apache.lucene.analysis.EmptyTokenizer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -27,6 +28,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -50,9 +53,9 @@ public class TestDocument extends LuceneTestCase {
     
     FieldType ft = new FieldType();
     ft.setStored(true);
-    IndexableField stringFld = new Field("string", binaryVal, ft);
-    IndexableField binaryFld = new StoredField("binary", binaryVal.getBytes("UTF-8"));
-    IndexableField binaryFld2 = new StoredField("binary", binaryVal2.getBytes("UTF-8"));
+    Field stringFld = new Field("string", binaryVal, ft);
+    StoredField binaryFld = new StoredField("binary", binaryVal.getBytes("UTF-8"));
+    StoredField binaryFld2 = new StoredField("binary", binaryVal2.getBytes("UTF-8"));
     
     doc.add(stringFld);
     doc.add(binaryFld);
@@ -124,7 +127,7 @@ public class TestDocument extends LuceneTestCase {
                                        // siltenlty ignored
     assertEquals(0, doc.getFields().size());
   }
-  
+
   public void testConstructorExceptions() {
     FieldType ft = new FieldType();
     ft.setStored(true);
@@ -145,6 +148,34 @@ public class TestDocument extends LuceneTestCase {
       fail();
     } catch (IllegalArgumentException e) {
       // expected exception
+    }
+  }
+
+  public void testClearDocument() {
+    Document doc = makeDocumentWithFields();
+    assertEquals(8, doc.getFields().size());
+    doc.clear();
+    assertEquals(0, doc.getFields().size());
+  }
+
+  public void testGetFieldsImmutable() {
+    Document doc = makeDocumentWithFields();
+    assertEquals(8, doc.getFields().size());
+    List<Field> fields = doc.getFields();
+    try {
+      fields.add( new StringField("name", "value", Field.Store.NO) );
+      fail("Document.getFields() should return immutable List");
+    }
+    catch (UnsupportedOperationException e) {
+      // OK
+    }
+
+    try {
+      fields.clear();
+      fail("Document.getFields() should return immutable List");
+    }
+    catch (UnsupportedOperationException e) {
+      // OK
     }
   }
   
@@ -179,7 +210,7 @@ public class TestDocument extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     
-    doAssert(searcher.doc(hits[0].doc), true);
+    doAssert(searcher.doc(hits[0].doc));
     writer.close();
     reader.close();
     dir.close();
@@ -214,11 +245,14 @@ public class TestDocument extends LuceneTestCase {
     return doc;
   }
   
+  private void doAssert(StoredDocument doc) {
+    doAssert(new Document(doc), true);
+  }
   private void doAssert(Document doc, boolean fromIndex) {
-    IndexableField[] keywordFieldValues = doc.getFields("keyword");
-    IndexableField[] textFieldValues = doc.getFields("text");
-    IndexableField[] unindexedFieldValues = doc.getFields("unindexed");
-    IndexableField[] unstoredFieldValues = doc.getFields("unstored");
+    StorableField[] keywordFieldValues = doc.getFields("keyword");
+    StorableField[] textFieldValues = doc.getFields("text");
+    StorableField[] unindexedFieldValues = doc.getFields("unindexed");
+    StorableField[] unstoredFieldValues = doc.getFields("unstored");
     
     assertTrue(keywordFieldValues.length == 2);
     assertTrue(textFieldValues.length == 2);
@@ -268,7 +302,7 @@ public class TestDocument extends LuceneTestCase {
     assertEquals(3, hits.length);
     int result = 0;
     for (int i = 0; i < 3; i++) {
-      Document doc2 = searcher.doc(hits[i].doc);
+      StoredDocument doc2 = searcher.doc(hits[i].doc);
       Field f = (Field) doc2.getField("id");
       if (f.stringValue().equals("id1")) result |= 1;
       else if (f.stringValue().equals("id2")) result |= 2;

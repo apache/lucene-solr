@@ -19,11 +19,15 @@ package org.apache.lucene.document;
 
 import java.util.*;
 
+import org.apache.lucene.index.IndexDocument;
 import org.apache.lucene.index.IndexReader;  // for javadoc
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.IndexSearcher;  // for javadoc
 import org.apache.lucene.search.ScoreDoc; // for javadoc
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FilterIterator;
 
 /** Documents are the unit of indexing and search.
  *
@@ -38,18 +42,36 @@ import org.apache.lucene.util.BytesRef;
  * ScoreDoc#doc} or {@link IndexReader#document(int)}.
  */
 
-public final class Document implements Iterable<IndexableField> {
+public final class Document implements IndexDocument {
 
-  private final List<IndexableField> fields = new ArrayList<IndexableField>();
+  private final List<Field> fields = new ArrayList<Field>();
 
   /** Constructs a new document with no fields. */
   public Document() {}
+  
 
-  @Override
-  public Iterator<IndexableField> iterator() {
-    return fields.iterator();
-  }
+  /**
+  * Creates a Document from StoredDocument so it that can be used e.g. for another
+  * round of indexing.
+  *
+  */
+  public Document(StoredDocument storedDoc) {
+    for (StorableField field : storedDoc.getFields()) {
+      Field newField = new Field(field.name(), (FieldType) field.fieldType());
+     
+      newField.fieldsData = field.stringValue();
+      if (newField.fieldsData == null) 
+        newField.fieldsData = field.numericValue();
+      if (newField.fieldsData == null) 
+        newField.fieldsData = field.binaryValue();
+      if (newField.fieldsData == null) 
+        newField.fieldsData = field.readerValue();
+     
+      add(newField);
+    }
+ }
 
+  
   /**
    * <p>Adds a field to a document.  Several fields may be added with
    * the same name.  In this case, if the fields are indexed, their text is
@@ -60,7 +82,7 @@ public final class Document implements Iterable<IndexableField> {
    * a document has to be deleted from an index and a new changed version of that
    * document has to be added.</p>
    */
-  public final void add(IndexableField field) {
+  public final void add(Field field) {
     fields.add(field);
   }
   
@@ -75,9 +97,9 @@ public final class Document implements Iterable<IndexableField> {
    * document has to be added.</p>
    */
   public final void removeField(String name) {
-    Iterator<IndexableField> it = fields.iterator();
+    Iterator<Field> it = fields.iterator();
     while (it.hasNext()) {
-      IndexableField field = it.next();
+      Field field = it.next();
       if (field.name().equals(name)) {
         it.remove();
         return;
@@ -95,9 +117,9 @@ public final class Document implements Iterable<IndexableField> {
    * document has to be added.</p>
    */
   public final void removeFields(String name) {
-    Iterator<IndexableField> it = fields.iterator();
+    Iterator<Field> it = fields.iterator();
     while (it.hasNext()) {
-      IndexableField field = it.next();
+      Field field = it.next();
       if (field.name().equals(name)) {
         it.remove();
       }
@@ -116,7 +138,10 @@ public final class Document implements Iterable<IndexableField> {
   */
   public final BytesRef[] getBinaryValues(String name) {
     final List<BytesRef> result = new ArrayList<BytesRef>();
-    for (IndexableField field : fields) {
+    Iterator<Field> it = storedFieldsIterator();
+    
+    while (it.hasNext()) {
+      StorableField field = it.next();
       if (field.name().equals(name)) {
         final BytesRef bytes = field.binaryValue();
         if (bytes != null) {
@@ -138,7 +163,10 @@ public final class Document implements Iterable<IndexableField> {
   * @return a <code>byte[]</code> containing the binary field value or <code>null</code>
   */
   public final BytesRef getBinaryValue(String name) {
-    for (IndexableField field : fields) {
+    Iterator<Field> it = storedFieldsIterator();
+    
+    while (it.hasNext()) {
+      StorableField field = it.next();
       if (field.name().equals(name)) {
         final BytesRef bytes = field.binaryValue();
         if (bytes != null) {
@@ -153,8 +181,8 @@ public final class Document implements Iterable<IndexableField> {
    * null.  If multiple fields exists with this name, this method returns the
    * first value added.
    */
-  public final IndexableField getField(String name) {
-    for (IndexableField field : fields) {
+  public final Field getField(String name) {
+    for (Field field : fields) {
       if (field.name().equals(name)) {
         return field;
       }
@@ -170,15 +198,15 @@ public final class Document implements Iterable<IndexableField> {
    * @param name the name of the field
    * @return a <code>Fieldable[]</code> array
    */
-  public IndexableField[] getFields(String name) {
-    List<IndexableField> result = new ArrayList<IndexableField>();
-    for (IndexableField field : fields) {
+  public Field[] getFields(String name) {
+    List<Field> result = new ArrayList<Field>();
+    for (Field field : fields) {
       if (field.name().equals(name)) {
         result.add(field);
       }
     }
 
-    return result.toArray(new IndexableField[result.size()]);
+    return result.toArray(new Field[result.size()]);
   }
   
   /** Returns a List of all the fields in a document.
@@ -186,9 +214,11 @@ public final class Document implements Iterable<IndexableField> {
    * <i>not</i> available in documents retrieved from the
    * index, e.g. {@link IndexSearcher#doc(int)} or {@link
    * IndexReader#document(int)}.
+   * 
+   * @return an immutable <code>List[Field]</code> 
    */
-  public final List<IndexableField> getFields() {
-    return fields;
+  public final List<Field> getFields() {
+    return Collections.unmodifiableList(fields);
   }
   
    private final static String[] NO_STRINGS = new String[0];
@@ -205,7 +235,10 @@ public final class Document implements Iterable<IndexableField> {
    */
   public final String[] getValues(String name) {
     List<String> result = new ArrayList<String>();
-    for (IndexableField field : fields) {
+    Iterator<Field> it = storedFieldsIterator();
+    
+    while (it.hasNext()) {
+      StorableField field = it.next();
       if (field.name().equals(name) && field.stringValue() != null) {
         result.add(field.stringValue());
       }
@@ -227,7 +260,10 @@ public final class Document implements Iterable<IndexableField> {
    * the actual numeric field instance back, use {@link #getField}.
    */
   public final String get(String name) {
-    for (IndexableField field : fields) {
+    Iterator<Field> it = storedFieldsIterator();
+    
+    while (it.hasNext()) {
+      StorableField field = it.next();
       if (field.name().equals(name) && field.stringValue() != null) {
         return field.stringValue();
       }
@@ -248,5 +284,51 @@ public final class Document implements Iterable<IndexableField> {
     }
     buffer.append(">");
     return buffer.toString();
+  }
+
+  /** Obtains all indexed fields in document */
+  @Override
+  public Iterable<? extends IndexableField> indexableFields() {
+    return new Iterable<Field>() {
+      @Override
+      public Iterator<Field> iterator() {
+        return Document.this.indexedFieldsIterator();
+      }
+    };
+  }
+
+
+  /** Obtains all stored fields in document. */
+  @Override
+  public Iterable<? extends StorableField> storableFields() {
+    return new Iterable<Field>() {
+      @Override
+      public Iterator<Field> iterator() {
+        return Document.this.storedFieldsIterator();
+      }
+    };
+  }
+
+  private Iterator<Field> storedFieldsIterator() {
+    return new FilterIterator<Field>(fields.iterator()) {
+      @Override
+      protected boolean predicateFunction(Field field) {
+        return field.type.stored();
+      }
+    };
+  }
+  
+  private Iterator<Field> indexedFieldsIterator() {
+    return new FilterIterator<Field>(fields.iterator()) {
+      @Override
+      protected boolean predicateFunction(Field field) {
+        return field.type.indexed();
+      }
+    };
+  }
+
+  /** Removes all the fields from document. */
+  public void clear() {
+    fields.clear();
   }
 }

@@ -18,7 +18,9 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.docvalues.DocTermsIndexDocValues;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -188,7 +190,7 @@ public class DateField extends PrimitiveFieldType {
     }
   }
 
-  public IndexableField createField(SchemaField field, Object value, float boost) {
+  public StorableField createField(SchemaField field, Object value, float boost) {
     // Convert to a string before indexing
     if(value instanceof Date) {
       value = toInternal( (Date)value ) + Z;
@@ -213,7 +215,7 @@ public class DateField extends PrimitiveFieldType {
   }
 
   @Override
-  public String toExternal(IndexableField f) {
+  public String toExternal(StorableField f) {
     return indexedToReadable(f.stringValue());
   }
 
@@ -222,7 +224,7 @@ public class DateField extends PrimitiveFieldType {
   }
 
   @Override
-  public Date toObject(IndexableField f) {
+  public Date toObject(StorableField f) {
     try {
       return parseDate( toExternal(f) );
     }
@@ -237,7 +239,7 @@ public class DateField extends PrimitiveFieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
     writer.writeDate(name, toExternal(f));
   }
 

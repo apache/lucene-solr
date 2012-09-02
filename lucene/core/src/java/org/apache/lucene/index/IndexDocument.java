@@ -1,3 +1,5 @@
+package org.apache.lucene.index;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,15 +17,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.schema;
-
-import org.apache.lucene.index.StorableField;
 /**
- *
+ * Elementary interface used for indexing an document.
+ * @lucene.internal
  */
-public class BCDLongField extends BCDIntField {
-  @Override
-  public Long toObject(StorableField f) {
-    return Long.valueOf( toExternal(f) );
-  }
+public interface IndexDocument {
+
+  /** Obtains all indexable fields in document */
+  public Iterable<? extends IndexableField> indexableFields();
+  
+  /** Obtains all storable fields in document */
+  public Iterable<? extends StorableField> storableFields();
 }

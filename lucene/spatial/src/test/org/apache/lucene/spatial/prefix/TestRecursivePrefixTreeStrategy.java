@@ -199,7 +199,7 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
   private Document newDoc(String id, Shape shape) {
     Document doc = new Document();
     doc.add(new StringField("id", id, Field.Store.YES));
-    for (IndexableField f : strategy.createIndexableFields(shape)) {
+    for (Field f : strategy.createIndexableFields(shape)) {
       doc.add(f);
     }
     if (storeShape)

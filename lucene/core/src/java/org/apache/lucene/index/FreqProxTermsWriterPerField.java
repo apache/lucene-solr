@@ -103,12 +103,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
   @Override
   boolean start(IndexableField[] fields, int count) {
-    for(int i=0;i<count;i++) {
-      if (fields[i].fieldType().indexed()) {
-        return true;
-      }
-    }
-    return false;
+    return true;
   }
 
   @Override

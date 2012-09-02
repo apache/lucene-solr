@@ -19,7 +19,9 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -62,7 +64,7 @@ public class DoubleField extends PrimitiveFieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
     String s = f.stringValue();
 
     // these values may be from a legacy lucene index, which may
@@ -88,7 +90,7 @@ public class DoubleField extends PrimitiveFieldType {
 
 
   @Override
-  public Double toObject(IndexableField f) {
+  public Double toObject(StorableField f) {
     return Double.valueOf(toExternal(f));
   }
 }

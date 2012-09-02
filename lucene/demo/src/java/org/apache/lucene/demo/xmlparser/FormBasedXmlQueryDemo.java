@@ -41,6 +41,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.queryparser.xml.CorePlusExtensionsParser;
 import org.apache.lucene.queryparser.xml.QueryTemplateManager;
 import org.apache.lucene.search.IndexSearcher;
@@ -112,7 +113,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
       //and package the results and forward to JSP
       if (topDocs != null) {
         ScoreDoc[] sd = topDocs.scoreDocs;
-        Document[] results = new Document[sd.length];
+        StoredDocument[] results = new StoredDocument[sd.length];
         for (int i = 0; i < results.length; i++) {
           results[i] = searcher.doc(sd[i].doc);
           request.setAttribute("results", results);

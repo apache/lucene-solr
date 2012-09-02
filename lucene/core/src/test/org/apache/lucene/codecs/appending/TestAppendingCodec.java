@@ -32,6 +32,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.TermsEnum;
@@ -128,7 +129,7 @@ public class TestAppendingCodec extends LuceneTestCase {
     writer.close();
     IndexReader reader = DirectoryReader.open(dir, 1);
     assertEquals(2, reader.numDocs());
-    Document doc2 = reader.document(0);
+    StoredDocument doc2 = reader.document(0);
     assertEquals(text, doc2.get("f"));
     Fields fields = MultiFields.getFields(reader);
     Terms terms = fields.terms("f");

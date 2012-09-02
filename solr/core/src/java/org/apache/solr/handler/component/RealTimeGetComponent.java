@@ -19,6 +19,8 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -167,7 +169,7 @@ public class RealTimeGetComponent extends SearchComponent
 
        int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes));
        if (docid < 0) continue;
-       Document luceneDocument = searcher.doc(docid);
+       StoredDocument luceneDocument = searcher.doc(docid);
        SolrDocument doc = toSolrDoc(luceneDocument,  req.getSchema());
        if( transformer != null ) {
          transformer.transform(doc, docid);
@@ -234,7 +236,7 @@ public class RealTimeGetComponent extends SearchComponent
 
         int docid = searcher.getFirstMatch(new Term(idField.getName(), idBytes));
         if (docid < 0) return null;
-        Document luceneDocument = searcher.doc(docid);
+        StoredDocument luceneDocument = searcher.doc(docid);
         sid = toSolrInputDocument(luceneDocument, core.getSchema());
       }
     } finally {
@@ -246,9 +248,9 @@ public class RealTimeGetComponent extends SearchComponent
     return sid;
   }
 
-  private static SolrInputDocument toSolrInputDocument(Document doc, IndexSchema schema) {
+  private static SolrInputDocument toSolrInputDocument(StoredDocument doc, IndexSchema schema) {
     SolrInputDocument out = new SolrInputDocument();
-    for( IndexableField f : doc.getFields() ) {
+    for( StorableField f : doc.getFields() ) {
       String fname = f.name();
       SchemaField sf = schema.getFieldOrNull(f.name());
       Object val = null;
@@ -269,9 +271,9 @@ public class RealTimeGetComponent extends SearchComponent
   }
 
 
-  private static SolrDocument toSolrDoc(Document doc, IndexSchema schema) {
+  private static SolrDocument toSolrDoc(StoredDocument doc, IndexSchema schema) {
     SolrDocument out = new SolrDocument();
-    for( IndexableField f : doc.getFields() ) {
+    for( StorableField f : doc.getFields() ) {
       // Make sure multivalued fields are represented as lists
       Object existing = out.get(f.name());
       if (existing == null) {
@@ -301,10 +303,10 @@ public class RealTimeGetComponent extends SearchComponent
     Document doc = DocumentBuilder.toDocument(sdoc, schema);
 
     // copy the stored fields only
-    Document out = new Document();
+    StoredDocument out = new StoredDocument();
     for (IndexableField f : doc.getFields()) {
       if (f.fieldType().stored() ) {
-        out.add(f);
+        out.add((StorableField) f);
       }
     }
 

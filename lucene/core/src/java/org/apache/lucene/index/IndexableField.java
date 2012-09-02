@@ -35,15 +35,19 @@ import org.apache.lucene.util.BytesRef;
  *
  *  @lucene.experimental */
 
-public interface IndexableField {
+public interface IndexableField extends GeneralField {
 
-  /** Field name */
-  public String name();
+  /**
+   * Creates the TokenStream used for indexing this field.  If appropriate,
+   * implementations should use the given Analyzer to create the TokenStreams.
+   *
+   * @param analyzer Analyzer that should be used to create the TokenStreams from
+   * @return TokenStream value for indexing the document.  Should always return
+   *         a non-null value if the field is to be indexed
+   * @throws IOException Can be thrown while creating the TokenStream
+   */
+  public TokenStream tokenStream(Analyzer analyzer) throws IOException;
 
-  /** {@link IndexableFieldType} describing the properties
-   * of this field. */
-  public IndexableFieldType fieldType();
-  
   /** 
    * Returns the field's index-time boost.
    * <p>
@@ -65,27 +69,4 @@ public interface IndexableField {
    * @see DefaultSimilarity#encodeNormValue(float)
    */
   public float boost();
-
-  /** Non-null if this field has a binary value */
-  public BytesRef binaryValue();
-
-  /** Non-null if this field has a string value */
-  public String stringValue();
-
-  /** Non-null if this field has a Reader value */
-  public Reader readerValue();
-
-  /** Non-null if this field has a numeric value */
-  public Number numericValue();
-
-  /**
-   * Creates the TokenStream used for indexing this field.  If appropriate,
-   * implementations should use the given Analyzer to create the TokenStreams.
-   *
-   * @param analyzer Analyzer that should be used to create the TokenStreams from
-   * @return TokenStream value for indexing the document.  Should always return
-   *         a non-null value if the field is to be indexed
-   * @throws IOException Can be thrown while creating the TokenStream
-   */
-  public TokenStream tokenStream(Analyzer analyzer) throws IOException;
 }

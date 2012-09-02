@@ -21,7 +21,9 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.search.QParser;
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.solr.response.TextResponseWriter;
 
 import java.util.Map;
@@ -60,7 +62,7 @@ public class IntField extends PrimitiveFieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
     String s = f.stringValue();
 
     // these values may be from a legacy lucene index, which may
@@ -85,7 +87,7 @@ public class IntField extends PrimitiveFieldType {
   }
 
   @Override
-  public Integer toObject(IndexableField f) {
+  public Integer toObject(StorableField f) {
     return Integer.valueOf( toExternal(f) );
   }
 }

@@ -6,6 +6,16 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 5.0.0 =======================
 
+Changes in backwards compatibility policy
+
+* LUCENE-3312: The API of oal.document was restructured to
+  differentiate between stored documents and indexed documents.
+  IndexReader.document(int) now returns StorableDocument
+  instead of Document. In most cases a simple replacement
+  of the return type is enough to upgrade (see MIGRATE.txt).
+  (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
+  Robert Muir)
+
 ======================= Lucene 4.0.0 =======================
 
 New Features
