@@ -107,7 +107,7 @@ public class MockSepPostingsFormat extends PostingsFormat {
       FieldsProducer ret = new BlockTermsReader(indexReader,
                                                 state.dir,
                                                 state.fieldInfos,
-                                                state.segmentInfo.name,
+                                                state.segmentInfo,
                                                 postingsReader,
                                                 state.context,
                                                 1024,

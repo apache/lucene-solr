@@ -19,7 +19,6 @@ package org.apache.solr.update;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -27,8 +26,6 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-
-import java.util.List;
 
 /**
  *
@@ -118,6 +115,35 @@ public class AddUpdateCommand extends UpdateCommand {
      return "(null)";
    }
 
+  /**
+   * @return String id to hash
+   */
+  public String getHashableId() {
+    String id = null;
+    IndexSchema schema = req.getSchema();
+    SchemaField sf = schema.getUniqueKeyField();
+    if (sf != null) {
+      if (solrDoc != null) {
+        SolrInputField field = solrDoc.getField(sf.getName());
+        
+        int count = field == null ? 0 : field.getValueCount();
+        if (count == 0) {
+          if (overwrite) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "Document is missing mandatory uniqueKey field: "
+                    + sf.getName());
+          }
+        } else if (count > 1) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Document contains multiple values for uniqueKey field: " + field);
+        } else {
+          return field.getFirstValue().toString();
+        }
+      }
+    }
+    return id;
+  }
+  
    @Override
   public String toString() {
      StringBuilder sb = new StringBuilder(super.toString());

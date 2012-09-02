@@ -365,7 +365,7 @@ final class DocumentsWriter {
 
       if (!perThread.isActive()) {
         ensureOpen();
-        assert false: "perThread is not active but we are still open";
+        throw new IllegalStateException("perThread is not active but we are still open");
       }
        
       final DocumentsWriterPerThread dwpt = perThread.dwpt;

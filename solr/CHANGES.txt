@@ -37,7 +37,15 @@ Apache ZooKeeper 3.3.6
 Upgrading from Solr 4.0.0-BETA
 ----------------------
 
-In order to better support distributed search mode, the TermVectorComponent's response format has been changed so that if the schema defines a uniqueKeyField, then that field value is used as the "key" for each document in it's response section, instead of the internal lucene doc id.  Users w/o a uniqueKeyField will continue to see the same response format.  See SOLR-3229 for more details.
+In order to better support distributed search mode, the TermVectorComponent's
+response format has been changed so that if the schema defines a 
+uniqueKeyField, then that field value is used as the "key" for each document in
+it's response section, instead of the internal lucene doc id.  Users w/o a 
+uniqueKeyField will continue to see the same response format.  See SOLR-3229
+for more details.
+
+If you are using SolrCloud's distributed update request capabilities and a non
+string type id field, you must re-index.
 
 Detailed Change List
 ----------------------
@@ -47,6 +55,11 @@ New Features
 
 * SOLR-3670: New CountFieldValuesUpdateProcessorFactory makes it easy to index 
   the number of values in another field for later use at query time. (hossman)
+
+* SOLR-2768: new "mod(x,y)" function for computing the modulus of two value 
+  sources. (hossman)
+
+* SOLR-3238: Numerous small improvements to the Admin UI (steffkes)
 
 Optimizations
 ----------------------
@@ -125,6 +138,13 @@ Other Changes
 
 * SOLR-3751: Add defensive checks for SolrCloud updates and requests that ensure 
   the local state matches what we can tell the request expected. (Mark Miller)
+  
+* SOLR-3773: Hash based on the external String id rather than the indexed 
+  representation for distributed updates. (Michael Garski, yonik, Mark Miller)
+
+* SOLR-3780: Maven build: Make solrj tests run separately from solr-core.
+  (Steve Rowe)
+
 
 ==================  4.0.0-BETA ===================
 

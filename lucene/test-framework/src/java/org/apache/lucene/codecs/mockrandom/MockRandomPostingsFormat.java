@@ -328,7 +328,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
       try {
         fields = new BlockTreeTermsReader(state.dir,
                                           state.fieldInfos,
-                                          state.segmentInfo.name,
+                                          state.segmentInfo,
                                           postingsReader,
                                           state.context,
                                           state.segmentSuffix,
@@ -398,7 +398,7 @@ public class MockRandomPostingsFormat extends PostingsFormat {
         fields = new BlockTermsReader(indexReader,
                                       state.dir,
                                       state.fieldInfos,
-                                      state.segmentInfo.name,
+                                      state.segmentInfo,
                                       postingsReader,
                                       state.context,
                                       termsCacheSize,

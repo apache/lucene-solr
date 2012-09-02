@@ -64,7 +64,7 @@ class AppendingPostingsFormat extends PostingsFormat {
       FieldsProducer ret = new AppendingTermsReader(
                                                     state.dir,
                                                     state.fieldInfos,
-                                                    state.segmentInfo.name,
+                                                    state.segmentInfo,
                                                     postings,
                                                     state.context,
                                                     state.segmentSuffix,

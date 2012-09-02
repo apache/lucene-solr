@@ -23,12 +23,14 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.TreeMap;
 
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -104,7 +106,7 @@ public class BlockTermsReader extends FieldsProducer {
   
   // private String segment;
   
-  public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, IOContext context,
+  public BlockTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, SegmentInfo info, PostingsReaderBase postingsReader, IOContext context,
                           int termsCacheSize, String segmentSuffix)
     throws IOException {
     
@@ -112,7 +114,7 @@ public class BlockTermsReader extends FieldsProducer {
     termsCache = new DoubleBarrelLRUCache<FieldAndTerm,BlockTermState>(termsCacheSize);
 
     // this.segment = segment;
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, BlockTermsWriter.TERMS_EXTENSION),
+    in = dir.openInput(IndexFileNames.segmentFileName(info.name, segmentSuffix, BlockTermsWriter.TERMS_EXTENSION),
                        context);
 
     boolean success = false;
@@ -126,6 +128,9 @@ public class BlockTermsReader extends FieldsProducer {
       seekDir(in, dirOffset);
 
       final int numFields = in.readVInt();
+      if (numFields < 0) {
+        throw new CorruptIndexException("invalid number of fields: " + numFields + " (resource=" + in + ")");
+      }
       for(int i=0;i<numFields;i++) {
         final int field = in.readVInt();
         final long numTerms = in.readVLong();
@@ -135,8 +140,19 @@ public class BlockTermsReader extends FieldsProducer {
         final long sumTotalTermFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY ? -1 : in.readVLong();
         final long sumDocFreq = in.readVLong();
         final int docCount = in.readVInt();
-        assert !fields.containsKey(fieldInfo.name);
-        fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, sumTotalTermFreq, sumDocFreq, docCount));
+        if (docCount < 0 || docCount > info.getDocCount()) { // #docs with field must be <= #docs
+          throw new CorruptIndexException("invalid docCount: " + docCount + " maxDoc: " + info.getDocCount() + " (resource=" + in + ")");
+        }
+        if (sumDocFreq < docCount) {  // #postings must be >= #docs with field
+          throw new CorruptIndexException("invalid sumDocFreq: " + sumDocFreq + " docCount: " + docCount + " (resource=" + in + ")");
+        }
+        if (sumTotalTermFreq != -1 && sumTotalTermFreq < sumDocFreq) { // #positions must be >= #postings
+          throw new CorruptIndexException("invalid sumTotalTermFreq: " + sumTotalTermFreq + " sumDocFreq: " + sumDocFreq + " (resource=" + in + ")");
+        }
+        FieldReader previous = fields.put(fieldInfo.name, new FieldReader(fieldInfo, numTerms, termsStartPointer, sumTotalTermFreq, sumDocFreq, docCount));
+        if (previous != null) {
+          throw new CorruptIndexException("duplicate fields: " + fieldInfo.name + " (resource=" + in + ")");
+        }
       }
       success = true;
     } finally {

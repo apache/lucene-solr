@@ -67,8 +67,39 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
 
   @Override
   public int getLevelForDistance(double dist) {
-    final int level = GeohashUtils.lookupHashLenForWidthHeight(dist, dist);
+    final int level = lookupHashLenForWidthHeight(dist, dist);
     return Math.max(Math.min(level, maxLevels), 1);
+  }
+
+  /* TODO temporarily in-lined GeoHashUtils.lookupHashLenForWidthHeight() is fixed in Spatial4j 0.3 */
+
+  /**
+   * Return the longest geohash length that will have a width & height >= specified arguments.
+   */
+  private static int lookupHashLenForWidthHeight(double lonErr, double latErr) {
+    //loop through hash length arrays from beginning till we find one.
+    for(int len = 1; len <= GeohashUtils.MAX_PRECISION; len++) {
+      double latHeight = hashLenToLatHeight[len];
+      double lonWidth = hashLenToLonWidth[len];
+      if (latHeight < latErr && lonWidth < lonErr)
+        return len;
+    }
+    return GeohashUtils.MAX_PRECISION;
+  }
+
+  /** See the table at http://en.wikipedia.org/wiki/Geohash */
+  private static final double[] hashLenToLatHeight, hashLenToLonWidth;
+  static {
+    hashLenToLatHeight = new double[GeohashUtils.MAX_PRECISION +1];
+    hashLenToLonWidth = new double[GeohashUtils.MAX_PRECISION +1];
+    hashLenToLatHeight[0] = 90*2;
+    hashLenToLonWidth[0] = 180*2;
+    boolean even = false;
+    for(int i = 1; i <= GeohashUtils.MAX_PRECISION; i++) {
+      hashLenToLatHeight[i] = hashLenToLatHeight[i-1]/(even?8:4);
+      hashLenToLonWidth[i] = hashLenToLonWidth[i-1]/(even?4:8);
+      even = ! even;
+    }
   }
 
   @Override

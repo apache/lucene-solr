@@ -170,7 +170,7 @@ public class DocMaker implements Closeable {
           f = new DoubleField(name, 0.0, Field.Store.NO);
           break;
         default:
-          assert false;
+          throw new AssertionError("Cannot get here");
         }
         if (reuseFields) {
           numericFields.put(name, f);

@@ -24,7 +24,6 @@ import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
@@ -38,7 +37,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -352,8 +350,6 @@ public class RealTimeGetComponent extends SearchComponent
 
     // if shards=... then use that
     if (zkController != null && params.get("shards") == null) {
-      SchemaField sf = rb.req.getSchema().getUniqueKeyField();
-
       CloudDescriptor cloudDescriptor = rb.req.getCore().getCoreDescriptor().getCloudDescriptor();
 
       String collection = cloudDescriptor.getCollectionName();
@@ -362,9 +358,7 @@ public class RealTimeGetComponent extends SearchComponent
       
       Map<String, List<String>> shardToId = new HashMap<String, List<String>>();
       for (String id : allIds) {
-        BytesRef br = new BytesRef();
-        sf.getType().readableToIndexed(id, br);
-        int hash = Hash.murmurhash3_x86_32(br.bytes, br.offset, br.length, 0);
+        int hash = Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
         String shard = clusterState.getShard(hash,  collection);
 
         List<String> idsForShard = shardToId.get(shard);

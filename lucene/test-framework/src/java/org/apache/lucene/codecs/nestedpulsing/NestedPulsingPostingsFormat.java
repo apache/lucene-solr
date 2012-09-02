@@ -81,7 +81,7 @@ public class NestedPulsingPostingsFormat extends PostingsFormat {
       pulsingReaderInner = new PulsingPostingsReader(docsReader);
       pulsingReader = new PulsingPostingsReader(pulsingReaderInner);
       FieldsProducer ret = new BlockTreeTermsReader(
-                                                    state.dir, state.fieldInfos, state.segmentInfo.name,
+                                                    state.dir, state.fieldInfos, state.segmentInfo,
                                                     pulsingReader,
                                                     state.context,
                                                     state.segmentSuffix,

@@ -177,6 +177,23 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new DivFloatFunction(a, b);
       }
     });
+    addParser("mod", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        ValueSource a = fp.parseValueSource();
+        ValueSource b = fp.parseValueSource();
+        return new DualFloatFunction(a, b) {
+          @Override
+          protected String name() {
+            return "mod";
+          }
+          @Override
+          protected float func(int doc, FunctionValues aVals, FunctionValues bVals) {
+            return aVals.floatVal(doc) % bVals.floatVal(doc);
+          }
+        };
+      }
+    });
     addParser("map", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws ParseException {

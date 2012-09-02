@@ -282,6 +282,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
       version = input.readLong();
       counter = input.readInt();
       int numSegments = input.readInt();
+      if (numSegments < 0) {
+        throw new CorruptIndexException("invalid segment count: " + numSegments + " (resource: " + input + ")");
+      }
       for(int seg=0;seg<numSegments;seg++) {
         String segName = input.readString();
         Codec codec = Codec.forName(input.readString());
@@ -290,7 +293,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         info.setCodec(codec);
         long delGen = input.readLong();
         int delCount = input.readInt();
-        assert delCount <= info.getDocCount();
+        if (delCount < 0 || delCount > info.getDocCount()) {
+          throw new CorruptIndexException("invalid deletion count: " + delCount + " (resource: " + input + ")");
+        }
         add(new SegmentInfoPerCommit(info, delCount, delGen));
       }
       userData = input.readStringStringMap();

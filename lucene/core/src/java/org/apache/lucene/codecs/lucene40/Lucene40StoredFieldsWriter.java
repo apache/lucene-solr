@@ -188,7 +188,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
       } else if (number instanceof Double) {
         fieldsStream.writeLong(Double.doubleToLongBits(number.doubleValue()));
       } else {
-        assert false;
+        throw new AssertionError("Cannot get here");
       }
     }
   }

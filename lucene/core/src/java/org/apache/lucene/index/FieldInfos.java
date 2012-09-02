@@ -57,10 +57,14 @@ public class FieldInfos implements Iterable<FieldInfo> {
     boolean hasDocValues = false;
     
     for (FieldInfo info : infos) {
-      assert !byNumber.containsKey(info.number);
-      byNumber.put(info.number, info);
-      assert !byName.containsKey(info.name);
-      byName.put(info.name, info);
+      FieldInfo previous = byNumber.put(info.number, info);
+      if (previous != null) {
+        throw new IllegalArgumentException("duplicate field numbers: " + previous.name + " and " + info.name + " have: " + info.number);
+      }
+      previous = byName.put(info.name, info);
+      if (previous != null) {
+        throw new IllegalArgumentException("duplicate field names: " + previous.number + " and " + info.number + " have: " + info.name);
+      }
       
       hasVectors |= info.hasVectors();
       hasProx |= info.isIndexed() && info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
