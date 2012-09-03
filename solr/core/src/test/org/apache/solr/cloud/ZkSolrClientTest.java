@@ -18,6 +18,8 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Assert;
@@ -172,6 +174,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
     AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
     final SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
+      final CountDownLatch latch = new CountDownLatch(1);
       zkClient.makePath("/collections", true);
 
       zkClient.getChildren("/collections", new Watcher() {
@@ -184,6 +187,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
           // remake watch
           try {
             zkClient.getChildren("/collections", this, true);
+            latch.countDown();
           } catch (KeeperException e) {
             throw new RuntimeException(e);
           } catch (InterruptedException e) {
@@ -193,6 +197,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
       }, true);
 
       zkClient.makePath("/collections/collection99/shards", true);
+      latch.await(); //wait until watch has been re-created
 
       zkClient.makePath("collections/collection99/config=collection1", true);
 
