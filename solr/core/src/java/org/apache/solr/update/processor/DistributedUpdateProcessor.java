@@ -164,15 +164,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
 
-   
-    
     cloudDesc = coreDesc.getCloudDescriptor();
     
     if (cloudDesc != null) {
       collection = cloudDesc.getCollectionName();
     }
 
-    cmdDistrib = new SolrCmdDistributor(numNodes);
+    cmdDistrib = new SolrCmdDistributor(numNodes, coreDesc.getCoreContainer().getCmdDistribExecutor());
   }
 
   private List<Node> setupRequest(int hash) {
@@ -851,6 +849,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     // forward to all replicas
     if (leaderLogic && replicas != null) {
+      if (!req.getCore().getCoreDescriptor().getCloudDescriptor().isLeader()) {
+        log.error("Abort sending request to replicas, we are no longer leader");
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Abort sending request to replicas, we are no longer leader");
+      }
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
       params.set(VERSION_FIELD, Long.toString(cmd.getVersion()));
       params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());

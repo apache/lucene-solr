@@ -55,6 +55,8 @@ public abstract class ElectionContext {
     this.zkClient = zkClient;
   }
   
+  public void close() {}
+  
   public void cancelElection() throws InterruptedException, KeeperException {
     zkClient.delete(leaderSeqPath, -1, true);
   }
@@ -83,10 +85,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   @Override
   void runLeaderProcess(boolean weAreReplacement) throws KeeperException,
       InterruptedException, IOException {
-    // this pause is important
-    // but I don't know why yet :*( - it must come before this publish call
-    // and can happen at the start of leader election process even
-    Thread.sleep(100);
     
     zkClient.makePath(leaderPath, ZkStateReader.toJSON(leaderProps),
         CreateMode.EPHEMERAL, true);
@@ -112,6 +110,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   private SyncStrategy syncStrategy = new SyncStrategy();
 
   private boolean afterExpiration;
+
+  private volatile boolean isClosed = false;
   
   public ShardLeaderElectionContext(LeaderElector leaderElector, 
       final String shardId, final String collection,
@@ -124,8 +124,15 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   }
   
   @Override
+  public void close() {
+    this.isClosed  = true;
+  }
+  
+  @Override
   void runLeaderProcess(boolean weAreReplacement) throws KeeperException,
       InterruptedException, IOException {
+    log.info("Running the leader process. afterExpiration=" + afterExpiration);
+    
     String coreName = leaderProps.get(ZkStateReader.CORE_NAME_PROP);
     
     // clear the leader in clusterstate
@@ -134,21 +141,10 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         collection);
     Overseer.getInQueue(zkClient).offer(ZkStateReader.toJSON(m));
     
-    waitForReplicasToComeUp(weAreReplacement);
-    
-    // wait for local leader state to clear...
-    // int tries = 0;
-    // while (zkController.getClusterState().getLeader(collection, shardId) !=
-    // null) {
-    // System.out.println("leader still shown " + tries + " " +
-    // zkController.getClusterState().getLeader(collection, shardId));
-    // Thread.sleep(1000);
-    // tries++;
-    // if (tries == 30) {
-    // break;
-    // }
-    // }
-    // Thread.sleep(1000);
+    String leaderVoteWait = cc.getZkController().getLeaderVoteWait();
+    if (leaderVoteWait != null) {
+      waitForReplicasToComeUp(weAreReplacement, leaderVoteWait);
+    }
     
     SolrCore core = null;
     try {
@@ -238,14 +234,14 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     
   }
 
-  private void waitForReplicasToComeUp(boolean weAreReplacement)
+  private void waitForReplicasToComeUp(boolean weAreReplacement, String leaderVoteWait)
       throws InterruptedException {
-    int retries = 300; // ~ 5 min
+    int timeout = Integer.parseInt(leaderVoteWait);
+    long timeoutAt = System.currentTimeMillis() + timeout;
+
     boolean tryAgain = true;
     Slice slices = zkController.getClusterState().getSlice(collection, shardId);
-    log.info("Running the leader process. afterExperiation=" + afterExpiration);
-    while (tryAgain || slices == null) {
-      
+    while (true && !isClosed) {
       // wait for everyone to be up
       if (slices != null) {
         Map<String,ZkNodeProps> shards = slices.getShards();
@@ -265,24 +261,23 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         if ((afterExpiration || !weAreReplacement)
             && found >= slices.getShards().size()) {
           log.info("Enough replicas found to continue.");
-          tryAgain = false;
+          break;
         } else if (!afterExpiration && found >= slices.getShards().size() - 1) {
           // a previous leader went down - wait for one less than the total
           // known shards
           log.info("Enough replicas found to continue.");
-          tryAgain = false;
+          break;
         } else {
-          log.info("Waiting until we see more replicas up");
+          log.info("Waiting until we see more replicas up: total=" + slices.getShards().size() + " found=" + found + " timeoutin=" + (timeoutAt - System.currentTimeMillis()));
         }
-        
-        retries--;
-        if (retries == 0) {
+  
+        if (System.currentTimeMillis() > timeoutAt) {
           log.info("Was waiting for replicas to come up, but they are taking too long - assuming they won't come back till later");
           break;
         }
       }
       if (tryAgain) {
-        Thread.sleep(1000);
+        Thread.sleep(500);
         slices = zkController.getClusterState().getSlice(collection, shardId);
       }
     }
@@ -306,6 +301,12 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   
   private boolean shouldIBeLeader(ZkNodeProps leaderProps, SolrCore core) {
     log.info("Checking if I should try and be the leader.");
+    
+    if (isClosed) {
+      log.info("Bailing on leader process because we have been closed");
+      return false;
+    }
+    
     ClusterState clusterState = zkController.getZkStateReader().getClusterState();
     Map<String,Slice> slices = clusterState.getSlices(this.collection);
     Slice slice = slices.get(shardId);

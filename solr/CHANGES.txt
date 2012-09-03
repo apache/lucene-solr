@@ -103,17 +103,12 @@ Bug Fixes
 
 * SOLR-3770: Overseer may lose updates to cluster state (siren)
 
-* SOLR-3721: Fix bug that could allow multiple recoveries to run briefly at
-  the same time if the recovery thread join call was interrupted.
+* SOLR-3721: Fix bug that could theoretically allow multiple recoveries to run
+  briefly at the same time if the recovery thread join call was interrupted.
   (Per Steffensen, Mark Miller)
-  
-* SOLR-3750: On session expiration, we should explicitly wait some time before 
-  running the leader sync process so that we are sure every node participates.
-  (Per Steffensen, Mark Miller)
-  
-* SOLR-3772: On cluster startup, we should wait until we see all registered 
-  replicas before running the leader process - or if they all do not come up, 
-  N amount of time. (Jan Høydahl, Per Steffensen, Mark Miller)
+
+* SOLR-3782: A leader going down while updates are coming in can cause shard
+  inconsistency. (Mark Miller)
 
 Other Changes
 ----------------------
@@ -144,7 +139,14 @@ Other Changes
 
 * SOLR-3780: Maven build: Make solrj tests run separately from solr-core.
   (Steve Rowe)
+  
+* SOLR-3772: Optionally, on cluster startup, we can wait until we see all registered 
+  replicas before running the leader process - or if they all do not come up, 
+  N amount of time. (Jan Høydahl, Per Steffensen, Mark Miller)
 
+* SOLR-3750: Optionaly, on session expiration, we can explicitly wait some time before 
+  running the leader sync process so that we are sure every node participates.
+  (Per Steffensen, Mark Miller)
 
 ==================  4.0.0-BETA ===================
 

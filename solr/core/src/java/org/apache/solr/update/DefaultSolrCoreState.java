@@ -29,7 +29,7 @@ import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class DefaultSolrCoreState extends SolrCoreState {
+public final class DefaultSolrCoreState extends SolrCoreState implements RecoveryStrategy.RecoveryListener {
   public static Logger log = LoggerFactory.getLogger(DefaultSolrCoreState.class);
   
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
@@ -43,7 +43,7 @@ public final class DefaultSolrCoreState extends SolrCoreState {
   private SolrIndexWriter indexWriter = null;
   private DirectoryFactory directoryFactory;
 
-  private boolean recoveryRunning;
+  private volatile boolean recoveryRunning;
   private RecoveryStrategy recoveryStrat;
   private boolean closed = false;
 
@@ -163,6 +163,7 @@ public final class DefaultSolrCoreState extends SolrCoreState {
           log.error("Error during shutdown of directory factory.", t);
         }
         try {
+          log.info("Closing SolrCoreState - canceling any ongoing recovery");
           cancelRecovery();
         } catch (Throwable t) {
           log.error("Error cancelling recovery", t);
@@ -210,6 +211,7 @@ public final class DefaultSolrCoreState extends SolrCoreState {
     }
     
     synchronized (recoveryLock) {
+      log.info("Running recovery - first canceling any ongoing recovery");
       cancelRecovery();
       
       while (recoveryRunning) {
@@ -229,7 +231,7 @@ public final class DefaultSolrCoreState extends SolrCoreState {
       // if true, we are recovering after startup and shouldn't have (or be receiving) additional updates (except for local tlog recovery)
       boolean recoveringAfterStartup = recoveryStrat == null;
 
-      recoveryStrat = new RecoveryStrategy(cc, name);
+      recoveryStrat = new RecoveryStrategy(cc, name, this);
       recoveryStrat.setRecoveringAfterStartup(recoveringAfterStartup);
       recoveryStrat.start();
       recoveryRunning = true;
@@ -240,7 +242,7 @@ public final class DefaultSolrCoreState extends SolrCoreState {
   @Override
   public void cancelRecovery() {
     synchronized (recoveryLock) {
-      if (recoveryStrat != null) {
+      if (recoveryStrat != null && recoveryRunning) {
         recoveryStrat.close();
         while (true) {
           try {
@@ -256,6 +258,16 @@ public final class DefaultSolrCoreState extends SolrCoreState {
         recoveryLock.notifyAll();
       }
     }
+  }
+
+  @Override
+  public void recovered() {
+    recoveryRunning = false;
+  }
+
+  @Override
+  public void failed() {
+    recoveryRunning = false;
   }
   
 }

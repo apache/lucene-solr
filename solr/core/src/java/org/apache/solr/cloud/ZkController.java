@@ -123,6 +123,8 @@ public final class ZkController {
 
   protected volatile Overseer overseer;
 
+  private String leaderVoteWait;
+
   /**
    * @param cc
    * @param zkServerAddress
@@ -139,6 +141,27 @@ public final class ZkController {
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
       String localHostContext, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
+    this(cc, zkServerAddress, zkClientTimeout, zkClientConnectTimeout, localHost, locaHostPort, localHostContext, null, registerOnReconnect);
+  }
+  
+
+  /**
+   * @param cc
+   * @param zkServerAddress
+   * @param zkClientTimeout
+   * @param zkClientConnectTimeout
+   * @param localHost
+   * @param locaHostPort
+   * @param localHostContext
+   * @param leaderVoteWait
+   * @param registerOnReconnect
+   * @throws InterruptedException
+   * @throws TimeoutException
+   * @throws IOException
+   */
+  public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
+      String localHostContext, String leaderVoteWait, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
+      TimeoutException, IOException {
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
     this.cc = cc;
     if (localHostContext.contains("/")) {
@@ -153,6 +176,7 @@ public final class ZkController {
     this.hostName = getHostNameFromAddress(this.localHost);
     this.nodeName = this.hostName + ':' + this.localHostPort + '_' + this.localHostContext;
     this.baseURL = this.localHost + ":" + this.localHostPort + "/" + this.localHostContext;
+    this.leaderVoteWait = leaderVoteWait;
 
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
         // on reconnect, reload cloud info
@@ -257,6 +281,10 @@ public final class ZkController {
     init(registerOnReconnect);
   }
 
+  public String getLeaderVoteWait() {
+    return leaderVoteWait;
+  }
+
   private void registerAllCoresAsDown(
       final CurrentCoreDescriptorProvider registerOnReconnect) {
     List<CoreDescriptor> descriptors = registerOnReconnect
@@ -281,6 +309,22 @@ public final class ZkController {
    * Closes the underlying ZooKeeper client.
    */
   public void close() {
+    try {
+      String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
+      // we don't retry if there is a problem - count on ephem timeout
+      zkClient.delete(nodePath, -1, false);
+    } catch (KeeperException.NoNodeException e) {
+      // fine
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    } catch (KeeperException e) {
+      SolrException.log(log, "Error trying to remove our ephem live node", e);
+    }
+    
+    for (ElectionContext context : electionContexts.values()) {
+      context.close();
+    }
+    
     try {
       overseer.close();
     } catch(Throwable t) {

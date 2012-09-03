@@ -21,6 +21,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -37,9 +40,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.SolrCmdDistributor.Node;
 import org.apache.solr.update.SolrCmdDistributor.Response;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 
 public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
-  
+  private ThreadPoolExecutor executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
+      TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+      new DefaultSolrThreadFactory("cmdDistribExecutor"));
   
   public SolrCmdDistributorTest() {
     fixShardCount = true;
@@ -85,7 +91,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   public void doTest() throws Exception {
     del("*:*");
     
-    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(8);
+    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(8, executor);
     
     ModifiableSolrParams params = new ModifiableSolrParams();
     List<Node> nodes = new ArrayList<Node>();
@@ -119,7 +125,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
     
     // add another 2 docs to control and 3 to client
-    cmdDistrib = new SolrCmdDistributor(8);
+    cmdDistrib = new SolrCmdDistributor(8, executor);
     cmd.solrDoc = sdoc("id", 2);
     cmdDistrib.distribAdd(cmd, nodes, params);
     
@@ -152,7 +158,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     DeleteUpdateCommand dcmd = new DeleteUpdateCommand(null);
     dcmd.id = "2";
     
-    cmdDistrib = new SolrCmdDistributor(8);
+    cmdDistrib = new SolrCmdDistributor(8, executor);
     cmdDistrib.distribDelete(dcmd, nodes, params);
     
     cmdDistrib.distribCommit(ccmd, nodes, params);
@@ -180,7 +186,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     int id = 5;
     
-    cmdDistrib = new SolrCmdDistributor(8);
+    cmdDistrib = new SolrCmdDistributor(8, executor);
     
     nodes.clear();
     int cnt = atLeast(200);

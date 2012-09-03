@@ -53,11 +53,6 @@ import org.slf4j.LoggerFactory;
 public class SolrCmdDistributor {
   private static final int MAX_RETRIES_ON_FORWARD = 6;
   public static Logger log = LoggerFactory.getLogger(SolrCmdDistributor.class);
-  
-  // TODO: shut this thing down
-  static ThreadPoolExecutor commExecutor = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
-      TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
-      new DefaultSolrThreadFactory("cmdDistribExecutor"));;
 
   static final HttpClient client;
   static AdjustableSemaphore semaphore = new AdjustableSemaphore(8);
@@ -90,7 +85,7 @@ public class SolrCmdDistributor {
     ModifiableSolrParams params;
   }
   
-  public SolrCmdDistributor(int numHosts) {
+  public SolrCmdDistributor(int numHosts, ThreadPoolExecutor executor) {
     int maxPermits = Math.max(8, (numHosts - 1) * 8);
     
     // limits how many tasks can actually execute at once
@@ -98,7 +93,7 @@ public class SolrCmdDistributor {
       semaphore.setMaxPermits(maxPermits);
     }
 
-    completionService = new ExecutorCompletionService<Request>(commExecutor);
+    completionService = new ExecutorCompletionService<Request>(executor);
     pending = new HashSet<Future<Request>>();
   }
   
