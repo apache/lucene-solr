@@ -58,9 +58,7 @@ public abstract class ElectionContext {
   public void cancelElection() throws InterruptedException, KeeperException {
     zkClient.delete(leaderSeqPath, -1, true);
   }
-  // the given core may or may not be null - if you need access to the current core, you must pass
-  // the core container and core name to your context impl - then use this core ref if it is not null
-  // else access it from the core container
+
   abstract void runLeaderProcess(boolean weAreReplacement) throws KeeperException, InterruptedException, IOException;
 }
 
