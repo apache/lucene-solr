@@ -83,11 +83,10 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   @Override
   void runLeaderProcess(boolean weAreReplacement) throws KeeperException,
       InterruptedException, IOException {
-    // this pause is important (and seems to work also at 100ms to 1 second in
-    // many cases),
+    // this pause is important
     // but I don't know why yet :*( - it must come before this publish call
     // and can happen at the start of leader election process even
-    Thread.sleep(500);
+    Thread.sleep(100);
     
     zkClient.makePath(leaderPath, ZkStateReader.toJSON(leaderProps),
         CreateMode.EPHEMERAL, true);
