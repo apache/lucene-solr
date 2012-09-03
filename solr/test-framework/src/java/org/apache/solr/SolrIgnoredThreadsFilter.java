@@ -47,6 +47,12 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
         threadName.startsWith("httpShardExecutor-")) {
       return true;
     }
+    
+    // This is a bug in ZooKeeper where they call System.exit(11) when
+    // this thread receives an interrupt signal.
+    if (threadName.startsWith("SyncThread")) {
+      return true;
+    }
 
     // THESE ARE LIKELY BUGS - these threads should be closed!
     if (threadName.startsWith("Overseer-") ||
