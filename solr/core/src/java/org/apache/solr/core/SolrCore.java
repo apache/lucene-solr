@@ -809,7 +809,8 @@ public final class SolrCore implements SolrInfoMBean {
   // this core current usage count
   private final AtomicInteger refCount = new AtomicInteger(1);
 
-  final void open() {
+  /** expert: increments the core reference count */
+  public void open() {
     refCount.incrementAndGet();
   }
   

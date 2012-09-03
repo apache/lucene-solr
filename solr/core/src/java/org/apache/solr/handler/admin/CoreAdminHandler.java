@@ -69,6 +69,9 @@ import org.apache.solr.util.RefCounted;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
 
 /**
  *
@@ -212,6 +215,53 @@ public class CoreAdminHandler extends RequestHandlerBase {
     rsp.setHttpCaching(false);
   }
 
+  /** Creates a new core and registers it. The returned core will have it's reference count incremented an extra time and close() should be called when finished. */
+  private SolrCore createCore(SolrCore current, int ord, HashPartitioner.Range newRange) throws IOException, SAXException, ParserConfigurationException {
+    CoreDescriptor currCoreD = current.getCoreDescriptor();
+    CloudDescriptor currCloudD = currCoreD.getCloudDescriptor();
+
+    String currName = currCoreD.getName();
+
+    // TODO: nicer way to come up with core names?
+    String name = currName + "_" + ord;
+
+    String instanceDir = name;
+
+
+    // TODO: do this via a clone / constructor?
+    CoreDescriptor dcore = new CoreDescriptor(coreContainer, name, instanceDir);
+    dcore.setConfigName( currCoreD.getConfigName() );
+    dcore.setSchemaName(currCoreD.getSchemaName());
+    // default dcore.setDataDir()
+
+    // TODO: for this to work in non-cloud mode, we will either need to make a copy of the conf directory, or
+    // develop named configs like we have in cloud mode.
+
+
+    CloudDescriptor cd = null;
+    if (currCloudD != null) {
+      cd = new CloudDescriptor();
+
+      // TODO: should we copy these?  any params that are core specific?
+      cd.setParams( currCloudD.getParams() );
+      cd.setCollectionName( currCloudD.getCollectionName() );
+      cd.setRoles( currCloudD.getRoles() );
+
+      // TODO: we must be careful that an unrelated node starting up does not try
+      // to become the new shard leader!  How do we designate ourselves as the
+      // leader but prevent new shards from trying to replicate from us before we are ready (i.e. have the split index)?
+      String shardId = currCloudD.getShardId() + "_" + ord;
+      cd.setShardId( shardId );
+
+      dcore.setCloudDescriptor(cd);
+    }
+
+    SolrCore core = coreContainer.create(dcore);
+    core.open();  // inc ref count before registering to ensure no one can close the core before we are done with it
+    coreContainer.register(name, core, false);
+    return core;
+  }
+
 
   protected boolean handleSplitAction(SolrQueryRequest adminReq, SolrQueryResponse rsp) throws IOException {
     SolrParams params = adminReq.getParams();
@@ -222,38 +272,48 @@ public class CoreAdminHandler extends RequestHandlerBase {
     // boolean closeDirectories = true;
     // DirectoryFactory dirFactory = null;
 
+    String[] pathsArr = params.getParams("path");
+    String rangesStr = params.get("ranges");    // ranges=a-b,c-d,e-f
 
     String cname = params.get(CoreAdminParams.CORE, "");
     SolrCore core = coreContainer.getCore(cname);
     SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+    List<SolrCore> newCores = null;
+
     try {
-
-      String[] pathsArr = params.getParams("path");
+      // TODO: allow use of rangesStr in the future
       List<String> paths = null;
-
-      String rangesStr = params.get("ranges");    // ranges=a-b,c-d,e-f
-
-
-      // dirFactory = core.getDirectoryFactory();
+      int partitions = pathsArr != null ? pathsArr.length : params.getInt("partitions", 2);
 
 
-      if (pathsArr != null) {
+      // TODO: if we don't know the real range of the current core, we should just
+      //  split on every other doc rather than hash.
 
-        paths = Arrays.asList(pathsArr);
+      // TODO (cloud): get from the current core
+      HashPartitioner.Range currentRange = new HashPartitioner.Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
 
-        if (rangesStr == null) {
-          HashPartitioner hp = new HashPartitioner();
-          // should this be static?
-          // TODO: use real range if we know it.  If we don't know it, we should prob
-          // split on every other doc rather than on a hash?
-          ranges = hp.partitionRange(pathsArr.length, Integer.MIN_VALUE, Integer.MAX_VALUE);
+      HashPartitioner hp = new HashPartitioner();
+      ranges = hp.partitionRange(partitions, currentRange);
+
+      if (pathsArr == null) {
+        newCores = new ArrayList<SolrCore>(partitions);
+        for (int i=0; i<partitions; i++) {
+          SolrCore newCore = createCore(core, i, ranges.get(i));
+          newCores.add(newCore);
         }
 
+        // TODO (cloud): cores should be registered, should be in recovery / buffering-updates mode, and the shard
+        // leader should be forwarding updates to the new shards *before* we split the current shard
+        // into the new shards.
+      } else {
+        paths = Arrays.asList(pathsArr);
       }
 
 
-      SplitIndexCommand cmd = new SplitIndexCommand(req, paths, ranges);
+      SplitIndexCommand cmd = new SplitIndexCommand(req, paths, newCores, ranges);
       core.getUpdateHandler().split(cmd);
+
+      // After the split has completed, someone (here?) should start the process of replaying the buffered updates.
 
     } catch (Exception e) {
       log.error("ERROR executing split:", e);
@@ -262,6 +322,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
     } finally {
       if (req != null) req.close();
       if (core != null) core.close();
+      if (newCores != null) {
+        for (SolrCore newCore : newCores) {
+          newCore.close();
+        }
+      }
     }
 
     return false;

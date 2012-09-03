@@ -35,6 +35,7 @@ import org.apache.solr.common.util.Hash;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +51,7 @@ public class SolrIndexSplitter {
   List<HashPartitioner.Range> ranges;
   HashPartitioner.Range[] rangesArr; // same as ranges list, but an array for extra speed in inner loops
   List<String> paths;
+  List<SolrCore> cores;
 
   public SolrIndexSplitter(SplitIndexCommand cmd) {
     field = cmd.getReq().getSchema().getUniqueKeyField();
@@ -57,6 +59,7 @@ public class SolrIndexSplitter {
     ranges = cmd.ranges;
     rangesArr = ranges.toArray(new HashPartitioner.Range[ranges.size()]);
     paths = cmd.paths;
+    cores = cmd.cores;
   }
 
   public void split() throws IOException {
@@ -76,6 +79,7 @@ public class SolrIndexSplitter {
     // would it be more efficient to write segment-at-a-time to each new index?
     // - need to worry about number of open descriptors
     // - need to worry about if IW.addIndexes does a sync or not...
+    // - would be more efficient on the read side, but prob less efficient merging
 
     IndexReader[] subReaders = new IndexReader[leaves.size()];
     for (int partitionNumber=0; partitionNumber<ranges.size(); partitionNumber++) {
@@ -85,22 +89,35 @@ public class SolrIndexSplitter {
         subReaders[segmentNumber] = new LiveDocsReader( leaves.get(segmentNumber), segmentDocSets.get(segmentNumber)[partitionNumber] );
       }
 
-      String path = paths.get(partitionNumber);
       boolean success = false;
-      SolrCore core = searcher.getCore();
-      IndexWriter iw = new SolrIndexWriter("SplittingIndexWriter"+partitionNumber + " " + ranges.get(partitionNumber), path,
-          core.getDirectoryFactory(), true, core.getSchema(),
-          core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec(), true);
+
+      RefCounted<IndexWriter> iwRef = null;
+      IndexWriter iw = null;
+      if (cores != null) {
+        SolrCore subCore = cores.get(partitionNumber);
+        iwRef = subCore.getUpdateHandler().getSolrCoreState().getIndexWriter(subCore);
+        iw = iwRef.get();
+      } else {
+        SolrCore core = searcher.getCore();
+        String path = paths.get(partitionNumber);
+        iw = new SolrIndexWriter("SplittingIndexWriter"+partitionNumber + " " + ranges.get(partitionNumber), path,
+                                 core.getDirectoryFactory(), true, core.getSchema(),
+                                 core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec(), true);
+      }
 
       try {
+        // This merges the subreaders and will thus remove deletions (i.e. no optimize needed)
         iw.addIndexes(subReaders);
-        // TODO: will many deletes have been removed, or should we optimize?
         success = true;
       } finally {
-        if (success) {
-          IOUtils.close(iw);
+        if (iwRef != null) {
+          iwRef.decref();
         } else {
-          IOUtils.closeWhileHandlingException(iw);
+          if (success) {
+            IOUtils.close(iw);
+          } else {
+            IOUtils.closeWhileHandlingException(iw);
+          }
         }
       }
 
