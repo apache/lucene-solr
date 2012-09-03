@@ -65,8 +65,14 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
 
   private static Logger log = LoggerFactory.getLogger(RecoveryStrategy.class);
 
+  public static interface RecoveryListener {
+    public void recovered();
+    public void failed();
+  }
+  
   private volatile boolean close = false;
 
+  private RecoveryListener recoveryListener;
   private ZkController zkController;
   private String baseUrl;
   private String coreZkNodeName;
@@ -76,9 +82,10 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   private boolean recoveringAfterStartup;
   private CoreContainer cc;
   
-  public RecoveryStrategy(CoreContainer cc, String name) {
+  public RecoveryStrategy(CoreContainer cc, String name, RecoveryListener recoveryListener) {
     this.cc = cc;
     this.coreName = name;
+    this.recoveryListener = recoveryListener;
     setName("RecoveryThread");
     zkController = cc.getZkController();
     zkStateReader = zkController.getZkStateReader();
@@ -93,7 +100,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   // make sure any threads stop retrying
   public void close() {
     close = true;
-    log.warn("Stopping recovery for core " + coreName + " zkNodeName=" + coreZkNodeName);
+    log.warn("Stopping recovery for zkNodeName=" + coreZkNodeName + "core=" + coreName );
   }
 
   
@@ -105,6 +112,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       zkController.publish(cd, ZkStateReader.RECOVERY_FAILED);
     } finally {
       close();
+      recoveryListener.failed();
     }
   }
   
@@ -210,15 +218,15 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
 
       try {
         doRecovery(core);
-      } catch (KeeperException e) {
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-            "", e);
-      } catch (InterruptedException e) {
+      }  catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         SolrException.log(log, "", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
             e);
+      } catch (Throwable t) {
+        log.error("", t);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", t);
       }
     } finally {
       if (core != null) core.close();
@@ -258,38 +266,52 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
 
     List<Long> startingVersions = ulog.getStartingVersions();
 
-
     if (startingVersions != null && recoveringAfterStartup) {
-      int oldIdx = 0;  // index of the start of the old list in the current list
-      long firstStartingVersion = startingVersions.size() > 0 ? startingVersions.get(0) : 0;
-
-      for (; oldIdx<recentVersions.size(); oldIdx++) {
-        if (recentVersions.get(oldIdx) == firstStartingVersion) break;
+      try {
+        int oldIdx = 0; // index of the start of the old list in the current
+                        // list
+        long firstStartingVersion = startingVersions.size() > 0 ? startingVersions
+            .get(0) : 0;
+        
+        for (; oldIdx < recentVersions.size(); oldIdx++) {
+          if (recentVersions.get(oldIdx) == firstStartingVersion) break;
+        }
+        
+        if (oldIdx > 0) {
+          log.info("####### Found new versions added after startup: num="
+              + oldIdx);
+          log.info("###### currentVersions=" + recentVersions);
+        }
+        
+        log.info("###### startupVersions=" + startingVersions);
+      } catch (Throwable t) {
+        SolrException.log(log, "Error getting recent versions. core=" + coreName, t);
+        recentVersions = new ArrayList<Long>(0);
       }
-
-      if (oldIdx > 0) {
-        log.info("####### Found new versions added after startup: num=" + oldIdx);
-        log.info("###### currentVersions=" + recentVersions);
-      }
-
-      log.info("###### startupVersions=" + startingVersions);
     }
 
     if (recoveringAfterStartup) {
       // if we're recovering after startup (i.e. we have been down), then we need to know what the last versions were
       // when we went down.  We may have received updates since then.
       recentVersions = startingVersions;
-
-      if ((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) != 0) {
-        // last operation at the time of startup had the GAP flag set...
-        // this means we were previously doing a full index replication
-        // that probably didn't complete and buffering updates in the meantime.
-        log.info("Looks like a previous replication recovery did not complete - skipping peer sync. core=" + coreName);
-        firstTime = false;    // skip peersync
+      try {
+        if ((ulog.getStartingOperation() & UpdateLog.FLAG_GAP) != 0) {
+          // last operation at the time of startup had the GAP flag set...
+          // this means we were previously doing a full index replication
+          // that probably didn't complete and buffering updates in the
+          // meantime.
+          log.info("Looks like a previous replication recovery did not complete - skipping peer sync. core="
+              + coreName);
+          firstTime = false; // skip peersync
+        }
+      } catch (Throwable t) {
+        SolrException.log(log, "Error trying to get ulog starting operation. core="
+            + coreName, t);
+        firstTime = false; // skip peersync
       }
     }
 
-    while (!successfulRecovery && !isClosed() && !isInterrupted()) { // don't use interruption or it will close channels though
+    while (!successfulRecovery && !isInterrupted()) { // don't use interruption or it will close channels though
       try {
         CloudDescriptor cloudDesc = core.getCoreDescriptor()
             .getCloudDescriptor();
@@ -393,6 +415,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           zkController.publish(core.getCoreDescriptor(), ZkStateReader.ACTIVE);
           close = true;
           successfulRecovery = true;
+          recoveryListener.recovered();
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           log.warn("Recovery was interrupted", e);
@@ -421,10 +444,17 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         try {
 
           log.error("Recovery failed - trying again... core=" + coreName);
+          
+          if (isClosed()) {
+            retries = INTERRUPTED;
+          }
+          
           retries++;
           if (retries >= MAX_RETRIES) {
             if (retries == INTERRUPTED) {
-
+              SolrException.log(log, "Recovery failed - interrupted. core=" + coreName);
+              recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
+                  core.getCoreDescriptor());
             } else {
               SolrException.log(log, "Recovery failed - max retries exceeded. core=" + coreName);
               recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
@@ -433,7 +463,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
             break;
           }
 
-        } catch (Exception e) {
+        } catch (Throwable e) {
           SolrException.log(log, "core=" + coreName, e);
         }
 

@@ -164,11 +164,14 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       // have request fails
       checkShardConsistency(false, true);
       
+      long ctrlDocs = controlClient.query(new SolrQuery("*:*")).getResults()
+      .getNumFound(); 
+      
       // ensure we have added more than 0 docs
       long cloudClientDocs = cloudClient.query(new SolrQuery("*:*"))
           .getResults().getNumFound();
       
-      assertTrue(cloudClientDocs > 0);
+      assertTrue("Found " + ctrlDocs + " control docs", cloudClientDocs > 0);
       
       if (VERBOSE) System.out.println("control docs:"
           + controlClient.query(new SolrQuery("*:*")).getResults()

@@ -34,6 +34,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -56,10 +59,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.util.DOMUtil;
-import org.apache.solr.util.FileUtils;
-import org.apache.solr.util.SystemIdResolver;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
 import org.apache.solr.core.SolrXMLSerializer.SolrXMLDef;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -71,6 +71,10 @@ import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.jul.JulWatcher;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.SolrCoreState;
+import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.FileUtils;
+import org.apache.solr.util.SystemIdResolver;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,8 +143,10 @@ public class CoreContainer
   protected LogWatcher logging = null;
   private String zkHost;
   private Map<SolrCore,String> coreToOrigName = new ConcurrentHashMap<SolrCore,String>();
+  private String leaderVoteWait;
 
-
+  private ThreadPoolExecutor cmdDistribExecutor;
+  
   {
     log.info("New CoreContainer " + System.identityHashCode(this));
   }
@@ -184,6 +190,10 @@ public class CoreContainer
   }
 
   protected void initZooKeeper(String zkHost, int zkClientTimeout) {
+    cmdDistribExecutor = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
+        TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+        new DefaultSolrThreadFactory("cmdDistribExecutor"));
+    
     // if zkHost sys property is not set, we are not using ZooKeeper
     String zookeeperHost;
     if(zkHost == null) {
@@ -227,7 +237,7 @@ public class CoreContainer
         } else {
           log.info("Zookeeper client=" + zookeeperHost);          
         }
-        zkController = new ZkController(this, zookeeperHost, zkClientTimeout, zkClientConnectTimeout, host, hostPort, hostContext, new CurrentCoreDescriptorProvider() {
+        zkController = new ZkController(this, zookeeperHost, zkClientTimeout, zkClientConnectTimeout, host, hostPort, hostContext, leaderVoteWait, new CurrentCoreDescriptorProvider() {
           
           @Override
           public List<CoreDescriptor> getCurrentDescriptors() {
@@ -284,6 +294,11 @@ public class CoreContainer
       }
     }
     
+  }
+
+  // may return null if not in zk mode
+  public ThreadPoolExecutor getCmdDistribExecutor() {
+    return cmdDistribExecutor;
   }
 
   public Properties getContainerProperties() {
@@ -456,6 +471,8 @@ public class CoreContainer
 
     hostContext = cfg.get("solr/cores/@hostContext", DEFAULT_HOST_CONTEXT);
     host = cfg.get("solr/cores/@host", null);
+    
+    leaderVoteWait = cfg.get("solr/cores/@leaderVoteWait", null);
 
     if(shareSchema){
       indexSchemaCache = new ConcurrentHashMap<String ,IndexSchema>();
@@ -600,6 +617,13 @@ public class CoreContainer
       } finally {
         if (shardHandlerFactory != null) {
           shardHandlerFactory.close();
+        }
+        if (cmdDistribExecutor != null) {
+          try {
+            ExecutorUtil.shutdownAndAwaitTermination(cmdDistribExecutor);
+          } catch (Throwable e) {
+            SolrException.log(log, e);
+          }
         }
         // we want to close zk stuff last
         if(zkController != null) {
