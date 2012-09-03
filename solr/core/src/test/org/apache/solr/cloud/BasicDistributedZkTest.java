@@ -78,7 +78,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
  * work as expected.
  */
 @Slow
-@ThreadLeakAction({Action.WARN})
 public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
   
   private static final String DEFAULT_COLLECTION = "collection1";

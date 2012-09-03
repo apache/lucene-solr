@@ -41,7 +41,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
  * work as expected.
  */
-@ThreadLeakAction({Action.WARN})
 public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
   /*
