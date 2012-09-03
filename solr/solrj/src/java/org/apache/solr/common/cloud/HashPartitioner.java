@@ -27,6 +27,8 @@ import java.util.List;
 public class HashPartitioner {
 
   // Hash ranges can't currently "wrap" - i.e. max must be greater or equal to min.
+  // TODO: ranges may not be all contiguous in the future (either that or we will
+  // need an extra class to model a collection of ranges)
   public static class Range {
     public int min;  // inclusive
     public int max;  // inclusive
@@ -48,7 +50,12 @@ public class HashPartitioner {
       return null; // TODO
     }
   }
-  
+
+
+
+  public List<Range> partitionRange(int partitions, Range range) {
+    return partitionRange(partitions, range.min, range.max);
+  }
 
   /**
    *
