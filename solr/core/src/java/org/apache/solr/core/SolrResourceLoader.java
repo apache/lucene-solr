@@ -634,7 +634,11 @@ public class SolrResourceLoader implements ResourceLoader
 
 
     for (SolrInfoMBean bean : arr) {
-      infoRegistry.put(bean.getName(), bean);
+      try {
+        infoRegistry.put(bean.getName(), bean);
+      } catch (Throwable t) {
+        log.warn("could not register MBean '" + bean.getName() + "'.", t);
+      }
     }
   }
   
