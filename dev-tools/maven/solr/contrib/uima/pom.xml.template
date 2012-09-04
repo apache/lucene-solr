@@ -68,16 +68,18 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>commons-digester</groupId>
-      <artifactId>commons-digester</artifactId>
-    </dependency>
-    <dependency>
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.uima</groupId>
       <artifactId>AlchemyAPIAnnotator</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-digester</groupId>
+          <artifactId>commons-digester</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.uima</groupId>
