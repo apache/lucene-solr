@@ -138,6 +138,10 @@ Bug Fixes
 * LUCENE-4333: Fixed NPE in TermGroupFacetCollector when faceting on mv fields.
   (Jesse MacVicar, Martijn van Groningen)
 
+* LUCENE-4218: Document.get(String) and Field.stringValue() again return
+  values for numeric fields, like Lucene 3.x and consistent with the documentation.
+  (Jamie, Uwe Schindler, Robert Muir)
+
 * NRTCachingDirectory was always caching a newly flushed segment in
   RAM, instead of checking the estimated size of the segment
   to decide whether to cache it. (Mike McCandless)

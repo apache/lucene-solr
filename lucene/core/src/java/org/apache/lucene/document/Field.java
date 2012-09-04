@@ -267,7 +267,11 @@ public class Field implements IndexableField, StorableField {
    * getBinaryValue() must be set.
    */
   public String stringValue() {
-    return fieldsData instanceof String ? (String) fieldsData : null;
+    if (fieldsData instanceof String || fieldsData instanceof Number) {
+      return fieldsData.toString();
+    } else {
+      return null;
+    }
   }
   
   /**
