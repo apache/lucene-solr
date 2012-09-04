@@ -133,6 +133,8 @@
           depends="test-core, test-contrib"/>
   <target name="test-core" description="Runs the core and solrj unit tests."
           depends="test-solr-core, test-solrj"/>
+  <target name="pitest" description="Validate, then run core, solrj, and contrib unit tests."
+          depends="pitest-core, pitest-contrib"/>
   <target name="compile-test" description="Compile unit tests."
           depends="compile-solr-test-framework, compile-test-solr-core, compile-test-solrj, compile-test-contrib"/>
   <target name="javadocs" description="Calls javadocs-all, javadocs-solrj, and javadocs-test-framework"
@@ -161,6 +163,23 @@
   <!-- Solr contrib targets -->
   <target name="test-contrib" description="Run contrib unit tests.">
     <contrib-crawl target="test" failonerror="true"/>
+  </target>
+
+  <!-- Pitest targets -->
+  <target name="pitest-core" description="PiTest solr core">
+    <ant dir="core" target="pitest" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <target name="pitest-solrj" description="PiTest java client">
+    <ant dir="solrj" target="pitest" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <target name="pitest-contrib" description="Run contrib PiTests.">
+    <contrib-crawl target="pitest" failonerror="false"/>
   </target>
   
   <!-- test-framework targets -->

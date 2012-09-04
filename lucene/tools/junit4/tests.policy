@@ -45,11 +45,17 @@ grant {
   permission java.util.PropertyPermission "*", "read,write";
   permission java.lang.reflect.ReflectPermission "*";
   permission java.lang.RuntimePermission "*";
-  
+
+  // Needed for some things in DNS caching in the JVM
+  permission java.security.SecurityPermission "*", "read,write";
+
+  // These two *have* to be spelled out a seperate
+  permission java.lang.management.ManagementPermission "control";
+  permission java.lang.management.ManagementPermission "monitor";
+
   // Solr needs those:
   permission java.net.NetPermission "*";
   permission java.util.logging.LoggingPermission "control";
-  permission java.lang.management.ManagementPermission "monitor";
   permission javax.management.MBeanPermission "*", "*";
   permission javax.management.MBeanServerPermission "*";
   permission javax.management.MBeanTrustPermission "*";
