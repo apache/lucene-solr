@@ -232,9 +232,11 @@ final class DocFieldProcessor extends DocConsumer {
       IndexableFieldType ft = field.fieldType();
 
       DocFieldProcessorPerField fp = processField(fieldInfos, thisFieldGen, fieldName, ft);
-      fieldsWriter.addField(field, fp.fieldInfo);
+      if (ft.stored()) {
+        fieldsWriter.addField(field, fp.fieldInfo);
+      }
       
-      final DocValues.Type dvType = field.fieldType().docValueType();
+      final DocValues.Type dvType = ft.docValueType();
       if (dvType != null) {
         DocValuesConsumerHolder docValuesConsumer = docValuesConsumer(dvType,
             docState, fp.fieldInfo);

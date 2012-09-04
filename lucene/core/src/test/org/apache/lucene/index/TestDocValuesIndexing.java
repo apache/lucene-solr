@@ -1042,4 +1042,34 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.close();
     d.close();
   }
+  
+  public void testDocValuesUnstored() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    IndexWriter writer = new IndexWriter(dir, iwconfig);
+    for (int i = 0; i < 50; i++) {
+      Document doc = new Document();
+      doc.add(new PackedLongDocValuesField("dv", i));
+      doc.add(new TextField("docId", "" + i, Field.Store.YES));
+      writer.addDocument(doc);
+    }
+    DirectoryReader r = writer.getReader();
+    SlowCompositeReaderWrapper slow = new SlowCompositeReaderWrapper(r);
+    FieldInfos fi = slow.getFieldInfos();
+    FieldInfo dvInfo = fi.fieldInfo("dv");
+    assertTrue(dvInfo.hasDocValues());
+    DocValues dv = slow.docValues("dv");
+    Source source = dv.getDirectSource();
+    for (int i = 0; i < 50; i++) {
+      assertEquals(i, source.getInt(i));
+      StoredDocument d = slow.document(i);
+      // cannot use d.get("dv") due to another bug!
+      assertNull(d.getField("dv"));
+      assertEquals(Integer.toString(i), d.get("docId"));
+    }
+    slow.close();
+    writer.close();
+    dir.close();
+  }
 }

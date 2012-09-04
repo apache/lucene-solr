@@ -424,6 +424,5 @@ public class FieldType implements IndexableFieldType  {
   public void setDocValueType(DocValues.Type type) {
     checkIfFrozen();
     docValueType = type;
-    this.stored = true;
   }
 }

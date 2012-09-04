@@ -313,7 +313,7 @@ public final class Document implements IndexDocument {
     return new FilterIterator<Field>(fields.iterator()) {
       @Override
       protected boolean predicateFunction(Field field) {
-        return field.type.stored();
+        return field.type.stored() || field.type.docValueType() != null;
       }
     };
   }
