@@ -138,6 +138,10 @@ Bug Fixes
 * LUCENE-4333: Fixed NPE in TermGroupFacetCollector when faceting on mv fields.
   (Jesse MacVicar, Martijn van Groningen)
 
+* NRTCachingDirectory was always caching a newly flushed segment in
+  RAM, instead of checking the estimated size of the segment
+  to decide whether to cache it. (Mike McCandless)
+
 Optimizations
 
 * LUCENE-4322: Decrease lucene-core JAR size. The core JAR size had increased a
