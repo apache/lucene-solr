@@ -163,6 +163,10 @@ Build
 * LUCENE-3985: Upgrade to randomizedtesting 2.0.0. Added support for 
   thread leak detection. Added support for suite timeouts. (Dawid Weiss)
 
+* LUCENE-4354: Corrected maven dependencies to be consistent with
+  the licenses/ folder and the binary release. Some had different
+  versions or additional unnecessary dependencies. (selckin via Robert Muir)
+
 Documentation
 
 * LUCENE-4302: Fix facet userguide to have HTML loose doctype like
