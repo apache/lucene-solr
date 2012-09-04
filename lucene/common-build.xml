@@ -106,7 +106,7 @@
     <isset property="run.clover"/>
   </condition>
   <property name="tests.clover.args" value=""/>
-  
+
   <property name="tests.tempDir" value="${build.dir}/test"/>
 
   <property name="tests.cachefile" location="${common.dir}/tools/junit4/cached-timehints.txt" />
@@ -217,6 +217,15 @@
   <property name="clover.license.path" location="${common.dir}/tools/clover/clover.license"/>
   <property name="clover.db.dir" location="${common.dir}/build/clover/db"/>
   <property name="clover.report.dir" location="${common.dir}/build/clover/reports"/>
+
+  <property name="pitest.report.dir" location="${common.dir}/build/pitest/${name}/reports"/>
+  <property name="pitest.distance" value="0" />
+  <property name="pitest.threads" value="2" />
+  <property name="pitest.testCases" value="org.apache.*" />
+  <property name="pitest.maxMutations" value="0" />
+  <property name="pitest.timeoutFactor" value="1.25" />
+  <property name="pitest.timeoutConst" value="3000" />
+  <property name="pitest.targetClasses" value="org.apache.*" />
 
   <!-- a reasonable default exclusion set, can be overridden for special cases -->
   <property name="rat.excludes" value="**/TODO,**/*.txt"/>
@@ -1102,6 +1111,16 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <path id="clover.classpath"/>
   </target>
 
+  <target name="pitest" if="run.pitest" depends="compile-test,install-junit4-taskdef,clover,validate"
+      description="Run Unit tests using pitest mutation testing. To use, specify -Drun.pitest=true on the command line.">
+    <echo>Code coverage with pitest enabled.</echo>
+    <ivy:cachepath
+        organisation="org.pitest" module="pitest-ant"
+        inline="true"
+        pathid="pitest.framework.classpath" />
+    <pitest-macro />
+  </target>
+
   <target name="generate-test-reports" description="Generates test reports">
     <mkdir dir="${junit.reports}"/>
     <junitreport todir="${junit.output.dir}">
@@ -1702,6 +1721,82 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       <copy todir="@{changes.target.dir}">
         <fileset dir="@{changes.src.dir}" includes="*.css"/>
       </copy>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="pitest-macro" description="Executes junit tests.">
+    <attribute name="pitest.report.dir" default="${pitest.report.dir}"/>
+    <attribute name="pitest.framework.classpath" default="pitest.framework.classpath"/>
+    <attribute name="pitest.distance" default="${pitest.distance}" />
+    <attribute name="pitest.sysprops" default="${pitest.sysprops}" />
+    <attribute name="pitest.threads" default="${pitest.threads}" />
+    <attribute name="pitest.testCases" default="${pitest.testCases}" />
+    <attribute name="pitest.maxMutations" default="${pitest.maxMutations}" />
+    <attribute name="pitest.timeoutFactor" default="${pitest.timeoutFactor}" />
+    <attribute name="pitest.timeoutConst" default="${pitest.timeoutConst}" />
+    <attribute name="pitest.targetClasses" default="${pitest.targetClasses}" />
+
+    <attribute name="junit.classpath" default="junit.classpath"/>
+
+    <attribute name="src.dir" default="${src.dir}"/>
+    <attribute name="build.dir" default="${build.dir}"/>
+
+    <sequential>
+
+        <echo>
+PiTest mutation coverage can take a *long* time on even large hardware.
+(EC2 32core sandy bridge takes at least 12 hours to run PiTest for the lucene test cases)
+
+The following arguments can be provided to ant to alter its behaviour and target specific tests::
+
+-Dpitest.report.dir (@{pitest.report.dir}) - Change where PiTest writes output reports
+
+-Dpitest.distance (@{pitest.distance}) - How far away from the test class should be mutated
+   0 being immeditate callees only
+
+-Dpitest.threads (@{pitest.threads}) - How many threads to use in PiTest 
+   (note this is independent of junit threads)
+
+-Dpitest.testCases (@{pitest.testCases}) - Glob of testcases to run
+
+-Dpitest.maxMutations (@{pitest.maxMutations}) - Maximum number of mutations per class under test
+    0 being unlimited
+
+-Dpitest.timeoutFactor (@{pitest.timeoutFactor}) - Tunable factor used to determine
+    if a test is potentially been mutated to be an infinate loop or O(n!) (or similar)
+
+-Dpitest.timeoutConst (@{pitest.timeoutConst}) - Base constant used for working out timeouts
+
+-Dpitest.targetClasses (@{pitest.targetClasses}) - Classes to consider for mutation
+        </echo>
+
+        <taskdef name="pitest" classname="org.pitest.ant.PitestTask"
+            classpathref="pitest.framework.classpath" />
+
+        <path id="pitest.classpath">
+            <path refid="junit.classpath"/>
+            <path refid="pitest.framework.classpath"/>
+            <pathelement path="${java.class.path}"/>
+        </path>
+
+        <junit4:pickseed property="pitest.seed" />
+
+        <property name="pitest.sysprops" value="-Dlucene.version=${dev.version},-Dtest.seed=${pitest.seed},-Djava.security.manager,-Djava.security.policy=${common.dir}/tools/junit4/tests.policy,-Djava.io.tmpdir=${tests.tempDir},-Dtests.sandbox.dir=${build.dir}" />
+
+        <pitest
+            classPath="pitest.classpath"
+            targetClasses="@{pitest.targetClasses}"
+            targetTests="@{pitest.testCases}"
+            reportDir="@{pitest.report.dir}"
+            sourceDir="@{src.dir}"
+            threads="@{pitest.threads}"
+            maxMutationsPerClass="@{pitest.maxMutations}"
+            timeoutFactor="@{pitest.timeoutFactor}"
+            timeoutConst="@{pitest.timeoutConst}"
+            verbose="false"
+            dependencyDistance="@{pitest.distance}"
+            mutableCodePaths="@{build.dir}/classes/java"
+            jvmArgs="-ea,@{pitest.sysprops}" />
     </sequential>
   </macrodef>
 

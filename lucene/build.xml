@@ -55,6 +55,10 @@
           description="Runs all unit tests (core, modules and back-compat)"
   />
 
+  <target name="pitest" depends="pitest-modules"
+          description="Runs pitests (core, modules and back-compat)"
+  />
+
   <path id="backwards.test.compile.classpath">
     <path refid="junit-path"/>
     <path refid="ant-path"/>
@@ -476,6 +480,10 @@
 
   <target name="changes-to-html">
     <build-changes changes.src.dir="${changes.src.dir}" changes.target.dir="${changes.target.dir}" />
+  </target>
+
+  <target name="pitest-modules" depends="compile-test">
+    <modules-crawl target="pitest" failonerror="false"/>
   </target>
 
   <!--

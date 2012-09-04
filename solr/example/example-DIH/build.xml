@@ -35,4 +35,7 @@
   <target name="compile-core"/>
   <target name="compile-test"/>
 
+  <!-- nothing to cover -->
+  <target name="pitest"/>
+
 </project>

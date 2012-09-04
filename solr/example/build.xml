@@ -33,6 +33,9 @@
   <target name="compile-core"/>
   <target name="compile-test"/>
 
+  <!-- nothing to cover -->
+  <target name="pitest"/>
+
   <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
     <sequential>
     <!-- jetty libs in lib/ -->
