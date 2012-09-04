@@ -110,6 +110,10 @@ Bug Fixes
 * SOLR-3782: A leader going down while updates are coming in can cause shard
   inconsistency. (Mark Miller)
 
+* SOLR-3611: We do not show ZooKeeper data in the UI for a node that has children.
+  (Mark Miller)
+
+
 Other Changes
 ----------------------
 
