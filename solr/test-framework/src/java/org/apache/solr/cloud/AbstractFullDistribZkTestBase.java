@@ -241,7 +241,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           server.getLbServer().getHttpClient().getParams()
               .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 5000);
           server.getLbServer().getHttpClient().getParams()
-              .setParameter(CoreConnectionPNames.SO_TIMEOUT, 15000);
+              .setParameter(CoreConnectionPNames.SO_TIMEOUT, 40000);
           cloudClient = server;
         } catch (MalformedURLException e) {
           throw new RuntimeException(e);
@@ -1196,7 +1196,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           + DEFAULT_COLLECTION;
       HttpSolrServer s = new HttpSolrServer(url);
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      s.setSoTimeout(20000);
+      s.setSoTimeout(40000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;
