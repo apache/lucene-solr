@@ -359,4 +359,25 @@ public class TestDocument extends LuceneTestCase {
     r.close();
     dir.close();
   }
+  
+  public void testNumericFieldAsString() throws Exception {
+    Document doc = new Document();
+    doc.add(new IntField("int", 5, Field.Store.YES));
+    assertEquals("5", doc.get("int"));
+    assertNull(doc.get("somethingElse"));
+    doc.add(new IntField("int", 4, Field.Store.YES));
+    assertArrayEquals(new String[] { "5", "4" }, doc.getValues("int"));
+    
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    iw.addDocument(doc);
+    DirectoryReader ir = iw.getReader();
+    Document sdoc = ir.document(0);
+    assertEquals("5", sdoc.get("int"));
+    assertNull(sdoc.get("somethingElse"));
+    assertArrayEquals(new String[] { "5", "4" }, sdoc.getValues("int"));
+    ir.close();
+    iw.close();
+    dir.close();
+  }
 }
