@@ -41,7 +41,7 @@ public class QuadPrefixTree extends SpatialPrefixTree {
     @Override
     protected int getLevelForDistance(double degrees) {
       QuadPrefixTree grid = new QuadPrefixTree(ctx, MAX_LEVELS_POSSIBLE);
-      return grid.getLevelForDistance(degrees) + 1;//returns 1 greater
+      return grid.getLevelForDistance(degrees);
     }
 
     @Override
