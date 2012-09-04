@@ -443,7 +443,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
     
     //System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
-    IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name, LuceneTestCase.newIOContext(randomState)), name);
+    IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name, LuceneTestCase.newIOContext(randomState, context)), name);
     addFileHandle(io, name, Handle.Output);
     openFilesForWrite.add(name);
     
@@ -497,7 +497,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       throw fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
     }
 
-    IndexInput ii = new MockIndexInputWrapper(this, name, delegate.openInput(name, LuceneTestCase.newIOContext(randomState)));
+    IndexInput ii = new MockIndexInputWrapper(this, name, delegate.openInput(name, LuceneTestCase.newIOContext(randomState, context)));
     addFileHandle(ii, name, Handle.Input);
     return ii;
   }

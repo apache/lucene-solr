@@ -38,12 +38,14 @@ import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -379,10 +381,13 @@ public class TestPostingsFormat extends LuceneTestCase {
 
     FieldInfos newFieldInfos = new FieldInfos(newFieldInfoArray);
 
+    // Estimate that flushed segment size will be 25% of
+    // what we use in RAM:
+    long bytes =  RamUsageEstimator.sizeOf(fields)/4;
+
     SegmentWriteState writeState = new SegmentWriteState(null, dir,
                                                          segmentInfo, newFieldInfos,
-                                                         32, null, IOContext.DEFAULT);
-
+                                                         32, null, new IOContext(new FlushInfo(maxDocID, bytes)));
     FieldsConsumer fieldsConsumer = Codec.getDefault().postingsFormat().fieldsConsumer(writeState);
 
     for(Map.Entry<String,Map<BytesRef,List<Posting>>> fieldEnt : fields.entrySet()) {
