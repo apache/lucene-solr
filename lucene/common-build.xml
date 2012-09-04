@@ -170,7 +170,7 @@
   <property name="tests.lockdir" location="${common.build.dir}"/>
   <property name="dist.dir" location="${common.dir}/dist"/>
   <property name="maven.dist.dir" location="${dist.dir}/maven"/>
-  <property name="m2.repository.url" value="file://${maven.dist.dir}"/>
+  <makeurl file="${maven.dist.dir}" property="m2.repository.url" validate="false"/>
   <property name="m2.repository.private.key" value="${user.home}/.ssh/id_dsa"/>
 
   <property name="jflex.home" location="${common.dir}"/>
