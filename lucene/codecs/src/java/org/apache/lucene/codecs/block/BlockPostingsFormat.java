@@ -140,7 +140,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <p>Notes:</p>
  * <ul>
  *    <li>Here explains MetadataBlock only, other fields are mentioned in 
- *   <a href="../lucene40/Lucene40PostingsFormat.html#Termdictionary">Lucene40PostingsFormat:TermDictionary</a>
+ *   <a href="{@docRoot}/../core/org/apache/lucene/codecs/lucene40/Lucene40PostingsFormat.html#Termdictionary">Lucene40PostingsFormat:TermDictionary</a>
  *    </li>
  *    <li>PackedBlockSize is the fixed block size for packed blocks. In packed block, bit width is 
  *        determined by the largest integer. Smaller block size result in smaller variance among width 
@@ -176,7 +176,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <dd>
  * <b>Term Index</b>
  * <p>The .tim file format is mentioned in
- *   <a href="../lucene40/Lucene40PostingsFormat.html#Termindex">Lucene40PostingsFormat:TermIndex</a>
+ *   <a href="{@docRoot}/../core/org/apache/lucene/codecs/lucene40/Lucene40PostingsFormat.html#Termindex">Lucene40PostingsFormat:TermIndex</a>
  * </dd>
  * </dl>
  *
@@ -222,7 +222,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *   </li>
  *   <li>VIntBlock stores remaining d-gaps (along with frequencies when possible) with a format 
  *       mentioned in
- *   <a href="../lucene40/Lucene40PostingsFormat.html#Frequencies">Lucene40PostingsFormat:Frequencies</a>
+ *   <a href="{@docRoot}/../core/org/apache/lucene/codecs/lucene40/Lucene40PostingsFormat.html#Frequencies">Lucene40PostingsFormat:Frequencies</a>
  *   </li>
  *   <li>PackedDocBlockNum is the number of packed blocks for current term's docids or frequencies. 
  *       In particular, PackedDocBlockNum = floor(DocFreq/PackedBlockSize) </li>
@@ -284,7 +284,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <li>The procedure how PackedPosDeltaBlock is generated is the same as PackedDocDeltaBlock 
  *       in chapter <a href="#Frequencies">Frequencies and Skip Data</a>.</li>
  *   <li>PosDelta is the same as the format mentioned in 
- *   <a href="../lucene40/Lucene40PostingsFormat.html#Positions">Lucene40PostingsFormat:Positions</a>
+ *   <a href="{@docRoot}/../core/org/apache/lucene/codecs/lucene40/Lucene40PostingsFormat.html#Positions">Lucene40PostingsFormat:Positions</a>
  *   </li>
  *   <li>OffsetStartDelta is the difference between this position's startOffset from the previous 
  *       occurrence (or zero, if this is the first occurrence in this document).</li>

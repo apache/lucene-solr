@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs;
+package org.apache.lucene.codecs.blockterms;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,6 +17,7 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.util.BytesRef;
 

@@ -569,6 +569,12 @@
     </uptodate>
   </target>
 
+  <target name="check-lucene-codecs-javadocs-uptodate" unless="codecs-javadocs.uptodate">
+    <uptodate property="codecs-javadocs.uptodate" targetfile="${common.dir}/build/codecs/lucene-codecs-${version}-javadoc.jar">
+       <srcfiles dir="${common.dir}/codecs/src/java" includes="**/*.java"/>
+    </uptodate>
+  </target>
+
   <target name="javadocs-lucene-core" depends="check-lucene-core-javadocs-uptodate" unless="core-javadocs.uptodate">
     <ant dir="${common.dir}/core" target="javadocs" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
@@ -576,8 +582,18 @@
     <property name="core-javadocs.uptodate" value="true"/>
   </target>
 
-  <target name="compile-codecs">
-    <ant dir="${common.dir}/codecs" target="compile-core" inheritAll="false"/>
+  <target name="compile-codecs" unless="codecs.compiled">
+    <ant dir="${common.dir}/codecs" target="compile-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="codecs.compiled" value="true"/>
+  </target>
+
+  <target name="javadocs-lucene-codecs" depends="check-lucene-codecs-javadocs-uptodate" unless="codecs-javadocs.uptodate">
+    <ant dir="${common.dir}/codecs" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="codecs-javadocs.uptodate" value="true"/>
   </target>
 
   <target name="compile-test-framework" unless="lucene.test.framework.compiled">
