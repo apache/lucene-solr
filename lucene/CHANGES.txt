@@ -160,6 +160,9 @@ Optimizations
 
 Build
 
+* LUCENE-4360: Support running the same test suite multiple times in 
+  parallel (Dawid Weiss)
+
 * LUCENE-3985: Upgrade to randomizedtesting 2.0.0. Added support for 
   thread leak detection. Added support for suite timeouts. (Dawid Weiss)
 

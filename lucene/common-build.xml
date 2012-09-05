@@ -712,6 +712,7 @@
         <property name="tests.dynamicAssignmentRatio" value="0.50" /> <!-- 50% of suites -->
         <property name="tests.haltonfailure" value="true" />
         <property name="tests.iters" value="" />
+        <property name="tests.dups"  value="1" />
 
         <!-- Pick the random seed now (unless already set). -->
         <junit4:pickseed property="tests.seed" />
@@ -751,6 +752,7 @@
             seed="${tests.seed}"
 
             heartbeat="${tests.heartbeat}"
+            uniqueSuiteNames="false"
         >
             <!-- Classpaths. -->
             <classpath refid="@{junit.classpath}"/>
@@ -908,11 +910,13 @@
             </listeners>
 
             <!-- Input test classes. -->
-            <fileset dir="@{testsDir}">
-              <include name="**/Test*.class" />
-              <include name="**/*Test.class" />
-              <exclude name="**/*$*" />
-            </fileset>
+            <junit4:duplicate times="${tests.dups}">
+              <fileset dir="@{testsDir}">
+                <include name="**/Test*.class" />
+                <include name="**/*Test.class" />
+                <exclude name="**/*$*" />
+              </fileset>
+            </junit4:duplicate>
         </junit4:junit4>
 
         <!-- Report the 5 slowest tests from this run to the console. -->
@@ -987,6 +991,12 @@ ant test -Dtests.iters=N -Dtestcase=ClassName -Dtests.method=mytest*
 # initial failures.
 ant test -Dtests.iters=N -Dtests.failfast=yes -Dtestcase=...
 ant test -Dtests.iters=N -Dtests.maxfailures=M -Dtestcase=...
+
+# Repeats every suite (class) and any tests inside N times
+# can be combined with -Dtestcase or -Dtests.iters, etc.
+# Can be used for running a single class on multiple JVMs
+# in parallel.
+ant test -Dtests.dups=N ...
 
 #
 # Test groups. ----------------------------------------------------
