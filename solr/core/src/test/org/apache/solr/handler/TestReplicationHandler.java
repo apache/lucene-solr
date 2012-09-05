@@ -41,7 +41,6 @@ import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.TestDistributedSearch;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -57,7 +56,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * Test for ReplicationHandler
@@ -928,13 +926,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   /* character copy of file using UTF-8 */
   private static void copyFile(File src, File dst) throws IOException {
-    copyFile(src, dst, null);
+    copyFile(src, dst, null, false);
   }
 
   /**
    * character copy of file using UTF-8. If port is non-null, will be substituted any time "TEST_PORT" is found.
    */
-  private static void copyFile(File src, File dst, Integer port) throws IOException {
+  private static void copyFile(File src, File dst, Integer port, boolean internalCompression) throws IOException {
     BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(src), "UTF-8"));
     Writer out = new OutputStreamWriter(new FileOutputStream(dst), "UTF-8");
 
@@ -942,6 +940,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       if (null != port)
         line = line.replace("TEST_PORT", port.toString());
+      
+      line = line.replace("COMPRESSION", internalCompression?"internal":"false");
+
       out.write(line);
     }
     in.close();
@@ -1020,10 +1021,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     public void copyConfigFile(String srcFile, String destFile) 
       throws IOException {
-
       copyFile(getFile(srcFile), 
                new File(confDir, destFile),
-               testPort);
+               testPort, random().nextBoolean());
     }
 
   }

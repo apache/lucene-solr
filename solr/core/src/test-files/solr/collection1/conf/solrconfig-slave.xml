@@ -53,7 +53,8 @@
 	<lst name="slave">
 		<str name="masterUrl">http://localhost:TEST_PORT/solr</str>
 		<str name="pollInterval">00:00:01</str>
-	</lst>
+        <str name="compression">COMPRESSION</str>
+     </lst>
   </requestHandler>
 
 
