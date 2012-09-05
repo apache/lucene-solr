@@ -452,13 +452,25 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           retries++;
           if (retries >= MAX_RETRIES) {
             if (retries == INTERRUPTED) {
-              SolrException.log(log, "Recovery failed - interrupted. core=" + coreName);
-              recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
-                  core.getCoreDescriptor());
+              SolrException.log(log, "Recovery failed - interrupted. core="
+                  + coreName);
+              try {
+                recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
+                    core.getCoreDescriptor());
+              } catch (Throwable t) {
+                SolrException.log(log,
+                    "Could not publish that recovery failed", t);
+              }
             } else {
-              SolrException.log(log, "Recovery failed - max retries exceeded. core=" + coreName);
-              recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
-                  core.getCoreDescriptor());
+              SolrException.log(log,
+                  "Recovery failed - max retries exceeded. core=" + coreName);
+              try {
+                recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
+                    core.getCoreDescriptor());
+              } catch (Throwable t) {
+                SolrException.log(log,
+                    "Could not publish that recovery failed", t);
+              }
             }
             break;
           }

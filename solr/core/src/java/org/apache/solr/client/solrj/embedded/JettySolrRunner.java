@@ -238,10 +238,9 @@ public class JettySolrRunner {
     server.getServer().stop();
     server.stop();
     if (threadPool instanceof QueuedThreadPool) {
-      ((QueuedThreadPool) threadPool).setMaxStopTimeMs(15000);
+      ((QueuedThreadPool) threadPool).setMaxStopTimeMs(30000);
       ((QueuedThreadPool) threadPool).stop();
-      ((QueuedThreadPool) threadPool).stop();
-      ((QueuedThreadPool) threadPool).stop();
+      ((QueuedThreadPool) threadPool).join();
     }
     //server.destroy();
     if (server.getState().equals(Server.FAILED)) {

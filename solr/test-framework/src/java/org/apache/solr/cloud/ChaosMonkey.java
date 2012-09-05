@@ -126,7 +126,7 @@ public class ChaosMonkey {
       if (cores != null) {
         SolrZkClient zkClient = cores.getZkController().getZkClient();
         // must be at least double tick time...
-        zkClient.getSolrZooKeeper().pauseCnxn(ZkTestServer.TICK_TIME * 2);
+        zkClient.getSolrZooKeeper().pauseCnxn(ZkTestServer.TICK_TIME * 2 + 200);
       }
     }
   }
@@ -380,7 +380,6 @@ public class ChaosMonkey {
             } 
             
             if (causeConnectionLoss && rnd < CONLOSS_PERCENT) {
-              randomConnectionLoss();
               randomConnectionLoss();
             }
             

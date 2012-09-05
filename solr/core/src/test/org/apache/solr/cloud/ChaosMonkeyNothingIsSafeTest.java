@@ -135,10 +135,12 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         indexThread.join();
       }
       
-      // fails will happen...
-      // for (StopableIndexingThread indexThread : threads) {
-      // assertEquals(0, indexThread.getFails());
-      // }
+       // we expect full throttle fails, but not cloud client...
+       for (StopableThread indexThread : threads) {
+         if (indexThread instanceof StopableIndexingThread && !(indexThread instanceof FullThrottleStopableIndexingThread)) {
+           assertEquals(0, ((StopableIndexingThread) indexThread).getFails());
+         }
+       }
       
       // try and wait for any replications and what not to finish...
       

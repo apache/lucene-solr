@@ -145,7 +145,7 @@ public class CoreContainer
   private Map<SolrCore,String> coreToOrigName = new ConcurrentHashMap<SolrCore,String>();
   private String leaderVoteWait;
 
-  private ThreadPoolExecutor cmdDistribExecutor;
+  private volatile ThreadPoolExecutor cmdDistribExecutor;
   
   {
     log.info("New CoreContainer " + System.identityHashCode(this));
@@ -190,9 +190,7 @@ public class CoreContainer
   }
 
   protected void initZooKeeper(String zkHost, int zkClientTimeout) {
-    cmdDistribExecutor = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
-        TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
-        new DefaultSolrThreadFactory("cmdDistribExecutor"));
+    newCmdDistribExecutor();
     
     // if zkHost sys property is not set, we are not using ZooKeeper
     String zookeeperHost;
@@ -294,6 +292,12 @@ public class CoreContainer
       }
     }
     
+  }
+
+  public void newCmdDistribExecutor() {
+    cmdDistribExecutor = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
+        TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+        new DefaultSolrThreadFactory("cmdDistribExecutor"));
   }
 
   // may return null if not in zk mode
@@ -600,6 +604,14 @@ public class CoreContainer
     log.info("Shutting down CoreContainer instance="+System.identityHashCode(this));
     isShutDown = true;
     
+    if (cmdDistribExecutor != null) {
+      try {
+        ExecutorUtil.shutdownAndAwaitTermination(cmdDistribExecutor);
+      } catch (Throwable e) {
+        SolrException.log(log, e);
+      }
+    }
+    
     if (isZooKeeperAware()) {
       cancelCoreRecoveries();
     }
@@ -618,13 +630,7 @@ public class CoreContainer
         if (shardHandlerFactory != null) {
           shardHandlerFactory.close();
         }
-        if (cmdDistribExecutor != null) {
-          try {
-            ExecutorUtil.shutdownAndAwaitTermination(cmdDistribExecutor);
-          } catch (Throwable e) {
-            SolrException.log(log, e);
-          }
-        }
+
         // we want to close zk stuff last
         if(zkController != null) {
           zkController.close();

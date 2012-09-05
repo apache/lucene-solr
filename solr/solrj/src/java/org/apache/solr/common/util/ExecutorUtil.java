@@ -30,17 +30,20 @@ public class ExecutorUtil {
   
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
     pool.shutdown(); // Disable new tasks from being submitted
+    pool.shutdownNow(); // Cancel currently executing tasks
     try {
       // Wait a while for existing tasks to terminate
-      if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
-        pool.shutdownNow(); // Cancel currently executing tasks
-        // Wait a while for tasks to respond to being cancelled
         if (!pool.awaitTermination(60, TimeUnit.SECONDS))
             SolrException.log(log, "Executor still has running tasks.");
-      }
     } catch (InterruptedException ie) {
       // (Re-)Cancel if current thread also interrupted
       pool.shutdownNow();
+      try {
+        if (!pool.awaitTermination(60, TimeUnit.SECONDS))
+          SolrException.log(log, "Executor still has running tasks.");
+      } catch (InterruptedException e) {
+    
+      }
       // Preserve interrupt status
       Thread.currentThread().interrupt();
     }
