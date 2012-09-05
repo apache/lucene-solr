@@ -97,6 +97,9 @@
   <target name="compile-test">
     <forall-analyzers target="compile-test"/>
   </target>
+  <target name="compile-tools">
+    <forall-analyzers target="compile-tools"/>
+  </target>
   <target name="test">
     <forall-analyzers target="test"/>
   </target>

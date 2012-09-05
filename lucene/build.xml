@@ -146,6 +146,11 @@
   <!-- Validation (license/notice/api checks). -->
   <target name="validate" depends="check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
 
+  <!-- Validation here depends on compile-tools: but we want to compile modules' tools too -->
+  <target name="compile-tools" depends="common.compile-tools">
+  	<modules-crawl target="compile-tools" failonerror="true"/>
+  </target>
+
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
     <license-check-macro dir="${basedir}" licensedir="${common.dir}/licenses" />
   </target>
