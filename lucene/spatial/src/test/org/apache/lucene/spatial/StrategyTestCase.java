@@ -19,6 +19,7 @@ package org.apache.lucene.spatial;
  */
 
 import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.io.ShapeReadWriter;
 import com.spatial4j.core.io.sample.SampleData;
 import com.spatial4j.core.io.sample.SampleDataReader;
 import com.spatial4j.core.shape.Shape;
@@ -84,7 +85,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       Document document = new Document();
       document.add(new StringField("id", data.id, Field.Store.YES));
       document.add(new StringField("name", data.name, Field.Store.YES));
-      Shape shape = ctx.readShape(data.shape);
+      Shape shape = new ShapeReadWriter(ctx).readShape(data.shape);
       for (Field f : strategy.createIndexableFields(shape)) {
         document.add(f);
       }
@@ -117,7 +118,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       SearchResults got = executeQuery(strategy.makeQuery(q.args), 100);
       if (storeShape && got.numFound > 0) {
         //check stored value is there & parses
-        assertNotNull(ctx.readShape(got.results.get(0).document.get(strategy.getFieldName())));
+        assertNotNull(new ShapeReadWriter(ctx).readShape(got.results.get(0).document.get(strategy.getFieldName())));
       }
       if (concern.orderIsImportant) {
         Iterator<String> ids = q.ids.iterator();

@@ -34,7 +34,7 @@
       <dependency org="org.easymock" name="easymock" rev="2.2" transitive="false"/>
       <dependency org="org.slf4j" name="slf4j-api" rev="1.6.4" transitive="false"/>
       <dependency org="org.slf4j" name="slf4j-jdk14" rev="1.6.4" transitive="false"/>
-      <dependency org="com.spatial4j" name="spatial4j" rev="0.2" transitive="false"/>
+      <dependency org="com.spatial4j" name="spatial4j" rev="0.3" transitive="false"/>
       <dependency org="javax.servlet" name="javax.servlet-api" rev="3.0.1" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>

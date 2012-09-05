@@ -17,8 +17,6 @@ package org.apache.lucene.spatial.query;
  * limitations under the License.
  */
 
-import com.spatial4j.core.exception.InvalidSpatialArgument;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -71,7 +69,7 @@ public class SpatialOperation implements Serializable {
       op = registry.get(v.toUpperCase(Locale.ROOT));
     }
     if( op == null ) {
-      throw new InvalidSpatialArgument("Unknown Operation: " + v );
+      throw new IllegalArgumentException("Unknown Operation: " + v );
     }
     return op;
   }

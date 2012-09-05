@@ -18,7 +18,7 @@ package org.apache.lucene.spatial;
  */
 
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.simple.SimpleSpatialContext;
+import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Rectangle;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.apache.lucene.spatial.query.SpatialOperation;
@@ -43,7 +43,7 @@ public class TestTestFramework extends LuceneTestCase {
     String name = StrategyTestCase.QTEST_Cities_IsWithin_BBox;
 
     InputStream in = getClass().getClassLoader().getResourceAsStream(name);
-    SpatialContext ctx = SimpleSpatialContext.GEO_KM;
+    SpatialContext ctx = SpatialContext.GEO;
     Iterator<SpatialTestQuery> iter = SpatialTestQuery.getTestQueries(
         new SpatialArgsParser(), ctx, name, in );
     List<SpatialTestQuery> tests = new ArrayList<SpatialTestQuery>();

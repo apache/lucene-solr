@@ -17,7 +17,7 @@ package org.apache.lucene.spatial.bbox;
  * limitations under the License.
  */
 
-import com.spatial4j.core.context.simple.SimpleSpatialContext;
+import com.spatial4j.core.context.SpatialContext;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.junit.Before;
@@ -31,7 +31,7 @@ public class TestBBoxStrategy extends StrategyTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    this.ctx = SimpleSpatialContext.GEO_KM;
+    this.ctx = SpatialContext.GEO;
     this.strategy = new BBoxStrategy(ctx, "bbox");
   }
 

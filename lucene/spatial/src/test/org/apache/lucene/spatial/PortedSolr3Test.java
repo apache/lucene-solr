@@ -20,14 +20,14 @@ package org.apache.lucene.spatial;
 import com.carrotsearch.randomizedtesting.annotations.Name;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.simple.SimpleSpatialContext;
+import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.io.ShapeReadWriter;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -55,7 +55,7 @@ public class PortedSolr3Test extends StrategyTestCase {
   public static Iterable<Object[]> parameters() {
     List<Object[]> ctorArgs = new ArrayList<Object[]>();
 
-    SpatialContext ctx = SimpleSpatialContext.GEO_KM;
+    SpatialContext ctx = SpatialContext.GEO;
     SpatialPrefixTree grid;
     SpatialStrategy strategy;
 
@@ -121,6 +121,7 @@ public class PortedSolr3Test extends StrategyTestCase {
   public void testIntersections() throws Exception {
     setupDocs();
     //Try some edge cases
+      //NOTE: 2nd arg is distance in kilometers
     checkHitsCircle("1,1", 175, 3, 5, 6, 7);
     checkHitsCircle("0,179.8", 200, 2, 8, 9);
     checkHitsCircle("89.8, 50", 200, 2, 10, 11);//this goes over the north pole
@@ -164,11 +165,12 @@ public class PortedSolr3Test extends StrategyTestCase {
     adoc("100","1,2");
     adoc("101","4,-1");
     commit();
+    double km1000inDeg = DistanceUtils.dist2Degrees(1000, DistanceUtils.EARTH_MEAN_RADIUS_KM);
 
     //query closer to #100
-    checkHitsOrdered("Intersects(Circle(3,4 d=1000))", "101", "100");
+    checkHitsOrdered("Intersects(Circle(3,4 d="+km1000inDeg+"))", "101", "100");
     //query closer to #101
-    checkHitsOrdered("Intersects(Circle(4,0 d=1000))", "100", "101");
+    checkHitsOrdered("Intersects(Circle(4,0 d="+km1000inDeg+"))", "100", "101");
   }
 
   private void checkHitsOrdered(String spatialQ, String... ids) {
@@ -186,7 +188,7 @@ public class PortedSolr3Test extends StrategyTestCase {
   //---- these are similar to Solr test methods
   
   private void adoc(String idStr, String shapeStr) throws IOException {
-    Shape shape = ctx.readShape(shapeStr);
+    Shape shape = new ShapeReadWriter(ctx).readShape(shapeStr);
     addDocument(newDoc(idStr,shape));
   }
 
@@ -202,17 +204,18 @@ public class PortedSolr3Test extends StrategyTestCase {
     return doc;
   }
 
-  private void checkHitsCircle(String ptStr, double dist, int assertNumFound, int... assertIds) {
-    _checkHits(SpatialOperation.Intersects, ptStr, dist, assertNumFound, assertIds);
+  private void checkHitsCircle(String ptStr, double distKM, int assertNumFound, int... assertIds) {
+    _checkHits(SpatialOperation.Intersects, ptStr, distKM, assertNumFound, assertIds);
   }
-  private void checkHitsBBox(String ptStr, double dist, int assertNumFound, int... assertIds) {
-    _checkHits(SpatialOperation.BBoxIntersects, ptStr, dist, assertNumFound, assertIds);
+  private void checkHitsBBox(String ptStr, double distKM, int assertNumFound, int... assertIds) {
+    _checkHits(SpatialOperation.BBoxIntersects, ptStr, distKM, assertNumFound, assertIds);
   }
 
   @SuppressWarnings("unchecked")
-  private void _checkHits(SpatialOperation op, String ptStr, double dist, int assertNumFound, int... assertIds) {
-    Point pt = (Point) ctx.readShape(ptStr);
-    Shape shape = ctx.makeCircle(pt,dist);
+  private void _checkHits(SpatialOperation op, String ptStr, double distKM, int assertNumFound, int... assertIds) {
+    Point pt = (Point) new ShapeReadWriter(ctx).readShape(ptStr);
+    double distDEG = DistanceUtils.dist2Degrees(distKM, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+    Shape shape = ctx.makeCircle(pt, distDEG);
 
     SpatialArgs args = new SpatialArgs(op,shape);
     //args.setDistPrecision(0.025);

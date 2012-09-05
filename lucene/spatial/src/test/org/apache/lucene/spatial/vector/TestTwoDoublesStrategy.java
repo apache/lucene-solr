@@ -17,12 +17,10 @@ package org.apache.lucene.spatial.vector;
  * limitations under the License.
  */
 
-import com.spatial4j.core.context.simple.SimpleSpatialContext;
+import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.exception.InvalidShapeException;
 import com.spatial4j.core.shape.Circle;
 import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.simple.CircleImpl;
-import com.spatial4j.core.shape.simple.PointImpl;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.StrategyTestCase;
@@ -39,13 +37,13 @@ public class TestTwoDoublesStrategy extends StrategyTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    this.ctx = SimpleSpatialContext.GEO_KM;
+    this.ctx = SpatialContext.GEO;
     this.strategy = new TwoDoublesStrategy(ctx, getClass().getSimpleName());
   }
 
   @Test
   public void testCircleShapeSupport() {
-    Circle circle = new CircleImpl(new PointImpl(0, 0), 10, this.ctx);
+    Circle circle = ctx.makeCircle(ctx.makePoint(0, 0), 10);
     SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects, circle);
     Query query = this.strategy.makeQuery(args);
 
@@ -54,7 +52,7 @@ public class TestTwoDoublesStrategy extends StrategyTestCase {
 
   @Test(expected = InvalidShapeException.class)
   public void testInvalidQueryShape() {
-    Point point = new PointImpl(0, 0);
+    Point point = ctx.makePoint(0, 0);
     SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects, point);
     this.strategy.makeQuery(args);
   }

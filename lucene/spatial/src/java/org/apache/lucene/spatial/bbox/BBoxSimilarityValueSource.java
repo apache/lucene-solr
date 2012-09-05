@@ -18,7 +18,6 @@ package org.apache.lucene.spatial.bbox;
  */
 
 import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.simple.RectangleImpl;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -74,11 +73,14 @@ public class BBoxSimilarityValueSource extends ValueSource {
     final Bits validMaxX = FieldCache.DEFAULT.getDocsWithField(reader, strategy.field_maxX);
 
     return new FunctionValues() {
+      //reused
+      Rectangle rect = strategy.getSpatialContext().makeRectangle(0,0,0,0);
+
       @Override
       public float floatVal(int doc) {
         // make sure it has minX and area
         if (validMinX.get(doc) && validMaxX.get(doc)) {
-          Rectangle rect = new RectangleImpl(
+          rect.reset(
               minX[doc], maxX[doc],
               minY[doc], maxY[doc]);
           return (float) similarity.score(rect, null);
@@ -89,7 +91,7 @@ public class BBoxSimilarityValueSource extends ValueSource {
       public Explanation explain(int doc) {
         // make sure it has minX and area
         if (validMinX.get(doc) && validMaxX.get(doc)) {
-          Rectangle rect = new RectangleImpl(
+          rect.reset(
               minX[doc], maxX[doc],
               minY[doc], maxY[doc]);
           Explanation exp = new Explanation();

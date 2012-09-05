@@ -19,7 +19,7 @@ package org.apache.lucene.spatial.query;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.exception.InvalidShapeException;
-import com.spatial4j.core.exception.InvalidSpatialArgument;
+import com.spatial4j.core.io.ShapeReadWriter;
 import com.spatial4j.core.shape.Shape;
 
 import java.util.HashMap;
@@ -30,7 +30,7 @@ import java.util.StringTokenizer;
  * Parses a string that usually looks like "OPERATION(SHAPE)" into a {@link SpatialArgs}
  * object. The set of operations supported are defined in {@link SpatialOperation}, such
  * as "Intersects" being a common one. The shape portion is defined by {@link
- * SpatialContext#readShape(String)}. There are some optional name-value pair parameters
+ * ShapeReadWriter#readShape(String)}. There are some optional name-value pair parameters
  * that follow the closing parenthesis.  Example:
  * <pre>
  *   Intersects(-10,20,-8,22) distPec=0.025
@@ -50,25 +50,25 @@ public class SpatialArgsParser {
    * @param v   The string to parse. Mandatory.
    * @param ctx The spatial context. Mandatory.
    * @return Not null.
-   * @throws InvalidSpatialArgument If there is a problem parsing the string.
-   * @throws InvalidShapeException  Thrown from {@link SpatialContext#readShape(String)}
+   * @throws IllegalArgumentException If there is a problem parsing the string.
+   * @throws InvalidShapeException  Thrown from {@link ShapeReadWriter#readShape(String)}
    */
-  public SpatialArgs parse(String v, SpatialContext ctx) throws InvalidSpatialArgument, InvalidShapeException {
+  public SpatialArgs parse(String v, SpatialContext ctx) throws IllegalArgumentException, InvalidShapeException {
     int idx = v.indexOf('(');
     int edx = v.lastIndexOf(')');
 
     if (idx < 0 || idx > edx) {
-      throw new InvalidSpatialArgument("missing parens: " + v, null);
+      throw new IllegalArgumentException("missing parens: " + v, null);
     }
 
     SpatialOperation op = SpatialOperation.get(v.substring(0, idx).trim());
 
     String body = v.substring(idx + 1, edx).trim();
     if (body.length() < 1) {
-      throw new InvalidSpatialArgument("missing body : " + v, null);
+      throw new IllegalArgumentException("missing body : " + v, null);
     }
 
-    Shape shape = ctx.readShape(body);
+    Shape shape = new ShapeReadWriter(ctx).readShape(body);
     SpatialArgs args = new SpatialArgs(op, shape);
 
     if (v.length() > (edx + 1)) {
@@ -77,7 +77,7 @@ public class SpatialArgsParser {
         Map<String, String> aa = parseMap(body);
         args.setDistPrecision(readDouble(aa.remove("distPrec")));
         if (!aa.isEmpty()) {
-          throw new InvalidSpatialArgument("unused parameters: " + aa, null);
+          throw new IllegalArgumentException("unused parameters: " + aa, null);
         }
       }
     }

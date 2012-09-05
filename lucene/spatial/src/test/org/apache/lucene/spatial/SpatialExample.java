@@ -18,7 +18,8 @@ package org.apache.lucene.spatial;
  */
 
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.simple.SimpleSpatialContext;
+import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.io.ShapeReadWriter;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -28,7 +29,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
@@ -87,7 +87,7 @@ public class SpatialExample extends LuceneTestCase {
   protected void init() {
     //Typical geospatial context with kilometer units.
     //  These can also be constructed from a factory: SpatialContextFactory
-    this.ctx = SimpleSpatialContext.GEO_KM;
+    this.ctx = SpatialContext.GEO;
 
     int maxLevels = 10;//results in sub-meter precision for geohash
     //TODO demo lookup by detail distance
@@ -110,7 +110,7 @@ public class SpatialExample extends LuceneTestCase {
     //When parsing a string to a shape, the presence of a comma means it's y-x
     // order (lon, lat)
     indexWriter.addDocument(newSampleDocument(
-        4, ctx.readShape("-50.7693246, 60.9289094")));
+        4, new ShapeReadWriter(ctx).readShape("-50.7693246, 60.9289094")));
 
     indexWriter.addDocument(newSampleDocument(
         20, ctx.makePoint(0.1,0.1), ctx.makePoint(0, 0)));
@@ -144,7 +144,7 @@ public class SpatialExample extends LuceneTestCase {
       //Search with circle
       //note: SpatialArgs can be parsed from a string
       SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,
-          ctx.makeCircle(-80.0, 33.0, 200));//200km (since km == ctx.getDistanceUnits
+          ctx.makeCircle(-80.0, 33.0, DistanceUtils.dist2Degrees(200, DistanceUtils.EARTH_MEAN_RADIUS_KM)));
       Filter filter = strategy.makeFilter(args);
       TopDocs docs = indexSearcher.search(new MatchAllDocsQuery(), filter, 10, idSort);
       assertDocMatchedIds(indexSearcher, docs, 2);
@@ -153,7 +153,7 @@ public class SpatialExample extends LuceneTestCase {
     {
       SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,//doesn't matter
           ctx.makePoint(60, -50));
-      ValueSource valueSource = strategy.makeValueSource(args);//the distance
+      ValueSource valueSource = strategy.makeValueSource(args);//the distance (in degrees)
       Sort reverseDistSort = new Sort(valueSource.getSortField(false)).rewrite(indexSearcher);//true=asc dist
       TopDocs docs = indexSearcher.search(new MatchAllDocsQuery(), 10, reverseDistSort);
       assertDocMatchedIds(indexSearcher, docs, 4, 20, 2);
@@ -161,8 +161,8 @@ public class SpatialExample extends LuceneTestCase {
     //demo arg parsing
     {
       SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,
-          ctx.makeCircle(-80.0, 33.0, 200));
-      SpatialArgs args2 = new SpatialArgsParser().parse("Intersects(Circle(33,-80 d=200))", ctx);
+          ctx.makeCircle(-80.0, 33.0, 1));
+      SpatialArgs args2 = new SpatialArgsParser().parse("Intersects(Circle(33,-80 d=1))", ctx);
       assertEquals(args.toString(),args2.toString());
     }
 

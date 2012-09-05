@@ -18,14 +18,12 @@ package org.apache.lucene.spatial.prefix;
  */
 
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.simple.SimpleSpatialContext;
+import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
-import com.spatial4j.core.shape.simple.PointImpl;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.spatial.SpatialTestCase;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
@@ -39,10 +37,10 @@ public class TestTermQueryPrefixGridStrategy extends SpatialTestCase {
 
   @Test
   public void testNGramPrefixGridLosAngeles() throws IOException {
-    SpatialContext ctx = SimpleSpatialContext.GEO_KM;
+    SpatialContext ctx = SpatialContext.GEO;
     TermQueryPrefixTreeStrategy prefixGridStrategy = new TermQueryPrefixTreeStrategy(new QuadPrefixTree(ctx), "geo");
 
-    Shape point = new PointImpl(-118.243680, 34.052230);
+    Shape point = ctx.makePoint(-118.243680, 34.052230);
 
     Document losAngeles = new Document();
     losAngeles.add(new StringField("name", "Los Angeles", Field.Store.YES));

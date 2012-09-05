@@ -113,7 +113,7 @@ public class TwoDoublesStrategy extends SpatialStrategy {
         ValueSource valueSource = makeValueSource(args);
 
         return new ValueSourceFilter(
-            new QueryWrapperFilter( bbox ), valueSource, 0, circle.getDistance() );
+            new QueryWrapperFilter( bbox ), valueSource, 0, circle.getRadius() );
       }
     }
     return new QueryWrapperFilter( makeQuery(args) );
@@ -155,7 +155,7 @@ public class TwoDoublesStrategy extends SpatialStrategy {
         valueSource = makeValueSource(args);
 
         ValueSourceFilter vsf = new ValueSourceFilter(
-            new QueryWrapperFilter( spatial ), valueSource, 0, circle.getDistance() );
+            new QueryWrapperFilter( spatial ), valueSource, 0, circle.getRadius() );
 
         spatial = new FilteredQuery( new MatchAllDocsQuery(), vsf );
       }

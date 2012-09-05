@@ -22,7 +22,6 @@ import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
-import com.spatial4j.core.shape.simple.PointImpl;
 
 import java.io.PrintStream;
 import java.text.NumberFormat;
@@ -134,7 +133,7 @@ public class QuadPrefixTree extends SpatialPrefixTree {
   @Override
   public Node getNode(Point p, int level) {
     List<Node> cells = new ArrayList<Node>(1);
-    build(xmid, ymid, 0, cells, new StringBuilder(), new PointImpl(p.getX(),p.getY()), level);
+    build(xmid, ymid, 0, cells, new StringBuilder(), ctx.makePoint(p.getX(),p.getY()), level);
     return cells.get(0);//note cells could be longer if p on edge
   }
 
@@ -195,8 +194,8 @@ public class QuadPrefixTree extends SpatialPrefixTree {
     double h = levelH[level] / 2;
 
     int strlen = str.length();
-    Rectangle rectangle = ctx.makeRect(cx - w, cx + w, cy - h, cy + h);
-    SpatialRelation v = shape.relate(rectangle, ctx);
+    Rectangle rectangle = ctx.makeRectangle(cx - w, cx + w, cy - h, cy + h);
+    SpatialRelation v = shape.relate(rectangle);
     if (SpatialRelation.CONTAINS == v) {
       str.append(c);
       //str.append(SpatialPrefixGrid.COVER);
@@ -297,7 +296,7 @@ public class QuadPrefixTree extends SpatialPrefixTree {
         width = gridW;
         height = gridH;
       }
-      return ctx.makeRect(xmin, xmin + width, ymin, ymin + height);
+      return ctx.makeRectangle(xmin, xmin + width, ymin, ymin + height);
     }
   }//QuadCell
 }
