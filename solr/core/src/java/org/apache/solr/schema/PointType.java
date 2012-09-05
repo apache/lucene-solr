@@ -25,7 +25,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import com.spatial4j.core.context.ParseUtils;
+import com.spatial4j.core.io.ParseUtils;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.exception.InvalidShapeException;
 import org.apache.solr.common.SolrException;

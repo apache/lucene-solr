@@ -7,7 +7,7 @@
   <import file="../module-build.xml"/>
 
   <path id="spatialjar">
-     <pathelement path="lib/spatial4j-0.2.jar"/>
+     <pathelement path="lib/spatial4j-0.3.jar"/>
   </path>
 
   <path id="classpath">

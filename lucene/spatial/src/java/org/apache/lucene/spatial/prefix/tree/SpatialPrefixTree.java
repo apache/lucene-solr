@@ -83,8 +83,6 @@ public abstract class SpatialPrefixTree {
     // and this is the longest distance that might be occurring within the shape.
     double diagonalDist = ctx.getDistCalc().distance(
         ctx.makePoint(bbox.getMinX(), bbox.getMinY()), bbox.getMaxX(), bbox.getMaxY());
-    //convert to degrees    //TODO not needed in Spatial4j 0.3
-    diagonalDist = ctx.getDistCalc().distanceToDegrees(diagonalDist);
     return getLevelForDistance(diagonalDist * 0.5 * precision);
   }
 

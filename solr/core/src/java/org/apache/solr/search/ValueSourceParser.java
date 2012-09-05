@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import com.spatial4j.core.distance.DistanceUtils;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.BoostedQuery;
@@ -398,13 +399,13 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser(new DoubleParser("rad") {
       @Override
       public double func(int doc, FunctionValues vals) {
-        return vals.doubleVal(doc) * HaversineConstFunction.DEGREES_TO_RADIANS;
+        return vals.doubleVal(doc) * DistanceUtils.DEGREES_TO_RADIANS;
       }
     });
     addParser(new DoubleParser("deg") {
       @Override
       public double func(int doc, FunctionValues vals) {
-        return vals.doubleVal(doc) * HaversineConstFunction.RADIANS_TO_DEGREES;
+        return vals.doubleVal(doc) * DistanceUtils.RADIANS_TO_DEGREES;
       }
     });
     addParser(new DoubleParser("sqrt") {

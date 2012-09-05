@@ -22,11 +22,10 @@ import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import com.spatial4j.core.context.ParseUtils;
+import com.spatial4j.core.io.ParseUtils;
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.simple.SimpleSpatialContext;
 import com.spatial4j.core.exception.InvalidShapeException;
-import com.spatial4j.core.util.GeohashUtils;
+import com.spatial4j.core.io.GeohashUtils;
 import com.spatial4j.core.shape.Point;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
@@ -44,12 +43,12 @@ import java.io.IOException;
  * href="http://en.wikipedia.org/wiki/Geohash">Geohash</a> field. The field is
  * provided as a lat/lon pair and is internally represented as a string.
  *
- * @see com.spatial4j.core.context.ParseUtils#parseLatitudeLongitude(double[], String) 
+ * @see com.spatial4j.core.io.ParseUtils#parseLatitudeLongitude(double[], String)
  */
 public class GeoHashField extends FieldType implements SpatialQueryable {
 
 
-  private final SpatialContext ctx = SimpleSpatialContext.GEO_KM;
+  private final SpatialContext ctx = SpatialContext.GEO;
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {

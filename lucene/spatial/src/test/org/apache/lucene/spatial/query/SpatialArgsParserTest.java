@@ -18,7 +18,6 @@ package org.apache.lucene.spatial.query;
  */
 
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.simple.SimpleSpatialContext;
 import com.spatial4j.core.shape.Rectangle;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
@@ -26,7 +25,7 @@ import org.junit.Test;
 
 public class SpatialArgsParserTest extends LuceneTestCase {
 
-  private SpatialContext ctx = SimpleSpatialContext.GEO_KM;
+  private SpatialContext ctx = SpatialContext.GEO;
 
   //The args parser is only dependent on the ctx for IO so I don't care to test
   // with other implementations.

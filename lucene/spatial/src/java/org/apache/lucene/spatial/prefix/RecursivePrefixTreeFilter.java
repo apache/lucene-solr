@@ -142,7 +142,7 @@ RE "scan" threshold:
             if (termLevel == detailLevel || scanCell.isLeaf()) {
               //TODO should put more thought into implications of box vs point
               Shape cShape = termLevel == grid.getMaxLevels() ? scanCell.getCenter() : scanCell.getShape();
-              if(queryShape.relate(cShape, grid.getSpatialContext()) == SpatialRelation.DISJOINT)
+              if(queryShape.relate(cShape) == SpatialRelation.DISJOINT)
                 continue;
 
               docsEnum = termsEnum.docs(acceptDocs, docsEnum, 0);

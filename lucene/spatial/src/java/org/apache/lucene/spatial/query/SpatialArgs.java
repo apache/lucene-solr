@@ -19,7 +19,6 @@ package org.apache.lucene.spatial.query;
 
 import java.util.Locale;
 
-import com.spatial4j.core.exception.InvalidSpatialArgument;
 import com.spatial4j.core.shape.Shape;
 
 /**
@@ -45,9 +44,9 @@ public class SpatialArgs {
   }
 
   /** Check if the arguments make sense -- throw an exception if not */
-  public void validate() throws InvalidSpatialArgument {
+  public void validate() throws IllegalArgumentException {
     if (operation.isTargetNeedsArea() && !shape.hasArea()) {
-      throw new InvalidSpatialArgument(operation + " only supports geometry with area");
+      throw new IllegalArgumentException(operation + " only supports geometry with area");
     }
   }
 

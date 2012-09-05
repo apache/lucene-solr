@@ -16,7 +16,6 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
-import com.spatial4j.core.distance.DistanceUnits;
 import org.apache.solr.schema.SchemaField;
 
 /**
@@ -28,8 +27,7 @@ public class SpatialOptions {
   public double distance;
   public SchemaField field;
   public String measStr;
-  public double radius;
-  public DistanceUnits units;
+  public double radius;//(planetRadius) effectively establishes the units
 
   /** Just do a "bounding box" - or any other quicker method / shape that
    * still encompasses all of the points of interest, but may also encompass
@@ -40,19 +38,11 @@ public class SpatialOptions {
   public SpatialOptions() {
   }
 
-
   public SpatialOptions(String pointStr, double dist, SchemaField sf, String measStr, double radius) {
-    this(pointStr, dist, sf, measStr, radius, DistanceUnits.MILES);
-
-  }
-
-
-  public SpatialOptions(String pointStr, double dist, SchemaField sf, String measStr, double radius, DistanceUnits units) {
     this.pointStr = pointStr;
     this.distance = dist;
     this.field = sf;
     this.measStr = measStr;
     this.radius = radius;
-    this.units = units;
   }
 }

@@ -19,7 +19,7 @@ package org.apache.solr.search.function.distance;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import com.spatial4j.core.util.GeohashUtils;
+import com.spatial4j.core.io.GeohashUtils;
 
 import java.util.Map;
 import java.io.IOException;
