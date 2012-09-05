@@ -47,7 +47,7 @@
   </target>
 
   <target name="javadocs-core" depends="javadocs"/>
-  <target name="javadocs" depends="init,javadocs-lucene-core">
+  <target name="javadocs" depends="init,javadocs-lucene-core,javadocs-lucene-codecs">
     <sequential>
       <mkdir dir="${javadoc.dir}/test-framework"/>
       <invoke-javadoc overview="${src.dir}/overview.html"
@@ -58,6 +58,7 @@
           <link offline="true" href="${javadoc.link.junit}"
                 packagelistLoc="${javadoc.packagelist.dir}/junit"/>
           <link href="../core/"/>
+          <link href="../codecs/"/>
           <link href=""/>
         </sources>
       </invoke-javadoc>
