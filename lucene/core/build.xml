@@ -27,6 +27,7 @@
   <path id="classpath"/>
   
   <path id="test.classpath">
+    <pathelement location="${common.dir}/build/codecs/classes/java"/>
     <pathelement location="${common.dir}/build/test-framework/classes/java"/>
     <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/java"/>
