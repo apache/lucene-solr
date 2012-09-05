@@ -167,6 +167,9 @@ Build
   the licenses/ folder and the binary release. Some had different
   versions or additional unnecessary dependencies. (selckin via Robert Muir)
 
+* LUCENE-4340: Move all non-default codec, postings format and terms
+  dictionary implementations to lucene/codecs. (Adrien Grand)
+
 Documentation
 
 * LUCENE-4302: Fix facet userguide to have HTML loose doctype like

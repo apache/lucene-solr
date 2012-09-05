@@ -8,6 +8,7 @@
     <buildFile url="file://$PROJECT_DIR$/lucene/memory/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/misc/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/sandbox/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/codecs/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/core/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/tools/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/test-framework/build.xml" />

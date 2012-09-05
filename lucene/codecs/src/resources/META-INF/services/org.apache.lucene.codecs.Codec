@@ -13,4 +13,5 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat
+org.apache.lucene.codecs.simpletext.SimpleTextCodec
+org.apache.lucene.codecs.appending.AppendingCodec
