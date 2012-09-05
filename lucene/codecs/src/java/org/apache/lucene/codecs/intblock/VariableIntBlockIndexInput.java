@@ -48,7 +48,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
   }
 
   @Override
-  public Reader reader() throws IOException {
+  public IntIndexInput.Reader reader() throws IOException {
     final int[] buffer = new int[maxBlockSize];
     final IndexInput clone = in.clone();
     // TODO: can this be simplified?
@@ -61,7 +61,7 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
   }
 
   @Override
-  public Index index() {
+  public IntIndexInput.Index index() {
     return new Index();
   }
 

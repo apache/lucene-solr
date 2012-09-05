@@ -46,7 +46,7 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
   }
 
   @Override
-  public Reader reader() throws IOException {
+  public IntIndexInput.Reader reader() throws IOException {
     final int[] buffer = new int[blockSize];
     final IndexInput clone = in.clone();
     // TODO: can this be simplified?
@@ -59,7 +59,7 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
   }
 
   @Override
-  public Index index() {
+  public IntIndexInput.Index index() {
     return new Index();
   }
 
