@@ -45,7 +45,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -142,6 +141,9 @@ public class TestPostingsFormat extends LuceneTestCase {
 
   private static List<FieldAndTerm> allTerms;
 
+  private static long totalPostings;
+  private static long totalPayloadBytes;
+
   @BeforeClass
   public static void createPostings() throws IOException {
 
@@ -155,6 +157,8 @@ public class TestPostingsFormat extends LuceneTestCase {
     int numMediumTerms = 0;
     int numBigTerms = 0;
     int numManyPositions = 0;
+    totalPostings = 0;
+    totalPayloadBytes = 0;
     while (fieldUpto < numFields) {
       String field = _TestUtil.randomSimpleString(random());
       if (fields.containsKey(field)) {
@@ -250,6 +254,7 @@ public class TestPostingsFormat extends LuceneTestCase {
           int pos = 0;
           int offset = 0;
           int posSpacing = _TestUtil.nextInt(random(), 1, 100);
+          totalPostings += freq;
           for(int posUpto=0;posUpto<freq;posUpto++) {
             if (posUpto == 0 && random().nextBoolean()) {
               // Sometimes index pos = 0
@@ -275,6 +280,7 @@ public class TestPostingsFormat extends LuceneTestCase {
 
             if (position.payload != null) {
               random().nextBytes(position.payload); 
+              totalPayloadBytes += position.payload.length;
             }
 
             position.startOffset = offset + random().nextInt(5);
@@ -383,7 +389,7 @@ public class TestPostingsFormat extends LuceneTestCase {
 
     // Estimate that flushed segment size will be 25% of
     // what we use in RAM:
-    long bytes =  RamUsageEstimator.sizeOf(fields)/4;
+    long bytes =  totalPostings * 8 + totalPayloadBytes;
 
     SegmentWriteState writeState = new SegmentWriteState(null, dir,
                                                          segmentInfo, newFieldInfos,
