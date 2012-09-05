@@ -390,7 +390,6 @@ public class TestPostingsFormat extends LuceneTestCase {
     // Estimate that flushed segment size will be 25% of
     // what we use in RAM:
     long bytes =  totalPostings * 8 + totalPayloadBytes;
-    System.out.println("BYTES=" + bytes);
 
     SegmentWriteState writeState = new SegmentWriteState(null, dir,
                                                          segmentInfo, newFieldInfos,
