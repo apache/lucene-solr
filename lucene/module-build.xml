@@ -40,6 +40,7 @@
   <path id="classpath" refid="base.classpath"/>
   
   <path id="test.base.classpath">
+    <pathelement location="${common.dir}/build/codecs/classes/java"/>
     <pathelement location="${common.dir}/build/test-framework/classes/java"/>
     <path refid="classpath"/>
     <path refid="junit-path"/>
@@ -355,6 +356,28 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="analyzers-morfologik-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="codecs.jar" value="${common.dir}/build/codecs/lucene-codecs-${version}.jar"/>
+  <target name="check-codecs-uptodate" unless="codecs.uptodate">
+    <module-uptodate name="codecs" jarfile="${codecs.jar}" property="codecs.uptodate"/>
+  </target>
+  <target name="jar-codecs" unless="codecs.uptodate" depends="check-codecs-uptodate">
+    <ant dir="${common.dir}/codecs" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="codecs.uptodate" value="true"/>
+  </target>
+
+  <property name="codecs-javadoc.jar" value="${common.dir}/build/codecs/lucene-codecs-${version}-javadoc.jar"/>
+  <target name="check-codecs-javadocs-uptodate" unless="codecs-javadocs.uptodate">
+    <module-uptodate name="codecs" jarfile="${codecs-javadoc.jar}" property="codecs-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-codecs" unless="codecs-javadocs.uptodate" depends="check-codecs-javadocs-uptodate">
+    <ant dir="${common.dir}/codecs" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="codecs-javadocs.uptodate" value="true"/>
   </target>
 
   <property name="grouping.jar" value="${common.dir}/build/grouping/lucene-grouping-${version}.jar"/>

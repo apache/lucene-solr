@@ -156,6 +156,9 @@ Build
 * LUCENE-3985: Upgrade to randomizedtesting 2.0.0. Added support for 
   thread leak detection. Added support for suite timeouts. (Dawid Weiss)
 
+* LUCENE-4340: Move all non-default codec, postings format and terms
+  dictionary implementations to lucene/codecs. (Adrien Grand)
+
 Documentation
 
 * LUCENE-4302: Fix facet userguide to have HTML loose doctype like

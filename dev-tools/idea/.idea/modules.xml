@@ -4,6 +4,7 @@
     <modules>
       <module filepath="$PROJECT_DIR$/parent.iml" />
       <module filepath="$PROJECT_DIR$/lucene/lucene.iml" />
+      <module filepath="$PROJECT_DIR$/lucene/codecs/codecs.iml" />
       <module filepath="$PROJECT_DIR$/lucene/demo/demo.iml" />
       <module filepath="$PROJECT_DIR$/lucene/highlighter/highlighter.iml" />
       <module filepath="$PROJECT_DIR$/lucene/memory/memory.iml" />

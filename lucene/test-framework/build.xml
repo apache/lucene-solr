@@ -26,6 +26,7 @@
 
   <path id="classpath">
     <pathelement location="${common.dir}/build/core/classes/java"/>
+    <pathelement location="${common.dir}/build/codecs/classes/java"/>
     <path refid="junit-path"/>
     <path refid="ant-path"/>
   </path>
@@ -35,7 +36,7 @@
       and *not* to depend on clover; clover already includes the
       test-framework sources in each module's test instrumentation.
    -->
-  <target name="compile-core" depends="init,compile-lucene-core"
+  <target name="compile-core" depends="init,compile-lucene-core,compile-codecs"
           description="Compiles test-framework classes">
     <compile srcdir="${src.dir}" destdir="${build.dir}/classes/java">
       <classpath refid="classpath"/>

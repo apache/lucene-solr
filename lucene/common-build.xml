@@ -576,6 +576,10 @@
     <property name="core-javadocs.uptodate" value="true"/>
   </target>
 
+  <target name="compile-codecs">
+    <ant dir="${common.dir}/codecs" target="compile-core" inheritAll="false"/>
+  </target>
+
   <target name="compile-test-framework" unless="lucene.test.framework.compiled">
     <ant dir="${common.dir}/test-framework" target="compile-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>

@@ -15,5 +15,3 @@
 
 org.apache.lucene.codecs.lucene40.Lucene40Codec
 org.apache.lucene.codecs.lucene3x.Lucene3xCodec
-org.apache.lucene.codecs.simpletext.SimpleTextCodec
-org.apache.lucene.codecs.appending.AppendingCodec

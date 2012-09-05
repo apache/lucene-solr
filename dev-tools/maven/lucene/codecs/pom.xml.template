@@ -9,9 +9,9 @@
     to you under the Apache License, Version 2.0 (the
     "License"); you may not use this file except in compliance
     with the License.  You may obtain a copy of the License at
-    
+
     http://www.apache.org/licenses/LICENSE-2.0
-    
+
     Unless required by applicable law or agreed to in writing,
     software distributed under the License is distributed on an
     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -22,40 +22,51 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.apache.lucene</groupId>
-    <artifactId>lucene-solr-grandparent</artifactId>
+    <artifactId>lucene-parent</artifactId>
     <version>@version@</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-parent</artifactId>
-  <packaging>pom</packaging>
-  <name>Lucene parent POM</name>
-  <description>Lucene parent POM</description>
+  <artifactId>lucene-codecs</artifactId>
+  <packaging>jar</packaging>
+  <name>Lucene codecs</name>
+  <description>
+    Codecs and postings formats for Apache Lucene.
+  </description>
   <properties>
-    <module-directory>lucene</module-directory>
+    <module-directory>lucene/codecs</module-directory>
+    <top-level>../../..</top-level>
+    <module-path>${top-level}/${module-directory}</module-path>
   </properties>
   <scm>
     <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
     <developerConnection>scm:svn:${vc-dev-base-url}/${module-directory}</developerConnection>
     <url>${vc-browse-base-url}/${module-directory}</url>
   </scm>
-  <modules>
-    <module>core</module>
-    <module>codecs</module>
-    <module>test-framework</module>
-    <module>analysis</module>
-    <module>benchmark</module>
-    <module>demo</module>
-    <module>facet</module>
-    <module>grouping</module>
-    <module>highlighter</module>
-    <module>join</module>
-    <module>memory</module>
-    <module>misc</module>
-    <module>queries</module>
-    <module>queryparser</module>
-    <module>sandbox</module>
-    <module>spatial</module>
-    <module>suggest</module>
-  </modules>
+  <dependencies>
+    <dependency> 
+      <!-- lucene-test-framework dependency must be declared before lucene-core -->
+      <groupId>${project.groupId}</groupId>
+      <artifactId>lucene-test-framework</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>lucene-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <sourceDirectory>${module-path}/src/java</sourceDirectory>
+    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
+    <testResources>
+      <testResource>
+        <directory>${project.build.testSourceDirectory}</directory>
+        <excludes>
+          <exclude>**/*.java</exclude>
+        </excludes>
+      </testResource>
+    </testResources>
+  </build>
 </project>

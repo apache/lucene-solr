@@ -3,6 +3,9 @@
   <classpathentry kind="src" path="lucene/core/src/java"/>
   <classpathentry kind="src" path="lucene/core/src/resources"/>
   <classpathentry kind="src" path="lucene/core/src/test"/>
+  <classpathentry kind="src" path="lucene/codecs/src/java"/>
+  <classpathentry kind="src" output="bin/codecs" path="lucene/codecs/src/resources"/>
+  <classpathentry kind="src" path="lucene/codecs/src/test"/>
   <classpathentry kind="src" path="lucene/demo/src/java"/>
   <classpathentry kind="src" path="lucene/demo/src/resources"/>
   <classpathentry kind="src" path="lucene/demo/src/test"/>
