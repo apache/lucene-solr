@@ -54,10 +54,15 @@
 
   <path id="classpath">
     <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/java"/>
-    <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/test"/>
     <fileset dir="${common-solr.dir}/contrib/dataimporthandler/lib" excludes="${common.classpath.excludes}"/>
     <fileset dir="${common-solr.dir}/contrib/extraction/lib" excludes="${common.classpath.excludes}"/>
     <path refid="solr.base.classpath"/>
+  </path>
+
+  <path id="test.classpath">
+    <path refid="classpath"/>
+    <path refid="solr.test.base.classpath"/>
+    <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/test"/>
   </path>
 
   <target name="compile-core" depends="compile-solr-dataimporthandler,resolve-extraction-libs,solr-contrib-build.compile-core"/>
