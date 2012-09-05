@@ -60,9 +60,9 @@
   </path>
 
   <path id="test.classpath">
-    <path refid="classpath"/>
     <path refid="solr.test.base.classpath"/>
     <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/test"/>
+    <path refid="classpath"/>
   </path>
 
   <target name="compile-core" depends="compile-solr-dataimporthandler,resolve-extraction-libs,solr-contrib-build.compile-core"/>
