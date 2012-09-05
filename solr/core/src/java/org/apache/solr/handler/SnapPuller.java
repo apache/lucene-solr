@@ -1151,7 +1151,7 @@ public class SnapPuller {
         params.set(FILE, fileName);
       }
       if (useInternal) {
-        params.set(COMPRESSION, "internal"); 
+        params.set(COMPRESSION, "true"); 
       }
       //use checksum
       if (this.includeChecksum) {

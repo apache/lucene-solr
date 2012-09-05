@@ -113,6 +113,9 @@ Bug Fixes
 * SOLR-3611: We do not show ZooKeeper data in the UI for a node that has children.
   (Mark Miller)
 
+* SOLR-3789: Fix bug in SnapPuller that caused "internal" compression to fail.
+  (siren)
+
 
 Other Changes
 ----------------------
