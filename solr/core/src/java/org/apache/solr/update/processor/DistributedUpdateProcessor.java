@@ -251,29 +251,30 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     boolean localIsLeader = req.getCore().getCoreDescriptor().getCloudDescriptor().isLeader();
     if (DistribPhase.FROMLEADER == phase && localIsLeader && from != null) { // from will be null on log replay
       log.error("Request says it is coming from leader, but we are the leader: " + req.getParamString());
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Request says it is coming from leader, but we are the leader");
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Request says it is coming from leader, but we are the leader");
     }
 
-    if (DistribPhase.FROMLEADER == phase && from != null) { // from will be null on log replay
-     
-      ZkCoreNodeProps clusterStateLeader = new ZkCoreNodeProps(zkController
-          .getClusterState().getLeader(collection, shardId));
-    
-      if (clusterStateLeader.getNodeProps() == null
-          || !clusterStateLeader.getCoreUrl().equals(from)) {
-        String coreUrl = null;
-        if (clusterStateLeader.getNodeProps() != null) {
-          coreUrl = clusterStateLeader.getCoreUrl();
-        }
-        log.error("We got a request from the leader, but it's not who our cluster state says is the leader :"
-            + req.getParamString()
-            + " : "
-            + coreUrl);
-
-        new SolrException(ErrorCode.BAD_REQUEST, "We got a request from the leader, but it's not who our cluster state says is the leader.");
-      }
- 
-    }
+    // this is too restrictive - cluster state can be stale - can cause shard inconsistency
+//    if (DistribPhase.FROMLEADER == phase && from != null) { // from will be null on log replay
+//     
+//      ZkCoreNodeProps clusterStateLeader = new ZkCoreNodeProps(zkController
+//          .getClusterState().getLeader(collection, shardId));
+//    
+//      if (clusterStateLeader.getNodeProps() == null
+//          || !clusterStateLeader.getCoreUrl().equals(from)) {
+//        String coreUrl = null;
+//        if (clusterStateLeader.getNodeProps() != null) {
+//          coreUrl = clusterStateLeader.getCoreUrl();
+//        }
+//        log.error("We got a request from the leader, but it's not who our cluster state says is the leader :"
+//            + req.getParamString()
+//            + " : "
+//            + coreUrl);
+//
+//        new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "We got a request from the leader, but it's not who our cluster state says is the leader.");
+//      }
+// 
+//    }
   }
 
 
@@ -348,11 +349,20 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     
     ModifiableSolrParams params = null;
     if (nodes != null) {
+      if (isLeader && !req.getCore().getCoreDescriptor().getCloudDescriptor().isLeader()) {
+        log.error("Abort sending request to replicas, we are no longer leader");
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Abort sending request to replicas, we are no longer leader");
+      }
+      
       params = new ModifiableSolrParams(req.getParams());
       params.set(DISTRIB_UPDATE_PARAM, 
                  (isLeader ? 
                   DistribPhase.FROMLEADER.toString() : 
                   DistribPhase.TOLEADER.toString()));
+      if (isLeader) {
+        params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
+            zkController.getBaseUrl(), req.getCore().getName()));
+      }
       params.remove("commit"); // this will be distributed from the local commit
       params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
           zkController.getBaseUrl(), req.getCore().getName()));
@@ -682,6 +692,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     ModifiableSolrParams params = null;
     if (nodes != null) {
+      if (isLeader && !req.getCore().getCoreDescriptor().getCloudDescriptor().isLeader()) {
+        log.error("Abort sending request to replicas, we are no longer leader");
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Abort sending request to replicas, we are no longer leader");
+      }
+      
       params = new ModifiableSolrParams(req.getParams());
       params.set(DISTRIB_UPDATE_PARAM, 
                  (isLeader ? 
@@ -851,7 +866,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (leaderLogic && replicas != null) {
       if (!req.getCore().getCoreDescriptor().getCloudDescriptor().isLeader()) {
         log.error("Abort sending request to replicas, we are no longer leader");
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Abort sending request to replicas, we are no longer leader");
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Abort sending request to replicas, we are no longer leader");
       }
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
       params.set(VERSION_FIELD, Long.toString(cmd.getVersion()));

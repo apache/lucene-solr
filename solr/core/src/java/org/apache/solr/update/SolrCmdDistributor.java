@@ -40,12 +40,12 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequestExt;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.AdjustableSemaphore;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -322,6 +322,12 @@ public class SolrCmdDistributor {
   
           HttpSolrServer server = new HttpSolrServer(fullUrl,
               client);
+          
+          if (Thread.currentThread().isInterrupted()) {
+            clonedRequest.rspCode = 503;
+            clonedRequest.exception = new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Shutting down.");
+            return clonedRequest;
+          }
           
           clonedRequest.ursp = server.request(clonedRequest.ureq);
           

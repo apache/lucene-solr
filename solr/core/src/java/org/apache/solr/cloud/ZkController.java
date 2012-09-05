@@ -48,6 +48,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -192,6 +193,8 @@ public final class ZkController {
               String adminPath;
               shardHandler = cc.getShardHandlerFactory().getShardHandler();
               adminPath = cc.getAdminPath();
+              ExecutorUtil.shutdownAndAwaitTermination(cc.getCmdDistribExecutor());
+              cc.newCmdDistribExecutor();
               ZkController.this.overseer = new Overseer(shardHandler, adminPath, zkStateReader);
               ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
               overseerElector.joinElection(context);
@@ -234,44 +237,6 @@ public final class ZkController {
  
         });
     
-    zkClient.getZkClientConnectionStrategy().addDisconnectedListener(new ZkClientConnectionStrategy.DisconnectedListener() {
-      
-      @Override
-      public void disconnected() {
-        List<CoreDescriptor> descriptors = registerOnReconnect.getCurrentDescriptors();
-        // re register all descriptors
-        if (descriptors  != null) {
-          for (CoreDescriptor descriptor : descriptors) {
-            descriptor.getCloudDescriptor().isLeader = false;
-          }
-        }
-      }
-    });
-    
-    zkClient.getZkClientConnectionStrategy().addConnectedListener(new ZkClientConnectionStrategy.ConnectedListener() {
-      
-      @Override
-      public void connected() {
-        List<CoreDescriptor> descriptors = registerOnReconnect.getCurrentDescriptors();
-        if (descriptors  != null) {
-          for (CoreDescriptor descriptor : descriptors) {
-            CloudDescriptor cloudDesc = descriptor.getCloudDescriptor();
-            String leaderUrl;
-            try {
-              leaderUrl = getLeaderProps(cloudDesc.getCollectionName(), cloudDesc.getShardId())
-                  .getCoreUrl();
-            } catch (InterruptedException e) {
-              throw new RuntimeException();
-            }
-            String ourUrl = ZkCoreNodeProps.getCoreUrl(getBaseUrl(), descriptor.getName());
-            boolean isLeader = leaderUrl.equals(ourUrl);
-            log.info("SolrCore connected to ZooKeeper - we are " + ourUrl + " and leader is " + leaderUrl);
-            cloudDesc.isLeader = isLeader;
-          }
-        }
-      }
-    });
-    
     this.overseerJobQueue = Overseer.getInQueue(zkClient);
     this.overseerCollectionQueue = Overseer.getCollectionQueue(zkClient);
     cmdExecutor = new ZkCmdExecutor();
@@ -296,6 +261,7 @@ public final class ZkController {
         final String coreZkNodeName = getNodeName() + "_"
             + descriptor.getName();
         try {
+          descriptor.getCloudDescriptor().isLeader = false;
           publish(descriptor, ZkStateReader.DOWN);
           waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
         } catch (Exception e) {
@@ -309,17 +275,6 @@ public final class ZkController {
    * Closes the underlying ZooKeeper client.
    */
   public void close() {
-    try {
-      String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
-      // we don't retry if there is a problem - count on ephem timeout
-      zkClient.delete(nodePath, -1, false);
-    } catch (KeeperException.NoNodeException e) {
-      // fine
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-    } catch (KeeperException e) {
-      SolrException.log(log, "Error trying to remove our ephem live node", e);
-    }
     
     for (ElectionContext context : electionContexts.values()) {
       context.close();
