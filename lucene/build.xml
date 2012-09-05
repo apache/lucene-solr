@@ -243,6 +243,7 @@
       <check-missing-javadocs dir="build/docs/analyzers-stempel" level="class"/>
       <check-missing-javadocs dir="build/docs/analyzers-uima" level="class"/>
       <check-missing-javadocs dir="build/docs/benchmark" level="class"/>
+      <check-missing-javadocs dir="build/docs/codecs" level="class"/>
       <check-missing-javadocs dir="build/docs/core" level="class"/>
       <check-missing-javadocs dir="build/docs/demo" level="class"/>
       <check-missing-javadocs dir="build/docs/facet" level="class"/>
