@@ -51,7 +51,7 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
   protected abstract void flushBlock() throws IOException;
 
   @Override
-  public Index index() throws IOException {
+  public IntIndexOutput.Index index() throws IOException {
     return new Index();
   }
 

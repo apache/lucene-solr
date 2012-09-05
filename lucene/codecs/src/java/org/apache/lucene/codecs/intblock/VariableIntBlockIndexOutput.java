@@ -60,7 +60,7 @@ public abstract class VariableIntBlockIndexOutput extends IntIndexOutput {
   protected abstract int add(int value) throws IOException;
 
   @Override
-  public Index index() throws IOException {
+  public IntIndexOutput.Index index() throws IOException {
     return new Index();
   }
 
