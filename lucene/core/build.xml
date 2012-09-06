@@ -96,18 +96,19 @@
   </target>
 
   <target name="createLevAutomata" depends="check-moman,clone-moman,pull-moman">
-  	<createLevAutomaton n="1"/>
-  	<createLevAutomaton n="2"/>
+    <createLevAutomaton n="1"/>
+    <createLevAutomaton n="2"/>
   </target>
   
   <target name="check-moman">
     <condition property="moman.cloned">
-      <available file="src/java/org/apache/lucene/util/automaton/moman"/>
-  	</condition>
+      <available file="${build.dir}/moman"/>
+    </condition>
   </target>
-	
+
   <target name="clone-moman" unless="moman.cloned">
-  	<exec dir="src/java/org/apache/lucene/util/automaton" 
+    <mkdir dir="${build.dir}"/>
+    <exec dir="${build.dir}" 
           executable="${hg.exe}" failonerror="true">
       <arg value="clone"/>
       <arg value="-r"/>
@@ -118,7 +119,7 @@
   </target>
 
   <target name="pull-moman" if="moman.cloned">
-    <exec dir="src/java/org/apache/lucene/util/automaton/moman" 
+    <exec dir="${build.dir}/moman" 
           executable="${hg.exe}" failonerror="true">
       <arg value="pull"/>
       <arg value="-f"/>
