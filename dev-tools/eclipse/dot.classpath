@@ -108,21 +108,21 @@
   <classpathentry kind="lib" path="lucene/benchmark/lib/commons-compress-1.4.1.jar"/>
   <classpathentry kind="lib" path="lucene/benchmark/lib/xercesImpl-2.9.1.jar"/>
   <classpathentry kind="lib" path="lucene/benchmark/lib/nekohtml-1.9.15.jar"/>
-  <classpathentry kind="lib" path="solr/lib/commons-fileupload-1.2.1.jar"/>
-  <classpathentry kind="lib" path="solr/lib/commons-cli-1.2.jar"/>
-  <classpathentry kind="lib" path="solr/lib/httpclient-4.1.3.jar"/>
-  <classpathentry kind="lib" path="solr/lib/httpcore-4.1.4.jar"/>
-  <classpathentry kind="lib" path="solr/lib/httpmime-4.1.3.jar"/>
-  <classpathentry kind="lib" path="solr/lib/commons-io-2.1.jar"/>
-  <classpathentry kind="lib" path="solr/lib/commons-lang-2.6.jar"/>
-  <classpathentry kind="lib" path="solr/lib/easymock-2.2.jar"/>
-  <classpathentry kind="lib" path="solr/lib/guava-r05.jar"/>
-  <classpathentry kind="lib" path="solr/lib/jcl-over-slf4j-1.6.4.jar"/>
-  <classpathentry kind="lib" path="solr/lib/log4j-over-slf4j-1.6.4.jar"/>
-  <classpathentry kind="lib" path="solr/lib/slf4j-api-1.6.4.jar"/>
-  <classpathentry kind="lib" path="solr/lib/slf4j-jdk14-1.6.4.jar"/>
-  <classpathentry kind="lib" path="solr/lib/wstx-asl-3.2.7.jar"/>
-  <classpathentry kind="lib" path="solr/lib/zookeeper-3.3.6.jar"/>
+  <classpathentry kind="lib" path="solr/core/lib/commons-fileupload-1.2.1.jar"/>
+  <classpathentry kind="lib" path="solr/core/lib/commons-cli-1.2.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/httpclient-4.1.3.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/httpcore-4.1.4.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/httpmime-4.1.3.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/commons-io-2.1.jar"/>
+  <classpathentry kind="lib" path="solr/core/lib/commons-lang-2.6.jar"/>
+  <classpathentry kind="lib" path="solr/core/lib/easymock-2.2.jar"/>
+  <classpathentry kind="lib" path="solr/core/lib/guava-r05.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/jcl-over-slf4j-1.6.4.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/log4j-over-slf4j-1.6.4.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/slf4j-api-1.6.4.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/slf4j-jdk14-1.6.4.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/wstx-asl-3.2.7.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/zookeeper-3.3.6.jar"/>
   <classpathentry kind="lib" path="solr/example/lib/jetty-continuation-8.1.2.v20120308.jar"/>
   <classpathentry kind="lib" path="solr/example/lib/jetty-deploy-8.1.2.v20120308.jar"/>
   <classpathentry kind="lib" path="solr/example/lib/jetty-http-8.1.2.v20120308.jar"/>
