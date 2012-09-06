@@ -20,6 +20,7 @@ package org.apache.lucene.store;
 import org.apache.lucene.codecs.Codec; // javadocs
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.LiveDocsFormat; // javadocs
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.store.DataOutput; // javadocs
@@ -142,8 +143,10 @@ public final class CompoundFileDirectory extends Directory {
         for (int i = 0; i < numEntries; i++) {
           final FileEntry fileEntry = new FileEntry();
           final String id = entriesStream.readString();
-          assert !mapping.containsKey(id): "id=" + id + " was written multiple times in the CFS";
-          mapping.put(id, fileEntry);
+          FileEntry previous = mapping.put(id, fileEntry);
+          if (previous != null) {
+            throw new CorruptIndexException("Duplicate cfs entry id=" + id + " in CFS: " + entriesStream);
+          }
           fileEntry.offset = entriesStream.readLong();
           fileEntry.length = entriesStream.readLong();
         }
