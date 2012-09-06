@@ -163,6 +163,7 @@ ul
 
 #wrapper
 {
+  position: relative;
   margin: 0 auto;
   margin-bottom: 30px;
   text-align: left;
@@ -171,7 +172,8 @@ ul
 #header
 {
   padding-bottom: 10px;
-  position: relative;
+  position: absolute;
+  z-index: 42;
 }
 
 #header #solr
@@ -207,6 +209,7 @@ ul
   background-position: 10px 50%;
   color: #fff;
   font-weight: bold;
+  margin-left: 150px;
   margin-bottom: 20px;
   padding: 10px;
   padding-left: 35px;
@@ -254,34 +257,33 @@ ul
 #environment
 {
   background-image: url( ../../img/ico/box.png );
-  background-position: 10px 50%;
-  border: 1px solid #c0c0c0;
+  background-position: 5px 50%;
   display: none;
   font-weight: bold;
+  margin-top: 10px;
   padding: 5px 10px;
-  padding-left: 31px;
-  position: absolute;
-  top: 0;
-  right: 0;
+  padding-left: 26px;
+}
+
+.has-environment #environment
+{
+  display: block;
 }
 
 #environment.prod
 {
   background-color: #c37f7f;
-  border-color: #b15757;
   color: #fff;
 }
 
 #environment.test
 {
   background-color: #f5f5b2;
-  border-color: #e4e433;
 }
 
 #environment.dev
 {
   background-color: #cce7cc;
-  border-color: #66b866;
 }
 
 #init-failures
@@ -290,11 +292,6 @@ ul
   display: none;
   margin-left: 150px;
   margin-bottom: 20px;
-}
-
-#main.error #init-failures
-{
-  margin-left: 0;
 }
 
 #init-failures h2,

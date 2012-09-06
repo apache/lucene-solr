@@ -61,6 +61,9 @@ New Features
 
 * SOLR-3238: Numerous small improvements to the Admin UI (steffkes)
 
+* SOLR-3597: seems like a lot of wasted whitespace at the top of the admin screens
+  (steffkes)
+
 Optimizations
 ----------------------
 
