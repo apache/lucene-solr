@@ -442,12 +442,8 @@
 
   </target>
 
-
-  <!-- TODO: these dependencies are bogus: we only
-       call this from prepare-release so it shouldn't require
-       'package' and 'javadocs' again -->
-  <target name="generate-maven-artifacts"
-          depends="install-maven-tasks, filter-pom-templates, package, javadocs">
+  <!-- install-maven-tasks is *not* a useless dependency. do not remove -->
+  <target name="generate-maven-artifacts" depends="install-maven-tasks">
     <sequential>
       <subant target="dist-maven" failonerror="true" inheritall="false">
         <propertyset refid="uptodate.and.compiled.properties"/>
@@ -456,6 +452,18 @@
       </subant>
       
       <modules-crawl target="dist-maven"/>
+    </sequential>
+  </target>
+	
+  <target name="validate-maven-dependencies" depends="compile-tools, generate-maven-artifacts, load-custom-tasks">
+    <sequential>
+      <subant target="-validate-maven-dependencies" failonerror="true" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+        <fileset dir="${common.dir}/core" includes="build.xml"/>
+        <fileset dir="${common.dir}/test-framework" includes="build.xml"/>
+      </subant>
+      
+      <modules-crawl target="-validate-maven-dependencies"/>
     </sequential>
   </target>
 	
