@@ -64,8 +64,6 @@ New Features
 * SOLR-3597: seems like a lot of wasted whitespace at the top of the admin screens
   (steffkes)
 
-* SOLR-3668: DataImport : Specifying Custom Parameters (steffkes)
-
 Optimizations
 ----------------------
 
@@ -124,6 +122,7 @@ Bug Fixes
 * SOLR-3790: ConcurrentModificationException could be thrown when using hl.fl=*.
   Fixed in r1231606. (yonik, koji)
 
+* SOLR-3668: DataImport : Specifying Custom Parameters (steffkes)
 
 Other Changes
 ----------------------
