@@ -53,6 +53,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.CopyField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -522,8 +523,8 @@ public class LukeRequestHandler extends RequestHandlerBase
     if (ft.getAnalyzer().getPositionIncrementGap(f.getName()) != 0) {
       field.add("positionIncrementGap", ft.getAnalyzer().getPositionIncrementGap(f.getName()));
     }
-    field.add("copyDests", schema.getCopyFieldsList(f.getName()));
-    field.add("copySources", schema.getCopySources(f.getName()));
+    field.add("copyDests", toListOfStringDests(schema.getCopyFieldsList(f.getName())));
+    field.add("copySources", toListOfStrings(schema.getCopySources(f.getName())));
 
 
     fields.put( f.getName(), field );
@@ -617,6 +618,22 @@ public class LukeRequestHandler extends RequestHandlerBase
     // Add a histogram
     fieldMap.add("histogram", tiq.histogram.toNamedList());
   }
+
+  private static List<String> toListOfStrings(SchemaField[] raw) {
+    List<String> result = new ArrayList<String>(raw.length);
+    for (SchemaField f : raw) {
+      result.add(f.getName());
+    }
+    return result;
+  }
+  private static List<String> toListOfStringDests(List<CopyField> raw) {
+    List<String> result = new ArrayList<String>(raw.size());
+    for (CopyField f : raw) {
+      result.add(f.getDestination().getName());
+    }
+    return result;
+  }
+
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override

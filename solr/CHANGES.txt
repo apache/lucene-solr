@@ -131,6 +131,9 @@ Bug Fixes
 
 * SOLR-3679: Core Admin UI gives no feedback if "Add Core" fails (steffkes, hossman)
 
+* SOLR-3795: Fixed LukeRequestHandler response to correctly return field name 
+  strings in copyDests and copySources arrays (hossman)
+
 Other Changes
 ----------------------
 
