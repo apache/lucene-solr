@@ -23,6 +23,9 @@ import urllib.parse as urlparse
 reHyperlink = re.compile(r'<a(\s+.*?)>', re.I)
 reAtt = re.compile(r"""(?:\s+([a-z]+)\s*=\s*("[^"]*"|'[^']?'|[^'"\s]+))+""", re.I)
 
+# Char ::= #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF] /* any Unicode character, excluding the surrogate blocks, FFFE, and FFFF. */
+reValidChar = re.compile("^[\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]*$")
+
 # silly emacs: '
 
 class FindHyperlinks(HTMLParser):
@@ -79,6 +82,12 @@ class FindHyperlinks(HTMLParser):
                    
 def parse(baseURL, html):
   global failures
+  # look for broken unicode
+  if not reValidChar.match(html):
+    print(' WARNING: invalid characters detected in: %s' % baseURL)
+    failures = True
+    return [], []
+
   parser = FindHyperlinks(baseURL)
   try:
     parser.feed(html)
