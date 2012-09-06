@@ -130,16 +130,16 @@ public class FuzzySet {
     return -1;    
   }
   
-  public static FuzzySet createSetBasedOnMaxMemory(int maxNumBytes, HashFunction hashFunction)
+  public static FuzzySet createSetBasedOnMaxMemory(int maxNumBytes)
   {
       int setSize=getNearestSetSize(maxNumBytes);
-      return new FuzzySet(new FixedBitSet(setSize+1),setSize,hashFunction);
+      return new FuzzySet(new FixedBitSet(setSize+1),setSize, hashFunctionForVersion(VERSION_CURRENT));
   }
   
-  public static FuzzySet createSetBasedOnQuality(int maxNumUniqueValues, float desiredMaxSaturation, HashFunction hashFunction)
+  public static FuzzySet createSetBasedOnQuality(int maxNumUniqueValues, float desiredMaxSaturation)
   {
       int setSize=getNearestSetSize(maxNumUniqueValues,desiredMaxSaturation);
-      return new FuzzySet(new FixedBitSet(setSize+1),setSize,hashFunction);
+      return new FuzzySet(new FixedBitSet(setSize+1),setSize, hashFunctionForVersion(VERSION_CURRENT));
   }
   
 

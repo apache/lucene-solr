@@ -43,7 +43,7 @@ public class TestBloomFilteredLucene40Postings extends PostingsFormat {
   static class LowMemoryBloomFactory extends BloomFilterFactory {
     @Override
     public FuzzySet getSetForField(SegmentWriteState state,FieldInfo info) {
-      return FuzzySet.createSetBasedOnMaxMemory(1024, new MurmurHash2());
+      return FuzzySet.createSetBasedOnMaxMemory(1024);
     }
     
     @Override
