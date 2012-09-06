@@ -116,6 +116,9 @@ Bug Fixes
 * SOLR-3789: Fix bug in SnapPuller that caused "internal" compression to fail.
   (siren)
 
+* SOLR-3790: ConcurrentModificationException could be thrown when using hl.fl=*.
+  Fixed in r1231606. (yonik, koji)
+
 
 Other Changes
 ----------------------
