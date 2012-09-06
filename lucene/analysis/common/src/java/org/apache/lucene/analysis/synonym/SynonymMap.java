@@ -227,8 +227,8 @@ public class SynonymMap {
     /**
      * Add a phrase->phrase synonym mapping.
      * Phrases are character sequences where words are
-     * separated with character zero (\u0000).  Empty words
-     * (two \u0000s in a row) are not allowed in the input nor
+     * separated with character zero (U+0000).  Empty words
+     * (two U+0000s in a row) are not allowed in the input nor
      * the output!
      * 
      * @param input input phrase
