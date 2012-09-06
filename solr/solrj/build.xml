@@ -18,11 +18,6 @@
 <project name="solr-solrj" default="default">
   <description>Solrj - Solr Java Client</description>
 
-  <property name="ivy.retrieve.pattern" value="${common-solr.dir}/lib/[artifact]-[revision].[ext]"/>
-
-  <!-- we cannot sync because solr/core and solr/solrj share the same lib/... clean this up! -->
-  <property name="ivy.sync" value="false"/>
-
   <import file="../common-build.xml"/>
 
   <!-- Specialized common-solr.test.classpath, to remove the Solr core test output -->
@@ -35,16 +30,8 @@
   <target name="dist" depends="common-solr.dist">
     <mkdir  dir="${dist}/solrj-lib" />
     <copy todir="${dist}/solrj-lib">
-      <fileset dir="${common-solr.dir}/lib">
-        <include name="commons-codec-*.jar"/>
-        <include name="commons-io-*.jar"/>
-        <include name="httpcore*.jar"/>
-        <include name="httpclient*.jar"/>
-        <include name="httpmime*.jar"/>
-        <include name="*stax-*.jar" />
-        <include name="wstx-*.jar" />
-        <include name="jcl-over-slf4j-*.jar" />
-        <include name="slf4j-api-*.jar" />
+      <fileset dir="${common-solr.dir}/solrj/lib">
+        <include name="*.jar"/>
       </fileset>
     </copy>
   </target>

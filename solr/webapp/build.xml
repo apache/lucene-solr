@@ -47,11 +47,11 @@
     <war destfile="${dist}/apache-solr-${version}${solr.war.suffix}.war"
          webxml="web/WEB-INF/web.xml"
          manifest="${manifest.file}">
-      <lib dir="${common-solr.dir}/lib" excludes="${exclude.from.war},${common.classpath.excludes}">
+      <lib dir="${common-solr.dir}/core/lib" excludes="${exclude.from.war},${common.classpath.excludes}">
         <exclude name="servlet-api*.jar" />
         <exclude name="easymock-*.jar" />
-        <exclude name="junit-*.jar" />
       </lib>
+      <lib dir="${common-solr.dir}/solrj/lib" excludes="${exclude.from.war},${common.classpath.excludes}"/>
       <lib dir="${lucene-libs}" excludes="${exclude.from.war},${common.classpath.excludes}" />
       <lib dir="${dist}" excludes="${exclude.from.war},${common.classpath.excludes}">
         <include name="apache-solr-solrj-${version}.jar" />
