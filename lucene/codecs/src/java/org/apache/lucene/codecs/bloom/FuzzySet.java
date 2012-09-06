@@ -1,4 +1,4 @@
-package org.apache.lucene.util;
+package org.apache.lucene.codecs.bloom;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,7 +20,8 @@ import java.io.IOException;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.util.hash.HashFunction;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * <p>
@@ -45,9 +46,20 @@ import org.apache.lucene.util.hash.HashFunction;
  * @lucene.experimental
  */
 public class FuzzySet {
-  
-  public static final int FUZZY_SERIALIZATION_VERSION=1;
-  
+
+  public static final int VERSION_SPI = 1; // HashFunction used to be loaded through a SPI
+  public static final int VERSION_START = VERSION_SPI;
+  public static final int VERSION_CURRENT = 2;
+
+  public static HashFunction hashFunctionForVersion(int version) {
+    if (version < VERSION_START) {
+      throw new IllegalArgumentException("Version " + version + " is too old, expected at least " + VERSION_START);
+    } else if (version > VERSION_CURRENT) {
+      throw new IllegalArgumentException("Version " + version + " is too new, expected at most " + VERSION_CURRENT);
+    }
+    return MurmurHash2.INSTANCE;
+  }
+
   /**
    * Result from {@link FuzzySet#contains(BytesRef)}:
    * can never return definitively YES (always MAYBE), 
@@ -174,8 +186,7 @@ public class FuzzySet {
    */
   public void serialize(DataOutput out) throws IOException
   {
-      out.writeInt(FUZZY_SERIALIZATION_VERSION);
-      out.writeString(hashFunction.getName());
+      out.writeInt(VERSION_CURRENT);
       out.writeInt(bloomSize);
       long[] bits = filter.getBits();
       out.writeInt(bits.length);
@@ -188,11 +199,10 @@ public class FuzzySet {
   public static FuzzySet deserialize(DataInput in) throws IOException
   {
     int version=in.readInt();
-    if(version!=FUZZY_SERIALIZATION_VERSION)
-    {
-      throw new IOException("Error deserializing: set version is not "+FUZZY_SERIALIZATION_VERSION);
+    if (version == VERSION_SPI) {
+      in.readString();
     }
-    HashFunction hashFunction=HashFunction.forName(in.readString());
+    final HashFunction hashFunction = hashFunctionForVersion(version);
     int bloomSize=in.readInt();
     int numLongs=in.readInt();
     long[]longs=new long[numLongs];

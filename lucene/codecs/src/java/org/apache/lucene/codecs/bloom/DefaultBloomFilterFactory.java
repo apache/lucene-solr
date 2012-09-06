@@ -17,9 +17,6 @@ package org.apache.lucene.codecs.bloom;
  */
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.FuzzySet;
-import org.apache.lucene.util.hash.HashFunction;
-import org.apache.lucene.util.hash.MurmurHash2;
 
 /**
  * Default policy is to allocate a bitset with 10% saturation given a unique term per document.

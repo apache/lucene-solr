@@ -1,4 +1,4 @@
-package org.apache.lucene.util.hash;
+package org.apache.lucene.codecs.bloom;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -32,14 +32,11 @@ import org.apache.lucene.util.BytesRef;
  * </p>
  * @lucene.experimental
  */
-public class MurmurHash2 extends HashFunction{
-  
-  
-  public static final String HASH_NAME="MurmurHash2";
-  
-  public MurmurHash2() {
-    super(HASH_NAME);
-  }
+public final class MurmurHash2 extends HashFunction{
+
+  public static final MurmurHash2 INSTANCE = new MurmurHash2();
+
+  private MurmurHash2() {}
 
   public static int hash(byte[] data, int seed, int offset, int len) {
     int m = 0x5bd1e995;
