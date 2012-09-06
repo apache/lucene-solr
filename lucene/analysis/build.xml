@@ -45,6 +45,7 @@
   <propertyset id="uptodate.and.compiled.properties" dynamic="true">
     <propertyref regex=".*\.uptodate$$"/>
     <propertyref regex=".*\.compiled$$"/>
+    <propertyref regex=".*\.loaded$$"/>
   </propertyset>
 
   <target name="common">
@@ -106,8 +107,12 @@
 
   <target name="build-artifacts-and-tests" depends="default,compile-test" />
 
-  <target name="dist-maven" depends="default,javadocs">
+  <target name="dist-maven">
     <forall-analyzers target="dist-maven"/>
+  </target>  	
+
+  <target name="-validate-maven-dependencies">
+    <forall-analyzers target="-validate-maven-dependencies"/>
   </target>  	
 
   <target name="javadocs">

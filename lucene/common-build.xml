@@ -19,7 +19,8 @@
 
 <project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant" 
                        xmlns:ivy="antlib:org.apache.ivy.ant"
-                       xmlns:junit4="antlib:com.carrotsearch.junit4">
+                       xmlns:junit4="antlib:com.carrotsearch.junit4"
+                       xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
   <description>
     This file is designed for importing into a main build file, and not intended
     for standalone use.
@@ -29,6 +30,7 @@
   <property name="dev-tools.dir" value="${common.dir}/../dev-tools"/>
   <property name="prettify.dir" value="${common.dir}/tools/prettify"/>
   <property name="maven.build.dir" value="${build.dir}/maven"/>
+  <property name="license.dir" value="${common.dir}/licenses"/>
 
   <!-- Give user a chance to override without editing this file
       (and without typing -D each time it compiles it -->
@@ -172,6 +174,7 @@
   <property name="maven.dist.dir" location="${dist.dir}/maven"/>
   <makeurl file="${maven.dist.dir}" property="m2.repository.url" validate="false"/>
   <property name="m2.repository.private.key" value="${user.home}/.ssh/id_dsa"/>
+  <property name="m2.repository.id" value="local"/>
 
   <property name="jflex.home" location="${common.dir}"/>
 
@@ -233,6 +236,7 @@
   <propertyset id="uptodate.and.compiled.properties" dynamic="true">
     <propertyref regex=".*\.uptodate$$"/>
     <propertyref regex=".*\.compiled$$"/>
+    <propertyref regex=".*\.loaded$$"/>
   </propertyset>
 
   <patternset id="lucene.local.src.package.patterns"
@@ -457,6 +461,39 @@
     </sequential>
   </macrodef>
 	
+  <!-- validate maven dependencies -->
+  <macrodef name="m2-validate-dependencies">
+      <attribute name="pom.xml"/>
+      <attribute name="licenseDirectory"/>
+      <element name="excludes" optional="true"/>
+      <element name="additional-filters" optional="true"/>
+    <sequential>
+      <artifact:dependencies filesetId="maven.fileset" useScope="test" type="jar">
+        <artifact:pom file="@{pom.xml}"/>
+        <remoteRepository id="apache.snapshots" url="${m2.repository.url}">
+          <snapshots enabled="true" updatePolicy="always"/>
+          <releases enabled="false"/>
+        </remoteRepository>
+      </artifact:dependencies>
+      <licenses licenseDirectory="@{licenseDirectory}">
+        <restrict>
+          <fileset refid="maven.fileset"/>
+          <rsel:not>
+            <excludes/>
+          </rsel:not>
+        </restrict>
+        <licenseMapper>
+          <chainedmapper>
+            <filtermapper refid="license-mapper-defaults"/>
+            <filtermapper>
+              <additional-filters/>
+            </filtermapper>
+          </chainedmapper>
+        </licenseMapper>
+      </licenses>
+    </sequential>
+  </macrodef>
+
   <macrodef name="build-manifest" description="Builds a manifest file">
   	<attribute name="title"/>
     <attribute name="implementation.title"/>
@@ -1230,6 +1267,24 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         </artifact-attachments>
       </m2-deploy>
     </sequential>
+  </target>
+
+  <target name="-validate-maven-dependencies">
+    <property name="top.level.dir" location="${common.dir}/.."/>
+    <pathconvert property="pom.xml">
+      <mapper>
+        <chainedmapper>
+          <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
+          <globmapper from="*build.xml" to="*pom.xml"/>
+        </chainedmapper>
+      </mapper>
+      <path location="${ant.file}"/>
+    </pathconvert>
+    <m2-validate-dependencies pom.xml="${pom.xml}" licenseDirectory="${license.dir}">
+      <excludes>
+        <rsel:name name="**/lucene-*.jar" handledirsep="true"/>
+      </excludes>
+    </m2-validate-dependencies>
   </target>
 
   <target name="filter-pom-templates" unless="filtered.pom.templates.uptodate">

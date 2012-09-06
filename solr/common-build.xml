@@ -15,7 +15,7 @@
  limitations under the License.
 -->
 
-<project name="common-solr" default="default">
+<project name="common-solr" default="default" xmlns:rsel="antlib:org.apache.tools.ant.types.resources.selectors">
   <description>
     This file is designed for importing into a main build file, and not intended
     for standalone use.
@@ -50,6 +50,7 @@
   <property name="tests.cleanthreads.sysprop" value="perClass"/>
 
   <property name="changes.target.dir" value="${dest}/docs/changes"/>
+  <property name="license.dir" value="${common-solr.dir}/licenses"/>
 
   <import file="${common-solr.dir}/../lucene/module-build.xml"/>
 
@@ -275,6 +276,34 @@
 
   <target name="dist-maven"
           depends="filter-pom-templates, install-maven-tasks, m2-deploy-solr-parent-pom, dist-maven-common"/>
+
+  <target name="-validate-maven-dependencies">
+    <property name="top.level.dir" location="${common.dir}/.."/>
+    <pathconvert property="pom.xml">
+      <mapper>
+        <chainedmapper>
+          <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
+          <globmapper from="*build.xml" to="*pom.xml"/>
+        </chainedmapper>
+      </mapper>
+      <path location="${ant.file}"/>
+    </pathconvert>
+    <m2-validate-dependencies pom.xml="${pom.xml}" licenseDirectory="${license.dir}">
+      <additional-filters>
+        <replaceregex pattern="jetty([^/]+)$" replace="jetty" flags="gi" />
+        <replaceregex pattern="slf4j-([^/]+)$" replace="slf4j" flags="gi" />
+        <replaceregex pattern="(bcmail|bcprov)-([^/]+)$" replace="\1" flags="gi" />
+      </additional-filters>
+      <excludes>
+        <rsel:or>
+          <rsel:name name="**/lucene-*.jar" handledirsep="true"/>
+          <rsel:name name="**/solr-*.jar" handledirsep="true"/>
+          <!-- TODO: figure out what is going on here with servlet-apis -->
+          <rsel:name name="**/*servlet*.jar" handledirsep="true"/>
+        </rsel:or>
+      </excludes>
+    </m2-validate-dependencies>
+  </target>
 
   <!-- Solr core targets -->
   <target name="compile-solr-core" description="Compile Solr core." unless="solr.core.compiled">
