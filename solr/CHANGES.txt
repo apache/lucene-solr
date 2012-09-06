@@ -64,6 +64,8 @@ New Features
 * SOLR-3597: seems like a lot of wasted whitespace at the top of the admin screens
   (steffkes)
 
+* SOLR-3668: DataImport : Specifying Custom Parameters (steffkes)
+
 Optimizations
 ----------------------
 
