@@ -486,13 +486,14 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
       run('%s; ant javadocs' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
       checkJavadocpath('%s/build/docs' % unpackPath)
     else:
+      os.chdir('solr')
       print('    run tests w/ Java 6...')
       run('%s; ant test' % javaExe('1.6'), '%s/test.log' % unpackPath)
 
       # test javadocs
       print('    generate javadocs w/ Java 6...')
       run('%s; ant javadocs' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
-      checkJavadocpath('%s/build/docs' % unpackPath)
+      checkJavadocpath('%s/solr/build/docs' % unpackPath, False)
 
       print('    run tests w/ Java 7...')
       run('%s; ant test' % javaExe('1.7'), '%s/test.log' % unpackPath)
@@ -500,9 +501,8 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
       # test javadocs
       print('    generate javadocs w/ Java 7...')
       run('%s; ant javadocs' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
-      checkJavadocpath('%s/build/docs' % unpackPath)
+      checkJavadocpath('%s/solr/build/docs' % unpackPath, False)
 
-      os.chdir('solr')
       print('    test solr example w/ Java 6...')
       run('%s; ant clean example' % javaExe('1.6'), '%s/antexample.log' % unpackPath)
       testSolrExample(unpackPath, JAVA6_HOME, True)
@@ -620,10 +620,10 @@ def testSolrExample(unpackPath, javaPath, isSrc):
     
   os.chdir('..')
     
-def checkJavadocpath(path):
+def checkJavadocpath(path, failOnMissing=True):
   # check for level='package'
   # we fail here if its screwed up
-  if checkJavaDocs.checkPackageSummaries(path, 'package'):
+  if failOnMissing and checkJavaDocs.checkPackageSummaries(path, 'package'):
     raise RuntimeError('missing javadocs package summaries!')
     
   # now check for level='class'
