@@ -66,7 +66,7 @@ import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
  * "\r" - carriage return
  * "\t" - horizontal tab
  * </pre>
- * Please note that Unicode sequences (e.g. \u0001) are not supported.
+ * Please note that Unicode sequences (e.g. &#92;u0001) are not supported.
  * <h2>Supported attribute names</h2>
  * The following token attributes are supported, and identified with short
  * symbolic names:
