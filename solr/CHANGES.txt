@@ -22,7 +22,10 @@ on how to get started.
 
 ==================  3.6.2  ==================
 
-(No Changes)
+Bug Fixes
+----------------------
+* SOLR-3790: ConcurrentModificationException could be thrown when using hl.fl=*.
+  (yonik, koji)
 
 ==================  3.6.1  ==================
 More information about this release, including any errata related to the 
