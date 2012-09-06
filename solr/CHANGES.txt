@@ -124,6 +124,12 @@ Bug Fixes
 
 * SOLR-3668: DataImport : Specifying Custom Parameters (steffkes)
 
+* SOLR-3793: UnInvertedField faceting cached big terms in the filter
+  cache that ignored deletions, leading to duplicate documents in search
+  later when a filter of the same term was specified.
+  (Günter Hipler, hossman, yonik)
+
+
 Other Changes
 ----------------------
 

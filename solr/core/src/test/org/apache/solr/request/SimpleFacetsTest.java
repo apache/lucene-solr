@@ -83,27 +83,39 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     add_doc("id", "42", 
             "range_facet_f", "35.3", 
             "trait_s", "Tool", "trait_s", "Obnoxious",
-            "name", "Zapp Brannigan");
+            "name", "Zapp Brannigan",
+             "foo_s","A", "foo_s","B"
+    );
     add_doc("id", "43" ,
             "range_facet_f", "28.789", 
-            "title", "Democratic Order of Planets");
+            "title", "Democratic Order of Planets",
+            "foo_s","A", "foo_s","B"
+    );
     add_doc("id", "44", 
             "range_facet_f", "15.97", 
             "trait_s", "Tool",
-            "name", "The Zapper");
+            "name", "The Zapper",
+            "foo_s","A", "foo_s","B", "foo_s","C"
+    );
     add_doc("id", "45", 
             "range_facet_f", "30.0", 
             "trait_s", "Chauvinist",
-            "title", "25 star General");
+            "title", "25 star General",
+            "foo_s","A", "foo_s","B"
+    );
     add_doc("id", "46", 
             "range_facet_f", "20.0", 
             "trait_s", "Obnoxious",
-            "subject", "Defeated the pacifists of the Gandhi nebula");
+            "subject", "Defeated the pacifists of the Gandhi nebula",
+            "foo_s","A", "foo_s","B"
+    );
     add_doc("id", "47", 
             "range_facet_f", "28.62", 
             "trait_s", "Pig",
             "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!",
-            "zerolen_s","");   
+            "zerolen_s","",
+            "foo_s","A", "foo_s","B", "foo_s","C"
+    );
   }
 
   static void indexSimpleGroupedFacetCounts() {
@@ -113,6 +125,28 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     add_doc("id", "2003", "hotel_s1", "b", "airport_s1", "ams", "duration_i1", "5");
     add_doc("id", "2004", "hotel_s1", "b", "airport_s1", "ams", "duration_i1", "5");
   }
+
+  @Test
+  public void testCachingBigTerms() throws Exception {
+    assertQ( req("indent","true", "q", "id:[42 TO 47]",
+            "facet", "true",
+            "facet.field", "foo_s"  // big terms should cause foo_s:A to be cached
+             ),
+        "*[count(//doc)=6]"
+    );
+
+    // now use the cached term as a filter to make sure deleted docs are accounted for
+    assertQ( req("indent","true", "fl","id", "q", "foo_s:B",
+        "facet", "true",
+        "facet.field", "foo_s",
+        "fq","foo_s:A"
+    ),
+        "*[count(//doc)=6]"
+    );
+
+
+  }
+
 
   @Test
   public void testSimpleGroupedQueryRangeFacets() throws Exception {
