@@ -277,6 +277,9 @@
   <target name="dist-maven"
           depends="filter-pom-templates, install-maven-tasks, m2-deploy-solr-parent-pom, dist-maven-common"/>
 
+  <target name="dist-maven-src-java"
+          depends="filter-pom-templates, install-maven-tasks, m2-deploy-solr-parent-pom, dist-maven-common-src-java"/>
+
   <target name="-validate-maven-dependencies">
     <property name="top.level.dir" location="${common.dir}/.."/>
     <pathconvert property="pom.xml">

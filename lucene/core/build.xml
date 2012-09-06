@@ -56,6 +56,8 @@
     </sequential>
   </target>
 
+  <target name="dist-maven" depends="dist-maven-src-java"/>
+
   <macrodef name="createLevAutomaton">
   	<attribute name="n"/>
   	<sequential>

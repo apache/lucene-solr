@@ -55,4 +55,6 @@
       <fileset dir="${javadoc.dir}"/>
     </copy>
   </target>
+
+  <target name="dist-maven" depends="dist-maven-src-java"/>
 </project>
