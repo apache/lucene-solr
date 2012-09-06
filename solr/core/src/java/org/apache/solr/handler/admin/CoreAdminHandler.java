@@ -442,9 +442,13 @@ public class CoreAdminHandler extends RequestHandlerBase {
    * @throws SolrException in case of a configuration error.
    */
   protected boolean handleCreateAction(SolrQueryRequest req, SolrQueryResponse rsp) throws SolrException {
+    SolrParams params = req.getParams();
+    String name = params.get(CoreAdminParams.NAME);
+    if (null == name || "".equals(name)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                              "Core name is mandatory to CREATE a SolrCore");
+    }
     try {
-      SolrParams params = req.getParams();
-      String name = params.get(CoreAdminParams.NAME);
       
       //for now, do not allow creating new core with same name when in cloud mode
       //XXX perhaps it should just be unregistered from cloud before readding it?, 
@@ -518,7 +522,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
       return coreContainer.isPersistent();
     } catch (Exception ex) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Error executing default implementation of CREATE", ex);
+                              "Error CREATEing SolrCore '" + name + "': " +
+                              ex.getMessage(), ex);
     }
   }
 

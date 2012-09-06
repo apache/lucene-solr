@@ -46,6 +46,12 @@
   display: none;
 }
 
+#content #cores .actions form .error
+{
+  color: #800;
+  display: none;
+}
+
 #content #cores .actions form p
 {
   padding-bottom: 8px;
@@ -62,7 +68,8 @@
 
 #content #cores .actions form input,
 #content #cores .actions form select,
-#content #cores .actions form .buttons
+#content #cores .actions form .buttons,
+#content #cores .actions form .error span
 {
   float: right;
   width: 73%;

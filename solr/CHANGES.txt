@@ -125,6 +125,7 @@ Bug Fixes
   later when a filter of the same term was specified.
   (Günter Hipler, hossman, yonik)
 
+* SOLR-3679: Core Admin UI gives no feedback if "Add Core" fails (steffkes, hossman)
 
 Other Changes
 ----------------------

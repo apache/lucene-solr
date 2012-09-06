@@ -36,19 +36,19 @@ limitations under the License.
           <input type="hidden" name="action" value="CREATE">
 
           <p class="clearfix"><label for="add_name">name:</label>
-          <input type="text" name="name" id="add_name" placeholder="new_core"></p>
+          <input type="text" name="name" id="add_name" value="new_core"></p>
 
           <p class="clearfix"><label for="add_instanceDir">instanceDir:</label>
-          <input type="text" name="instanceDir" id="add_instanceDir" placeholder="new_core"></p>
+          <input type="text" name="instanceDir" id="add_instanceDir" value="new_core"></p>
 
           <p class="clearfix"><label for="add_dataDir">dataDir:</label>
-          <input type="text" name="dataDir" id="dataDir" placeholder="data"></p>
+          <input type="text" name="dataDir" id="dataDir" value="data"></p>
 
           <p class="clearfix"><label for="add_config">config:</label>
-          <input type="text" name="config" id="add_config" placeholder="solrconfig.xml"></p>
+          <input type="text" name="config" id="add_config" value="solrconfig.xml"></p>
 
           <p class="clearfix"><label for="add_schema">schema:</label>
-          <input type="text" name="schema" id="add_schema" placeholder="schema.xml"></p>
+          <input type="text" name="schema" id="add_schema" value="schema.xml"></p>
 
           <div class="cloud">
 
@@ -59,6 +59,12 @@ limitations under the License.
             <input type="text" name="shard" id="shard"></p>
 
           </div>
+
+          <p class="clearfix error">
+
+            <span></span>
+
+          </p>
 
           <p class="clearfix buttons">
             <button type="submit" class="submit"><span>Add Core</span></button>
