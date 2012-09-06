@@ -365,6 +365,12 @@ sammy.get
                       },
                       error : function( xhr, text_status, error_thrown )
                       {
+                        var response = null;
+                        eval( 'response = ' + xhr.responseText + ';' );
+
+                        var error_elem = $( '.error', div_action.filter( ':visible' ) );
+                        error_elem.show();
+                        $( 'span', error_elem ).text( response.error.msg );
                       },
                       complete : function()
                       {
