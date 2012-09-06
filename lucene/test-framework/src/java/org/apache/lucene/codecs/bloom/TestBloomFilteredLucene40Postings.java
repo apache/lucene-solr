@@ -22,13 +22,10 @@ import java.io.IOException;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.bloom.BloomFilteringPostingsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.FuzzySet;
-import org.apache.lucene.util.hash.MurmurHash2;
 
 /**
  * A class used for testing {@link BloomFilteringPostingsFormat} with a concrete
@@ -46,7 +43,7 @@ public class TestBloomFilteredLucene40Postings extends PostingsFormat {
   static class LowMemoryBloomFactory extends BloomFilterFactory {
     @Override
     public FuzzySet getSetForField(SegmentWriteState state,FieldInfo info) {
-      return FuzzySet.createSetBasedOnMaxMemory(1024, new MurmurHash2());
+      return FuzzySet.createSetBasedOnMaxMemory(1024);
     }
     
     @Override
