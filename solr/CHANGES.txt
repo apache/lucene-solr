@@ -137,6 +137,8 @@ Bug Fixes
 * SOLR-3699: Fixed some Directory leaks when there were errors during SolrCore 
   or SolrIndexWriter initialization. (hossman)
 
+* SOLR-3518: Include final 'hits' in log information when aggregating a 
+  distibuted request (Markus Jelsma via hossman)
 
 Other Changes
 ----------------------
