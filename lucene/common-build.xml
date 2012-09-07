@@ -470,8 +470,9 @@
     <sequential>
       <artifact:dependencies filesetId="maven.fileset" useScope="test" type="jar">
         <artifact:pom file="@{pom.xml}"/>
-        <remoteRepository id="apache.snapshots" url="${m2.repository.url}">
-          <snapshots enabled="true" updatePolicy="always"/>
+        <!-- disable completely, so this has no chance to download any updates from anywhere: -->
+        <remoteRepository id="apache.snapshots" url="foobar://disabled/">
+          <snapshots enabled="false"/>
           <releases enabled="false"/>
         </remoteRepository>
       </artifact:dependencies>
