@@ -1312,6 +1312,13 @@ New features
 * LUCENE-4108: add replaceTaxonomy to DirectoryTaxonomyWriter, which replaces
   the taxonomy in place with the given one. (Shai Erera)
 
+* LUCENE-3030: new BlockTree terms dictionary (used by the default
+  Lucene40 postings format) uses less RAM (for the terms index) and
+  disk space (for all terms and metadata) and gives sizable
+  performance gains for terms dictionary intensive operations like
+  FuzzyQuery, direct spell checker and primary-key lookup (Mike
+  McCandless).
+
 Optimizations
 
 * LUCENE-2588: Don't store unnecessary suffixes when writing the terms
