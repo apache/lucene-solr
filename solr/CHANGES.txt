@@ -134,6 +134,10 @@ Bug Fixes
 * SOLR-3795: Fixed LukeRequestHandler response to correctly return field name 
   strings in copyDests and copySources arrays (hossman)
 
+* SOLR-3699: Fixed some Directory leaks when there were errors during SolrCore 
+  or SolrIndexWriter initialization. (hossman)
+
+
 Other Changes
 ----------------------
 

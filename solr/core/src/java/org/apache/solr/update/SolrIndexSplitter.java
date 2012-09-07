@@ -100,9 +100,9 @@ public class SolrIndexSplitter {
       } else {
         SolrCore core = searcher.getCore();
         String path = paths.get(partitionNumber);
-        iw = new SolrIndexWriter("SplittingIndexWriter"+partitionNumber + " " + ranges.get(partitionNumber), path,
-                                 core.getDirectoryFactory(), true, core.getSchema(),
-                                 core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec(), true);
+        iw = SolrIndexWriter.create("SplittingIndexWriter"+partitionNumber + " " + ranges.get(partitionNumber), path,
+                                    core.getDirectoryFactory(), true, core.getSchema(),
+                                    core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec(), true);
       }
 
       try {

@@ -188,7 +188,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
   
   protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name, boolean forceNewDirectory) throws IOException {
-    return new SolrIndexWriter(name, core.getNewIndexDir(),
+    return SolrIndexWriter.create(name, core.getNewIndexDir(),
         core.getDirectoryFactory(), false, core.getSchema(),
         core.getSolrConfig().indexConfig, core.getDeletionPolicy(), core.getCodec(), forceNewDirectory);
   }

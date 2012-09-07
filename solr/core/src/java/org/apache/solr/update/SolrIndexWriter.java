@@ -54,20 +54,38 @@ public class SolrIndexWriter extends IndexWriter {
   String name;
   private DirectoryFactory directoryFactory;
 
-  public SolrIndexWriter(String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec, boolean forceNewDirectory) throws IOException {
-    super(
-        directoryFactory.get(path, config.lockType, forceNewDirectory),
-        config.toIndexWriterConfig(schema).
-            setOpenMode(create ? IndexWriterConfig.OpenMode.CREATE : IndexWriterConfig.OpenMode.APPEND).
-            setIndexDeletionPolicy(delPolicy).setCodec(codec).setInfoStream(toInfoStream(config))
-    );
+  public static SolrIndexWriter create(String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec, boolean forceNewDirectory) throws IOException {
+
+    SolrIndexWriter w = null;
+    final Directory d = directoryFactory.get(path, config.lockType, forceNewDirectory);
+    try {
+      w = new SolrIndexWriter(name, path, d, create, schema, 
+                              config, delPolicy, codec, forceNewDirectory);
+      w.setDirectoryFactory(directoryFactory);
+      return w;
+    } finally {
+      if (null == w && null != d) { 
+        directoryFactory.doneWithDirectory(d);
+        directoryFactory.release(d);
+      }
+    }
+  }
+
+  private SolrIndexWriter(String name, String path, Directory directory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec, boolean forceNewDirectory) throws IOException {
+    super(directory,
+          config.toIndexWriterConfig(schema).
+          setOpenMode(create ? IndexWriterConfig.OpenMode.CREATE : IndexWriterConfig.OpenMode.APPEND).
+          setIndexDeletionPolicy(delPolicy).setCodec(codec).setInfoStream(toInfoStream(config))
+          );
     log.debug("Opened Writer " + name);
     this.name = name;
-
-    this.directoryFactory = directoryFactory;
     numOpens.incrementAndGet();
   }
   
+  private void setDirectoryFactory(DirectoryFactory factory) {
+    this.directoryFactory = factory;
+  }
+
   private static InfoStream toInfoStream(SolrIndexConfig config) throws IOException {
     String infoStreamFile = config.infoStreamFile;
     if (infoStreamFile != null) {

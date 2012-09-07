@@ -93,6 +93,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     // try to add a collection with a path that doesn't exist
     final CoreDescriptor bogus = new CoreDescriptor(cc, "bogus", "bogus_path");
     try {
+      ignoreException(Pattern.quote("bogus_path"));
       cc.create(bogus);
       fail("bogus inst dir failed to trigger exception from create");
     } catch (Exception e) {
@@ -123,12 +124,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
   }
   
   public void testFlowBadFromStart() throws Exception {
-    // TODO: even if we close all solr cores in the container, there is still a leaked dir?
-    // maybe from one that didnt load right?
-    
-    // TODO: make SolrCore closeable since its has close()
-    System.setProperty("solr.directoryFactory", "org.apache.solr.core.SimpleFSDirectoryFactory");
-    
+
     // reused state
     Map<String,Exception> failures = null;
     Collection<String> cores = null;
@@ -198,6 +194,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     // try to add a collection with a path that doesn't exist
     final CoreDescriptor bogus = new CoreDescriptor(cc, "bogus", "bogus_path");
     try {
+      ignoreException(Pattern.quote("bogus_path"));
       cc.create(bogus);
       fail("bogus inst dir failed to trigger exception from create");
     } catch (Exception e) {
@@ -254,6 +251,7 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
        IOUtils.CHARSET_UTF_8.toString());
 
     try {
+      ignoreException(Pattern.quote("SAX"));
       cc.reload("col_bad");
       fail("corrupt solrconfig.xml failed to trigger exception from reload");
     } catch (SAXParseException e) {
