@@ -20,11 +20,19 @@
 
   <import file="../common-build.xml"/>
 
+  <!-- Specialized compile classpath: to only depend on what solrj should depend on (e.g. not lucene) -->
+  <path id="classpath">
+    <fileset dir="${common-solr.dir}/solrj/lib">
+      <include name="*.jar"/>
+    </fileset>
+  </path>
+
   <!-- Specialized common-solr.test.classpath, to remove the Solr core test output -->
   <path id="test.classpath">
     <pathelement path="${common-solr.dir}/build/solr-test-framework/classes/java"/>
   	<pathelement path="${tests.userdir}"/>
   	<path refid="test.base.classpath"/>
+        <path refid="solr.base.classpath"/>
   </path>
 
   <target name="dist" depends="common-solr.dist">
