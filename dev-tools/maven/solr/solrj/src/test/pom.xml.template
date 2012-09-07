@@ -96,15 +96,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-install-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>default-install</id>
-            <!-- Skipping by binding the default execution ID to a non-existent phase only works in Maven 3, not 2. -->
-            <phase>none</phase>
-          </execution>
-        </executions>
         <configuration>
-          <!-- Skipping enabled in maven-install-plugin v2.4 -->
           <skip>true</skip>
         </configuration>
       </plugin>
