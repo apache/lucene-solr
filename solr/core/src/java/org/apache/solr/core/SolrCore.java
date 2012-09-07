@@ -445,7 +445,7 @@ public final class SolrCore implements SolrInfoMBean {
         log.warn(logid+"Solr index directory '" + new File(indexDir) + "' doesn't exist."
                 + " Creating new index...");
 
-        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, schema, solrConfig.indexConfig, solrDelPolicy, codec, false);
+        SolrIndexWriter writer = SolrIndexWriter.create("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, schema, solrConfig.indexConfig, solrDelPolicy, codec, false);
         writer.close();
       }
 
@@ -897,7 +897,15 @@ public final class SolrCore implements SolrInfoMBean {
     }
 
     try {
-      if (updateHandler != null) updateHandler.close();
+      if (null != updateHandler) {
+        updateHandler.close();
+      } else {
+        if (null != directoryFactory) {
+          // :HACK: normally we rely on updateHandler to do this, 
+          // but what if updateHandler failed to init?
+          directoryFactory.close();
+        }
+      }
     } catch (Throwable e) {
       SolrException.log(log,e);
     }

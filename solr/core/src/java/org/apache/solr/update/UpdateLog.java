@@ -215,6 +215,7 @@ public class UpdateLog implements PluginInfoInitialized {
     try {
       versionInfo = new VersionInfo(this, 256);
     } catch (SolrException e) {
+      log.error("Unable to use updateLog: " + e.getMessage(), e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                               "Unable to use updateLog: " + e.getMessage(), e);
     }

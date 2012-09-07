@@ -47,6 +47,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     int refCnt = 1;
     public String path;
     public boolean doneWithDir = false;
+    public String toString() {
+      return "CachedDir<<" + directory.toString() + ";refCount=" + refCnt + ";path=" + path + ";done=" + doneWithDir + ">>";
+    }
   }
   
   private static Logger log = LoggerFactory
@@ -123,6 +126,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         throw new IllegalArgumentException("Unknown directory: " + directory
             + " " + byDirectoryCache);
       }
+
+      log.debug("Closing: {}", cacheValue);
+
       cacheValue.refCnt--;
       if (cacheValue.refCnt == 0 && cacheValue.doneWithDir) {
         log.info("Closing directory:" + cacheValue.path);

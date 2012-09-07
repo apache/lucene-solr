@@ -906,6 +906,9 @@ public class CoreContainer
       failure = e4;
       throw e4;
     } finally {
+      if (null != failure) {
+        log.error("Unable to create core: " + name, failure);
+      }
       synchronized (coreInitFailures) {
         // remove first so insertion order is updated and newest is last
         coreInitFailures.remove(name);
@@ -1066,6 +1069,9 @@ public class CoreContainer
       failure = e4;
       throw e4;
     } finally {
+      if (null != failure) {
+        log.error("Unable to reload core: " + name, failure);
+      }
       synchronized (coreInitFailures) {
         // remove first so insertion order is updated and newest is last
         coreInitFailures.remove(name);

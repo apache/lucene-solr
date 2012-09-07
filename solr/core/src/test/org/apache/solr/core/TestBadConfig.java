@@ -29,11 +29,6 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
 
   public void testUpdateLogButNoVersionField() throws Exception {
     
-    // :TODO: neccessary until SOLR-3699 is fixed
-    System.setProperty("solr.directoryFactory", 
-                       "org.apache.solr.core.SimpleFSDirectoryFactory");
-
-
     System.setProperty("enable.update.log", "true");
     try {
       assertConfigs("solrconfig.xml", "schema12.xml", "_version_");
@@ -62,6 +57,11 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("javascript"));
     assertConfigs("bad-solrconfig-invalid-scriptfile.xml",
                   "schema.xml","currency.xml");
+  }
+
+  public void testBogusMergePolicy() throws Exception {
+    assertConfigs("bad-mp-solrconfig.xml", "schema-minimal.xml",
+                  "DummyMergePolicy");
   }
 
 }
