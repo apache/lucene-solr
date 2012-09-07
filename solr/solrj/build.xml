@@ -22,9 +22,7 @@
 
   <!-- Specialized compile classpath: to only depend on what solrj should depend on (e.g. not lucene) -->
   <path id="classpath">
-    <fileset dir="${common-solr.dir}/solrj/lib">
-      <include name="*.jar"/>
-    </fileset>
+    <fileset dir="${common-solr.dir}/solrj/lib" excludes="${common.classpath.excludes}"/>
   </path>
 
   <!-- Specialized common-solr.test.classpath, to remove the Solr core test output -->
