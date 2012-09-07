@@ -1269,6 +1269,32 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </target>
 
+  <target name="dist-maven-src-java"
+          depends="filter-pom-templates, install-maven-tasks, m2-deploy-lucene-parent-pom, dist-maven-common-src-java"/>
+  <target name="dist-maven-common-src-java"
+          depends="jar-core, jar-src, javadocs, install-maven-tasks, filter-pom-templates">
+    <sequential>
+      <property name="top.level.dir" location="${common.dir}/.."/>
+      <pathconvert property="pom.xml">
+        <mapper>
+          <chainedmapper>
+            <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
+            <globmapper from="*build.xml" to="*/src/java/pom.xml"/>
+          </chainedmapper>
+        </mapper>
+        <path location="${ant.file}"/>
+      </pathconvert>
+      <m2-deploy pom.xml="${pom.xml}">
+        <artifact-attachments>
+          <attach file="${build.dir}/${final.name}-src.jar"
+                  classifier="sources"/>
+          <attach file="${build.dir}/${final.name}-javadoc.jar"
+                  classifier="javadoc"/>
+        </artifact-attachments>
+      </m2-deploy>
+    </sequential>
+  </target>
+
   <target name="-validate-maven-dependencies">
     <property name="top.level.dir" location="${common.dir}/.."/>
     <pathconvert property="pom.xml">

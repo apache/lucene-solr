@@ -21,20 +21,46 @@
   -->
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.apache.solr</groupId>
-    <artifactId>solr-parent</artifactId>
+    <groupId>org.apache.lucene</groupId>
+    <artifactId>lucene-parent</artifactId>
     <version>@version@</version>
-    <relativePath>../pom.xml</relativePath>
+    <relativePath>../../../pom.xml</relativePath>
   </parent>
-  <groupId>org.apache.solr</groupId>
-  <artifactId>solr-solrj-aggregator</artifactId>
-  <packaging>pom</packaging>
-  <name>Apache Solr Solrj aggregator POM</name>
-  <modules>
-    <module>src/java</module>
-    <module>src/test</module>
-  </modules>
+  <groupId>org.apache.lucene</groupId>
+  <artifactId>lucene-codecs-tests</artifactId>
+  <name>Lucene codecs tests</name>
+  <packaging>jar</packaging>
+  <properties>
+    <module-directory>lucene/codecs</module-directory>
+    <top-level>../../../../..</top-level>
+    <module-path>${top-level}/${module-directory}/src/test</module-path>
+  </properties>
+  <dependencies>
+    <dependency>
+      <!-- lucene-test-framework dependency must be declared before lucene-core -->
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-test-framework</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-codecs</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
   <build>
+    <sourceDirectory/>
+    <testSourceDirectory>${module-path}</testSourceDirectory>
+    <testResources>
+      <testResource>
+        <directory>${project.build.testSourceDirectory}</directory>
+        <excludes>
+          <exclude>**/*.java</exclude>
+        </excludes>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

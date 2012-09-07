@@ -9,9 +9,9 @@
     to you under the Apache License, Version 2.0 (the
     "License"); you may not use this file except in compliance
     with the License.  You may obtain a copy of the License at
-    
+
     http://www.apache.org/licenses/LICENSE-2.0
-    
+
     Unless required by applicable law or agreed to in writing,
     software distributed under the License is distributed on an
     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -24,17 +24,19 @@
     <groupId>org.apache.lucene</groupId>
     <artifactId>lucene-parent</artifactId>
     <version>@version@</version>
-    <relativePath>../pom.xml</relativePath>
+    <relativePath>../../../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-test-framework</artifactId>
+  <artifactId>lucene-codecs</artifactId>
   <packaging>jar</packaging>
-  <name>Lucene Test Framework</name>
-  <description>Apache Lucene Java Test Framework</description>
+  <name>Lucene codecs</name>
+  <description>
+    Codecs and postings formats for Apache Lucene.
+  </description>
   <properties>
-    <module-directory>lucene/test-framework</module-directory>
-    <top-level>../../..</top-level>
-    <module-path>${top-level}/${module-directory}</module-path>
+    <module-directory>lucene/codecs</module-directory>
+    <top-level>../../../../..</top-level>
+    <module-path>${top-level}/${module-directory}/src/java</module-path>
   </properties>
   <scm>
     <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
@@ -47,54 +49,30 @@
       <artifactId>lucene-core</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lucene-codecs</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.carrotsearch.randomizedtesting</groupId>
-      <artifactId>randomizedtesting-runner</artifactId>
-    </dependency>
   </dependencies>
   <build>
-    <sourceDirectory>${module-path}/src/java</sourceDirectory>
+    <sourceDirectory>${module-path}</sourceDirectory>
     <resources>
       <resource>
-        <directory>${module-path}/src/resources</directory>
-      </resource>
-      <resource>
-        <directory>${project.build.sourceDirectory}</directory>
-        <excludes>
-          <exclude>**/*.java</exclude>
-        </excludes>
+        <directory>${module-path}/../resources</directory>
       </resource>
     </resources>
+    <testSourceDirectory/>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <skip>true</skip>
+          <skip>true</skip> <!-- Tests are run from lucene-codecs-tests module -->
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <skip>true</skip> <!-- This skips test compilation - tests are run from lucene-codecs-tests module -->
         </configuration>
       </plugin>
     </plugins>
   </build>
-  <repositories>
-    <repository>
-      <id>sonatype.releases</id>
-      <name>Sonatype Releases Repository</name>
-      <url>http://oss.sonatype.org/content/repositories/releases</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <updatePolicy>never</updatePolicy>
-      </snapshots>
-    </repository>
-  </repositories>
 </project>
