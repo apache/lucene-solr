@@ -25,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.store.Directory.IndexInputSlicer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -75,11 +76,48 @@ public class TestMultiMMap extends LuceneTestCase {
       // pass
     }
   }
+  
+  public void testCloneSliceSafety() throws Exception {
+    MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testCloneSliceSafety"));
+    IndexOutput io = mmapDir.createOutput("bytes", newIOContext(random()));
+    io.writeInt(1);
+    io.writeInt(2);
+    io.close();
+    IndexInputSlicer slicer = mmapDir.createSlicer("bytes", newIOContext(random()));
+    IndexInput one = slicer.openSlice("first int", 0, 4);
+    IndexInput two = slicer.openSlice("second int", 4, 4);
+    IndexInput three = one.clone(); // clone of clone
+    IndexInput four = two.clone(); // clone of clone
+    slicer.close();
+    try {
+      one.readInt();
+      fail("Must throw AlreadyClosedException");
+    } catch (AlreadyClosedException ignore) {
+      // pass
+    }
+    try {
+      two.readInt();
+      fail("Must throw AlreadyClosedException");
+    } catch (AlreadyClosedException ignore) {
+      // pass
+    }
+    try {
+      three.readInt();
+      fail("Must throw AlreadyClosedExveption");
+    } catch (AlreadyClosedException ignore) {
+      // pass
+    }
+    try {
+      four.readInt();
+      fail("Must throw AlreadyClosedExveption");
+    } catch (AlreadyClosedException ignore) {
+      // pass
+    }
+  }
 
   public void testSeekZero() throws Exception {
     for (int i = 0; i < 31; i++) {
-      MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testSeekZero"));
-      mmapDir.setMaxChunkSize(1<<i);
+      MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testSeekZero"), null, 1<<i);
       IndexOutput io = mmapDir.createOutput("zeroBytes", newIOContext(random()));
       io.close();
       IndexInput ii = mmapDir.openInput("zeroBytes", newIOContext(random()));
@@ -89,10 +127,23 @@ public class TestMultiMMap extends LuceneTestCase {
     }
   }
   
+  public void testSeekSliceZero() throws Exception {
+    for (int i = 0; i < 31; i++) {
+      MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testSeekSliceZero"), null, 1<<i);
+      IndexOutput io = mmapDir.createOutput("zeroBytes", newIOContext(random()));
+      io.close();
+      IndexInputSlicer slicer = mmapDir.createSlicer("zeroBytes", newIOContext(random()));
+      IndexInput ii = slicer.openSlice("zero-length slice", 0, 0);
+      ii.seek(0L);
+      ii.close();
+      slicer.close();
+      mmapDir.close();
+    }
+  }
+  
   public void testSeekEnd() throws Exception {
     for (int i = 0; i < 17; i++) {
-      MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testSeekEnd"));
-      mmapDir.setMaxChunkSize(1<<i);
+      MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testSeekEnd"), null, 1<<i);
       IndexOutput io = mmapDir.createOutput("bytes", newIOContext(random()));
       byte bytes[] = new byte[1<<i];
       random().nextBytes(bytes);
@@ -108,10 +159,28 @@ public class TestMultiMMap extends LuceneTestCase {
     }
   }
   
+  public void testSeekSliceEnd() throws Exception {
+    for (int i = 0; i < 17; i++) {
+      MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testSeekSliceEnd"), null, 1<<i);
+      IndexOutput io = mmapDir.createOutput("bytes", newIOContext(random()));
+      byte bytes[] = new byte[1<<i];
+      random().nextBytes(bytes);
+      io.writeBytes(bytes, bytes.length);
+      io.close();
+      IndexInputSlicer slicer = mmapDir.createSlicer("bytes", newIOContext(random()));
+      IndexInput ii = slicer.openSlice("full slice", 0, bytes.length);
+      byte actual[] = new byte[1<<i];
+      ii.readBytes(actual, 0, actual.length);
+      assertEquals(new BytesRef(bytes), new BytesRef(actual));
+      ii.seek(1<<i);
+      ii.close();
+      mmapDir.close();
+    }
+  }
+  
   public void testSeeking() throws Exception {
     for (int i = 0; i < 10; i++) {
-      MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testSeeking"));
-      mmapDir.setMaxChunkSize(1<<i);
+      MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testSeeking"), null, 1<<i);
       IndexOutput io = mmapDir.createOutput("bytes", newIOContext(random()));
       byte bytes[] = new byte[1<<(i+1)]; // make sure we switch buffers
       random().nextBytes(bytes);
@@ -134,6 +203,36 @@ public class TestMultiMMap extends LuceneTestCase {
     }
   }
   
+  // note instead of seeking to offset and reading length, this opens slices at the 
+  // the various offset+length and just does readBytes.
+  public void testSlicedSeeking() throws Exception {
+    for (int i = 0; i < 10; i++) {
+      MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testSlicedSeeking"), null, 1<<i);
+      IndexOutput io = mmapDir.createOutput("bytes", newIOContext(random()));
+      byte bytes[] = new byte[1<<(i+1)]; // make sure we switch buffers
+      random().nextBytes(bytes);
+      io.writeBytes(bytes, bytes.length);
+      io.close();
+      IndexInput ii = mmapDir.openInput("bytes", newIOContext(random()));
+      byte actual[] = new byte[1<<(i+1)]; // first read all bytes
+      ii.readBytes(actual, 0, actual.length);
+      ii.close();
+      assertEquals(new BytesRef(bytes), new BytesRef(actual));
+      IndexInputSlicer slicer = mmapDir.createSlicer("bytes", newIOContext(random()));
+      for (int sliceStart = 0; sliceStart < bytes.length; sliceStart++) {
+        for (int sliceLength = 0; sliceLength < bytes.length - sliceStart; sliceLength++) {
+          byte slice[] = new byte[sliceLength];
+          IndexInput input = slicer.openSlice("bytesSlice", sliceStart, slice.length);
+          input.readBytes(slice, 0, slice.length);
+          input.close();
+          assertEquals(new BytesRef(bytes, sliceStart, sliceLength), new BytesRef(slice));
+        }
+      }
+      slicer.close();
+      mmapDir.close();
+    }
+  }
+  
   public void testRandomChunkSizes() throws Exception {
     int num = atLeast(10);
     for (int i = 0; i < num; i++)
@@ -144,8 +243,7 @@ public class TestMultiMMap extends LuceneTestCase {
     File path = _TestUtil.createTempFile("mmap" + chunkSize, "tmp", workDir);
     path.delete();
     path.mkdirs();
-    MMapDirectory mmapDir = new MMapDirectory(path);
-    mmapDir.setMaxChunkSize(chunkSize);
+    MMapDirectory mmapDir = new MMapDirectory(path, null, chunkSize);
     // we will map a lot, try to turn on the unmap hack
     if (MMapDirectory.UNMAP_SUPPORTED)
       mmapDir.setUseUnmap(true);

@@ -790,14 +790,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         addFileHandle(ii, name, Handle.Input);
         return ii;
       }
-
-      @Override
-      public IndexInput openFullSlice() throws IOException {
-        maybeYield();
-        IndexInput ii = new MockIndexInputWrapper(MockDirectoryWrapper.this, name, delegateHandle.openFullSlice());
-        addFileHandle(ii, name, Handle.Input);
-        return ii;
-      }
       
     };
     addFileHandle(handle, name, Handle.Slice);

@@ -229,10 +229,6 @@ public abstract class Directory implements Closeable {
       public void close() throws IOException {
         base.close();
       }
-      @Override
-      public IndexInput openFullSlice() {
-        return base.clone();
-      }
     };
   }
 
@@ -256,12 +252,6 @@ public abstract class Directory implements Closeable {
      * Returns an {@link IndexInput} slice starting at the given offset with the given length.
      */
     public abstract IndexInput openSlice(String sliceDescription, long offset, long length) throws IOException;
-
-    /**
-     * Returns an {@link IndexInput} slice starting at offset <i>0</i> with a
-     * length equal to the length of the underlying file
-     */
-    public abstract IndexInput openFullSlice() throws IOException;
   }
   
   /** Implementation of an IndexInput that reads from a portion of

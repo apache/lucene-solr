@@ -22,7 +22,6 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.LiveDocsFormat; // javadocs
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.store.DataOutput; // javadocs
 import org.apache.lucene.util.IOUtils;
 
@@ -102,7 +101,7 @@ public final class CompoundFileDirectory extends Directory {
       boolean success = false;
       handle = directory.createSlicer(fileName, context);
       try {
-        this.entries = readEntries(handle, directory, fileName);
+        this.entries = readEntries(directory, fileName);
         success = true;
       } finally {
         if (!success) {
@@ -121,44 +120,32 @@ public final class CompoundFileDirectory extends Directory {
   }
 
   /** Helper method that reads CFS entries from an input stream */
-  private static final Map<String, FileEntry> readEntries(
-      IndexInputSlicer handle, Directory dir, String name) throws IOException {
+  private static final Map<String, FileEntry> readEntries(Directory dir, String name) throws IOException {
     IOException priorE = null;
-    IndexInput stream = null, entriesStream = null;
+    IndexInput entriesStream = null;
     try {
-      stream = handle.openFullSlice();
-      final int firstInt = stream.readInt();
-      // NOTE: as long as we want to throw indexformattooold (vs corruptindexexception), we need
-      // to read the magic ourselves. See SegmentInfos which also has this.
-      if (firstInt == CodecUtil.CODEC_MAGIC) {
-        CodecUtil.checkHeaderNoMagic(stream, CompoundFileWriter.DATA_CODEC, 
-            CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
-        final String entriesFileName = IndexFileNames.segmentFileName(
-                                              IndexFileNames.stripExtension(name), "",
-                                              IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
-        entriesStream = dir.openInput(entriesFileName, IOContext.READONCE);
-        CodecUtil.checkHeader(entriesStream, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
-        final int numEntries = entriesStream.readVInt();
-        final Map<String, FileEntry> mapping = new HashMap<String,FileEntry>(numEntries);
-        for (int i = 0; i < numEntries; i++) {
-          final FileEntry fileEntry = new FileEntry();
-          final String id = entriesStream.readString();
-          FileEntry previous = mapping.put(id, fileEntry);
-          if (previous != null) {
-            throw new CorruptIndexException("Duplicate cfs entry id=" + id + " in CFS: " + entriesStream);
-          }
-          fileEntry.offset = entriesStream.readLong();
-          fileEntry.length = entriesStream.readLong();
+      final String entriesFileName = IndexFileNames.segmentFileName(
+                                            IndexFileNames.stripExtension(name), "",
+                                             IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION);
+      entriesStream = dir.openInput(entriesFileName, IOContext.READONCE);
+      CodecUtil.checkHeader(entriesStream, CompoundFileWriter.ENTRY_CODEC, CompoundFileWriter.VERSION_START, CompoundFileWriter.VERSION_START);
+      final int numEntries = entriesStream.readVInt();
+      final Map<String, FileEntry> mapping = new HashMap<String,FileEntry>(numEntries);
+      for (int i = 0; i < numEntries; i++) {
+        final FileEntry fileEntry = new FileEntry();
+        final String id = entriesStream.readString();
+        FileEntry previous = mapping.put(id, fileEntry);
+        if (previous != null) {
+          throw new CorruptIndexException("Duplicate cfs entry id=" + id + " in CFS: " + entriesStream);
         }
-        return mapping;
-      } else {
-        throw new IndexFormatTooOldException(stream, firstInt,
-            CodecUtil.CODEC_MAGIC, CodecUtil.CODEC_MAGIC);
+        fileEntry.offset = entriesStream.readLong();
+        fileEntry.length = entriesStream.readLong();
       }
+      return mapping;
     } catch (IOException ioe) {
       priorE = ioe;
     } finally {
-      IOUtils.closeWhileHandlingException(priorE, stream, entriesStream);
+      IOUtils.closeWhileHandlingException(priorE, entriesStream);
     }
     // this is needed until Java 7's real try-with-resources:
     throw new AssertionError("impossible to get here");
@@ -290,11 +277,6 @@ public final class CompoundFileDirectory extends Directory {
       @Override
       public IndexInput openSlice(String sliceDescription, long offset, long length) throws IOException {
         return handle.openSlice(sliceDescription, entry.offset + offset, length);
-      }
-
-      @Override
-      public IndexInput openFullSlice() throws IOException {
-        return openSlice("full-slice", 0, entry.length);
       }
     };
   }

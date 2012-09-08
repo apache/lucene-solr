@@ -158,6 +158,11 @@ Optimizations
 * LUCENE-4327: Support out-of-order scoring in FilteredQuery for higher
   performance.  (Mike McCandless, Robert Muir)
 
+* LUCENE-4364: Optimize MMapDirectory to not make a mapping per-cfs-slice,
+  instead one map per .cfs file. This reduces the total number of maps.
+  Additionally factor out a (package-private) generic 
+  ByteBufferIndexInput from MMapDirectory.  (Uwe Schindler, Robert Muir)
+
 Build
 
 * LUCENE-4360: Support running the same test suite multiple times in 

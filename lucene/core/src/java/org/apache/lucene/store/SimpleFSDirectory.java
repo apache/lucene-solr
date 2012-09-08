@@ -77,11 +77,6 @@ public class SimpleFSDirectory extends FSDirectory {
         return new SimpleFSIndexInput("SimpleFSIndexInput(" + sliceDescription + " in path=\"" + file.getPath() + "\" slice=" + offset + ":" + (offset+length) + ")", descriptor, offset,
             length, BufferedIndexInput.bufferSize(context), getReadChunkSize());
       }
-
-      @Override
-      public IndexInput openFullSlice() {
-        return openSlice("full-slice", 0, descriptor.length);
-      }
     };
   }
 

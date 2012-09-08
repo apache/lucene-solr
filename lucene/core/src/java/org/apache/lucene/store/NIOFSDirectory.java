@@ -98,11 +98,6 @@ public class NIOFSDirectory extends FSDirectory {
         return new NIOFSIndexInput(sliceDescription, path, descriptor, descriptor.getChannel(), offset,
             length, BufferedIndexInput.bufferSize(context), getReadChunkSize());
       }
-
-      @Override
-      public IndexInput openFullSlice() {
-        return openSlice("full-slice", 0, descriptor.length);
-      }
     };
   }
 
