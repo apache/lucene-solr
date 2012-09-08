@@ -23,6 +23,7 @@ import com.spatial4j.core.io.ShapeReadWriter;
 import com.spatial4j.core.shape.Shape;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -44,8 +45,22 @@ import java.util.StringTokenizer;
  */
 public class SpatialArgsParser {
 
+  /** Writes a close approximation to the parsed input format. */
+  static String writeSpatialArgs(SpatialArgs args) {
+    StringBuilder str = new StringBuilder();
+    str.append(args.getOperation().getName());
+    str.append('(');
+    str.append(args.getShape().toString());
+    if (args.getDistErrPct() != null)
+      str.append(" distErrPct=").append(String.format(Locale.ROOT, "%.2f%%", args.getDistErrPct() * 100d));
+    if (args.getDistErr() != null)
+      str.append(" distErr=").append(args.getDistErr());
+    str.append(')');
+    return str.toString();
+  }
+
   /**
-   * Parses a string such as "Intersects(-10,20,-8,22) distPec=0.025".
+   * Parses a string such as "Intersects(-10,20,-8,22) distErrPct=0.025".
    *
    * @param v   The string to parse. Mandatory.
    * @param ctx The spatial context. Mandatory.
@@ -75,12 +90,14 @@ public class SpatialArgsParser {
       body = v.substring(edx + 1).trim();
       if (body.length() > 0) {
         Map<String, String> aa = parseMap(body);
-        args.setDistPrecision(readDouble(aa.remove("distPrec")));
+        args.setDistErrPct(readDouble(aa.remove("distErrPct")));
+        args.setDistErr(readDouble(aa.remove("distErr")));
         if (!aa.isEmpty()) {
           throw new IllegalArgumentException("unused parameters: " + aa, null);
         }
       }
     }
+    args.validate();
     return args;
   }
 
@@ -92,6 +109,8 @@ public class SpatialArgsParser {
     return v == null ? defaultValue : Boolean.parseBoolean(v);
   }
 
+  /** Parses "a=b c=d f" (whitespace separated) into name-value pairs. If there
+   * is no '=' as in 'f' above then it's short for f=f. */
   protected static Map<String, String> parseMap(String body) {
     Map<String, String> map = new HashMap<String, String>();
     StringTokenizer st = new StringTokenizer(body, " \n\t");

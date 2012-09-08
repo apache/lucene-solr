@@ -19,10 +19,10 @@ package org.apache.lucene.spatial.prefix;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.io.GeohashUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
-import com.spatial4j.core.io.GeohashUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
@@ -91,22 +91,22 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
     final double DIST = 35.75;//35.7499...
     assertEquals(DIST, ctx.getDistCalc().distance(iPt, qPt) * DEG2KM, 0.001);
 
-    //distPrec will affect the query shape precision. The indexed precision
+    //distErrPct will affect the query shape precision. The indexed precision
     // was set to nearly zilch via init(GeohashPrefixTree.getMaxLevelsPossible());
-    final double distPrec = 0.025; //the suggested default, by the way
-    final double distMult = 1+distPrec;
+    final double distErrPct = 0.025; //the suggested default, by the way
+    final double distMult = 1+distErrPct;
 
     assertTrue(35.74*distMult >= DIST);
-    checkHits(q(qPt, 35.74 * KM2DEG, distPrec), 1, null);
+    checkHits(q(qPt, 35.74 * KM2DEG, distErrPct), 1, null);
 
     assertTrue(30*distMult < DIST);
-    checkHits(q(qPt, 30 * KM2DEG, distPrec), 0, null);
+    checkHits(q(qPt, 30 * KM2DEG, distErrPct), 0, null);
 
     assertTrue(33*distMult < DIST);
-    checkHits(q(qPt, 33 * KM2DEG, distPrec), 0, null);
+    checkHits(q(qPt, 33 * KM2DEG, distErrPct), 0, null);
 
     assertTrue(34*distMult < DIST);
-    checkHits(q(qPt, 34 * KM2DEG, distPrec), 0, null);
+    checkHits(q(qPt, 34 * KM2DEG, distErrPct), 0, null);
   }
 
   @Test @Ignore /* LUCENE-4351 ignore this test until I figure out why it failed (as reported by Jenkins) */
@@ -178,10 +178,10 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
     return q(pt, distDEG, 0.0);
   }
 
-  private SpatialArgs q(Point pt, double distDEG, double distPrec) {
+  private SpatialArgs q(Point pt, double distDEG, double distErrPct) {
     Shape shape = ctx.makeCircle(pt, distDEG);
     SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,shape);
-    args.setDistPrecision(distPrec);
+    args.setDistErrPct(distErrPct);
     return args;
   }
 

@@ -17,8 +17,9 @@ package org.apache.lucene.spatial.query;
  * limitations under the License.
  */
 
-import java.util.Locale;
-
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 
 /**
@@ -28,19 +29,58 @@ import com.spatial4j.core.shape.Shape;
  */
 public class SpatialArgs {
 
-  public static final double DEFAULT_DIST_PRECISION = 0.025d;
+  public static final double DEFAULT_DISTERRPCT = 0.025d;
 
   private SpatialOperation operation;
   private Shape shape;
-  private double distPrecision = DEFAULT_DIST_PRECISION;
-
-  public SpatialArgs(SpatialOperation operation) {
-    this.operation = operation;
-  }
+  private Double distErrPct;
+  private Double distErr;
 
   public SpatialArgs(SpatialOperation operation, Shape shape) {
+    if (operation == null || shape == null)
+      throw new NullPointerException("operation and shape are required");
     this.operation = operation;
     this.shape = shape;
+  }
+
+  /**
+   * Computes the distance given a shape and the {@code distErrPct}.  The
+   * algorithm is the fraction of the distance from the center of the query
+   * shape to its furthest bounding box corner.
+   *
+   * @param shape Mandatory.
+   * @param distErrPct 0 to 0.5
+   * @param ctx Mandatory
+   * @return A distance (in degrees).
+   */
+  public static double calcDistanceFromErrPct(Shape shape, double distErrPct, SpatialContext ctx) {
+    if (distErrPct < 0 || distErrPct > 0.5) {
+      throw new IllegalArgumentException("distErrPct " + distErrPct + " must be between [0 to 0.5]");
+    }
+    if (distErrPct == 0 || shape instanceof Point) {
+      return 0;
+    }
+    Rectangle bbox = shape.getBoundingBox();
+    //The diagonal distance should be the same computed from any opposite corner,
+    // and this is the longest distance that might be occurring within the shape.
+    double diagonalDist = ctx.getDistCalc().distance(
+        ctx.makePoint(bbox.getMinX(), bbox.getMinY()), bbox.getMaxX(), bbox.getMaxY());
+    return diagonalDist * 0.5 * distErrPct;
+  }
+
+  /**
+   * Gets the error distance that specifies how precise the query shape is. This
+   * looks at {@link #getDistErr()}, {@link #getDistErrPct()}, and {@code
+   * defaultDistErrPct}.
+   * @param ctx
+   * @param defaultDistErrPct 0 to 0.5
+   * @return >= 0
+   */
+  public double resolveDistErr(SpatialContext ctx, double defaultDistErrPct) {
+    if (distErr != null)
+      return distErr;
+    double distErrPct = (this.distErrPct != null ? this.distErrPct : defaultDistErrPct);
+    return calcDistanceFromErrPct(shape, distErrPct, ctx);
   }
 
   /** Check if the arguments make sense -- throw an exception if not */
@@ -48,16 +88,13 @@ public class SpatialArgs {
     if (operation.isTargetNeedsArea() && !shape.hasArea()) {
       throw new IllegalArgumentException(operation + " only supports geometry with area");
     }
+    if (distErr != null && distErrPct != null)
+      throw new IllegalArgumentException("Only distErr or distErrPct can be specified.");
   }
 
   @Override
   public String toString() {
-    StringBuilder str = new StringBuilder();
-    str.append(operation.getName()).append('(');
-    str.append(shape.toString());
-    str.append(" distPrec=").append(String.format(Locale.ROOT, "%.2f%%", distPrecision / 100d));
-    str.append(')');
-    return str.toString();
+    return SpatialArgsParser.writeSpatialArgs(this);
   }
 
   //------------------------------------------------
@@ -84,22 +121,33 @@ public class SpatialArgs {
   }
 
   /**
-   * A measure of acceptable error of the shape.  It is specified as the
-   * fraction of the distance from the center of the query shape to its furthest
-   * bounding box corner.  This effectively inflates the size of the shape but
-   * should not shrink it.
-   * <p/>
-   * The default is {@link #DEFAULT_DIST_PRECISION}
+   * A measure of acceptable error of the shape as a fraction.  This effectively
+   * inflates the size of the shape but should not shrink it.
    *
    * @return 0 to 0.5
+   * @see #calcDistanceFromErrPct(com.spatial4j.core.shape.Shape, double,
+   *      com.spatial4j.core.context.SpatialContext)
    */
-  public Double getDistPrecision() {
-    return distPrecision;
+  public Double getDistErrPct() {
+    return distErrPct;
   }
 
-  public void setDistPrecision(Double distPrecision) {
-    if (distPrecision != null)
-      this.distPrecision = distPrecision;
+  public void setDistErrPct(Double distErrPct) {
+    if (distErrPct != null)
+      this.distErrPct = distErrPct;
   }
 
+  /**
+   * The acceptable error of the shape.  This effectively inflates the
+   * size of the shape but should not shrink it.
+   *
+   * @return >= 0
+   */
+  public Double getDistErr() {
+    return distErr;
+  }
+
+  public void setDistErr(Double distErr) {
+    this.distErr = distErr;
+  }
 }

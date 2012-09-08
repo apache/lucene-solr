@@ -44,7 +44,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   protected final SpatialPrefixTree grid;
   private final Map<String, PointPrefixTreeFieldCacheProvider> provider = new ConcurrentHashMap<String, PointPrefixTreeFieldCacheProvider>();
   protected int defaultFieldValuesArrayLen = 2;
-  protected double distErrPct = SpatialArgs.DEFAULT_DIST_PRECISION;
+  protected double distErrPct = SpatialArgs.DEFAULT_DISTERRPCT;// [ 0 TO 0.5 ]
 
   public PrefixTreeStrategy(SpatialPrefixTree grid, String fieldName) {
     super(grid.getSpatialContext(), fieldName);
@@ -56,21 +56,34 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
     this.defaultFieldValuesArrayLen = defaultFieldValuesArrayLen;
   }
 
-  /** See {@link SpatialPrefixTree#getMaxLevelForPrecision(com.spatial4j.core.shape.Shape, double)}. */
+  public double getDistErrPct() {
+    return distErrPct;
+  }
+
+  /**
+   * The default measure of shape precision affecting indexed and query shapes.
+   * Specific shapes at index and query time can use something different.
+   * @see org.apache.lucene.spatial.query.SpatialArgs#getDistErrPct()
+   */
   public void setDistErrPct(double distErrPct) {
     this.distErrPct = distErrPct;
   }
 
   @Override
   public Field[] createIndexableFields(Shape shape) {
-    int detailLevel = grid.getMaxLevelForPrecision(shape,distErrPct);
+    double distErr = SpatialArgs.calcDistanceFromErrPct(shape, distErrPct, ctx);
+    return createIndexableFields(shape, distErr);
+  }
+
+  public Field[] createIndexableFields(Shape shape, double distErr) {
+    int detailLevel = grid.getLevelForDistance(distErr);
     List<Node> cells = grid.getNodes(shape, detailLevel, true);//true=intermediates cells
     //If shape isn't a point, add a full-resolution center-point so that
-    // PrefixFieldCacheProvider has the center-points.
+    // PointPrefixTreeFieldCacheProvider has the center-points.
     // TODO index each center of a multi-point? Yes/no?
     if (!(shape instanceof Point)) {
       Point ctr = shape.getCenter();
-      //TODO should be smarter; don't index 2 tokens for this in CellTokenizer. Harmless though.
+      //TODO should be smarter; don't index 2 tokens for this in CellTokenStream. Harmless though.
       cells.add(grid.getNodes(ctr,grid.getMaxLevels(),false).get(0));
     }
 

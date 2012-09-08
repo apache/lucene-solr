@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.prefix.tree;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,13 +17,11 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.prefix.tree;
-
 import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.io.GeohashUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
-import com.spatial4j.core.io.GeohashUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -67,6 +67,8 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
 
   @Override
   public int getLevelForDistance(double dist) {
+    if (dist == 0)
+      return maxLevels;//short circuit
     final int level = GeohashUtils.lookupHashLenForWidthHeight(dist, dist);
     return Math.max(Math.min(level, maxLevels), 1);
   }
