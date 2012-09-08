@@ -148,7 +148,7 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
           //4.1 Query a small box getting nothing
           checkHits(q(queryCenter, radiusDeg - smallRadius/2), 0, null);
           //4.2 Query a large box enclosing the cluster, getting everything
-          checkHits(q(queryCenter, radiusDeg*3*1.01), points.size(), null);
+          checkHits(q(queryCenter, radiusDeg*3 + smallRadius/2), points.size(), null);
           //4.3 Query a medium box getting some (calculate the correct solution and verify)
           double queryDist = radiusDeg * 2;
 
