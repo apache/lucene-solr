@@ -77,6 +77,8 @@ public class TestMultiMMap extends LuceneTestCase {
     }
     two.close();
     three.close();
+    // test double close of master:
+    one.close();
     mmapDir.close();
   }
   
@@ -98,6 +100,7 @@ public class TestMultiMMap extends LuceneTestCase {
     }
     assertEquals(5, three.readVInt());
     one.close();
+    three.close();
     mmapDir.close();
   }
   
@@ -141,6 +144,8 @@ public class TestMultiMMap extends LuceneTestCase {
     two.close();
     three.close();
     four.close();
+    // test double-close of slicer:
+    slicer.close();
     mmapDir.close();
   }
 
