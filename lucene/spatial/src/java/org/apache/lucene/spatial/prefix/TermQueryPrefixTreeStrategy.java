@@ -48,7 +48,7 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
       throw new UnsupportedSpatialOperation(op);
 
     Shape shape = args.getShape();
-    int detailLevel = grid.getMaxLevelForPrecision(shape, args.getDistPrecision());
+    int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
     List<Node> cells = grid.getNodes(shape, detailLevel, false);
     TermsFilter filter = new TermsFilter();
     for (Node cell : cells) {

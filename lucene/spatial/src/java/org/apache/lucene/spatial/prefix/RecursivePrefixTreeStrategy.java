@@ -56,7 +56,7 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
 
     Shape shape = args.getShape();
 
-    int detailLevel = grid.getMaxLevelForPrecision(shape,args.getDistPrecision());
+    int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
 
     return new RecursivePrefixTreeFilter(
         getFieldName(), grid,shape, prefixGridScanLevel, detailLevel);

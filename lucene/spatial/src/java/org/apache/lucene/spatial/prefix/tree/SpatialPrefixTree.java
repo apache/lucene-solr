@@ -18,9 +18,7 @@ package org.apache.lucene.spatial.prefix.tree;
  */
 
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Circle;
 import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 
 import java.nio.charset.Charset;
@@ -30,7 +28,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * A Spatial Prefix Tree, or Trie, which decomposes shapes into prefixed strings at variable lengths corresponding to
+ * A spatial Prefix Tree, or Trie, which decomposes shapes into prefixed strings at variable lengths corresponding to
  * variable precision.  Each string corresponds to a spatial region.
  *
  * Implementations of this class should be thread-safe and immutable once initialized.
@@ -62,28 +60,6 @@ public abstract class SpatialPrefixTree {
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(maxLevels:" + maxLevels + ",ctx:" + ctx + ")";
-  }
-
-  /**
-   * See {@link org.apache.lucene.spatial.query.SpatialArgs#getDistPrecision()}.
-   * A grid level looked up via {@link #getLevelForDistance(double)} is returned.
-   *
-   * @param precision 0 to 0.5
-   * @return 1 to maxLevels
-   */
-  public int getMaxLevelForPrecision(Shape shape, double precision) {
-    if (precision < 0 || precision > 0.5) {
-      throw new IllegalArgumentException("Precision " + precision + " must be between [0 to 0.5]");
-    }
-    if (precision == 0 || shape instanceof Point) {
-      return maxLevels;
-    }
-    Rectangle bbox = shape.getBoundingBox();
-    //The diagonal distance should be the same computed from any opposite corner,
-    // and this is the longest distance that might be occurring within the shape.
-    double diagonalDist = ctx.getDistCalc().distance(
-        ctx.makePoint(bbox.getMinX(), bbox.getMinY()), bbox.getMaxX(), bbox.getMaxY());
-    return getLevelForDistance(diagonalDist * 0.5 * precision);
   }
 
   /**

@@ -1,3 +1,5 @@
+package org.apache.lucene.spatial.prefix.tree;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,8 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.lucene.spatial.prefix.tree;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Point;
@@ -121,6 +121,8 @@ public class QuadPrefixTree extends SpatialPrefixTree {
 
   @Override
   public int getLevelForDistance(double dist) {
+    if (dist == 0)//short circuit
+      return maxLevels;
     for (int i = 0; i < maxLevels-1; i++) {
       //note: level[i] is actually a lookup for level i+1
       if(dist > levelW[i] && dist > levelH[i]) {
