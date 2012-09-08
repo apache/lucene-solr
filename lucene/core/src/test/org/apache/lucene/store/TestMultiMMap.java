@@ -75,6 +75,9 @@ public class TestMultiMMap extends LuceneTestCase {
     } catch (AlreadyClosedException ignore) {
       // pass
     }
+    two.close();
+    three.close();
+    mmapDir.close();
   }
   
   public void testCloneSliceSafety() throws Exception {
@@ -113,6 +116,11 @@ public class TestMultiMMap extends LuceneTestCase {
     } catch (AlreadyClosedException ignore) {
       // pass
     }
+    one.close();
+    two.close();
+    three.close();
+    four.close();
+    mmapDir.close();
   }
 
   public void testSeekZero() throws Exception {
@@ -174,6 +182,7 @@ public class TestMultiMMap extends LuceneTestCase {
       assertEquals(new BytesRef(bytes), new BytesRef(actual));
       ii.seek(1<<i);
       ii.close();
+      slicer.close();
       mmapDir.close();
     }
   }
