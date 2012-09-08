@@ -71,12 +71,33 @@ public class TestMultiMMap extends LuceneTestCase {
     }
     try {
       three.readVInt();
-      fail("Must throw AlreadyClosedExveption");
+      fail("Must throw AlreadyClosedException");
     } catch (AlreadyClosedException ignore) {
       // pass
     }
     two.close();
     three.close();
+    mmapDir.close();
+  }
+  
+  public void testCloneClose() throws Exception {
+    MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testCloneClose"));
+    IndexOutput io = mmapDir.createOutput("bytes", newIOContext(random()));
+    io.writeVInt(5);
+    io.close();
+    IndexInput one = mmapDir.openInput("bytes", IOContext.DEFAULT);
+    IndexInput two = one.clone();
+    IndexInput three = two.clone(); // clone of clone
+    two.close();
+    assertEquals(5, one.readVInt());
+    try {
+      two.readVInt();
+      fail("Must throw AlreadyClosedException");
+    } catch (AlreadyClosedException ignore) {
+      // pass
+    }
+    assertEquals(5, three.readVInt());
+    one.close();
     mmapDir.close();
   }
   
@@ -106,13 +127,13 @@ public class TestMultiMMap extends LuceneTestCase {
     }
     try {
       three.readInt();
-      fail("Must throw AlreadyClosedExveption");
+      fail("Must throw AlreadyClosedException");
     } catch (AlreadyClosedException ignore) {
       // pass
     }
     try {
       four.readInt();
-      fail("Must throw AlreadyClosedExveption");
+      fail("Must throw AlreadyClosedException");
     } catch (AlreadyClosedException ignore) {
       // pass
     }
@@ -120,6 +141,32 @@ public class TestMultiMMap extends LuceneTestCase {
     two.close();
     three.close();
     four.close();
+    mmapDir.close();
+  }
+
+  public void testCloneSliceClose() throws Exception {
+    MMapDirectory mmapDir = new MMapDirectory(_TestUtil.getTempDir("testCloneSliceClose"));
+    IndexOutput io = mmapDir.createOutput("bytes", newIOContext(random()));
+    io.writeInt(1);
+    io.writeInt(2);
+    io.close();
+    IndexInputSlicer slicer = mmapDir.createSlicer("bytes", newIOContext(random()));
+    IndexInput one = slicer.openSlice("first int", 0, 4);
+    IndexInput two = slicer.openSlice("second int", 4, 4);
+    one.close();
+    try {
+      one.readInt();
+      fail("Must throw AlreadyClosedException");
+    } catch (AlreadyClosedException ignore) {
+      // pass
+    }
+    assertEquals(2, two.readInt());
+    // reopen a new slice "one":
+    one = slicer.openSlice("first int", 0, 4);
+    assertEquals(1, one.readInt());
+    one.close();
+    two.close();
+    slicer.close();
     mmapDir.close();
   }
 
