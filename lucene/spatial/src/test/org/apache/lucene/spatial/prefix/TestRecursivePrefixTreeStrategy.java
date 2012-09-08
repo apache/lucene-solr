@@ -32,7 +32,6 @@ import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -109,12 +108,12 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
     checkHits(q(qPt, 34 * KM2DEG, distErrPct), 0, null);
   }
 
-  @Test @Ignore /* LUCENE-4351 ignore this test until I figure out why it failed (as reported by Jenkins) */
+  @Test
   public void geohashRecursiveRandom() throws IOException {
     init(12);
 
     //1. Iterate test with the cluster at some worldly point of interest
-    Point[] clusterCenters = new Point[]{ctx.makePoint(0,0), ctx.makePoint(0,90), ctx.makePoint(0,-90)};
+    Point[] clusterCenters = new Point[]{ctx.makePoint(-180,0), ctx.makePoint(0,90), ctx.makePoint(0,-90)};
     for (Point clusterCenter : clusterCenters) {
       //2. Iterate on size of cluster (a really small one and a large one)
       String hashCenter = GeohashUtils.encodeLatLon(clusterCenter.getY(), clusterCenter.getX(), maxLength);
@@ -144,10 +143,10 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
         //3. Use some query centers. Each is twice the cluster's radius away.
         for(int ri = 0; ri < 4; ri++) {
           Point queryCenter = ctx.getDistCalc().pointOnBearing(clusterCenter,
-              radiusDeg*2, random().nextInt() * 360, ctx, null);
+              radiusDeg*2, random().nextInt(360), ctx, null);
           queryCenter = alignGeohash(queryCenter);
           //4.1 Query a small box getting nothing
-          checkHits(q(queryCenter, radiusDeg*0.99), 0, null);
+          checkHits(q(queryCenter, radiusDeg - smallRadius/2), 0, null);
           //4.2 Query a large box enclosing the cluster, getting everything
           checkHits(q(queryCenter, radiusDeg*3*1.01), points.size(), null);
           //4.3 Query a medium box getting some (calculate the correct solution and verify)
