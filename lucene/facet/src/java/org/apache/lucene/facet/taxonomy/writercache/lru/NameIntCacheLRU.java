@@ -70,8 +70,6 @@ class NameIntCacheLRU {
 
   /**
    * Subclasses can override this to provide caching by e.g. hash of the string.
-   * @param name
-   * @return
    */
   Object key(CategoryPath name) {
     // Note that a copy constructor (cloning) here is necessary, because a

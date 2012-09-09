@@ -2212,7 +2212,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * {@link #prepareFlushedSegment(FlushedSegment)} to obtain the
    * {@link SegmentInfo} for the flushed segment.
    * 
-   * @see #prepareFlushedSegment(FlushedSegment)
+   * @see #prepareFlushedSegment(DocumentsWriterPerThread.FlushedSegment)
    */
   synchronized void publishFlushedSegment(SegmentInfoPerCommit newSegment,
       FrozenBufferedDeletes packet, FrozenBufferedDeletes globalPacket) throws IOException {
