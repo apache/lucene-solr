@@ -110,6 +110,8 @@
 
   <property name="version" value="5.0-SNAPSHOT"/>
   <property name="maven-build-dir" value="maven-build"/>
+  <property name="maven-version" value="2.2.1"/>
+  
   <target name="get-maven-poms"
           description="Copy Maven POMs from dev-tools/maven/ to ${maven-build-dir}/">
     <copy todir="${maven-build-dir}" overwrite="true">
@@ -148,6 +150,25 @@
       <fileset dir="lucene" includes="build.xml"/>
       <fileset dir="solr" includes="build.xml"/>
     </subant>
+  </target>
+  
+  <target name="run-maven-build" depends="get-maven-poms" description="Runs the Maven build using automatically generated POMs">
+    <subant target="run-maven-build" inheritall="false" failonerror="true">
+      <propertyset>
+        <propertyref prefix="maven-"/>
+      </propertyset>
+      <fileset dir="." includes="extra-targets.xml" />
+    </subant>
+  </target>
+  
+  <target name="remove-maven-artifacts" description="Removes all Lucene/Solr Maven artifacts from the local repository">
+    <echo message="Removing all Lucene/Solr Maven artifacts from '${user.home}/.m2/repository'..."/>
+    <delete includeemptydirs="true">
+      <fileset dir="${user.home}/.m2/repository">
+        <include name="org/apache/lucene/**"/>
+        <include name="org/apache/solr/**"/>
+      </fileset>
+    </delete>
   </target>
 
   <target name="eclipse" depends="clean-jars, resolve" description="Setup Eclipse configuration">
@@ -225,7 +246,7 @@
   <property name="fakeReleaseTmp" value="lucene/build/fakeReleaseTmp"/>
   <property name="fakeReleaseVersion" value="5.0"/> <!-- *not* -SNAPSHOT, the real version -->
 
-  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it." depends="clean">
+  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it" depends="clean">
    <sequential>
      <fail unless="JAVA6_HOME">JAVA6_HOME property is not defined.</fail>
      <fail unless="JAVA7_HOME">JAVA7_HOME property is not defined.</fail>
@@ -279,9 +300,9 @@
   </target>
 
   <!-- Jenkins tasks -->
-  <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-javadocs-lint,check-svn-working-copy"/>
+  <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-javadocs-lint,check-svn-working-copy" description="Runs the Jenkins hourly test runs"/>
   
-  <target name="jenkins-clover">
+  <target name="jenkins-clover" description="Runs nightly clover builds on Jenkins">
     <antcall target="-jenkins-clover">
       <param name="run.clover" value="true"/>
       <!-- must be 1, as clover does not like parallel test runs: -->
@@ -295,7 +316,8 @@
   </target>
   <target name="-jenkins-clover" depends="clean,test,generate-clover-reports"/>
 
-  <target name="jenkins-maven-nightly" depends="clean,generate-maven-artifacts,validate-maven-dependencies"/>
+  <target name="jenkins-maven-nightly" depends="clean,remove-maven-artifacts,run-maven-build,generate-maven-artifacts,validate-maven-dependencies"
+    description="Runs the nightly Maven build on Jenkins, including artifact deployment"/>
   
   <!-- we need this extra condition, as we want to match only on "true", not solely if property is set: -->
   <property name="disable.javadocs-lint" value="false" />
