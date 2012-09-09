@@ -887,10 +887,12 @@ sammy.get
         var similarity_element = $( 'dt.similarity', options_element );
         if ( is_t && schema_browser_data.types[field] && schema_browser_data.types[field].similarity ) {
             var similarity = schema_browser_data.types[field].similarity
-            $( 'dd.similarity', options_element ).remove();
-            similarity_element
-                .show()
-                .after(['<dd class="similarity">', similarity.details.esc(), ' (', similarity.className.esc(), ') </dd>'].join(""));
+            if (similarity.details && similarity.className) {
+                $( 'dd.similarity', options_element ).remove();
+                similarity_element
+                    .show()
+                    .after(['<dd class="similarity">', similarity.details.esc(), ' (', similarity.className.esc(), ') </dd>'].join(""));
+            }
         } else {
             $( '.similarity', options_element ).hide();
         }
