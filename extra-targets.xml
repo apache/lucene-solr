@@ -51,6 +51,14 @@
     <echo>You can find the merged Lucene/Solr Clover report in '${clover.report.dir}'.</echo>
   </target>
 
+  <target name="run-maven-build" depends="install-maven-tasks">
+    <mvn xmlns="antlib:org.apache.maven.artifact.ant" pom="${maven-build-dir}/pom.xml"
+      mavenVersion="${maven-version}" failonerror="true" fork="true">
+      <arg value="-fae"/>
+      <arg value="install"/>
+    </mvn>
+  </target>
+
   <target xmlns:ivy="antlib:org.apache.ivy.ant" name="check-svn-working-copy" depends="ivy-availability-check,ivy-fail,ivy-configure">
     <ivy:cachepath organisation="org.tmatesoft.svnkit" module="svnkit" revision="1.7.5-v1"
       inline="true" conf="default" type="jar" transitive="true" pathid="svnkit.classpath"/>
