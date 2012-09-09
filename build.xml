@@ -164,7 +164,7 @@
   <target name="remove-maven-artifacts" description="Removes all Lucene/Solr Maven artifacts from the local repository">
     <echo message="Removing all Lucene/Solr Maven artifacts from '${user.home}/.m2/repository'..."/>
     <delete includeemptydirs="true">
-      <fileset dir="${user.home}/.m2/repository">
+      <fileset dir="${user.home}/.m2/repository" erroronmissingdir="false">
         <include name="org/apache/lucene/**"/>
         <include name="org/apache/solr/**"/>
       </fileset>
