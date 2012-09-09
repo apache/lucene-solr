@@ -30,6 +30,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.grouping.dv.DVGroupFacetCollector;
 import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util._TestUtil;
 
@@ -291,7 +292,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
     indexSearcher.search(new MatchAllDocsQuery(), groupedAirportFacetCollector);
     TermGroupFacetCollector.GroupedFacetResult airportResult = groupedAirportFacetCollector.mergeSegmentResults(10, 0, false);
     assertEquals(3, airportResult.getTotalCount());
-    assertEquals(0, airportResult.getTotalMissingCount());
+    assertEquals(1, airportResult.getTotalMissingCount());
 
     List<TermGroupFacetCollector.FacetEntry> entries = airportResult.getFacetEntries(0, 10);
     assertEquals(2, entries.size());
