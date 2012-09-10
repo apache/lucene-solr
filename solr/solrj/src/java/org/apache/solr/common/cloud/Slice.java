@@ -118,7 +118,7 @@ public class Slice extends ZkNodeProps {
     return leader;
   }
 
-  /***
+  /*
   // returns a copy of this slice containing the new replica
   public Slice addReplica(Replica replica) {
     Map<String, Object> newProps = new LinkedHashMap<String,Object>(props);
