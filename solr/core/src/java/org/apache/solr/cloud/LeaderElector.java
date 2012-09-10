@@ -161,9 +161,6 @@ public  class LeaderElector {
   
   /**
    * Returns int given String of form n_0000000001 or n_0000000003, etc.
-   * 
-   * @param nStringSequence
-   * @return
    */
   private int getSeq(String nStringSequence) {
     int seq = 0;
@@ -191,9 +188,6 @@ public  class LeaderElector {
   
   /**
    * Returns int list given list of form n_0000000001, n_0000000003, etc.
-   * 
-   * @param seqs
-   * @return
    */
   private List<Integer> getSeqs(List<String> seqs) {
     List<Integer> intSeqs = new ArrayList<Integer>(seqs.size());

@@ -657,12 +657,6 @@ public final class ZkController {
   
   /**
    * Get leader props directly from zk nodes.
-   * 
-   * @param collection
-   * @param slice
-   * @return
-   * @throws KeeperException
-   * @throws InterruptedException
    */
   private ZkCoreNodeProps getLeaderProps(final String collection,
       final String slice) throws InterruptedException {
