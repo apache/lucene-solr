@@ -245,13 +245,6 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     close(directory);
   }
   
-  /**
-   * @param dir
-   * @param lockPath
-   * @param rawLockType
-   * @return
-   * @throws IOException
-   */
   private static Directory injectLockFactory(Directory dir, String lockPath,
       String rawLockType) throws IOException {
     if (null == rawLockType) {
