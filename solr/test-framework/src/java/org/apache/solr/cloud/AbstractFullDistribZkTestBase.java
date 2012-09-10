@@ -45,6 +45,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -340,7 +341,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     Map<String,Slice> slices = this.zkStateReader.getClusterState().getSlices(defaultCollection);
     int cnt = 0;
     for (Map.Entry<String,Slice> entry : slices.entrySet()) {
-      cnt += entry.getValue().getShards().size();
+      cnt += entry.getValue().getReplicasMap().size();
     }
     
     return cnt;
@@ -378,8 +379,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       nextClient:
       // we find ou state by simply matching ports...
       for (Map.Entry<String,Slice> slice : slices.entrySet()) {
-        Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
-        for (Map.Entry<String,ZkNodeProps> shard : theShards.entrySet()) {
+        Map<String,Replica> theShards = slice.getValue().getReplicasMap();
+        for (Map.Entry<String,Replica> shard : theShards.entrySet()) {
           int port = new URI(((HttpSolrServer) client).getBaseURL())
               .getPort();
           
@@ -387,7 +388,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             CloudSolrServerClient csc = new CloudSolrServerClient();
             csc.solrClient = client;
             csc.port = port;
-            csc.shardName = shard.getValue().get(ZkStateReader.NODE_NAME_PROP);
+            csc.shardName = shard.getValue().getStr(ZkStateReader.NODE_NAME_PROP);
             csc.info = shard.getValue();
             
             theClients .add(csc);
@@ -406,8 +407,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       
       nextJetty:
       for (Map.Entry<String,Slice> slice : slices.entrySet()) {
-        Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
-        for (Map.Entry<String,ZkNodeProps> shard : theShards.entrySet()) {
+        Map<String,Replica> theShards = slice.getValue().getReplicasMap();
+        for (Map.Entry<String,Replica> shard : theShards.entrySet()) {
           if (shard.getKey().contains(":" + port + "_")) {
             List<CloudJettyRunner> list = shardToJetty.get(slice.getKey());
             if (list == null) {
@@ -419,9 +420,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             CloudJettyRunner cjr = new CloudJettyRunner();
             cjr.jetty = jetty;
             cjr.info = shard.getValue();
-            cjr.nodeName = shard.getValue().get(ZkStateReader.NODE_NAME_PROP);
+            cjr.nodeName = shard.getValue().getStr(ZkStateReader.NODE_NAME_PROP);
             cjr.coreNodeName = shard.getKey();
-            cjr.url = shard.getValue().get(ZkStateReader.BASE_URL_PROP) + "/" + shard.getValue().get(ZkStateReader.CORE_NAME_PROP);
+            cjr.url = shard.getValue().getStr(ZkStateReader.BASE_URL_PROP) + "/" + shard.getValue().getStr(ZkStateReader.CORE_NAME_PROP);
             cjr.client = findClientByPort(port, theClients);
             list.add(cjr);
             if (isLeader) {
@@ -442,7 +443,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       List<CloudJettyRunner> jetties = shardToJetty.get(slice.getKey());
       assertNotNull("Test setup problem: We found no jetties for shard: " + slice.getKey()
           + " just:" + shardToJetty.keySet(), jetties);
-      assertEquals(slice.getValue().getShards().size(), jetties.size());
+      assertEquals(slice.getValue().getReplicasMap().size(), jetties.size());
     }
   }
   
@@ -752,7 +753,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         "The client count does not match up with the shard count for slice:"
             + shard,
         zkStateReader.getClusterState().getSlice(DEFAULT_COLLECTION, shard)
-            .getShards().size(), solrJetties.size());
+            .getReplicasMap().size(), solrJetties.size());
 
     CloudJettyRunner lastJetty = null;
     for (CloudJettyRunner cjetty : solrJetties) {
@@ -775,7 +776,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
       
       boolean live = false;
-      String nodeName = props.get(ZkStateReader.NODE_NAME_PROP);
+      String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
       if (zkStateReader.getClusterState().liveNodesContain(nodeName)) {
         live = true;
       }
@@ -783,7 +784,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       
       if (verbose) System.err.println(" num:" + num + "\n");
       
-      boolean active = props.get(ZkStateReader.STATE_PROP).equals(
+      boolean active = props.getStr(ZkStateReader.STATE_PROP).equals(
           ZkStateReader.ACTIVE);
       if (active && live) {
         if (lastNum > -1 && lastNum != num && failMessage == null) {
@@ -877,7 +878,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             CloudJettyRunner cjetty = shardToJetty.get(s).get(i);
             ZkNodeProps props = cjetty.info;
             SolrServer client = cjetty.client.solrClient;
-            boolean active = props.get(ZkStateReader.STATE_PROP).equals(
+            boolean active = props.getStr(ZkStateReader.STATE_PROP).equals(
                 ZkStateReader.ACTIVE);
             if (active) {
               SolrQuery query = new SolrQuery("*:*");
@@ -886,7 +887,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               if (verbose) System.err.println(new ZkCoreNodeProps(props)
                   .getCoreUrl() + " : " + results);
               if (verbose) System.err.println("shard:"
-                  + props.get(ZkStateReader.SHARD_ID_PROP));
+                  + props.getStr(ZkStateReader.SHARD_ID_PROP));
               cnt += results;
               break;
             }
@@ -948,8 +949,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     for (CloudJettyRunner cjetty : cloudJettys) {
       CloudSolrServerClient client = cjetty.client;
       for (Map.Entry<String,Slice> slice : slices.entrySet()) {
-        Map<String,ZkNodeProps> theShards = slice.getValue().getShards();
-        for (Map.Entry<String,ZkNodeProps> shard : theShards.entrySet()) {
+        Map<String,Replica> theShards = slice.getValue().getReplicasMap();
+        for (Map.Entry<String,Replica> shard : theShards.entrySet()) {
           String shardName = new URI(
               ((HttpSolrServer) client.solrClient).getBaseURL()).getPort()
               + "_solr_";
@@ -961,11 +962,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
       
       long count = 0;
-      String currentState = cjetty.info.get(ZkStateReader.STATE_PROP);
+      String currentState = cjetty.info.getStr(ZkStateReader.STATE_PROP);
       if (currentState != null
           && currentState.equals(ZkStateReader.ACTIVE)
           && zkStateReader.getClusterState().liveNodesContain(
-              cjetty.info.get(ZkStateReader.NODE_NAME_PROP))) {
+              cjetty.info.getStr(ZkStateReader.NODE_NAME_PROP))) {
         SolrQuery query = new SolrQuery("*:*");
         query.set("distrib", false);
         count = client.solrClient.query(query).getResults().getNumFound();
@@ -1209,7 +1210,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       CloudJettyRunner cjetty) throws InterruptedException {
     int tries = 0;
     while (zkStateReader.getClusterState()
-        .liveNodesContain(cjetty.info.get(ZkStateReader.NODE_NAME_PROP))) {
+        .liveNodesContain(cjetty.info.getStr(ZkStateReader.NODE_NAME_PROP))) {
       if (tries++ == 120) {
         fail("Shard still reported as live in zk");
       }

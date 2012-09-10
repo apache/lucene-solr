@@ -56,7 +56,7 @@ public class AssignShard {
     // else figure out which shard needs more replicas
     final Map<String, Integer> map = new HashMap<String, Integer>();
     for (String shardId : shardIdNames) {
-      int cnt = sliceMap.get(shardId).getShards().size();
+      int cnt = sliceMap.get(shardId).getReplicasMap().size();
       map.put(shardId, cnt);
     }
 

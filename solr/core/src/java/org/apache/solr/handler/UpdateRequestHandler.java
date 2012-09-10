@@ -74,7 +74,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
       if(type == null) {
         type = stream.getContentType();
       }
-      if( type == null ) { // Normal requests will not get here. 
+      if( type == null ) { // Normal requests will not get here.
         throw new SolrException(ErrorCode.BAD_REQUEST, "Missing ContentType");
       }
       int idx = type.indexOf(';');

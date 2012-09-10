@@ -34,9 +34,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.servlet.SolrDispatchFilter;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
-
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
  * work as expected.
@@ -106,7 +103,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       ZkNodeProps leaderProps = zkStateReader.getLeaderProps(
           DEFAULT_COLLECTION, SHARD2);
       
-      String nodeName = leaderProps.get(ZkStateReader.NODE_NAME_PROP);
+      String nodeName = leaderProps.getStr(ZkStateReader.NODE_NAME_PROP);
       chaosMonkey.stopShardExcept(SHARD2, nodeName);
       
       SolrServer client = getClient(nodeName);

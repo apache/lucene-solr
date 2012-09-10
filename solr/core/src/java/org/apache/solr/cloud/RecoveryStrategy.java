@@ -119,7 +119,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   private void replicate(String nodeName, SolrCore core, ZkNodeProps leaderprops, String baseUrl)
       throws SolrServerException, IOException {
    
-    String leaderBaseUrl = leaderprops.get(ZkStateReader.BASE_URL_PROP);
+    String leaderBaseUrl = leaderprops.getStr(ZkStateReader.BASE_URL_PROP);
     ZkCoreNodeProps leaderCNodeProps = new ZkCoreNodeProps(leaderprops);
     String leaderUrl = leaderCNodeProps.getCoreUrl();
     
@@ -318,8 +318,8 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         ZkNodeProps leaderprops = zkStateReader.getLeaderProps(
             cloudDesc.getCollectionName(), cloudDesc.getShardId());
 
-        String leaderBaseUrl = leaderprops.get(ZkStateReader.BASE_URL_PROP);
-        String leaderCoreName = leaderprops.get(ZkStateReader.CORE_NAME_PROP);
+        String leaderBaseUrl = leaderprops.getStr(ZkStateReader.BASE_URL_PROP);
+        String leaderCoreName = leaderprops.getStr(ZkStateReader.CORE_NAME_PROP);
 
         String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderBaseUrl, leaderCoreName);
 

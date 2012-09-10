@@ -539,7 +539,7 @@ public abstract class FieldType extends FieldProperties {
   public abstract SortField getSortField(SchemaField field, boolean top);
 
   /**
-   * Utility usable by subclasses when they want to get basic String sorting 
+   * Utility usable by subclasses when they want to get basic String sorting
    * using common checks.
    * @see SchemaField#checkSortability
    */

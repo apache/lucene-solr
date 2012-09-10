@@ -39,7 +39,7 @@ public class TestDIHEndToEnd extends AbstractDIHJdbcTestCase {
     assertQ(req("COUNTRY_NAME:zealand"), "//*[@numFound='2']");
     assertQ(req("COUNTRY_NAME:niue"), "//*[@numFound='3']");
     
-    //It would be nice if there was a way to get it to run transformers before putting 
+    //It would be nice if there was a way to get it to run transformers before putting
     //data in the cache, then id=2 (person=Ethan, country=NU,NA,NE) could join...)
     //assertQ(req("COUNTRY_NAME:Netherlands"), "//*[@numFound='3']");
     

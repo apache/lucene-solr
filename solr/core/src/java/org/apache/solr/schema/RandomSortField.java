@@ -76,7 +76,7 @@ public class RandomSortField extends FieldType {
   }
 
   /** 
-   * Given a field name and an IndexReader, get a random hash seed.  
+   * Given a field name and an IndexReader, get a random hash seed.
    * Using dynamic fields, you can force the random order to change 
    */
   private static int getSeed(String fieldName, AtomicReaderContext context) {
