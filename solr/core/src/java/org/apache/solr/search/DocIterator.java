@@ -34,9 +34,8 @@ public interface DocIterator extends Iterator<Integer> {
   //public boolean hasNext();
 
   /**
-   * Returns the next document id if hasNext()==true
+   * Returns the next document id if <code>hasNext()==true</code>
    *
-   * <code>
    * This method is equivalent to <code>next()</code>, but avoids the creation
    * of an Integer Object.
    * @see #next()

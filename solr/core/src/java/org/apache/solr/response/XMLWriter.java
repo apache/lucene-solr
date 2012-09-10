@@ -45,7 +45,7 @@ public class XMLWriter extends TextResponseWriter {
   private static final char[] XML_STYLESHEET="<?xml-stylesheet type=\"text/xsl\" href=\"".toCharArray();
   private static final char[] XML_STYLESHEET_END="\"?>\n".toCharArray();
 
-  /***
+  /*
   private static final char[] XML_START2_SCHEMA=(
   "<response xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
   +" xsi:noNamespaceSchemaLocation=\"http://pi.cnet.com/cnet-search/response.xsd\">\n"
@@ -90,7 +90,7 @@ public class XMLWriter extends TextResponseWriter {
       writer.write(XML_STYLESHEET_END);
     }
 
-    /***
+    /*
     String noSchema = req.getParams().get("noSchema");
     // todo - change when schema becomes available?
     if (false && noSchema == null)
@@ -180,7 +180,7 @@ public class XMLWriter extends TextResponseWriter {
 
   /**
    * The SolrDocument should already have multivalued fields implemented as
-   * Collections -- this will not rewrite to <arr>
+   * Collections -- this will not rewrite to &lt;arr&gt;
    */ 
   @Override
   public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx ) throws IOException {
