@@ -24,7 +24,7 @@ reHyperlink = re.compile(r'<a(\s+.*?)>', re.I)
 reAtt = re.compile(r"""(?:\s+([a-z]+)\s*=\s*("[^"]*"|'[^']?'|[^'"\s]+))+""", re.I)
 
 # Char ::= #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF] /* any Unicode character, excluding the surrogate blocks, FFFE, and FFFF. */
-reValidChar = re.compile("^[\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]*$")
+reValidChar = re.compile("^[^\u0000-\u0008\u000B-\u000C\u000E-\u001F\uFFFE\uFFFF]*$")
 
 # silly emacs: '
 
