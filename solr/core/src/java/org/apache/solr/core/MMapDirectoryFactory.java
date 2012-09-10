@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockFactory; // javadocs
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -33,8 +34,8 @@ import java.io.IOException;
  *
  * Can set the following parameters:
  * <ul>
- *  <li>unmap -- See {@link org.apache.lucene.store.MMapDirectory#setUseUnmap(boolean)}</li>
- *  <li>maxChunkSize -- The Max chunk size.  See {@link org.apache.lucene.store.MMapDirectory#setMaxChunkSize(int)}</li>
+ *  <li>unmap -- See {@link MMapDirectory#setUseUnmap(boolean)}</li>
+ *  <li>maxChunkSize -- The Max chunk size.  See {@link MMapDirectory#MMapDirectory(File, LockFactory, int)}</li>
  * </ul>
  *
  **/
@@ -55,13 +56,12 @@ public class MMapDirectoryFactory extends CachingDirectoryFactory {
 
   @Override
   protected Directory create(String path) throws IOException {
-    MMapDirectory mapDirectory = new MMapDirectory(new File(path));
+    MMapDirectory mapDirectory = new MMapDirectory(new File(path), null, maxChunk);
     try {
       mapDirectory.setUseUnmap(unmapHack);
     } catch (Exception e) {
       log.warn("Unmap not supported on this JVM, continuing on without setting unmap", e);
     }
-    mapDirectory.setMaxChunkSize(maxChunk);
     return mapDirectory;
   }
 }
