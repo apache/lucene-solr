@@ -72,9 +72,12 @@ public abstract class AbstractPluginLoader<T>
   
   /**
    * Create a plugin from an XML configuration.  Plugins are defined using:
-   *   <plugin name="name1" class="solr.ClassName">
+   * <pre class="prettyprint">
+   * {@code
+   * <plugin name="name1" class="solr.ClassName">
    *      ...
-   *   </plugin>
+   * </plugin>}
+   * </pre>
    * 
    * @param name - The registered name.  In the above example: "name1"
    * @param className - class name for requested plugin.  In the above example: "solr.ClassName"
@@ -101,16 +104,19 @@ public abstract class AbstractPluginLoader<T>
   abstract protected void init( T plugin, Node node ) throws Exception;
 
   /**
+   * Initializes and registers each plugin in the list.
    * Given a NodeList from XML in the form:
-   * 
-   *  <plugins>
+   * <pre class="prettyprint">
+   * {@code
+   * <plugins>
    *    <plugin name="name1" class="solr.ClassName" >
    *      ...
    *    </plugin>
    *    <plugin name="name2" class="solr.ClassName" >
    *      ...
    *    </plugin>
-   *  </plugins>
+   * </plugins>}
+   * </pre>
    * 
    * This will initialize and register each plugin from the list.  A class will 
    * be generated for each class name and registered to the given name.
@@ -120,7 +126,10 @@ public abstract class AbstractPluginLoader<T>
    * plugins at startup.
    * 
    * One (and only one) plugin may declare itself to be the 'default' plugin using:
-   *    <plugin name="name2" class="solr.ClassName" default="true">
+   * <pre class="prettyprint">
+   * {@code
+   *    <plugin name="name2" class="solr.ClassName" default="true">}
+   * </pre>
    * If a default element is defined, it will be returned from this function.
    * 
    */
@@ -190,9 +199,13 @@ public abstract class AbstractPluginLoader<T>
   }
   
   /**
-   * Given a NodeList from XML in the form:
+   * Initializes and registers a single plugin.
    * 
-   * <plugin name="name1" class="solr.ClassName" > ... </plugin>
+   * Given a NodeList from XML in the form:
+   * <pre class="prettyprint">
+   * {@code
+   * <plugin name="name1" class="solr.ClassName" > ... </plugin>}
+   * </pre>
    * 
    * This will initialize and register a single plugin. A class will be
    * generated for the plugin and registered to the given name.

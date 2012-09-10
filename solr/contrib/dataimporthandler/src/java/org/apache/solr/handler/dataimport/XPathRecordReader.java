@@ -105,7 +105,7 @@ public class XPathRecordReader {
    * @param name The name for this field in the emitted record
    * @param xpath The xpath expression for this field
    * @param multiValued If 'true' then the emitted record will have values in 
-   *                    a List<String>
+   *                    a List&lt;String&gt;
    */
   public synchronized XPathRecordReader addField(String name, String xpath, boolean multiValued) {
     addField0(xpath, name, multiValued, false, 0);
@@ -120,8 +120,8 @@ public class XPathRecordReader {
    * @param name The name for this field in the emitted record
    * @param xpath The xpath expression for this field
    * @param multiValued If 'true' then the emitted record will have values in 
-   *                    a List<String>
-   * @param flags FLATTEN: Recursivly combine text from all child XML elements
+   *                    a List&lt;String&gt;
+   * @param flags FLATTEN: Recursively combine text from all child XML elements
    */
   public synchronized XPathRecordReader addField(String name, String xpath, boolean multiValued, int flags) {
     addField0(xpath, name, multiValued, false, flags);
@@ -136,7 +136,7 @@ public class XPathRecordReader {
    * @param xpath The xpath expression for this field
    * @param name The name for this field in the emitted record
    * @param multiValued If 'true' then the emitted record will have values in 
-   *                    a List<String>
+   *                    a List&lt;String&gt;
    * @param isRecord Flags that this XPATH is from a forEach statement
    * @param flags The only supported flag is 'FLATTEN'
    */
