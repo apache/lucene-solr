@@ -41,7 +41,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkClientConnectionStrategy;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -492,7 +491,7 @@ public final class ZkController {
     
     if(data != null) {
       ZkNodeProps props = ZkNodeProps.load(data);
-      configName = props.get(CONFIGNAME_PROP);
+      configName = props.getStr(CONFIGNAME_PROP);
     }
     
     if (configName != null && !zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true)) {
@@ -539,7 +538,7 @@ public final class ZkController {
     
     String shardId = cloudDesc.getShardId();
 
-    Map<String,String> props = new HashMap<String,String>();
+    Map<String,Object> props = new HashMap<String,Object>();
  // we only put a subset of props into the leader node
     props.put(ZkStateReader.BASE_URL_PROP, baseUrl);
     props.put(ZkStateReader.CORE_NAME_PROP, coreName);
@@ -695,7 +694,7 @@ public final class ZkController {
     
     String shardId = cd.getCloudDescriptor().getShardId();
     
-    Map<String,String> props = new HashMap<String,String>();
+    Map<String,Object> props = new HashMap<String,Object>();
     // we only put a subset of props into the leader node
     props.put(ZkStateReader.BASE_URL_PROP, getBaseUrl());
     props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
@@ -872,7 +871,7 @@ public final class ZkController {
        SolrParams params = cd.getParams();
 
         try {
-          Map<String,String> collectionProps = new HashMap<String,String>();
+          Map<String,Object> collectionProps = new HashMap<String,Object>();
           // TODO: if collection.configName isn't set, and there isn't already a conf in zk, just use that?
           String defaultConfigName = System.getProperty(COLLECTION_PARAM_PREFIX+CONFIGNAME_PROP, collection);
 
@@ -937,7 +936,7 @@ public final class ZkController {
 
 
   private void getConfName(String collection, String collectionPath,
-      Map<String,String> collectionProps) throws KeeperException,
+      Map<String,Object> collectionProps) throws KeeperException,
       InterruptedException {
     // check for configName
     log.info("Looking for collection configName");
@@ -1168,7 +1167,7 @@ public final class ZkController {
     ZkNodeProps props = null;
     if(data != null) {
       props = ZkNodeProps.load(data);
-      Map<String,String> newProps = new HashMap<String,String>();
+      Map<String,Object> newProps = new HashMap<String,Object>();
       newProps.putAll(props.getProperties());
       newProps.put(CONFIGNAME_PROP, confSetName);
       props = new ZkNodeProps(newProps);

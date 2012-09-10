@@ -26,6 +26,7 @@ import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -84,13 +85,13 @@ public class OverseerCollectionProcessor implements Runnable {
         
         //if (head != null) {    // should not happen since we block above
           final ZkNodeProps message = ZkNodeProps.load(head);
-          final String operation = message.get(QUEUE_OPERATION);
+          final String operation = message.getStr(QUEUE_OPERATION);
           
           boolean success = processMessage(message, operation);
           if (!success) {
             // TODO: what to do on failure / partial failure
             // if we fail, do we clean up then ?
-            SolrException.log(log, "Collection creation of " + message.get("name") + " failed");
+            SolrException.log(log, "Collection creation of " + message.getStr("name") + " failed");
           }
         //}
         workQueue.remove();
@@ -118,7 +119,7 @@ public class OverseerCollectionProcessor implements Runnable {
     try {
       ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(
           "/overseer_elect/leader", null, null, true));
-      if (myId.equals(props.get("id"))) {
+      if (myId.equals(props.getStr("id"))) {
         return true;
       }
     } catch (KeeperException e) {
@@ -152,7 +153,7 @@ public class OverseerCollectionProcessor implements Runnable {
     // look at the replication factor and see if it matches reality
     // if it does not, find best nodes to create more cores
     
-    String numReplicasString = message.get("numReplicas");
+    String numReplicasString = message.getStr("numReplicas");
     int numReplicas;
     try {
       numReplicas = numReplicasString == null ? 0 : Integer.parseInt(numReplicasString);
@@ -160,7 +161,7 @@ public class OverseerCollectionProcessor implements Runnable {
       SolrException.log(log, "Could not parse numReplicas", ex);
       return false;
     }
-    String numShardsString = message.get("numShards");
+    String numShardsString = message.getStr("numShards");
     int numShards;
     try {
       numShards = numShardsString == null ? 0 : Integer.parseInt(numShardsString);
@@ -169,8 +170,8 @@ public class OverseerCollectionProcessor implements Runnable {
       return false;
     }
     
-    String name = message.get("name");
-    String configName = message.get("collection.configName");
+    String name = message.getStr("name");
+    String configName = message.getStr("collection.configName");
     
     // we need to look at every node and see how many cores it serves
     // add our new cores to existing nodes serving the least number of cores
@@ -237,7 +238,7 @@ public class OverseerCollectionProcessor implements Runnable {
   
   private boolean collectionCmd(ClusterState clusterState, ZkNodeProps message, ModifiableSolrParams params) {
     log.info("Executing Collection Cmd : " + params);
-    String name = message.get("name");
+    String name = message.getStr("name");
     
     Map<String,Slice> slices = clusterState.getCollectionStates().get(name);
     
@@ -247,14 +248,14 @@ public class OverseerCollectionProcessor implements Runnable {
     
     for (Map.Entry<String,Slice> entry : slices.entrySet()) {
       Slice slice = entry.getValue();
-      Map<String,ZkNodeProps> shards = slice.getShards();
-      Set<Map.Entry<String,ZkNodeProps>> shardEntries = shards.entrySet();
-      for (Map.Entry<String,ZkNodeProps> shardEntry : shardEntries) {
+      Map<String,Replica> shards = slice.getReplicasMap();
+      Set<Map.Entry<String,Replica>> shardEntries = shards.entrySet();
+      for (Map.Entry<String,Replica> shardEntry : shardEntries) {
         final ZkNodeProps node = shardEntry.getValue();
-        if (clusterState.liveNodesContain(node.get(ZkStateReader.NODE_NAME_PROP))) {
-          params.set(CoreAdminParams.CORE, node.get(ZkStateReader.CORE_NAME_PROP));
+        if (clusterState.liveNodesContain(node.getStr(ZkStateReader.NODE_NAME_PROP))) {
+          params.set(CoreAdminParams.CORE, node.getStr(ZkStateReader.CORE_NAME_PROP));
 
-          String replica = node.get(ZkStateReader.BASE_URL_PROP);
+          String replica = node.getStr(ZkStateReader.BASE_URL_PROP);
           ShardRequest sreq = new ShardRequest();
           // yes, they must use same admin handler path everywhere...
           params.set("qt", adminPath);

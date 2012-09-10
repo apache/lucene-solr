@@ -92,9 +92,9 @@ public class ClusterState implements JSONWriter.Writable {
       Set<Entry<String,Slice>> slices = state.entrySet();
       for (Entry<String,Slice> sliceEntry : slices) {
         Slice slice = sliceEntry.getValue();
-        Map<String,ZkNodeProps> shards = slice.getShards();
-        Set<Entry<String,ZkNodeProps>> shardsEntries = shards.entrySet();
-        for (Entry<String,ZkNodeProps> shardEntry : shardsEntries) {
+        Map<String,Replica> shards = slice.getReplicasMap();
+        Set<Entry<String,Replica>> shardsEntries = shards.entrySet();
+        for (Entry<String,Replica> shardEntry : shardsEntries) {
           ZkNodeProps props = shardEntry.getValue();
           if (props.containsKey(ZkStateReader.LEADER_PROP)) {
             Map<String,ZkNodeProps> leadersForCollection = leaders.get(collection.getKey());
@@ -122,11 +122,11 @@ public class ClusterState implements JSONWriter.Writable {
   /**
    * Get shard properties or null if shard is not found.
    */
-  public ZkNodeProps getShardProps(final String collection, final String coreNodeName) {
+  public Replica getShardProps(final String collection, final String coreNodeName) {
     Map<String, Slice> slices = getSlices(collection);
     for(Slice slice: slices.values()) {
-      if(slice.getShards().get(coreNodeName)!=null) {
-        return slice.getShards().get(coreNodeName);
+      if(slice.getReplicasMap().get(coreNodeName)!=null) {
+        return slice.getReplicasMap().get(coreNodeName);
       }
     }
     return null;
@@ -185,7 +185,7 @@ public class ClusterState implements JSONWriter.Writable {
   public String getShardId(String coreNodeName) {
     for (Entry<String, Map<String, Slice>> states: collectionStates.entrySet()){
       for(Entry<String, Slice> slices: states.getValue().entrySet()) {
-        for(Entry<String, ZkNodeProps> shards: slices.getValue().getShards().entrySet()){
+        for(Entry<String, Replica> shards: slices.getValue().getReplicasMap().entrySet()){
           if(coreNodeName.equals(shards.getKey())) {
             return slices.getKey();
           }
@@ -294,10 +294,10 @@ public class ClusterState implements JSONWriter.Writable {
       Map<String, Object> collection = (Map<String, Object>)stateMap.get(collectionName);
       Map<String, Slice> slices = new LinkedHashMap<String,Slice>();
       for(String sliceName: collection.keySet()) {
-        Map<String, Map<String, String>> sliceMap = (Map<String, Map<String, String>>)collection.get(sliceName);
-        Map<String, ZkNodeProps> shards = new LinkedHashMap<String,ZkNodeProps>();
+        Map<String, Map<String, Object>> sliceMap = (Map<String, Map<String, Object>>)collection.get(sliceName);
+        Map<String, Replica> shards = new LinkedHashMap<String,Replica>();
         for(String shardName: sliceMap.keySet()) {
-          shards.put(shardName, new ZkNodeProps(sliceMap.get(shardName)));
+          shards.put(shardName, new Replica(shardName, sliceMap.get(shardName)));
         }
         Slice slice = new Slice(sliceName, shards);
         slices.put(sliceName, slice);

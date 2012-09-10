@@ -70,7 +70,7 @@ import java.util.Set;
  * the registered invariant param for wt.
  * 
  * If you want to override the contentType header returned for a given file, you can
- * set it directly using: {@link #USE_CONTENT_TYPE}.  For example, to get a plain text 
+ * set it directly using: {@link #USE_CONTENT_TYPE}.  For example, to get a plain text
  * version of schema.xml, try:
  * <pre>
  *   http://localhost:8983/solr/admin/file?file=schema.xml&contentType=text/plain

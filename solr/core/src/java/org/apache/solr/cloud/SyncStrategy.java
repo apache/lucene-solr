@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -136,9 +137,9 @@ public class SyncStrategy {
     ClusterState clusterState = zkController.getZkStateReader().getClusterState();
     Map<String,Slice> slices = clusterState.getSlices(collection);
     Slice slice = slices.get(shardId);
-    Map<String,ZkNodeProps> shards = slice.getShards();
-    for (Map.Entry<String,ZkNodeProps> shard : shards.entrySet()) {
-      String state = shard.getValue().get(ZkStateReader.STATE_PROP);
+    Map<String,Replica> shards = slice.getReplicasMap();
+    for (Map.Entry<String,Replica> shard : shards.entrySet()) {
+      String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);
 //      System.out.println("state:"
 //          + state
 //          + shard.getValue().get(ZkStateReader.NODE_NAME_PROP)
@@ -146,8 +147,8 @@ public class SyncStrategy {
 //          + clusterState.liveNodesContain(shard.getValue().get(
 //              ZkStateReader.NODE_NAME_PROP)));
       if ((state.equals(ZkStateReader.ACTIVE))
-          && clusterState.liveNodesContain(shard.getValue().get(
-              ZkStateReader.NODE_NAME_PROP))
+          && clusterState.liveNodesContain(shard.getValue().getStr(
+          ZkStateReader.NODE_NAME_PROP))
           && !new ZkCoreNodeProps(shard.getValue()).getCoreUrl().equals(
               new ZkCoreNodeProps(leaderProps).getCoreUrl())) {
         return true;
@@ -161,8 +162,8 @@ public class SyncStrategy {
       ZkNodeProps props, String collection, String shardId) {
     List<ZkCoreNodeProps> nodes = zkController.getZkStateReader()
         .getReplicaProps(collection, shardId,
-            props.get(ZkStateReader.NODE_NAME_PROP),
-            props.get(ZkStateReader.CORE_NAME_PROP), ZkStateReader.ACTIVE); // TODO:
+            props.getStr(ZkStateReader.NODE_NAME_PROP),
+            props.getStr(ZkStateReader.CORE_NAME_PROP), ZkStateReader.ACTIVE); // TODO:
     // TODO should there be a state filter?
     
     if (nodes == null) {
@@ -191,8 +192,8 @@ public class SyncStrategy {
     List<ZkCoreNodeProps> nodes = zkController
         .getZkStateReader()
         .getReplicaProps(collection, shardId,
-            leaderProps.get(ZkStateReader.NODE_NAME_PROP),
-            leaderProps.get(ZkStateReader.CORE_NAME_PROP), ZkStateReader.ACTIVE);
+            leaderProps.getStr(ZkStateReader.NODE_NAME_PROP),
+            leaderProps.getStr(ZkStateReader.CORE_NAME_PROP), ZkStateReader.ACTIVE);
     if (nodes == null) {
       log.info(ZkCoreNodeProps.getCoreUrl(leaderProps) + " has no replicas");
       return;

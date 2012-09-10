@@ -58,6 +58,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -69,9 +70,6 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.SolrCmdDistributor.Request;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
 
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
@@ -462,11 +460,11 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
       Iterator<Entry<String,Slice>> it = slices.entrySet().iterator();
       while (it.hasNext()) {
         Entry<String,Slice> sliceEntry = it.next();
-        Map<String,ZkNodeProps> sliceShards = sliceEntry.getValue().getShards();
-        Iterator<Entry<String,ZkNodeProps>> shardIt = sliceShards.entrySet()
+        Map<String,Replica> sliceShards = sliceEntry.getValue().getReplicasMap();
+        Iterator<Entry<String,Replica>> shardIt = sliceShards.entrySet()
             .iterator();
         while (shardIt.hasNext()) {
-          Entry<String,ZkNodeProps> shardEntry = shardIt.next();
+          Entry<String,Replica> shardEntry = shardIt.next();
           ZkCoreNodeProps coreProps = new ZkCoreNodeProps(shardEntry.getValue());
           CoreAdminResponse mcr = CoreAdminRequest.getStatus(
               coreProps.getCoreName(),
@@ -491,11 +489,11 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
     
     for (Map.Entry<String,Slice> entry : slices.entrySet()) {
       Slice slice = entry.getValue();
-      Map<String,ZkNodeProps> shards = slice.getShards();
-      Set<Map.Entry<String,ZkNodeProps>> shardEntries = shards.entrySet();
-      for (Map.Entry<String,ZkNodeProps> shardEntry : shardEntries) {
+      Map<String,Replica> shards = slice.getReplicasMap();
+      Set<Map.Entry<String,Replica>> shardEntries = shards.entrySet();
+      for (Map.Entry<String,Replica> shardEntry : shardEntries) {
         final ZkNodeProps node = shardEntry.getValue();
-        if (clusterState.liveNodesContain(node.get(ZkStateReader.NODE_NAME_PROP))) {
+        if (clusterState.liveNodesContain(node.getStr(ZkStateReader.NODE_NAME_PROP))) {
           return new ZkCoreNodeProps(node).getCoreUrl();
         }
       }
@@ -551,13 +549,13 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
           Iterator<Entry<String,Slice>> it = slices.entrySet().iterator();
           while (it.hasNext()) {
             Entry<String,Slice> sliceEntry = it.next();
-            Map<String,ZkNodeProps> sliceShards = sliceEntry.getValue()
-                .getShards();
-            Iterator<Entry<String,ZkNodeProps>> shardIt = sliceShards
+            Map<String,Replica> sliceShards = sliceEntry.getValue()
+                .getReplicasMap();
+            Iterator<Entry<String,Replica>> shardIt = sliceShards
                 .entrySet().iterator();
             while (shardIt.hasNext()) {
-              Entry<String,ZkNodeProps> shardEntry = shardIt.next();
-              if (!shardEntry.getValue().get(ZkStateReader.STATE_PROP)
+              Entry<String,Replica> shardEntry = shardIt.next();
+              if (!shardEntry.getValue().getStr(ZkStateReader.STATE_PROP)
                   .equals(ZkStateReader.ACTIVE)) {
                 found = false;
                 break;
@@ -745,7 +743,7 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
     
     assertAllActive(oneInstanceCollection2, solrj.getZkStateReader());
     
-   // TODO: enable when we don't falsely get slice1... 
+   // TODO: enable when we don't falsely get slice1...
    // solrj.getZkStateReader().getLeaderUrl(oneInstanceCollection2, "slice1", 30000);
    // solrj.getZkStateReader().getLeaderUrl(oneInstanceCollection2, "slice2", 30000);
     client2.add(getDoc(id, "1")); 
@@ -780,7 +778,7 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
     zkStateReader.updateClusterState(true);
     Map<String,Slice> slices = zkStateReader.getClusterState().getSlices(oneInstanceCollection2);
     assertNotNull(slices);
-    String roles = slices.get("slice1").getShards().values().iterator().next().get(ZkStateReader.ROLES_PROP);
+    String roles = slices.get("slice1").getReplicasMap().values().iterator().next().getStr(ZkStateReader.ROLES_PROP);
     assertEquals("none", roles);
   }
 

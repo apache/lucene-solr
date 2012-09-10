@@ -17,23 +17,26 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
+import org.apache.noggit.JSONWriter;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Class to partition int range into n ranges.
- * 
+ *
  */
 public class HashPartitioner {
 
   // Hash ranges can't currently "wrap" - i.e. max must be greater or equal to min.
   // TODO: ranges may not be all contiguous in the future (either that or we will
   // need an extra class to model a collection of ranges)
-  public static class Range {
+  public static class Range implements JSONWriter.Writable {
     public int min;  // inclusive
     public int max;  // inclusive
-    
+
     public Range(int min, int max) {
+      assert min <= max;
       this.min = min;
       this.max = max;
     }
@@ -46,12 +49,39 @@ public class HashPartitioner {
       return Integer.toHexString(min) + '-' + Integer.toHexString(max);
     }
 
-    public static Range fromString(String range) {
-      return null; // TODO
+
+    @Override
+    public int hashCode() {
+      // difficult numbers to hash... only the highest bits will tend to differ.
+      // ranges will only overlap during a split, so we can just hash the lower range.
+      return (min>>28) + (min>>25) + (min>>21) + min;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj.getClass() != getClass()) return false;
+      Range other = (Range)obj;
+      return this.min == other.min && this.max == other.max;
+    }
+
+    @Override
+    public void write(JSONWriter writer) {
+      writer.write(toString());
     }
   }
 
+  public Range fromString(String range) {
+    int middle = range.indexOf('-');
+    String minS = range.substring(0, middle);
+    String maxS = range.substring(middle+1);
+    long min = Long.parseLong(minS, 16);  // use long to prevent the parsing routines from potentially worrying about overflow
+    long max = Long.parseLong(maxS, 16);
+    return new Range((int)min, (int)max);
+  }
 
+  public Range fullRange() {
+    return new Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
+  }
 
   public List<Range> partitionRange(int partitions, Range range) {
     return partitionRange(partitions, range.min, range.max);

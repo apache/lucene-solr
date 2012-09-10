@@ -30,7 +30,7 @@ public class ZkNodePropsTest extends SolrTestCaseJ4 {
   @Test
   public void testBasic() throws IOException {
     
-    Map<String,String> props = new HashMap<String,String>();
+    Map<String,Object> props = new HashMap<String,Object>();
     props.put("prop1", "value1");
     props.put("prop2", "value2");
     props.put("prop3", "value3");
@@ -42,11 +42,11 @@ public class ZkNodePropsTest extends SolrTestCaseJ4 {
     byte[] bytes = ZkStateReader.toJSON(zkProps);
     
     ZkNodeProps props2 = ZkNodeProps.load(bytes);
-    assertEquals("value1", props2.get("prop1"));
-    assertEquals("value2", props2.get("prop2"));
-    assertEquals("value3", props2.get("prop3"));
-    assertEquals("value4", props2.get("prop4"));
-    assertEquals("value5", props2.get("prop5"));
-    assertEquals("value6", props2.get("prop6"));
+    assertEquals("value1", props2.getStr("prop1"));
+    assertEquals("value2", props2.getStr("prop2"));
+    assertEquals("value3", props2.getStr("prop3"));
+    assertEquals("value4", props2.getStr("prop4"));
+    assertEquals("value5", props2.getStr("prop5"));
+    assertEquals("value6", props2.getStr("prop6"));
   }
 }

@@ -208,7 +208,7 @@ public class CloudSolrServer extends SolrServer {
       Map<String,ZkNodeProps> nodes = new HashMap<String,ZkNodeProps>();
       List<String> urlList = new ArrayList<String>();
       for (Slice slice : slices.values()) {
-        for (ZkNodeProps nodeProps : slice.getShards().values()) {
+        for (ZkNodeProps nodeProps : slice.getReplicasMap().values()) {
           ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
           String node = coreNodeProps.getNodeName();
           if (!liveNodes.contains(coreNodeProps.getNodeName())

@@ -159,7 +159,7 @@ public final class SchemaField extends FieldProperties {
 
   /** 
    * Sanity checks that the properties of this field type are plausible 
-   * for a field that may be used to get a FieldCacheSource, throwing 
+   * for a field that may be used to get a FieldCacheSource, throwing
    * an appropriate exception (including the field name) if it is not.  
    * FieldType subclasses can choose to call this method in their 
    * getValueSource implementation 

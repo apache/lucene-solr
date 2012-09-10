@@ -162,7 +162,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     Query q = qp.parse(query);
     if (!(q instanceof AutomatonQuery))
       return false;
-    // this is a hack to get the protected Automaton field in AutomatonQuery, 
+    // this is a hack to get the protected Automaton field in AutomatonQuery,
     // may break in later lucene versions - we have no getter... for good reasons.
     final Field automatonField = AutomatonQuery.class.getDeclaredField("automaton");
     automatonField.setAccessible(true);

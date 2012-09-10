@@ -24,11 +24,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
@@ -130,18 +129,18 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       ClusterState clusterState = zkStateReader.getClusterState();
       Map<String,Slice> slices = clusterState.getSlices(collection);
       for (Map.Entry<String,Slice> entry : slices.entrySet()) {
-        Map<String,ZkNodeProps> shards = entry.getValue().getShards();
-        for (Map.Entry<String,ZkNodeProps> shard : shards.entrySet()) {
+        Map<String,Replica> shards = entry.getValue().getReplicasMap();
+        for (Map.Entry<String,Replica> shard : shards.entrySet()) {
           if (verbose) System.out.println("rstate:"
-              + shard.getValue().get(ZkStateReader.STATE_PROP)
+              + shard.getValue().getStr(ZkStateReader.STATE_PROP)
               + " live:"
-              + clusterState.liveNodesContain(shard.getValue().get(
-                  ZkStateReader.NODE_NAME_PROP)));
-          String state = shard.getValue().get(ZkStateReader.STATE_PROP);
+              + clusterState.liveNodesContain(shard.getValue().getStr(
+              ZkStateReader.NODE_NAME_PROP)));
+          String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);
           if ((state.equals(ZkStateReader.RECOVERING) || state
               .equals(ZkStateReader.SYNC) || state.equals(ZkStateReader.DOWN))
-              && clusterState.liveNodesContain(shard.getValue().get(
-                  ZkStateReader.NODE_NAME_PROP))) {
+              && clusterState.liveNodesContain(shard.getValue().getStr(
+              ZkStateReader.NODE_NAME_PROP))) {
             sawLiveRecovering = true;
           }
         }
@@ -176,10 +175,10 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
         throw new IllegalArgumentException("Cannot find collection:" + collection);
       }
       for (Map.Entry<String,Slice> entry : slices.entrySet()) {
-        Map<String,ZkNodeProps> shards = entry.getValue().getShards();
-        for (Map.Entry<String,ZkNodeProps> shard : shards.entrySet()) {
+        Map<String,Replica> shards = entry.getValue().getReplicasMap();
+        for (Map.Entry<String,Replica> shard : shards.entrySet()) {
 
-          String state = shard.getValue().get(ZkStateReader.STATE_PROP);
+          String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);
           if (!state.equals(ZkStateReader.ACTIVE)) {
             fail("Not all shards are ACTIVE - found a shard that is: " + state);
           }

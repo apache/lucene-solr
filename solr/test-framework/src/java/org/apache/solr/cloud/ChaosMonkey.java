@@ -259,13 +259,13 @@ public class ChaosMonkey {
       Slice theShards = zkStateReader.getClusterState().getSlices(collection)
           .get(slice);
       
-      ZkNodeProps props = theShards.getShards().get(cloudJetty.coreNodeName);
+      ZkNodeProps props = theShards.getReplicasMap().get(cloudJetty.coreNodeName);
       if (props == null) {
-        throw new RuntimeException("shard name " + cloudJetty.coreNodeName + " not found in " + theShards.getShards().keySet());
+        throw new RuntimeException("shard name " + cloudJetty.coreNodeName + " not found in " + theShards.getReplicasMap().keySet());
       }
       
-      String state = props.get(ZkStateReader.STATE_PROP);
-      String nodeName = props.get(ZkStateReader.NODE_NAME_PROP);
+      String state = props.getStr(ZkStateReader.STATE_PROP);
+      String nodeName = props.getStr(ZkStateReader.NODE_NAME_PROP);
       
       
       if (!cloudJetty.jetty.isRunning()
@@ -309,7 +309,7 @@ public class ChaosMonkey {
       cjetty = jetties.get(index);
       
       ZkNodeProps leader = zkStateReader.getLeaderProps(collection, slice);
-      boolean isLeader = leader.get(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName);
+      boolean isLeader = leader.getStr(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName);
       if (!aggressivelyKillLeaders && isLeader) {
         // we don't kill leaders...
         monkeyLog("abort! I don't kill leaders");

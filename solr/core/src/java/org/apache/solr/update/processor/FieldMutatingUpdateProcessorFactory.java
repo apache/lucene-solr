@@ -68,7 +68,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * containing any of the above criteria, identifying fields to be excluded 
  * from seelction even if they match the selection criteria.  As with the main 
  * selection critiera a field must match all of criteria in a single exclusion 
- * in order to be excluded, but multiple exclusions may be specified to get an 
+ * in order to be excluded, but multiple exclusions may be specified to get an
  * <code>OR</code> behavior
  * </p>
  *

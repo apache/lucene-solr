@@ -8,6 +8,7 @@ import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -89,10 +90,10 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     zkClient.makePath(leaderPath, ZkStateReader.toJSON(leaderProps),
         CreateMode.EPHEMERAL, true);
     
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "leader",
+    ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION, "leader",
         ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP,
         collection, ZkStateReader.BASE_URL_PROP, leaderProps.getProperties()
-            .get(ZkStateReader.BASE_URL_PROP), ZkStateReader.CORE_NAME_PROP,
+        .get(ZkStateReader.BASE_URL_PROP), ZkStateReader.CORE_NAME_PROP,
         leaderProps.getProperties().get(ZkStateReader.CORE_NAME_PROP),
         ZkStateReader.STATE_PROP, ZkStateReader.ACTIVE);
     Overseer.getInQueue(zkClient).offer(ZkStateReader.toJSON(m));
@@ -133,7 +134,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       InterruptedException, IOException {
     log.info("Running the leader process. afterExpiration=" + afterExpiration);
     
-    String coreName = leaderProps.get(ZkStateReader.CORE_NAME_PROP);
+    String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
     
     // clear the leader in clusterstate
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "leader",
@@ -244,11 +245,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     while (true && !isClosed) {
       // wait for everyone to be up
       if (slices != null) {
-        Map<String,ZkNodeProps> shards = slices.getShards();
-        Set<Entry<String,ZkNodeProps>> entrySet = shards.entrySet();
+        Map<String,Replica> shards = slices.getReplicasMap();
+        Set<Entry<String,Replica>> entrySet = shards.entrySet();
         int found = 0;
         tryAgain = false;
-        for (Entry<String,ZkNodeProps> entry : entrySet) {
+        for (Entry<String,Replica> entry : entrySet) {
           ZkCoreNodeProps props = new ZkCoreNodeProps(entry.getValue());
           if (props.getState().equals(ZkStateReader.ACTIVE)
               && zkController.getClusterState().liveNodesContain(
@@ -259,16 +260,16 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         
         // on startup and after connection timeout, wait for all known shards
         if ((afterExpiration || !weAreReplacement)
-            && found >= slices.getShards().size()) {
+            && found >= slices.getReplicasMap().size()) {
           log.info("Enough replicas found to continue.");
           break;
-        } else if (!afterExpiration && found >= slices.getShards().size() - 1) {
+        } else if (!afterExpiration && found >= slices.getReplicasMap().size() - 1) {
           // a previous leader went down - wait for one less than the total
           // known shards
           log.info("Enough replicas found to continue.");
           break;
         } else {
-          log.info("Waiting until we see more replicas up: total=" + slices.getShards().size() + " found=" + found + " timeoutin=" + (timeoutAt - System.currentTimeMillis()));
+          log.info("Waiting until we see more replicas up: total=" + slices.getReplicasMap().size() + " found=" + found + " timeoutin=" + (timeoutAt - System.currentTimeMillis()));
         }
   
         if (System.currentTimeMillis() > timeoutAt) {
@@ -310,16 +311,16 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     ClusterState clusterState = zkController.getZkStateReader().getClusterState();
     Map<String,Slice> slices = clusterState.getSlices(this.collection);
     Slice slice = slices.get(shardId);
-    Map<String,ZkNodeProps> shards = slice.getShards();
+    Map<String,Replica> shards = slice.getReplicasMap();
     boolean foundSomeoneElseActive = false;
-    for (Map.Entry<String,ZkNodeProps> shard : shards.entrySet()) {
-      String state = shard.getValue().get(ZkStateReader.STATE_PROP);
+    for (Map.Entry<String,Replica> shard : shards.entrySet()) {
+      String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);
 
       if (new ZkCoreNodeProps(shard.getValue()).getCoreUrl().equals(
               new ZkCoreNodeProps(leaderProps).getCoreUrl())) {
         if (state.equals(ZkStateReader.ACTIVE)
-          && clusterState.liveNodesContain(shard.getValue().get(
-              ZkStateReader.NODE_NAME_PROP))) {
+          && clusterState.liveNodesContain(shard.getValue().getStr(
+            ZkStateReader.NODE_NAME_PROP))) {
           // we are alive
           log.info("I am Active and live, it's okay to be the leader.");
           return true;
@@ -327,8 +328,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       }
       
       if ((state.equals(ZkStateReader.ACTIVE))
-          && clusterState.liveNodesContain(shard.getValue().get(
-              ZkStateReader.NODE_NAME_PROP))
+          && clusterState.liveNodesContain(shard.getValue().getStr(
+          ZkStateReader.NODE_NAME_PROP))
           && !new ZkCoreNodeProps(shard.getValue()).getCoreUrl().equals(
               new ZkCoreNodeProps(leaderProps).getCoreUrl())) {
         foundSomeoneElseActive = true;
@@ -354,15 +355,15 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     ClusterState clusterState = zkController.getZkStateReader().getClusterState();
     Map<String,Slice> slices = clusterState.getSlices(this.collection);
     Slice slice = slices.get(shardId);
-    Map<String,ZkNodeProps> shards = slice.getShards();
+    Map<String,Replica> shards = slice.getReplicasMap();
 
-    for (Map.Entry<String,ZkNodeProps> shard : shards.entrySet()) {
-      String state = shard.getValue().get(ZkStateReader.STATE_PROP);
+    for (Map.Entry<String,Replica> shard : shards.entrySet()) {
+      String state = shard.getValue().getStr(ZkStateReader.STATE_PROP);
 
       
       if ((state.equals(ZkStateReader.ACTIVE))
-          && clusterState.liveNodesContain(shard.getValue().get(
-              ZkStateReader.NODE_NAME_PROP))) {
+          && clusterState.liveNodesContain(shard.getValue().getStr(
+          ZkStateReader.NODE_NAME_PROP))) {
         return true;
       }
     }

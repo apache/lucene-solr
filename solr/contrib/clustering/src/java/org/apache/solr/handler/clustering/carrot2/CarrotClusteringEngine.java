@@ -194,7 +194,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       try {
         configDir = "configDir=" + new File(resourceLoader.getConfigDir()).getAbsolutePath() + ", ";
       } catch (Exception ignored) {
-        // If we get the exception, the resource loader implementation 
+        // If we get the exception, the resource loader implementation
         // probably does not support getConfigDir(). Not a big problem.
       }
       

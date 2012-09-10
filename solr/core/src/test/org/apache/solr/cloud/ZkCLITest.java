@@ -20,7 +20,6 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -136,7 +135,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     
     ZkNodeProps collectionProps = ZkNodeProps.load(zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/collection1", null, null, true));
     assertTrue(collectionProps.containsKey("configName"));
-    assertEquals(confsetname, collectionProps.get("configName"));
+    assertEquals(confsetname, collectionProps.getStr("configName"));
     
     // test down config
     File confDir = new File(TEMP_DIR,

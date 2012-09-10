@@ -851,7 +851,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       if (core != null) {
         SyncStrategy syncStrategy = new SyncStrategy();
 
-        Map<String,String> props = new HashMap<String,String>();
+        Map<String,Object> props = new HashMap<String,Object>();
         props.put(ZkStateReader.BASE_URL_PROP, zkController.getBaseUrl());
         props.put(ZkStateReader.CORE_NAME_PROP, cname);
         props.put(ZkStateReader.NODE_NAME_PROP, zkController.getNodeName());
@@ -934,9 +934,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
           Slice slice = clusterState.getSlice(collection,
               cloudDescriptor.getShardId());
           if (slice != null) {
-            ZkNodeProps nodeProps = slice.getShards().get(coreNodeName);
+            ZkNodeProps nodeProps = slice.getReplicasMap().get(coreNodeName);
             if (nodeProps != null) {
-              state = nodeProps.get(ZkStateReader.STATE_PROP);
+              state = nodeProps.getStr(ZkStateReader.STATE_PROP);
               live = clusterState.liveNodesContain(nodeName);
               if (nodeProps != null && state.equals(waitForState)) {
                 if (checkLive == null) {
