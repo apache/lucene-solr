@@ -551,6 +551,8 @@
   <!-- TODO: also integrate checkJavaDocs.py, which does more checks -->
   <target name="javadocs-lint" depends="javadocs">
     <check-broken-links dir="build/docs"/>
+    <!-- TODO: add missing package.htmls and bump this to level=package -->
+    <!-- <check-missing-javadocs dir="build/docs" level="none"/> -->
   </target>
  
   <!-- install-maven-tasks is *not* a useless dependency. do not remove -->
