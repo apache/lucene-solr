@@ -68,6 +68,8 @@ public final class SchemaField extends FieldProperties {
     
     // initalize with the required property flag
     required = (properties & REQUIRED) !=0;
+
+    type.checkSchemaField(this);
   }
 
   public String getName() { return name; }

@@ -66,6 +66,15 @@ public class BadIndexSchemaTest extends AbstractBadConfigTestBase {
            "can not be configured to be multivalued");
   }
 
+  public void testMultivaluedCurrency() throws Exception {
+    doTest("bad-schema-currency-ft-multivalued.xml", 
+           "types can not be multiValued: currency");
+    doTest("bad-schema-currency-multivalued.xml", 
+           "Fields can not be multiValued: money");
+    doTest("bad-schema-currency-dynamic-multivalued.xml", 
+           "Fields can not be multiValued: *_c");
+  }
+
   public void testPerFieldtypeSimButNoSchemaSimFactory() throws Exception {
     doTest("bad-schema-sim-global-vs-ft-mismatch.xml", "global similarity does not support it");
   }

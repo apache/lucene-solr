@@ -79,6 +79,11 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
+    if (this.isMultiValued()) { 
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+                              "CurrencyField types can not be multiValued: " + 
+                              this.typeName);
+    }
     this.schema = schema;
     this.exchangeRateProviderClass = args.get(PARAM_RATE_PROVIDER_CLASS);
     this.defaultCurrency = args.get(PARAM_DEFAULT_CURRENCY);
@@ -128,6 +133,16 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
   @Override
   public boolean isPolyField() {
     return true;
+  }
+
+  @Override
+  public void checkSchemaField(final SchemaField field) throws SolrException {
+    super.checkSchemaField(field);
+    if (field.multiValued()) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+                              "CurrencyFields can not be multiValued: " + 
+                              field.getName());
+    }
   }
 
   @Override
