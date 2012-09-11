@@ -178,6 +178,8 @@ Other Changes
   running the leader sync process so that we are sure every node participates.
   (Per Steffensen, Mark Miller)
 
+* SOLR-3824: Velocity: Error messages from search not displayed (janhoy)
+
 ==================  4.0.0-BETA ===================
 
 
