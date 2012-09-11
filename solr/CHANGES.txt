@@ -145,7 +145,7 @@ Bug Fixes
   from Collections passed to addValue/addField
   (Tom Switzer via hossman)
 
-* SOLR-3087: CurrencyField now generates an appropriate error on schema init
+* SOLR-3595: CurrencyField now generates an appropriate error on schema init
   if it is configured as multiValued - this has never been properly supported, 
   but previously failed silently in odd ways.  (hossman)
 
