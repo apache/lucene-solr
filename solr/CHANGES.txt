@@ -171,6 +171,10 @@ Other Changes
   running the leader sync process so that we are sure every node participates.
   (Per Steffensen, Mark Miller)
 
+* SOLR-3691: SimplePostTool: Mode for crawling/posting web pages
+  See http://wiki.apache.org/solr/ExtractingRequestHandler for examples (janhoy)
+
+
 ==================  4.0.0-BETA ===================
 
 
