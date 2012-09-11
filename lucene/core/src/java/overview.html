@@ -152,11 +152,11 @@ index for all the files contained in a directory.</li>
 queries and searches an index.</li>
 </ul>
 To demonstrate these, try something like:
-<blockquote><tt>> <b>java -cp lucene-core.jar:lucene-demo.jar:lucene-analyzers-common.jar org.apache.lucene.demo.IndexFiles rec.food.recipes/soups</b></tt>
+<blockquote><tt>> <b>java -cp lucene-core.jar:lucene-demo.jar:lucene-analyzers-common.jar org.apache.lucene.demo.IndexFiles -index index -docs rec.food.recipes/soups</b></tt>
 <br><tt>adding rec.food.recipes/soups/abalone-chowder</tt>
 <br><tt>&nbsp; </tt>[ ... ]
 
-<p><tt>> <b>java -cp lucene-core.jar:lucene-demo.jar:lucene-analyzers-common.jar org.apache.lucene.demo.SearchFiles</b></tt>
+<p><tt>> <b>java -cp lucene-core.jar:lucene-demo.jar:lucene-queryparser.jar:lucene-analyzers-common.jar org.apache.lucene.demo.SearchFiles</b></tt>
 <br><tt>Query: <b>chowder</b></tt>
 <br><tt>Searching for: chowder</tt>
 <br><tt>34 total matching documents</tt>
