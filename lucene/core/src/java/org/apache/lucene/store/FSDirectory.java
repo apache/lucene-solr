@@ -33,9 +33,10 @@ import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Constants;
 
 /**
- * <a name="subclasses"/>
  * Base class for Directory implementations that store index
- * files in the file system.  There are currently three core
+ * files in the file system.  
+ * <a name="subclasses"/>
+ * There are currently three core
  * subclasses:
  *
  * <ul>
