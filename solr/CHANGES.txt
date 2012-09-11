@@ -140,6 +140,11 @@ Bug Fixes
 * SOLR-3518: Include final 'hits' in log information when aggregating a 
   distibuted request (Markus Jelsma via hossman)
 
+* SOLR-3628: SolrInputField and SolrInputDocument are now consistently backed 
+  by Collections passed in to setValue/setField, and defensively copy values 
+  from Collections passed to addValue/addField
+  (Tom Switzer via hossman)
+
 Other Changes
 ----------------------
 

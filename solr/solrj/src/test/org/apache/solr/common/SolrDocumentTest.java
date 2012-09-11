@@ -158,6 +158,28 @@ public class SolrDocumentTest extends LuceneTestCase
     assertFalse( doc.getFieldValuesMap().containsKey( "g" ) );
     assertFalse( doc.getFieldValueMap().keySet().contains( "g" ) );
     assertFalse( doc.getFieldValuesMap().keySet().contains( "g" ) );
+
+    // A read-only list shouldn't break addField("v", ...).
+    List<String> ro = Collections.unmodifiableList(c0);
+    doc = new SolrDocument();
+    doc.addField( "v", ro );
+
+    // This should NOT throw an UnsupportedOperationException.
+    doc.addField( "v", "asdf" );
+
+    // set field using a collection is documented to be backed by 
+    // that collection, so changes should affect it.
+    Collection<String> tmp = new ArrayList<String>(3);
+    tmp.add("one");
+    doc.setField( "collection_backed", tmp );
+    assertEquals("collection not the same", 
+                 tmp, doc.getFieldValues( "collection_backed" ));
+    tmp.add("two");
+    assertEquals("wrong size", 
+                 2, doc.getFieldValues( "collection_backed" ).size());
+    assertEquals("collection not the same", 
+                 tmp, doc.getFieldValues( "collection_backed" ));
+    
   }
    
   public void testDuplicate() 

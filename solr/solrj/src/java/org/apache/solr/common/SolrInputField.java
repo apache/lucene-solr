@@ -41,7 +41,9 @@ public class SolrInputField implements Iterable<Object>, Serializable
   //---------------------------------------------------------------
 
   /**
-   * Set the value for a field.  Arrays will be converted to a collection.
+   * Set the value for a field.  Arrays will be converted to a collection. If
+   * a collection is given, then that collection will be used as the backing
+   * collection for the values.
    */
   public void setValue(Object v, float b) {
     boost = b;
@@ -60,13 +62,22 @@ public class SolrInputField implements Iterable<Object>, Serializable
   }
 
   /**
-   * Add values to a field.  if the added value is a collection, each value
-   * will be added individually
+   * Add values to a field.  If the added value is a collection, each value
+   * will be added individually.
    */
   @SuppressWarnings("unchecked")
   public void addValue(Object v, float b) {
     if( value == null ) {
-      setValue(v, b);
+      if ( v instanceof Collection ) {
+        Collection<Object> c = new ArrayList<Object>( 3 );
+        for ( Object o : (Collection<Object>)v ) {
+          c.add( o );
+        }
+        setValue(c, b);
+      } else {
+        setValue(v, b);
+      }
+
       return;
     }
     
