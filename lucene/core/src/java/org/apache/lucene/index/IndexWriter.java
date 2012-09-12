@@ -796,7 +796,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * docs in the IndexWriter instance) then you can do
    * something like this:</p>
    *
-   * <pre>
+   * <pre class="prettyprint">
    * try {
    *   writer.close();
    * } finally {

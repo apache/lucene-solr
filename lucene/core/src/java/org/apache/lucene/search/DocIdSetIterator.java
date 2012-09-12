@@ -72,7 +72,7 @@ public abstract class DocIdSetIterator {
    * <p>
    * When <code> target &gt; current</code> it behaves as if written:
    * 
-   * <pre>
+   * <pre class="prettyprint">
    * int advance(int target) {
    *   int doc;
    *   while ((doc = nextDoc()) &lt; target) {

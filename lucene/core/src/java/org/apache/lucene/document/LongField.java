@@ -29,14 +29,14 @@ import org.apache.lucene.util.NumericUtils;
  * This class provides a {@link Field} that enables indexing of long values
  * for efficient range filtering and sorting. Here's an example usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  * document.add(new LongField(name, 6L, Field.Store.NO));
  * </pre>
  * 
  * For optimal performance, re-use the <code>LongField</code> and
  * {@link Document} instance for more than one document:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *  LongField field = new LongField(name, 0L, Field.Store.NO);
  *  Document document = new Document();
  *  document.add(field);

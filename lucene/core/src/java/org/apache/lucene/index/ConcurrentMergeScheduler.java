@@ -210,7 +210,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
    * Returns true if verbosing is enabled. This method is usually used in
    * conjunction with {@link #message(String)}, like that:
    * 
-   * <pre>
+   * <pre class="prettyprint">
    * if (verbose()) {
    *   message(&quot;your message&quot;);
    * }

@@ -44,7 +44,7 @@ import java.io.OutputStream;
  * <p>
  * For the reasons mentioned above, these encoders are usually chained with
  * {@link UniqueValuesIntEncoder} and {@link DGapIntEncoder} in the following
- * manner: <code><pre>
+ * manner: <code><pre class="prettyprint">
  * IntEncoder fourFlags = 
  *         new SortingEncoderFilter(new UniqueValuesIntEncoder(new DGapIntEncoder(new FlagsIntEncoderImpl())));
  * </code></pre>

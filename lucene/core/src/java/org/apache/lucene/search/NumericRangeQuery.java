@@ -49,7 +49,7 @@ import org.apache.lucene.index.Term; // for javadocs
  * <p>You create a new NumericRangeQuery with the static
  * factory methods, eg:
  *
- * <pre>
+ * <pre class="prettyprint">
  * Query q = NumericRangeQuery.newFloatRange("weight", 0.03f, 0.10f, true, true);
  * </pre>
  *

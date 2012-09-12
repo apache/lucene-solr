@@ -30,7 +30,7 @@ import org.apache.lucene.util.BytesRef;
  * are (mostly) unique it's better to use {@link
  * StraightBytesDocValuesField}.  Here's an example usage: 
  * 
- * <pre>
+ * <pre class="prettyprint">
  *   document.add(new DerefBytesDocValuesField(name, new BytesRef("hello")));
  * </pre>
  * 

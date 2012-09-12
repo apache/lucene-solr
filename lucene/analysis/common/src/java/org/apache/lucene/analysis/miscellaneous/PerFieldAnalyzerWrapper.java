@@ -31,13 +31,15 @@ import java.util.Map;
  * 
  * <p>Example usage:
  * 
- * <pre>
- *   Map analyzerPerField = new HashMap();
- *   analyzerPerField.put("firstname", new KeywordAnalyzer());
- *   analyzerPerField.put("lastname", new KeywordAnalyzer());
+ * <pre class="prettyprint">
+ * {@code
+ * Map<String,Analyzer> analyzerPerField = new HashMap<String,Analyzer>();
+ * analyzerPerField.put("firstname", new KeywordAnalyzer());
+ * analyzerPerField.put("lastname", new KeywordAnalyzer());
  *
- *   PerFieldAnalyzerWrapper aWrapper =
- *      new PerFieldAnalyzerWrapper(new StandardAnalyzer(), analyzerPerField);
+ * PerFieldAnalyzerWrapper aWrapper =
+ *   new PerFieldAnalyzerWrapper(new StandardAnalyzer(version), analyzerPerField);
+ * }
  * </pre>
  * 
  * <p>In this example, StandardAnalyzer will be used for all fields except "firstname"

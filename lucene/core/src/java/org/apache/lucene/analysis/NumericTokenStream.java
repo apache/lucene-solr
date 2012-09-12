@@ -47,21 +47,17 @@ import org.apache.lucene.util.NumericUtils;
  *
  * <p>Here's an example usage, for an <code>int</code> field:
  *
- * <pre>
- *  Field field = new Field(name, new NumericTokenStream(precisionStep).setIntValue(value));
- *  field.setOmitNorms(true);
- *  field.setIndexOptions(IndexOptions.DOCS_ONLY);
+ * <pre class="prettyprint">
+ *  Field field = new Field(name, new NumericTokenStream(precisionStep).setIntValue(value), IntField.TYPE_NOT_STORED);
  *  document.add(field);
  * </pre>
  *
  * <p>For optimal performance, re-use the TokenStream and Field instance
  * for more than one document:
  *
- * <pre>
+ * <pre class="prettyprint">
  *  NumericTokenStream stream = new NumericTokenStream(precisionStep);
- *  Field field = new Field(name, stream);
- *  field.setOmitNorms(true);
- *  field.setIndexOptions(IndexOptions.DOCS_ONLY);
+ *  Field field = new Field(name, stream, IntField.TYPE_NOT_STORED);
  *  Document document = new Document();
  *  document.add(field);
  *

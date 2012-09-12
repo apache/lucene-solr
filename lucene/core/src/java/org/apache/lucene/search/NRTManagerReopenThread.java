@@ -29,7 +29,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  *
  * <p> Typical usage looks like this:
  *
- * <pre>
+ * <pre class="prettyprint">
  *   ... open your own writer ...
  * 
  *   NRTManager manager = new NRTManager(writer);
@@ -45,7 +45,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  *
  * Then, for each incoming query, do this:
  *
- * <pre>
+ * <pre class="prettyprint">
  *   // For each incoming query:
  *   IndexSearcher searcher = manager.get();
  *   try {
@@ -58,7 +58,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * You should make changes using the <code>NRTManager</code>; if you later need to obtain
  * a searcher reflecting those changes:
  *
- * <pre>
+ * <pre class="prettyprint">
  *   // ... or updateDocument, deleteDocuments, etc:
  *   long gen = manager.addDocument(...);
  *   
@@ -73,7 +73,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  *
  *
  * When you are done be sure to close both the manager and the reopen thrad:
- * <pre> 
+ * <pre class="prettyprint"> 
  *   reopenThread.close();       
  *   manager.close();
  * </pre>

@@ -25,7 +25,7 @@ import org.apache.lucene.index.DocValues;
  * of a per-document long value for scoring, sorting or value retrieval. Here's an
  * example usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *   document.add(new LongDocValuesField(name, 22L));
  * </pre>
  * 

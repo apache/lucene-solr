@@ -130,7 +130,7 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
   
   /** Calculates the hash code as required by TermsHash during indexing.
    * <p>It is defined as:
-   * <pre>
+   * <pre class="prettyprint">
    *  int hash = 0;
    *  for (int i = offset; i &lt; offset + length; i++) {
    *    hash = 31*hash + bytes[i];

@@ -53,17 +53,17 @@
 <pre class="prettyprint">
   // "fa" Locale is not supported by Sun JDK 1.4 or 1.5
   Collator collator = Collator.getInstance(new Locale("ar"));
-  CollationKeyAnalyzer analyzer = new CollationKeyAnalyzer(Version.LUCENE_40, collator);
+  CollationKeyAnalyzer analyzer = new CollationKeyAnalyzer(version, collator);
   RAMDirectory ramDir = new RAMDirectory();
-  IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(Version.LUCENE_40, analyzer));
+  IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(version, analyzer));
   Document doc = new Document();
-  doc.add(new Field("content", "\u0633\u0627\u0628", 
-                    Field.Store.YES, Field.Index.ANALYZED));
+  doc.add(new TextField("content", "\u0633\u0627\u0628", Field.Store.YES));
   writer.addDocument(doc);
   writer.close();
-  IndexSearcher is = new IndexSearcher(ramDir, true);
+  IndexReader ir = DirectoryReader.open(ramDir);
+  IndexSearcher is = new IndexSearcher(ir);
 
-  QueryParser aqp = new QueryParser(Version.LUCENE_40, "content", analyzer);
+  QueryParser aqp = new QueryParser(version, "content", analyzer);
   aqp.setAnalyzeRangeTerms(true);
     
   // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
@@ -79,20 +79,21 @@
 <h3>Danish Sorting</h3>
 <pre class="prettyprint">
   Analyzer analyzer 
-    = new CollationKeyAnalyzer(Version.LUCENE_40, Collator.getInstance(new Locale("da", "dk")));
+    = new CollationKeyAnalyzer(version, Collator.getInstance(new Locale("da", "dk")));
   RAMDirectory indexStore = new RAMDirectory();
-  IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(Version.LUCENE_40, analyzer));
+  IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(version, analyzer));
   String[] tracer = new String[] { "A", "B", "C", "D", "E" };
   String[] data = new String[] { "HAT", "HUT", "H\u00C5T", "H\u00D8T", "HOT" };
   String[] sortedTracerOrder = new String[] { "A", "E", "B", "D", "C" };
   for (int i = 0 ; i < data.length ; ++i) {
     Document doc = new Document();
-    doc.add(new Field("tracer", tracer[i], Field.Store.YES, Field.Index.NO));
-    doc.add(new Field("contents", data[i], Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(new StoredField("tracer", tracer[i]));
+    doc.add(new TextField("contents", data[i], Field.Store.NO));
     writer.addDocument(doc);
   }
   writer.close();
-  IndexSearcher searcher = new IndexSearcher(indexStore, true);
+  IndexReader ir = DirectoryReader.open(indexStore);
+  IndexSearcher searcher = new IndexSearcher(ir);
   Sort sort = new Sort();
   sort.setSort(new SortField("contents", SortField.STRING));
   Query query = new MatchAllDocsQuery();
@@ -107,15 +108,16 @@
 <pre class="prettyprint">
   Collator collator = Collator.getInstance(new Locale("tr", "TR"));
   collator.setStrength(Collator.PRIMARY);
-  Analyzer analyzer = new CollationKeyAnalyzer(Version.LUCENE_40, collator);
+  Analyzer analyzer = new CollationKeyAnalyzer(version, collator);
   RAMDirectory ramDir = new RAMDirectory();
-  IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(Version.LUCENE_40, analyzer));
+  IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(version, analyzer));
   Document doc = new Document();
-  doc.add(new Field("contents", "DIGY", Field.Store.NO, Field.Index.ANALYZED));
+  doc.add(new TextField("contents", "DIGY", Field.Store.NO));
   writer.addDocument(doc);
   writer.close();
-  IndexSearcher is = new IndexSearcher(ramDir, true);
-  QueryParser parser = new QueryParser(Version.LUCENE_40, "contents", analyzer);
+  IndexReader ir = DirectoryReader.open(ramDir);
+  IndexSearcher is = new IndexSearcher(ir);
+  QueryParser parser = new QueryParser(version, "contents", analyzer);
   Query query = parser.parse("d\u0131gy");   // U+0131: dotless i
   ScoreDoc[] result = is.search(query, null, 1000).scoreDocs;
   assertEquals("The index Term should be included.", 1, result.length);

@@ -58,7 +58,7 @@ import org.apache.lucene.util.Version;
  *
  * <p>Example Usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *  SpellChecker spellchecker = new SpellChecker(spellIndexDirectory);
  *  // To index a field of a user index:
  *  spellchecker.indexDictionary(new LuceneDictionary(my_lucene_reader, a_field));

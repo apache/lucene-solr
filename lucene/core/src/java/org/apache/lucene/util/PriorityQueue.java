@@ -101,7 +101,7 @@ public abstract class PriorityQueue<T> {
    * If this method is extended to return a non-null value, then the following
    * usage pattern is recommended:
    * 
-   * <pre>
+   * <pre class="prettyprint">
    * // extends getSentinelObject() to return a non-null value.
    * PriorityQueue&lt;MyObject&gt; pq = new MyQueue&lt;MyObject&gt;(numHits);
    * // save the 'top' element, which is guaranteed to not be null.
@@ -191,14 +191,14 @@ public abstract class PriorityQueue<T> {
    * Should be called when the Object at top changes values. Still log(n) worst
    * case, but it's at least twice as fast to
    * 
-   * <pre>
+   * <pre class="prettyprint">
    * pq.top().change();
    * pq.updateTop();
    * </pre>
    * 
    * instead of
    * 
-   * <pre>
+   * <pre class="prettyprint">
    * o = pq.pop();
    * o.change();
    * pq.push(o);

@@ -47,7 +47,7 @@ import org.apache.lucene.util.IOUtils;
  *
  * <p>Here's a simple example usage:
  *
- * <pre>
+ * <pre class="prettyprint">
  *   Directory fsDir = FSDirectory.open(new File("/path/to/index"));
  *   NRTCachingDirectory cachedFSDir = new NRTCachingDirectory(fsDir, 5.0, 60.0);
  *   IndexWriterConfig conf = new IndexWriterConfig(Version.LUCENE_32, analyzer);

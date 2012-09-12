@@ -597,7 +597,7 @@ public abstract class TFIDFSimilarity extends Similarity {
    * <p>
    * The default implementation uses:
    * 
-   * <pre>
+   * <pre class="prettyprint">
    * idf(docFreq, searcher.maxDoc());
    * </pre>
    * 

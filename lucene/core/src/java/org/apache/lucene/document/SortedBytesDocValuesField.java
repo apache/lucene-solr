@@ -26,7 +26,7 @@ import org.apache.lucene.util.BytesRef;
  * of a per-document {@link BytesRef} value, indexed for
  * sorting.  Here's an example usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *   document.add(new SortedBytesDocValuesField(name, new BytesRef("hello")));
  * </pre>
  * 
