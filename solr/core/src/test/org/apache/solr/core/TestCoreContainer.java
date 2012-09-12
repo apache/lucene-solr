@@ -40,7 +40,41 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
-  
+
+
+  public void testShareSchema() throws IOException, ParserConfigurationException, SAXException {
+    final File workDir = new File(TEMP_DIR, this.getClass().getName());
+
+    if (workDir.exists()) {
+      FileUtils.deleteDirectory(workDir);
+    }
+    assertTrue("Failed to mkdirs workDir", workDir.mkdirs());
+    
+    String solrHome = SolrResourceLoader.locateSolrHome();
+    File fconf = new File(solrHome, "solr.xml");
+
+    final CoreContainer cores = new CoreContainer(solrHome);
+    System.setProperty("shareSchema", "true");
+    cores.load(solrHome, fconf);
+    try {
+      cores.setPersistent(false);
+      assertTrue(cores.isShareSchema());
+      
+      CoreDescriptor descriptor1 = new CoreDescriptor(cores, "core1", "./collection1");
+      SolrCore core1 = cores.create(descriptor1);
+      
+      CoreDescriptor descriptor2 = new CoreDescriptor(cores, "core2", "./collection1");
+      SolrCore core2 = cores.create(descriptor2);
+      
+      assertSame(core1.getSchema(), core2.getSchema());
+      
+      core1.close();
+      core2.close();
+    } finally {
+      cores.shutdown();
+    }
+  }
+
   @Test
   public void testPersist() throws Exception {
     final File workDir = new File(TEMP_DIR, this.getClass().getName()
