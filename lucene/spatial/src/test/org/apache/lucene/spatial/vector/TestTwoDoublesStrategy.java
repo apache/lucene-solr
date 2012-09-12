@@ -58,8 +58,8 @@ public class TestTwoDoublesStrategy extends StrategyTestCase {
   }
 
   @Test
-  public void testCitiesWithinBBox() throws IOException {
+  public void testCitiesIntersectsBBox() throws IOException {
     getAddAndVerifyIndexedDocuments(DATA_WORLD_CITIES_POINTS);
-    executeQueries(SpatialMatchConcern.FILTER, QTEST_Cities_IsWithin_BBox);
+    executeQueries(SpatialMatchConcern.FILTER, QTEST_Cities_Intersects_BBox);
   }
 }

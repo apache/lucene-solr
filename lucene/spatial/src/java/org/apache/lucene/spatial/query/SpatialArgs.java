@@ -109,10 +109,7 @@ public class SpatialArgs {
     this.operation = operation;
   }
 
-  /** Considers {@link SpatialOperation#BBoxWithin} in returning the shape. */
   public Shape getShape() {
-    if (shape != null && (operation == SpatialOperation.BBoxWithin || operation == SpatialOperation.BBoxIntersects))
-      return shape.getBoundingBox();
     return shape;
   }
 

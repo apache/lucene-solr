@@ -38,7 +38,10 @@ public class SpatialOperation implements Serializable {
   private static final List<SpatialOperation> list = new ArrayList<SpatialOperation>();
 
   // Geometry Operations
+
+  /** Bounding box of the *indexed* shape. */
   public static final SpatialOperation BBoxIntersects = new SpatialOperation("BBoxIntersects", true, false, false);
+  /** Bounding box of the *indexed* shape. */
   public static final SpatialOperation BBoxWithin     = new SpatialOperation("BBoxWithin", true, false, false);
   public static final SpatialOperation Contains       = new SpatialOperation("Contains", true, true, false);
   public static final SpatialOperation Intersects     = new SpatialOperation("Intersects", true, false, false);

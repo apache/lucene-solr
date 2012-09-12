@@ -27,7 +27,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.junit.Assert;
 
@@ -51,8 +50,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
 
   public static final String QTEST_States_IsWithin_BBox   = "states-IsWithin-BBox.txt";
   public static final String QTEST_States_Intersects_BBox = "states-Intersects-BBox.txt";
-
-  public static final String QTEST_Cities_IsWithin_BBox = "cities-IsWithin-BBox.txt";
+  public static final String QTEST_Cities_Intersects_BBox = "cities-Intersects-BBox.txt";
 
   private Logger log = Logger.getLogger(getClass().getName());
 
@@ -85,7 +83,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       document.add(new StringField("id", data.id, Field.Store.YES));
       document.add(new StringField("name", data.name, Field.Store.YES));
       Shape shape = new ShapeReadWriter(ctx).readShape(data.shape);
-      for (IndexableField f : strategy.createIndexableFields(shape)) {
+      for (Field f : strategy.createIndexableFields(shape)) {
         document.add(f);
       }
       if (storeShape)
