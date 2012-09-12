@@ -338,18 +338,6 @@ public abstract class BufferedIndexInput extends IndexInput {
     return toCopy;
   }
   
-  @Override
-  public void copyBytes(IndexOutput out, long numBytes) throws IOException {
-    assert numBytes >= 0: "numBytes=" + numBytes;
-
-    while (numBytes > 0) {
-      if (bufferLength == bufferPosition) {
-        refill();
-      }
-      numBytes -= flushBuffer(out, numBytes);
-    }
-  }
-  
   /**
    * Returns default buffer sizes for the given {@link IOContext}
    */

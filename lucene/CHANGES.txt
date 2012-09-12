@@ -99,6 +99,10 @@ API Changes
   not be overriden by subclasses: per-stream initialization should happen
   in reset().  (Robert Muir)
 
+* LUCENE-4377: Remove IndexInput.copyBytes(IndexOutput, long). 
+  Use DataOutput.copyBytes(DataInput, long) instead.
+  (Mike McCandless, Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor

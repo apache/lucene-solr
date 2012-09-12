@@ -197,7 +197,7 @@ public abstract class Directory implements Closeable {
     try {
       os = to.createOutput(dest, context);
       is = openInput(src, context);
-      is.copyBytes(os, is.length());
+      os.copyBytes(is, is.length());
     } catch (IOException ioe) {
       priorException = ioe;
     } finally {
@@ -313,23 +313,6 @@ public abstract class Directory implements Closeable {
     @Override
     public long length() {
       return length;
-    }
-    
-    @Override
-    public void copyBytes(IndexOutput out, long numBytes) throws IOException {
-      // Copy first whatever is in the buffer
-      numBytes -= flushBuffer(out, numBytes);
-      
-      // If there are more bytes left to copy, delegate the copy task to the
-      // base IndexInput, in case it can do an optimized copy.
-      if (numBytes > 0) {
-        long start = getFilePointer();
-        if (start + numBytes > length) {
-          throw new EOFException("read past EOF: " + this);
-        }
-        base.seek(fileOffset + start);
-        base.copyBytes(out, numBytes);
-      }
     }
   }
 }

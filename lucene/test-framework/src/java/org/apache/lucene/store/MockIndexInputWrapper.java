@@ -119,12 +119,6 @@ public class MockIndexInputWrapper extends IndexInput {
   }
 
   @Override
-  public void copyBytes(IndexOutput out, long numBytes) throws IOException {
-    ensureOpen();
-    delegate.copyBytes(out, numBytes);
-  }
-
-  @Override
   public void readBytes(byte[] b, int offset, int len, boolean useBuffer)
       throws IOException {
     ensureOpen();

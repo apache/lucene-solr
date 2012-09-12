@@ -300,7 +300,7 @@ public class NRTCachingDirectory extends Directory {
       IndexInput in = null;
       try {
         in = cache.openInput(fileName, context);
-        in.copyBytes(out, in.length());
+        out.copyBytes(in, in.length());
       } finally {
         IOUtils.close(in, out);
       }

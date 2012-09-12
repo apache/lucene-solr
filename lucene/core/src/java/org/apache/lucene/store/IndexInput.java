@@ -66,30 +66,6 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
   /** The number of bytes in the file. */
   public abstract long length();
 
-  /**
-   * Copies <code>numBytes</code> bytes to the given {@link IndexOutput}.
-   * <p>
-   * <b>NOTE:</b> this method uses an intermediate buffer to copy the bytes.
-   * Consider overriding it in your implementation, if you can make a better,
-   * optimized copy.
-   * <p>
-   * <b>NOTE</b> ensure that there are enough bytes in the input to copy to
-   * output. Otherwise, different exceptions may be thrown, depending on the
-   * implementation.
-   */
-  public void copyBytes(IndexOutput out, long numBytes) throws IOException {
-    assert numBytes >= 0: "numBytes=" + numBytes;
-
-    byte copyBuf[] = new byte[BufferedIndexInput.BUFFER_SIZE];
-
-    while (numBytes > 0) {
-      final int toCopy = (int) (numBytes > copyBuf.length ? copyBuf.length : numBytes);
-      readBytes(copyBuf, 0, toCopy);
-      out.writeBytes(copyBuf, 0, toCopy);
-      numBytes -= toCopy;
-    }
-  }
-
   @Override
   public String toString() {
     return resourceDescription;
