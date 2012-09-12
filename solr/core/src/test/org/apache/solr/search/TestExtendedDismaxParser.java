@@ -343,8 +343,24 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
         "//doc[3]/str[@name='id'][.='52']"
      );
     
+    // non-trivial bqs
+    assertQ(req("q", "tekna", 
+                "qf", "text_sw", 
+                "defType", "edismax", 
+                "bq", "(text_sw:blasdfadsf id:54)^100", 
+                "bq", "id:[53 TO 53]^10", 
+                "fq", "id:[52 TO 54]", 
+                "fl", "id,score"), 
+            "//doc[1]/str[@name='id'][.='54']",
+            "//doc[2]/str[@name='id'][.='53']",
+            "//doc[3]/str[@name='id'][.='52']"
+            );
+
+    // genuine negative boosts are not legal
+    // see SOLR-3823, SOLR-3278, LUCENE-4378 and 
+    // https://wiki.apache.org/solr/SolrRelevancyFAQ#How_do_I_give_a_negative_.28or_very_low.29_boost_to_documents_that_match_a_query.3F
     assertQ(
-        req("q", "tekna", "qf", "text_sw", "defType", "edismax", "bq", "id:54^-100", "bq", "id:53^10", "bq", "id:52", "fq", "id:[52 TO 54]", "fl", "id,score"), 
+        req("q", "tekna", "qf", "text_sw", "defType", "edismax", "bq", "(*:* -id:54)^100", "bq", "id:53^10", "bq", "id:52", "fq", "id:[52 TO 54]", "fl", "id,score"), 
         "//doc[1]/str[@name='id'][.='53']",
         "//doc[2]/str[@name='id'][.='52']",
         "//doc[3]/str[@name='id'][.='54']"

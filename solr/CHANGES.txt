@@ -149,6 +149,8 @@ Bug Fixes
   if it is configured as multiValued - this has never been properly supported, 
   but previously failed silently in odd ways.  (hossman)
 
+* SOLR-3823: Fix 'bq' parsing in edismax.  Please note that this required 
+  reverting the negative boost support added by SOLR-3278 (hossman)
 
 Other Changes
 ----------------------
