@@ -121,7 +121,7 @@ public class TestCopyBytes extends LuceneTestCase {
     IndexInput input = d.openInput("data", IOContext.DEFAULT);
     IndexOutput outputHeader = d.createOutput("header", IOContext.DEFAULT);
     // copy our 100-byte header
-    input.copyBytes(outputHeader, 100);
+    outputHeader.copyBytes(input, 100);
     outputHeader.close();
     
     // now make N copies of the remaining bytes
@@ -163,7 +163,7 @@ public class TestCopyBytes extends LuceneTestCase {
     @Override
     public void run() {
       try {
-        src.copyBytes(dst, src.length()-100);
+        dst.copyBytes(src, src.length()-100);
         dst.close();
       } catch (IOException ex) {
         throw new RuntimeException(ex);
