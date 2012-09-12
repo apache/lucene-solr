@@ -52,6 +52,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Conseque
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.rules.NoClassHooksShadowingRule;
 import com.carrotsearch.randomizedtesting.rules.NoInstanceHooksOverridesRule;
+import com.carrotsearch.randomizedtesting.rules.StaticFieldsInvariantRule;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesInvariantRule;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
@@ -365,6 +366,18 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /**
+   * Max 10mb of static data stored in a test suite class after the suite is complete.
+   * Prevents static data structures leaking and causing OOMs in subsequent tests.
+   */
+  private final static long STATIC_LEAK_THRESHOLD = 10 * 1024 * 1024;
+
+  /** By-name list of ignored types like loggers etc. */
+  private final static Set<String> STATIC_LEAK_IGNORED_TYPES = 
+      Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
+      "org.slf4j.Logger",
+      "org.apache.solr.SolrLogFormatter")));
+
+  /**
    * This controls how suite-level rules are nested. It is important that _all_ rules declared
    * in {@link LuceneTestCase} are executed in proper order if they depend on each 
    * other.
@@ -375,6 +388,14 @@ public abstract class LuceneTestCase extends Assert {
     .around(ignoreAfterMaxFailures)
     .around(suiteFailureMarker)
     .around(new TestRuleAssertionsRequired())
+    .around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {
+      protected boolean accept(java.lang.reflect.Field field) {
+        if (STATIC_LEAK_IGNORED_TYPES.contains(field.getType().getName())) {
+          return false;
+        }
+        return super.accept(field);
+      }
+    })
     .around(new NoClassHooksShadowingRule())
     .around(new NoInstanceHooksOverridesRule() {
       @Override

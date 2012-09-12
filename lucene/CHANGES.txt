@@ -165,6 +165,9 @@ Optimizations
 
 Build
 
+* LUCENE-4252: Detect/Fail tests when they leak RAM in static fields
+  (Robert Muir, Dawid Weiss)
+
 * LUCENE-4360: Support running the same test suite multiple times in 
   parallel (Dawid Weiss)
 
