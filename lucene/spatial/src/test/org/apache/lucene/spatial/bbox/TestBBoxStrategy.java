@@ -18,6 +18,7 @@ package org.apache.lucene.spatial.bbox;
  */
 
 import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.junit.Before;
@@ -33,6 +34,12 @@ public class TestBBoxStrategy extends StrategyTestCase {
     super.setUp();
     this.ctx = SpatialContext.GEO;
     this.strategy = new BBoxStrategy(ctx, "bbox");
+  }
+
+  /* Convert DATA_WORLD_CITIES_POINTS to bbox */
+  @Override
+  protected Shape convertShapeFromGetDocuments(Shape shape) {
+    return shape.getBoundingBox();
   }
 
   @Test

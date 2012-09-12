@@ -26,7 +26,6 @@ import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
@@ -79,19 +78,19 @@ public class TwoDoublesStrategy extends SpatialStrategy {
 
   @Override
   public Field[] createIndexableFields(Shape shape) {
-    if( shape instanceof Point ) {
-      Point point = (Point)shape;
-      FieldType doubleFieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
-      doubleFieldType.setNumericPrecisionStep(precisionStep);
-      Field[] f = new Field[2];
-      f[0] = new DoubleField(fieldNameX, point.getX(), doubleFieldType);
-      f[1] = new DoubleField(fieldNameY, point.getY(), doubleFieldType);
-      return f;
-    }
-    if( !ignoreIncompatibleGeometry ) {
-      throw new IllegalArgumentException( "TwoDoublesStrategy can not index: "+shape );
-    }
-    return new Field[0]; // nothing (solr does not support null)
+    if (shape instanceof Point)
+      return createIndexableFields((Point) shape);
+    throw new IllegalArgumentException("Can only index Point, not " + shape);
+  }
+
+  /** @see #createIndexableFields(com.spatial4j.core.shape.Shape) */
+  public Field[] createIndexableFields(Point point) {
+    FieldType doubleFieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
+    doubleFieldType.setNumericPrecisionStep(precisionStep);
+    Field[] f = new Field[2];
+    f[0] = new DoubleField(fieldNameX, point.getX(), doubleFieldType);
+    f[1] = new DoubleField(fieldNameY, point.getY(), doubleFieldType);
+    return f;
   }
 
   @Override

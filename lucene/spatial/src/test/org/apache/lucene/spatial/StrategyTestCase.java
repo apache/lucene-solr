@@ -85,15 +85,23 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       document.add(new StringField("id", data.id, Field.Store.YES));
       document.add(new StringField("name", data.name, Field.Store.YES));
       Shape shape = new ShapeReadWriter(ctx).readShape(data.shape);
-      for (Field f : strategy.createIndexableFields(shape)) {
-        document.add(f);
+      shape = convertShapeFromGetDocuments(shape);
+      if (shape != null) {
+        for (Field f : strategy.createIndexableFields(shape)) {
+          document.add(f);
+        }
+        if (storeShape)
+          document.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
       }
-      if (storeShape)
-        document.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
 
       documents.add(document);
     }
     return documents;
+  }
+
+  /** Subclasses may override to transform or remove a shape for indexing */
+  protected Shape convertShapeFromGetDocuments(Shape shape) {
+    return shape;
   }
 
   protected Iterator<SampleData> getSampleData(String testDataFile) throws IOException {

@@ -24,7 +24,6 @@ import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -93,7 +92,12 @@ public class BBoxStrategy extends SpatialStrategy {
 
   @Override
   public Field[] createIndexableFields(Shape shape) {
-    Rectangle bbox = shape.getBoundingBox();
+    if (shape instanceof Rectangle)
+      return createIndexableFields((Rectangle)shape);
+    throw new IllegalArgumentException("Can only index Rectangle, not " + shape);
+  }
+
+  public Field[] createIndexableFields(Rectangle bbox) {
     FieldType doubleFieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
     doubleFieldType.setNumericPrecisionStep(precisionStep);
     Field[] fields = new Field[5];
@@ -111,8 +115,11 @@ public class BBoxStrategy extends SpatialStrategy {
 
   @Override
   public ValueSource makeValueSource(SpatialArgs args) {
+    Shape shape = args.getShape();
+    if (!(shape instanceof Rectangle))
+      throw new IllegalArgumentException("Can only get valueSource by Rectangle, not " + shape);
     return new BBoxSimilarityValueSource(
-        this, new AreaSimilarity(args.getShape().getBoundingBox(), queryPower, targetPower));
+        this, new AreaSimilarity((Rectangle)shape, queryPower, targetPower));
   }
 
 
@@ -136,7 +143,11 @@ public class BBoxStrategy extends SpatialStrategy {
 
 
   private Query makeSpatialQuery(SpatialArgs args) {
-    Rectangle bbox = args.getShape().getBoundingBox();
+    Shape shape = args.getShape();
+    if (!(shape instanceof Rectangle))
+      throw new IllegalArgumentException("Can only query by Rectangle, not " + shape);
+
+    Rectangle bbox = (Rectangle) shape;
     Query spatial = null;
 
     // Useful for understanding Relations:
