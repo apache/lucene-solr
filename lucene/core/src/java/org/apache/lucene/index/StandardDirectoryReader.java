@@ -273,7 +273,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     return reader;
   }
 
-  private synchronized DirectoryReader doOpenNoWriter(IndexCommit commit) throws IOException {
+  private DirectoryReader doOpenNoWriter(IndexCommit commit) throws IOException {
 
     if (commit == null) {
       if (isCurrent()) {
@@ -298,7 +298,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     }.run(commit);
   }
 
-  synchronized DirectoryReader doOpenIfChanged(SegmentInfos infos, IndexWriter writer) throws IOException {
+  DirectoryReader doOpenIfChanged(SegmentInfos infos, IndexWriter writer) throws IOException {
     return StandardDirectoryReader.open(directory, writer, infos, getSequentialSubReaders(), termInfosIndexDivisor);
   }
 
@@ -328,7 +328,7 @@ final class StandardDirectoryReader extends DirectoryReader {
   }
 
   @Override
-  protected synchronized void doClose() throws IOException {
+  protected void doClose() throws IOException {
     IOException ioe = null;
     for (final AtomicReader r : getSequentialSubReaders()) {
       // try to close each reader, even if an exception is thrown
