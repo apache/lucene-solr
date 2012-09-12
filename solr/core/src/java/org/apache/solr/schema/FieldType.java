@@ -607,7 +607,7 @@ public abstract class FieldType extends FieldProperties {
    * check that it's initialization does not violate any fundemental 
    * requirements of the <code>FieldType</code>.  The default implementation 
    * does nothing, but subclasses may chose to throw a {@link SolrException}  
-   * if invariants are violated by the <code>SchemaField.
+   * if invariants are violated by the <code>SchemaField.</code>
    * </p>
    */
   public void checkSchemaField(final SchemaField field) throws SolrException {
