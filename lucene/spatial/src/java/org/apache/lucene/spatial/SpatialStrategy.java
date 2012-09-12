@@ -20,7 +20,6 @@ package org.apache.lucene.spatial;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Filter;
@@ -56,7 +55,6 @@ import org.apache.lucene.spatial.query.SpatialArgs;
  */
 public abstract class SpatialStrategy {
 
-  protected boolean ignoreIncompatibleGeometry = false;
   protected final SpatialContext ctx;
   private final String fieldName;
 
@@ -120,14 +118,6 @@ public abstract class SpatialStrategy {
    * Make a Filter
    */
   public abstract Filter makeFilter(SpatialArgs args);
-
-  public boolean isIgnoreIncompatibleGeometry() {
-    return ignoreIncompatibleGeometry;
-  }
-
-  public void setIgnoreIncompatibleGeometry(boolean ignoreIncompatibleGeometry) {
-    this.ignoreIncompatibleGeometry = ignoreIncompatibleGeometry;
-  }
 
   @Override
   public String toString() {
