@@ -18,7 +18,6 @@ package org.apache.lucene.spatial.prefix;
  */
 
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -55,7 +54,7 @@ public class TestTermQueryPrefixGridStrategy extends SpatialTestCase {
     SpatialArgsParser spatialArgsParser = new SpatialArgsParser();
     // TODO... use a non polygon query
 //    SpatialArgs spatialArgs = spatialArgsParser.parse(
-//        "IsWithin(POLYGON((-127.00390625 39.8125,-112.765625 39.98828125,-111.53515625 31.375,-125.94921875 30.14453125,-127.00390625 39.8125)))",
+//        "Intersects(POLYGON((-127.00390625 39.8125,-112.765625 39.98828125,-111.53515625 31.375,-125.94921875 30.14453125,-127.00390625 39.8125)))",
 //        new SimpleSpatialContext());
 
 //    Query query = prefixGridStrategy.makeQuery(spatialArgs, fieldInfo);

@@ -44,7 +44,7 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
   @Override
   public Filter makeFilter(SpatialArgs args) {
     final SpatialOperation op = args.getOperation();
-    if (! SpatialOperation.is(op, SpatialOperation.IsWithin, SpatialOperation.Intersects, SpatialOperation.BBoxWithin, SpatialOperation.BBoxIntersects))
+    if (op != SpatialOperation.Intersects)
       throw new UnsupportedSpatialOperation(op);
 
     Shape shape = args.getShape();

@@ -61,7 +61,7 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
     //execute queries for each prefix grid scan level
     for(int i = 0; i <= maxLength; i++) {
       ((RecursivePrefixTreeStrategy)strategy).setPrefixGridScanLevel(i);
-      executeQueries(SpatialMatchConcern.FILTER, QTEST_Cities_IsWithin_BBox);
+      executeQueries(SpatialMatchConcern.FILTER, QTEST_Cities_Intersects_BBox);
     }
   }
 

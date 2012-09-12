@@ -192,7 +192,6 @@ public class PortedSolr3Test extends StrategyTestCase {
     addDocument(newDoc(idStr,shape));
   }
 
-  @SuppressWarnings("unchecked")
   private Document newDoc(String id, Shape shape) {
     Document doc = new Document();
     doc.add(new StringField("id", id, Field.Store.YES));
@@ -205,17 +204,19 @@ public class PortedSolr3Test extends StrategyTestCase {
   }
 
   private void checkHitsCircle(String ptStr, double distKM, int assertNumFound, int... assertIds) {
-    _checkHits(SpatialOperation.Intersects, ptStr, distKM, assertNumFound, assertIds);
+    _checkHits(false, ptStr, distKM, assertNumFound, assertIds);
   }
   private void checkHitsBBox(String ptStr, double distKM, int assertNumFound, int... assertIds) {
-    _checkHits(SpatialOperation.BBoxIntersects, ptStr, distKM, assertNumFound, assertIds);
+    _checkHits(true, ptStr, distKM, assertNumFound, assertIds);
   }
 
-  @SuppressWarnings("unchecked")
-  private void _checkHits(SpatialOperation op, String ptStr, double distKM, int assertNumFound, int... assertIds) {
+  private void _checkHits(boolean bbox, String ptStr, double distKM, int assertNumFound, int... assertIds) {
+    SpatialOperation op = SpatialOperation.Intersects;
     Point pt = (Point) new ShapeReadWriter(ctx).readShape(ptStr);
     double distDEG = DistanceUtils.dist2Degrees(distKM, DistanceUtils.EARTH_MEAN_RADIUS_KM);
     Shape shape = ctx.makeCircle(pt, distDEG);
+    if (bbox)
+      shape = shape.getBoundingBox();
 
     SpatialArgs args = new SpatialArgs(op,shape);
     //args.setDistPrecision(0.025);
