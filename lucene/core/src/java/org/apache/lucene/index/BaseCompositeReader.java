@@ -151,7 +151,7 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
   }
   
   @Override
-  public final List<? extends R> getSequentialSubReaders() {
+  protected final List<? extends R> getSequentialSubReaders() {
     return subReadersList;
   }
 }
