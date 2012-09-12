@@ -152,6 +152,9 @@ Bug Fixes
 * SOLR-3823: Fix 'bq' parsing in edismax.  Please note that this required 
   reverting the negative boost support added by SOLR-3278 (hossman)
 
+* SOLR-3827: Fix shareSchema=true in solr.xml 
+  (Tomás Fernández Löbbe via hossman)
+
 Other Changes
 ----------------------
 

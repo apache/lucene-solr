@@ -837,7 +837,7 @@ public class CoreContainer
     
       IndexSchema schema = null;
       if (indexSchemaCache != null) {
-        if (zkController != null) {
+        if (zkController == null) {
           File schemaFile = new File(dcore.getSchemaName());
           if (!schemaFile.isAbsolute()) {
             schemaFile = new File(solrLoader.getInstanceDir() + "conf"
@@ -1434,6 +1434,10 @@ public class CoreContainer
   
   public ZkController getZkController() {
     return zkController;
+  }
+  
+  public boolean isShareSchema() {
+    return shareSchema;
   }
 
   /** The default ShardHandlerFactory used to communicate with other solr instances */
