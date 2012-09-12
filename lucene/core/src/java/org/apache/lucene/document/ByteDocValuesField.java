@@ -25,7 +25,7 @@ import org.apache.lucene.index.DocValues;
  * of a per-document byte value for scoring, sorting or value retrieval. Here's an
  * example usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *   document.add(new ByteDocValuesField(name, (byte) 22));
  * </pre>
  * 

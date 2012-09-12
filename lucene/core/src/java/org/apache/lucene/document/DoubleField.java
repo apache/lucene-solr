@@ -29,14 +29,14 @@ import org.apache.lucene.util.NumericUtils;
  * This class provides a {@link Field} that enables indexing of double values
  * for efficient range filtering and sorting. Here's an example usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  * document.add(new DoubleField(name, 6.0, Field.Store.NO));
  * </pre>
  * 
  * For optimal performance, re-use the <code>DoubleField</code> and
  * {@link Document} instance for more than one document:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *  DoubleField field = new DoubleField(name, 0.0, Field.Store.NO);
  *  Document document = new Document();
  *  document.add(field);

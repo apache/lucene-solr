@@ -25,7 +25,7 @@ import org.apache.lucene.index.DocValues;
  * of a per-document double value for scoring, sorting or value retrieval. Here's an
  * example usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *   document.add(new DoubleDocValuesField(name, 22.0));
  * </pre>
  * 

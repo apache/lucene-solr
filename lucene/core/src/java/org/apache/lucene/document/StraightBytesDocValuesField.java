@@ -29,7 +29,7 @@ import org.apache.lucene.util.BytesRef;
  * field.  If values may be shared it's better to use {@link
  * DerefBytesDocValuesField}.  Here's an example usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *   document.add(new StraightBytesDocValuesField(name, new BytesRef("hello")));
  * </pre>
  * 

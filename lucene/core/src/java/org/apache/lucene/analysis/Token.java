@@ -79,28 +79,28 @@ import org.apache.lucene.util.BytesRef;
   <p>Typical Token reuse patterns:
   <ul>
   <li> Copying text from a string (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
-  <pre>
+  <pre class="prettyprint">
     return reusableToken.reinit(string, startOffset, endOffset[, type]);
   </pre>
   </li>
   <li> Copying some text from a string (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
-  <pre>
+  <pre class="prettyprint">
     return reusableToken.reinit(string, 0, string.length(), startOffset, endOffset[, type]);
   </pre>
   </li>
   </li>
   <li> Copying text from char[] buffer (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
-  <pre>
+  <pre class="prettyprint">
     return reusableToken.reinit(buffer, 0, buffer.length, startOffset, endOffset[, type]);
   </pre>
   </li>
   <li> Copying some text from a char[] buffer (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
-  <pre>
+  <pre class="prettyprint">
     return reusableToken.reinit(buffer, start, end - start, startOffset, endOffset[, type]);
   </pre>
   </li>
   <li> Copying from one one Token to another (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
-  <pre>
+  <pre class="prettyprint">
     return reusableToken.reinit(source.buffer(), 0, source.length(), source.startOffset(), source.endOffset()[, source.type()]);
   </pre>
   </li>

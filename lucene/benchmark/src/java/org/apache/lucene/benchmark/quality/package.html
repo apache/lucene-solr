@@ -34,10 +34,11 @@ For benchmarking TREC collections with TREC QRels, take a look at the
 <p>
 Here is a sample code used to run the TREC 2006 queries 701-850 on the .Gov2 collection:
 
-<pre>
+<pre class="prettyprint">
     File topicsFile = new File("topics-701-850.txt");
     File qrelsFile = new File("qrels-701-850.txt");
-    Searcher searcher = new IndexSearcher("index");
+    IndexReader ir = DirectoryReader.open(directory):
+    IndexSearcher searcher = new IndexSearcher(ir);
 
     int maxResults = 1000;
     String docNameField = "docname"; 

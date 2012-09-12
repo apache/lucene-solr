@@ -39,7 +39,7 @@ import org.apache.lucene.util.Bits;
  * the expanded terms, but this can be customized. 
  * <p>
  * Example:
- * <blockquote><pre>
+ * <blockquote><pre class="prettyprint">
  * {@code
  * WildcardQuery wildcard = new WildcardQuery(new Term("field", "bro?n"));
  * SpanQuery spanWildcard = new SpanMultiTermQueryWrapper<WildcardQuery>(wildcard);

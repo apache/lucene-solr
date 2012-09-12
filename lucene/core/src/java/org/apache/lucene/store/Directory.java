@@ -180,7 +180,7 @@ public abstract class Directory implements Closeable {
    * If you want to copy the entire source directory to the destination one, you
    * can do so like this:
    * 
-   * <pre>
+   * <pre class="prettyprint">
    * Directory to; // the directory to copy to
    * for (String file : dir.listAll()) {
    *   dir.copy(to, file, newFile); // newFile can be either file, or a new name

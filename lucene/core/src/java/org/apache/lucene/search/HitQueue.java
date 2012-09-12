@@ -30,8 +30,8 @@ final class HitQueue extends PriorityQueue<ScoreDoc> {
    * <b>NOTE:</b> in case <code>prePopulate</code> is true, you should pop
    * elements from the queue using the following code example:
    * 
-   * <pre>
-   * PriorityQueue pq = new HitQueue(10, true); // pre-populate.
+   * <pre class="prettyprint">
+   * PriorityQueue&lt;ScoreDoc&gt; pq = new HitQueue(10, true); // pre-populate.
    * ScoreDoc top = pq.top();
    * 
    * // Add/Update one element.

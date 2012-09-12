@@ -25,7 +25,7 @@ import org.apache.lucene.index.DocValues;
  * of a per-document int value for scoring, sorting or value retrieval. Here's an
  * example usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *   document.add(new IntDocValuesField(name, 22));
  * </pre>
  * 

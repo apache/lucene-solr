@@ -31,7 +31,7 @@ import java.util.Set;
  * The cost of reflection is minimized by the following usage of this class:</p>
  * <p>Define <strong>static final</strong> fields in the base class ({@code BaseClass}),
  * where the old and new method are declared:</p>
- * <pre>
+ * <pre class="prettyprint">
  *  static final VirtualMethod&lt;BaseClass&gt; newMethod =
  *   new VirtualMethod&lt;BaseClass&gt;(BaseClass.class, "newName", parameters...);
  *  static final VirtualMethod&lt;BaseClass&gt; oldMethod =
@@ -41,7 +41,7 @@ import java.util.Set;
  * If you try to create a second instance of for the same method/{@code baseClass} combination, an exception is thrown.
  * <p>To detect if e.g. the old method was overridden by a more far subclass on the inheritance path to the current
  * instance's class, use a <strong>non-static</strong> field:</p>
- * <pre>
+ * <pre class="prettyprint">
  *  final boolean isDeprecatedMethodOverridden =
  *   oldMethod.getImplementationDistance(this.getClass()) > newMethod.getImplementationDistance(this.getClass());
  *

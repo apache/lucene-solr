@@ -28,7 +28,7 @@ import org.apache.lucene.index.AtomicReader;      // javadocs
  * in RAM (when loaded via {@link AtomicReader#docValues})
  * using packed ints. Here's an example usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *   document.add(new PackedLongDocValuesField(name, 22L));
  * </pre>
  * 

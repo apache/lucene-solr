@@ -29,14 +29,14 @@ import org.apache.lucene.util.NumericUtils;
  * This class provides a {@link Field} that enables indexing of float values
  * for efficient range filtering and sorting. Here's an example usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  * document.add(new FloatField(name, 6.0F, Field.Store.NO));
  * </pre>
  * 
  * For optimal performance, re-use the <code>FloatField</code> and
  * {@link Document} instance for more than one document:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *  FloatField field = new FloatField(name, 0.0F, Field.Store.NO);
  *  Document document = new Document();
  *  document.add(field);

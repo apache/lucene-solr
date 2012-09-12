@@ -39,7 +39,7 @@ import org.apache.lucene.util.Version;
  * All setter methods return {@link IndexWriterConfig} to allow chaining
  * settings conveniently, for example:
  * 
- * <pre>
+ * <pre class="prettyprint">
  * IndexWriterConfig conf = new IndexWriterConfig(analyzer);
  * conf.setter1().setter2();
  * </pre>

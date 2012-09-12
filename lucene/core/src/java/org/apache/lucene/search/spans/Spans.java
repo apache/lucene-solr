@@ -30,7 +30,7 @@ public abstract class Spans {
 
   /** Skips to the first match beyond the current, whose document number is
    * greater than or equal to <i>target</i>. <p>Returns true iff there is such
-   * a match.  <p>Behaves as if written: <pre>
+   * a match.  <p>Behaves as if written: <pre class="prettyprint">
    *   boolean skipTo(int target) {
    *     do {
    *       if (!next())

@@ -24,7 +24,7 @@ import java.io.OutputStream;
  * An abstract implementation of {@link IntEncoder} which is served as a filter
  * on the values to encode. An encoder filter wraps another {@link IntEncoder}
  * which does the actual encoding. This allows for chaining filters and
- * encoders, such as: <code><pre>
+ * encoders, such as: <code><pre class="prettyprint">
  * new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEnoder()));
  * {@link UniqueValuesIntEncoder} followed by {@link DGapIntEncoder}
   </pre></code>

@@ -59,7 +59,7 @@ import org.apache.lucene.util.ToStringUtils;
  * 
  * <p>a SpanNearQuery with a slop of 0 can be applied across two 
  * {@link SpanTermQuery} objects as follows:
- * <pre>
+ * <pre class="prettyprint">
  *    SpanQuery q1  = new SpanTermQuery(new Term("studentfirstname", "james"));
  *    SpanQuery q2  = new SpanTermQuery(new Term("studentsurname", "jones"));
  *    SpanQuery q2m = new FieldMaskingSpanQuery(q2, "studentfirstname");

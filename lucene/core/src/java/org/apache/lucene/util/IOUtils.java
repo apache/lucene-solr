@@ -56,7 +56,7 @@ public final class IOUtils {
    * may be null, they are ignored. After everything is closed, method either throws <tt>priorException</tt>,
    * if one is supplied, or the first of suppressed exceptions, or completes normally.</p>
    * <p>Sample usage:<br/>
-   * <pre>
+   * <pre class="prettyprint">
    * Closeable resource1 = null, resource2 = null, resource3 = null;
    * ExpectedException priorE = null;
    * try {

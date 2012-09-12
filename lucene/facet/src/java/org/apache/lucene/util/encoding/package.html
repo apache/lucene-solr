@@ -36,7 +36,7 @@ encoders buffer values in-memory and encode in batches in order to
 optimize the encoding, and not closing them may result in loss of
 information or corrupt stream.
 <p>A proper and typical usage of an encoder looks like this:
-<blockquote><pre><code>
+<blockquote><pre class="prettyprint"><code>
 int[] data = &lt;the values to encode&gt;
 IntEncoder encoder = new VInt8IntEncoder();
 OutputStream out = new ByteArrayOutputStream();
@@ -59,7 +59,7 @@ As mentioned above, not all encoders have a matching decoder (like some
 encoder filters which are explained next), however every encoder should
 return a decoder following a call to that method. To complete the
 example above, one can easily iterate over the decoded values like this:
-<blockquote><pre><code>
+<blockquote><pre class="prettyprint"><code>
 IntDecoder d = e.createMatchingDecoder();
 d.reInit(new ByteArrayInputStream(bytes));
 long val;
@@ -94,7 +94,7 @@ in scenarios where an application uses different encoders for different
 streams, and wants to manage some sort of mapping between an encoder ID
 to an IntEncoder/Decoder implementation, so a proper decoder will be
 initialized on the fly:
-<blockquote><pre><code>
+<blockquote><pre class="prettyprint"><code>
 public class TaggingIntEncoder extends IntEncoderFilter {
   
   public TaggingIntEncoder(IntEncoder encoder) {
@@ -128,7 +128,7 @@ public class TaggingIntEncoder extends IntEncoderFilter {
 }
 </code></pre></blockquote>
 And the matching decoder:
-<blockquote><pre><code>
+<blockquote><pre class="prettyprint"><code>
 public class TaggingIntDecoder extends IntDecoder {
   
   // Will be initialized upon calling reInit.

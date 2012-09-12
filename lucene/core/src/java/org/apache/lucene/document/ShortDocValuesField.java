@@ -25,7 +25,7 @@ import org.apache.lucene.index.DocValues;
  * of a per-document short value for scoring, sorting or value retrieval. Here's an
  * example usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *   document.add(new ShortDocValuesField(name, (short) 22));
  * </pre>
  * 
