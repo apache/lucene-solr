@@ -45,6 +45,7 @@
     <module>test-framework</module>
     <module>analysis</module>
     <module>benchmark</module>
+    <module>classification</module>
     <module>demo</module>
     <module>facet</module>
     <module>grouping</module>
