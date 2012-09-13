@@ -26,7 +26,7 @@ import org.apache.lucene.store.*;
  Instances of this reader type can only
  be used to get stored fields from the underlying AtomicReaders,
  but it is not possible to directly retrieve postings. To do that, get
- the {@link AtomicReaderContext} for all sub-readers via {@link #leaves}.
+ the {@link AtomicReaderContext} for all sub-readers via {@link #leaves()}.
  Alternatively, you can mimic an {@link AtomicReader} (with a serious slowdown),
  by wrapping composite readers with {@link SlowCompositeReaderWrapper}.
  
