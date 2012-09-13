@@ -18,33 +18,44 @@ package org.apache.lucene.index;
  */
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.util.BytesRef;
 
 /** 
 * StoredDocument is retrieved from IndexReader containing only stored fields from indexed {@link IndexDocument}.
 */
+// TODO: shouldn't this really be in the .document package?
 public class StoredDocument implements Iterable<StorableField>{
   
   private final List<StorableField> fields = new ArrayList<StorableField>();
   
-  
+  /**
+   * Adds a field to a document.
+   * <p> This method supports construction of a StoredDocument from a 
+   * {@link StoredFieldVisitor}. This method cannot
+   * be used to change the content of an existing index! In order to achieve this,
+   * a document has to be deleted from an index and a new changed version of that
+   * document has to be added.</p>
+   */
   public final void add(StorableField field) {
     fields.add(field);
   }
   
+  /**
+   * Returns an array of {@link StorableField}s with the given name.
+   * This method returns an empty array when there are no
+   * matching fields.  It never returns null.
+   *
+   * @param name the name of the field
+   * @return a <code>StorableField[]</code> array
+   */
   public StorableField[] getFields(String name) {
     List<StorableField> result = new ArrayList<StorableField>();
     for (StorableField field : fields) {
@@ -76,7 +87,7 @@ public class StoredDocument implements Iterable<StorableField>{
    * index, e.g. {@link IndexSearcher#doc(int)} or {@link
    * IndexReader#document(int)}.
    * 
-   * @return an immutable <code>List[StorableField]</code> 
+   * @return an immutable <code>List&lt;StorableField&gt;</code> 
    */
   public final List<StorableField> getFields() {
     return fields;
@@ -94,7 +105,7 @@ public class StoredDocument implements Iterable<StorableField>{
    * returns null.
    *
    * @param name the name of the field
-   * @return a <code>byte[][]</code> of binary field values
+   * @return a <code>BytesRef[]</code> of binary field values
    */
    public final BytesRef[] getBinaryValues(String name) {
      final List<BytesRef> result = new ArrayList<BytesRef>();
@@ -117,7 +128,7 @@ public class StoredDocument implements Iterable<StorableField>{
    * There may be non-binary fields with the same name.
    *
    * @param name the name of the field.
-   * @return a <code>byte[]</code> containing the binary field value or <code>null</code>
+   * @return a <code>BytesRef</code> containing the binary field value or <code>null</code>
    */
    public final BytesRef getBinaryValue(String name) {
      for (StorableField field : fields) {

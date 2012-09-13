@@ -134,7 +134,7 @@ public final class Document implements IndexDocument {
   * returns null.
   *
   * @param name the name of the field
-  * @return a <code>byte[][]</code> of binary field values
+  * @return a <code>BytesRef[]</code> of binary field values
   */
   public final BytesRef[] getBinaryValues(String name) {
     final List<BytesRef> result = new ArrayList<BytesRef>();
@@ -160,7 +160,7 @@ public final class Document implements IndexDocument {
   * There may be non-binary fields with the same name.
   *
   * @param name the name of the field.
-  * @return a <code>byte[]</code> containing the binary field value or <code>null</code>
+  * @return a <code>BytesRef</code> containing the binary field value or <code>null</code>
   */
   public final BytesRef getBinaryValue(String name) {
     Iterator<Field> it = storedFieldsIterator();
@@ -196,7 +196,7 @@ public final class Document implements IndexDocument {
    * matching fields.  It never returns null.
    *
    * @param name the name of the field
-   * @return a <code>Fieldable[]</code> array
+   * @return a <code>Field[]</code> array
    */
   public Field[] getFields(String name) {
     List<Field> result = new ArrayList<Field>();
@@ -215,7 +215,7 @@ public final class Document implements IndexDocument {
    * index, e.g. {@link IndexSearcher#doc(int)} or {@link
    * IndexReader#document(int)}.
    * 
-   * @return an immutable <code>List[Field]</code> 
+   * @return an immutable <code>List&lt;Field&gt;</code> 
    */
   public final List<Field> getFields() {
     return Collections.unmodifiableList(fields);
