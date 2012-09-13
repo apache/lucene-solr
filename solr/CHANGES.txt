@@ -158,6 +158,11 @@ Bug Fixes
 * SOLR-3809: Fixed config file replication when subdirectories are used
   (Emmanuel Espina via hossman)
 
+* SOLR-3828: Fixed QueryElevationComponent so that using 'markExcludes' does 
+  not modify the result set or ranking of 'excluded' documents relative to 
+  not using elevation at all.  (Alexey Serba via hossman)
+
+
 Other Changes
 ----------------------
 
