@@ -286,7 +286,7 @@ class FieldCacheImpl implements FieldCache {
 
   /** Expert: Every composite-key in the internal cache is of this type. */
   static class Entry {
-    final String field;        // which Fieldable
+    final String field;        // which Field
     final Object custom;       // which custom comparator or parser
 
     /** Creates one of these objects for a custom comparator/parser. */

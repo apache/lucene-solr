@@ -196,7 +196,7 @@ public class IndexSearcher {
     return reader.document(docID, fieldsToLoad);
   }
 
-  /** Expert: Set the Similarity implementation used by this Searcher.
+  /** Expert: Set the Similarity implementation used by this IndexSearcher.
    *
    */
   public void setSimilarity(Similarity similarity) {
