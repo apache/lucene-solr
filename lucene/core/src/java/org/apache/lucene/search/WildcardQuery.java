@@ -28,8 +28,7 @@ import java.util.List;
 
 /** Implements the wildcard search query. Supported wildcards are <code>*</code>, which
  * matches any character sequence (including the empty one), and <code>?</code>,
- * which matches any single character. If you want to treat a wildcard as a literal
- * character instead, escape it with '\'.
+ * which matches any single character. '\' is the escape character.
  * <p>
  * Note this query can be slow, as it
  * needs to iterate over many terms. In order to prevent extremely slow WildcardQueries,
