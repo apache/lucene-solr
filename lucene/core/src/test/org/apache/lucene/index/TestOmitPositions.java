@@ -225,4 +225,41 @@ public class TestOmitPositions extends LuceneTestCase {
     assertNoPrx(ram);
     ram.close();
   }
+  
+  /** make sure we downgrade positions and payloads correctly */
+  public void testMixing() throws Exception {
+    // no positions
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+    ft.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    
+    for (int i = 0; i < 20; i++) {
+      Document doc = new Document();
+      if (i < 19 && random().nextBoolean()) {
+        for (int j = 0; j < 50; j++) {
+          doc.add(new TextField("foo", "i have positions", Field.Store.NO));
+        }
+      } else {
+        for (int j = 0; j < 50; j++) {
+          doc.add(new Field("foo", "i have no positions", ft));
+        }
+      }
+      iw.addDocument(doc);
+      iw.commit();
+    }
+    
+    if (random().nextBoolean()) {
+      iw.forceMerge(1);
+    }
+    
+    DirectoryReader ir = iw.getReader();
+    FieldInfos fis = MultiFields.getMergedFieldInfos(ir);
+    assertEquals(IndexOptions.DOCS_AND_FREQS, fis.fieldInfo("foo").getIndexOptions());
+    assertFalse(fis.fieldInfo("foo").hasPayloads());
+    iw.close();
+    ir.close();
+    dir.close(); // checkindex
+  }
 }
