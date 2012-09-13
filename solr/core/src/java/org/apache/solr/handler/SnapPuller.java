@@ -967,6 +967,14 @@ public class SnapPuller {
 
       this.file = new File(copy2Dir, saveAs);
       
+      File parentDir = this.file.getParentFile();
+      if( ! parentDir.exists() ){
+        if ( ! parentDir.mkdirs() ) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                                  "Failed to create (sub)directory for file: " + saveAs);
+        }
+      }
+      
       this.fileOutputStream = new FileOutputStream(file);
       this.fileChannel = this.fileOutputStream.getChannel();
 

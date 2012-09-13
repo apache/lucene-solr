@@ -411,6 +411,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
 
     slaveJetty.stop();
+
+    // setup an xslt dir to force subdir file replication
+    File masterXsltDir = new File(master.getConfDir() + File.separator + "xslt");
+    File masterXsl = new File(masterXsltDir, "dummy.xsl");
+    assertTrue(masterXsltDir.mkdir());
+    assertTrue(masterXsl.createNewFile());
+
+    File slaveXsltDir = new File(slave.getConfDir() + File.separator + "xslt");
+    File slaveXsl = new File(slaveXsltDir, "dummy.xsl");
+    assertFalse(slaveXsltDir.exists());
+
     slaveJetty = createJetty(slave);
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
@@ -425,6 +436,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveQueryRsp = rQuery(1, "*:*", slaveClient);
     SolrDocument d = ((SolrDocumentList) slaveQueryRsp.get("response")).get(0);
     assertEquals("newname = 2000", (String) d.getFieldValue("newname"));
+
+    assertTrue(slaveXsltDir.isDirectory());
+    assertTrue(slaveXsl.exists());
 
   }
 
