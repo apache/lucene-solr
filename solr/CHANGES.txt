@@ -162,6 +162,8 @@ Bug Fixes
   not modify the result set or ranking of 'excluded' documents relative to 
   not using elevation at all.  (Alexey Serba via hossman)
 
+* SOLR-3569: Fixed debug output on distributed requests when there are no 
+  results found.  (David Bowen via hossman)
 
 Other Changes
 ----------------------
