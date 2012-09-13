@@ -375,7 +375,8 @@ public abstract class LuceneTestCase extends Assert {
   private final static Set<String> STATIC_LEAK_IGNORED_TYPES = 
       Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(
       "org.slf4j.Logger",
-      "org.apache.solr.SolrLogFormatter")));
+      "org.apache.solr.SolrLogFormatter",
+      EnumSet.class.getName())));
 
   /**
    * This controls how suite-level rules are nested. It is important that _all_ rules declared
@@ -390,7 +391,12 @@ public abstract class LuceneTestCase extends Assert {
     .around(new TestRuleAssertionsRequired())
     .around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {
       protected boolean accept(java.lang.reflect.Field field) {
+        // Don't count known classes that consume memory once.
         if (STATIC_LEAK_IGNORED_TYPES.contains(field.getType().getName())) {
+          return false;
+        }
+        // Don't count references from ourselves, we're top-level.
+        if (field.getDeclaringClass() == LuceneTestCase.class) {
           return false;
         }
         return super.accept(field);
