@@ -4,7 +4,7 @@
   <classpathentry kind="src" path="lucene/core/src/resources"/>
   <classpathentry kind="src" path="lucene/core/src/test"/>
   <classpathentry kind="src" path="lucene/codecs/src/java"/>
-  <classpathentry kind="src" output="bin/codecs" path="lucene/codecs/src/resources"/>
+  <classpathentry kind="src" output="eclipse-build/codecs" path="lucene/codecs/src/resources"/>
   <classpathentry kind="src" path="lucene/codecs/src/test"/>
   <classpathentry kind="src" path="lucene/demo/src/java"/>
   <classpathentry kind="src" path="lucene/demo/src/resources"/>
@@ -18,30 +18,30 @@
   <classpathentry kind="src" path="lucene/sandbox/src/java"/>
   <classpathentry kind="src" path="lucene/sandbox/src/test"/>
   <classpathentry kind="src" path="lucene/test-framework/src/java"/>
-  <classpathentry kind="src" output="bin/tests-framework" path="lucene/test-framework/src/resources"/>
+  <classpathentry kind="src" output="eclipse-build/tests-framework" path="lucene/test-framework/src/resources"/>
   <classpathentry kind="src" path="lucene/analysis/common/src/java"/>
-  <classpathentry kind="src" output="bin/analysis-common" path="lucene/analysis/common/src/resources"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-common" path="lucene/analysis/common/src/resources"/>
   <classpathentry kind="src" path="lucene/analysis/common/src/test"/>
   <classpathentry kind="src" path="lucene/analysis/icu/src/java"/>
-  <classpathentry kind="src" output="bin/analysis-icu" path="lucene/analysis/icu/src/resources"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-icu" path="lucene/analysis/icu/src/resources"/>
   <classpathentry kind="src" path="lucene/analysis/icu/src/test"/>
   <classpathentry kind="src" path="lucene/analysis/kuromoji/src/java"/>
-  <classpathentry kind="src" output="bin/analysis-kuromoji" path="lucene/analysis/kuromoji/src/resources"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-kuromoji" path="lucene/analysis/kuromoji/src/resources"/>
   <classpathentry kind="src" path="lucene/analysis/kuromoji/src/test"/>
   <classpathentry kind="src" path="lucene/analysis/phonetic/src/java"/>
-  <classpathentry kind="src" output="bin/analysis-phonetic" path="lucene/analysis/phonetic/src/resources"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-phonetic" path="lucene/analysis/phonetic/src/resources"/>
   <classpathentry kind="src" path="lucene/analysis/phonetic/src/test"/>
   <classpathentry kind="src" path="lucene/analysis/smartcn/src/java"/>
-  <classpathentry kind="src" output="bin/analysis-smartcn" path="lucene/analysis/smartcn/src/resources"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-smartcn" path="lucene/analysis/smartcn/src/resources"/>
   <classpathentry kind="src" path="lucene/analysis/smartcn/src/test"/>
   <classpathentry kind="src" path="lucene/analysis/stempel/src/java"/>
-  <classpathentry kind="src" output="bin/analysis-stempel" path="lucene/analysis/stempel/src/resources"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-stempel" path="lucene/analysis/stempel/src/resources"/>
   <classpathentry kind="src" path="lucene/analysis/stempel/src/test"/>
   <classpathentry kind="src" path="lucene/analysis/morfologik/src/java"/>
-  <classpathentry kind="src" output="bin/analysis-morfologik" path="lucene/analysis/morfologik/src/resources"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-morfologik" path="lucene/analysis/morfologik/src/resources"/>
   <classpathentry kind="src" path="lucene/analysis/morfologik/src/test"/>
   <classpathentry kind="src" path="lucene/analysis/uima/src/java"/>
-  <classpathentry kind="src" output="bin/analysis-uima" path="lucene/analysis/uima/src/resources"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-uima" path="lucene/analysis/uima/src/resources"/>
   <classpathentry kind="src" path="lucene/analysis/uima/src/test"/>
   <classpathentry kind="src" path="lucene/benchmark/src/java"/>
   <classpathentry kind="src" path="lucene/benchmark/src/test"/>
@@ -188,5 +188,5 @@
   <classpathentry kind="lib" path="solr/contrib/extraction/lib/vorbis-java-tika-0.1.jar"/>
   <classpathentry kind="lib" path="solr/contrib/extraction/lib/xercesImpl-2.9.1.jar"/>
   <classpathentry kind="lib" path="solr/contrib/extraction/lib/xz-1.0.jar"/>
-  <classpathentry kind="output" path="bin/other"/>
+  <classpathentry kind="output" path="eclipse-build/other"/>
 </classpath>
