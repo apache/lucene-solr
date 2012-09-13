@@ -41,6 +41,11 @@
   <doc id="5" />
   <doc id="6" exclude="true" />
  </query>
+ 
+ <query text="QQQQ">
+  <doc id="10" exclude="true" />
+ </query>
+ 
 
  <query text="solr">
   <doc id="7" />

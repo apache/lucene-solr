@@ -385,9 +385,6 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             //we are only going to mark items as excluded, not actually exclude them.  This works
             //with the EditorialMarkerFactory
             rb.req.getContext().put(EXCLUDED, booster.excludeIds);
-            for (TermQuery tq : booster.exclude) {
-              newq.add(new BooleanClause(tq, BooleanClause.Occur.SHOULD));
-            }
           }
         }
         rb.setQuery(newq);
