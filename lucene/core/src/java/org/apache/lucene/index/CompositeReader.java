@@ -22,12 +22,13 @@ import java.util.List;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
 
-/** Instances of this reader type can only
-  be used to get stored fields from the underlying AtomicReaders,
-  but it is not possible to directly retrieve postings. To do that, get
-  the sub-readers via {@link #getSequentialSubReaders}.
-  Alternatively, you can mimic an {@link AtomicReader} (with a serious slowdown),
-  by wrapping composite readers with {@link SlowCompositeReaderWrapper}.
+/**
+ Instances of this reader type can only
+ be used to get stored fields from the underlying AtomicReaders,
+ but it is not possible to directly retrieve postings. To do that, get
+ the {@link AtomicReaderContext} for all sub-readers via {@link #leaves}.
+ Alternatively, you can mimic an {@link AtomicReader} (with a serious slowdown),
+ by wrapping composite readers with {@link SlowCompositeReaderWrapper}.
  
  <p>IndexReader instances for indexes on disk are usually constructed
  with a call to one of the static <code>DirectoryReader.open()</code> methods,
