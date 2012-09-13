@@ -112,7 +112,7 @@ public final class Document implements Iterable<IndexableField> {
   * returns null.
   *
   * @param name the name of the field
-  * @return a <code>byte[][]</code> of binary field values
+  * @return a <code>BytesRef[]</code> of binary field values
   */
   public final BytesRef[] getBinaryValues(String name) {
     final List<BytesRef> result = new ArrayList<BytesRef>();
@@ -135,7 +135,7 @@ public final class Document implements Iterable<IndexableField> {
   * There may be non-binary fields with the same name.
   *
   * @param name the name of the field.
-  * @return a <code>byte[]</code> containing the binary field value or <code>null</code>
+  * @return a <code>BytesRef</code> containing the binary field value or <code>null</code>
   */
   public final BytesRef getBinaryValue(String name) {
     for (IndexableField field : fields) {
@@ -168,7 +168,7 @@ public final class Document implements Iterable<IndexableField> {
    * matching fields.  It never returns null.
    *
    * @param name the name of the field
-   * @return a <code>Fieldable[]</code> array
+   * @return a <code>IndexableField[]</code> array
    */
   public IndexableField[] getFields(String name) {
     List<IndexableField> result = new ArrayList<IndexableField>();
