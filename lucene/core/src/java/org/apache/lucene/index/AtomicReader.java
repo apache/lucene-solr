@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 
 /** {@code AtomicReader} is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -67,17 +66,17 @@ public abstract class AtomicReader extends IndexReader {
   public abstract Fields fields() throws IOException;
   
   @Override
-  public final int docFreq(String field, BytesRef term) throws IOException {
+  public final int docFreq(Term term) throws IOException {
     final Fields fields = fields();
     if (fields == null) {
       return 0;
     }
-    final Terms terms = fields.terms(field);
+    final Terms terms = fields.terms(term.field());
     if (terms == null) {
       return 0;
     }
     final TermsEnum termsEnum = terms.iterator(null);
-    if (termsEnum.seekExact(term, true)) {
+    if (termsEnum.seekExact(term.bytes(), true)) {
       return termsEnum.docFreq();
     } else {
       return 0;
@@ -89,17 +88,17 @@ public abstract class AtomicReader extends IndexReader {
    * field does not exists.  This method does not take into
    * account deleted documents that have not yet been merged
    * away. */
-  public final long totalTermFreq(String field, BytesRef term) throws IOException {
+  public final long totalTermFreq(Term term) throws IOException {
     final Fields fields = fields();
     if (fields == null) {
       return 0;
     }
-    final Terms terms = fields.terms(field);
+    final Terms terms = fields.terms(term.field());
     if (terms == null) {
       return 0;
     }
     final TermsEnum termsEnum = terms.iterator(null);
-    if (termsEnum.seekExact(term, true)) {
+    if (termsEnum.seekExact(term.bytes(), true)) {
       return termsEnum.totalTermFreq();
     } else {
       return 0;
@@ -115,61 +114,40 @@ public abstract class AtomicReader extends IndexReader {
     return fields.terms(field);
   }
 
-  /** Returns {@link DocsEnum} for the specified field &
-   *  term.  This will return null if either the field or
-   *  term does not exist. */
-  public final DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term) throws IOException {
-    return termDocsEnum(liveDocs, field, term, DocsEnum.FLAG_FREQS);
-  }
-
-  /** Returns {@link DocsEnum} for the specified field &
-   *  term, with control over whether freqs are required.
-   *  Some codecs may be able to optimize their
-   *  implementation when freqs are not required. This will
-   *  return null if the field or term does not
-   *  exist.  See {@link TermsEnum#docs(Bits,DocsEnum,int)}. */
-  public final DocsEnum termDocsEnum(Bits liveDocs, String field, BytesRef term, int flags) throws IOException {
-    assert field != null;
-    assert term != null;
+  /** Returns {@link DocsEnum} for the specified term.
+   *  This will return null if either the field or
+   *  term does not exist. 
+   *  @see TermsEnum#docs(Bits, DocsEnum) */
+  public final DocsEnum termDocsEnum(Term term) throws IOException {
+    assert term.field() != null;
+    assert term.bytes() != null;
     final Fields fields = fields();
     if (fields != null) {
-      final Terms terms = fields.terms(field);
+      final Terms terms = fields.terms(term.field());
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator(null);
-        if (termsEnum.seekExact(term, true)) {
-          return termsEnum.docs(liveDocs, null, flags);
+        if (termsEnum.seekExact(term.bytes(), true)) {
+          return termsEnum.docs(getLiveDocs(), null);
         }
       }
     }
     return null;
   }
-  
+
   /** Returns {@link DocsAndPositionsEnum} for the specified
-   *  field & term.  This will return null if the
+   *  term.  This will return null if the
    *  field or term does not exist or positions weren't indexed. 
-   *  @see #termPositionsEnum(Bits, String, BytesRef, int) */
-  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term) throws IOException {
-    return termPositionsEnum(liveDocs, field, term, DocsAndPositionsEnum.FLAG_OFFSETS | DocsAndPositionsEnum.FLAG_PAYLOADS);
-  }
-
-
-  /** Returns {@link DocsAndPositionsEnum} for the specified
-   *  field & term, with control over whether offsets and payloads are
-   *  required.  Some codecs may be able to optimize their
-   *  implementation when offsets and/or payloads are not required.
-   *  This will return null if the field or term
-   *  does not exist or positions weren't indexed.  See
-   *  {@link TermsEnum#docsAndPositions(Bits,DocsAndPositionsEnum,int)}. */
-  public final DocsAndPositionsEnum termPositionsEnum(Bits liveDocs, String field, BytesRef term, int flags) throws IOException {
-    assert field != null;
-    assert term != null;
+   *  @see TermsEnum#docsAndPositions(Bits, DocsAndPositionsEnum) */
+  public final DocsAndPositionsEnum termPositionsEnum(Term term) throws IOException {
+    assert term.field() != null;
+    assert term.bytes() != null;
     final Fields fields = fields();
     if (fields != null) {
-      final Terms terms = fields.terms(field);
+      final Terms terms = fields.terms(term.field());
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator(null);
-        if (termsEnum.seekExact(term, true)) {
-          return termsEnum.docsAndPositions(liveDocs, null, flags);
+        if (termsEnum.seekExact(term.bytes(), true)) {
+          return termsEnum.docsAndPositions(getLiveDocs(), null);
         }
       }
     }

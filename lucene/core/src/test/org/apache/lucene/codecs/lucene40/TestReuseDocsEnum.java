@@ -156,7 +156,15 @@ public class TestReuseDocsEnum extends LuceneTestCase {
       return null;
     }
     AtomicReader indexReader = readers.get(random().nextInt(readers.size())).reader();
-    return indexReader.termDocsEnum(bits, field, term, random().nextBoolean() ? DocsEnum.FLAG_FREQS : 0);
+    Terms terms = indexReader.terms(field);
+    if (terms == null) {
+      return null;
+    }
+    TermsEnum iterator = terms.iterator(null);
+    if (iterator.seekExact(term, true)) {
+      return iterator.docs(bits, null, random().nextBoolean() ? DocsEnum.FLAG_FREQS : 0);
+    }
+    return null;
   }
 
   /**

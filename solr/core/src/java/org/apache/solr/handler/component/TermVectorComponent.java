@@ -18,6 +18,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
@@ -381,13 +382,19 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
           }
         }
       }
-
-      if (fieldOptions.docFreq) {
-        termInfo.add("df", getDocFreq(reader, field, text));
+      
+      int df = 0;
+      if (fieldOptions.docFreq || fieldOptions.tfIdf) {
+        df = reader.docFreq(new Term(field, text));
       }
 
+      if (fieldOptions.docFreq) {
+        termInfo.add("df", df);
+      }
+
+      // TODO: this is not TF/IDF by anyone's definition!
       if (fieldOptions.tfIdf) {
-        double tfIdfVal = ((double) freq) / getDocFreq(reader, field, text);
+        double tfIdfVal = ((double) freq) / df;
         termInfo.add("tf-idf", tfIdfVal);
       }
     }
@@ -404,16 +411,6 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
         }
       }
-    }
-    return result;
-  }
-
-  private static int getDocFreq(IndexReader reader, String field, BytesRef term) {
-    int result = 1;
-    try {
-      result = reader.docFreq(field, term);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
     }
     return result;
   }

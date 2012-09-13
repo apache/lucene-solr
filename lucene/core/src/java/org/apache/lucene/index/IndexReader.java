@@ -31,7 +31,6 @@ import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 
 /** IndexReader is an abstract class, providing an interface for accessing an
  index.  Search of an index is done entirely through this abstract interface,
@@ -432,15 +431,17 @@ public abstract class IndexReader implements Closeable {
    * <code>term</code>.  This method returns 0 if the term or
    * field does not exists.  This method does not take into
    * account deleted documents that have not yet been merged
-   * away. */
-  public final int docFreq(Term term) throws IOException {
-    return docFreq(term.field(), term.bytes());
-  }
-
-  /** Returns the number of documents containing the
+   * away. 
+   * @see TermsEnum#docFreq()
+   */
+  public abstract int docFreq(Term term) throws IOException;
+  
+  /** Returns the number of documents containing the term
    * <code>term</code>.  This method returns 0 if the term or
-   * field does not exists.  This method does not take into
-   * account deleted documents that have not yet been merged
-   * away. */
-  public abstract int docFreq(String field, BytesRef term) throws IOException;
+   * field does not exists, or -1 if the Codec does not support
+   * the measure.  This method does not take into account deleted 
+   * documents that have not yet been merged away.
+   * @see TermsEnum#totalTermFreq() 
+   */
+  public abstract long totalTermFreq(Term term) throws IOException;
 }

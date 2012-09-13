@@ -121,7 +121,7 @@ public class SimpleNaiveBayesClassifier implements Classifier {
     Terms terms = MultiFields.getTerms(atomicReader, textFieldName);
     long numPostings = terms.getSumDocFreq(); // number of term/doc pairs
     double avgNumberOfUniqueTerms = numPostings / (double) terms.getDocCount(); // avg # of unique terms per doc
-    int docsWithC = atomicReader.docFreq(classFieldName, new BytesRef(c));
+    int docsWithC = atomicReader.docFreq(new Term(classFieldName, c));
     return avgNumberOfUniqueTerms * docsWithC; // avg # of unique terms in text field per doc * # docs with c
   }
 

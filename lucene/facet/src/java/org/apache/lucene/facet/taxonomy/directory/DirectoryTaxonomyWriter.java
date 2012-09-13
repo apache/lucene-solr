@@ -411,10 +411,14 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     try {
       final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter));
       for (AtomicReaderContext ctx : reader.leaves()) {
-        DocsEnum docs = ctx.reader().termDocsEnum(null, Consts.FULL, catTerm, 0);
-        if (docs != null) {
-          doc = docs.nextDoc() + ctx.docBase;
-          break;
+        Terms terms = ctx.reader().terms(Consts.FULL);
+        if (terms != null) {
+          TermsEnum termsEnum = terms.iterator(null);
+          if (termsEnum.seekExact(catTerm, true)) {
+            // TODO: is it really ok that null is passed here as liveDocs?
+            DocsEnum docs = termsEnum.docs(null, null, 0);
+            doc = docs.nextDoc() + ctx.docBase;
+          }
         }
       }
     } finally {
@@ -452,10 +456,14 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     try {
       final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter, prefixLen));
       for (AtomicReaderContext ctx : reader.leaves()) {
-        DocsEnum docs = ctx.reader().termDocsEnum(null, Consts.FULL, catTerm, 0);
-        if (docs != null) {
-          doc = docs.nextDoc() + ctx.docBase;
-          break;
+        Terms terms = ctx.reader().terms(Consts.FULL);
+        if (terms != null) {
+          TermsEnum termsEnum = terms.iterator(null);
+          if (termsEnum.seekExact(catTerm, true)) {
+            // TODO: is it really ok that null is passed here as liveDocs?
+            DocsEnum docs = termsEnum.docs(null, null, 0);
+            doc = docs.nextDoc() + ctx.docBase;
+          }
         }
       }
     } finally {

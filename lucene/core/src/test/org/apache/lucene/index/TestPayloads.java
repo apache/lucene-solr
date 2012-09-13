@@ -605,7 +605,7 @@ public class TestPayloads extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     AtomicReader sr = SlowCompositeReaderWrapper.wrap(reader);
-    DocsAndPositionsEnum de = sr.termPositionsEnum(null, "field", new BytesRef("withPayload"));
+    DocsAndPositionsEnum de = sr.termPositionsEnum(new Term("field", "withPayload"));
     de.nextDoc();
     de.nextPosition();
     assertEquals(new BytesRef("test"), de.getPayload());
@@ -639,7 +639,7 @@ public class TestPayloads extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     SegmentReader sr = getOnlySegmentReader(reader);
-    DocsAndPositionsEnum de = sr.termPositionsEnum(null, "field", new BytesRef("withPayload"));
+    DocsAndPositionsEnum de = sr.termPositionsEnum(new Term("field", "withPayload"));
     de.nextDoc();
     de.nextPosition();
     assertEquals(new BytesRef("test"), de.getPayload());

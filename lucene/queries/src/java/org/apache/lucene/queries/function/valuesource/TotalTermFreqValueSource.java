@@ -18,6 +18,7 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
@@ -65,7 +66,7 @@ public class TotalTermFreqValueSource extends ValueSource {
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     long totalTermFreq = 0;
     for (AtomicReaderContext readerContext : searcher.getTopReaderContext().leaves()) {
-      long val = readerContext.reader().totalTermFreq(indexedField, indexedBytes);
+      long val = readerContext.reader().totalTermFreq(new Term(indexedField, indexedBytes));
       if (val == -1) {
         totalTermFreq = -1;
         break;

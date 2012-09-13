@@ -103,6 +103,12 @@ API Changes
   Use DataOutput.copyBytes(DataInput, long) instead.
   (Mike McCandless, Robert Muir)
 
+* LUCENE-4355: Simplify AtomicReader's sugar methods such as termDocsEnum,
+  termPositionsEnum, docFreq, and totalTermFreq to only take Term as a
+  parameter. If you want to do expert things such as pass a different
+  Bits as liveDocs, then use the flex apis (fields(), terms(), etc) directly.
+  (Mike McCandless, Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor

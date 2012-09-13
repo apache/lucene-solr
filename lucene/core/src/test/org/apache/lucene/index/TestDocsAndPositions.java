@@ -92,7 +92,14 @@ public class TestDocsAndPositions extends LuceneTestCase {
 
   public DocsAndPositionsEnum getDocsAndPositions(AtomicReader reader,
       BytesRef bytes, Bits liveDocs) throws IOException {
-    return reader.termPositionsEnum(null, fieldName, bytes);
+    Terms terms = reader.terms(fieldName);
+    if (terms != null) {
+      TermsEnum te = terms.iterator(null);
+      if (te.seekExact(bytes, true)) {
+        return te.docsAndPositions(liveDocs, null);
+      }
+    }
+    return null;
   }
 
   /**
@@ -352,7 +359,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
     AtomicReader r = getOnlySegmentReader(reader);
-    DocsAndPositionsEnum disi = r.termPositionsEnum(null, "foo", new BytesRef("bar"));
+    DocsAndPositionsEnum disi = r.termPositionsEnum(new Term("foo", "bar"));
     int docid = disi.docID();
     assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
     assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
