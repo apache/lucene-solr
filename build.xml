@@ -202,6 +202,7 @@
       <fileset dir="solr" includes="**/*.iml"/>
       <fileset dir="lucene" includes="**/*.iml"/>
     </delete>
+    <delete dir="idea-build" failonerror="true"/>
   </target>
 
   <target name="clean" description="Clean Lucene and Solr">
