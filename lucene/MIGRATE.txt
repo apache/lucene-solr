@@ -21,7 +21,8 @@ enumeration APIs.  Here are the major changes:
     Do this:
 
         for(String field : fields) {
-            TermsEnum termsEnum = fields.terms(field);
+            Terms terms = fields.terms(field);
+            TermsEnum termsEnum = terms.iterator(null);
             BytesRef text;
             while((text = termsEnum.next()) != null) {
               System.out.println("field=" + field + "; text=" + text.utf8ToString());
@@ -159,9 +160,8 @@ enumeration APIs.  Here are the major changes:
 
     do this:
 
-        String field;
-        BytesRef text;
-        DocsEnum docsEnum = reader.termDocsEnum(reader.getLiveDocs(), field, text, needsFreqs);
+        Term t;
+        DocsEnum docsEnum = reader.termDocsEnum(t);
 
     Likewise for DocsAndPositionsEnum.
 
