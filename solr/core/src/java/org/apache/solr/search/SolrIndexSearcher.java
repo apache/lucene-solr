@@ -615,19 +615,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       final AtomicReaderContext leaf = leafContexts.get(i);
       final AtomicReader reader = leaf.reader();
 
-      final Fields fields = reader.fields();
-      if (fields == null) continue;
-
-      final Bits liveDocs = reader.getLiveDocs();
+      final Terms terms = reader.terms(field);
+      if (terms == null) continue;
       
-      final DocsEnum docs = reader.termDocsEnum(liveDocs, field, idBytes, 0);
+      TermsEnum te = terms.iterator(null);
+      if (te.seekExact(idBytes, true)) {
+        DocsEnum docs = te.docs(reader.getLiveDocs(), null, 0);
+        int id = docs.nextDoc();
+        if (id == DocIdSetIterator.NO_MORE_DOCS) continue;
+        assert docs.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
 
-      if (docs == null) continue;
-      int id = docs.nextDoc();
-      if (id == DocIdSetIterator.NO_MORE_DOCS) continue;
-      assert docs.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
-
-      return (((long)i) << 32) | id;
+        return (((long)i) << 32) | id;
+      }
     }
 
     return -1;

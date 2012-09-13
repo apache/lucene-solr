@@ -26,6 +26,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -182,7 +183,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
     String term ="highTF";
     BytesRef termtext = new BytesRef (term);
     String field = "FIELD_1";
-    long totalTermFreq = HighFreqTerms.getTotalTermFreq(reader, field, termtext);
+    long totalTermFreq = HighFreqTerms.getTotalTermFreq(reader, new Term(field, termtext));
     assertEquals("highTf tf should be 200",200,totalTermFreq);
     
   }
@@ -191,7 +192,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
     String term ="foobar";
     BytesRef termtext = new BytesRef (term);
     String field = "FIELD_1";
-    long totalTermFreq = HighFreqTerms.getTotalTermFreq(reader, field, termtext);
+    long totalTermFreq = HighFreqTerms.getTotalTermFreq(reader, new Term(field, termtext));
     assertEquals("totalTermFreq should be 0 for term not in index",0,totalTermFreq);
     
   }

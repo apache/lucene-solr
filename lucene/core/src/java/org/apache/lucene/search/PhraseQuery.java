@@ -260,7 +260,7 @@ public class PhraseQuery extends Query {
         final Term t = terms.get(i);
         final TermState state = states[i].get(context.ord);
         if (state == null) { /* term doesnt exist in this segment */
-          assert termNotInReader(reader, field, t.bytes()): "no termstate found but term exists in reader";
+          assert termNotInReader(reader, t): "no termstate found but term exists in reader";
           return null;
         }
         te.seekExact(t.bytes(), state);
@@ -295,8 +295,8 @@ public class PhraseQuery extends Query {
     }
     
     // only called from assert
-    private boolean termNotInReader(AtomicReader reader, String field, BytesRef bytes) throws IOException {
-      return reader.docFreq(field, bytes) == 0;
+    private boolean termNotInReader(AtomicReader reader, Term term) throws IOException {
+      return reader.docFreq(term) == 0;
     }
 
     @Override

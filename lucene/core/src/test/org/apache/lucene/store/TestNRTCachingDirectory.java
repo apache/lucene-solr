@@ -96,7 +96,7 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
     
     r = DirectoryReader.open(dir);
     for(BytesRef id : ids) {
-      assertEquals(1, r.docFreq("docid", id));
+      assertEquals(1, r.docFreq(new Term("docid", id)));
     }
     r.close();
     cachedDir.close();

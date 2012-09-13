@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.DocsEnum;
@@ -167,7 +168,7 @@ public class HighFreqTerms {
     TermStats[] ts = new TermStats[terms.length]; // array for sorting
     long totalTF;
     for (int i = 0; i < terms.length; i++) {
-      totalTF = getTotalTermFreq(reader, terms[i].field, terms[i].termtext);
+      totalTF = getTotalTermFreq(reader, new Term(terms[i].field, terms[i].termtext));
       ts[i] = new TermStats(terms[i].field, terms[i].termtext, terms[i].docFreq, totalTF);
     }
     
@@ -177,24 +178,23 @@ public class HighFreqTerms {
     return ts;
   }
   
-  public static long getTotalTermFreq(IndexReader reader, final String field, final BytesRef termText) throws Exception {   
+  public static long getTotalTermFreq(IndexReader reader, Term term) throws Exception {   
     long totalTF = 0L;
     for (final AtomicReaderContext ctx : reader.leaves()) {
       AtomicReader r = ctx.reader();
-      Bits liveDocs = r.getLiveDocs();
-      if (liveDocs == null) {
+      if (!r.hasDeletions()) {
         // TODO: we could do this up front, during the scan
         // (next()), instead of after-the-fact here w/ seek,
         // if the codec supports it and there are no del
         // docs...
-        final long totTF = r.totalTermFreq(field, termText);
+        final long totTF = r.totalTermFreq(term);
         if (totTF != -1) {
           totalTF += totTF;
           continue;
         } // otherwise we fall-through
       }
       // note: what should we do if field omits freqs? currently it counts as 1...
-      DocsEnum de = r.termDocsEnum(liveDocs, field, termText);
+      DocsEnum de = r.termDocsEnum(term);
       if (de != null) {
         while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)
           totalTF += de.freq();

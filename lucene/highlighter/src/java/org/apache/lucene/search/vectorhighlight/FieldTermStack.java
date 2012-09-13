@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
@@ -112,7 +113,7 @@ public class FieldTermStack {
       dpEnum.nextDoc();
       
       // For weight look here: http://lucene.apache.org/core/3_6_0/api/core/org/apache/lucene/search/DefaultSimilarity.html
-      final float weight = ( float ) ( Math.log( numDocs / ( double ) ( reader.docFreq( fieldName, text ) + 1 ) ) + 1.0 );
+      final float weight = ( float ) ( Math.log( numDocs / ( double ) ( reader.docFreq( new Term(fieldName, text) ) + 1 ) ) + 1.0 );
 
       final int freq = dpEnum.freq();
       
