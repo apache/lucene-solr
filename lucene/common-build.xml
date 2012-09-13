@@ -231,7 +231,7 @@
   <property name="pitest.targetClasses" value="org.apache.*" />
 
   <!-- a reasonable default exclusion set, can be overridden for special cases -->
-  <property name="rat.excludes" value="**/TODO,**/*.txt"/>
+  <property name="rat.excludes" value="**/TODO,**/*.txt,**/*.iml"/>
 
   <propertyset id="uptodate.and.compiled.properties" dynamic="true">
     <propertyref regex=".*\.uptodate$$"/>
