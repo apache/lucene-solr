@@ -78,6 +78,13 @@
                 antfile="file://$PROJECT_DIR$/lucene/benchmark/build.xml" />
       </method>
     </configuration>
+    <configuration default="false" name="Module classification" type="JUnit" factoryName="JUnit">
+      <module name="classification" />
+      <option name="TEST_OBJECT" value="package" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/lucene/build/classification" />
+      <option name="VM_PARAMETERS" value="-ea -DtempDir=temp" />
+      <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
+    </configuration>
     <configuration default="false" name="Module codecs" type="JUnit" factoryName="JUnit">
       <module name="codecs-tests" />
       <option name="TEST_OBJECT" value="package" />
