@@ -872,26 +872,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
   public void testCorruptLog() throws Exception {
     try {
       DirectUpdateHandler2.commitOnClose = false;
-      final Semaphore logReplay = new Semaphore(0);
-      final Semaphore logReplayFinish = new Semaphore(0);
-
-      UpdateLog.testing_logReplayHook = new Runnable() {
-        @Override
-        public void run() {
-          try {
-            assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
-        }
-      };
-
-      UpdateLog.testing_logReplayFinishHook = new Runnable() {
-        @Override
-        public void run() {
-          logReplayFinish.release();
-        }
-      };
 
       File logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
 
@@ -911,8 +891,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       raf.write(new byte[(int)len]);  // zero out file
       raf.close();
 
-      logReplay.release(1000);
-      logReplayFinish.release(1);
+
       ignoreException("Failure to open existing log file");  // this is what the corrupted log currently produces... subject to change.
       createCore();
       resetExceptionIgnores();
@@ -931,6 +910,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
       // This currently skips the bad log file and also returns the version of the clearIndex (del *:*)
       // assertJQ(req("qt","/get", "getVersions","6"), "/versions==[106,105,104]");
       assertJQ(req("qt","/get", "getVersions","3"), "/versions==[106,105,104]");
+
+      assertU(commit());
+
+      assertJQ(req("q","*:*") ,"/response/numFound==3");
 
     } finally {
       DirectUpdateHandler2.commitOnClose = true;
