@@ -155,6 +155,9 @@ Bug Fixes
 * SOLR-3827: Fix shareSchema=true in solr.xml 
   (Tomás Fernández Löbbe via hossman)
 
+* SOLR-3809: Fixed config file replication when subdirectories are used
+  (Emmanuel Espina via hossman)
+
 Other Changes
 ----------------------
 
