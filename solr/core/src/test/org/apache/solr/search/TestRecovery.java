@@ -915,6 +915,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       assertJQ(req("q","*:*") ,"/response/numFound==3");
 
+      // This messes up some other tests (on windows) if we don't remove the bad log.
+      // This *should* hopefully just be because the tests are too fragile and not because of real bugs - but it should be investigated further.
+      deleteLogs();
+
     } finally {
       DirectUpdateHandler2.commitOnClose = true;
       UpdateLog.testing_logReplayHook = null;
