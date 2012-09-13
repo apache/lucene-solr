@@ -47,6 +47,13 @@ public class SimpleNaiveBayesClassifier implements Classifier {
   private int docsWithClassSize;
   private Analyzer analyzer;
   private IndexSearcher indexSearcher;
+  
+  /** 
+   * Creates a new NaiveBayes classifier.
+   * Note that you must call {@link #train(AtomicReader, String, String, Analyzer) train()} before you can
+   * classify any documents.
+   */
+  public SimpleNaiveBayesClassifier() {}
 
   public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer)
       throws IOException {
