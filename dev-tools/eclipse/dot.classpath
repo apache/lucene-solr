@@ -46,6 +46,8 @@
   <classpathentry kind="src" path="lucene/benchmark/src/java"/>
   <classpathentry kind="src" path="lucene/benchmark/src/test"/>
   <classpathentry excluding="src" including="conf/**" kind="src" path="lucene/benchmark"/>
+  <classpathentry kind="src" path="lucene/classification/src/java"/>
+  <classpathentry kind="src" path="lucene/classification/src/test"/>
   <classpathentry kind="src" path="lucene/facet/src/java"/>
   <classpathentry kind="src" path="lucene/facet/src/examples"/>
   <classpathentry kind="src" path="lucene/facet/src/test"/>
