@@ -214,6 +214,10 @@ Other Changes
 
 * SOLR-3824: Velocity: Error messages from search not displayed (janhoy)
 
+* SOLR-3826: Test framework improvements for specifying coreName on initCore
+  (Amit Nithian, hossman)
+
+
 ==================  4.0.0-BETA ===================
 
 

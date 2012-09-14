@@ -76,16 +76,29 @@ public class TestHarness {
   private final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<DocumentBuilder>();
   private final ThreadLocal<XPath> xpathTL = new ThreadLocal<XPath>();
   public UpdateRequestHandler updater;
-        
-  public static SolrConfig createConfig(String solrHome, String confFile) {
+ 
+  /**
+   * Creates a SolrConfig object for the specified coreName assuming it 
+   * follows the basic conventions of being a relative path in the solrHome 
+   * dir. (ie: <code>${solrHome}/${coreName}/conf/${confFile}</code>
+   */
+  public static SolrConfig createConfig(String solrHome, String coreName, String confFile) {
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     try {
-      return new SolrConfig(solrHome + File.separator + "collection1", confFile, null);
+      return new SolrConfig(solrHome + File.separator + coreName, confFile, null);
     } catch (Exception xany) {
       throw new RuntimeException(xany);
     }
+  }
+  
+  /**
+   * Creates a SolrConfig object for the 
+   * {@link CoreContainer#DEFAULT_DEFAULT_CORE_NAME} core using {@link #createConfig(String,String,String)}
+   */
+  public static SolrConfig createConfig(String solrHome, String confFile) {
+    return createConfig(solrHome, CoreContainer.DEFAULT_DEFAULT_CORE_NAME, confFile);
   }
 
    /**
@@ -176,7 +189,7 @@ public class TestHarness {
         {
           hostPort = System.getProperty("hostPort");
           hostContext = "solr";
-          defaultCoreName = "collection1";
+          defaultCoreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
           initZooKeeper(System.getProperty("zkHost"), 10000);
         }
       };
