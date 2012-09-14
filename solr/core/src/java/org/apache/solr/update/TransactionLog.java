@@ -141,6 +141,7 @@ public class TransactionLog {
   }
 
   TransactionLog(File tlogFile, Collection<String> globalStrings, boolean openExisting) {
+    boolean success = false;
     try {
       if (debug) {
         log.debug("New TransactionLog file=" + tlogFile + ", exists=" + tlogFile.exists() + ", size=" + tlogFile.length() + ", openExisting=" + openExisting);
@@ -175,8 +176,18 @@ public class TransactionLog {
         addGlobalStrings(globalStrings);
       }
 
+      success = true;
+
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } finally {
+      if (!success && raf != null) {
+        try {
+          raf.close();
+        } catch (Exception e) {
+          log.error("Error closing tlog file (after error opening)", e);
+        }
+      }
     }
   }
 
