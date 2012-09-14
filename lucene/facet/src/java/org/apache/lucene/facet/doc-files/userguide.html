@@ -360,8 +360,8 @@ use facets accumulators.
 Following is a code snippet from the example code - the complete example can be
 found under <code>org.apache.lucene.facet.example.simple.Searcher</code>:
 <pre class="prettyprint lang-java linenums">
-IndexReader indexReader = IndexReader.open(indexDir);
-Searcher searcher = new IndexSearcher(indexReader);
+IndexReader indexReader = DirectoryReader.open(indexDir);
+IndexSearcher searcher = new IndexSearcher(indexReader);
 TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
 ...
 Query q = new TermQuery(new Term(SimpleUtils.TEXT, "white"));
