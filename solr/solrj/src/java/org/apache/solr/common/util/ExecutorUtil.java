@@ -20,7 +20,6 @@ package org.apache.solr.common.util;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,24 +27,38 @@ import org.slf4j.LoggerFactory;
 public class ExecutorUtil {
   public static Logger log = LoggerFactory.getLogger(ExecutorUtil.class);
   
-  public static void shutdownAndAwaitTermination(ExecutorService pool) {
+  public static void shutdownNowAndAwaitTermination(ExecutorService pool) {
     pool.shutdown(); // Disable new tasks from being submitted
     pool.shutdownNow(); // Cancel currently executing tasks
-    try {
-      // Wait a while for existing tasks to terminate
-        if (!pool.awaitTermination(60, TimeUnit.SECONDS))
-            SolrException.log(log, "Executor still has running tasks.");
-    } catch (InterruptedException ie) {
-      // (Re-)Cancel if current thread also interrupted
-      pool.shutdownNow();
+    boolean shutdown = false;
+    while (!shutdown) {
       try {
-        if (!pool.awaitTermination(60, TimeUnit.SECONDS))
-          SolrException.log(log, "Executor still has running tasks.");
-      } catch (InterruptedException e) {
-    
+        // Wait a while for existing tasks to terminate
+        shutdown = pool.awaitTermination(5, TimeUnit.SECONDS);
+      } catch (InterruptedException ie) {
+        // Preserve interrupt status
+        Thread.currentThread().interrupt();
       }
-      // Preserve interrupt status
-      Thread.currentThread().interrupt();
+      if (!shutdown) {
+        pool.shutdownNow(); // Cancel currently executing tasks
+      }
+    }
+  }
+  
+  public static void shutdownAndAwaitTermination(ExecutorService pool) {
+    pool.shutdown(); // Disable new tasks from being submitted
+    boolean shutdown = false;
+    while (!shutdown) {
+      try {
+        // Wait a while for existing tasks to terminate
+        shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
+      } catch (InterruptedException ie) {
+        // Preserve interrupt status
+        Thread.currentThread().interrupt();
+      }
+      if (!shutdown) {
+        pool.shutdownNow(); // Cancel currently executing tasks
+      }
     }
   }
 }

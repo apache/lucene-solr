@@ -32,6 +32,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -43,13 +44,16 @@ import org.slf4j.LoggerFactory;
  * 
  * It can also run in a background thread and start and stop jetties
  * randomly.
- *
+ * TODO: expire multiple sessions / connectionloss at once
+ * TODO: kill multiple jetties at once
+ * TODO: ? add random headhunter mode that always kills the leader
+ * TODO: chaosmonkey should be able to do cluster stop/start tests
  */
 public class ChaosMonkey {
   private static Logger log = LoggerFactory.getLogger(ChaosMonkey.class);
   
-  private static final int CONLOSS_PERCENT = 3; //30%
-  private static final int EXPIRE_PERCENT = 4; //40%
+  private static final int CONLOSS_PERCENT = 10; // 0 - 10 = 0 - 100%
+  private static final int EXPIRE_PERCENT = 10; // 0 - 10 = 0 - 100%
   private Map<String,List<CloudJettyRunner>> shardToJetty;
   
   private ZkTestServer zkServer;
@@ -79,22 +83,50 @@ public class ChaosMonkey {
     this.zkStateReader = zkStateReader;
     this.collection = collection;
     Random random = LuceneTestCase.random();
-    expireSessions = random.nextBoolean();
-    causeConnectionLoss = random.nextBoolean();
+    expireSessions = true; //= random.nextBoolean();
+    
+    causeConnectionLoss = true;//= random.nextBoolean();
     monkeyLog("init - expire sessions:" + expireSessions
         + " cause connection loss:" + causeConnectionLoss);
   }
   
-  public void expireSession(JettySolrRunner jetty) {
+  // TODO: expire all clients at once?
+  public void expireSession(final JettySolrRunner jetty) {
     monkeyLog("expire session for " + jetty.getLocalPort() + " !");
-    SolrDispatchFilter solrDispatchFilter = (SolrDispatchFilter) jetty.getDispatchFilter().getFilter();
+    
+    SolrDispatchFilter solrDispatchFilter = (SolrDispatchFilter) jetty
+        .getDispatchFilter().getFilter();
     if (solrDispatchFilter != null) {
       CoreContainer cores = solrDispatchFilter.getCores();
       if (cores != null) {
-        long sessionId = cores.getZkController().getZkClient().getSolrZooKeeper().getSessionId();
-        zkServer.expire(sessionId);
+        causeConnectionLoss(jetty, cores.getZkController().getClientTimeout() + 200);
       }
     }
+    
+
+//    Thread thread = new Thread() {
+//      {
+//        setDaemon(true);
+//      }
+//      public void run() {
+//        SolrDispatchFilter solrDispatchFilter = (SolrDispatchFilter) jetty.getDispatchFilter().getFilter();
+//        if (solrDispatchFilter != null) {
+//          CoreContainer cores = solrDispatchFilter.getCores();
+//          if (cores != null) {
+//            try {
+//              Thread.sleep(ZkTestServer.TICK_TIME * 2 + 800);
+//            } catch (InterruptedException e) {
+//              // we act as only connection loss
+//              return;
+//            }
+//            long sessionId = cores.getZkController().getZkClient().getSolrZooKeeper().getSessionId();
+//            zkServer.expire(sessionId);
+//          }
+//        }
+//      }
+//    };
+//    thread.start();
+
   }
   
   public void expireRandomSession() throws KeeperException, InterruptedException {
@@ -119,6 +151,10 @@ public class ChaosMonkey {
   }
   
   private void causeConnectionLoss(JettySolrRunner jetty) {
+    causeConnectionLoss(jetty, ZkTestServer.TICK_TIME * 2 + 200);
+  }
+  
+  private void causeConnectionLoss(JettySolrRunner jetty, int pauseTime) {
     SolrDispatchFilter solrDispatchFilter = (SolrDispatchFilter) jetty
         .getDispatchFilter().getFilter();
     if (solrDispatchFilter != null) {
@@ -126,7 +162,7 @@ public class ChaosMonkey {
       if (cores != null) {
         SolrZkClient zkClient = cores.getZkController().getZkClient();
         // must be at least double tick time...
-        zkClient.getSolrZooKeeper().pauseCnxn(ZkTestServer.TICK_TIME * 2 + 200);
+        zkClient.getSolrZooKeeper().pauseCnxn(pauseTime);
       }
     }
   }
@@ -291,6 +327,7 @@ public class ChaosMonkey {
       }
     }
     
+    // TODO: stale state makes this a tough call
     if (numActive < 2) {
       // we cannot kill anyone
       monkeyLog("only one active node in shard - monkey cannot kill :(");
@@ -308,8 +345,44 @@ public class ChaosMonkey {
       int index = random.nextInt(jetties.size());
       cjetty = jetties.get(index);
       
-      ZkNodeProps leader = zkStateReader.getLeaderProps(collection, slice);
-      boolean isLeader = leader.getStr(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName);
+      ZkNodeProps leader = null;
+      try {
+        leader = zkStateReader.getLeaderProps(collection, slice);
+      } catch (Throwable t) {
+        log.error("Could not get leader", t);
+        return null;
+      }
+      
+      FilterHolder fh = cjetty.jetty.getDispatchFilter();
+      if (fh == null) {
+        monkeyLog("selected jetty not running correctly - skip");
+        return null;
+      }
+      SolrDispatchFilter df = ((SolrDispatchFilter) fh.getFilter());
+      if (df == null) {
+        monkeyLog("selected jetty not running correctly - skip");
+        return null;
+      }
+      CoreContainer cores = df.getCores();
+      if (cores == null) {
+        monkeyLog("selected jetty not running correctly - skip");
+        return null;
+      }
+      SolrCore core = cores.getCore(leader.getStr(ZkStateReader.CORE_NAME_PROP));
+      if (core == null) {
+        monkeyLog("selected jetty not running correctly - skip");
+        return null;
+      }
+      // cluster state can be stale - also go by our 'near real-time' is leader prop
+      boolean rtIsLeader;
+      try {
+        rtIsLeader = core.getCoreDescriptor().getCloudDescriptor().isLeader();
+      } finally {
+        core.close();
+      }
+      
+      boolean isLeader = leader.getStr(ZkStateReader.NODE_NAME_PROP).equals(jetties.get(index).nodeName)
+          || rtIsLeader;
       if (!aggressivelyKillLeaders && isLeader) {
         // we don't kill leaders...
         monkeyLog("abort! I don't kill leaders");
@@ -343,7 +416,7 @@ public class ChaosMonkey {
   
   // synchronously starts and stops shards randomly, unless there is only one
   // active shard up for a slice or if there is one active and others recovering
-  public void startTheMonkey(boolean killLeaders, final int roundPause) {
+  public void startTheMonkey(boolean killLeaders, final int roundPauseUpperLimit) {
     monkeyLog("starting");
     this.aggressivelyKillLeaders = killLeaders;
     startTime = System.currentTimeMillis();
@@ -357,8 +430,9 @@ public class ChaosMonkey {
       public void run() {
         while (!stop) {
           try {
-            Thread.sleep(roundPause);
+    
             Random random = LuceneTestCase.random();
+            Thread.sleep(random.nextInt(roundPauseUpperLimit));
             if (random.nextBoolean()) {
              if (!deadPool.isEmpty()) {
                int index = random.nextInt(deadPool.size());

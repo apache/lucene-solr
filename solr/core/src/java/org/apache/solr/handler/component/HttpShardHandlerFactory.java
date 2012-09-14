@@ -164,7 +164,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
       SolrException.log(log, e);
     }
     try {
-      ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
+      ExecutorUtil.shutdownNowAndAwaitTermination(commExecutor);
     } catch (Throwable e) {
       SolrException.log(log, e);
     }

@@ -20,6 +20,7 @@ package org.apache.solr.update;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -31,6 +32,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -81,6 +83,8 @@ public class UpdateLog implements PluginInfoInitialized {
     public int deletes;
     public int deleteByQuery;
     public int errors;
+
+    public boolean failed;
 
     @Override
     public String toString() {
@@ -1117,6 +1121,7 @@ public class UpdateLog implements PluginInfoInitialized {
     public void run() {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(DISTRIB_UPDATE_PARAM, FROMLEADER.toString());
+      params.set(DistributedUpdateProcessor.LOG_REPLAY, "true");
       req = new LocalSolrQueryRequest(uhandler.core, params);
       rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));    // setting request info will help logging
@@ -1125,9 +1130,17 @@ public class UpdateLog implements PluginInfoInitialized {
         for (TransactionLog translog : translogs) {
           doReplay(translog);
         }
+      } catch (SolrException e) {
+        if (e.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
+          SolrException.log(log, e);
+          recoveryInfo.failed = true;
+        } else {
+          recoveryInfo.errors++;
+          SolrException.log(log, e);
+        }
       } catch (Throwable e) {
         recoveryInfo.errors++;
-        SolrException.log(log,e);
+        SolrException.log(log, e);
       } finally {
         // change the state while updates are still blocked to prevent races
         state = State.ACTIVE;
@@ -1275,6 +1288,13 @@ public class UpdateLog implements PluginInfoInitialized {
             recoveryInfo.errors++;
             loglog.warn("REPLAY_ERR: Unexpected log entry or corrupt log.  Entry=" + o, cl);
             // would be caused by a corrupt transaction log
+          }  catch (SolrException ex) {
+            if (ex.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
+              throw ex;
+            }
+            recoveryInfo.errors++;
+            loglog.warn("REYPLAY_ERR: IOException reading log", ex);
+            // could be caused by an incomplete flush if recovering from log
           } catch (Throwable ex) {
             recoveryInfo.errors++;
             loglog.warn("REPLAY_ERR: Exception replaying log", ex);

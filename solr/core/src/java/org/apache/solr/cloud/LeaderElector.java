@@ -52,12 +52,11 @@ import org.slf4j.LoggerFactory;
  * a watch on the next lowest node it finds, and if that node goes down, 
  * starts the whole process over by checking if it's the lowest sequential node, etc.
  * 
- * TODO: now we could just reuse the lock package code for leader election
  */
 public  class LeaderElector {
   private static Logger log = LoggerFactory.getLogger(LeaderElector.class);
   
-  private static final String ELECTION_NODE = "/election";
+  static final String ELECTION_NODE = "/election";
   
   private final static Pattern LEADER_SEQ = Pattern.compile(".*?/?.*?-n_(\\d+)");
   private final static Pattern SESSION_ID = Pattern.compile(".*?/?(.*?-.*?)-n_\\d+");
@@ -161,6 +160,9 @@ public  class LeaderElector {
   
   /**
    * Returns int given String of form n_0000000001 or n_0000000003, etc.
+   * 
+   * @param nStringSequence
+   * @return sequence number
    */
   private int getSeq(String nStringSequence) {
     int seq = 0;
@@ -188,6 +190,9 @@ public  class LeaderElector {
   
   /**
    * Returns int list given list of form n_0000000001, n_0000000003, etc.
+   * 
+   * @param seqs
+   * @return
    */
   private List<Integer> getSeqs(List<String> seqs) {
     List<Integer> intSeqs = new ArrayList<Integer>(seqs.size());
@@ -239,18 +244,31 @@ public  class LeaderElector {
           }
         }
         if (!foundId) {
-          throw e;
+          cont = true;
+          if (tries++ > 20) {
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                "", e);
+          }
+          try {
+            Thread.sleep(50);
+          } catch (InterruptedException e2) {
+            Thread.currentThread().interrupt();
+          }
         }
 
       } catch (KeeperException.NoNodeException e) {
         // we must have failed in creating the election node - someone else must
         // be working on it, lets try again
-        if (tries++ > 9) {
+        if (tries++ > 20) {
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
               "", e);
         }
         cont = true;
-        Thread.sleep(50);
+        try {
+          Thread.sleep(50);
+        } catch (InterruptedException e2) {
+          Thread.currentThread().interrupt();
+        }
       }
     }
     int seq = getSeq(leaderSeqPath);

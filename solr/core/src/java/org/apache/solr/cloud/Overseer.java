@@ -516,11 +516,11 @@ public class Overseer {
     } catch (KeeperException.NodeExistsException e) {
       //ok
     } catch (InterruptedException e) {
-      log.error("Could not create Overseer node: " + e.getClass() + ":" + e.getMessage());
+      log.error("Could not create Overseer node", e);
       Thread.currentThread().interrupt();
       throw new RuntimeException(e);
     } catch (KeeperException e) {
-      log.error("Could not create Overseer node: " + e.getClass() + ":" + e.getMessage());
+      log.error("Could not create Overseer node", e);
       throw new RuntimeException(e);
     }
   }

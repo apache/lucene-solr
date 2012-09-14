@@ -120,7 +120,6 @@ public class CoreAdminRequest extends SolrRequest
     protected String coreNodeName;
     protected String state;
     protected Boolean checkLive;
-    protected Integer pauseFor;
     protected Boolean onlyIfLeader;
     
 
@@ -160,14 +159,6 @@ public class CoreAdminRequest extends SolrRequest
       this.checkLive = checkLive;
     }
     
-    public Integer getPauseFor() {
-      return pauseFor;
-    }
-
-    public void setPauseFor(Integer pauseFor) {
-      this.pauseFor = pauseFor;
-    }
-    
     public boolean isOnlyIfLeader() {
       return onlyIfLeader;
     }
@@ -200,10 +191,6 @@ public class CoreAdminRequest extends SolrRequest
       
       if (checkLive != null) {
         params.set( "checkLive", checkLive);
-      }
-      
-      if (pauseFor != null) {
-        params.set( "pauseFor", pauseFor);
       }
       
       if (onlyIfLeader != null) {
