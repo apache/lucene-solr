@@ -128,6 +128,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     // if we are the leader, either we are trying to recover faster
     // then our ephemeral timed out or we are the only node
     if (!leaderBaseUrl.equals(baseUrl)) {
+      
       // send commit
       commitOnLeader(leaderUrl);
       
@@ -194,7 +195,6 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     prepCmd.setState(ZkStateReader.RECOVERING);
     prepCmd.setCheckLive(true);
     prepCmd.setOnlyIfLeader(true);
-    prepCmd.setPauseFor(6000);
     
     server.request(prepCmd);
     server.shutdown();
@@ -317,7 +317,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
             .getCloudDescriptor();
         ZkNodeProps leaderprops = zkStateReader.getLeaderProps(
             cloudDesc.getCollectionName(), cloudDesc.getShardId());
-
+      
         String leaderBaseUrl = leaderprops.getStr(ZkStateReader.BASE_URL_PROP);
         String leaderCoreName = leaderprops.getStr(ZkStateReader.CORE_NAME_PROP);
 
@@ -338,9 +338,6 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         }
         
         zkController.publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
-        
-        sendPrepRecoveryCmd(leaderBaseUrl, leaderCoreName);
-
 
         // first thing we just try to sync
         if (firstTime) {
@@ -355,6 +352,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           if (syncSuccess) {
             SolrQueryRequest req = new LocalSolrQueryRequest(core,
                 new ModifiableSolrParams());
+            // force open a new searcher
             core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
             log.info("PeerSync Recovery was successful - registering as Active. core=" + coreName);
 
@@ -384,24 +382,24 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
 
           log.info("PeerSync Recovery was not successful - trying replication. core=" + coreName);
         }
-        //System.out.println("Sync Recovery was not successful - trying replication");
+
         log.info("Starting Replication Recovery. core=" + coreName);
+        
+        sendPrepRecoveryCmd(leaderBaseUrl, leaderCoreName);
+        
+        // we wait a bit so that any updates on the leader
+        // that started before they saw recovering state 
+        // are sure to have finished
+        try {
+          Thread.sleep(2000);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+        
         log.info("Begin buffering updates. core=" + coreName);
         ulog.bufferUpdates();
         replayed = false;
         
-//        // open a new IndexWriter - we don't want any background merges ongoing
-//        // also ensures something like NRTCachingDirectory is flushed
-//        boolean forceNewIndexDir = false;
-//        try {
-//          core.getUpdateHandler().newIndexWriter(false);
-//        } catch (Throwable t) {
-//          SolrException.log(log, "Could not read the current index - replicating to a new directory", t);
-//          // something is wrong with the index
-//          // we need to force using a new index directory
-//          forceNewIndexDir = true;
-//        }
-//        
         try {
 
           replicate(zkController.getNodeName(), core,
@@ -507,7 +505,11 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     } else {
       log.info("Replaying buffered documents. core=" + coreName);
       // wait for replay
-      future.get();
+      RecoveryInfo report = future.get();
+      if (report.failed) {
+        SolrException.log(log, "Replay failed");
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Replay failed");
+      }
     }
     
     // solrcloud_debug

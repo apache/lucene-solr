@@ -289,7 +289,7 @@ public abstract class LuceneTestCase extends Assert {
    * @see #classRules
    */
   private static final String [] IGNORED_INVARIANT_PROPERTIES = {
-    "user.timezone"
+    "user.timezone", "java.rmi.server.randomIDs"
   };
 
   /** Filesystem-based {@link Directory} implementations. */

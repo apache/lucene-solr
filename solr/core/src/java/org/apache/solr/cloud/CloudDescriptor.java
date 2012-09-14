@@ -27,7 +27,12 @@ public class CloudDescriptor {
   private Integer numShards;
   
   volatile boolean isLeader = false;
+  volatile String lastPublished;
   
+  public String getLastPublished() {
+    return lastPublished;
+  }
+
   public boolean isLeader() {
     return isLeader;
   }

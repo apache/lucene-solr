@@ -523,8 +523,9 @@ public class RealTimeGetComponent extends SearchComponent
   public void processSync(ResponseBuilder rb, int nVersions, String sync) {
     List<String> replicas = StrUtils.splitSmart(sync, ",", true);
     
+    boolean cantReachIsSuccess = rb.req.getParams().getBool("cantReachIsSuccess", false);
     
-    PeerSync peerSync = new PeerSync(rb.req.getCore(), replicas, nVersions);
+    PeerSync peerSync = new PeerSync(rb.req.getCore(), replicas, nVersions, cantReachIsSuccess);
     boolean success = peerSync.sync();
     
     // TODO: more complex response?

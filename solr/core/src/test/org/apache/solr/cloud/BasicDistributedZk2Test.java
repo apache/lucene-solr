@@ -223,7 +223,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     
     query("q", "*:*", "sort", "n_tl1 desc");
     
-    // try adding a doc with CloudSolrServer
+
     cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
 
     long numFound2 = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
@@ -235,6 +235,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     
     controlClient.add(doc);
     
+    // try adding a doc with CloudSolrServer
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
     // ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);

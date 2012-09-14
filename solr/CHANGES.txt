@@ -70,6 +70,17 @@ Optimizations
 * SOLR-3715: improve concurrency of the transaction log by removing
   synchronization around log record serialization. (yonik)
 
+* SOLR-3807: Currently during recovery we pause for a number of seconds after 
+  waiting for the leader to see a recovering state so that any previous updates
+  will have finished before our commit on the leader - we don't need this wait 
+  for peersync. (Mark Miller)
+  
+* SOLR-3837: When a leader is elected and asks replicas to sync back to him and 
+  that fails, we should ask those nodes to recovery asynchronously rather than 
+  synchronously. (Mark Miller)
+
+* SOLR-3709: Cache the url list created from the ClusterState in CloudSolrServer
+  on each request. (Mark Miller)
 
 Bug Fixes
 ----------------------
@@ -173,6 +184,36 @@ Bug Fixes
   
 * SOLR-3791: CachedSqlEntityProcessor would throw a NullPointerException when 
   a query returns a row with a NULL key.  (Steffen Moelter via James Dyer)
+
+* SOLR-3833: When a election is started because a leader went down, the new 
+  leader candidate should decline if the last state they published was not
+  active. (yonik, Mark Miller)
+
+* SOLR-3836: When doing peer sync, we should only count sync attempts that 
+  cannot reach the given host as success when the candidate leader is 
+  syncing with the replicas - not when replicas are syncing to the leader.
+  (Mark Miller)
+
+* SOLR-3835: In our leader election algorithm, if on connection loss we found
+  we did not create our election node, we should retry, not throw an exception.
+  (Mark Miller)
+
+* SOLR-3834: A new leader on cluster startup should also run the leader sync 
+  process in case there was a bad cluster shutdown. (Mark Miller)
+
+* SOLR-3772: On cluster startup, we should wait until we see all registered 
+  replicas before running the leader process - or if they all do not come up,
+  N amount of time. (Mark Miller)
+  
+* SOLR-3756: If we are elected the leader of a shard, but we fail to publish 
+  this for any reason, we should clean up and re trigger a leader election.
+  (Mark Miller)
+
+* SOLR-3812: ConnectionLoss during recovery can cause lost updates, leading to 
+  shard inconsistency. (Mark Miller)
+  
+* SOLR-3813: When a new leader syncs, we need to ask all shards to sync back, 
+  not just those that are active. (Mark Miller)
 
 Other Changes
 ----------------------

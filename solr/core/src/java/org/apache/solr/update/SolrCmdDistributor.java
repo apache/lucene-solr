@@ -29,9 +29,7 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -51,7 +49,7 @@ import org.slf4j.LoggerFactory;
 
 
 public class SolrCmdDistributor {
-  private static final int MAX_RETRIES_ON_FORWARD = 6;
+  private static final int MAX_RETRIES_ON_FORWARD = 10;
   public static Logger log = LoggerFactory.getLogger(SolrCmdDistributor.class);
 
   static final HttpClient client;
@@ -85,9 +83,12 @@ public class SolrCmdDistributor {
     ModifiableSolrParams params;
   }
   
+  public static interface AbortCheck {
+    public boolean abortCheck();
+  }
+  
   public SolrCmdDistributor(int numHosts, ThreadPoolExecutor executor) {
-    int maxPermits = Math.max(8, (numHosts - 1) * 8);
-    
+    int maxPermits = Math.max(16, numHosts * 16);
     // limits how many tasks can actually execute at once
     if (maxPermits != semaphore.getMaxPermits()) {
       semaphore.setMaxPermits(maxPermits);
@@ -307,12 +308,13 @@ public class SolrCmdDistributor {
     Callable<Request> task = new Callable<Request>() {
       @Override
       public Request call() throws Exception {
-        Request clonedRequest = new Request();
-        clonedRequest.node = sreq.node;
-        clonedRequest.ureq = sreq.ureq;
-        clonedRequest.retries = sreq.retries;
-        
+        Request clonedRequest = null;
         try {
+          clonedRequest = new Request();
+          clonedRequest.node = sreq.node;
+          clonedRequest.ureq = sreq.ureq;
+          clonedRequest.retries = sreq.retries;
+          
           String fullUrl;
           if (!url.startsWith("http://") && !url.startsWith("https://")) {
             fullUrl = "http://" + url;
@@ -349,7 +351,7 @@ public class SolrCmdDistributor {
       semaphore.acquire();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new RuntimeException("Update thread interrupted");
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Update thread interrupted", e);
     }
     pending.add(completionService.submit(task));
     

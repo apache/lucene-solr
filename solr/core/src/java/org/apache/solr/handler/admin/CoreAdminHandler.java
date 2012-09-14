@@ -902,10 +902,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     String waitForState = params.get("state");
     Boolean checkLive = params.getBool("checkLive");
     Boolean onlyIfLeader = params.getBool("onlyIfLeader");
-    int pauseFor = params.getInt("pauseFor", 0);
-    
 
-    
     String state = null;
     boolean live = false;
     int retry = 0;
@@ -965,13 +962,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       }
       Thread.sleep(1000);
     }
-    
-    // small safety net for any updates that started with state that
-    // kept it from sending the update to be buffered -
-    // pause for a while to let any outstanding updates finish
-    // System.out.println("I saw state:" + state + " sleep for " + pauseFor +
-    // " live:" + live);
-    Thread.sleep(pauseFor);
+
     
     // solrcloud_debug
     // try {;

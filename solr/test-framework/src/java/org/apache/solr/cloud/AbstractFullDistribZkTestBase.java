@@ -242,7 +242,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           server.getLbServer().getHttpClient().getParams()
               .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 5000);
           server.getLbServer().getHttpClient().getParams()
-              .setParameter(CoreConnectionPNames.SO_TIMEOUT, 40000);
+              .setParameter(CoreConnectionPNames.SO_TIMEOUT, 20000);
           cloudClient = server;
         } catch (MalformedURLException e) {
           throw new RuntimeException(e);
@@ -891,7 +891,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               cnt += results;
               break;
             }
-          } catch (SolrServerException e) {
+          } catch (Exception e) {
             // if we have a problem, try the next one
             if (i == times - 1) {
               throw e;

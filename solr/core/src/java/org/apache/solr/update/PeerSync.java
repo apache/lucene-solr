@@ -46,7 +46,6 @@ import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -78,6 +77,7 @@ public class PeerSync  {
   private Set<Long> requestedUpdateSet;
   private long ourLowThreshold;  // 20th percentile
   private long ourHighThreshold; // 80th percentile
+  private boolean cantReachIsSuccess;
   private static final HttpClient client;
   static {
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -127,18 +127,21 @@ public class PeerSync  {
     Exception updateException;
   }
 
-
+  public PeerSync(SolrCore core, List<String> replicas, int nUpdates) {
+    this(core, replicas, nUpdates, false);
+  }
+  
   /**
    *
    * @param core
    * @param replicas
    * @param nUpdates
    */
-  public PeerSync(SolrCore core, List<String> replicas, int nUpdates) {
+  public PeerSync(SolrCore core, List<String> replicas, int nUpdates, boolean cantReachIsSuccess) {
     this.replicas = replicas;
     this.nUpdates = nUpdates;
     this.maxUpdates = nUpdates;
-
+    this.cantReachIsSuccess = cantReachIsSuccess;
 
     
     uhandler = core.getUpdateHandler();
@@ -214,6 +217,7 @@ public class PeerSync  {
     if (startingVersions != null) {
       if (startingVersions.size() == 0) {
         // no frame of reference to tell of we've missed updates
+        log.warn("no frame of reference to tell of we've missed updates");
         return false;
       }
       Collections.sort(startingVersions, absComparator);
@@ -298,20 +302,25 @@ public class PeerSync  {
       // If the replica went down between asking for versions and asking for specific updates, that
       // shouldn't be treated as success since we counted on getting those updates back (and avoided
       // redundantly asking other replicas for them).
-      if (sreq.purpose == 1 && srsp.getException() instanceof SolrServerException) {
+      if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrServerException) {
         Throwable solrException = ((SolrServerException) srsp.getException())
             .getRootCause();
         if (solrException instanceof ConnectException
             || solrException instanceof NoHttpResponseException) {
-          log.info(msg() + " couldn't connect to " + srsp.getShardAddress() + ", counting as success");
+          log.warn(msg() + " couldn't connect to " + srsp.getShardAddress() + ", counting as success");
 
           return true;
         }
       }
+      
+      if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 503) {
+        log.warn(msg() + " got a 503 from " + srsp.getShardAddress() + ", counting as success");
+        return true;
+      }
       // TODO: at least log???
       // srsp.getException().printStackTrace(System.out);
-      
-      log.warn(msg() + " exception talking to " + srsp.getShardAddress() + ", counting as success");
+     
+      log.warn(msg() + " exception talking to " + srsp.getShardAddress() + ", failed", srsp.getException());
       
       return false;
     }
