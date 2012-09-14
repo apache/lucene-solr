@@ -20,12 +20,11 @@ package org.apache.lucene.store;
 import java.io.File;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.channels.FileChannel;
 import java.util.concurrent.Future; // javadoc
-
-import org.apache.lucene.store.SimpleFSDirectory.SimpleFSIndexInput.Descriptor;
 
 /**
  * An {@link FSDirectory} implementation that uses java.nio's FileChannel's
@@ -85,7 +84,7 @@ public class NIOFSDirectory extends FSDirectory {
       final IOContext context) throws IOException {
     ensureOpen();
     final File path = new File(getDirectory(), name);
-    final Descriptor descriptor = new Descriptor(path, "r");
+    final RandomAccessFile descriptor = new RandomAccessFile(path, "r");
     return new Directory.IndexInputSlicer() {
 
       @Override
@@ -104,7 +103,7 @@ public class NIOFSDirectory extends FSDirectory {
   /**
    * Reads bytes with {@link FileChannel#read(ByteBuffer, long)}
    */
-  protected static class NIOFSIndexInput extends SimpleFSDirectory.SimpleFSIndexInput {
+  protected static class NIOFSIndexInput extends FSIndexInput {
 
     private ByteBuffer byteBuf; // wraps the buffer for NIO
 
@@ -115,7 +114,7 @@ public class NIOFSDirectory extends FSDirectory {
       channel = file.getChannel();
     }
     
-    public NIOFSIndexInput(String sliceDescription, File path, Descriptor file, FileChannel fc, long off, long length, int bufferSize, int chunkSize) {
+    public NIOFSIndexInput(String sliceDescription, File path, RandomAccessFile file, FileChannel fc, long off, long length, int bufferSize, int chunkSize) {
       super("NIOFSIndexInput(" + sliceDescription + " in path=\"" + path + "\" slice=" + off + ":" + (off+length) + ")", file, off, length, bufferSize, chunkSize);
       channel = fc;
       isClone = true;
@@ -125,18 +124,6 @@ public class NIOFSDirectory extends FSDirectory {
     protected void newBuffer(byte[] newBuffer) {
       super.newBuffer(newBuffer);
       byteBuf = ByteBuffer.wrap(newBuffer);
-    }
-
-    @Override
-    public void close() throws IOException {
-      if (!isClone && file.isOpen) {
-        // Close the channel & file
-        try {
-          channel.close();
-        } finally {
-          file.close();
-        }
-      }
     }
 
     @Override
@@ -194,6 +181,9 @@ public class NIOFSDirectory extends FSDirectory {
         throw new IOException(ioe.getMessage() + ": " + this, ioe);
       }
     }
+
+    @Override
+    protected void seekInternal(long pos) throws IOException {}
   }
 
 }
