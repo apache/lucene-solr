@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-Example "Solr Home" Directory
+Example Solr Home Directory
 =============================
 
 This directory is provided as an example of what a "Solr Home" directory
@@ -27,28 +27,37 @@ directory when setting up a new instance of Solr, but it is recommended.
 Basic Directory Structure
 -------------------------
 
-The Solr Home directory typically contains the following subdirectories...
+The Solr Home directory typically contains the following...
 
-   conf/
-        This directory is mandatory and must contain your solrconfig.xml
-        and schema.xml.  Any other optional configuration files would also 
-        be kept here.
+* solr.xml *
 
-   data/
-        This directory is the default location where Solr will keep your
-        index, and is used by the replication scripts for dealing with
-        snapshots.  You can override this location in the solrconfig.xml
-        and scripts.conf files. Solr will create this directory if it
-        does not already exist.
+This is the primary configuration file Solr looks for when starting.
+This file specifies the list of "SolrCores" it should load, and high 
+level configuration options that should be used for all SolrCores.
 
-   lib/
-        This directory is optional.  If it exists, Solr will load any Jars
-        found in this directory and use them to resolve any "plugins"
-        specified in your solrconfig.xml or schema.xml (ie: Analyzers,
-        Request Handlers, etc...).  Alternatively you can use the <lib>
-        syntax in solrconfig.xml to direct Solr to your plugins.  See the
-        example solrconfig.xml file for details.
+Please see the comments in ./solr.xml for more details.
 
-   bin/
-        This directory is optional.  It is the default location used for
-        keeping the replication scripts.
+If no solr.xml file is found, then Solr assumes that there should be
+a single SolrCore named "collection1" and that the "Instance Directory" 
+for collection1 should be the same as the Solr Home Directory.
+
+* Individual SolrCore Instance Directories *
+
+Although solr.xml can be configured to look for SolrCore Instance Directories 
+in any path, simple sub-directories of the Solr Home Dir using relative paths 
+are common for many installations.  In this directory you can see the 
+"./collection1" Instance Directory.
+
+* A Shared 'lib' Directory *
+
+Although solr.xml can be configured with an optional "sharedLib" attribute 
+that can point to any path, it is common to use a "./lib" sub-directory of the 
+Solr Home Directory.
+
+* ZooKeeper Files *
+
+When using SolrCloud using the embedded ZooKeeper option for Solr, it is 
+common to have a "zoo.cfg" file and "zoo_data" directories in the Solr Home 
+Directory.  Please see the SolrCloud wiki page for more details...
+
+https://wiki.apache.org/solr/SolrCloud
