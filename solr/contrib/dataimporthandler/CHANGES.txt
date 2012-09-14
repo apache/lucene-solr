@@ -9,7 +9,14 @@ HTTP data sources quick and easy.
 
 ==================  3.6.2  ==================
 
-(No Changes)
+Bug Fixes
+----------------------
+* SOLR-3779: DataImportHandler's LineEntityProcessor when used in conjunction 
+  with FileListEntityProcessor would only process the first file.
+  (Ahmet Arslan via James Dyer)
+  
+* SOLR-3791: CachedSqlEntityProcessor would throw a NullPointerException when 
+  a query returns a row with a NULL key.  (Steffen Moelter via James Dyer)
 
 ==================  3.6.1 ==================
 

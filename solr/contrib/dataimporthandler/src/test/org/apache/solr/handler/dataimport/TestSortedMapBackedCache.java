@@ -20,6 +20,7 @@ package org.apache.solr.handler.dataimport;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -70,6 +71,37 @@ public class TestSortedMapBackedCache extends AbstractDIHCacheTestCase {
 			} catch (Exception ex) {
 			}
 		}
+	}
+	
+	@Test
+	public void testNullKeys() throws Exception {
+	  //A null key should just be ignored, but not throw an exception
+	  DIHCache cache = null;
+	  try {
+	    cache = new SortedMapBackedCache();
+	    Map<String, String> cacheProps = new HashMap<String, String>();
+      cacheProps.put(DIHCacheSupport.CACHE_PRIMARY_KEY, "a_id");
+      cache.open(getContext(cacheProps));
+      
+      Map<String,Object> data = new HashMap<String,Object>();
+      data.put("a_id", null);
+      data.put("bogus", "data");
+      cache.add(data);
+      
+      Iterator<Map<String, Object>> cacheIter = cache.iterator();
+      while (cacheIter.hasNext()) {
+        Assert.fail("cache should be empty.");
+      }
+      Assert.assertNull(cache.iterator(null));
+      cache.delete(null);      
+	  } catch (Exception e) {
+	    throw e;
+    } finally {
+      try {
+        cache.destroy();
+      } catch (Exception ex) {
+      }
+    }	  
 	}
 
 	@Test

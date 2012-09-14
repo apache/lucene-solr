@@ -54,6 +54,10 @@ public class SortedMapBackedCache implements DIHCache {
       }
       pk = c.iterator().next();
     }
+    //Rows with null keys are not added.
+    if(pk==null) {
+      return;
+    }
     List<Map<String,Object>> thisKeysRecs = theMap.get(pk);
     if (thisKeysRecs == null) {
       thisKeysRecs = new ArrayList<Map<String,Object>>();
@@ -85,6 +89,9 @@ public class SortedMapBackedCache implements DIHCache {
   public void delete(Object key) {
     checkOpen(true);
     checkReadOnly();
+    if(key==null) {
+      return;
+    }
     theMap.remove(key);
   }
   
@@ -114,6 +121,9 @@ public class SortedMapBackedCache implements DIHCache {
   
   public Iterator<Map<String,Object>> iterator(Object key) {
     checkOpen(true);
+    if(key==null) {
+      return null;
+    }
     if(key instanceof Iterable<?>) {
       List<Map<String,Object>> vals = new ArrayList<Map<String,Object>>();
       Iterator<?> iter = ((Iterable<?>) key).iterator();
