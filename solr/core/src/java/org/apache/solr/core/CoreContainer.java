@@ -92,6 +92,7 @@ import org.xml.sax.SAXException;
  */
 public class CoreContainer 
 {
+  private static final String LEADER_VOTE_WAIT = "180000";  // 3 minutes
   private static final String DEFAULT_HOST_CONTEXT = "solr";
   private static final String DEFAULT_HOST_PORT = "8983";
   private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 15000;
@@ -461,7 +462,7 @@ public class CoreContainer
     hostContext = cfg.get("solr/cores/@hostContext", DEFAULT_HOST_CONTEXT);
     host = cfg.get("solr/cores/@host", null);
     
-    leaderVoteWait = cfg.get("solr/cores/@leaderVoteWait", "180000"); // 3 minutes
+    leaderVoteWait = cfg.get("solr/cores/@leaderVoteWait", LEADER_VOTE_WAIT);
 
     if(shareSchema){
       indexSchemaCache = new ConcurrentHashMap<String ,IndexSchema>();
@@ -1246,6 +1247,7 @@ public class CoreContainer
         intToString(this.zkClientTimeout),
         Integer.toString(DEFAULT_ZK_CLIENT_TIMEOUT));
     addCoresAttrib(coresAttribs, "hostContext", this.hostContext, DEFAULT_HOST_CONTEXT);
+    addCoresAttrib(coresAttribs, "leaderVoteWait", this.leaderVoteWait, LEADER_VOTE_WAIT);
     
     List<SolrCoreXMLDef> solrCoreXMLDefs = new ArrayList<SolrCoreXMLDef>();
     
@@ -1318,10 +1320,14 @@ public class CoreContainer
         
         CloudDescriptor cd = dcore.getCloudDescriptor();
         String shard = null;
+        String roles = null;
         if (cd != null) {
           shard = cd.getShardId();
+          roles = cd.getRoles();
         }
         addCoreProperty(coreAttribs, coreNode, CORE_SHARD, shard, null);
+        
+        addCoreProperty(coreAttribs, coreNode, CORE_ROLES, roles, null);
         
         String collection = null;
         // only write out the collection name if it's not the default (the

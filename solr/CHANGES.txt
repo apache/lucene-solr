@@ -215,6 +215,9 @@ Bug Fixes
 * SOLR-3813: When a new leader syncs, we need to ask all shards to sync back, 
   not just those that are active. (Mark Miller)
 
+* SOLR-3641: CoreContainer is not persisting roles core attribute. 
+  (hossman, Mark Miller)
+
 Other Changes
 ----------------------
 
