@@ -19,7 +19,7 @@
   <description>Solr Core</description>
 
   <!-- html file for testing -->
-  <property name="rat.excludes" value="**/htmlStripReaderTest.html"/>
+  <property name="rat.excludes" value="**/htmlStripReaderTest.html,**/*.iml"/>
 
   <import file="../common-build.xml"/>
 
