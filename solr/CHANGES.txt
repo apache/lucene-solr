@@ -218,6 +218,10 @@ Bug Fixes
 * SOLR-3641: CoreContainer is not persisting roles core attribute. 
   (hossman, Mark Miller)
 
+* SOLR-3527: SolrCmdDistributor drops some of the important commit attributes
+  (maxOptimizeSegments, softCommit, expungeDeletes) when sending a commit to
+  replicas. (Andy Laird, Tomas Fernandez Lobbe, Mark Miller)
+
 Other Changes
 ----------------------
 
