@@ -165,6 +165,8 @@ Bug Fixes
 * SOLR-3569: Fixed debug output on distributed requests when there are no 
   results found.  (David Bowen via hossman)
 
+* SOLR-3811: Query Form using wrong values for dismax, edismax (steffkes)
+
 Other Changes
 ----------------------
 
