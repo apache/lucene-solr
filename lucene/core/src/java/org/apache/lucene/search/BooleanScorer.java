@@ -345,11 +345,6 @@ final class BooleanScorer extends Scorer {
   
   @Override
   public Collection<ChildScorer> getChildren() {
-    List<ChildScorer> children = new ArrayList<ChildScorer>();
-    for (SubScorer sub = scorers; sub != null; sub = sub.next) {
-      // TODO: fix this if BQ ever sends us required clauses
-      children.add(new ChildScorer(sub.scorer, sub.prohibited ? "MUST_NOT" : "SHOULD"));
-    }
-    return children;
+    throw new UnsupportedOperationException();
   }
 }
