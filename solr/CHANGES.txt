@@ -167,6 +167,10 @@ Bug Fixes
 
 * SOLR-3811: Query Form using wrong values for dismax, edismax (steffkes)
 
+* SOLR-3779: DataImportHandler's LineEntityProcessor when used in conjunction 
+  with FileListEntityProcessor would only process the first file.
+  (Ahmet Arslan via James Dyer)
+
 Other Changes
 ----------------------
 
