@@ -332,7 +332,14 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
           optional.add(subScorer);
         }
       }
-      
+
+      // NOTE: we could also use BooleanScorer, if we knew
+      // this BooleanQuery was embedded in another
+      // BooleanQuery that was also using BooleanScorer (ie,
+      // BooleanScorer can nest).  But this is hard to
+      // detect and we never do so today... (ie, we only
+      // return BooleanScorer for topScorer):
+
       // Check if we can return a BooleanScorer
       if (!scoreDocsInOrder && topScorer && required.size() == 0) {
         return new BooleanScorer(this, disableCoord, minNrShouldMatch, optional, prohibited, maxCoord);
