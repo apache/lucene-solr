@@ -870,7 +870,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
   // test that a corrupt tlog doesn't stop us from coming up
   //
   @Test
-  @Ignore // I have reproduced the failure on windows and am looking into fixes -yonik
   public void testCorruptLog() throws Exception {
     try {
       DirectUpdateHandler2.commitOnClose = false;
@@ -885,6 +884,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertU(adoc("id","G3"));
 
       h.close();
+
+
       String[] files = UpdateLog.getLogList(logDir);
       Arrays.sort(files);
       RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length-1]), "rw");
@@ -1040,13 +1041,19 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
     h.close();
 
-    String[] files = UpdateLog.getLogList(logDir);
-    for (String file : files) {
-      new File(logDir, file).delete();
-    }
+    try {
+      String[] files = UpdateLog.getLogList(logDir);
+      for (String file : files) {
+        new File(logDir, file).delete();
+      }
 
-    assertEquals(0, UpdateLog.getLogList(logDir).length);
-    createCore();
+      assertEquals(0, UpdateLog.getLogList(logDir).length);
+    } finally {
+      // make sure we create the core again, even if the assert fails so it won't mess
+      // up the next test.
+      createCore();
+      assertJQ(req("q","*:*") ,"/response/numFound==");   // ensure it works
+    }
   }
 
   private static Long getVer(SolrQueryRequest req) throws Exception {

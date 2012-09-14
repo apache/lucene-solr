@@ -205,7 +205,7 @@ public class UpdateLog implements PluginInfoInitialized {
         addOldLog(oldLog, false);  // don't remove old logs on startup since more than one may be uncapped.
       } catch (Exception e) {
         SolrException.log(log, "Failure to open existing log file (non fatal) " + f, e);
-        f.delete();
+        deleteFile(f);
       }
     }
 
@@ -1346,6 +1346,26 @@ public class UpdateLog implements PluginInfoInitialized {
       Integer.MAX_VALUE, 1, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
       new DefaultSolrThreadFactory("recoveryExecutor"));
 
+
+  public static void deleteFile(File file) {
+    boolean success = false;
+    try {
+      success = file.delete();
+      if (!success) {
+        log.error("Error deleting file: " + file);
+      }
+    } catch (Exception e) {
+      log.error("Error deleting file: " + file, e);
+    }
+
+    if (!success) {
+      try {
+        file.deleteOnExit();
+      } catch (Exception e) {
+        log.error("Error deleting file on exit: " + file, e);
+      }
+    }
+  }
 }
 
 
