@@ -133,7 +133,7 @@ The <span class="codefrag">exampledocs</span> directory contains sample files
 showing of the types of commands Solr accepts, as well as a java utility 
 for posting them from the command line (a <span class="codefrag">post.sh</span>
 shell script is also available, but for this tutorial we'll use the 
-cross-platform Java client).  
+cross-platform Java client. Run <span class="codefrag">java -jar post.jar -h</span> so see it's various options).  
 </p>
 <p> To try this, open a new terminal window, enter the exampledocs directory, 
 and run "<span class="codefrag">java -jar post.jar</span>" on some of the XML 
@@ -293,9 +293,9 @@ Here is an example of using delete-by-query to delete anything with
 <pre class="code">java -Dcommit=false -Ddata=args -jar post.jar "&lt;delete&gt;&lt;query&gt;name:DDR&lt;/query&gt;&lt;/delete&gt;"</pre>
 
 <p>
-You can force a new searcher to be opened to reflect these changes by sending a commit command to Solr (which post.jar does for you by default):
+You can force a new searcher to be opened to reflect these changes by sending an explicit commit command to Solr:
 </p>
-<pre class="code">java -jar post.jar</pre>
+<pre class="code">java -jar post.jar -</pre>
 
 <p>
 Now re-execute <a href="http://localhost:8983/solr/#/collection1/query?q=id:SP2514N">the previous search</a> 
@@ -396,7 +396,7 @@ and is useful when testing or debugging queries.
 <ul>
       
 <li>
-<a href="http://localhost:8983/solr/collection1/select/?indent=on&amp;q=*:*&amp;sort=div(popularity,add(price,1))+desc">q=video&amp;sort=div(popularity,add(price,1)) desc</a>
+<a href="http://localhost:8983/solr/collection1/select/?indent=on&amp;q=video&amp;sort=div(popularity,add(price,1))+desc">q=video&amp;sort=div(popularity,add(price,1)) desc</a>
 </li>
     
 </ul>
@@ -479,7 +479,7 @@ and is useful when testing or debugging queries.
   </p>
 <p>
     
-<a href="http://localhost:8983/solr/collection1/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name,manufacturedate_dt&amp;facet=true&amp;facet.range=manufacturedate_dt&amp;facet.range.start=2004-01-01T00:00:00Z&amp;facet.range.end=2010-01-01T00:00:00Z&amp;facet.range.gap=%2b1YEAR">...&amp;q=*:*&amp;facet=true&amp;facet.rage=manufacturedate_dt&amp;facet.rage.start=2004-01-01T00:00:00Z&amp;facet.rage.end=2010-01-01T00:00:00Z&amp;facet.range.gap=+1YEAR</a>
+<a href="http://localhost:8983/solr/collection1/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name,manufacturedate_dt&amp;facet=true&amp;facet.range=manufacturedate_dt&amp;facet.range.start=2004-01-01T00:00:00Z&amp;facet.range.end=2010-01-01T00:00:00Z&amp;facet.range.gap=%2b1YEAR">...&amp;q=*:*&amp;facet=true&amp;facet.range=manufacturedate_dt&amp;facet.range.start=2004-01-01T00:00:00Z&amp;facet.range.end=2010-01-01T00:00:00Z&amp;facet.range.gap=+1YEAR</a>
   
 </p>
 <p>
@@ -538,7 +538,7 @@ most languages.
   If you know your textual content is English, as is the case for the example 
   documents in this tutorial, and you'd like to apply English-specific stemming
   and stop word removal, as well as split compound words, you can use the 
-  <a href="http://localhost:8983/solr/#/collection1/schema-browser?type=text_en_splitting"><span class="codefrag">text_en_splitting</span> fieldType</a> instead.
+  <a href="http://localhost:8983/solr/#/collection1/schema-browser?type=text_en_splitting"><span class="codefrag">text_en_splitting</span></a> fieldType instead.
   Go ahead and edit the <span class="codefrag">schema.xml</span> in the 
   <span class="codefrag">solr/example/solr/collection1/conf</span> directory,
   to use the <span class="codefrag">text_en_splitting</span> fieldType for 
@@ -596,7 +596,7 @@ There is a handy <a href="http://localhost:8983/solr/#/collection1/analysis">Ana
 where you can see how a text value is broken down into words by both Index time nad Query time analysis chains for a field or field type.  This page shows the resulting tokens after they pass through each filter in the chains.
 </p>
 <p>
-  <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&analysis.query=&analysis.fieldtype=text_en_splitting">This url</a>
+  <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&amp;analysis.query=&amp;analysis.fieldtype=text_en_splitting">This url</a>
   shows the tokens created from 
   "<span class="codefrag">Canon Power-Shot SD500</span>" 
   using the 
@@ -607,14 +607,14 @@ where you can see how a text value is broken down into words by both Index time 
   <span class="codefrag">power</span>, <span class="codefrag">shot</span> 
   are indexed, using tokens that have the same "position".
   (Compare the previous output with
-  <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&analysis.query=&analysis.fieldtype=text_general">The tokens produced using the text_general field type</a>.)
+  <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&amp;analysis.query=&amp;analysis.fieldtype=text_general">The tokens produced using the text_general field type</a>.)
 </p>
 
 <p>
 Mousing over the section label to the left of the section will display the full name of the analyzer component at that stage of the chain.  Toggling the "Verbose Output" checkbox will show/hide the detailed token attributes.
 </p>
 <p>
-When both <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&analysis.query=power+shot+sd-500&analysis.fieldtype=text_en_splitting">Index and Query</a>
+When both <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&amp;analysis.query=power+shot+sd-500&amp;analysis.fieldtype=text_en_splitting">Index and Query</a>
 values are provided, two tables will be displayed side by side showing the 
 results of each chain.  Terms in the Index chain results that are equivilent 
 to the final terms produced by the Query chain will be highlighted.
@@ -623,16 +623,16 @@ to the final terms produced by the Query chain will be highlighted.
   Other interesting examples:
 </p>
 <ul>
-  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Four+score+and+seven+years+ago+our+fathers+brought+forth+on+this+continent+a+new+nation%2C+conceived+in+liberty+and+dedicated+to+the+proposition+that+all+men+are+created+equal.%0A&analysis.query=liberties+and+equality&analysis.fieldtype=text_en">English stemming and stop-words</a> 
+  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Four+score+and+seven+years+ago+our+fathers+brought+forth+on+this+continent+a+new+nation%2C+conceived+in+liberty+and+dedicated+to+the+proposition+that+all+men+are+created+equal.%0A&amp;analysis.query=liberties+and+equality&amp;analysis.fieldtype=text_en">English stemming and stop-words</a> 
     using the <span class="codefrag">text_en</span> field type
   </li>
-  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldtype=text_cjk&analysis.fieldvalue=%EF%BD%B6%EF%BE%80%EF%BD%B6%EF%BE%85&analysis.query=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A">Half-width katakana normalization with bi-graming</a> 
+  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldtype=text_cjk&amp;analysis.fieldvalue=%EF%BD%B6%EF%BE%80%EF%BD%B6%EF%BE%85&amp;analysis.query=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A">Half-width katakana normalization with bi-graming</a> 
     using the <span class="codefrag">text_cjk</span> field type
   </li>
-  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldtype=text_ja&analysis.fieldvalue=%E7%A7%81%E3%81%AF%E5%88%B6%E9%99%90%E3%82%B9%E3%83%94%E3%83%BC%E3%83%89%E3%82%92%E8%B6%85%E3%81%88%E3%82%8B%E3%80%82">Japanese morphological decomposition with part-of-speech filtering</a>
+  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldtype=text_ja&amp;analysis.fieldvalue=%E7%A7%81%E3%81%AF%E5%88%B6%E9%99%90%E3%82%B9%E3%83%94%E3%83%BC%E3%83%89%E3%82%92%E8%B6%85%E3%81%88%E3%82%8B%E3%80%82">Japanese morphological decomposition with part-of-speech filtering</a>
     using the <span class="codefrag">text_ja</span> field type 
   </li>
-  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldtype=text_ar&analysis.fieldvalue=%D9%84%D8%A7+%D8%A3%D8%AA%D9%83%D9%84%D9%85+%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9
+  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldtype=text_ar&amp;analysis.fieldvalue=%D9%84%D8%A7+%D8%A3%D8%AA%D9%83%D9%84%D9%85+%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9
 ">Arabic stop-words, normalization, and stemming</a>
     using the <span class="codefrag">text_ar</span> field type 
   </li>

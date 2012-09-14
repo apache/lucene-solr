@@ -27,7 +27,7 @@
 -->
 
 <!--
- All (relative) paths are relative to the installation path
+ All (relative) paths are relative to the Solr Home Directory
   
   persistent: Save changes made via the API to this file
   sharedLib: path to a lib directory that will be shared across all cores
