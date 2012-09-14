@@ -39,6 +39,8 @@ public class QueryWrapperFilter extends Filter {
    * <code>query</code>.
    */
   public QueryWrapperFilter(Query query) {
+    if (query == null)
+      throw new NullPointerException("Query may not be null");
     this.query = query;
   }
   
