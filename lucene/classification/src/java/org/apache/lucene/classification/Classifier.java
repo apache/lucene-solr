@@ -24,6 +24,7 @@ import java.io.IOException;
 
 /**
  * A classifier, see <code>http://en.wikipedia.org/wiki/Classifier_(mathematics)</code>
+ * @lucene.experimental
  */
 public interface Classifier {
 
