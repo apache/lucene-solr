@@ -34,6 +34,7 @@ import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.spatial.vector.TwoDoublesStrategy;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -66,6 +67,9 @@ public class PortedSolr3Test extends StrategyTestCase {
     grid = new GeohashPrefixTree(ctx,12);
     strategy = new TermQueryPrefixTreeStrategy(grid, "termquery_geohash");
     ctorArgs.add(new Object[]{new Param(strategy, "termquery_geohash")});
+
+    strategy = new TwoDoublesStrategy(ctx, "twodoubles");
+    ctorArgs.add(new Object[]{new Param(strategy, "twodoubles")});
 
     return ctorArgs;
   }
