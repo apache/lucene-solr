@@ -48,16 +48,18 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.SpecialOperations;
+import org.apache.lucene.util.automaton.State;
+import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
-import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
-import org.apache.lucene.util.fst.PairOutputs;
+import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
+import org.apache.lucene.util.fst.PairOutputs;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
-import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.fst.Util.MinResult;
+import org.apache.lucene.util.fst.Util;
 
 /**
  * Suggester that first analyzes the surface form, adds the
@@ -105,25 +107,82 @@ public class AnalyzingCompletionLookup extends Lookup {
    */
   private final boolean exactFirst;
   
+  /** 
+   * True if separator between tokens should be preservered.
+   */
+  private final boolean preserveSep;
+
   /**
-   * Calls {@link #AnalyzingCompletionLookup(Analyzer,boolean) AnalyzingCompletionLookup(analyzer, true)}
+   * Calls {@link #AnalyzingCompletionLookup(Analyzer,int) AnalyzingCompletionLookup(analyzer, EXACT_FIRST | PRESERVE_SEP)}
    */
   public AnalyzingCompletionLookup(Analyzer analyzer) {
-    this(analyzer, true);
+    this(analyzer, EXACT_FIRST | PRESERVE_SEP);
   }
-  
+
+  /** Include this flag in the options parameter {@link
+   * #AnalyzingCompletionLookup(Analyzer,int)} to always
+   * return exact matches first regardless of score.  This
+   * has no performance impact but could result in
+   * low-quality suggestions. */
+  public static final int EXACT_FIRST = 1;
+
+  /** Include this flag in the options parameter {@link
+   * #AnalyzingCompletionLookup(Analyzer,int)} to preserve
+   * token separators when matching. */
+  public static final int PRESERVE_SEP = 2;
+
+  /** Represents the separation between tokens, if
+   *  PRESERVE_SEP was specified */
+  private static final byte SEP_BYTE = 0;
+
   /**
    * Creates a new suggester.
    * 
    * @param analyzer Analyzer that will be used for analyzing suggestions.
-   * @param exactFirst <code>true</code> if suggestions that match the 
-   *        prefix exactly should always be returned first, regardless
-   *        of score. This has no performance impact, but could result
-   *        in low-quality suggestions.
+   * @param options see {@link #EXACT_FIRST}, {@link #PRESERVE_SEP}
    */
-  public AnalyzingCompletionLookup(Analyzer analyzer, boolean exactFirst) {
+  public AnalyzingCompletionLookup(Analyzer analyzer, int options) {
     this.analyzer = analyzer;
-    this.exactFirst = exactFirst;
+    if ((options & ~(EXACT_FIRST | PRESERVE_SEP)) != 0) {
+      throw new IllegalArgumentException("options should only contain EXACT_FIRST and PRESERVE_SEP; got " + options);
+    }
+    this.exactFirst = (options & EXACT_FIRST) != 0;
+    this.preserveSep = (options & PRESERVE_SEP) != 0;
+  }
+
+  // Replaces SEP with epsilon or remaps them if
+  // we were asked to preserve them:
+  private void replaceSep(Automaton a) {
+
+    State[] states = a.getNumberedStates();
+
+    // Go in reverse topo sort so we know we only have to
+    // make one pass:
+    for(int stateNumber=states.length-1;stateNumber >=0;stateNumber--) {
+      final State state = states[stateNumber];
+      List<Transition> newTransitions = new ArrayList<Transition>();
+      for(Transition t : state.getTransitions()) {
+        assert t.getMin() == t.getMax();
+        if (t.getMin() == TokenStreamToAutomaton.POS_SEP) {
+          if (preserveSep) {
+            // Remap to SEP_BYTE:
+            t = new Transition(SEP_BYTE, t.getDest());
+          } else {
+            // NOTE: sort of weird because this will grow
+            // the transition array we are iterating over,
+            // but because we are going in reverse topo sort
+            // it will not add any SEP/HOLE transitions:
+            state.addEpsilon(t.getDest());
+            t = null;
+          }
+        }
+        if (t != null) {
+          newTransitions.add(t);
+        }
+      }
+      state.resetTransitions();
+      state.setTransitions(newTransitions.toArray(new Transition[newTransitions.size()]));
+    }
   }
   
   @Override
@@ -136,8 +195,6 @@ public class AnalyzingCompletionLookup extends Lookup {
     Sort.ByteSequencesWriter writer = new Sort.ByteSequencesWriter(tempInput);
     Sort.ByteSequencesReader reader = null;
     BytesRef scratch = new BytesRef();
-
-    assert TokenStreamToAutomaton.POS_SEP < Byte.MAX_VALUE;
 
     BytesRef separator = new BytesRef(new byte[] { (byte)TokenStreamToAutomaton.POS_SEP });
     
@@ -158,6 +215,9 @@ public class AnalyzingCompletionLookup extends Lookup {
         Automaton automaton = TokenStreamToAutomaton.toAutomaton(ts);
         ts.end();
         ts.close();
+
+        replaceSep(automaton);
+
         assert SpecialOperations.isFinite(automaton);
 
         // Get all paths from the automaton (there can be
@@ -166,7 +226,7 @@ public class AnalyzingCompletionLookup extends Lookup {
 
         // nocommit: we should probably not wire this param to -1 but have a reasonable limit?!
         Set<IntsRef> paths = SpecialOperations.getFiniteStrings(automaton, -1);
-        for (IntsRef path : paths) {        
+        for (IntsRef path : paths) {
 
           Util.toBytesRef(path, scratch);
           
@@ -203,6 +263,7 @@ public class AnalyzingCompletionLookup extends Lookup {
       BytesRef surface = new BytesRef();
       IntsRef scratchInts = new IntsRef();
       ByteArrayDataInput input = new ByteArrayDataInput();
+      int dedup = 0;
       while (reader.read(scratch)) {
         input.reset(scratch.bytes, scratch.offset, scratch.length);
         input.setPosition(input.length()-2);
@@ -226,8 +287,21 @@ public class AnalyzingCompletionLookup extends Lookup {
           // increasing bytes (it wont matter) ... or we
           // could use multiple outputs for a single input?
           // this would be more efficient?
-          continue;
+          if (dedup < 256) {
+            analyzed.grow(analyzed.length+1);
+            analyzed.bytes[analyzed.length] = (byte) dedup;
+            dedup++;
+            analyzed.length++;
+          } else {
+            // nocommit add param to limit "dups"???
+
+            // More than 256 dups: skip the rest:
+            continue;
+          }
+        } else {
+          dedup = 0;
         }
+
         Util.toIntsRef(analyzed, scratchInts);
         // nocommit (why?)
         builder.add(scratchInts, outputs.newPair(cost, BytesRef.deepCopyOf(surface)));
@@ -289,6 +363,8 @@ public class AnalyzingCompletionLookup extends Lookup {
       throw new RuntimeException(bogus);
     }
 
+    replaceSep(automaton);
+
     // TODO: we can optimize this somewhat by determinizing
     // while we convert
     automaton = Automaton.minimize(automaton);
@@ -307,7 +383,11 @@ public class AnalyzingCompletionLookup extends Lookup {
       throw new RuntimeException(bogus);
     }
 
-    // nocommit maybe nuke exactFirst...? but... it's useful?
+    // nocommit maybe nuke exactFirst...? but... it's
+    // useful?
+    // nocommit: exactFirst is not well defined here ... the
+    // "exactness" refers to the analyzed form not the
+    // surface form
     if (exactFirst) {
       for (FSTUtil.Path<Pair<Long,BytesRef>> path : prefixPaths) {
         if (path.fstNode.isFinal()) {

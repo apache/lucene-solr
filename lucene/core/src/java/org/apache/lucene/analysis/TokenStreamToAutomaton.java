@@ -64,14 +64,10 @@ public class TokenStreamToAutomaton {
   }
 
   /** We create transition between two adjacent tokens. */
-  // nocommit should we ues 256?  ie, outside of the utf8
-  // byte range...
-  public static final int POS_SEP = 0;
+  public static final int POS_SEP = 256;
 
   /** We add this arc to represent a hole. */
-  // nocommit should we ues 257?  ie, outside of the utf8
-  // byte range...
-  public static final int HOLE = 1;
+  public static final int HOLE = 257;
 
   /** Pulls the graph (including {@link
    *  PositionLengthAttribute}) from the provided {@link

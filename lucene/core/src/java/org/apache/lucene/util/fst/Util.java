@@ -836,7 +836,9 @@ public final class Util {
   public static BytesRef toBytesRef(IntsRef input, BytesRef scratch) {
     scratch.grow(input.length);
     for(int i=0;i<input.length;i++) {
-      scratch.bytes[i] = (byte) input.ints[i+input.offset];
+      int value = input.ints[i+input.offset];
+      assert value >= Byte.MIN_VALUE && value <= Byte.MAX_VALUE: "value " + value + " doesn't fit into byte";
+      scratch.bytes[i] = (byte) value;
     }
     scratch.length = input.length;
     return scratch;

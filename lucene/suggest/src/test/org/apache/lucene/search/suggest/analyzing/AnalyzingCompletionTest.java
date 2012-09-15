@@ -120,7 +120,31 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
     assertEquals("the ghost of christmas past", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
   }
-  
+
+  public void testNoSeps() throws Exception {
+    TermFreq[] keys = new TermFreq[] {
+      new TermFreq("ab cd", 0),
+      new TermFreq("abcd", 1),
+    };
+
+    int options = 0;
+
+    AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(new MockAnalyzer(random()), options);
+    suggester.build(new TermFreqArrayIterator(keys));
+    // nocommit if i change this to "ab " ... the test fails
+    // now but really it should pass???  problem is
+    // analyzers typically strip trailing space?  really we
+    // need a SEP token appear instead...?  hmm actually i
+    // think we need to look @ posIncAtt after .end()?
+    List<LookupResult> r = suggester.lookup(_TestUtil.stringToCharSequence("ab c", random()), false, 2);
+    assertEquals(2, r.size());
+
+    // With no PRESERVE_SEPS specified, "ab c" should also
+    // complete to "abcd", which has higher weight so should
+    // appear first:
+    assertEquals("abcd", r.get(0).key.toString());
+  }
+
   public void testInputPathRequired() throws Exception {
     TermFreq keys[] = new TermFreq[] {
         new TermFreq("ab xc", 50),
@@ -238,7 +262,10 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
       keys[i] = new TermFreq(s, weight);
     }
 
-    AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false), false);
+    // nocommit also test NOT preserving seps/holes
+    // nocommit why no failure if we DON'T preserve seps/holes...?
+    AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false),
+                                                                        AnalyzingCompletionLookup.PRESERVE_SEP);
     suggester.build(new TermFreqArrayIterator(keys));
     
     for (String prefix : allPrefixes) {
