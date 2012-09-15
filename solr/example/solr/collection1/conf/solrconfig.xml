@@ -1449,6 +1449,7 @@
   <requestHandler name="/terms" class="solr.SearchHandler" startup="lazy">
      <lst name="defaults">
       <bool name="terms">true</bool>
+      <bool name="distrib">false</bool>
     </lst>     
     <arr name="components">
       <str>terms</str>
