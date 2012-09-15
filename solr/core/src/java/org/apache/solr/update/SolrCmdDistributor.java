@@ -29,6 +29,7 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.apache.http.client.HttpClient;
@@ -353,7 +354,12 @@ public class SolrCmdDistributor {
       Thread.currentThread().interrupt();
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Update thread interrupted", e);
     }
-    pending.add(completionService.submit(task));
+    try {
+      pending.add(completionService.submit(task));
+    } catch (RejectedExecutionException e) {
+      semaphore.release();
+      throw e;
+    }
     
   }
 
