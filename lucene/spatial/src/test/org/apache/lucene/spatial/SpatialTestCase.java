@@ -31,14 +31,15 @@ import org.junit.After;
 import org.junit.Before;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class SpatialTestCase extends LuceneTestCase {
 
   private DirectoryReader indexReader;
   private RandomIndexWriter indexWriter;
   private Directory directory;
-  private IndexSearcher indexSearcher;
+  protected IndexSearcher indexSearcher;
 
   @Override
   @Before
