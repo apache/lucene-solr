@@ -243,13 +243,14 @@
   </target>
 
   <!-- rat sources -->
-  <target name="rat-sources">
-    <sequential>
-       <ant dir="core" target="rat-sources" inheritall="false"/>
-       <ant dir="solrj" target="rat-sources" inheritall="false"/>
-       <ant dir="test-framework" target="rat-sources" inheritall="false"/>
-      <contrib-crawl target="rat-sources" failonerror="true"/>
-    </sequential>
+  <!-- rat-sources-typedef is *not* a useless dependency. do not remove -->
+  <target name="rat-sources" depends="rat-sources-typedef">
+    <subant target="rat-sources" inheritall="false" >
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="solrj" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+    </subant>
   </target>
   
   <!-- Clean targets -->
