@@ -1211,7 +1211,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     int tries = 0;
     while (zkStateReader.getClusterState()
         .liveNodesContain(cjetty.info.getStr(ZkStateReader.NODE_NAME_PROP))) {
-      if (tries++ == 120) {
+      if (tries++ == 220) {
         fail("Shard still reported as live in zk");
       }
       Thread.sleep(1000);
