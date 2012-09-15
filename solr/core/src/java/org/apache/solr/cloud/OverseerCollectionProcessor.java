@@ -266,7 +266,7 @@ public class OverseerCollectionProcessor implements Runnable {
           sreq.shards = new String[] {replica};
           sreq.actualShards = sreq.shards;
           sreq.params = params;
-          
+          log.info("Collection Admin sending CoreAdmin cmd to " + replica);
           shardHandler.submit(sreq, replica, sreq.params);
         }
       }

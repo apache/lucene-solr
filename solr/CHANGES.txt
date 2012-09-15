@@ -225,6 +225,9 @@ Bug Fixes
 * SOLR-3844: SolrCore reload can fail because it tries to remove the index 
   write lock while already holding it. (Mark Miller)
 
+* SOLR-3831: Atomic updates do not distribute correctly to other nodes.
+  (Jim Musil, Mark Miller)
+
 Other Changes
 ----------------------
 
