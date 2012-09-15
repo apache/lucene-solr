@@ -276,6 +276,9 @@ Other Changes
 
 * SOLR-3826: Test framework improvements for specifying coreName on initCore
   (Amit Nithian, hossman)
+  
+* SOLR-3749: Allow default UpdateLog syncLevel to be configured by
+  solrconfig.xml (Raintung Li, Mark Miller)
 
 
 ==================  4.0.0-BETA ===================

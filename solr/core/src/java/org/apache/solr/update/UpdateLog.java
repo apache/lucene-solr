@@ -62,7 +62,19 @@ public class UpdateLog implements PluginInfoInitialized {
   public boolean trace = log.isTraceEnabled();
 
 
-  public enum SyncLevel { NONE, FLUSH, FSYNC }
+  public enum SyncLevel { NONE, FLUSH, FSYNC;
+	  public static SyncLevel getSyncLevel(String level){
+	    if (level == null) {
+	      return SyncLevel.FLUSH;
+	    }
+		  try{
+			  return SyncLevel.valueOf(level.toUpperCase());
+		  } catch(Exception ex){
+		    log.warn("There was an error reading the SyncLevel - default to " + SyncLevel.FLUSH, ex);
+			  return SyncLevel.FLUSH;
+		  }
+	  }
+  }
   public enum State { REPLAYING, BUFFERING, APPLYING_BUFFERED, ACTIVE }
 
   public static final int ADD = 0x01;
@@ -168,6 +180,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
   public void init(PluginInfo info) {
     dataDir = (String)info.initArgs.get("dir");
+    defaultSyncLevel = SyncLevel.getSyncLevel((String)info.initArgs.get("syncLevel"));
   }
 
   public void init(UpdateHandler uhandler, SolrCore core) {
