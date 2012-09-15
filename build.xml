@@ -304,7 +304,7 @@
   </target>
 
   <!-- Jenkins tasks -->
-  <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-javadocs-lint,check-svn-working-copy" description="Runs the Jenkins hourly test runs"/>
+  <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-javadocs-lint,jar-checksums,check-svn-working-copy" description="Runs the Jenkins hourly test runs"/>
   
   <target name="jenkins-clover" description="Runs nightly clover builds on Jenkins">
     <antcall target="-jenkins-clover">
