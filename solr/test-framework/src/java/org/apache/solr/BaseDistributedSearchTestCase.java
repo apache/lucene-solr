@@ -373,6 +373,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected void query(Object... q) throws Exception {
+    query(true, q);
+  }
+  
+  protected void query(boolean setDistribParams, Object[] q) throws Exception {
     
     final ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -385,7 +389,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     validateControlData(controlRsp);
 
     params.remove("distrib");
-    setDistributedParams(params);
+    if (setDistribParams) setDistributedParams(params);
 
     QueryResponse rsp = queryServer(params);
 

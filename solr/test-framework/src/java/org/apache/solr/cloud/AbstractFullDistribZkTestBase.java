@@ -288,8 +288,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     StringBuilder sb = new StringBuilder();
     for (int i = 1; i <= numJettys; i++) {
       if (sb.length() > 0) sb.append(',');
-      JettySolrRunner j = createJetty(new File(getSolrHome()), testDir + "/jetty"
-          + this.jettyIntCntr.incrementAndGet(), null, "solrconfig.xml", null);
+      int cnt = this.jettyIntCntr.incrementAndGet();
+      File jettyDir = new File(TEMP_DIR,
+          "solrtest-" + "jetty" + cnt + "-" + System.currentTimeMillis());
+      jettyDir.mkdirs();
+      org.apache.commons.io.FileUtils.copyDirectory(new File(getSolrHome()), jettyDir);
+      JettySolrRunner j = createJetty(jettyDir, testDir + "/jetty"
+          + cnt, null, "solrconfig.xml", null);
       jettys.add(j);
       SolrServer client = createNewSolrServer(j.getLocalPort());
       clients.add(client);

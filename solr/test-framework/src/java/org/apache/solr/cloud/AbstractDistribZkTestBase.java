@@ -128,6 +128,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       zkStateReader.updateClusterState(true);
       ClusterState clusterState = zkStateReader.getClusterState();
       Map<String,Slice> slices = clusterState.getSlices(collection);
+      assertNotNull("Could not find collection:" + collection, slices);
       for (Map.Entry<String,Slice> entry : slices.entrySet()) {
         Map<String,Replica> shards = entry.getValue().getReplicasMap();
         for (Map.Entry<String,Replica> shard : shards.entrySet()) {
