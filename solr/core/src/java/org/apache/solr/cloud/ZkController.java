@@ -727,7 +727,7 @@ public final class ZkController {
    * 
    * @param collection
    * @param slice
-   * @return
+   * @return leader props
    * @throws KeeperException
    * @throws InterruptedException
    */
