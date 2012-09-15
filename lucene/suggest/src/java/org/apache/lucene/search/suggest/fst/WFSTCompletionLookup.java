@@ -57,7 +57,7 @@ import org.apache.lucene.util.fst.Util.MinResult;
  * Input weights will be cast to a java integer, and any
  * negative, infinite, or NaN values will be rejected.
  * 
- * @see Util#shortestPaths(FST, FST.Arc, Comparator, int)
+ * @see Util#shortestPaths(FST, FST.Arc, Object, Comparator, int)
  * @lucene.experimental
  */
 public class WFSTCompletionLookup extends Lookup {
@@ -169,12 +169,14 @@ public class WFSTCompletionLookup extends Lookup {
         return results; // that was quick
       }
     }
-    
+
     // complete top-N
     MinResult<Long> completions[] = null;
     try {
-      completions = Util.shortestPaths(fst, arc, weightComparator, num);
-    } catch (IOException bogus) { throw new RuntimeException(bogus); }
+      completions = Util.shortestPaths(fst, arc, prefixOutput, weightComparator, num, !exactFirst);
+    } catch (IOException bogus) {
+      throw new RuntimeException(bogus);
+    }
     
     BytesRef suffix = new BytesRef(8);
     for (MinResult<Long> completion : completions) {
@@ -184,7 +186,7 @@ public class WFSTCompletionLookup extends Lookup {
       scratch.append(suffix);
       spare.grow(scratch.length);
       UnicodeUtil.UTF8toUTF16(scratch, spare);
-      results.add(new LookupResult(spare.toString(), decodeWeight(prefixOutput + completion.output)));
+      results.add(new LookupResult(spare.toString(), decodeWeight(completion.output)));
     }
     return results;
   }

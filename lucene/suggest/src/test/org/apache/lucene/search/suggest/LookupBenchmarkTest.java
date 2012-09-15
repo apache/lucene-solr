@@ -19,6 +19,7 @@ package org.apache.lucene.search.suggest;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -30,7 +31,11 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 
 import org.apache.lucene.util.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.analyzing.AnalyzingCompletionLookup;
 import org.apache.lucene.search.suggest.fst.FSTCompletionLookup;
 import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup;
 import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
@@ -49,7 +54,8 @@ public class LookupBenchmarkTest extends LuceneTestCase {
       JaspellLookup.class, 
       TSTLookup.class,
       FSTCompletionLookup.class,
-      WFSTCompletionLookup.class);
+      WFSTCompletionLookup.class,
+      AnalyzingCompletionLookup.class);
 
   private final static int rounds = 15;
   private final static int warmup = 5;
@@ -144,7 +150,13 @@ public class LookupBenchmarkTest extends LuceneTestCase {
    * Create {@link Lookup} instance and populate it. 
    */
   private Lookup buildLookup(Class<? extends Lookup> cls, TermFreq[] input) throws Exception {
-    Lookup lookup = cls.newInstance();
+    Lookup lookup = null;
+    try {
+      lookup = cls.newInstance();
+    } catch (InstantiationException e) {
+      Constructor<? extends Lookup> ctor = cls.getConstructor(Analyzer.class);
+      lookup = ctor.newInstance(new MockAnalyzer(random, MockTokenizer.KEYWORD, false));
+    }
     lookup.build(new TermFreqArrayIterator(input));
     return lookup;
   }

@@ -44,7 +44,13 @@ public class WFSTCompletionTest extends LuceneTestCase {
     assertEquals(1, results.size());
     assertEquals("foo", results.get(0).key.toString());
     assertEquals(50, results.get(0).value, 0.01F);
-    
+
+    // make sure we don't get a dup exact suggestion:
+    results = suggester.lookup(_TestUtil.stringToCharSequence("foo", random), true, 2);
+    assertEquals(1, results.size());
+    assertEquals("foo", results.get(0).key.toString());
+    assertEquals(50, results.get(0).value, 0.01F);
+
     // top N of 1 for 'bar': we return this even though barbar is higher
     results = suggester.lookup(_TestUtil.stringToCharSequence("bar", random), false, 1);
     assertEquals(1, results.size());

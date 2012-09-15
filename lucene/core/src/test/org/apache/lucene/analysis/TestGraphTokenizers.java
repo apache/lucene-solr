@@ -17,9 +17,15 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
+import java.io.StringWriter;
+import java.io.PrintWriter;
+import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -27,6 +33,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
+import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.BasicAutomata;
+import org.apache.lucene.util.automaton.BasicOperations;
 
 public class TestGraphTokenizers extends BaseTokenStreamTestCase {
 
@@ -385,5 +394,190 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
       Random random = random();
       checkRandomData(random, a, 5, atLeast(1000));
     }
+  }
+
+  private static Token token(String term, int posInc, int posLength) {
+    final Token t = new Token(term, 0, 0);
+    t.setPositionIncrement(posInc);
+    t.setPositionLength(posLength);
+    return t;
+  }
+
+  private static Token token(String term, int posInc, int posLength, int startOffset, int endOffset) {
+    final Token t = new Token(term, startOffset, endOffset);
+    t.setPositionIncrement(posInc);
+    t.setPositionLength(posLength);
+    return t;
+  }
+
+  public void testSingleToken() throws Exception {
+
+    final TokenStream ts = new CannedTokenStream(
+      new Token[] {
+        token("abc", 1, 1),
+      });
+    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton expected = BasicAutomata.makeString("abc");
+    assertTrue(BasicOperations.sameLanguage(expected, actual));
+  }
+
+  // for debugging!
+  // nocommit comment out
+  private static void toDot(Automaton a) throws IOException {
+    final String s = a.toDot();
+    Writer w = new OutputStreamWriter(new FileOutputStream("/x/tmp3/out.dot"));
+    w.write(s);
+    w.close();
+    System.out.println("TEST: saved to /x/tmp3/out.dot");
+  }
+
+  private static final Automaton SEP_A = BasicAutomata.makeCharRange(TokenStreamToAutomaton.POS_SEP,
+                                                                     TokenStreamToAutomaton.POS_SEP);
+
+  private static final String SEP = "" + (char) TokenStreamToAutomaton.POS_SEP;
+
+  private static final String HOLE = "" + (char) TokenStreamToAutomaton.HOLE;
+
+  public void testTwoTokens() throws Exception {
+
+    final TokenStream ts = new CannedTokenStream(
+      new Token[] {
+        token("abc", 1, 1),
+        token("def", 1, 1),
+      });
+    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton expected =  BasicAutomata.makeString("abc" + SEP + "def");
+
+    //toDot(actual);
+    assertTrue(BasicOperations.sameLanguage(expected, actual));
+  }
+
+  public void testHole() throws Exception {
+
+    final TokenStream ts = new CannedTokenStream(
+      new Token[] {
+        token("abc", 1, 1),
+        token("def", 2, 1),
+      });
+    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+
+    final Automaton expected = BasicAutomata.makeString("abc" + SEP + HOLE + SEP + "def");
+
+    //toDot(actual);
+    assertTrue(BasicOperations.sameLanguage(expected, actual));
+  }
+
+  public void testOverlappedTokensSausage() throws Exception {
+
+    // Two tokens on top of each other (sausage):
+    final TokenStream ts = new CannedTokenStream(
+      new Token[] {
+        token("abc", 1, 1),
+        token("xyz", 0, 1)
+      });
+    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton a1 = BasicAutomata.makeString("abc");
+    final Automaton a2 = BasicAutomata.makeString("xyz");
+    final Automaton expected = BasicOperations.union(a1, a2);
+    assertTrue(BasicOperations.sameLanguage(expected, actual));
+  }
+
+  public void testOverlappedTokensLattice() throws Exception {
+
+    final TokenStream ts = new CannedTokenStream(
+      new Token[] {
+        token("abc", 1, 1),
+        token("xyz", 0, 2),
+        token("def", 1, 1),
+      });
+    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton a1 = BasicAutomata.makeString("xyz");
+    final Automaton a2 = BasicAutomata.makeString("abc" + SEP + "def");
+                                                                   
+    final Automaton expected = BasicOperations.union(a1, a2);
+    //toDot(actual);
+    assertTrue(BasicOperations.sameLanguage(expected, actual));
+  }
+
+  public void testSynOverHole() throws Exception {
+
+    final TokenStream ts = new CannedTokenStream(
+      new Token[] {
+        token("a", 1, 1),
+        token("X", 0, 2),
+        token("b", 2, 1),
+      });
+    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton a1 = BasicOperations.union(
+                                               BasicAutomata.makeString("a" + SEP + HOLE),
+                                               BasicAutomata.makeString("X"));
+    final Automaton expected = BasicOperations.concatenate(a1,
+                                                           BasicAutomata.makeString(SEP + "b"));
+    //toDot(actual);
+    assertTrue(BasicOperations.sameLanguage(expected, actual));
+  }
+
+  public void testSynOverHole2() throws Exception {
+
+    final TokenStream ts = new CannedTokenStream(
+      new Token[] {
+        token("xyz", 1, 1),
+        token("abc", 0, 3),
+        token("def", 2, 1),
+      });
+    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton expected = BasicOperations.union(
+                                                     BasicAutomata.makeString("xyz" + SEP + HOLE + SEP + "def"),
+                                                     BasicAutomata.makeString("abc"));
+    assertTrue(BasicOperations.sameLanguage(expected, actual));
+  }
+
+  public void testOverlappedTokensLattice2() throws Exception {
+
+    final TokenStream ts = new CannedTokenStream(
+      new Token[] {
+        token("abc", 1, 1),
+        token("xyz", 0, 3),
+        token("def", 1, 1),
+        token("ghi", 1, 1),
+      });
+    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton a1 = BasicAutomata.makeString("xyz");
+    final Automaton a2 = BasicAutomata.makeString("abc" + SEP + "def" + SEP + "ghi");
+    final Automaton expected = BasicOperations.union(a1, a2);
+    //toDot(actual);
+    assertTrue(BasicOperations.sameLanguage(expected, actual));
+  }
+
+  public void testToDot() throws Exception {
+    final TokenStream ts = new CannedTokenStream(new Token[] {token("abc", 1, 1, 0, 4)});
+    StringWriter w = new StringWriter();
+    new TokenStreamToDot("abcd", ts, new PrintWriter(w)).toDot();
+    assertTrue(w.toString().indexOf("abc / abcd") != -1);
+  }
+
+  public void testStartsWithHole() throws Exception {
+    final TokenStream ts = new CannedTokenStream(
+      new Token[] {
+        token("abc", 2, 1),
+      });
+    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton expected = BasicAutomata.makeString(HOLE + SEP + "abc");
+    //toDot(actual);
+    assertTrue(BasicOperations.sameLanguage(expected, actual));
+  }
+
+  // TODO: testEndsWithHole... but we need posInc to set in TS.end()
+
+  public void testSynHangingOverEnd() throws Exception {
+    final TokenStream ts = new CannedTokenStream(
+      new Token[] {
+        token("a", 1, 1),
+        token("X", 0, 10),
+      });
+    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton expected = BasicOperations.union(BasicAutomata.makeString("a"),
+                                                     BasicAutomata.makeString("X"));
+    assertTrue(BasicOperations.sameLanguage(expected, actual));
   }
 }
