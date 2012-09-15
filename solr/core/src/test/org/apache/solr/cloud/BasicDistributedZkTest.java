@@ -352,7 +352,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       int numShards = _TestUtil.nextInt(random(), 0, shardCount) + 1;
       int numReplicas = _TestUtil.nextInt(random(), 0, 5) + 1;
       params.set("numShards", numShards);
-      params.set("numReplicas", numReplicas);
+      params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, numReplicas);
       String collectionName = "awholynewcollection_" + i;
       int clientIndex = random().nextInt(2);
       List<Integer> list = new ArrayList<Integer>();
