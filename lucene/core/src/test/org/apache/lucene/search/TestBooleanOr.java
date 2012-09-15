@@ -16,15 +16,18 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 import java.io.IOException;
-
-import org.apache.lucene.util.LuceneTestCase;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestBooleanOr extends LuceneTestCase {
 
@@ -161,5 +164,65 @@ public class TestBooleanOr extends LuceneTestCase {
     reader.close();
     dir.close();
     super.tearDown();
+  }
+
+  public void testBooleanScorerMax() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter riw = new RandomIndexWriter(random(), dir);
+
+    int docCount = atLeast(10000);
+
+    for(int i=0;i<docCount;i++) {
+      Document doc = new Document();
+      doc.add(newField("field", "a", TextField.TYPE_NOT_STORED));
+      riw.addDocument(doc);
+    }
+
+    riw.forceMerge(1);
+    IndexReader r = riw.getReader();
+    riw.close();
+
+    IndexSearcher s = newSearcher(r);
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
+    bq.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
+
+    Weight w = s.createNormalizedWeight(bq);
+
+    assertEquals(1, s.getIndexReader().leaves().size());
+    Scorer scorer = w.scorer(s.getIndexReader().leaves().get(0), false, true, null);
+
+    final FixedBitSet hits = new FixedBitSet(docCount);
+    final AtomicInteger end = new AtomicInteger();
+    Collector c = new Collector() {
+        @Override
+        public void setNextReader(AtomicReaderContext sub) {
+        }
+
+        @Override
+        public void collect(int doc) {
+          assertTrue("collected doc=" + doc + " beyond max=" + end, doc < end.intValue());
+          hits.set(doc);
+        }
+
+        @Override
+        public void setScorer(Scorer scorer) {
+        }
+
+        @Override
+        public boolean acceptsDocsOutOfOrder() {
+          return true;
+        }
+      };
+
+    while (end.intValue() < docCount) {
+      final int inc = _TestUtil.nextInt(random(), 1, 1000);
+      end.getAndAdd(inc);
+      scorer.score(c, end.intValue(), -1);
+    }
+
+    assertEquals(docCount, hits.cardinality());
+    r.close();
+    dir.close();
   }
 }
