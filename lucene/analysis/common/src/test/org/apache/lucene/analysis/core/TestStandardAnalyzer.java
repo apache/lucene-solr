@@ -241,6 +241,20 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "아゙",  "아゙"); // hangul Works
   }
 
+  /** @deprecated uses older unicode (6.0). simple test to make sure its basically working */
+  @Deprecated
+  public void testVersion36() throws Exception {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new StandardTokenizer(Version.LUCENE_36, reader);
+        return new TokenStreamComponents(tokenizer);
+      }
+    };
+    assertAnalyzesTo(a, "this is just a t\u08E6st lucene@apache.org", // new combining mark in 6.1
+        new String[] { "this", "is", "just", "a", "t", "st", "lucene", "apache.org" });
+  };
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), new StandardAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);
