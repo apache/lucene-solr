@@ -27,6 +27,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.junit.Assert;
 
@@ -167,4 +172,47 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       }
     }
   }
+
+  protected void adoc(String id, String shapeStr) throws IOException {
+    Shape shape = shapeStr==null ? null : new ShapeReadWriter(ctx).readShape(shapeStr);
+    addDocument(newDoc(id, shape));
+  }
+  protected void adoc(String id, Shape shape) throws IOException {
+    addDocument(newDoc(id, shape));
+  }
+
+  protected Document newDoc(String id, Shape shape) {
+    Document doc = new Document();
+    doc.add(new StringField("id", id, Field.Store.YES));
+    if (shape != null) {
+      for (Field f : strategy.createIndexableFields(shape)) {
+        doc.add(f);
+      }
+      if (storeShape)
+        doc.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
+    }
+    return doc;
+  }
+
+  /** scores[] are in docId order */
+  protected void checkValueSource(ValueSource vs, float scores[], float delta) throws IOException {
+    FunctionQuery q = new FunctionQuery(vs);
+
+//    //TODO is there any point to this check?
+//    int expectedDocs[] = new int[scores.length];//fill with ascending 0....length-1
+//    for (int i = 0; i < expectedDocs.length; i++) {
+//      expectedDocs[i] = i;
+//    }
+//    CheckHits.checkHits(random(), q, "", indexSearcher, expectedDocs);
+
+    TopDocs docs = indexSearcher.search(q, 1000);//calculates the score
+    for (int i = 0; i < docs.scoreDocs.length; i++) {
+      ScoreDoc gotSD = docs.scoreDocs[i];
+      float expectedScore = scores[gotSD.doc];
+      assertEquals("Not equal for doc "+gotSD.doc, expectedScore, gotSD.score, delta);
+    }
+
+    CheckHits.checkExplanations(q, "", indexSearcher);
+  }
+
 }

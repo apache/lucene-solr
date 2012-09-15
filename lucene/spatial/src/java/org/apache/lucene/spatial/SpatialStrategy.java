@@ -18,13 +18,14 @@ package org.apache.lucene.spatial;
  */
 
 import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.query.SpatialArgs;
 
 /**
@@ -99,25 +100,49 @@ public abstract class SpatialStrategy {
   public abstract Field[] createIndexableFields(Shape shape);
 
   /**
-   * The value source yields a number that is proportional to the distance between the query shape and indexed data.
+   * Make a ValueSource returning the distance between the center of the
+   * indexed shape and {@code queryPoint}.  If there are multiple indexed shapes
+   * then the closest one is chosen.
    */
-  public abstract ValueSource makeValueSource(SpatialArgs args);
+  public abstract ValueSource makeDistanceValueSource(Point queryPoint);
 
   /**
-   * Make a query which has a score based on the distance from the data to the query shape.
-   * The default implementation constructs a {@link FilteredQuery} based on
-   * {@link #makeFilter(org.apache.lucene.spatial.query.SpatialArgs)} and
-   * {@link #makeValueSource(org.apache.lucene.spatial.query.SpatialArgs)}.
+   * Make a (ConstantScore) Query based principally on {@link org.apache.lucene.spatial.query.SpatialOperation}
+   * and {@link Shape} from the supplied {@code args}.
+   * The default implementation is
+   * <pre>return new ConstantScoreQuery(makeFilter(args));</pre>
    */
-  public Query makeQuery(SpatialArgs args) {
-    Filter filter = makeFilter(args);
-    ValueSource vs = makeValueSource(args);
-    return new FilteredQuery(new FunctionQuery(vs), filter);
+  public ConstantScoreQuery makeQuery(SpatialArgs args) {
+    return new ConstantScoreQuery(makeFilter(args));
   }
+
   /**
-   * Make a Filter
+   * Make a Filter based principally on {@link org.apache.lucene.spatial.query.SpatialOperation}
+   * and {@link Shape} from the supplied {@code args}.
+   * <p />
+   * If a subclasses implements
+   * {@link #makeQuery(org.apache.lucene.spatial.query.SpatialArgs)}
+   * then this method could be simply:
+   * <pre>return new QueryWrapperFilter(makeQuery(args).getQuery());</pre>
    */
   public abstract Filter makeFilter(SpatialArgs args);
+
+  /**
+   * Returns a ValueSource with values ranging from 1 to 0, depending inversely
+   * on the distance from {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point)}.
+   * The formula is <code>c/(d + c)</code> where 'd' is the distance and 'c' is
+   * one tenth the distance to the farthest edge from the center. Thus the
+   * scores will be 1 for indexed points at the center of the query shape and as
+   * low as ~0.1 at its furthest edges.
+   */
+  public final ValueSource makeRecipDistanceValueSource(Shape queryShape) {
+    Rectangle bbox = queryShape.getBoundingBox();
+    double diagonalDist = ctx.getDistCalc().distance(
+        ctx.makePoint(bbox.getMinX(), bbox.getMinY()), bbox.getMaxX(), bbox.getMaxY());
+    double distToEdge = diagonalDist * 0.5;
+    float c = (float)distToEdge * 0.1f;//one tenth
+    return new ReciprocalFloatFunction(makeDistanceValueSource(queryShape.getCenter()), 1f, c, c);
+  }
 
   @Override
   public String toString() {

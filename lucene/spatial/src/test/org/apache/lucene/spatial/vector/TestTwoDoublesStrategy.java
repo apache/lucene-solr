@@ -27,6 +27,7 @@ import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -41,7 +42,7 @@ public class TestTwoDoublesStrategy extends StrategyTestCase {
     this.strategy = new TwoDoublesStrategy(ctx, getClass().getSimpleName());
   }
 
-  @Test
+  @Test @Ignore
   public void testCircleShapeSupport() {
     Circle circle = ctx.makeCircle(ctx.makePoint(0, 0), 10);
     SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects, circle);

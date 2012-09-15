@@ -20,6 +20,7 @@ package org.apache.lucene.spatial;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.io.ShapeReadWriter;
+import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -45,7 +46,6 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
@@ -75,8 +75,9 @@ public class SpatialExample extends LuceneTestCase {
 
   /**
    * The Lucene spatial {@link SpatialStrategy} encapsulates an approach to
-   * indexing and searching shapes, and providing relevancy scores for them.
-   * It's a simple API to unify different approaches.
+   * indexing and searching shapes, and providing distance values for them.
+   * It's a simple API to unify different approaches. You might use more than
+   * one strategy for a shape as each strategy has its strengths and weaknesses.
    * <p />
    * Note that these are initialized with a field name.
    */
@@ -85,13 +86,13 @@ public class SpatialExample extends LuceneTestCase {
   private Directory directory;
 
   protected void init() {
-    //Typical geospatial context with kilometer units.
-    //  These can also be constructed from a factory: SpatialContextFactory
+    //Typical geospatial context
+    //  These can also be constructed from SpatialContextFactory
     this.ctx = SpatialContext.GEO;
 
-    int maxLevels = 10;//results in sub-meter precision for geohash
+    int maxLevels = 11;//results in sub-meter precision for geohash
     //TODO demo lookup by detail distance
-    //  This can also be constructed from a factory: SpatialPrefixTreeFactory
+    //  This can also be constructed from SpatialPrefixTreeFactory
     SpatialPrefixTree grid = new GeohashPrefixTree(ctx, maxLevels);
 
     this.strategy = new RecursivePrefixTreeStrategy(grid, "myGeoField");
@@ -151,9 +152,8 @@ public class SpatialExample extends LuceneTestCase {
     }
     //--Match all, order by distance
     {
-      SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,//doesn't matter
-          ctx.makePoint(60, -50));
-      ValueSource valueSource = strategy.makeValueSource(args);//the distance (in degrees)
+      Point pt = ctx.makePoint(60, -50);
+      ValueSource valueSource = strategy.makeDistanceValueSource(pt);//the distance (in degrees)
       Sort reverseDistSort = new Sort(valueSource.getSortField(false)).rewrite(indexSearcher);//true=asc dist
       TopDocs docs = indexSearcher.search(new MatchAllDocsQuery(), 10, reverseDistSort);
       assertDocMatchedIds(indexSearcher, docs, 4, 20, 2);

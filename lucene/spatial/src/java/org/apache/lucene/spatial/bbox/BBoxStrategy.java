@@ -18,6 +18,7 @@ package org.apache.lucene.spatial.bbox;
  */
 
 import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.DoubleField;
@@ -114,29 +115,33 @@ public class BBoxStrategy extends SpatialStrategy {
   //---------------------------------
 
   @Override
-  public ValueSource makeValueSource(SpatialArgs args) {
-    Shape shape = args.getShape();
-    if (!(shape instanceof Rectangle))
-      throw new IllegalArgumentException("Can only get valueSource by Rectangle, not " + shape);
+  public ValueSource makeDistanceValueSource(Point queryPoint) {
     return new BBoxSimilarityValueSource(
-        this, new AreaSimilarity((Rectangle)shape, queryPower, targetPower));
+        this, new DistanceSimilarity(this.getSpatialContext(), queryPoint));
   }
 
+  public ValueSource makeBBoxAreaSimilarityValueSource(Rectangle queryBox) {
+    return new BBoxSimilarityValueSource(
+        this, new AreaSimilarity(queryBox, queryPower, targetPower));
+  }
 
   @Override
   public Filter makeFilter(SpatialArgs args) {
-    Query spatial = makeSpatialQuery(args);
-    return new QueryWrapperFilter( spatial );
+    return new QueryWrapperFilter(makeSpatialQuery(args));
   }
 
   @Override
-  public Query makeQuery(SpatialArgs args) {
+  public ConstantScoreQuery makeQuery(SpatialArgs args) {
+    return new ConstantScoreQuery(makeSpatialQuery(args));
+  }
+
+  public Query makeQueryWithValueSource(SpatialArgs args, ValueSource valueSource) {
     BooleanQuery bq = new BooleanQuery();
     Query spatial = makeSpatialQuery(args);
     bq.add(new ConstantScoreQuery(spatial), BooleanClause.Occur.MUST);
-    
+
     // This part does the scoring
-    Query spatialRankingQuery = new FunctionQuery(makeValueSource(args));
+    Query spatialRankingQuery = new FunctionQuery(valueSource);
     bq.add(spatialRankingQuery, BooleanClause.Occur.MUST);
     return bq;
   }

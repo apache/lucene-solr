@@ -17,7 +17,6 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
-import com.spatial4j.core.distance.DistanceCalculator;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.analysis.TokenStream;
@@ -141,12 +140,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   }
 
   @Override
-  public ValueSource makeValueSource(SpatialArgs args) {
-    DistanceCalculator calc = grid.getSpatialContext().getDistCalc();
-    return makeValueSource(args, calc);
-  }
-  
-  public ValueSource makeValueSource(SpatialArgs args, DistanceCalculator calc) {
+  public ValueSource makeDistanceValueSource(Point queryPoint) {
     PointPrefixTreeFieldCacheProvider p = provider.get( getFieldName() );
     if( p == null ) {
       synchronized (this) {//double checked locking idiom is okay since provider is threadsafe
@@ -157,8 +151,8 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
         }
       }
     }
-    Point point = args.getShape().getCenter();
-    return new ShapeFieldCacheDistanceValueSource(point, calc, p);
+
+    return new ShapeFieldCacheDistanceValueSource(ctx, p, queryPoint);
   }
 
   public SpatialPrefixTree getGrid() {

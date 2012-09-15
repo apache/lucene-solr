@@ -24,10 +24,6 @@ import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.io.ShapeReadWriter;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -157,51 +153,7 @@ public class PortedSolr3Test extends StrategyTestCase {
     checkHitsBBox("43.517030,-96.789603", 110, 1, 17);
   }
 
-  /**
-   * This test is similar to a Solr 3 spatial test.
-   */
-  @Test
-  public void testDistanceOrder() throws IOException {
-    adoc("100","1,2");
-    adoc("101","4,-1");
-    commit();
-    double km1000inDeg = DistanceUtils.dist2Degrees(1000, DistanceUtils.EARTH_MEAN_RADIUS_KM);
-
-    //query closer to #100
-    checkHitsOrdered("Intersects(Circle(3,4 d="+km1000inDeg+"))", "101", "100");
-    //query closer to #101
-    checkHitsOrdered("Intersects(Circle(4,0 d="+km1000inDeg+"))", "100", "101");
-  }
-
-  private void checkHitsOrdered(String spatialQ, String... ids) {
-    SpatialArgs args = this.argsParser.parse(spatialQ,ctx);
-    Query query = strategy.makeQuery(args);
-    SearchResults results = executeQuery(query, 100);
-    String[] resultIds = new String[results.numFound];
-    int i = 0;
-    for (SearchResult result : results.results) {
-      resultIds[i++] = result.document.get("id");
-    }
-    assertArrayEquals("order matters",ids, resultIds);
-  }
-
   //---- these are similar to Solr test methods
-  
-  private void adoc(String idStr, String shapeStr) throws IOException {
-    Shape shape = new ShapeReadWriter(ctx).readShape(shapeStr);
-    addDocument(newDoc(idStr,shape));
-  }
-
-  private Document newDoc(String id, Shape shape) {
-    Document doc = new Document();
-    doc.add(new StringField("id", id, Field.Store.YES));
-    for (Field f : strategy.createIndexableFields(shape)) {
-      doc.add(f);
-    }
-    if (storeShape)
-      doc.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
-    return doc;
-  }
 
   private void checkHitsCircle(String ptStr, double distKM, int assertNumFound, int... assertIds) {
     _checkHits(false, ptStr, distKM, assertNumFound, assertIds);

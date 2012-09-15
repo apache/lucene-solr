@@ -23,10 +23,6 @@ import com.spatial4j.core.io.GeohashUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
@@ -196,17 +192,6 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
         assertTrue("has "+assertId,gotIds.contains(assertId));
       }
     }
-  }
-
-  private Document newDoc(String id, Shape shape) {
-    Document doc = new Document();
-    doc.add(new StringField("id", id, Field.Store.YES));
-    for (Field f : strategy.createIndexableFields(shape)) {
-      doc.add(f);
-    }
-    if (storeShape)
-      doc.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
-    return doc;
   }
 
   /** NGeohash round-trip for given precision. */

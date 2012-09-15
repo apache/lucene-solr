@@ -84,8 +84,9 @@ public class BBoxSimilarityValueSource extends ValueSource {
               minX[doc], maxX[doc],
               minY[doc], maxY[doc]);
           return (float) similarity.score(rect, null);
+        } else {
+          return (float) similarity.score(null, null);
         }
-        return 0;
       }
 
       public Explanation explain(int doc) {
