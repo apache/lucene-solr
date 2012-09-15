@@ -410,7 +410,7 @@ public final class SolrCore implements SolrInfoMBean {
   // protect via synchronized(SolrCore.class)
   private static Set<String> dirs = new HashSet<String>();
 
-  void initIndex() {
+  void initIndex(boolean reload) {
     try {
       String indexDir = getNewIndexDir();
       boolean indexExists = getDirectoryFactory().exists(indexDir);
@@ -422,7 +422,7 @@ public final class SolrCore implements SolrInfoMBean {
 
       initIndexReaderFactory();
 
-      if (indexExists && firstTime) {
+      if (indexExists && firstTime && !reload) {
         // to remove locks, the directory must already exist... so we create it
         // if it didn't exist already...
         Directory dir = directoryFactory.get(indexDir, getSolrConfig().indexConfig.lockType);
@@ -644,7 +644,7 @@ public final class SolrCore implements SolrInfoMBean {
       this.isReloaded = true;
     }
     
-    initIndex();
+    initIndex(prev != null);
 
     initWriters();
     initQParsers();

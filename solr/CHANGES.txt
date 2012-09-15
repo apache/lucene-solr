@@ -222,6 +222,9 @@ Bug Fixes
   (maxOptimizeSegments, softCommit, expungeDeletes) when sending a commit to
   replicas. (Andy Laird, Tomas Fernandez Lobbe, Mark Miller)
 
+* SOLR-3844: SolrCore reload can fail because it tries to remove the index 
+  write lock while already holding it. (Mark Miller)
+
 Other Changes
 ----------------------
 
