@@ -24,6 +24,9 @@
     </subant>
   </target>
 
+  <target name="precommit" description="Run basic checks before committing"
+          depends="check-svn-working-copy,validate,javadocs-lint"/>
+
   <target name="test" description="Test both Lucene and Solr">
     <sequential>
       <subant target="test" inheritall="false" failonerror="true">
