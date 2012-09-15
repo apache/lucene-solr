@@ -227,6 +227,10 @@ Bug Fixes
 
 * SOLR-3831: Atomic updates do not distribute correctly to other nodes.
   (Jim Musil, Mark Miller)
+  
+* SOLR-3465: Replication causes two searcher warmups. 
+  (Michael Garski, Mark Miller)
+
 
 Other Changes
 ----------------------

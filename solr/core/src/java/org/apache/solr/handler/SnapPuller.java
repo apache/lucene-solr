@@ -555,7 +555,10 @@ public class SnapPuller {
      }
 
       // update our commit point to the right dir
-      solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
+      CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
+      cuc.waitSearcher = false;
+      cuc.openSearcher = false;
+      solrCore.getUpdateHandler().commit(cuc);
 
     } finally {
       req.close();
