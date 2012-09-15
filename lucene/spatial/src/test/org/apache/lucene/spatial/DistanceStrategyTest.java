@@ -36,9 +36,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author David Smiley - dsmiley@mitre.org
- */
 public class DistanceStrategyTest extends StrategyTestCase {
 
   @ParametersFactory
