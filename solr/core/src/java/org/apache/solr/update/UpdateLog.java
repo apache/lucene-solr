@@ -68,7 +68,7 @@ public class UpdateLog implements PluginInfoInitialized {
 	      return SyncLevel.FLUSH;
 	    }
 		  try{
-			  return SyncLevel.valueOf(level.toUpperCase());
+			  return SyncLevel.valueOf(level.toUpperCase(Locale.ROOT));
 		  } catch(Exception ex){
 		    log.warn("There was an error reading the SyncLevel - default to " + SyncLevel.FLUSH, ex);
 			  return SyncLevel.FLUSH;
