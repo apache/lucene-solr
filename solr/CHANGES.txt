@@ -280,6 +280,8 @@ Other Changes
 * SOLR-3749: Allow default UpdateLog syncLevel to be configured by
   solrconfig.xml (Raintung Li, Mark Miller)
 
+* SOLR-3845: Rename numReplicas to replicationFactor in Collections API.
+  (yonik, Mark Miller)
 
 ==================  4.0.0-BETA ===================
 

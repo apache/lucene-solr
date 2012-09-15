@@ -42,6 +42,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class OverseerCollectionProcessor implements Runnable {
+  public static final String REPLICATION_FACTOR = "replicationFactor";
+
   public static final String DELETECOLLECTION = "deletecollection";
 
   public static final String CREATECOLLECTION = "createcollection";
@@ -153,12 +155,12 @@ public class OverseerCollectionProcessor implements Runnable {
     // look at the replication factor and see if it matches reality
     // if it does not, find best nodes to create more cores
     
-    String numReplicasString = message.getStr("numReplicas");
+    String numReplicasString = message.getStr(REPLICATION_FACTOR);
     int numReplicas;
     try {
       numReplicas = numReplicasString == null ? 0 : Integer.parseInt(numReplicasString);
     } catch (Exception ex) {
-      SolrException.log(log, "Could not parse numReplicas", ex);
+      SolrException.log(log, "Could not parse " + REPLICATION_FACTOR, ex);
       return false;
     }
     String numShardsString = message.getStr("numShards");
