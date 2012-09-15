@@ -232,7 +232,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    executor = new ThreadPoolExecutor(0, 5 * 16, 5,
+    executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
         TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
         new DefaultSolrThreadFactory("cmdDistribExecutor"));
   }
