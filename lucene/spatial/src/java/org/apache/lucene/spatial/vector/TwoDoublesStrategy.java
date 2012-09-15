@@ -101,7 +101,13 @@ public class TwoDoublesStrategy extends SpatialStrategy {
 
   @Override
   public Filter makeFilter(SpatialArgs args) {
-    return new QueryWrapperFilter(makeQuery(args).getQuery());
+    //unwrap the CSQ from makeQuery
+    ConstantScoreQuery csq = makeQuery(args);
+    Filter filter = csq.getFilter();
+    if (filter != null)
+      return filter;
+    else
+      return new QueryWrapperFilter(csq.getQuery());
   }
 
   @Override
@@ -111,15 +117,25 @@ public class TwoDoublesStrategy extends SpatialStrategy {
         SpatialOperation.IsWithin ))
       throw new UnsupportedSpatialOperation(args.getOperation());
     Shape shape = args.getShape();
-    if (!(shape instanceof Rectangle))
-      throw new InvalidShapeException("Only Rectangle is currently supported, got "+shape.getClass());
-    Rectangle bbox = (Rectangle) shape;
-    if (bbox.getCrossesDateLine()) {
-      throw new UnsupportedOperationException( "Crossing dateline not yet supported" );
+    if (shape instanceof Rectangle) {
+      Rectangle bbox = (Rectangle) shape;
+      return new ConstantScoreQuery(makeWithin(bbox));
+    } else if (shape instanceof Circle) {
+      Circle circle = (Circle)shape;
+      Rectangle bbox = circle.getBoundingBox();
+      ValueSourceFilter vsf = new ValueSourceFilter(
+          new QueryWrapperFilter(makeWithin(bbox)),
+          makeDistanceValueSource(circle.getCenter()),
+          0,
+          circle.getRadius() );
+      return new ConstantScoreQuery(vsf);
+    } else {
+      throw new InvalidShapeException("Only Rectangles and Circles are currently supported, " +
+          "found [" + shape.getClass() + "]");//TODO
     }
-    return new ConstantScoreQuery(makeWithin(bbox));
   }
 
+  //TODO this is basically old code that hasn't been verified well and should probably be removed
   public Query makeQueryDistanceScore(SpatialArgs args) {
     // For starters, just limit the bbox
     Shape shape = args.getShape();
@@ -183,49 +199,40 @@ public class TwoDoublesStrategy extends SpatialStrategy {
 
   /**
    * Constructs a query to retrieve documents that fully contain the input envelope.
-   * @return the spatial query
    */
   private Query makeWithin(Rectangle bbox) {
-    Query qX = NumericRangeQuery.newDoubleRange(
-      fieldNameX,
-      precisionStep,
-      bbox.getMinX(),
-      bbox.getMaxX(),
-      true,
-      true);
-    Query qY = NumericRangeQuery.newDoubleRange(
-      fieldNameY,
-      precisionStep,
-      bbox.getMinY(),
-      bbox.getMaxY(),
-      true,
-      true);
-
     BooleanQuery bq = new BooleanQuery();
-    bq.add(qX,BooleanClause.Occur.MUST);
-    bq.add(qY,BooleanClause.Occur.MUST);
+    BooleanClause.Occur MUST = BooleanClause.Occur.MUST;
+    if (bbox.getCrossesDateLine()) {
+      //use null as performance trick since no data will be beyond the world bounds
+      bq.add(rangeQuery(fieldNameX, null/*-180*/, bbox.getMaxX()), BooleanClause.Occur.SHOULD );
+      bq.add(rangeQuery(fieldNameX, bbox.getMinX(), null/*+180*/), BooleanClause.Occur.SHOULD );
+      bq.setMinimumNumberShouldMatch(1);//must match at least one of the SHOULD
+    } else {
+      bq.add(rangeQuery(fieldNameX, bbox.getMinX(), bbox.getMaxX()), MUST);
+    }
+    bq.add(rangeQuery(fieldNameY, bbox.getMinY(), bbox.getMaxY()), MUST);
     return bq;
+  }
+
+  private NumericRangeQuery<Double> rangeQuery(String fieldName, Double min, Double max) {
+    return NumericRangeQuery.newDoubleRange(
+        fieldName,
+        precisionStep,
+        min,
+        max,
+        true,
+        true);//inclusive
   }
 
   /**
    * Constructs a query to retrieve documents that fully contain the input envelope.
-   * @return the spatial query
    */
-  Query makeDisjoint(Rectangle bbox) {
-    Query qX = NumericRangeQuery.newDoubleRange(
-        fieldNameX,
-        precisionStep,
-        bbox.getMinX(),
-        bbox.getMaxX(),
-        true,
-        true);
-    Query qY = NumericRangeQuery.newDoubleRange(
-        fieldNameY,
-        precisionStep,
-        bbox.getMinY(),
-        bbox.getMaxY(),
-        true,
-        true);
+  private Query makeDisjoint(Rectangle bbox) {
+    if (bbox.getCrossesDateLine())
+      throw new UnsupportedOperationException("makeDisjoint doesn't handle dateline cross");
+    Query qX = rangeQuery(fieldNameX, bbox.getMinX(), bbox.getMaxX());
+    Query qY = rangeQuery(fieldNameY, bbox.getMinY(), bbox.getMaxY());
 
     BooleanQuery bq = new BooleanQuery();
     bq.add(qX,BooleanClause.Occur.MUST_NOT);
