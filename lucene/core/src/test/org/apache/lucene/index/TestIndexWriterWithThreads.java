@@ -33,6 +33,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -453,6 +454,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
      thread1.join();
      thread2.join();
      
+     assumeFalse("aborting test: timeout obtaining lock", thread1.failure instanceof LockObtainFailedException);
+     assumeFalse("aborting test: timeout obtaining lock", thread2.failure instanceof LockObtainFailedException);
+
      assertFalse("Failed due to: " + thread1.failure, thread1.failed);
      assertFalse("Failed due to: " + thread2.failure, thread2.failed);
      // now verify that we have two documents in the index
