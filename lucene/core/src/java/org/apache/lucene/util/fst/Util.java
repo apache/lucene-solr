@@ -347,9 +347,6 @@ public final class Util {
      *  the node is final, from this node into the queue.  */
     public void addStartPaths(FST.Arc<T> node, T startOutput, boolean allowEmptyString, IntsRef input) throws IOException {
 
-      T minArcCost = null;
-      FST.Arc<T> minArc = null;
-
       // De-dup NO_OUTPUT since it must be a singleton:
       if (startOutput.equals(fst.outputs.getNoOutput())) {
         startOutput = fst.outputs.getNoOutput();
@@ -363,12 +360,6 @@ public final class Util {
       // Bootstrap: find the min starting arc
       while (true) {
         if (allowEmptyString || path.arc.label != FST.END_LABEL) {
-          T arcScore = path.arc.output;
-          if (minArcCost == null || comparator.compare(arcScore, minArcCost) < 0) {
-            minArcCost = arcScore;
-            minArc = scratchArc.copyFrom(path.arc);
-            //System.out.println("    **");
-          }
           addIfCompetitive(path);
         }
         if (path.arc.isLast()) {
@@ -381,6 +372,8 @@ public final class Util {
     public MinResult<T>[] search() throws IOException {
 
       final List<MinResult<T>> results = new ArrayList<MinResult<T>>();
+
+      //System.out.println("search topN=" + topN);
 
       final FST.BytesReader fstReader = fst.getBytesReader(0);
       final T NO_OUTPUT = fst.outputs.getNoOutput();
