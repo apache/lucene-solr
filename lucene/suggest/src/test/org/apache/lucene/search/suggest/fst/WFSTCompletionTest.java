@@ -75,6 +75,54 @@ public class WFSTCompletionTest extends LuceneTestCase {
     assertEquals("barbara", results.get(2).key.toString());
     assertEquals(6, results.get(2).value, 0.01F);
   }
+
+  public void testExactFirst() throws Exception {
+
+    WFSTCompletionLookup suggester = new WFSTCompletionLookup(true);
+
+    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
+          new TermFreq("x y", 20),
+          new TermFreq("x", 2),
+        }));
+
+    for(int topN=1;topN<4;topN++) {
+      List<LookupResult> results = suggester.lookup("x", false, topN);
+
+      assertEquals(Math.min(topN, 2), results.size());
+
+      assertEquals("x", results.get(0).key);
+      assertEquals(2, results.get(0).value);
+
+      if (topN > 1) {
+        assertEquals("x y", results.get(1).key);
+        assertEquals(20, results.get(1).value);
+      }
+    }
+  }
+
+  public void testNonExactFirst() throws Exception {
+
+    WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
+
+    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
+          new TermFreq("x y", 20),
+          new TermFreq("x", 2),
+        }));
+
+    for(int topN=1;topN<4;topN++) {
+      List<LookupResult> results = suggester.lookup("x", false, topN);
+
+      assertEquals(Math.min(topN, 2), results.size());
+
+      assertEquals("x y", results.get(0).key);
+      assertEquals(20, results.get(0).value);
+
+      if (topN > 1) {
+        assertEquals("x", results.get(1).key);
+        assertEquals(2, results.get(1).value);
+      }
+    }
+  }
   
   public void testRandom() throws Exception {
     int numWords = atLeast(1000);
