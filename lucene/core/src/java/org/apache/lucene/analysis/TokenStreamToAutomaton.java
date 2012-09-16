@@ -34,7 +34,6 @@ import org.apache.lucene.util.automaton.State;
 import org.apache.lucene.util.automaton.Transition;
 
 // TODO: maybe also toFST?  then we can translate atts into FST outputs/weights
-// nocommit need option to not add pos sep...?
 
 /** Consumes a TokenStream and creates an {@link Automaton}
  *  where the transition labels are UTF8 bytes from the {@link
