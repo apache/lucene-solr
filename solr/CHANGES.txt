@@ -64,6 +64,13 @@ New Features
 * SOLR-3597: seems like a lot of wasted whitespace at the top of the admin screens
   (steffkes)
 
+* SOLR-3304: Added Solr adapters for Lucene 4's new spatial module.  With
+  SpatialRecursivePrefixTreeFieldType ("location_rpt" in example schema), it is
+  possible to index a variable number of points per document (and sort on them),
+  index not just points but any Spatial4j supported shape such as polygons, and
+  to query on these shapes too.  Polygons requires adding JTS to the classpath.
+  (David Smiley)
+
 Optimizations
 ----------------------
 
