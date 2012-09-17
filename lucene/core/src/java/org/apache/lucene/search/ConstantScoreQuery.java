@@ -190,6 +190,7 @@ public class ConstantScoreQuery extends Query {
 
     @Override
     public float score() throws IOException {
+      assert docIdSetIterator.docID() != NO_MORE_DOCS;
       return theScore;
     }
 
