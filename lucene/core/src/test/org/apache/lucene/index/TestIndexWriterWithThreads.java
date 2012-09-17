@@ -454,18 +454,23 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
      thread1.join();
      thread2.join();
      
-     assumeFalse("aborting test: timeout obtaining lock", thread1.failure instanceof LockObtainFailedException);
-     assumeFalse("aborting test: timeout obtaining lock", thread2.failure instanceof LockObtainFailedException);
+     // ensure the directory is closed if we hit the timeout and throw assume
+     // TODO: can we improve this in LuceneTestCase? I dont know what the logic would be...
+     try {
+       assumeFalse("aborting test: timeout obtaining lock", thread1.failure instanceof LockObtainFailedException);
+       assumeFalse("aborting test: timeout obtaining lock", thread2.failure instanceof LockObtainFailedException);
 
-     assertFalse("Failed due to: " + thread1.failure, thread1.failed);
-     assertFalse("Failed due to: " + thread2.failure, thread2.failed);
-     // now verify that we have two documents in the index
-     IndexReader reader = DirectoryReader.open(dir);
-     assertEquals("IndexReader should have one document per thread running", 2,
+       assertFalse("Failed due to: " + thread1.failure, thread1.failed);
+       assertFalse("Failed due to: " + thread2.failure, thread2.failed);
+       // now verify that we have two documents in the index
+       IndexReader reader = DirectoryReader.open(dir);
+       assertEquals("IndexReader should have one document per thread running", 2,
          reader.numDocs());
      
-     reader.close();
-     dir.close();
+       reader.close();
+     } finally {
+       dir.close();
+     }
   }
   
   static class DelayedIndexAndCloseRunnable extends Thread {
