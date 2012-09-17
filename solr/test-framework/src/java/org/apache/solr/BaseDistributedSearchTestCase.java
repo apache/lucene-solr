@@ -201,7 +201,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
           getSchemaFile());
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
-      String shardStr = "localhost:" + j.getLocalPort() + context;
+      String shardStr = "127.0.0.1:" + j.getLocalPort() + context;
       shardsArr[i] = shardStr;
       sb.append(shardStr);
     }

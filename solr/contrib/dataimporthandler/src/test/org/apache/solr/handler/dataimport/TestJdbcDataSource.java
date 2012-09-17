@@ -160,7 +160,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     JdbcDataSource dataSource = new JdbcDataSource();
     Properties p = new Properties();
     p.put("driver", "com.mysql.jdbc.Driver");
-    p.put("url", "jdbc:mysql://localhost/autos");
+    p.put("url", "jdbc:mysql://127.0.0.1/autos");
     p.put("user", "root");
     p.put("password", "");
 
