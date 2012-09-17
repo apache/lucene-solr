@@ -77,7 +77,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
           getSchemaFile());
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
-      String shardStr = "localhost:" + j.getLocalPort() + context;
+      String shardStr = "127.0.0.1:" + j.getLocalPort() + context;
       shardsArr[i] = shardStr;
       sb.append(shardStr);
     }
@@ -194,7 +194,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         HttpSolrServer httpClient = (HttpSolrServer) c;
         nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
             httpClient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
-        
+        System.out.println("node props:" + nodeProps);
         nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
 
       }

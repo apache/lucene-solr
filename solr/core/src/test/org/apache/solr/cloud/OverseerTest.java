@@ -196,7 +196,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       ZkStateReader reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
       
-      zkController = new MockZKController(server.getZkAddress(), "localhost", "collection1");
+      zkController = new MockZKController(server.getZkAddress(), "127.0.0.1", "collection1");
 
       final int numShards=6;
       
