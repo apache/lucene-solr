@@ -26,7 +26,14 @@
   -->
   <luceneMatchVersion>LUCENE_50</luceneMatchVersion>
 
+  <!--
+      NOTE: In order to reduce Jar duplication, dataimporthandler-extras 
+      explicitly requires the deps from contrib/extraction.
+      See https://issues.apache.org/jira/browse/SOLR-3848
+  -->
   <lib dir="../../../../contrib/extraction/lib" />
+
+  <lib dir="../../../../contrib/dataimporthandler/lib/" regex=".*jar$" />
   <lib dir="../../../../dist/" regex="apache-solr-dataimporthandler-.*\.jar" />
 
   <!-- <indexConfig> section could go here, but we want the defaults -->

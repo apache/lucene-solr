@@ -26,7 +26,13 @@
   -->
   <luceneMatchVersion>LUCENE_50</luceneMatchVersion>
 
+  <!--
+      NOTE: In order to reduce Jar duplication, dataimporthandler-extras 
+      explicitly requires the deps from contrib/extraction.
+      See https://issues.apache.org/jira/browse/SOLR-3848
+  -->
   <lib dir="../../../../contrib/extraction/lib" />
+
   <lib dir="../../../../contrib/dataimporthandler/lib/" regex=".*jar$" />
   <lib dir="../../../../dist/" regex="apache-solr-dataimporthandler-.*\.jar" />
   
@@ -521,17 +527,6 @@
       <str>tvComponent</str>
     </arr>
   </requestHandler>
-
-<!--
-  <requestHandler name="/update/extract" class="org.apache.solr.handler.extraction.ExtractingRequestHandler">
-    <lst name="defaults">
-      <str name="ext.map.Last-Modified">last_modified</str>
-      <bool name="ext.ignore.und.fl">true</bool>
-    </lst>
-  </requestHandler>
--->
-
-
 
   <searchComponent name="termsComp" class="org.apache.solr.handler.component.TermsComponent"/>
 
