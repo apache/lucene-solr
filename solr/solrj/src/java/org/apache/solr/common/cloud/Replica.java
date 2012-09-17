@@ -17,13 +17,15 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
+import org.apache.noggit.JSONUtil;
+
 import java.util.Map;
 
 
 public class Replica extends ZkNodeProps {
   private final String name;
 
-  public Replica(String name, Map<String,Object> propMap) {         // TODO: back compat for handling Map<String,String>
+  public Replica(String name, Map<String,Object> propMap) {
     super(propMap);
     this.name = name;
     String nodeName = (String)propMap.get(ZkStateReader.NODE_NAME_PROP);
@@ -34,5 +36,9 @@ public class Replica extends ZkNodeProps {
     return name;
   }
 
+  @Override
+  public String toString() {
+    return name + ':' + JSONUtil.toJSON(propMap, -1); // small enough, keep it on one line (i.e. no indent)
+  }
 
 }

@@ -17,6 +17,7 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
+import org.apache.noggit.JSONUtil;
 import org.apache.noggit.JSONWriter;
 
 import java.util.Collections;
@@ -36,7 +37,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
   /**
    * Construct ZKNodeProps from map.
    */
-  public ZkNodeProps(Map<String,Object> propMap) {         // TODO: back compat for handling Map<String,String>
+  public ZkNodeProps(Map<String,Object> propMap) {
     this.propMap = propMap;
   }
 
@@ -46,7 +47,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
    * key2, value2, ..., keyN, valueN
    */
   public ZkNodeProps(String... keyVals) {
-    this( makeMap(keyVals) );
+    this( makeMap((Object[])keyVals) );
   }
 
   public static ZkNodeProps fromKeyVals(Object... keyVals)  {
@@ -105,18 +106,21 @@ public class ZkNodeProps implements JSONWriter.Writable {
     return o == null ? null : o.toString();
   }
 
-  public Object get(String key,int foo) {
+  public Object get(String key) {
     return propMap.get(key);
   }
   
   @Override
   public String toString() {
+    return JSONUtil.toJSON(this);
+    /***
     StringBuilder sb = new StringBuilder();
     Set<Entry<String,Object>> entries = propMap.entrySet();
     for(Entry<String,Object> entry : entries) {
       sb.append(entry.getKey() + "=" + entry.getValue() + "\n");
     }
     return sb.toString();
+    ***/
   }
 
   /**

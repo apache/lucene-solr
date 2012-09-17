@@ -286,21 +286,17 @@ public class ClusterState implements JSONWriter.Writable {
     if (bytes == null || bytes.length == 0) {
       return new ClusterState(version, liveNodes, Collections.<String, Map<String,Slice>>emptyMap());
     }
-    
+    // System.out.println("########## Loading ClusterState:" + new String(bytes));
     LinkedHashMap<String, Object> stateMap = (LinkedHashMap<String, Object>) ZkStateReader.fromJSON(bytes);
     HashMap<String,Map<String, Slice>> state = new HashMap<String,Map<String,Slice>>();
 
     for(String collectionName: stateMap.keySet()){
       Map<String, Object> collection = (Map<String, Object>)stateMap.get(collectionName);
       Map<String, Slice> slices = new LinkedHashMap<String,Slice>();
-      for(String sliceName: collection.keySet()) {
-        Map<String, Map<String, Object>> sliceMap = (Map<String, Map<String, Object>>)collection.get(sliceName);
-        Map<String, Replica> shards = new LinkedHashMap<String,Replica>();
-        for(String shardName: sliceMap.keySet()) {
-          shards.put(shardName, new Replica(shardName, sliceMap.get(shardName)));
-        }
-        Slice slice = new Slice(sliceName, shards);
-        slices.put(sliceName, slice);
+
+      for (Entry<String,Object> sliceEntry : collection.entrySet()) {
+        Slice slice = new Slice(sliceEntry.getKey(), null, (Map<String,Object>)sliceEntry.getValue());
+        slices.put(slice.getName(), slice);
       }
       state.put(collectionName, slices);
     }
