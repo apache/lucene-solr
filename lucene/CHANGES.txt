@@ -18,6 +18,11 @@ Changes in backwards compatibility policy
 
 ======================= Lucene 4.0.0 =======================
 
+Changes in backwards compatibility policy
+
+* LUCENE-4392: Class org.apache.lucene.util.SortedVIntList has been removed.
+  (Adrien Grand)
+
 New Features
 
 * LUCENE-1888: Added the option to store payloads in the term
