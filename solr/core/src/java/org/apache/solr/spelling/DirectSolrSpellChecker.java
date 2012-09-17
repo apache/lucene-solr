@@ -214,7 +214,7 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
         result.add(token, empty);
       } else {        
         for (SuggestWord suggestion : suggestions) {
-          result.add(token, suggestion.string, suggestion.freq);      	
+          result.add(token, suggestion.string, suggestion.freq);
         }
       }
     }

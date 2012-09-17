@@ -63,17 +63,17 @@ public class UpdateLog implements PluginInfoInitialized {
 
 
   public enum SyncLevel { NONE, FLUSH, FSYNC;
-	  public static SyncLevel getSyncLevel(String level){
-	    if (level == null) {
-	      return SyncLevel.FLUSH;
-	    }
-		  try{
-			  return SyncLevel.valueOf(level.toUpperCase(Locale.ROOT));
-		  } catch(Exception ex){
-		    log.warn("There was an error reading the SyncLevel - default to " + SyncLevel.FLUSH, ex);
-			  return SyncLevel.FLUSH;
-		  }
-	  }
+    public static SyncLevel getSyncLevel(String level){
+      if (level == null) {
+        return SyncLevel.FLUSH;
+      }
+      try{
+        return SyncLevel.valueOf(level.toUpperCase(Locale.ROOT));
+      } catch(Exception ex){
+        log.warn("There was an error reading the SyncLevel - default to " + SyncLevel.FLUSH, ex);
+        return SyncLevel.FLUSH;
+      }
+    }
   }
   public enum State { REPLAYING, BUFFERING, APPLYING_BUFFERED, ACTIVE }
 

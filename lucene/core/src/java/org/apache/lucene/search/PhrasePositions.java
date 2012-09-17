@@ -24,13 +24,13 @@ import org.apache.lucene.index.*;
  * Position of a term in a document that takes into account the term offset within the phrase. 
  */
 final class PhrasePositions {
-  int doc;					  // current doc
-  int position;					  // position in doc
-  int count;					  // remaining pos in this doc
-  int offset;					  // position in phrase
+  int doc;              // current doc
+  int position;         // position in doc
+  int count;            // remaining pos in this doc
+  int offset;           // position in phrase
   final int ord;                                  // unique across all PhrasePositions instances
-  final DocsAndPositionsEnum postings;  	  // stream of docs & positions
-  PhrasePositions next;	                          // used to make lists
+  final DocsAndPositionsEnum postings;            // stream of docs & positions
+  PhrasePositions next;                           // used to make lists
   int rptGroup = -1; // >=0 indicates that this is a repeating PP
   int rptInd; // index in the rptGroup
   final Term[] terms; // for repetitions initialization 
@@ -42,7 +42,7 @@ final class PhrasePositions {
     this.terms = terms;
   }
 
-  final boolean next() throws IOException {	  // increments to next doc
+  final boolean next() throws IOException {  // increments to next doc
     doc = postings.nextDoc();
     if (doc == DocIdSetIterator.NO_MORE_DOCS) {
       return false;
@@ -59,7 +59,7 @@ final class PhrasePositions {
   }
 
   final void firstPosition() throws IOException {
-    count = postings.freq();				  // read first pos
+    count = postings.freq();  // read first pos
     nextPosition();
   }
 
@@ -70,7 +70,7 @@ final class PhrasePositions {
    * have exactly the same <code>position</code>.
    */
   final boolean nextPosition() throws IOException {
-    if (count-- > 0) {				  // read subsequent pos's
+    if (count-- > 0) {  // read subsequent pos's
       position = postings.nextPosition() - offset;
       return true;
     } else

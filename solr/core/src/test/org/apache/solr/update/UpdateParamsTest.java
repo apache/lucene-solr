@@ -54,8 +54,8 @@ public class UpdateParamsTest extends AbstractSolrTestCase {
     
     // First check that the old param behaves as it should
     try {
-    	handler.handleRequestBody(req, rsp);
-    	assertTrue("Old param update.processor should not have any effect anymore", true);
+      handler.handleRequestBody(req, rsp);
+      assertTrue("Old param update.processor should not have any effect anymore", true);
     } catch (Exception e) {
       assertFalse("Got wrong exception while testing update.chain", e.getMessage().equals("unknown UpdateRequestProcessorChain: nonexistant"));
     }
@@ -65,10 +65,10 @@ public class UpdateParamsTest extends AbstractSolrTestCase {
     params.getMap().put(UpdateParams.UPDATE_CHAIN, "nonexistant");    
     req.setParams(params);
     try {
-    	handler.handleRequestBody(req, rsp);
-    	assertFalse("Faulty update.chain parameter not causing an error - i.e. it is not detected", true);
+      handler.handleRequestBody(req, rsp);
+      assertFalse("Faulty update.chain parameter not causing an error - i.e. it is not detected", true);
     } catch (Exception e) {
-    	assertEquals("Got wrong exception while testing update.chain", e.getMessage(), "unknown UpdateRequestProcessorChain: nonexistant");
+      assertEquals("Got wrong exception while testing update.chain", e.getMessage(), "unknown UpdateRequestProcessorChain: nonexistant");
     }
     
   }

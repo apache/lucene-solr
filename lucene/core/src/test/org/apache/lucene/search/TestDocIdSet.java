@@ -62,15 +62,15 @@ public class TestDocIdSet extends LuceneTestCase {
           };
         } 
       };
-	  
-		
+
+
     DocIdSet filteredSet = new FilteredDocIdSet(innerSet){
         @Override
         protected boolean match(int docid) {
           return docid%2 == 0;  //validate only even docids
-        }	
+        }
       };
-	  
+
     DocIdSetIterator iter = filteredSet.iterator();
     ArrayList<Integer> list = new ArrayList<Integer>();
     int doc = iter.advance(3);
@@ -80,7 +80,7 @@ public class TestDocIdSet extends LuceneTestCase {
         list.add(Integer.valueOf(doc));
       }
     }
-	  
+
     int[] docs = new int[list.size()];
     int c=0;
     Iterator<Integer> intIter = list.iterator();
@@ -151,7 +151,7 @@ public class TestDocIdSet extends LuceneTestCase {
           @Override
           protected boolean match(int docid) {
             return true;
-          }	
+          }
         };
       }
     };

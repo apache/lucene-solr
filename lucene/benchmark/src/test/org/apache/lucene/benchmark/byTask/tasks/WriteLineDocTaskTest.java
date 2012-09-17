@@ -157,16 +157,16 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
                           String expDate, String expBody) throws Exception {
     InputStream in = new FileInputStream(file);
     switch(fileType) {
-    	case BZIP2:
-    		in = csFactory.createCompressorInputStream(CompressorStreamFactory.BZIP2, in);
-    		break;
-    	case GZIP:
-    		in = csFactory.createCompressorInputStream(CompressorStreamFactory.GZIP, in);
-                break;
-    	case PLAIN:
-    		break; // nothing to do
-    	default:
-    		assertFalse("Unknown file type!",true); //fail, should not happen
+      case BZIP2:
+        in = csFactory.createCompressorInputStream(CompressorStreamFactory.BZIP2, in);
+        break;
+      case GZIP:
+        in = csFactory.createCompressorInputStream(CompressorStreamFactory.GZIP, in);
+        break;
+      case PLAIN:
+        break; // nothing to do
+      default:
+        assertFalse("Unknown file type!",true); //fail, should not happen
     }
     BufferedReader br = new BufferedReader(new InputStreamReader(in, "utf-8"));
     try {

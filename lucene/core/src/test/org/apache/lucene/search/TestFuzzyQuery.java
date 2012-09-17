@@ -101,7 +101,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     }
 
     // not similar enough:
-    query = new FuzzyQuery(new Term("field", "xxxxx"), FuzzyQuery.defaultMaxEdits, 0);  	
+    query = new FuzzyQuery(new Term("field", "xxxxx"), FuzzyQuery.defaultMaxEdits, 0);
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
     query = new FuzzyQuery(new Term("field", "aaccc"), FuzzyQuery.defaultMaxEdits, 0);   // edit distance to "aaaaa" = 3

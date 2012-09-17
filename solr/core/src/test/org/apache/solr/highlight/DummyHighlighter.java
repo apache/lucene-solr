@@ -27,17 +27,17 @@ import org.apache.solr.search.DocList;
 
 public class DummyHighlighter extends SolrHighlighter {
 
-	@Override
-	public NamedList<Object> doHighlighting(DocList docs, Query query,
-			SolrQueryRequest req, String[] defaultFields) throws IOException {
-		NamedList fragments = new SimpleOrderedMap();
-		fragments.add("dummy", "thing1");
-		return fragments;
-	}
+  @Override
+  public NamedList<Object> doHighlighting(DocList docs, Query query,
+      SolrQueryRequest req, String[] defaultFields) throws IOException {
+    NamedList fragments = new SimpleOrderedMap();
+    fragments.add("dummy", "thing1");
+    return fragments;
+  }
 
-	@Override
-	public void initalize(SolrConfig config) {
-		// do nothing
-	}
+  @Override
+  public void initalize(SolrConfig config) {
+    // do nothing
+  }
 
 }

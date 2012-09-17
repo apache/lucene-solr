@@ -184,7 +184,7 @@ public final class SchemaField extends FieldProperties {
 
     String defaultValue = null;
     if( props.containsKey( "default" ) ) {
-    	defaultValue = props.get( "default" );
+      defaultValue = props.get( "default" );
     }
     return new SchemaField(name, ft, calcProps(name, ft, props), defaultValue );
   }

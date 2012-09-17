@@ -33,7 +33,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *
  */
 public class HyphenatedWordsFilterFactory extends TokenFilterFactory {
-	public HyphenatedWordsFilter create(TokenStream input) {
-		return new HyphenatedWordsFilter(input);
-	}
+  public HyphenatedWordsFilter create(TokenStream input) {
+    return new HyphenatedWordsFilter(input);
+  }
 }

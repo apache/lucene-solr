@@ -88,7 +88,7 @@ public class DocumentObjectBinder {
       } else {
         doc.setField(field.name, field.get(obj), 1.0f);
       }
-	}
+    }
     return doc;
   }
   

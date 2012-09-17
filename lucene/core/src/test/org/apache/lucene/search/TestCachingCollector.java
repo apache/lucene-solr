@@ -145,7 +145,7 @@ public class TestCachingCollector extends LuceneTestCase {
     try {
       cc.replay(new NoOpCollector(false)); // this call should fail
       fail("should have failed if an in-order Collector was given to replay(), " +
-      		"while CachingCollector was initialized with out-of-order collection");
+           "while CachingCollector was initialized with out-of-order collection");
     } catch (IllegalArgumentException e) {
       // ok
     }

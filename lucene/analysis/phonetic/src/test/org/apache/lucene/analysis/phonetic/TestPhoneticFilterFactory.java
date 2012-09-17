@@ -175,23 +175,23 @@ public class TestPhoneticFilterFactory extends BaseTokenStreamTestCase {
   }
   
   public void testSpeed() throws Exception {
-	  checkSpeedEncoding("Metaphone", "easgasg", "ESKS");
-	  checkSpeedEncoding("DoubleMetaphone", "easgasg", "ASKS");
-	  checkSpeedEncoding("Soundex", "easgasg", "E220");
-	  checkSpeedEncoding("RefinedSoundex", "easgasg", "E034034");
-	  checkSpeedEncoding("Caverphone", "Carlene", "KLN1111111");
-	  checkSpeedEncoding("ColognePhonetic", "Schmitt", "862");
+    checkSpeedEncoding("Metaphone", "easgasg", "ESKS");
+    checkSpeedEncoding("DoubleMetaphone", "easgasg", "ASKS");
+    checkSpeedEncoding("Soundex", "easgasg", "E220");
+    checkSpeedEncoding("RefinedSoundex", "easgasg", "E034034");
+    checkSpeedEncoding("Caverphone", "Carlene", "KLN1111111");
+    checkSpeedEncoding("ColognePhonetic", "Schmitt", "862");
   }
   
   private void checkSpeedEncoding(String encoder, String toBeEncoded, String estimated) throws Exception {
-	  long start = System.currentTimeMillis();
-	  for ( int i=0; i<REPEATS; i++) {
-		    assertAlgorithm(encoder, "false", toBeEncoded,
-		            new String[] { estimated });
-	  }
-	  long duration = System.currentTimeMillis()-start;
-	  if (VERBOSE)
-	    System.out.println(encoder + " encodings per msec: "+(REPEATS/duration));
+    long start = System.currentTimeMillis();
+    for ( int i=0; i<REPEATS; i++) {
+        assertAlgorithm(encoder, "false", toBeEncoded,
+                new String[] { estimated });
+    }
+    long duration = System.currentTimeMillis()-start;
+    if (VERBOSE)
+      System.out.println(encoder + " encodings per msec: "+(REPEATS/duration));
   }
   
 }

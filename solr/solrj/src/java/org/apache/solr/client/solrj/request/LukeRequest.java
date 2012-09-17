@@ -108,7 +108,7 @@ public class LukeRequest extends SolrRequest
       params.add( "numTerms", numTerms+"" );
     }
     if (showSchema) {
-    	params.add("show", "schema");
+      params.add("show", "schema");
     }
     return params;
   }

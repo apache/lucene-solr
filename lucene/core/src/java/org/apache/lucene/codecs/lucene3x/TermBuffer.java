@@ -46,7 +46,7 @@ final class TermBuffer implements Cloneable {
   int newSuffixStart;                             // only valid right after .read is called
 
   public int compareTo(TermBuffer other) {
-    if (field == other.field) 	  // fields are interned
+    if (field == other.field)     // fields are interned
                                   // (only by PreFlex codec)
       return utf8AsUTF16Comparator.compare(bytes, other.bytes);
     else

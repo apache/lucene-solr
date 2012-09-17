@@ -529,7 +529,7 @@ public class CoreContainer
           }
           opt = DOMUtil.getAttr(node, CORE_ROLES, null);
           if(opt != null){
-        	  p.getCloudDescriptor().setRoles(opt);
+            p.getCloudDescriptor().setRoles(opt);
           }
         }
         opt = DOMUtil.getAttr(node, CORE_PROPERTIES, null);

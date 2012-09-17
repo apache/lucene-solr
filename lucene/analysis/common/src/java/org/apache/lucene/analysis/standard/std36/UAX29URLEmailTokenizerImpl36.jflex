@@ -189,8 +189,8 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
 
 %%
 
-// UAX#29 WB1. 	sot 	÷ 	
-//        WB2. 		÷ 	eot
+// UAX#29 WB1.   sot   ÷
+//        WB2.     ÷   eot
 //
 <<EOF>> { return StandardTokenizerInterface.YYEOF; }
 

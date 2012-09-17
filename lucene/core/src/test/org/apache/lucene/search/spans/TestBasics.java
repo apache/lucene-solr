@@ -582,21 +582,21 @@ public class TestBasics extends LuceneTestCase {
   
   @Test
   public void testSpansSkipTo() throws Exception {
-	  SpanTermQuery t1 = new SpanTermQuery(new Term("field", "seventy"));
-	  SpanTermQuery t2 = new SpanTermQuery(new Term("field", "seventy"));
-	  Spans s1 = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), t1);
-	  Spans s2 = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), t2);
-	  
-	  assertTrue(s1.next());
-	  assertTrue(s2.next());
-	  
-	  boolean hasMore = true;
-	  
-	  do {
-		  hasMore = skipToAccoringToJavaDocs(s1, s1.doc());
-		  assertEquals(hasMore, s2.skipTo(s2.doc()));
-		  assertEquals(s1.doc(), s2.doc());
-	  } while (hasMore);
+    SpanTermQuery t1 = new SpanTermQuery(new Term("field", "seventy"));
+    SpanTermQuery t2 = new SpanTermQuery(new Term("field", "seventy"));
+    Spans s1 = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), t1);
+    Spans s2 = MultiSpansWrapper.wrap(searcher.getTopReaderContext(), t2);
+
+    assertTrue(s1.next());
+    assertTrue(s2.next());
+
+    boolean hasMore = true;
+
+    do {
+      hasMore = skipToAccoringToJavaDocs(s1, s1.doc());
+      assertEquals(hasMore, s2.skipTo(s2.doc()));
+      assertEquals(s1.doc(), s2.doc());
+    } while (hasMore);
   }
 
   /** Skips to the first match beyond the current, whose document number is

@@ -409,11 +409,11 @@ public class ResponseBuilder
 
   public ScoreDoc getScoreDoc()
   {
-	  return scoreDoc;
+    return scoreDoc;
   }
   
   public void setScoreDoc(ScoreDoc scoreDoc)
   {
-	  this.scoreDoc = scoreDoc;
+    this.scoreDoc = scoreDoc;
   }
 }

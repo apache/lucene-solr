@@ -23,9 +23,9 @@ package org.apache.lucene.search.highlight;
 public class InvalidTokenOffsetsException extends Exception
 {
 
-	public InvalidTokenOffsetsException(String message)
-	{
-		super(message);
-	}
+  public InvalidTokenOffsetsException(String message)
+  {
+    super(message);
+  }
 
 }

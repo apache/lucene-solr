@@ -105,7 +105,7 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
     }
 
     // not similar enough:
-    query = new SlowFuzzyQuery(new Term("field", "xxxxx"), SlowFuzzyQuery.defaultMinSimilarity, 0);  	
+    query = new SlowFuzzyQuery(new Term("field", "xxxxx"), SlowFuzzyQuery.defaultMinSimilarity, 0);
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
     query = new SlowFuzzyQuery(new Term("field", "aaccc"), SlowFuzzyQuery.defaultMinSimilarity, 0);   // edit distance to "aaaaa" = 3

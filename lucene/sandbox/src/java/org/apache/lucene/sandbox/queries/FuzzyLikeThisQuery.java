@@ -121,17 +121,17 @@ public class FuzzyLikeThisQuery extends Query
 
     class FieldVals
     {
-    	String queryString;
-    	String fieldName;
-    	float minSimilarity;
-    	int prefixLength;
-		public FieldVals(String name, float similarity, int length, String queryString)
-		{
-			fieldName = name;
-			minSimilarity = similarity;
-			prefixLength = length;
-			this.queryString = queryString;
-		}
+      String queryString;
+      String fieldName;
+      float minSimilarity;
+      int prefixLength;
+    public FieldVals(String name, float similarity, int length, String queryString)
+    {
+      fieldName = name;
+      minSimilarity = similarity;
+      prefixLength = length;
+      this.queryString = queryString;
+    }
 
     @Override
     public int hashCode() {
@@ -174,7 +174,7 @@ public class FuzzyLikeThisQuery extends Query
     }
     
 
-    	
+
     }
     
     /**
@@ -186,77 +186,72 @@ public class FuzzyLikeThisQuery extends Query
      */
     public void addTerms(String queryString, String fieldName,float minSimilarity, int prefixLength) 
     {
-    	fieldVals.add(new FieldVals(fieldName,minSimilarity,prefixLength,queryString));
+      fieldVals.add(new FieldVals(fieldName,minSimilarity,prefixLength,queryString));
     }
-    
-    
-    private void addTerms(IndexReader reader,FieldVals f) throws IOException
-    {
-        if(f.queryString==null) return;
-        TokenStream ts=analyzer.tokenStream(f.fieldName, new StringReader(f.queryString));
-        CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
-        
-        int corpusNumDocs=reader.numDocs();
-        HashSet<String> processedTerms=new HashSet<String>();
-        ts.reset();
-        while (ts.incrementToken()) 
-        {
-                String term = termAtt.toString();
-        	if(!processedTerms.contains(term))
-        	{
-                  processedTerms.add(term);
-                  ScoreTermQueue variantsQ=new ScoreTermQueue(MAX_VARIANTS_PER_TERM); //maxNum variants considered for any one term
-                  float minScore=0;
-                  Term startTerm=new Term(f.fieldName, term);
-                  AttributeSource atts = new AttributeSource();
-                  MaxNonCompetitiveBoostAttribute maxBoostAtt =
-                    atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
-                  SlowFuzzyTermsEnum fe = new SlowFuzzyTermsEnum(MultiFields.getTerms(reader, startTerm.field()), atts, startTerm, f.minSimilarity, f.prefixLength);
-                  //store the df so all variants use same idf
-                  int df = reader.docFreq(startTerm);
-                  int numVariants=0;
-                  int totalVariantDocFreqs=0;
-                  BytesRef possibleMatch;
-                  BoostAttribute boostAtt =
-                    fe.attributes().addAttribute(BoostAttribute.class);
-                  while ((possibleMatch = fe.next()) != null) {
-                      numVariants++;
-                      totalVariantDocFreqs+=fe.docFreq();
-                      float score=boostAtt.getBoost();
-                      if (variantsQ.size() < MAX_VARIANTS_PER_TERM || score > minScore){
-                        ScoreTerm st=new ScoreTerm(new Term(startTerm.field(), BytesRef.deepCopyOf(possibleMatch)),score,startTerm);                    
-                        variantsQ.insertWithOverflow(st);
-                        minScore = variantsQ.top().score; // maintain minScore
-                      }
-                      maxBoostAtt.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
-                    }
 
-                  if(numVariants>0)
-                    {
-                      int avgDf=totalVariantDocFreqs/numVariants;
-                      if(df==0)//no direct match we can use as df for all variants 
-	                {
-	                    df=avgDf; //use avg df of all variants
-	                }
-	                
-                    // take the top variants (scored by edit distance) and reset the score
-                    // to include an IDF factor then add to the global queue for ranking 
-                    // overall top query terms
-                    int size = variantsQ.size();
-                    for(int i = 0; i < size; i++)
-	                {
-	                  ScoreTerm st = variantsQ.pop();
-	                  st.score=(st.score*st.score)*sim.idf(df,corpusNumDocs);
-	                  q.insertWithOverflow(st);
-	                }                            
-                }
-        	}
+
+  private void addTerms(IndexReader reader, FieldVals f) throws IOException {
+    if (f.queryString == null) return;
+    TokenStream ts = analyzer.tokenStream(f.fieldName, new StringReader(f.queryString));
+    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+
+    int corpusNumDocs = reader.numDocs();
+    HashSet<String> processedTerms = new HashSet<String>();
+    ts.reset();
+    while (ts.incrementToken()) {
+      String term = termAtt.toString();
+      if (!processedTerms.contains(term)) {
+        processedTerms.add(term);
+        ScoreTermQueue variantsQ = new ScoreTermQueue(MAX_VARIANTS_PER_TERM); //maxNum variants considered for any one term
+        float minScore = 0;
+        Term startTerm = new Term(f.fieldName, term);
+        AttributeSource atts = new AttributeSource();
+        MaxNonCompetitiveBoostAttribute maxBoostAtt =
+            atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
+        SlowFuzzyTermsEnum fe = new SlowFuzzyTermsEnum(MultiFields.getTerms(reader, startTerm.field()), atts, startTerm, f.minSimilarity, f.prefixLength);
+        //store the df so all variants use same idf
+        int df = reader.docFreq(startTerm);
+        int numVariants = 0;
+        int totalVariantDocFreqs = 0;
+        BytesRef possibleMatch;
+        BoostAttribute boostAtt =
+            fe.attributes().addAttribute(BoostAttribute.class);
+        while ((possibleMatch = fe.next()) != null) {
+          numVariants++;
+          totalVariantDocFreqs += fe.docFreq();
+          float score = boostAtt.getBoost();
+          if (variantsQ.size() < MAX_VARIANTS_PER_TERM || score > minScore) {
+            ScoreTerm st = new ScoreTerm(new Term(startTerm.field(), BytesRef.deepCopyOf(possibleMatch)), score, startTerm);
+            variantsQ.insertWithOverflow(st);
+            minScore = variantsQ.top().score; // maintain minScore
+          }
+          maxBoostAtt.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
         }
-        ts.end();
-        ts.close();
+
+        if (numVariants > 0) {
+          int avgDf = totalVariantDocFreqs / numVariants;
+          if (df == 0)//no direct match we can use as df for all variants
+          {
+            df = avgDf; //use avg df of all variants
+          }
+
+          // take the top variants (scored by edit distance) and reset the score
+          // to include an IDF factor then add to the global queue for ranking
+          // overall top query terms
+          int size = variantsQ.size();
+          for (int i = 0; i < size; i++) {
+            ScoreTerm st = variantsQ.pop();
+            st.score = (st.score * st.score) * sim.idf(df, corpusNumDocs);
+            q.insertWithOverflow(st);
+          }
+        }
+      }
     }
-            
-    @Override
+    ts.end();
+    ts.close();
+  }
+
+  @Override
     public Query rewrite(IndexReader reader) throws IOException
     {
         if(rewrittenQuery!=null)
@@ -264,12 +259,11 @@ public class FuzzyLikeThisQuery extends Query
             return rewrittenQuery;
         }
         //load up the list of possible terms
-        for (Iterator<FieldVals> iter = fieldVals.iterator(); iter.hasNext();)
-		{
-			FieldVals f = iter.next();
-			addTerms(reader,f);			
-		}
-        //clear the list of fields
+        for (Iterator<FieldVals> iter = fieldVals.iterator(); iter.hasNext(); ) {
+          FieldVals f = iter.next();
+          addTerms(reader, f);
+        }
+      //clear the list of fields
         fieldVals.clear();
         
         BooleanQuery bq=new BooleanQuery();
@@ -368,15 +362,15 @@ public class FuzzyLikeThisQuery extends Query
     }
 
 
-	public boolean isIgnoreTF()
-	{
-		return ignoreTF;
-	}
+  public boolean isIgnoreTF()
+  {
+    return ignoreTF;
+  }
 
 
-	public void setIgnoreTF(boolean ignoreTF)
-	{
-		this.ignoreTF = ignoreTF;
-	}   
+  public void setIgnoreTF(boolean ignoreTF)
+  {
+    this.ignoreTF = ignoreTF;
+  }
     
 }

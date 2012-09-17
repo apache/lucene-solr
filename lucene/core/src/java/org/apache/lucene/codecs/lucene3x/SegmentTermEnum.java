@@ -141,15 +141,15 @@ final class SegmentTermEnum implements Cloneable {
     termBuffer.read(input, fieldInfos);
     newSuffixStart = termBuffer.newSuffixStart;
 
-    termInfo.docFreq = input.readVInt();	  // read doc freq
-    termInfo.freqPointer += input.readVLong();	  // read freq pointer
-    termInfo.proxPointer += input.readVLong();	  // read prox pointer
+    termInfo.docFreq = input.readVInt();    // read doc freq
+    termInfo.freqPointer += input.readVLong();    // read freq pointer
+    termInfo.proxPointer += input.readVLong();    // read prox pointer
     
     if (termInfo.docFreq >= skipInterval) 
       termInfo.skipOffset = input.readVInt();
 
     if (isIndex)
-      indexPointer += input.readVLong();	  // read index pointer
+      indexPointer += input.readVLong();    // read index pointer
 
     //System.out.println("  ste ret term=" + term());
     return true;

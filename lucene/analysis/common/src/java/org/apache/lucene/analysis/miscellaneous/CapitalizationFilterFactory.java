@@ -49,8 +49,8 @@ import java.util.StringTokenizer;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.CapitalizationFilterFactory" onlyFirstWord="true"
- *     	     keep="java solr lucene" keepIgnoreCase="false"
- *     	     okPrefix="McK McD McA"/&gt;   
+ *           keep="java solr lucene" keepIgnoreCase="false"
+ *           okPrefix="McK McD McA"/&gt;   
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *

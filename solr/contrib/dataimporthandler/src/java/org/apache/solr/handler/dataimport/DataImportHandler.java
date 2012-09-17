@@ -178,7 +178,7 @@ public class DataImportHandler extends RequestHandlerBase implements
             rsp.add("mode", "debug");
             rsp.add("documents", requestParams.getDebugInfo().debugDocuments);
             if (requestParams.getDebugInfo().debugVerboseOutput != null) {
-            	rsp.add("verbose-output", requestParams.getDebugInfo().debugVerboseOutput);
+              rsp.add("verbose-output", requestParams.getDebugInfo().debugVerboseOutput);
             }
           } else {
             message = DataImporter.MSG.DEBUG_NOT_ENABLED;

@@ -52,7 +52,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * @since   lucene 1.4
  */
 class FieldCacheImpl implements FieldCache {
-	
+
   private Map<Class<?>,Cache> caches;
   FieldCacheImpl() {
     init();
@@ -173,7 +173,7 @@ class FieldCacheImpl implements FieldCache {
         ((AtomicReader)key).addReaderClosedListener(purgeReader); 
       } else {
         // last chance
-        reader.addReaderClosedListener(purgeReader); 				
+        reader.addReaderClosedListener(purgeReader);
       }
     }
   }

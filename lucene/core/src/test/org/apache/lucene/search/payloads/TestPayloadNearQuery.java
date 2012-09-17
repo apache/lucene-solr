@@ -140,7 +140,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
 
     query = newPhraseQuery("field", "twenty two", true, new AveragePayloadFunction());
     QueryUtils.check(query);
-		
+
     // all 10 hits should have score = 3 because adjacent terms have payloads of 2,4
     // and all the similarity factors are set to 1
     hits = searcher.search(query, null, 100);
@@ -162,8 +162,8 @@ public class TestPayloadNearQuery extends LuceneTestCase {
       assertEquals("should be 100 hits", 100, hits.totalHits);
       for (int j = 0; j < hits.scoreDocs.length; j++) {
         ScoreDoc doc = hits.scoreDocs[j];
-        //				System.out.println("Doc: " + doc.toString());
-        //				System.out.println("Explain: " + searcher.explain(query, doc.doc));
+        //        System.out.println("Doc: " + doc.toString());
+        //        System.out.println("Explain: " + searcher.explain(query, doc.doc));
         assertTrue(doc.score + " does not equal: " + 3, doc.score == 3);
       }
     }
@@ -192,71 +192,71 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   }
   
   public void testAverageFunction() throws IOException {
-	  PayloadNearQuery query;
-	  TopDocs hits;
+    PayloadNearQuery query;
+    TopDocs hits;
 
-	  query = newPhraseQuery("field", "twenty two", true, new AveragePayloadFunction());
-	  QueryUtils.check(query);
-	  // all 10 hits should have score = 3 because adjacent terms have payloads of 2,4
-	  // and all the similarity factors are set to 1
-	  hits = searcher.search(query, null, 100);
-	  assertTrue("hits is null and it shouldn't be", hits != null);
-	  assertTrue("should be 10 hits", hits.totalHits == 10);
-	  for (int j = 0; j < hits.scoreDocs.length; j++) {
-		  ScoreDoc doc = hits.scoreDocs[j];
-		  assertTrue(doc.score + " does not equal: " + 3, doc.score == 3);
-		  Explanation explain = searcher.explain(query, hits.scoreDocs[j].doc);
-		  String exp = explain.toString();
-		  assertTrue(exp, exp.indexOf("AveragePayloadFunction") > -1);
-		  assertTrue(hits.scoreDocs[j].score + " explain value does not equal: " + 3, explain.getValue() == 3f);
-	  }
+    query = newPhraseQuery("field", "twenty two", true, new AveragePayloadFunction());
+    QueryUtils.check(query);
+    // all 10 hits should have score = 3 because adjacent terms have payloads of 2,4
+    // and all the similarity factors are set to 1
+    hits = searcher.search(query, null, 100);
+    assertTrue("hits is null and it shouldn't be", hits != null);
+    assertTrue("should be 10 hits", hits.totalHits == 10);
+    for (int j = 0; j < hits.scoreDocs.length; j++) {
+      ScoreDoc doc = hits.scoreDocs[j];
+      assertTrue(doc.score + " does not equal: " + 3, doc.score == 3);
+      Explanation explain = searcher.explain(query, hits.scoreDocs[j].doc);
+      String exp = explain.toString();
+      assertTrue(exp, exp.indexOf("AveragePayloadFunction") > -1);
+      assertTrue(hits.scoreDocs[j].score + " explain value does not equal: " + 3, explain.getValue() == 3f);
+    }
   }
   public void testMaxFunction() throws IOException {
-	  PayloadNearQuery query;
-	  TopDocs hits;
+    PayloadNearQuery query;
+    TopDocs hits;
 
-	  query = newPhraseQuery("field", "twenty two", true, new MaxPayloadFunction());
-	  QueryUtils.check(query);
-	  // all 10 hits should have score = 4 (max payload value)
-	  hits = searcher.search(query, null, 100);
-	  assertTrue("hits is null and it shouldn't be", hits != null);
-	  assertTrue("should be 10 hits", hits.totalHits == 10);
-	  for (int j = 0; j < hits.scoreDocs.length; j++) {
-		  ScoreDoc doc = hits.scoreDocs[j];
-		  assertTrue(doc.score + " does not equal: " + 4, doc.score == 4);
-		  Explanation explain = searcher.explain(query, hits.scoreDocs[j].doc);
-		  String exp = explain.toString();
-		  assertTrue(exp, exp.indexOf("MaxPayloadFunction") > -1);
-		  assertTrue(hits.scoreDocs[j].score + " explain value does not equal: " + 4, explain.getValue() == 4f);
-	  }
+    query = newPhraseQuery("field", "twenty two", true, new MaxPayloadFunction());
+    QueryUtils.check(query);
+    // all 10 hits should have score = 4 (max payload value)
+    hits = searcher.search(query, null, 100);
+    assertTrue("hits is null and it shouldn't be", hits != null);
+    assertTrue("should be 10 hits", hits.totalHits == 10);
+    for (int j = 0; j < hits.scoreDocs.length; j++) {
+      ScoreDoc doc = hits.scoreDocs[j];
+      assertTrue(doc.score + " does not equal: " + 4, doc.score == 4);
+      Explanation explain = searcher.explain(query, hits.scoreDocs[j].doc);
+      String exp = explain.toString();
+      assertTrue(exp, exp.indexOf("MaxPayloadFunction") > -1);
+      assertTrue(hits.scoreDocs[j].score + " explain value does not equal: " + 4, explain.getValue() == 4f);
+    }
   }  
   public void testMinFunction() throws IOException {
-	  PayloadNearQuery query;
-	  TopDocs hits;
+    PayloadNearQuery query;
+    TopDocs hits;
 
-	  query = newPhraseQuery("field", "twenty two", true, new MinPayloadFunction());
-	  QueryUtils.check(query);
-	  // all 10 hits should have score = 2 (min payload value)
-	  hits = searcher.search(query, null, 100);
-	  assertTrue("hits is null and it shouldn't be", hits != null);
-	  assertTrue("should be 10 hits", hits.totalHits == 10);
-	  for (int j = 0; j < hits.scoreDocs.length; j++) {
-		  ScoreDoc doc = hits.scoreDocs[j];
-		  assertTrue(doc.score + " does not equal: " + 2, doc.score == 2);
-		  Explanation explain = searcher.explain(query, hits.scoreDocs[j].doc);
-		  String exp = explain.toString();
-		  assertTrue(exp, exp.indexOf("MinPayloadFunction") > -1);
-		  assertTrue(hits.scoreDocs[j].score + " explain value does not equal: " + 2, explain.getValue() == 2f);
-	  }
+    query = newPhraseQuery("field", "twenty two", true, new MinPayloadFunction());
+    QueryUtils.check(query);
+    // all 10 hits should have score = 2 (min payload value)
+    hits = searcher.search(query, null, 100);
+    assertTrue("hits is null and it shouldn't be", hits != null);
+    assertTrue("should be 10 hits", hits.totalHits == 10);
+    for (int j = 0; j < hits.scoreDocs.length; j++) {
+      ScoreDoc doc = hits.scoreDocs[j];
+      assertTrue(doc.score + " does not equal: " + 2, doc.score == 2);
+      Explanation explain = searcher.explain(query, hits.scoreDocs[j].doc);
+      String exp = explain.toString();
+      assertTrue(exp, exp.indexOf("MinPayloadFunction") > -1);
+      assertTrue(hits.scoreDocs[j].score + " explain value does not equal: " + 2, explain.getValue() == 2f);
+    }
   }  
   private SpanQuery[] getClauses() {
-	    SpanNearQuery q1, q2;
-	    q1 = spanNearQuery("field2", "twenty two");
-	    q2 = spanNearQuery("field2", "twenty three");
-	    SpanQuery[] clauses = new SpanQuery[2];
-	    clauses[0] = q1;
-	    clauses[1] = q2;
-	    return clauses;
+      SpanNearQuery q1, q2;
+      q1 = spanNearQuery("field2", "twenty two");
+      q2 = spanNearQuery("field2", "twenty three");
+      SpanQuery[] clauses = new SpanQuery[2];
+      clauses[0] = q1;
+      clauses[1] = q2;
+      return clauses;
   }
   private SpanNearQuery spanNearQuery(String fieldName, String words) {
     String[] wordList = words.split("[\\s]+");
@@ -274,8 +274,8 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     ScoreDoc doc = hits.scoreDocs[0];
-    //		System.out.println("Doc: " + doc.toString());
-    //		System.out.println("Explain: " + searcher.explain(query, doc.doc));
+    //    System.out.println("Doc: " + doc.toString());
+    //    System.out.println("Explain: " + searcher.explain(query, doc.doc));
     assertTrue("there should only be one hit", hits.totalHits == 1);
     // should have score = 3 because adjacent terms have payloads of 2,4
     assertTrue(doc.score + " does not equal: " + 3, doc.score == 3); 
@@ -299,8 +299,8 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     assertTrue("should only be one hit", hits.scoreDocs.length == 1);
     // the score should be 3 - the average of all the underlying payloads
     ScoreDoc doc = hits.scoreDocs[0];
-    //		System.out.println("Doc: " + doc.toString());
-    //		System.out.println("Explain: " + searcher.explain(query, doc.doc));
+    //    System.out.println("Doc: " + doc.toString());
+    //    System.out.println("Explain: " + searcher.explain(query, doc.doc));
     assertTrue(doc.score + " does not equal: " + 3, doc.score == 3);  
   }
 

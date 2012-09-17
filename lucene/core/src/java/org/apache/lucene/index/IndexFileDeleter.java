@@ -571,7 +571,7 @@ final class IndexFileDeleter {
         infoStream.message("IFD", "delete \"" + fileName + "\"");
       }
       directory.deleteFile(fileName);
-    } catch (IOException e) {			  // if delete fails
+    } catch (IOException e) {  // if delete fails
       if (directory.fileExists(fileName)) {
 
         // Some operating systems (e.g. Windows) don't

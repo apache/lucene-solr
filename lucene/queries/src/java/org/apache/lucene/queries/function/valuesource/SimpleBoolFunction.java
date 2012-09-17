@@ -44,11 +44,11 @@ public abstract class SimpleBoolFunction extends BoolFunction {
     return new BoolDocValues(this) {
       @Override
       public boolean boolVal(int doc) {
-	      return func(doc, vals);
+        return func(doc, vals);
       }
       @Override
       public String toString(int doc) {
-	      return name() + '(' + vals.toString(doc) + ')';
+        return name() + '(' + vals.toString(doc) + ')';
       }
     };
   }

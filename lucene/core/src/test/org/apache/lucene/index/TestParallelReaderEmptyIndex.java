@@ -152,7 +152,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
 
     rd1.close();
     rd2.close();
-		
+
     iwOut.forceMerge(1);
     iwOut.close();
     

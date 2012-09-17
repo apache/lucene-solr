@@ -90,18 +90,18 @@ EventAttributeSuffixes = ( [aA][bB][oO][rR][tT]                 |
                            [bB][lL][uU][rR]                     |
                            [cC][hH][aA][nN][gG][eE]             |
                            [cC][lL][iI][cC][kK]                 |
-	                         [dD][bB][lL][cC][lL][iI][cC][kK]     |
+                           [dD][bB][lL][cC][lL][iI][cC][kK]     |
                            [eE][rR][rR][oO][rR]                 |
                            [fF][oO][cC][uU][sS]                 |
-	                         [kK][eE][yY][dD][oO][wW][nN]         |
-	                         [kK][eE][yY][pP][rR][eE][sS][sS]     |
-	                         [kK][eE][yY][uU][pP]                 |
+                           [kK][eE][yY][dD][oO][wW][nN]         |
+                           [kK][eE][yY][pP][rR][eE][sS][sS]     |
+                           [kK][eE][yY][uU][pP]                 |
                            [lL][oO][aA][dD]                     |
-	                         [mM][oO][uU][sS][eE][dD][oO][wW][nN] |
-	                         [mM][oO][uU][sS][eE][mM][oO][vV][eE] |
+                           [mM][oO][uU][sS][eE][dD][oO][wW][nN] |
+                           [mM][oO][uU][sS][eE][mM][oO][vV][eE] |
                            [mM][oO][uU][sS][eE][oO][uU][tT]     |
                            [mM][oO][uU][sS][eE][oO][vV][eE][rR] |
-	                         [mM][oO][uU][sS][eE][uU][pP]         |
+                           [mM][oO][uU][sS][eE][uU][pP]         |
                            [rR][eE][sS][eE][tT]                 |
                            [sS][eE][lL][eE][cC][tT]             |
                            [sS][uU][bB][mM][iI][tT]             |

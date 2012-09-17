@@ -56,6 +56,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * Test for ReplicationHandler
@@ -243,7 +244,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     return res;
   }
-
+  @Ignore
   public void test() throws Exception {
     doTestReplicateAfterCoreReload();
     doTestDetails();

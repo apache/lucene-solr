@@ -54,11 +54,12 @@ public abstract class DualFloatFunction extends ValueSource {
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
-	return func(doc, aVals, bVals);
+        return func(doc, aVals, bVals);
       }
+
       @Override
       public String toString(int doc) {
-	return name() + '(' + aVals.toString(doc) + ',' + bVals.toString(doc) + ')';
+        return name() + '(' + aVals.toString(doc) + ',' + bVals.toString(doc) + ')';
       }
     };
   }

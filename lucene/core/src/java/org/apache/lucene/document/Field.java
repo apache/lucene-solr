@@ -691,7 +691,7 @@ public class Field implements IndexableField {
       @Override
       public boolean isAnalyzed() { return true;  }
       @Override
-      public boolean omitNorms()  { return false; }   	
+      public boolean omitNorms()  { return false; }
     },
 
     /** Index the field's value without using an Analyzer, so it can be searched.
@@ -704,7 +704,7 @@ public class Field implements IndexableField {
       @Override
       public boolean isAnalyzed() { return false; }
       @Override
-      public boolean omitNorms()  { return false; }   	
+      public boolean omitNorms()  { return false; }
     },
 
     /** Expert: Index the field's value without an Analyzer,
@@ -727,7 +727,7 @@ public class Field implements IndexableField {
       @Override
       public boolean isAnalyzed() { return false; }
       @Override
-      public boolean omitNorms()  { return true;  }   	
+      public boolean omitNorms()  { return true;  }
     },
 
     /** Expert: Index the tokens produced by running the
@@ -741,7 +741,7 @@ public class Field implements IndexableField {
       @Override
       public boolean isAnalyzed() { return true;  }
       @Override
-      public boolean omitNorms()  { return true;  }   	
+      public boolean omitNorms()  { return true;  }
     };
 
     /** Get the best representation of the index given the flags. */
@@ -774,7 +774,7 @@ public class Field implements IndexableField {
 
     public abstract boolean isIndexed();
     public abstract boolean isAnalyzed();
-    public abstract boolean omitNorms();  	
+    public abstract boolean omitNorms();
   }
 
   /** Specifies whether and how a field should have term vectors.

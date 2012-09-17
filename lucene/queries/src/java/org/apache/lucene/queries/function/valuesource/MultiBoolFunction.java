@@ -50,7 +50,7 @@ public abstract class MultiBoolFunction extends BoolFunction {
     return new BoolDocValues(this) {
       @Override
       public boolean boolVal(int doc) {
-	      return func(doc, vals);
+        return func(doc, vals);
       }
 
       @Override

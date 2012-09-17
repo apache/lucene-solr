@@ -160,7 +160,7 @@ public class MockTokenizer extends Tokenizer {
           return Character.toCodePoint((char) ch, (char) ch2);
         } else {
           assert false : "stream ends with unpaired high surrogate: " + Integer.toHexString(ch);
-	}
+        }
       }
       return ch;
     }

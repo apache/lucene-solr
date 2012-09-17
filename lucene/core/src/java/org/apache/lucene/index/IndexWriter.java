@@ -2894,7 +2894,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       final boolean anySegmentFlushed;
       
       synchronized (fullFlushLock) {
-    	boolean flushSuccess = false;
+      boolean flushSuccess = false;
         try {
           anySegmentFlushed = docWriter.flushAllThreads();
           flushSuccess = true;

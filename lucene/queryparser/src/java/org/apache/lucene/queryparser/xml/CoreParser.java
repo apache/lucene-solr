@@ -153,5 +153,5 @@ public class CoreParser implements QueryBuilder {
 
   public Query getQuery(Element e) throws ParserException {
     return queryFactory.getQuery(e);
-	}
+  }
 }

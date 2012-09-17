@@ -404,7 +404,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   public Query rewrite(IndexReader reader) throws IOException {
     if (minNrShouldMatch == 0 && clauses.size() == 1) {                    // optimize 1-clause queries
       BooleanClause c = clauses.get(0);
-      if (!c.isProhibited()) {			  // just return clause
+      if (!c.isProhibited()) {  // just return clause
 
         Query query = c.getQuery().rewrite(reader);    // rewrite first
 
@@ -475,7 +475,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
       Query subQuery = c.getQuery();
       if (subQuery != null) {
-        if (subQuery instanceof BooleanQuery) {	  // wrap sub-bools in parens
+        if (subQuery instanceof BooleanQuery) {  // wrap sub-bools in parens
           buffer.append("(");
           buffer.append(subQuery.toString(field));
           buffer.append(")");

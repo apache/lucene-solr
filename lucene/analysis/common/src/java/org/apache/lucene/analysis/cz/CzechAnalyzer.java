@@ -61,24 +61,24 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
    * 
    * @return a set of default Czech-stopwords
    */
-	public static final CharArraySet getDefaultStopSet(){
-	  return DefaultSetHolder.DEFAULT_SET;
-	}
-	
-	private static class DefaultSetHolder {
-	  private static final CharArraySet DEFAULT_SET;
-	  
-	  static {
-	    try {
-	      DEFAULT_SET = WordlistLoader.getWordSet(IOUtils.getDecodingReader(CzechAnalyzer.class, 
-	          DEFAULT_STOPWORD_FILE, IOUtils.CHARSET_UTF_8), "#", Version.LUCENE_CURRENT);
-	    } catch (IOException ex) {
-	      // default set should always be present as it is part of the
-	      // distribution (JAR)
-	      throw new RuntimeException("Unable to load default stopword set");
-	    }
-	  }
-	}
+  public static final CharArraySet getDefaultStopSet(){
+    return DefaultSetHolder.DEFAULT_SET;
+  }
+
+  private static class DefaultSetHolder {
+    private static final CharArraySet DEFAULT_SET;
+  
+    static {
+      try {
+        DEFAULT_SET = WordlistLoader.getWordSet(IOUtils.getDecodingReader(CzechAnalyzer.class, 
+            DEFAULT_STOPWORD_FILE, IOUtils.CHARSET_UTF_8), "#", Version.LUCENE_CURRENT);
+      } catch (IOException ex) {
+        // default set should always be present as it is part of the
+        // distribution (JAR)
+        throw new RuntimeException("Unable to load default stopword set");
+      }
+    }
+  }
 
  
   private final CharArraySet stemExclusionTable;
@@ -89,9 +89,9 @@ public final class CzechAnalyzer extends StopwordAnalyzerBase {
    * @param matchVersion Lucene version to match See
    *          {@link <a href="#version">above</a>}
    */
-	public CzechAnalyzer(Version matchVersion) {
+  public CzechAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_SET);
-	}
+  }
 
   /**
    * Builds an analyzer with the given stop words.

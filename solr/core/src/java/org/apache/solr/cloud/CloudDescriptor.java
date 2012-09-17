@@ -54,11 +54,11 @@ public class CloudDescriptor {
   }
 
   public String getRoles(){
-	  return roles;
+    return roles;
   }
   
   public void setRoles(String roles){
-	  this.roles = roles;
+    this.roles = roles;
   }
   
   /** Optional parameters that can change how a core is created. */

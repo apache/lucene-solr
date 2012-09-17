@@ -143,7 +143,7 @@ class DebugLogger {
 
   private void popAllTransformers() {
     while (true) {
-    	DIHLogLevels type = debugStack.peek().type;
+      DIHLogLevels type = debugStack.peek().type;
       if (type == DIHLogLevels.START_DOC || type == DIHLogLevels.START_ENTITY)
         break;
       debugStack.pop();

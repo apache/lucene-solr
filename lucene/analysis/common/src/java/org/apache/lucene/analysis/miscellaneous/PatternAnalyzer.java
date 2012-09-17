@@ -366,7 +366,7 @@ public final class PatternAnalyzer extends Analyzer {
     public final void end() {
       // set final offset
       final int finalOffset = correctOffset(str.length());
-    	this.offsetAtt.setOffset(finalOffset, finalOffset);
+      this.offsetAtt.setOffset(finalOffset, finalOffset);
     }
 
     @Override

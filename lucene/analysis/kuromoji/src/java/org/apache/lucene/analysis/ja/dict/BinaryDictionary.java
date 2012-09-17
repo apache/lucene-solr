@@ -150,7 +150,7 @@ public abstract class BinaryDictionary implements Dictionary {
     ref.length = targetMapOffsets[sourceId + 1] - ref.offset;
   }
   
-  @Override	
+  @Override
   public int getLeftId(int wordId) {
     return buffer.getShort(wordId) >>> 3;
   }
@@ -162,7 +162,7 @@ public abstract class BinaryDictionary implements Dictionary {
   
   @Override
   public int getWordCost(int wordId) {
-    return buffer.getShort(wordId + 2);	// Skip id
+    return buffer.getShort(wordId + 2);  // Skip id
   }
 
   @Override

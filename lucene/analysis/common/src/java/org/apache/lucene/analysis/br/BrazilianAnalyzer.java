@@ -50,7 +50,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
   /** File containing default Brazilian Portuguese stopwords. */
   public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
   
-	/**
+  /**
    * Returns an unmodifiable instance of the default stop-words set.
    * @return an unmodifiable instance of the default stop-words set.
    */
@@ -74,19 +74,19 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
   }
 
 
-	/**
-	 * Contains words that should be indexed but not stemmed.
-	 */
-	private CharArraySet excltable = CharArraySet.EMPTY_SET;
-	
-	/**
-	 * Builds an analyzer with the default stop words ({@link #getDefaultStopSet()}).
-	 */
-	public BrazilianAnalyzer(Version matchVersion) {
+  /**
+   * Contains words that should be indexed but not stemmed.
+   */
+  private CharArraySet excltable = CharArraySet.EMPTY_SET;
+
+  /**
+   * Builds an analyzer with the default stop words ({@link #getDefaultStopSet()}).
+   */
+  public BrazilianAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
-	}
-	
-	/**
+  }
+
+  /**
    * Builds an analyzer with the given stop words
    * 
    * @param matchVersion

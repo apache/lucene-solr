@@ -163,7 +163,7 @@ final class BitVector implements Cloneable, MutableBits {
       int c = 0;
       int end = bits.length;
       for (int i = 0; i < end; i++) {
-        c += BYTE_COUNTS[bits[i] & 0xFF];	  // sum bits per byte
+        c += BYTE_COUNTS[bits[i] & 0xFF];  // sum bits per byte
       }
       count = c;
     }
@@ -176,12 +176,12 @@ final class BitVector implements Cloneable, MutableBits {
     int c = 0;
     int end = bits.length;
     for (int i = 0; i < end; i++) {
-      c += BYTE_COUNTS[bits[i] & 0xFF];	  // sum bits per byte
+      c += BYTE_COUNTS[bits[i] & 0xFF];  // sum bits per byte
     }
     return c;
   }
 
-  private static final byte[] BYTE_COUNTS = {	  // table of bits/byte
+  private static final byte[] BYTE_COUNTS = {  // table of bits/byte
     0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4,
     1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,
     1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5,

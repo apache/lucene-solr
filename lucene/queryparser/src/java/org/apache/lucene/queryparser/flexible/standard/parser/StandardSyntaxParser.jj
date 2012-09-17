@@ -57,14 +57,14 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
  */
 public class StandardSyntaxParser implements SyntaxParser {
 
-	private static final int CONJ_NONE =0;
-	private static final int CONJ_AND =2;
-	private static final int CONJ_OR =2;
+  private static final int CONJ_NONE =0;
+  private static final int CONJ_AND =2;
+  private static final int CONJ_OR =2;
 
  
    // syntax parser constructor
    public StandardSyntaxParser() {
-   	this(new FastCharStream(new StringReader("")));
+     this(new FastCharStream(new StringReader("")));
   }
      /** Parses a query string, returning a {@link org.apache.lucene.queryparser.flexible.core.nodes.QueryNode}.
      *  @param query  the query string to be parsed.
@@ -178,13 +178,13 @@ ModifierQueryNode.Modifier Modifiers() : {
 // This makes sure that there is no garbage after the query string
 QueryNode TopLevelQuery(CharSequence field) : 
 {
-	QueryNode q;
+  QueryNode q;
 }
 {
-	q=Query(field) <EOF>
-	{
-		return q;
-	}
+  q=Query(field) <EOF>
+  {
+    return q;
+  }
 }
 
 // These changes were made to introduce operator precedence:
@@ -209,25 +209,25 @@ QueryNode Query(CharSequence field) :
   (
     c=DisjQuery(field)
     { 
-	     if (clauses == null) {
-	         clauses = new Vector<QueryNode>();
-	         clauses.addElement(first); 
-	     } 
-    	 clauses.addElement(c);
+       if (clauses == null) {
+           clauses = new Vector<QueryNode>();
+           clauses.addElement(first);
+       }
+       clauses.addElement(c);
     }
     )*
     {
         if (clauses != null) { 
-	    	return new BooleanQueryNode(clauses);
-    	} else {
-        	return first;
-    	}
+        return new BooleanQueryNode(clauses);
+      } else {
+          return first;
+      }
     }
 }
 
 QueryNode DisjQuery(CharSequence field) : {
-	QueryNode first, c;
-	Vector<QueryNode> clauses = null;
+  QueryNode first, c;
+  Vector<QueryNode> clauses = null;
 }
 {
   first = ConjQuery(field)
@@ -243,7 +243,7 @@ QueryNode DisjQuery(CharSequence field) : {
   )*
   {
     if (clauses != null) { 
-	    return new OrQueryNode(clauses);
+      return new OrQueryNode(clauses);
     } else {
         return first;
     }
@@ -251,8 +251,8 @@ QueryNode DisjQuery(CharSequence field) : {
 }
 
 QueryNode ConjQuery(CharSequence field) : {
-	QueryNode first, c;
-	Vector<QueryNode> clauses = null;
+  QueryNode first, c;
+  Vector<QueryNode> clauses = null;
 }
 {
   first = ModClause(field)
@@ -268,7 +268,7 @@ QueryNode ConjQuery(CharSequence field) : {
   )*
   {
     if (clauses != null) {     
-	    return new AndQueryNode(clauses);
+      return new AndQueryNode(clauses);
     } else {
         return first;
     }
@@ -289,27 +289,27 @@ QueryNode ConjQuery(CharSequence field) : {
 //     if (mods == ModifierQueryNode.Modifier.MOD_NONE) firstQuery=q;
 //     
 //     // do not create modifier nodes with MOD_NONE
-//    	if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
-//    		q = new ModifierQueryNode(q, mods);
-//    	}
-//    	clauses.add(q);
+//      if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
+//        q = new ModifierQueryNode(q, mods);
+//      }
+//      clauses.add(q);
 //   }
 //   (
 //     conj=Conjunction() mods=Modifiers() q=Clause(field)
 //     { 
-// 	    // do not create modifier nodes with MOD_NONE
-// 	   	if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
-// 	   		q = new ModifierQueryNode(q, mods);
-// 	   	}
-// 	   	clauses.add(q);
-// 	   	//TODO: figure out what to do with AND and ORs
+//       // do not create modifier nodes with MOD_NONE
+//        if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
+//          q = new ModifierQueryNode(q, mods);
+//        }
+//        clauses.add(q);
+//        //TODO: figure out what to do with AND and ORs
 //   }
 //   )*
 //     {
 //      if (clauses.size() == 1 && firstQuery != null)
 //         return firstQuery;
 //       else {
-//   		return new BooleanQueryNode(clauses);
+//       return new BooleanQueryNode(clauses);
 //       }
 //     }
 // }
@@ -320,10 +320,10 @@ QueryNode ModClause(CharSequence field) : {
 }
 {
    mods=Modifiers() q= Clause(field) {
- 	   	if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
- 	   		q = new ModifierQueryNode(q, mods);
- 	   	}
- 	   	return q;
+        if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
+          q = new ModifierQueryNode(q, mods);
+        }
+        return q;
    }
 }
 
@@ -347,18 +347,18 @@ QueryNode Clause(CharSequence field) : {
         }
         switch (operator.kind) {
             case OP_LESSTHAN:
-            	lowerInclusive = true;
-            	upperInclusive = false;
-            	
-            	qLower = new FieldQueryNode(field,
+              lowerInclusive = true;
+              upperInclusive = false;
+
+              qLower = new FieldQueryNode(field,
                                          "*", term.beginColumn, term.endColumn);
-        		qUpper = new FieldQueryNode(field, 
+            qUpper = new FieldQueryNode(field,
                                  EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
                 
                 break;
             case OP_LESSTHANEQ:
-            	lowerInclusive = true;
-            	upperInclusive = true;
+              lowerInclusive = true;
+              upperInclusive = true;
             
                 qLower = new FieldQueryNode(field, 
                                          "*", term.beginColumn, term.endColumn);
@@ -366,8 +366,8 @@ QueryNode Clause(CharSequence field) : {
                                          EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
                 break;
             case OP_MORETHAN:
-            	lowerInclusive = false;
-            	upperInclusive = true;
+              lowerInclusive = false;
+              upperInclusive = true;
             
                 qLower = new FieldQueryNode(field, 
                                          EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
@@ -375,9 +375,9 @@ QueryNode Clause(CharSequence field) : {
                                          "*", term.beginColumn, term.endColumn);
                 break;
             case OP_MORETHANEQ:
-            	lowerInclusive = true;
-            	upperInclusive = true;
-            	
+              lowerInclusive = true;
+              upperInclusive = true;
+
                 qLower = new FieldQueryNode(field, 
                                          EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
                 qUpper = new FieldQueryNode(field, 
@@ -401,18 +401,18 @@ QueryNode Clause(CharSequence field) : {
 )
     {
       if (boost != null) {
-		  float f = (float)1.0;
-		  try {
-		    f = Float.valueOf(boost.image).floatValue();
-		    // avoid boosting null queries, such as those caused by stop words
-	      	if (q != null) {
-	        	q = new BoostQueryNode(q, f);
-	      	}
-		  } catch (Exception ignored) {
-		  	/* Should this be handled somehow? (defaults to "no boost", if
+      float f = (float)1.0;
+      try {
+        f = Float.valueOf(boost.image).floatValue();
+        // avoid boosting null queries, such as those caused by stop words
+          if (q != null) {
+            q = new BoostQueryNode(q, f);
+          }
+      } catch (Exception ignored) {
+        /* Should this be handled somehow? (defaults to "no boost", if
              * boost number is invalid)
-             */		  
-		  }
+             */
+      }
       }
       if (group) { q = new GroupQueryNode(q);}
       return q;
@@ -433,7 +433,7 @@ QueryNode Term(CharSequence field) : {
 {
   (
      (
- 	   term=<TERM> { q = new FieldQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn); }
+      term=<TERM> { q = new FieldQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn); }
        | term=<REGEXPTERM> { regexp=true; }
        | term=<NUMBER>
      )
@@ -441,16 +441,16 @@ QueryNode Term(CharSequence field) : {
      [ <CARAT> boost=<NUMBER> [ fuzzySlop=<FUZZY_SLOP> { fuzzy=true; } ] ]
      {
        if (fuzzy) {
-       	  float fms = defaultMinSimilarity;
-       	  try {
+           float fms = defaultMinSimilarity;
+           try {
             fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
-       	  } catch (Exception ignored) { }
-       	 if(fms < 0.0f){
-       	   throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_LIMITS));
-       	 } else if (fms >= 1.0f && fms != (int) fms) {
-       	   throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_EDITS));
-       	 }
-       	 q = new FuzzyQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), fms, term.beginColumn, term.endColumn);
+           } catch (Exception ignored) { }
+          if(fms < 0.0f){
+            throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_LIMITS));
+          } else if (fms >= 1.0f && fms != (int) fms) {
+            throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_EDITS));
+          }
+          q = new FuzzyQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), fms, term.beginColumn, term.endColumn);
        } else if (regexp) {
          String re = term.image.substring(1, term.image.length()-1);
          q = new RegexpQueryNode(field, re, 0, re.length());
@@ -471,9 +471,9 @@ QueryNode Term(CharSequence field) : {
           }
           
           qLower = new FieldQueryNode(field, 
-		                               EscapeQuerySyntaxImpl.discardEscapeChar(goop1.image), goop1.beginColumn, goop1.endColumn);
-		  qUpper = new FieldQueryNode(field,  
-		                               EscapeQuerySyntaxImpl.discardEscapeChar(goop2.image), goop2.beginColumn, goop2.endColumn);
+                                   EscapeQuerySyntaxImpl.discardEscapeChar(goop1.image), goop1.beginColumn, goop1.endColumn);
+      qUpper = new FieldQueryNode(field,
+                                   EscapeQuerySyntaxImpl.discardEscapeChar(goop2.image), goop2.beginColumn, goop2.endColumn);
           q = new TermRangeQueryNode(qLower, qUpper, startInc ? true : false, endInc ? true : false);
         }
      | term=<QUOTED> {q = new QuotedFieldQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image.substring(1, term.image.length()-1)), term.beginColumn + 1, term.endColumn - 1);}
@@ -489,28 +489,28 @@ QueryNode Term(CharSequence field) : {
            }
            catch (Exception ignored) {
             /* Should this be handled somehow? (defaults to "no PhraseSlop", if
-	         * slop number is invalid)
-	         */		
+           * slop number is invalid)
+           */
            }
          }
               
        }
   )
   {
-	  if (boost != null) {
-		  float f = (float)1.0;
-		  try {
-		    f = Float.valueOf(boost.image).floatValue();
-		    // avoid boosting null queries, such as those caused by stop words
-	      	if (q != null) {
-	        	q = new BoostQueryNode(q, f);
-	      	}
-		  } catch (Exception ignored) {
-		  	/* Should this be handled somehow? (defaults to "no boost", if
-	         * boost number is invalid)
-	         */		  
-		  }
-	  }
+    if (boost != null) {
+      float f = (float)1.0;
+      try {
+        f = Float.valueOf(boost.image).floatValue();
+        // avoid boosting null queries, such as those caused by stop words
+          if (q != null) {
+            q = new BoostQueryNode(q, f);
+          }
+      } catch (Exception ignored) {
+        /* Should this be handled somehow? (defaults to "no boost", if
+           * boost number is invalid)
+           */
+      }
+    }
       return q;
   }
 }

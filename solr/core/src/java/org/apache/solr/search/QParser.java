@@ -224,18 +224,18 @@ public abstract class QParser {
     String pageScoreS = null;
     String pageDocS = null;
 
-	  pageScoreS = params.get(CommonParams.PAGESCORE);
-	  pageDocS = params.get(CommonParams.PAGEDOC);
-		  
-	  if (pageScoreS == null || pageDocS == null)
-		  return null;
-	  
-	  int pageDoc = pageDocS != null ? Integer.parseInt(pageDocS) : -1;
-	  float pageScore = pageScoreS != null ? new Float(pageScoreS) : -1;
-	  if(pageDoc != -1 && pageScore != -1){
+    pageScoreS = params.get(CommonParams.PAGESCORE);
+    pageDocS = params.get(CommonParams.PAGEDOC);
+
+    if (pageScoreS == null || pageDocS == null)
+      return null;
+
+    int pageDoc = pageDocS != null ? Integer.parseInt(pageDocS) : -1;
+    float pageScore = pageScoreS != null ? new Float(pageScoreS) : -1;
+    if(pageDoc != -1 && pageScore != -1){
       return new ScoreDoc(pageDoc, pageScore);
     }
-	  else {
+    else {
       return null;
     }
 

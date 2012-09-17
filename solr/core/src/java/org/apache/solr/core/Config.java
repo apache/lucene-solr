@@ -141,8 +141,8 @@ public class Config {
       SolrException.log(log, "Exception during parsing file: " + name, e);
       throw e;
     } catch( SolrException e ){
-    	SolrException.log(log,"Error in "+name,e);
-    	throw e;
+      SolrException.log(log,"Error in "+name,e);
+      throw e;
     }
   }
   

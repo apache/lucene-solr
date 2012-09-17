@@ -58,6 +58,6 @@ public class CorePlusExtensionsParser extends CoreParser {
     queryFactory.addBuilder("LikeThisQuery", new LikeThisQueryBuilder(analyzer, fields));
     queryFactory.addBuilder("BoostingQuery", new BoostingQueryBuilder(queryFactory));
     queryFactory.addBuilder("FuzzyLikeThisQuery", new FuzzyLikeThisQueryBuilder(analyzer));
-		
-	}
+
+  }
 }

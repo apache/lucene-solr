@@ -57,7 +57,7 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
 
   @Override
   public void extractTerms(Set<Term> terms) {
-	    match.extractTerms(terms);
+    match.extractTerms(terms);
   }
 
   /** 

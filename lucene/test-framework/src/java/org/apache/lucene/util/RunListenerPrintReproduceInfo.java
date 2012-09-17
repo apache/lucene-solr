@@ -129,7 +129,7 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
   private void reportAdditionalFailureInfo(final String testName) {
     if (TEST_LINE_DOCS_FILE.endsWith(JENKINS_LARGE_LINE_DOCS_FILE)) {
       System.err.println("NOTE: download the large Jenkins line-docs file by running " +
-      		"'ant get-jenkins-line-docs' in the lucene directory.");
+        "'ant get-jenkins-line-docs' in the lucene directory.");
     }
 
     final StringBuilder b = new StringBuilder();

@@ -41,9 +41,9 @@ public abstract class BufferedIndexInput extends IndexInput {
   
   protected byte[] buffer;
   
-  private long bufferStart = 0;			  // position in file of buffer
-  private int bufferLength = 0;			  // end of valid bytes
-  private int bufferPosition = 0;		  // next byte to read
+  private long bufferStart = 0;       // position in file of buffer
+  private int bufferLength = 0;       // end of valid bytes
+  private int bufferPosition = 0;     // next byte to read
 
   @Override
   public final byte readByte() throws IOException {
@@ -259,7 +259,7 @@ public abstract class BufferedIndexInput extends IndexInput {
   private void refill() throws IOException {
     long start = bufferStart + bufferPosition;
     long end = start + bufferSize;
-    if (end > length())				  // don't read past EOF
+    if (end > length())  // don't read past EOF
       end = length();
     int newLength = (int)(end - start);
     if (newLength <= 0)
@@ -294,7 +294,7 @@ public abstract class BufferedIndexInput extends IndexInput {
     else {
       bufferStart = pos;
       bufferPosition = 0;
-      bufferLength = 0;				  // trigger refill() on read()
+      bufferLength = 0;  // trigger refill() on read()
       seekInternal(pos);
     }
   }

@@ -45,46 +45,46 @@ import java.io.IOException;
 @Deprecated
 public final class FrenchStemFilter extends TokenFilter {
 
-	/**
-	 * The actual token in the input stream.
-	 */
-	private FrenchStemmer stemmer = new FrenchStemmer();
-	
-	private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  /**
+   * The actual token in the input stream.
+   */
+  private FrenchStemmer stemmer = new FrenchStemmer();
+  
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
 
-	public FrenchStemFilter( TokenStream in ) {
+  public FrenchStemFilter( TokenStream in ) {
     super(in);
-	}
+  }
 
-	/**
-	 * @return  Returns true for the next token in the stream, or false at EOS
-	 */
-	@Override
-	public boolean incrementToken() throws IOException {
-	  if (input.incrementToken()) {
-	    String term = termAtt.toString();
+  /**
+   * @return  Returns true for the next token in the stream, or false at EOS
+   */
+  @Override
+  public boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
+      String term = termAtt.toString();
 
-	    // Check the exclusion table
-	    if (!keywordAttr.isKeyword()) {
-	      String s = stemmer.stem( term );
-	      // If not stemmed, don't waste the time  adjusting the token.
-	      if ((s != null) && !s.equals( term ) )
-	        termAtt.setEmpty().append(s);
-	    }
-	    return true;
-	  } else {
-	    return false;
-	  }
-	}
-	/**
-	 * Set a alternative/custom {@link FrenchStemmer} for this filter.
-	 */
-	public void setStemmer( FrenchStemmer stemmer ) {
-		if ( stemmer != null ) {
-			this.stemmer = stemmer;
-		}
-	}
+      // Check the exclusion table
+      if (!keywordAttr.isKeyword()) {
+        String s = stemmer.stem( term );
+        // If not stemmed, don't waste the time  adjusting the token.
+        if ((s != null) && !s.equals( term ) )
+          termAtt.setEmpty().append(s);
+      }
+      return true;
+    } else {
+      return false;
+    }
+  }
+  /**
+   * Set a alternative/custom {@link FrenchStemmer} for this filter.
+   */
+  public void setStemmer( FrenchStemmer stemmer ) {
+    if ( stemmer != null ) {
+      this.stemmer = stemmer;
+    }
+  }
 }
 
 

@@ -54,12 +54,12 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
   
   @Override
   public void close() {
-  	try {
-  		processor.finish();
-  	} catch (IOException e) {
-  		throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
-  				"Unable to call finish() on UpdateRequestProcessor", e);
-  	}
+    try {
+      processor.finish();
+    } catch (IOException e) {
+      throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
+          "Unable to call finish() on UpdateRequestProcessor", e);
+    }
   }
   @Override
   public boolean upload(SolrInputDocument d) {
@@ -87,8 +87,8 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
       log.error("Exception while deleteing: " + id, e);
     }
   }
-  	
-	@Override
+
+  @Override
   public void deleteByQuery(String query) {
     try {
       log.info("Deleting documents from Solr with query: " + query);
@@ -100,7 +100,7 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
     }
   }
 
-	@Override
+  @Override
   public void commit(boolean optimize) {
     try {
       CommitUpdateCommand commit = new CommitUpdateCommand(req,optimize);
@@ -110,7 +110,7 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
     }
   }
 
-	@Override
+  @Override
   public void rollback() {
     try {
       RollbackUpdateCommand rollback = new RollbackUpdateCommand(req);
@@ -120,7 +120,7 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
     }
   }
 
-	@Override
+  @Override
   public void doDeleteAll() {
     try {
       DeleteUpdateCommand deleteCommand = new DeleteUpdateCommand(req);
@@ -158,8 +158,8 @@ public class SolrWriter extends DIHWriterBase implements DIHWriter {
       return null;
     }
   }
-	@Override
-	public void init(Context context) {
-		/* NO-OP */		
-	}	
+  @Override
+  public void init(Context context) {
+    /* NO-OP */
+  }
 }

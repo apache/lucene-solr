@@ -6,6 +6,7 @@
 <div>Price: #field('price_c')</div>
 <div>Features: #field('features')</div>
 <div>In Stock: #field('inStock')</div>
+<div>jEOE: #field('cat')</div>
 <div class="mlt">
   #set($mlt = $mltResults.get($docId))
   #set($mltOn = $params.getBool('mlt'))

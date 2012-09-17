@@ -34,7 +34,7 @@ public abstract class Spans {
    *   boolean skipTo(int target) {
    *     do {
    *       if (!next())
-   * 	     return false;
+   *         return false;
    *     } while (target > doc());
    *     return true;
    *   }

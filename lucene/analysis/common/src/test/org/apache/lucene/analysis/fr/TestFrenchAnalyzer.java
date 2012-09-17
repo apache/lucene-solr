@@ -31,181 +31,181 @@ import org.apache.lucene.util.Version;
 
 public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
 
-	public void testAnalyzer() throws Exception {
-		FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT);
-	
-		assertAnalyzesTo(fa, "", new String[] {
-		});
+  public void testAnalyzer() throws Exception {
+    FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT);
 
-		assertAnalyzesTo(
-			fa,
-			"chien chat cheval",
-			new String[] { "chien", "chat", "cheval" });
+    assertAnalyzesTo(fa, "", new String[] {
+    });
 
-		assertAnalyzesTo(
-			fa,
-			"chien CHAT CHEVAL",
-			new String[] { "chien", "chat", "cheval" });
+    assertAnalyzesTo(
+      fa,
+      "chien chat cheval",
+      new String[] { "chien", "chat", "cheval" });
 
-		assertAnalyzesTo(
-			fa,
-			"  chien  ,? + = -  CHAT /: > CHEVAL",
-			new String[] { "chien", "chat", "cheval" });
+    assertAnalyzesTo(
+      fa,
+      "chien CHAT CHEVAL",
+      new String[] { "chien", "chat", "cheval" });
 
-		assertAnalyzesTo(fa, "chien++", new String[] { "chien" });
+    assertAnalyzesTo(
+      fa,
+      "  chien  ,? + = -  CHAT /: > CHEVAL",
+      new String[] { "chien", "chat", "cheval" });
 
-		assertAnalyzesTo(
-			fa,
-			"mot \"entreguillemet\"",
-			new String[] { "mot", "entreguilemet" });
+    assertAnalyzesTo(fa, "chien++", new String[] { "chien" });
 
-		// let's do some french specific tests now	
+    assertAnalyzesTo(
+      fa,
+      "mot \"entreguillemet\"",
+      new String[] { "mot", "entreguilemet" });
 
-		/* 1. couldn't resist
-		 I would expect this to stay one term as in French the minus 
-		sign is often used for composing words */
-		assertAnalyzesTo(
-			fa,
-			"Jean-François",
-			new String[] { "jean", "francoi" });
+    // let's do some french specific tests now
 
-		// 2. stopwords
-		assertAnalyzesTo(
-			fa,
-			"le la chien les aux chat du des à cheval",
-			new String[] { "chien", "chat", "cheval" });
+    /* 1. couldn't resist
+     I would expect this to stay one term as in French the minus
+    sign is often used for composing words */
+    assertAnalyzesTo(
+      fa,
+      "Jean-François",
+      new String[] { "jean", "francoi" });
 
-		// some nouns and adjectives
-		assertAnalyzesTo(
-			fa,
-			"lances chismes habitable chiste éléments captifs",
-			new String[] {
-				"lanc",
-				"chism",
-				"habitabl",
-				"chist",
-				"element",
-				"captif" });
+    // 2. stopwords
+    assertAnalyzesTo(
+      fa,
+      "le la chien les aux chat du des à cheval",
+      new String[] { "chien", "chat", "cheval" });
 
-		// some verbs
-		assertAnalyzesTo(
-			fa,
-			"finissions souffrirent rugissante",
-			new String[] { "finision", "soufrirent", "rugisant" });
+    // some nouns and adjectives
+    assertAnalyzesTo(
+      fa,
+      "lances chismes habitable chiste éléments captifs",
+      new String[] {
+        "lanc",
+        "chism",
+        "habitabl",
+        "chist",
+        "element",
+        "captif" });
 
-		// some everything else
-		// aujourd'hui stays one term which is OK
-		assertAnalyzesTo(
-			fa,
-			"C3PO aujourd'hui oeuf ïâöûàä anticonstitutionnellement Java++ ",
-			new String[] {
-				"c3po",
-				"aujourd'hui",
-				"oeuf",
-				"ïaöuaä",
-				"anticonstitutionel",
-				"java" });
+    // some verbs
+    assertAnalyzesTo(
+      fa,
+      "finissions souffrirent rugissante",
+      new String[] { "finision", "soufrirent", "rugisant" });
 
-		// some more everything else
-		// here 1940-1945 stays as one term, 1940:1945 not ?
-		assertAnalyzesTo(
-			fa,
-			"33Bis 1940-1945 1940:1945 (---i+++)*",
-			new String[] { "33bi", "1940", "1945", "1940", "1945", "i" });
+    // some everything else
+    // aujourd'hui stays one term which is OK
+    assertAnalyzesTo(
+      fa,
+      "C3PO aujourd'hui oeuf ïâöûàä anticonstitutionnellement Java++ ",
+      new String[] {
+        "c3po",
+        "aujourd'hui",
+        "oeuf",
+        "ïaöuaä",
+        "anticonstitutionel",
+        "java" });
 
-	}
-	
-	/**
-	 * @deprecated (3.1) remove this test for Lucene 5.0
-	 */
-	@Deprecated
-	public void testAnalyzer30() throws Exception {
-	    FrenchAnalyzer fa = new FrenchAnalyzer(Version.LUCENE_30);
-	  
-	    assertAnalyzesTo(fa, "", new String[] {
-	    });
+    // some more everything else
+    // here 1940-1945 stays as one term, 1940:1945 not ?
+    assertAnalyzesTo(
+      fa,
+      "33Bis 1940-1945 1940:1945 (---i+++)*",
+      new String[] { "33bi", "1940", "1945", "1940", "1945", "i" });
 
-	    assertAnalyzesTo(
-	      fa,
-	      "chien chat cheval",
-	      new String[] { "chien", "chat", "cheval" });
+  }
 
-	    assertAnalyzesTo(
-	      fa,
-	      "chien CHAT CHEVAL",
-	      new String[] { "chien", "chat", "cheval" });
+  /**
+   * @deprecated (3.1) remove this test for Lucene 5.0
+   */
+  @Deprecated
+  public void testAnalyzer30() throws Exception {
+      FrenchAnalyzer fa = new FrenchAnalyzer(Version.LUCENE_30);
 
-	    assertAnalyzesTo(
-	      fa,
-	      "  chien  ,? + = -  CHAT /: > CHEVAL",
-	      new String[] { "chien", "chat", "cheval" });
+      assertAnalyzesTo(fa, "", new String[] {
+      });
 
-	    assertAnalyzesTo(fa, "chien++", new String[] { "chien" });
+      assertAnalyzesTo(
+        fa,
+        "chien chat cheval",
+        new String[] { "chien", "chat", "cheval" });
 
-	    assertAnalyzesTo(
-	      fa,
-	      "mot \"entreguillemet\"",
-	      new String[] { "mot", "entreguillemet" });
+      assertAnalyzesTo(
+        fa,
+        "chien CHAT CHEVAL",
+        new String[] { "chien", "chat", "cheval" });
 
-	    // let's do some french specific tests now  
+      assertAnalyzesTo(
+        fa,
+        "  chien  ,? + = -  CHAT /: > CHEVAL",
+        new String[] { "chien", "chat", "cheval" });
 
-	    /* 1. couldn't resist
-	     I would expect this to stay one term as in French the minus 
-	    sign is often used for composing words */
-	    assertAnalyzesTo(
-	      fa,
-	      "Jean-François",
-	      new String[] { "jean", "françois" });
+      assertAnalyzesTo(fa, "chien++", new String[] { "chien" });
 
-	    // 2. stopwords
-	    assertAnalyzesTo(
-	      fa,
-	      "le la chien les aux chat du des à cheval",
-	      new String[] { "chien", "chat", "cheval" });
+      assertAnalyzesTo(
+        fa,
+        "mot \"entreguillemet\"",
+        new String[] { "mot", "entreguillemet" });
 
-	    // some nouns and adjectives
-	    assertAnalyzesTo(
-	      fa,
-	      "lances chismes habitable chiste éléments captifs",
-	      new String[] {
-	        "lanc",
-	        "chism",
-	        "habit",
-	        "chist",
-	        "élément",
-	        "captif" });
+      // let's do some french specific tests now
 
-	    // some verbs
-	    assertAnalyzesTo(
-	      fa,
-	      "finissions souffrirent rugissante",
-	      new String[] { "fin", "souffr", "rug" });
+      /* 1. couldn't resist
+       I would expect this to stay one term as in French the minus
+      sign is often used for composing words */
+      assertAnalyzesTo(
+        fa,
+        "Jean-François",
+        new String[] { "jean", "françois" });
 
-	    // some everything else
-	    // aujourd'hui stays one term which is OK
-	    assertAnalyzesTo(
-	      fa,
-	      "C3PO aujourd'hui oeuf ïâöûàä anticonstitutionnellement Java++ ",
-	      new String[] {
-	        "c3po",
-	        "aujourd'hui",
-	        "oeuf",
-	        "ïâöûàä",
-	        "anticonstitutionnel",
-	        "jav" });
+      // 2. stopwords
+      assertAnalyzesTo(
+        fa,
+        "le la chien les aux chat du des à cheval",
+        new String[] { "chien", "chat", "cheval" });
 
-	    // some more everything else
-	    // here 1940-1945 stays as one term, 1940:1945 not ?
-	    assertAnalyzesTo(
-	      fa,
-	      "33Bis 1940-1945 1940:1945 (---i+++)*",
-	      new String[] { "33bis", "1940-1945", "1940", "1945", "i" });
+      // some nouns and adjectives
+      assertAnalyzesTo(
+        fa,
+        "lances chismes habitable chiste éléments captifs",
+        new String[] {
+          "lanc",
+          "chism",
+          "habit",
+          "chist",
+          "élément",
+          "captif" });
 
-	  }
-	
-	public void testReusableTokenStream() throws Exception {
-	  FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT);
-	  // stopwords
+      // some verbs
+      assertAnalyzesTo(
+        fa,
+        "finissions souffrirent rugissante",
+        new String[] { "fin", "souffr", "rug" });
+
+      // some everything else
+      // aujourd'hui stays one term which is OK
+      assertAnalyzesTo(
+        fa,
+        "C3PO aujourd'hui oeuf ïâöûàä anticonstitutionnellement Java++ ",
+        new String[] {
+          "c3po",
+          "aujourd'hui",
+          "oeuf",
+          "ïâöûàä",
+          "anticonstitutionnel",
+          "jav" });
+
+      // some more everything else
+      // here 1940-1945 stays as one term, 1940:1945 not ?
+      assertAnalyzesTo(
+        fa,
+        "33Bis 1940-1945 1940:1945 (---i+++)*",
+        new String[] { "33bis", "1940-1945", "1940", "1945", "i" });
+
+    }
+
+  public void testReusableTokenStream() throws Exception {
+    FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT);
+    // stopwords
       assertAnalyzesToReuse(
           fa,
           "le la chien les aux chat du des à cheval",
@@ -222,7 +222,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
               "chist",
               "element",
               "captif" });
-	}
+  }
 
   public void testExclusionTableViaCtor() throws Exception {
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);

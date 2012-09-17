@@ -49,7 +49,7 @@ public class TestSynonymMap extends LuceneTestCase {
   }
   
   public void testReadMappingRules() throws Exception {
-	SlowSynonymMap synMap;
+    SlowSynonymMap synMap;
 
     // (a)->[b]
     List<String> rules = new ArrayList<String>();
@@ -244,14 +244,14 @@ public class TestSynonymMap extends LuceneTestCase {
   }
   
   public void testBigramTokenizer() throws Exception {
-	SlowSynonymMap synMap;
-	
-	// prepare bi-gram tokenizer factory
-	TokenizerFactory tf = new NGramTokenizerFactory();
-	Map<String, String> args = new HashMap<String, String>();
-	args.put("minGramSize","2");
-	args.put("maxGramSize","2");
-	tf.init( args );
+    SlowSynonymMap synMap;
+
+    // prepare bi-gram tokenizer factory
+    TokenizerFactory tf = new NGramTokenizerFactory();
+    Map<String, String> args = new HashMap<String, String>();
+    args.put("minGramSize","2");
+    args.put("maxGramSize","2");
+    tf.init( args );
 
     // (ab)->(bc)->(cd)->[ef][fg][gh]
     List<String> rules = new ArrayList<String>();

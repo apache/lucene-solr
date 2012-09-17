@@ -294,7 +294,7 @@ public class DirectSpellChecker {
    */
   public SuggestWord[] suggestSimilar(Term term, int numSug, IndexReader ir, 
       SuggestMode suggestMode) throws IOException {
-  	return suggestSimilar(term, numSug, ir, suggestMode, this.accuracy);
+    return suggestSimilar(term, numSug, ir, suggestMode, this.accuracy);
   }
   
   /**

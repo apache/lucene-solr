@@ -356,7 +356,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     // only possible writer, and it is "synchronized" to avoid this case).
     DirectoryReader r2 = DirectoryReader.openIfChanged(indexReader);
     if (r2 == null) {
-    	return false; // no changes, nothing to do
+      return false; // no changes, nothing to do
     } 
     
     // validate that a refresh is valid at this point, i.e. that the taxonomy 
@@ -364,13 +364,13 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     String t1 = indexReader.getIndexCommit().getUserData().get(DirectoryTaxonomyWriter.INDEX_CREATE_TIME);
     String t2 = r2.getIndexCommit().getUserData().get(DirectoryTaxonomyWriter.INDEX_CREATE_TIME);
     if (t1==null) {
-    	if (t2!=null) {
-    		r2.close();
-    		throw new InconsistentTaxonomyException("Taxonomy was recreated at: "+t2);
-    	}
+      if (t2!=null) {
+        r2.close();
+        throw new InconsistentTaxonomyException("Taxonomy was recreated at: "+t2);
+      }
     } else if (!t1.equals(t2)) {
-    	r2.close();
-    	throw new InconsistentTaxonomyException("Taxonomy was recreated at: "+t2+"  !=  "+t1);
+      r2.close();
+      throw new InconsistentTaxonomyException("Taxonomy was recreated at: "+t2+"  !=  "+t1);
     }
     
       IndexReader oldreader = indexReader;

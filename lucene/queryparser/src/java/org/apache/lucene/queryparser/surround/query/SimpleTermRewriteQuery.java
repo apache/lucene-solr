@@ -37,16 +37,16 @@ class SimpleTermRewriteQuery extends RewriteQuery<SimpleTerm> {
   public Query rewrite(IndexReader reader) throws IOException {
     final List<Query> luceneSubQueries = new ArrayList<Query>();
     srndQuery.visitMatchingTerms(reader, fieldName,
-	  new SimpleTerm.MatchingTermVisitor() {
-	    public void visitMatchingTerm(Term term) throws IOException {
-	      luceneSubQueries.add(qf.newTermQuery(term));
-	    }
-	  });
+    new SimpleTerm.MatchingTermVisitor() {
+      public void visitMatchingTerm(Term term) throws IOException {
+        luceneSubQueries.add(qf.newTermQuery(term));
+      }
+    });
     return  (luceneSubQueries.size() == 0) ? SrndQuery.theEmptyLcnQuery
-	  : (luceneSubQueries.size() == 1) ? luceneSubQueries.get(0)
-	  : SrndBooleanQuery.makeBooleanQuery(
-	    /* luceneSubQueries all have default weight */
-	    luceneSubQueries, BooleanClause.Occur.SHOULD); /* OR the subquery terms */
+    : (luceneSubQueries.size() == 1) ? luceneSubQueries.get(0)
+    : SrndBooleanQuery.makeBooleanQuery(
+      /* luceneSubQueries all have default weight */
+      luceneSubQueries, BooleanClause.Occur.SHOULD); /* OR the subquery terms */
   }
 }
 
