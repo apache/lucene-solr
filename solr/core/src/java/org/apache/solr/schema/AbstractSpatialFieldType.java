@@ -75,12 +75,12 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   //--------------------------------------------------------------
 
   @Override
-  public final StorableField createField(SchemaField field, Object val, float boost) {
+  public final Field createField(SchemaField field, Object val, float boost) {
     throw new IllegalStateException("should be calling createFields because isPolyField() is true");
   }
 
   @Override
-  public final StorableField[] createFields(SchemaField field, Object val, float boost) {
+  public final Field[] createFields(SchemaField field, Object val, float boost) {
     String shapeStr = null;
     Shape shape = null;
     if (val instanceof Shape) {
