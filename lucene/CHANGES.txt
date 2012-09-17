@@ -8,6 +8,11 @@ http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib
 
 ======================= Lucene 4.0.0 =======================
 
+Changes in backwards compatibility policy
+
+* LUCENE-4392: Class org.apache.lucene.util.SortedVIntList has been removed.
+  (Adrien Grand)
+
 New Features
 
 * LUCENE-1888: Added the option to store payloads in the term
