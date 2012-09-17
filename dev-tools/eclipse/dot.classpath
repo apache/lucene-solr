@@ -103,7 +103,7 @@
   <classpathentry kind="lib" path="lucene/test-framework/lib/junit-4.10.jar"/>
   <classpathentry kind="lib" path="lucene/sandbox/lib/jakarta-regexp-1.4.jar"/>
   <classpathentry kind="lib" path="lucene/analysis/icu/lib/icu4j-49.1.jar"/>
-  <classpathentry kind="lib" path="lucene/analysis/phonetic/lib/commons-codec-1.6.jar"/>
+  <classpathentry kind="lib" path="lucene/analysis/phonetic/lib/commons-codec-1.7.jar"/>
   <classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-fsa-1.5.3.jar"/>
   <classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-polish-1.5.3.jar"/>
   <classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-stemming-1.5.3.jar"/>

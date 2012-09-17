@@ -164,6 +164,9 @@ Bug Fixes
   RAM, instead of checking the estimated size of the segment
   to decide whether to cache it. (Mike McCandless)
 
+* LUCENE-3720: fix memory-consumption issues with BeiderMorseFilter.
+  (Thomas Neidhart via Robert Muir)
+
 Optimizations
 
 * LUCENE-4322: Decrease lucene-core JAR size. The core JAR size had increased a

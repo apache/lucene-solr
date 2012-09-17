@@ -31,7 +31,7 @@ lucene-analyzers-morfologik-XX.jar
 lucene-analyzers-phonetic-XX.jar
   An add-on analysis library that provides phonetic encoders via Apache
   Commons-Codec. Note: this module depends on the commons-codec jar 
-  file (version >= 1.4)
+  file
   
 lucene-analyzers-smartcn-XX.jar
   An add-on analysis library that provides word segmentation for Simplified
