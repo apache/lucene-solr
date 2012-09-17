@@ -36,9 +36,10 @@ import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
 
 /**
- * This codec extends {@link Lucene40Codec} to work on append-only outputs, such
- * as plain output streams and append-only filesystems.
- * 
+ * This codec uses an index format that is very similar to
+ * {@link Lucene40Codec} but works on append-only outputs, such as plain output
+ * streams and append-only filesystems.
+ *
  * @lucene.experimental
  */
 public class AppendingCodec extends Codec {
