@@ -188,17 +188,19 @@ public abstract class LuceneTestCase extends Assert {
   public @interface Slow {}
 
   /**
-   * Annotation for tests that fail frequently. You can disable them
-   * if you want to run a long build and not stop on something that
-   * is a known problem.
+   * Annotation for tests that fail frequently and should
+   * be moved to a <a href="https://builds.apache.org/job/Lucene-BadApples-trunk-java7/">"vault" plan in Jenkins</a>.
+   *
+   * Tests annotated with this will be turned off by default. If you want to enable
+   * them, set:
    * <pre>
-   * -Dtests.badapples=false
+   * -Dtests.badapples=true
    * </pre>
    */
   @Documented
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
-  @TestGroup(enabled = true, sysProperty = SYSPROP_BADAPPLES)
+  @TestGroup(enabled = false, sysProperty = SYSPROP_BADAPPLES)
   public @interface BadApple {}
 
   /**
