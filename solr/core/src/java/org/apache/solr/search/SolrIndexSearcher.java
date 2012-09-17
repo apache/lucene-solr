@@ -1369,7 +1369,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       TopDocsCollector topCollector;
       if (cmd.getSort() == null) {
         if(cmd.getScoreDoc() != null) {
-        	topCollector = TopScoreDocCollector.create(len, cmd.getScoreDoc(), true); //create the Collector with InOrderPagingCollector
+          topCollector = TopScoreDocCollector.create(len, cmd.getScoreDoc(), true); //create the Collector with InOrderPagingCollector
         } else {
           topCollector = TopScoreDocCollector.create(len, true);
         }
@@ -2029,11 +2029,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     
     public ScoreDoc getScoreDoc()
     {
-    	return scoreDoc;
+      return scoreDoc;
     }
     public void setScoreDoc(ScoreDoc scoreDoc)
     {
-    	this.scoreDoc = scoreDoc;
+      this.scoreDoc = scoreDoc;
     }
     //Issue 1726 end
 

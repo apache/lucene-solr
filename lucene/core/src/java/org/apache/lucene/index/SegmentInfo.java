@@ -42,9 +42,9 @@ public final class SegmentInfo {
   public static final int NO = -1;          // e.g. no norms; no deletes;
   public static final int YES = 1;          // e.g. have norms; have deletes;
 
-  public final String name;				  // unique name in dir
-  private int docCount;				  // number of docs in seg
-  public final Directory dir;				  // where segment resides
+  public final String name;     // unique name in dir
+  private int docCount;         // number of docs in seg
+  public final Directory dir;   // where segment resides
 
   private boolean isCompoundFile;
 

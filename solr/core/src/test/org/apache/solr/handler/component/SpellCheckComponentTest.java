@@ -206,55 +206,55 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     
     @Test
     public void testThresholdTokenFrequency() throws Exception {
-    	
-  	  	//"document" is in 2 documents but "another" is only in 1.  
-  	  	//So with a threshold of 29%, "another" is absent from the dictionary 
-  	  	//while "document" is present.
-    	
-  	  	assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documenq", SpellingParams.SPELLCHECK_DICT, "threshold", SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"true")
-  	        ,"/spellcheck/suggestions/[1]/suggestion==[{'word':'document','freq':2}]"
-  	    );
-  	  	
-  	  	assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documenq", SpellingParams.SPELLCHECK_DICT, "threshold_direct", SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"true")
-  	        ,"/spellcheck/suggestions/[1]/suggestion==[{'word':'document','freq':2}]"
-  	    );
-  	  	
-  	  	//TODO:  how do we make this into a 1-liner using "assertQ()" ???
-  	  	SolrCore core = h.getCore();
-  	  	SearchComponent speller = core.getSearchComponent("spellcheck");
-  	  	assertTrue("speller is null and it shouldn't be", speller != null);
-  	  	
-  	  	ModifiableSolrParams params = new ModifiableSolrParams();		
-  			params.add(SpellCheckComponent.COMPONENT_NAME, "true");
-  			params.add(SpellingParams.SPELLCHECK_COUNT, "10");	
-  			params.add(SpellingParams.SPELLCHECK_DICT, "threshold");
-  			params.add(SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"true");
-  			params.add(CommonParams.Q, "anotheq");
-  			
-  			SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
-  			SolrQueryResponse rsp = new SolrQueryResponse();
-  			rsp.add("responseHeader", new SimpleOrderedMap());
-  			SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
-  			handler.handleRequest(req, rsp);
-  			req.close();
-  			NamedList values = rsp.getValues();
-  			NamedList spellCheck = (NamedList) values.get("spellcheck");
-  			NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-  			assertTrue(suggestions.get("suggestion")==null);
-  			assertTrue((Boolean) suggestions.get("correctlySpelled")==false);
-  			
-  			params.remove(SpellingParams.SPELLCHECK_DICT);
-  			params.add(SpellingParams.SPELLCHECK_DICT, "threshold_direct");
-  			rsp = new SolrQueryResponse();
-  			rsp.add("responseHeader", new SimpleOrderedMap());
-  			req = new LocalSolrQueryRequest(core, params);
-  			handler.handleRequest(req, rsp);
-  			req.close();
-  			values = rsp.getValues();
-  			spellCheck = (NamedList) values.get("spellcheck");
-  			suggestions = (NamedList) spellCheck.get("suggestions");
-  			assertTrue(suggestions.get("suggestion")==null);
-  			
-  			assertTrue((Boolean) suggestions.get("correctlySpelled")==false);
+
+        //"document" is in 2 documents but "another" is only in 1.
+        //So with a threshold of 29%, "another" is absent from the dictionary
+        //while "document" is present.
+
+        assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documenq", SpellingParams.SPELLCHECK_DICT, "threshold", SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"true")
+            ,"/spellcheck/suggestions/[1]/suggestion==[{'word':'document','freq':2}]"
+        );
+
+        assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documenq", SpellingParams.SPELLCHECK_DICT, "threshold_direct", SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"true")
+            ,"/spellcheck/suggestions/[1]/suggestion==[{'word':'document','freq':2}]"
+        );
+
+        //TODO:  how do we make this into a 1-liner using "assertQ()" ???
+        SolrCore core = h.getCore();
+        SearchComponent speller = core.getSearchComponent("spellcheck");
+        assertTrue("speller is null and it shouldn't be", speller != null);
+
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.add(SpellCheckComponent.COMPONENT_NAME, "true");
+        params.add(SpellingParams.SPELLCHECK_COUNT, "10");
+        params.add(SpellingParams.SPELLCHECK_DICT, "threshold");
+        params.add(SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"true");
+        params.add(CommonParams.Q, "anotheq");
+
+        SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
+        SolrQueryResponse rsp = new SolrQueryResponse();
+        rsp.add("responseHeader", new SimpleOrderedMap());
+        SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+        handler.handleRequest(req, rsp);
+        req.close();
+        NamedList values = rsp.getValues();
+        NamedList spellCheck = (NamedList) values.get("spellcheck");
+        NamedList suggestions = (NamedList) spellCheck.get("suggestions");
+        assertTrue(suggestions.get("suggestion")==null);
+        assertTrue((Boolean) suggestions.get("correctlySpelled")==false);
+
+        params.remove(SpellingParams.SPELLCHECK_DICT);
+        params.add(SpellingParams.SPELLCHECK_DICT, "threshold_direct");
+        rsp = new SolrQueryResponse();
+        rsp.add("responseHeader", new SimpleOrderedMap());
+        req = new LocalSolrQueryRequest(core, params);
+        handler.handleRequest(req, rsp);
+        req.close();
+        values = rsp.getValues();
+        spellCheck = (NamedList) values.get("spellcheck");
+        suggestions = (NamedList) spellCheck.get("suggestions");
+        assertTrue(suggestions.get("suggestion")==null);
+
+        assertTrue((Boolean) suggestions.get("correctlySpelled")==false);
     }
 }

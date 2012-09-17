@@ -166,10 +166,10 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
 
 // This makes sure that there is no garbage after the query string
   final public Query TopLevelQuery(String field) throws ParseException {
-        Query q;
+  Query q;
     q = Query(field);
     jj_consume_token(0);
-                {if (true) return q;}
+    {if (true) return q;}
     throw new Error("Missing return statement in function");
   }
 

@@ -47,33 +47,33 @@ public class NvlValueSourceParser extends ValueSourceParser {
 
     @Override
     public ValueSource parse(FunctionQParser fp) throws ParseException {
-	ValueSource source = fp.parseValueSource();
-	final float nvl = fp.parseFloat();
+      ValueSource source = fp.parseValueSource();
+      final float nvl = fp.parseFloat();
 
-	return new SimpleFloatFunction(source) {
-	    @Override
+      return new SimpleFloatFunction(source) {
+        @Override
       protected String name() {
-		return "nvl";
-	    }
+          return "nvl";
+        }
 
-	    @Override
-      protected float func(int doc, FunctionValues vals) {
-		float v = vals.floatVal(doc);
-		if (v == nvlFloatValue) {
-		    return nvl;
-		} else {
-		    return v;
-		}
-	    }
-	};
+        @Override
+        protected float func(int doc, FunctionValues vals) {
+          float v = vals.floatVal(doc);
+          if (v == nvlFloatValue) {
+            return nvl;
+          } else {
+            return v;
+          }
+        }
+      };
     }
 
-    @Override
-    public void init(NamedList args) {
-	/* initialize the value to consider as null */
-	Float nvlFloatValueArg = (Float) args.get("nvlFloatValue");
-	if (nvlFloatValueArg != null) {
-	    this.nvlFloatValue = nvlFloatValueArg;
-	}
+  @Override
+  public void init(NamedList args) {
+    /* initialize the value to consider as null */
+    Float nvlFloatValueArg = (Float) args.get("nvlFloatValue");
+    if (nvlFloatValueArg != null) {
+      this.nvlFloatValue = nvlFloatValueArg;
     }
+  }
 }

@@ -257,7 +257,7 @@ public class PayloadNearQuery extends SpanNearQuery {
             getPayloads(spansArr);            
             more = spans.next();
           } while (more && (doc == spans.doc()));
-          return true;    	
+          return true;
     }
 
     @Override

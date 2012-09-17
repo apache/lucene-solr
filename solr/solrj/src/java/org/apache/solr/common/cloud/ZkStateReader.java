@@ -141,7 +141,7 @@ public class ZkStateReader {
 
           public void command() {
             try {
-            	ZkStateReader.this.createClusterStateWatchersAndUpdate();
+              ZkStateReader.this.createClusterStateWatchersAndUpdate();
             } catch (KeeperException e) {
               log.error("", e);
               throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
@@ -378,12 +378,12 @@ public class ZkStateReader {
   }
   
   abstract class RunnableWatcher implements Runnable {
-		Watcher watcher;
-		public RunnableWatcher(Watcher watcher){
-			this.watcher = watcher;
-		}
+    Watcher watcher;
+    public RunnableWatcher(Watcher watcher){
+      this.watcher = watcher;
+    }
 
-	}
+  }
   
   public String getLeaderUrl(String collection, String shard, int timeout)
       throws InterruptedException, KeeperException {

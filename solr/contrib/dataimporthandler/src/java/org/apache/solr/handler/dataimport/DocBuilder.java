@@ -89,17 +89,17 @@ public class DocBuilder {
     
     String writerClassStr = null;
     if(reqParams!=null && reqParams.getRawParams() != null) {
-    	writerClassStr = (String) reqParams.getRawParams().get(PARAM_WRITER_IMPL);
+      writerClassStr = (String) reqParams.getRawParams().get(PARAM_WRITER_IMPL);
     }
     if(writerClassStr != null && !writerClassStr.equals(DEFAULT_WRITER_NAME) && !writerClassStr.equals(DocBuilder.class.getPackage().getName() + "." + DEFAULT_WRITER_NAME)) {
-    	try {
-    		Class<DIHWriter> writerClass = loadClass(writerClassStr, dataImporter.getCore());
-    		this.writer = writerClass.newInstance();
-    	} catch (Exception e) {
-    		throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Unable to load Writer implementation:" + writerClassStr, e);
-    	}
-   	} else {
-    	writer = solrWriter;
+      try {
+        Class<DIHWriter> writerClass = loadClass(writerClassStr, dataImporter.getCore());
+        this.writer = writerClass.newInstance();
+      } catch (Exception e) {
+        throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Unable to load Writer implementation:" + writerClassStr, e);
+      }
+     } else {
+      writer = solrWriter;
     }
     ContextImpl ctx = new ContextImpl(null, null, null, null, reqParams.getRawParams(), null, this);
     writer.init(ctx);
@@ -178,111 +178,111 @@ public class DocBuilder {
   @SuppressWarnings("unchecked")
   public void execute() {
     List<EntityProcessorWrapper> epwList = null;
-  	try {
-	    dataImporter.store(DataImporter.STATUS_MSGS, statusMessages);
-	    config = dataImporter.getConfig();
-	    final AtomicLong startTime = new AtomicLong(System.currentTimeMillis());
-	    statusMessages.put(TIME_ELAPSED, new Object() {
-	      @Override
-	      public String toString() {
-	        return getTimeElapsedSince(startTime.get());
-	      }
-	    });
-	
-	    statusMessages.put(DataImporter.MSG.TOTAL_QUERIES_EXECUTED,
-	            importStatistics.queryCount);
-	    statusMessages.put(DataImporter.MSG.TOTAL_ROWS_EXECUTED,
-	            importStatistics.rowsCount);
-	    statusMessages.put(DataImporter.MSG.TOTAL_DOC_PROCESSED,
-	            importStatistics.docCount);
-	    statusMessages.put(DataImporter.MSG.TOTAL_DOCS_SKIPPED,
-	            importStatistics.skipDocCount);
-	
-	    List<String> entities = reqParams.getEntitiesToRun();
-	
-	    // Trigger onImportStart
-	    if (config.getOnImportStart() != null) {
-	      invokeEventListener(config.getOnImportStart());
-	    }
-	    AtomicBoolean fullCleanDone = new AtomicBoolean(false);
-	    //we must not do a delete of *:* multiple times if there are multiple root entities to be run
-	    Properties lastIndexTimeProps = new Properties();
-	    lastIndexTimeProps.setProperty(LAST_INDEX_KEY,
-	            DataImporter.DATE_TIME_FORMAT.get().format(dataImporter.getIndexStartTime()));
-	    
-	    epwList = new ArrayList<EntityProcessorWrapper>(config.getEntities().size());
-	    for (Entity e : config.getEntities()) {
-	      epwList.add(getEntityProcessorWrapper(e));
-	    }	    
-	    for (EntityProcessorWrapper epw : epwList) {
-	      if (entities != null && !entities.contains(epw.getEntity().getName()))
-	        continue;
-	      lastIndexTimeProps.setProperty(epw.getEntity().getName() + "." + LAST_INDEX_KEY,
-	              DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
-	      currentEntityProcessorWrapper = epw;
-	      String delQuery = epw.getEntity().getAllAttributes().get("preImportDeleteQuery");
-	      if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP) {
-	        cleanByQuery(delQuery, fullCleanDone);
-	        doDelta();
-	        delQuery = epw.getEntity().getAllAttributes().get("postImportDeleteQuery");
-	        if (delQuery != null) {
-	          fullCleanDone.set(false);
-	          cleanByQuery(delQuery, fullCleanDone);
-	        }
-	      } else {
-	        cleanByQuery(delQuery, fullCleanDone);
-	        doFullDump();
-	        delQuery = epw.getEntity().getAllAttributes().get("postImportDeleteQuery");
-	        if (delQuery != null) {
-	          fullCleanDone.set(false);
-	          cleanByQuery(delQuery, fullCleanDone);
-	        }
-	      }
-	      statusMessages.remove(DataImporter.MSG.TOTAL_DOC_PROCESSED);
-	    }
-	
-	    if (stop.get()) {
-	      // Dont commit if aborted using command=abort
-	      statusMessages.put("Aborted", DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
-	      rollback();
-	    } else {
-	      // Do not commit unnecessarily if this is a delta-import and no documents were created or deleted
-	      if (!reqParams.isClean()) {
-	        if (importStatistics.docCount.get() > 0 || importStatistics.deletedDocCount.get() > 0) {
-	          finish(lastIndexTimeProps);
-	        }
-	      } else {
-	        // Finished operation normally, commit now
-	        finish(lastIndexTimeProps);
-	      } 
-	      
-	      if (config.getOnImportEnd() != null) {
-	        invokeEventListener(config.getOnImportEnd());
-	      }
-	    }
-	
-	    statusMessages.remove(TIME_ELAPSED);
-	    statusMessages.put(DataImporter.MSG.TOTAL_DOC_PROCESSED, ""+ importStatistics.docCount.get());
-	    if(importStatistics.failedDocCount.get() > 0)
-	      statusMessages.put(DataImporter.MSG.TOTAL_FAILED_DOCS, ""+ importStatistics.failedDocCount.get());
-	
-	    statusMessages.put("Time taken", getTimeElapsedSince(startTime.get()));
-	    LOG.info("Time taken = " + getTimeElapsedSince(startTime.get()));
-	  } catch(Exception e)
-		{
-			throw new RuntimeException(e);
-		} finally
-		{
-			if (writer != null) {
-	      writer.close();
-	    }
-			if (epwList != null) {
-			  closeEntityProcessorWrappers(epwList);
-			}
-			if(reqParams.isDebug()) {
-				reqParams.getDebugInfo().debugVerboseOutput = getDebugLogger().output;	
-			}
-		}
+    try {
+      dataImporter.store(DataImporter.STATUS_MSGS, statusMessages);
+      config = dataImporter.getConfig();
+      final AtomicLong startTime = new AtomicLong(System.currentTimeMillis());
+      statusMessages.put(TIME_ELAPSED, new Object() {
+        @Override
+        public String toString() {
+          return getTimeElapsedSince(startTime.get());
+        }
+      });
+
+      statusMessages.put(DataImporter.MSG.TOTAL_QUERIES_EXECUTED,
+              importStatistics.queryCount);
+      statusMessages.put(DataImporter.MSG.TOTAL_ROWS_EXECUTED,
+              importStatistics.rowsCount);
+      statusMessages.put(DataImporter.MSG.TOTAL_DOC_PROCESSED,
+              importStatistics.docCount);
+      statusMessages.put(DataImporter.MSG.TOTAL_DOCS_SKIPPED,
+              importStatistics.skipDocCount);
+
+      List<String> entities = reqParams.getEntitiesToRun();
+
+      // Trigger onImportStart
+      if (config.getOnImportStart() != null) {
+        invokeEventListener(config.getOnImportStart());
+      }
+      AtomicBoolean fullCleanDone = new AtomicBoolean(false);
+      //we must not do a delete of *:* multiple times if there are multiple root entities to be run
+      Properties lastIndexTimeProps = new Properties();
+      lastIndexTimeProps.setProperty(LAST_INDEX_KEY,
+              DataImporter.DATE_TIME_FORMAT.get().format(dataImporter.getIndexStartTime()));
+
+      epwList = new ArrayList<EntityProcessorWrapper>(config.getEntities().size());
+      for (Entity e : config.getEntities()) {
+        epwList.add(getEntityProcessorWrapper(e));
+      }
+      for (EntityProcessorWrapper epw : epwList) {
+        if (entities != null && !entities.contains(epw.getEntity().getName()))
+          continue;
+        lastIndexTimeProps.setProperty(epw.getEntity().getName() + "." + LAST_INDEX_KEY,
+                DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
+        currentEntityProcessorWrapper = epw;
+        String delQuery = epw.getEntity().getAllAttributes().get("preImportDeleteQuery");
+        if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP) {
+          cleanByQuery(delQuery, fullCleanDone);
+          doDelta();
+          delQuery = epw.getEntity().getAllAttributes().get("postImportDeleteQuery");
+          if (delQuery != null) {
+            fullCleanDone.set(false);
+            cleanByQuery(delQuery, fullCleanDone);
+          }
+        } else {
+          cleanByQuery(delQuery, fullCleanDone);
+          doFullDump();
+          delQuery = epw.getEntity().getAllAttributes().get("postImportDeleteQuery");
+          if (delQuery != null) {
+            fullCleanDone.set(false);
+            cleanByQuery(delQuery, fullCleanDone);
+          }
+        }
+        statusMessages.remove(DataImporter.MSG.TOTAL_DOC_PROCESSED);
+      }
+
+      if (stop.get()) {
+        // Dont commit if aborted using command=abort
+        statusMessages.put("Aborted", DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
+        rollback();
+      } else {
+        // Do not commit unnecessarily if this is a delta-import and no documents were created or deleted
+        if (!reqParams.isClean()) {
+          if (importStatistics.docCount.get() > 0 || importStatistics.deletedDocCount.get() > 0) {
+            finish(lastIndexTimeProps);
+          }
+        } else {
+          // Finished operation normally, commit now
+          finish(lastIndexTimeProps);
+        }
+
+        if (config.getOnImportEnd() != null) {
+          invokeEventListener(config.getOnImportEnd());
+        }
+      }
+
+      statusMessages.remove(TIME_ELAPSED);
+      statusMessages.put(DataImporter.MSG.TOTAL_DOC_PROCESSED, ""+ importStatistics.docCount.get());
+      if(importStatistics.failedDocCount.get() > 0)
+        statusMessages.put(DataImporter.MSG.TOTAL_FAILED_DOCS, ""+ importStatistics.failedDocCount.get());
+
+      statusMessages.put("Time taken", getTimeElapsedSince(startTime.get()));
+      LOG.info("Time taken = " + getTimeElapsedSince(startTime.get()));
+    } catch(Exception e)
+    {
+      throw new RuntimeException(e);
+    } finally
+    {
+      if (writer != null) {
+        writer.close();
+      }
+      if (epwList != null) {
+        closeEntityProcessorWrappers(epwList);
+      }
+      if(reqParams.isDebug()) {
+        reqParams.getDebugInfo().debugVerboseOutput = getDebugLogger().output;
+      }
+    }
   }
   private void closeEntityProcessorWrappers(List<EntityProcessorWrapper> epwList) {
     for(EntityProcessorWrapper epw : epwList) {
@@ -506,7 +506,7 @@ public class DocBuilder {
             if (!doc.isEmpty()) {
               boolean result = writer.upload(doc);
               if(reqParams.isDebug()) {
-              	reqParams.getDebugInfo().debugDocuments.add(doc);
+                reqParams.getDebugInfo().debugDocuments.add(doc);
               }
               doc = null;
               if (result){

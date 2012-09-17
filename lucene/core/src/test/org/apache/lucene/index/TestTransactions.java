@@ -129,7 +129,7 @@ public class TestTransactions extends LuceneTestCase {
           }
           try {
             writer2.prepareCommit();
-          } catch (Throwable t) { 	
+          } catch (Throwable t) {
             writer1.rollback();
             writer2.rollback();
             return;

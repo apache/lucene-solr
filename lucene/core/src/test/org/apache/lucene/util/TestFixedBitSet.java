@@ -49,7 +49,7 @@ public class TestFixedBitSet extends LuceneTestCase {
       // aa = a.prevSetBit(aa-1);
       aa--;
       while ((aa >= 0) && (! a.get(aa))) {
-      	aa--;
+        aa--;
       }
       if (b.length() == 0) {
         bb = -1;

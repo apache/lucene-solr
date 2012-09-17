@@ -358,7 +358,7 @@ public abstract class LuceneTestCase extends Assert {
       } else {
         Logger.getLogger(LuceneTestCase.class.getSimpleName()).warning(
             "Property '" + SYSPROP_MAXFAILURES + "'=" + maxFailures + ", 'failfast' is" +
-            		" ignored.");
+            " ignored.");
       }
     }
 

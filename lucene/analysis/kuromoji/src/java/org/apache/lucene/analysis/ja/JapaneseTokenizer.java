@@ -292,12 +292,12 @@ public final class JapaneseTokenizer extends Tokenizer {
         if (!characterDefinition.isKanji((char) buffer.get(pos2))) {
           allKanji = false;
           break;
-        }				
+        }
       }
-      if (allKanji) {	// Process only Kanji keywords
+      if (allKanji) {  // Process only Kanji keywords
         return (length - SEARCH_MODE_KANJI_LENGTH) * SEARCH_MODE_KANJI_PENALTY;
       } else if (length > SEARCH_MODE_OTHER_LENGTH) {
-        return (length - SEARCH_MODE_OTHER_LENGTH) * SEARCH_MODE_OTHER_PENALTY;								
+        return (length - SEARCH_MODE_OTHER_LENGTH) * SEARCH_MODE_OTHER_PENALTY;
       }
     }
     return 0;
@@ -807,7 +807,7 @@ public final class JapaneseTokenizer extends Tokenizer {
             }
             if (characterId == characterDefinition.getCharacterClass((char) ch) &&
                 isPunctuation((char) ch) == isPunct) {
-              unknownWordLength++;    			
+              unknownWordLength++;
             } else {
               break;
             }

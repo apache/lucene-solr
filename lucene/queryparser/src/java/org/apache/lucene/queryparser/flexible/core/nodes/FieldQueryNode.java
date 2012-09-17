@@ -179,12 +179,12 @@ public class FieldQueryNode extends QueryNodeImpl implements FieldValuePairQuery
 
   }
 
-	public CharSequence getValue() {
-		return getText();
-	}
+  public CharSequence getValue() {
+    return getText();
+  }
 
-	public void setValue(CharSequence value) {
-		setText(value);
-	}
+  public void setValue(CharSequence value) {
+    setText(value);
+  }
 
 }

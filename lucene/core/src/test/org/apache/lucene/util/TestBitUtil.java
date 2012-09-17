@@ -71,12 +71,12 @@ public class TestBitUtil extends LuceneTestCase {
     long sumRes = 0;
     while (iters-- >= 0) {
       for (int i = 1; i <= 63; i++) {
-      	long a = testArg(i);
-	sumRes += BitUtil.nlz(a);
-	sumRes += BitUtil.nlz(a+1);
-	sumRes += BitUtil.nlz(a-1);
-	sumRes += BitUtil.nlz(a+10);
-	sumRes += BitUtil.nlz(a-10);
+        long a = testArg(i);
+        sumRes += BitUtil.nlz(a);
+        sumRes += BitUtil.nlz(a + 1);
+        sumRes += BitUtil.nlz(a - 1);
+        sumRes += BitUtil.nlz(a + 10);
+        sumRes += BitUtil.nlz(a - 10);
       }
     }
     return sumRes;
@@ -86,12 +86,12 @@ public class TestBitUtil extends LuceneTestCase {
     long sumRes = 0;
     while (iters-- >= 0) {
       for (int i = 1; i <= 63; i++) {
-      	long a = testArg(i);
-	sumRes += Long.numberOfLeadingZeros(a);
-	sumRes += Long.numberOfLeadingZeros(a+1);
-	sumRes += Long.numberOfLeadingZeros(a-1);
-	sumRes += Long.numberOfLeadingZeros(a+10);
-	sumRes += Long.numberOfLeadingZeros(a-10);
+        long a = testArg(i);
+        sumRes += Long.numberOfLeadingZeros(a);
+        sumRes += Long.numberOfLeadingZeros(a + 1);
+        sumRes += Long.numberOfLeadingZeros(a - 1);
+        sumRes += Long.numberOfLeadingZeros(a + 10);
+        sumRes += Long.numberOfLeadingZeros(a - 10);
       }
     }
     return sumRes;

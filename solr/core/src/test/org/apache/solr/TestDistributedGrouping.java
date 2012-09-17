@@ -140,7 +140,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
 
     commit();
 
-	  // test grouping
+    // test grouping
     // The second sort = id asc . The sorting behaviour is different in dist mode. See TopDocs#merge
     // The shard the result came from matters in the order if both document sortvalues are equal
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc");

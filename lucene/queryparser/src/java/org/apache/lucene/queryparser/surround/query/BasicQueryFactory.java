@@ -47,9 +47,9 @@ public class BasicQueryFactory {
   
   public String toString() {
     return getClass().getName()
-	  + "(maxBasicQueries: " + maxBasicQueries
-	  + ", queriesMade: " + queriesMade
-	  + ")";
+    + "(maxBasicQueries: " + maxBasicQueries
+    + ", queriesMade: " + queriesMade
+    + ")";
   }
 
   private boolean atMax() {

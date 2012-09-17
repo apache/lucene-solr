@@ -110,7 +110,7 @@ public class MultiPhraseQuery extends Query {
    * Do not modify the List or its contents.
    */
   public List<Term[]> getTermArrays() {
-	  return Collections.unmodifiableList(termArrays);
+    return Collections.unmodifiableList(termArrays);
   }
 
   /**

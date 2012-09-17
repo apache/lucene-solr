@@ -170,7 +170,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
     @Override
     public long seek(BytesRef target) {
-      int lo = 0;				  // binary search
+      int lo = 0;          // binary search
       int hi = fieldIndex.numIndexTerms - 1;
       assert totalIndexInterval > 0 : "totalIndexInterval=" + totalIndexInterval;
 

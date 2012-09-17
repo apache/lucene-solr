@@ -111,26 +111,26 @@ public class TestLongPostings extends LuceneTestCase {
     }
 
     final IndexReader r;
-	  final IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-	    .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
-	    .setMergePolicy(newLogMergePolicy());
-	  iwc.setRAMBufferSizeMB(16.0 + 16.0 * random().nextDouble());
-	  iwc.setMaxBufferedDocs(-1);
-	  final RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
-	
-	  for(int idx=0;idx<NUM_DOCS;idx++) {
-	    final Document doc = new Document();
-	    String s = isS1.get(idx) ? s1 : s2;
-	    final Field f = newTextField("field", s, Field.Store.NO);
-	    final int count = _TestUtil.nextInt(random(), 1, 4);
-	    for(int ct=0;ct<count;ct++) {
-	      doc.add(f);
-	    }
-	    riw.addDocument(doc);
-	  }
-	
-	  r = riw.getReader();
-	  riw.close();
+    final IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+      .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+      .setMergePolicy(newLogMergePolicy());
+    iwc.setRAMBufferSizeMB(16.0 + 16.0 * random().nextDouble());
+    iwc.setMaxBufferedDocs(-1);
+    final RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
+
+    for(int idx=0;idx<NUM_DOCS;idx++) {
+      final Document doc = new Document();
+      String s = isS1.get(idx) ? s1 : s2;
+      final Field f = newTextField("field", s, Field.Store.NO);
+      final int count = _TestUtil.nextInt(random(), 1, 4);
+      for(int ct=0;ct<count;ct++) {
+        doc.add(f);
+      }
+      riw.addDocument(doc);
+    }
+
+    r = riw.getReader();
+    riw.close();
 
     /*
     if (VERBOSE) {

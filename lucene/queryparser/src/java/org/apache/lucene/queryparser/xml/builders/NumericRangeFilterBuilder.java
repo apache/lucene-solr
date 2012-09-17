@@ -158,7 +158,7 @@ public class NumericRangeFilterBuilder implements FilterBuilder {
     @Override
     public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       return null;
-		}
+    }
 
-	}
+  }
 }

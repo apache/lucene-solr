@@ -117,7 +117,7 @@ public class NearSpansOrdered extends Spans {
   public int end() { return matchEnd; }
   
   public Spans[] getSubSpans() {
-	  return subSpans;
+    return subSpans;
   }  
 
   // TODO: Remove warning after API has been finalized

@@ -43,10 +43,10 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  * <pre class="prettyprint" >
  * &lt;fieldType name="descendent_path" class="solr.TextField"&gt;
  *   &lt;analyzer type="index"&gt;
- * 	   &lt;tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/" /&gt;
+ *     &lt;tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/" /&gt;
  *   &lt;/analyzer&gt;
  *   &lt;analyzer type="query"&gt;
- * 	   &lt;tokenizer class="solr.KeywordTokenizerFactory" /&gt;
+ *     &lt;tokenizer class="solr.KeywordTokenizerFactory" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>
@@ -61,10 +61,10 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  * <pre class="prettyprint" >
  * &lt;fieldType name="descendent_path" class="solr.TextField"&gt;
  *   &lt;analyzer type="index"&gt;
- * 	   &lt;tokenizer class="solr.KeywordTokenizerFactory" /&gt;
+ *     &lt;tokenizer class="solr.KeywordTokenizerFactory" /&gt;
  *   &lt;/analyzer&gt;
  *   &lt;analyzer type="query"&gt;
- * 	   &lt;tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/" /&gt;
+ *     &lt;tokenizer class="solr.PathHierarchyTokenizerFactory" delimiter="/" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;
  * </pre>

@@ -46,7 +46,7 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "ΠΡΟΫΠΟΘΕΣΕΙΣ  Άψογος, ο μεστός και οι άλλοι",
         new String[] { "προυποθεσ", "αψογ", "μεστ", "αλλ" });
   }
-	
+
   public void testReusableTokenStream() throws Exception {
     Analyzer a = new GreekAnalyzer(TEST_VERSION_CURRENT);
     // Verify the correct analysis of capitals and small accented letters, and

@@ -22,8 +22,8 @@ package org.apache.lucene.search.highlight;
  */
 public interface Encoder
 {
-	/**
-	 * @param originalText The section of text being output
-	 */
-	String encodeText(String originalText);
+  /**
+   * @param originalText The section of text being output
+   */
+  String encodeText(String originalText);
 }

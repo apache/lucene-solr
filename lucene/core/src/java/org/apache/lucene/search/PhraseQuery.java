@@ -281,7 +281,7 @@ public class PhraseQuery extends Query {
         ArrayUtil.mergeSort(postingsFreqs);
       }
 
-      if (slop == 0) {				  // optimize exact case
+      if (slop == 0) {  // optimize exact case
         ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity.exactSimScorer(stats, context));
         if (s.noDocs) {
           return null;

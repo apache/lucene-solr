@@ -32,10 +32,10 @@ import java.util.Map;
  * Filters are cached in an LRU Cache keyed on the contained query or filter object. Using this will
  * speed up overall performance for repeated uses of the same expensive query/filter. The sorts of
  * queries/filters likely to benefit from caching need not necessarily be complex - e.g. simple
- * TermQuerys with a large DF (document frequency) can be expensive	on large indexes.
- * A good example of this might be a term query on a field with only 2 possible	values -
+ * TermQuerys with a large DF (document frequency) can be expensive  on large indexes.
+ * A good example of this might be a term query on a field with only 2 possible  values -
  * "true" or "false". In a large index, querying or filtering on this field requires reading
- * millions	of document ids from disk which can more usefully be cached as a filter bitset.
+ * millions  of document ids from disk which can more usefully be cached as a filter bitset.
  * <p/>
  * For Queries/Filters to be cached and reused the object must implement hashcode and
  * equals methods correctly so that duplicate queries/filters can be detected in the cache.

@@ -92,9 +92,9 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   
   @Override
   public void extractTerms(Set<Term> terms) {
-	    for (final SpanQuery clause : clauses) {
-	      clause.extractTerms(terms);
-	    }
+    for (final SpanQuery clause : clauses) {
+      clause.extractTerms(terms);
+    }
   }  
   
 

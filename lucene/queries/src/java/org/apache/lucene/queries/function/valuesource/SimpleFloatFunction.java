@@ -40,11 +40,11 @@ import java.util.Map;
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
-	return func(doc, vals);
+        return func(doc, vals);
       }
       @Override
       public String toString(int doc) {
-	return name() + '(' + vals.toString(doc) + ')';
+        return name() + '(' + vals.toString(doc) + ')';
       }
     };
   }

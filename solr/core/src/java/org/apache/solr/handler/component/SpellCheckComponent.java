@@ -191,41 +191,41 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   }
   
   @SuppressWarnings("unchecked")
-	protected void addCollationsToResponse(SolrParams params, SpellingResult spellingResult, ResponseBuilder rb, String q,
-	    NamedList response, boolean suggestionsMayOverlap) {
-		int maxCollations = params.getInt(SPELLCHECK_MAX_COLLATIONS, 1);
-		int maxCollationTries = params.getInt(SPELLCHECK_MAX_COLLATION_TRIES, 0);
-		int maxCollationEvaluations = params.getInt(SPELLCHECK_MAX_COLLATION_EVALUATIONS, 10000);
-		boolean collationExtendedResults = params.getBool(SPELLCHECK_COLLATE_EXTENDED_RESULTS, false);
-		boolean shard = params.getBool(ShardParams.IS_SHARD, false);
+  protected void addCollationsToResponse(SolrParams params, SpellingResult spellingResult, ResponseBuilder rb, String q,
+      NamedList response, boolean suggestionsMayOverlap) {
+    int maxCollations = params.getInt(SPELLCHECK_MAX_COLLATIONS, 1);
+    int maxCollationTries = params.getInt(SPELLCHECK_MAX_COLLATION_TRIES, 0);
+    int maxCollationEvaluations = params.getInt(SPELLCHECK_MAX_COLLATION_EVALUATIONS, 10000);
+    boolean collationExtendedResults = params.getBool(SPELLCHECK_COLLATE_EXTENDED_RESULTS, false);
+    boolean shard = params.getBool(ShardParams.IS_SHARD, false);
 
-		SpellCheckCollator collator = new SpellCheckCollator();
-		List<SpellCheckCollation> collations = collator.collate(spellingResult, q, rb, maxCollations, maxCollationTries, maxCollationEvaluations, suggestionsMayOverlap);
+    SpellCheckCollator collator = new SpellCheckCollator();
+    List<SpellCheckCollation> collations = collator.collate(spellingResult, q, rb, maxCollations, maxCollationTries, maxCollationEvaluations, suggestionsMayOverlap);
     //by sorting here we guarantee a non-distributed request returns all 
-		//results in the same order as a distributed request would, 
-		//even in cases when the internal rank is the same.
-		Collections.sort(collations);
-		
-		for (SpellCheckCollation collation : collations) {
-			if (collationExtendedResults) {
-				NamedList extendedResult = new NamedList();
-				extendedResult.add("collationQuery", collation.getCollationQuery());
-				extendedResult.add("hits", collation.getHits());
-				extendedResult.add("misspellingsAndCorrections", collation.getMisspellingsAndCorrections());
-				if(maxCollationTries>0 && shard)
-				{
-					extendedResult.add("collationInternalRank", collation.getInternalRank());
-				}
-				response.add("collation", extendedResult);
-			} else {
-				response.add("collation", collation.getCollationQuery());
-				if(maxCollationTries>0 && shard)
-				{
-					response.add("collationInternalRank", collation.getInternalRank());
-				}
-			}
-		}
-	}
+    //results in the same order as a distributed request would,
+    //even in cases when the internal rank is the same.
+    Collections.sort(collations);
+
+    for (SpellCheckCollation collation : collations) {
+      if (collationExtendedResults) {
+        NamedList extendedResult = new NamedList();
+        extendedResult.add("collationQuery", collation.getCollationQuery());
+        extendedResult.add("hits", collation.getHits());
+        extendedResult.add("misspellingsAndCorrections", collation.getMisspellingsAndCorrections());
+        if(maxCollationTries>0 && shard)
+        {
+          extendedResult.add("collationInternalRank", collation.getInternalRank());
+        }
+        response.add("collation", extendedResult);
+      } else {
+        response.add("collation", collation.getCollationQuery());
+        if(maxCollationTries>0 && shard)
+        {
+          response.add("collationInternalRank", collation.getInternalRank());
+        }
+      }
+    }
+  }
 
   /**
    * For every param that is of the form "spellcheck.[dictionary name].XXXX=YYYY, add
@@ -297,8 +297,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           NamedList nl = (NamedList) srsp.getSolrResponse().getResponse().get("spellcheck");
           LOG.info(srsp.getShard() + " " + nl);
           if (nl != null) {
-          	mergeData.totalNumberShardResponses++;
-          	collectShardSuggestions(nl, mergeData);          
+            mergeData.totalNumberShardResponses++;
+            collectShardSuggestions(nl, mergeData);
             collectShardCollations(mergeData, nl, maxCollationTries);
           }
         }
@@ -317,22 +317,22 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       SpellCheckCollation[] sortedCollations = mergeData.collations.values()
           .toArray(new SpellCheckCollation[mergeData.collations.size()]);
       Arrays.sort(sortedCollations);
-			int i = 0;
-			while (i < maxCollations && i < sortedCollations.length) {
-				SpellCheckCollation collation = sortedCollations[i];
-				i++;
-				if (collationExtendedResults) {
-					NamedList extendedResult = new NamedList();
-					extendedResult.add("collationQuery", collation.getCollationQuery());
-					extendedResult.add("hits", collation.getHits());
-					extendedResult.add("misspellingsAndCorrections", collation
-							.getMisspellingsAndCorrections());
-					suggestions.add("collation", extendedResult);
-				} else {
-					suggestions.add("collation", collation.getCollationQuery());
-				}
-			}
-		}
+      int i = 0;
+      while (i < maxCollations && i < sortedCollations.length) {
+        SpellCheckCollation collation = sortedCollations[i];
+        i++;
+        if (collationExtendedResults) {
+          NamedList extendedResult = new NamedList();
+          extendedResult.add("collationQuery", collation.getCollationQuery());
+          extendedResult.add("hits", collation.getHits());
+          extendedResult.add("misspellingsAndCorrections", collation
+              .getMisspellingsAndCorrections());
+          suggestions.add("collation", extendedResult);
+        } else {
+          suggestions.add("collation", collation.getCollationQuery());
+        }
+      }
+    }
     
     response.add("suggestions", suggestions);
     rb.rsp.add("spellcheck", response);

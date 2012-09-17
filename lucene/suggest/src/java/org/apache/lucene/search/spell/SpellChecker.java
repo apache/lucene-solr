@@ -283,7 +283,7 @@ public class SpellChecker implements java.io.Closeable {
    */
   public String[] suggestSimilar(String word, int numSug, IndexReader ir,
       String field, SuggestMode suggestMode) throws IOException {
-  	return suggestSimilar(word, numSug, ir, field, suggestMode, this.accuracy);
+    return suggestSimilar(word, numSug, ir, field, suggestMode, this.accuracy);
   }
   
   /**

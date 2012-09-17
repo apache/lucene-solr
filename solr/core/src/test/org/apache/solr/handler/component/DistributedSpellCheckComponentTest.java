@@ -42,12 +42,12 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
   private String requestHandlerName;
   private String reqHandlerWithWordbreak;
   
-	public DistributedSpellCheckComponentTest()
-	{
-		//fixShardCount=true;
-		//shardCount=2;
-		//stress=0;
-	}
+  public DistributedSpellCheckComponentTest()
+  {
+    //fixShardCount=true;
+    //shardCount=2;
+    //stress=0;
+  }
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -100,7 +100,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
   
   @Override
   public void doTest() throws Exception {
-  	del("*:*");
+    del("*:*");
     index(id, "1", "lowerfilt", "toyota");
     index(id, "2", "lowerfilt", "chevrolet");
     index(id, "3", "lowerfilt", "suzuki");

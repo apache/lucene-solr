@@ -79,7 +79,7 @@ APOSTROPHE =  {ALPHA} ("'" {ALPHA})+
 // use a post-filter to remove dots
 ACRONYM    =  {LETTER} "." ({LETTER} ".")+
 
-ACRONYM_DEP	= {ALPHANUM} "." ({ALPHANUM} ".")+
+ACRONYM_DEP  = {ALPHANUM} "." ({ALPHANUM} ".")+
 
 // company names like AT&T and Excite@Home.
 COMPANY    =  {ALPHA} ("&"|"@") {ALPHA}
@@ -100,7 +100,7 @@ NUM        = ({ALPHANUM} {P} {HAS_DIGIT}
            | {HAS_DIGIT} {P} {ALPHANUM} ({P} {HAS_DIGIT} {P} {ALPHANUM})+)
 
 // punctuation
-P	         = ("_"|"-"|"/"|"."|",")
+P           = ("_"|"-"|"/"|"."|",")
 
 // at least one digit
 HAS_DIGIT  = ({LETTER}|[:digit:])* [:digit:] ({LETTER}|[:digit:])*

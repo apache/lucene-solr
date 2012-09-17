@@ -112,65 +112,65 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   
   @Test
   public void testReadDelete() throws Exception {
-	    String xml =
-	      "<update>" +
-	      " <delete>" +
-	      "   <query>id:150</query>" +
-	      "   <id>150</id>" +
-	      "   <id>200</id>" +
-	      "   <query>id:200</query>" +
-	      " </delete>" +
-	      " <delete commitWithin=\"500\">" +
-	      "   <query>id:150</query>" +
-	      " </delete>" +
-	      " <delete>" +
-	      "   <id>150</id>" +
-	      " </delete>" +
-	      "</update>";
-	    
-	    MockUpdateRequestProcessor p = new MockUpdateRequestProcessor(null);
-	    p.expectDelete(null, "id:150", -1);
-	    p.expectDelete("150", null, -1);
-	    p.expectDelete("200", null, -1);
-	    p.expectDelete(null, "id:200", -1);
-	    p.expectDelete(null, "id:150", 500);
-	    p.expectDelete("150", null, -1);
+      String xml =
+        "<update>" +
+        " <delete>" +
+        "   <query>id:150</query>" +
+        "   <id>150</id>" +
+        "   <id>200</id>" +
+        "   <query>id:200</query>" +
+        " </delete>" +
+        " <delete commitWithin=\"500\">" +
+        "   <query>id:150</query>" +
+        " </delete>" +
+        " <delete>" +
+        "   <id>150</id>" +
+        " </delete>" +
+        "</update>";
 
-	    XMLLoader loader = new XMLLoader().init(null);
-	    loader.load(req(), new SolrQueryResponse(), new ContentStreamBase.StringStream(xml), p);
-	    
-	    p.assertNoCommandsPending();
-	  }
-	  
-	  private class MockUpdateRequestProcessor extends UpdateRequestProcessor {
-	    
-	    private Queue<DeleteUpdateCommand> deleteCommands = new LinkedList<DeleteUpdateCommand>();
-	    
-	    public MockUpdateRequestProcessor(UpdateRequestProcessor next) {
-	      super(next);
-	    }
-	    
-	    public void expectDelete(String id, String query, int commitWithin) {
-	      DeleteUpdateCommand cmd = new DeleteUpdateCommand(null);
-	      cmd.id = id;
-	      cmd.query = query;
-	      cmd.commitWithin = commitWithin;
-	      deleteCommands.add(cmd);
-	    }
-	    
-	    public void assertNoCommandsPending() {
-	      assertTrue(deleteCommands.isEmpty());
-	    }
-	    
-	    @Override
-	    public void processDelete(DeleteUpdateCommand cmd) throws IOException {
-	      DeleteUpdateCommand expected = deleteCommands.poll();
-	      assertNotNull("Unexpected delete command: [" + cmd + "]", expected);
-	      assertTrue("Expected [" + expected + "] but found [" + cmd + "]",
-	          ObjectUtils.equals(expected.id, cmd.id) &&
-	          ObjectUtils.equals(expected.query, cmd.query) &&
-	          expected.commitWithin==cmd.commitWithin);
-	    }
-	  }
+      MockUpdateRequestProcessor p = new MockUpdateRequestProcessor(null);
+      p.expectDelete(null, "id:150", -1);
+      p.expectDelete("150", null, -1);
+      p.expectDelete("200", null, -1);
+      p.expectDelete(null, "id:200", -1);
+      p.expectDelete(null, "id:150", 500);
+      p.expectDelete("150", null, -1);
+
+      XMLLoader loader = new XMLLoader().init(null);
+      loader.load(req(), new SolrQueryResponse(), new ContentStreamBase.StringStream(xml), p);
+
+      p.assertNoCommandsPending();
+    }
+
+    private class MockUpdateRequestProcessor extends UpdateRequestProcessor {
+
+      private Queue<DeleteUpdateCommand> deleteCommands = new LinkedList<DeleteUpdateCommand>();
+
+      public MockUpdateRequestProcessor(UpdateRequestProcessor next) {
+        super(next);
+      }
+
+      public void expectDelete(String id, String query, int commitWithin) {
+        DeleteUpdateCommand cmd = new DeleteUpdateCommand(null);
+        cmd.id = id;
+        cmd.query = query;
+        cmd.commitWithin = commitWithin;
+        deleteCommands.add(cmd);
+      }
+
+      public void assertNoCommandsPending() {
+        assertTrue(deleteCommands.isEmpty());
+      }
+
+      @Override
+      public void processDelete(DeleteUpdateCommand cmd) throws IOException {
+        DeleteUpdateCommand expected = deleteCommands.poll();
+        assertNotNull("Unexpected delete command: [" + cmd + "]", expected);
+        assertTrue("Expected [" + expected + "] but found [" + cmd + "]",
+            ObjectUtils.equals(expected.id, cmd.id) &&
+            ObjectUtils.equals(expected.query, cmd.query) &&
+            expected.commitWithin==cmd.commitWithin);
+      }
+    }
 
 }

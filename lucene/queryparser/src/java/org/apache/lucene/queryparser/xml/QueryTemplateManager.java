@@ -199,5 +199,5 @@ public class QueryTemplateManager {
     org.w3c.dom.Document xslDoc = builder.parse(xslIs);
     DOMSource ds = new DOMSource(xslDoc);
     return tFactory.newTemplates(ds);
-	}
+  }
 }
