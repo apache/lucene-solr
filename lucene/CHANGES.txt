@@ -10,8 +10,9 @@ Bug Fixes:
 * LUCENE-4234: Exception when FacetsCollector is used with ScoreFacetRequest, 
   and the number of matching documents is too large. (Gilad Barkai via Shai Erera)
 
-* LUCENE-2686, LUCENE-3505: Fix BooleanQuery scorers to return correct freq().
-  (Koji Sekiguchi, Mike McCandless, Robert Muir)
+* LUCENE-2686, LUCENE-3505, LUCENE-4401: Fix BooleanQuery scorers to 
+  return correct freq().
+  (Koji Sekiguchi, Mike McCandless, Liu Chao, Robert Muir)
 
 * LUCENE-2501: Fixed rare thread-safety issue that could cause
   ArrayIndexOutOfBoundsException inside ByteBlockPool (Robert Muir,

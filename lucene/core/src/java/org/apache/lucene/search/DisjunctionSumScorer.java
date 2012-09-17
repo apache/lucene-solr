@@ -68,6 +68,7 @@ class DisjunctionSumScorer extends DisjunctionScorer {
 
   @Override
   public int nextDoc() throws IOException {
+    assert doc != NO_MORE_DOCS;
     while(true) {
       while (subScorers[0].docID() == doc) {
         if (subScorers[0].nextDoc() != NO_MORE_DOCS) {
@@ -91,10 +92,14 @@ class DisjunctionSumScorer extends DisjunctionScorer {
   private void afterNext() throws IOException {
     final Scorer sub = subScorers[0];
     doc = sub.docID();
-    score = sub.score();
-    nrMatchers = 1;
-    countMatches(1);
-    countMatches(2);
+    if (doc == NO_MORE_DOCS) {
+      nrMatchers = Integer.MAX_VALUE; // stop looping
+    } else {
+      score = sub.score();
+      nrMatchers = 1;
+      countMatches(1);
+      countMatches(2);
+    }
   }
   
   // TODO: this currently scores, but so did the previous impl
