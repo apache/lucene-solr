@@ -56,6 +56,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     clearIndex();
+    assertU(commit());
   }
 
   private void setupDocs() {
