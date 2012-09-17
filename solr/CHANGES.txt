@@ -71,6 +71,9 @@ New Features
   to query on these shapes too.  Polygons requires adding JTS to the classpath.
   (David Smiley)
 
+* SOLR-3825: Added optional capability to log what ids are in a response
+        (Scott Stults via gsingers)
+
 Optimizations
 ----------------------
 
