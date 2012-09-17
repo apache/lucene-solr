@@ -243,6 +243,7 @@ Bug Fixes
 
 * SOLR-3645: /terms should default to distrib=false. (Nick Cotton, Mark Miller)
 
+* SOLR-3759: Various fixes to the example-DIH configs (Ahmet Arslan, hossman)
 
 Other Changes
 ----------------------

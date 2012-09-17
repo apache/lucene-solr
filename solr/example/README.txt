@@ -54,7 +54,7 @@ container).  To run other example configurations, you can specify the
 solr.solr.home system property when starting jetty...
 
   java -Dsolr.solr.home=multicore -jar start.jar
-  java -Dsolr.solr.home=example-DIH -jar start.jar
+  java -Dsolr.solr.home=example-DIH/solr -jar start.jar
 
 * References to Jar Files Outside This Directory *
 
