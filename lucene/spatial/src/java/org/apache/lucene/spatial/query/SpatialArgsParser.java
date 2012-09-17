@@ -45,6 +45,9 @@ import java.util.StringTokenizer;
  */
 public class SpatialArgsParser {
 
+  public static final String DIST_ERR_PCT = "distErrPct";
+  public static final String DIST_ERR = "distErr";
+
   /** Writes a close approximation to the parsed input format. */
   static String writeSpatialArgs(SpatialArgs args) {
     StringBuilder str = new StringBuilder();
@@ -90,8 +93,8 @@ public class SpatialArgsParser {
       body = v.substring(edx + 1).trim();
       if (body.length() > 0) {
         Map<String, String> aa = parseMap(body);
-        args.setDistErrPct(readDouble(aa.remove("distErrPct")));
-        args.setDistErr(readDouble(aa.remove("distErr")));
+        args.setDistErrPct(readDouble(aa.remove(DIST_ERR_PCT)));
+        args.setDistErr(readDouble(aa.remove(DIST_ERR)));
         if (!aa.isEmpty()) {
           throw new IllegalArgumentException("unused parameters: " + aa, null);
         }
