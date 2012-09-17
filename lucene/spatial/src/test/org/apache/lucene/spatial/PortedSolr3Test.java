@@ -58,36 +58,30 @@ public class PortedSolr3Test extends StrategyTestCase {
 
     grid = new GeohashPrefixTree(ctx,12);
     strategy = new RecursivePrefixTreeStrategy(grid, "recursive_geohash");
-    ctorArgs.add(new Object[]{new Param(strategy, "recursive_geohash")});
+    ctorArgs.add(new Object[]{new Param(strategy)});
 
     grid = new QuadPrefixTree(ctx,25);
     strategy = new RecursivePrefixTreeStrategy(grid, "recursive_quad");
-    ctorArgs.add(new Object[]{new Param(strategy, "recursive_quad")});
+    ctorArgs.add(new Object[]{new Param(strategy)});
 
     grid = new GeohashPrefixTree(ctx,12);
     strategy = new TermQueryPrefixTreeStrategy(grid, "termquery_geohash");
-    ctorArgs.add(new Object[]{new Param(strategy, "termquery_geohash")});
+    ctorArgs.add(new Object[]{new Param(strategy)});
 
     strategy = new TwoDoublesStrategy(ctx, "twodoubles");
-    ctorArgs.add(new Object[]{new Param(strategy, "twodoubles")});
+    ctorArgs.add(new Object[]{new Param(strategy)});
 
     return ctorArgs;
   }
   
-  // this is a hack for clover!
+  // this is a hack for clover! (otherwise strategy.toString() used as file name)
   static class Param {
     SpatialStrategy strategy;
-    String description;
 
-    Param(SpatialStrategy strategy, String description) {
-      this.strategy = strategy;
-      this.description = description;
-    }
+    Param(SpatialStrategy strategy) { this.strategy = strategy; }
     
     @Override
-    public String toString() {
-      return description;
-    }
+    public String toString() { return strategy.getFieldName(); }
   }
 
 //  private String fieldName;
