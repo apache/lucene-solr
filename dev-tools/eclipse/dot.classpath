@@ -19,110 +19,110 @@
   <classpathentry kind="src" path="lucene/sandbox/src/test"/>
   <classpathentry kind="src" path="lucene/test-framework/src/java"/>
   <classpathentry kind="src" output="eclipse-build/tests-framework" path="lucene/test-framework/src/resources"/>
-	<classpathentry kind="src" path="lucene/analysis/common/src/java"/>
-	<classpathentry kind="src" output="eclipse-build/analysis-common"  path="lucene/analysis/common/src/resources"/>
-	<classpathentry kind="src" path="lucene/analysis/common/src/test"/>
-	<classpathentry kind="src" path="lucene/analysis/icu/src/java"/>
-	<classpathentry kind="src" output="eclipse-build/analysis-icu" path="lucene/analysis/icu/src/resources"/>
-	<classpathentry kind="src" path="lucene/analysis/icu/src/test"/>
-	<classpathentry kind="src" path="lucene/analysis/kuromoji/src/java"/>
-	<classpathentry kind="src" output="eclipse-build/analysis-kuromoji" path="lucene/analysis/kuromoji/src/resources"/>
-	<classpathentry kind="src" path="lucene/analysis/kuromoji/src/test"/>
-	<classpathentry kind="src" path="lucene/analysis/phonetic/src/java"/>
-	<classpathentry kind="src" output="eclipse-build/analysis-phonetic" path="lucene/analysis/phonetic/src/resources"/>
-	<classpathentry kind="src" path="lucene/analysis/phonetic/src/test"/>
-	<classpathentry kind="src" path="lucene/analysis/smartcn/src/java"/>
-	<classpathentry kind="src" output="eclipse-build/analysis-smartcn" path="lucene/analysis/smartcn/src/resources"/>
-	<classpathentry kind="src" path="lucene/analysis/smartcn/src/test"/>
-	<classpathentry kind="src" path="lucene/analysis/stempel/src/java"/>
-	<classpathentry kind="src" output="eclipse-build/analysis-stempel" path="lucene/analysis/stempel/src/resources"/>
-	<classpathentry kind="src" path="lucene/analysis/stempel/src/test"/>
-	<classpathentry kind="src" path="lucene/analysis/morfologik/src/java"/>
-	<classpathentry kind="src" output="eclipse-build/analysis-morfologik" path="lucene/analysis/morfologik/src/resources"/>
-	<classpathentry kind="src" path="lucene/analysis/morfologik/src/test"/>
-	<classpathentry kind="src" path="lucene/analysis/uima/src/java"/>
-	<classpathentry kind="src" output="eclipse-build/analysis-uima" path="lucene/analysis/uima/src/resources"/>
-	<classpathentry kind="src" path="lucene/analysis/uima/src/test"/>
-	<classpathentry kind="src" path="lucene/benchmark/src/java"/>
-	<classpathentry kind="src" path="lucene/benchmark/src/test"/>
+  <classpathentry kind="src" path="lucene/analysis/common/src/java"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-common" path="lucene/analysis/common/src/resources"/>
+  <classpathentry kind="src" path="lucene/analysis/common/src/test"/>
+  <classpathentry kind="src" path="lucene/analysis/icu/src/java"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-icu" path="lucene/analysis/icu/src/resources"/>
+  <classpathentry kind="src" path="lucene/analysis/icu/src/test"/>
+  <classpathentry kind="src" path="lucene/analysis/kuromoji/src/java"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-kuromoji" path="lucene/analysis/kuromoji/src/resources"/>
+  <classpathentry kind="src" path="lucene/analysis/kuromoji/src/test"/>
+  <classpathentry kind="src" path="lucene/analysis/phonetic/src/java"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-phonetic" path="lucene/analysis/phonetic/src/resources"/>
+  <classpathentry kind="src" path="lucene/analysis/phonetic/src/test"/>
+  <classpathentry kind="src" path="lucene/analysis/smartcn/src/java"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-smartcn" path="lucene/analysis/smartcn/src/resources"/>
+  <classpathentry kind="src" path="lucene/analysis/smartcn/src/test"/>
+  <classpathentry kind="src" path="lucene/analysis/stempel/src/java"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-stempel" path="lucene/analysis/stempel/src/resources"/>
+  <classpathentry kind="src" path="lucene/analysis/stempel/src/test"/>
+  <classpathentry kind="src" path="lucene/analysis/morfologik/src/java"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-morfologik" path="lucene/analysis/morfologik/src/resources"/>
+  <classpathentry kind="src" path="lucene/analysis/morfologik/src/test"/>
+  <classpathentry kind="src" path="lucene/analysis/uima/src/java"/>
+  <classpathentry kind="src" output="eclipse-build/analysis-uima" path="lucene/analysis/uima/src/resources"/>
+  <classpathentry kind="src" path="lucene/analysis/uima/src/test"/>
+  <classpathentry kind="src" path="lucene/benchmark/src/java"/>
+  <classpathentry kind="src" path="lucene/benchmark/src/test"/>
   <classpathentry excluding="src" including="conf/**" kind="src" path="lucene/benchmark"/>
-	<classpathentry kind="src" path="lucene/facet/src/java"/>
-	<classpathentry kind="src" path="lucene/facet/src/examples"/>
-	<classpathentry kind="src" path="lucene/facet/src/test"/>
-	<classpathentry kind="src" path="lucene/grouping/src/java"/>
-	<classpathentry kind="src" path="lucene/grouping/src/test"/>
-	<classpathentry kind="src" path="lucene/join/src/java"/>
-	<classpathentry kind="src" path="lucene/join/src/test"/>
-	<classpathentry kind="src" path="lucene/queries/src/java"/>
-	<classpathentry kind="src" path="lucene/queries/src/test"/>
-	<classpathentry kind="src" path="lucene/queryparser/src/java"/>
-	<classpathentry kind="src" path="lucene/queryparser/src/resources"/>
-	<classpathentry kind="src" path="lucene/queryparser/src/test"/>
-	<classpathentry kind="src" path="lucene/suggest/src/java"/>
-	<classpathentry kind="src" path="lucene/suggest/src/test"/>
-	<classpathentry kind="src" path="lucene/spatial/src/java"/>
-	<classpathentry kind="src" path="lucene/spatial/src/test"/>
-	<classpathentry kind="src" path="lucene/spatial/src/test-files"/>
-	<classpathentry kind="lib" path="lucene/spatial/lib/spatial4j-0.3.jar"/>
-	<classpathentry kind="src" path="solr/core/src/java"/>
-	<classpathentry kind="src" path="solr/core/src/test"/>
-	<classpathentry kind="src" path="solr/core/src/test-files"/>
-	<classpathentry kind="src" path="solr/solrj/src/java"/>
-	<classpathentry kind="src" path="solr/solrj/src/test"/>
-	<classpathentry kind="src" path="solr/solrj/src/test-files"/>
-	<classpathentry kind="src" path="solr/test-framework/src/java"/>
-	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/java"/>
-	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/test"/>
-	<classpathentry kind="src" path="solr/contrib/analysis-extras/src/test-files"/>
-	<classpathentry kind="src" path="solr/contrib/clustering/src/java"/>
-	<classpathentry kind="src" path="solr/contrib/clustering/src/test"/>
-	<classpathentry kind="src" path="solr/contrib/clustering/src/test-files"/>
-	<classpathentry kind="src" path="solr/contrib/dataimporthandler/src/java"/>
-	<classpathentry kind="src" path="solr/contrib/dataimporthandler/src/test"/>
-	<classpathentry kind="src" path="solr/contrib/dataimporthandler/src/test-files"/>
-	<classpathentry kind="src" path="solr/contrib/dataimporthandler-extras/src/java"/>
-	<classpathentry kind="src" path="solr/contrib/dataimporthandler-extras/src/test"/>
-	<classpathentry kind="src" path="solr/contrib/dataimporthandler-extras/src/test-files"/>
-	<classpathentry kind="src" path="solr/contrib/extraction/src/java"/>
-	<classpathentry kind="src" path="solr/contrib/extraction/src/test"/>
-	<classpathentry kind="src" path="solr/contrib/extraction/src/test-files"/>
-	<classpathentry kind="src" path="solr/contrib/langid/src/java"/>
-	<classpathentry kind="src" path="solr/contrib/langid/src/resources"/>
-	<classpathentry kind="src" path="solr/contrib/langid/src/test"/>
-	<classpathentry kind="src" path="solr/contrib/langid/src/test-files"/>
-	<classpathentry kind="src" path="solr/contrib/uima/src/java"/>
-	<classpathentry kind="src" path="solr/contrib/uima/src/resources"/>
-	<classpathentry kind="src" path="solr/contrib/uima/src/test"/>
-	<classpathentry kind="src" path="solr/contrib/uima/src/test-files"/>
-	<classpathentry kind="src" path="solr/contrib/velocity/src/java"/>
-	<classpathentry kind="src" path="solr/contrib/velocity/src/test"/>
-	<classpathentry kind="src" path="solr/contrib/velocity/src/test-files"/>
-	<classpathentry kind="lib" path="lucene/test-framework/lib/ant-1.8.2.jar"/>
-	<classpathentry kind="lib" path="lucene/test-framework/lib/junit-4.10.jar"/>
-	<classpathentry kind="lib" path="lucene/sandbox/lib/jakarta-regexp-1.4.jar"/>
-	<classpathentry kind="lib" path="lucene/analysis/icu/lib/icu4j-49.1.jar"/>
-	<classpathentry kind="lib" path="lucene/analysis/phonetic/lib/commons-codec-1.6.jar"/>
-	<classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-fsa-1.5.3.jar"/>
-	<classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-polish-1.5.3.jar"/>
-	<classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-stemming-1.5.3.jar"/>
-	<classpathentry kind="lib" path="lucene/benchmark/lib/commons-compress-1.4.1.jar"/>
-	<classpathentry kind="lib" path="lucene/benchmark/lib/xercesImpl-2.9.1.jar"/>
-	<classpathentry kind="lib" path="lucene/benchmark/lib/nekohtml-1.9.15.jar"/>
-	<classpathentry kind="lib" path="solr/core/lib/commons-fileupload-1.2.1.jar"/>
-	<classpathentry kind="lib" path="solr/core/lib/commons-cli-1.2.jar"/>
-	<classpathentry kind="lib" path="solr/solrj/lib/httpclient-4.1.3.jar"/>
-	<classpathentry kind="lib" path="solr/solrj/lib/httpcore-4.1.4.jar"/>
-	<classpathentry kind="lib" path="solr/solrj/lib/httpmime-4.1.3.jar"/>
-	<classpathentry kind="lib" path="solr/solrj/lib/commons-io-2.1.jar"/>
-	<classpathentry kind="lib" path="solr/core/lib/commons-lang-2.6.jar"/>
-	<classpathentry kind="lib" path="solr/core/lib/easymock-2.2.jar"/>
-	<classpathentry kind="lib" path="solr/core/lib/guava-r05.jar"/>
-	<classpathentry kind="lib" path="solr/solrj/lib/jcl-over-slf4j-1.6.4.jar"/>
-	<classpathentry kind="lib" path="solr/solrj/lib/log4j-over-slf4j-1.6.4.jar"/>
-	<classpathentry kind="lib" path="solr/solrj/lib/slf4j-api-1.6.4.jar"/>
-	<classpathentry kind="lib" path="solr/solrj/lib/slf4j-jdk14-1.6.4.jar"/>
-	<classpathentry kind="lib" path="solr/solrj/lib/wstx-asl-3.2.7.jar"/>
-	<classpathentry kind="lib" path="solr/solrj/lib/zookeeper-3.3.6.jar"/>
+  <classpathentry kind="src" path="lucene/facet/src/java"/>
+  <classpathentry kind="src" path="lucene/facet/src/examples"/>
+  <classpathentry kind="src" path="lucene/facet/src/test"/>
+  <classpathentry kind="src" path="lucene/grouping/src/java"/>
+  <classpathentry kind="src" path="lucene/grouping/src/test"/>
+  <classpathentry kind="src" path="lucene/join/src/java"/>
+  <classpathentry kind="src" path="lucene/join/src/test"/>
+  <classpathentry kind="src" path="lucene/queries/src/java"/>
+  <classpathentry kind="src" path="lucene/queries/src/test"/>
+  <classpathentry kind="src" path="lucene/queryparser/src/java"/>
+  <classpathentry kind="src" path="lucene/queryparser/src/resources"/>
+  <classpathentry kind="src" path="lucene/queryparser/src/test"/>
+  <classpathentry kind="src" path="lucene/suggest/src/java"/>
+  <classpathentry kind="src" path="lucene/suggest/src/test"/>
+  <classpathentry kind="src" path="lucene/spatial/src/java"/>
+  <classpathentry kind="src" path="lucene/spatial/src/test"/>
+  <classpathentry kind="src" path="lucene/spatial/src/test-files"/>
+  <classpathentry kind="lib" path="lucene/spatial/lib/spatial4j-0.3.jar"/>
+  <classpathentry kind="src" path="solr/core/src/java"/>
+  <classpathentry kind="src" path="solr/core/src/test"/>
+  <classpathentry kind="src" path="solr/core/src/test-files"/>
+  <classpathentry kind="src" path="solr/solrj/src/java"/>
+  <classpathentry kind="src" path="solr/solrj/src/test"/>
+  <classpathentry kind="src" path="solr/solrj/src/test-files"/>
+  <classpathentry kind="src" path="solr/test-framework/src/java"/>
+  <classpathentry kind="src" path="solr/contrib/analysis-extras/src/java"/>
+  <classpathentry kind="src" path="solr/contrib/analysis-extras/src/test"/>
+  <classpathentry kind="src" path="solr/contrib/analysis-extras/src/test-files"/>
+  <classpathentry kind="src" path="solr/contrib/clustering/src/java"/>
+  <classpathentry kind="src" path="solr/contrib/clustering/src/test"/>
+  <classpathentry kind="src" path="solr/contrib/clustering/src/test-files"/>
+  <classpathentry kind="src" path="solr/contrib/dataimporthandler/src/java"/>
+  <classpathentry kind="src" path="solr/contrib/dataimporthandler/src/test"/>
+  <classpathentry kind="src" path="solr/contrib/dataimporthandler/src/test-files"/>
+  <classpathentry kind="src" path="solr/contrib/dataimporthandler-extras/src/java"/>
+  <classpathentry kind="src" path="solr/contrib/dataimporthandler-extras/src/test"/>
+  <classpathentry kind="src" path="solr/contrib/dataimporthandler-extras/src/test-files"/>
+  <classpathentry kind="src" path="solr/contrib/extraction/src/java"/>
+  <classpathentry kind="src" path="solr/contrib/extraction/src/test"/>
+  <classpathentry kind="src" path="solr/contrib/extraction/src/test-files"/>
+  <classpathentry kind="src" path="solr/contrib/langid/src/java"/>
+  <classpathentry kind="src" path="solr/contrib/langid/src/resources"/>
+  <classpathentry kind="src" path="solr/contrib/langid/src/test"/>
+  <classpathentry kind="src" path="solr/contrib/langid/src/test-files"/>
+  <classpathentry kind="src" path="solr/contrib/uima/src/java"/>
+  <classpathentry kind="src" path="solr/contrib/uima/src/resources"/>
+  <classpathentry kind="src" path="solr/contrib/uima/src/test"/>
+  <classpathentry kind="src" path="solr/contrib/uima/src/test-files"/>
+  <classpathentry kind="src" path="solr/contrib/velocity/src/java"/>
+  <classpathentry kind="src" path="solr/contrib/velocity/src/test"/>
+  <classpathentry kind="src" path="solr/contrib/velocity/src/test-files"/>
+  <classpathentry kind="lib" path="lucene/test-framework/lib/ant-1.8.2.jar"/>
+  <classpathentry kind="lib" path="lucene/test-framework/lib/junit-4.10.jar"/>
+  <classpathentry kind="lib" path="lucene/sandbox/lib/jakarta-regexp-1.4.jar"/>
+  <classpathentry kind="lib" path="lucene/analysis/icu/lib/icu4j-49.1.jar"/>
+  <classpathentry kind="lib" path="lucene/analysis/phonetic/lib/commons-codec-1.7.jar"/>
+  <classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-fsa-1.5.3.jar"/>
+  <classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-polish-1.5.3.jar"/>
+  <classpathentry kind="lib" path="lucene/analysis/morfologik/lib/morfologik-stemming-1.5.3.jar"/>
+  <classpathentry kind="lib" path="lucene/benchmark/lib/commons-compress-1.4.1.jar"/>
+  <classpathentry kind="lib" path="lucene/benchmark/lib/xercesImpl-2.9.1.jar"/>
+  <classpathentry kind="lib" path="lucene/benchmark/lib/nekohtml-1.9.15.jar"/>
+  <classpathentry kind="lib" path="solr/core/lib/commons-fileupload-1.2.1.jar"/>
+  <classpathentry kind="lib" path="solr/core/lib/commons-cli-1.2.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/httpclient-4.1.3.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/httpcore-4.1.4.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/httpmime-4.1.3.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/commons-io-2.1.jar"/>
+  <classpathentry kind="lib" path="solr/core/lib/commons-lang-2.6.jar"/>
+  <classpathentry kind="lib" path="solr/core/lib/easymock-2.2.jar"/>
+  <classpathentry kind="lib" path="solr/core/lib/guava-r05.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/jcl-over-slf4j-1.6.4.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/log4j-over-slf4j-1.6.4.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/slf4j-api-1.6.4.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/slf4j-jdk14-1.6.4.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/wstx-asl-3.2.7.jar"/>
+  <classpathentry kind="lib" path="solr/solrj/lib/zookeeper-3.3.6.jar"/>
   <classpathentry kind="lib" path="solr/example/lib/jetty-continuation-8.1.2.v20120308.jar"/>
   <classpathentry kind="lib" path="solr/example/lib/jetty-deploy-8.1.2.v20120308.jar"/>
   <classpathentry kind="lib" path="solr/example/lib/jetty-http-8.1.2.v20120308.jar"/>

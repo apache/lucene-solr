@@ -20,7 +20,7 @@
     <info organisation="org.apache.solr" module="core"/>
 
     <dependencies>
-      <dependency org="commons-codec" name="commons-codec" rev="1.6" transitive="false"/>
+      <dependency org="commons-codec" name="commons-codec" rev="1.7" transitive="false"/>
       <dependency org="commons-fileupload" name="commons-fileupload" rev="1.2.1" transitive="false"/>
       <dependency org="commons-cli" name="commons-cli" rev="1.2" transitive="false"/>
       <dependency org="commons-lang" name="commons-lang" rev="2.6" transitive="false"/>
