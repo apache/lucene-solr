@@ -1,4 +1,4 @@
-package org.apache.lucene.util;
+package org.apache.lucene.analysis.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,6 +19,9 @@ package org.apache.lucene.util;
 
 import java.io.StringReader;
 import java.util.Random;
+
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestRollingCharBuffer extends LuceneTestCase {
 

@@ -1,4 +1,4 @@
-package org.apache.lucene.util;
+package org.apache.lucene.analysis.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,6 +19,9 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.io.Reader;
+
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /** Acts like a forever growing char[] as you read
  *  characters into it from the provided reader, but

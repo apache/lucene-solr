@@ -23,6 +23,9 @@ Changes in backwards compatibility policy
 * LUCENE-4392: Class org.apache.lucene.util.SortedVIntList has been removed.
   (Adrien Grand)
 
+* LUCENE-4393: RollingCharBuffer has been moved to the o.a.l.analysis.util
+  package of lucene-analysis-common. (Adrien Grand)
+
 New Features
 
 * LUCENE-1888: Added the option to store payloads in the term
