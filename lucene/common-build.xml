@@ -876,6 +876,9 @@
             <sysproperty key="jetty.testMode" value="1"/>
             <sysproperty key="jetty.insecurerandom" value="1"/>
             <sysproperty key="solr.directoryFactory" value="org.apache.solr.core.MockDirectoryFactory"/>
+            
+            <!-- disable AWT while running tests -->
+            <sysproperty key="java.awt.headless" value="true"/>
 
             <!-- Only pass these to the test JVMs if defined in ANT. -->
             <syspropertyset>
