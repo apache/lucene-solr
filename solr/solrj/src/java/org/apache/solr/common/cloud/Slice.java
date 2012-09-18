@@ -17,6 +17,7 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
+import org.apache.noggit.JSONUtil;
 import org.apache.noggit.JSONWriter;
 
 import java.util.Collection;
@@ -30,11 +31,11 @@ import java.util.Map;
 public class Slice extends ZkNodeProps {
   public static String REPLICAS = "replicas";
   public static String RANGE = "range";
-  public static String LEADER = "leader";
+  public static String LEADER = "leader";       // FUTURE: do we want to record the leader as a slice property in the JSON (as opposed to isLeader as a replica property?)
 
   private final String name;
   private final HashPartitioner.Range range;
-  // private final Integer replicationFactor;
+  private final Integer replicationFactor;
   private final Map<String,Replica> replicas;
   private final Replica leader;
 
@@ -45,18 +46,23 @@ public class Slice extends ZkNodeProps {
   public Slice(String name, Map<String,Replica> replicas, Map<String,Object> props) {
     super( props==null ? new LinkedHashMap<String,Object>(2) : new LinkedHashMap<String,Object>(props));
     this.name = name;
-    this.replicas = replicas != null ? replicas : makeReplicas((Map<String,Object>)propMap.get(REPLICAS));
-    propMap.put(REPLICAS, replicas);
 
-    String rangeStr = (String)propMap.get(RANGE);
+    Object rangeObj = propMap.get(RANGE);
     HashPartitioner.Range tmpRange = null;
-    if (rangeStr != null) {
+    if (rangeObj instanceof HashPartitioner.Range) {
+      tmpRange = (HashPartitioner.Range)rangeObj;
+    } else if (rangeObj != null) {
       HashPartitioner hp = new HashPartitioner();
-      tmpRange = hp.fromString(rangeStr);
+      tmpRange = hp.fromString(rangeObj.toString());
     }
-
     range = tmpRange;
-    // replicationFactor = null;  // future
+
+    replicationFactor = null;  // future
+
+    // add the replicas *after* the other properties (for aesthetics, so it's easy to find slice properties in the JSON output)
+    this.replicas = replicas != null ? replicas : makeReplicas((Map<String,Object>)propMap.get(REPLICAS));
+    propMap.put(REPLICAS, this.replicas);
+
     leader = findLeader();
   }
 
@@ -101,10 +107,6 @@ public class Slice extends ZkNodeProps {
 
   /**
    * Get the map of coreNodeName to replicas for this slice.
-   *
-   * @return map containing coreNodeName as the key, see
-   *         {@link ZkStateReader#getCoreNodeName(String, String)}, Replica
-   *         as the value.
    */
   public Map<String, Replica> getReplicasMap() {
     return replicas;
@@ -118,31 +120,13 @@ public class Slice extends ZkNodeProps {
     return leader;
   }
 
-  /*
-  // returns a copy of this slice containing the new replica
-  public Slice addReplica(Replica replica) {
-    Map<String, Object> newProps = new LinkedHashMap<String,Object>(props);
-    Map<String, Replica> replicas = getReplicasMap();
-    Map<String, Replica> newReplicas = replicas == null ? new HashMap<String, Replica>(1) : new LinkedHashMap<String, Replica>(replicas);
-//    newReplicas.put(replica.getName(), replica);
-    newProps.put(REPLICAS, replicas);
-    return new Slice(name, newProps); // TODO: new constructor that takes replicas as-is w/o rebuilding
-  }
-
-  public static Slice newSlice(String name) {
-    Map<String, Object> props = new HashMap<String,Object>(1);
-    props.put("replicas", new HashMap<String,Object>(1));
-    return new Slice(name, props);
-  }
-   ***/
-
   @Override
   public String toString() {
-    return "Slice [replicas=" + replicas + ", name=" + name + "]";
+    return name + ':' + JSONUtil.toJSON(propMap);
   }
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    jsonWriter.write(replicas);
+    jsonWriter.write(propMap);
   }
 }

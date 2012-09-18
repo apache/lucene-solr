@@ -20,12 +20,15 @@ package org.apache.solr.cloud;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.noggit.JSONUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ClosableThread;
+import org.apache.solr.common.cloud.HashPartitioner;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -216,48 +219,70 @@ public class Overseer {
         }
         
         // use the provided non null shardId
-        String shardId = message.getStr(ZkStateReader.SHARD_ID_PROP);
-        if (shardId == null) {
+        String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
+        if (sliceName == null) {
           String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
           //get shardId from ClusterState
-          shardId = getAssignedId(state, nodeName, message);
+          sliceName = getAssignedId(state, nodeName, message);
         }
-        if(shardId == null) {
+        if(sliceName == null) {
           //request new shardId 
-          shardId = AssignShard.assignShard(collection, state, numShards);
+          sliceName = AssignShard.assignShard(collection, state, numShards);
         }
-          
-          Map<String,Object> props = new HashMap<String,Object>();
-          Map<String,Object> coreProps = new HashMap<String,Object>(message.getProperties().size());
-          coreProps.putAll(message.getProperties());
-          // we don't put num_shards in the clusterstate
-          coreProps.remove(ZkStateReader.NUM_SHARDS_PROP);
-          coreProps.remove(QUEUE_OPERATION);
-          for (Entry<String,Object> entry : coreProps.entrySet()) {
-            props.put(entry.getKey(), entry.getValue());
-          }
-          Replica zkProps = new Replica(zkCoreNodeName, props);
-          Slice slice = state.getSlice(collection, shardId);
-          Map<String,Replica> shardProps;
-          if (slice == null) {
-            shardProps = new HashMap<String,Replica>();
-          } else {
-            shardProps = state.getSlice(collection, shardId).getReplicasCopy();
-          }
-          shardProps.put(zkCoreNodeName, zkProps);
 
-          slice = new Slice(shardId, shardProps);
+        Slice slice = state.getSlice(collection, sliceName);
+        Map<String,Object> replicaProps = new LinkedHashMap<String,Object>();
+
+        replicaProps.putAll(message.getProperties());
+        // System.out.println("########## UPDATE MESSAGE: " + JSONUtil.toJSON(message));
+        if (slice != null) {
+          Replica oldReplica = slice.getReplicasMap().get(zkCoreNodeName);
+          if (oldReplica != null && oldReplica.containsKey(ZkStateReader.LEADER_PROP)) {
+            replicaProps.put(ZkStateReader.LEADER_PROP, oldReplica.get(ZkStateReader.LEADER_PROP));
+          }
+        }
+
+        // we don't put num_shards in the clusterstate
+          replicaProps.remove(ZkStateReader.NUM_SHARDS_PROP);
+          replicaProps.remove(QUEUE_OPERATION);
+
+
+          Replica replica = new Replica(zkCoreNodeName, replicaProps);
+
+         // TODO: where do we get slice properties in this message?  or should there be a separate create-slice message if we want that?
+
+          Map<String,Object> sliceProps = null;
+          Map<String,Replica> replicas;
+
+          if (slice != null) {
+            sliceProps = slice.getProperties();
+            replicas = slice.getReplicasCopy();
+          } else {
+            replicas = new HashMap<String, Replica>(1);
+          }
+
+          replicas.put(replica.getName(), replica);
+          slice = new Slice(sliceName, replicas, sliceProps);
+
           ClusterState newClusterState = updateSlice(state, collection, slice);
           return newClusterState;
       }
 
       private ClusterState createCollection(ClusterState state, String collectionName, int numShards) {
+        HashPartitioner hp = new HashPartitioner();
+        List<HashPartitioner.Range> ranges = hp.partitionRange(numShards, hp.fullRange());
+
+
         Map<String, Map<String, Slice>> newStates = new LinkedHashMap<String,Map<String, Slice>>();
         Map<String, Slice> newSlices = new LinkedHashMap<String,Slice>();
         newStates.putAll(state.getCollectionStates());
         for (int i = 0; i < numShards; i++) {
           final String sliceName = "shard" + (i+1);
-          newSlices.put(sliceName, new Slice(sliceName, Collections.EMPTY_MAP));
+
+          Map<String,Object> sliceProps = new LinkedHashMap<String,Object>(1);
+          sliceProps.put(Slice.RANGE, ranges.get(i));
+
+          newSlices.put(sliceName, new Slice(sliceName, null, sliceProps));
         }
         newStates.put(collectionName, newSlices);
         ClusterState newClusterState = new ClusterState(state.getLiveNodes(), newStates);
@@ -282,36 +307,22 @@ public class Overseer {
       }
       
       private ClusterState updateSlice(ClusterState state, String collection, Slice slice) {
-        
-        final Map<String, Map<String, Slice>> newStates = new LinkedHashMap<String,Map<String,Slice>>();
-        newStates.putAll(state.getCollectionStates());
-        
-        if (!newStates.containsKey(collection)) {
-          newStates.put(collection, new LinkedHashMap<String,Slice>());
-        }
-        
-        final Map<String, Slice> slices = newStates.get(collection);
-        if (!slices.containsKey(slice.getName())) {
-          slices.put(slice.getName(), slice);
+        // System.out.println("###!!!### OLD CLUSTERSTATE: " + JSONUtil.toJSON(state.getCollectionStates()));
+        // System.out.println("Updating slice:" + slice);
+
+        Map<String, Map<String, Slice>> newCollections = new LinkedHashMap<String,Map<String,Slice>>(state.getCollectionStates());  // make a shallow copy
+        Map<String, Slice> slices = newCollections.get(collection);
+        if (slices == null) {
+          slices = new HashMap<String, Slice>(1);
         } else {
-          final Map<String,Replica> shards = new LinkedHashMap<String,Replica>();
-          final Slice existingSlice = slices.get(slice.getName());
-          shards.putAll(existingSlice.getReplicasMap());
-          //XXX preserve existing leader
-          for(Entry<String, Replica> edit: slice.getReplicasMap().entrySet()) {
-            if(existingSlice.getReplicasMap().get(edit.getKey())!=null && existingSlice.getReplicasMap().get(edit.getKey()).containsKey(ZkStateReader.LEADER_PROP)) {
-              HashMap<String, Object> newProps = new HashMap<String,Object>();
-              newProps.putAll(edit.getValue().getProperties());
-              newProps.put(ZkStateReader.LEADER_PROP, existingSlice.getReplicasMap().get(edit.getKey()).getStr(ZkStateReader.LEADER_PROP));
-              shards.put(edit.getKey(), new Replica(edit.getKey(), newProps));
-            } else {
-              shards.put(edit.getKey(), edit.getValue());
-            }
-          }
-          final Slice updatedSlice = new Slice(slice.getName(), shards);
-          slices.put(slice.getName(), updatedSlice);
+          slices = new LinkedHashMap<String, Slice>(slices); // make a shallow copy
         }
-        return new ClusterState(state.getLiveNodes(), newStates);
+        slices.put(slice.getName(),  slice);
+        newCollections.put(collection, slices);
+
+        // System.out.println("###!!!### NEW CLUSTERSTATE: " + JSONUtil.toJSON(newCollections));
+
+        return new ClusterState(state.getLiveNodes(), newCollections);
       }
       
       private ClusterState setShardLeader(ClusterState state, String collection, String sliceName, String leaderUrl) {

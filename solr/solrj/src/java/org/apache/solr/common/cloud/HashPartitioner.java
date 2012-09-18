@@ -20,6 +20,7 @@ package org.apache.solr.common.cloud;
 import org.apache.noggit.JSONWriter;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -94,6 +95,7 @@ public class HashPartitioner {
    */
   public List<Range> partitionRange(int partitions, int min, int max) {
     assert max >= min;
+    if (partitions == 0) return Collections.EMPTY_LIST;
     long range = (long)max - (long)min;
     long srange = Math.max(1, range / partitions);
 
