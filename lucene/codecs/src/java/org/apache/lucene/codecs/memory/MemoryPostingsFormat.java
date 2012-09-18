@@ -79,7 +79,7 @@ import org.apache.lucene.util.packed.PackedInts;
 // TODO: Maybe name this 'Cached' or something to reflect
 // the reality that it is actually written to disk, but
 // loads itself in ram?
-public class MemoryPostingsFormat extends PostingsFormat {
+public final class MemoryPostingsFormat extends PostingsFormat {
 
   private final boolean doPackFST;
   private final float acceptableOverheadRatio;

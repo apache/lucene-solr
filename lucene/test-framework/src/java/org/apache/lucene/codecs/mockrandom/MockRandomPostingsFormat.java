@@ -66,7 +66,7 @@ import org.apache.lucene.util._TestUtil;
  * Randomly combines terms index impl w/ postings impls.
  */
 
-public class MockRandomPostingsFormat extends PostingsFormat {
+public final class MockRandomPostingsFormat extends PostingsFormat {
   private final Random seedRandom;
   private final String SEED_EXT = "sd";
   

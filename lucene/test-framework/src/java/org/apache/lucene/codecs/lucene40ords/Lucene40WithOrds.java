@@ -44,7 +44,7 @@ import org.apache.lucene.util.BytesRef;
  * Customized version of {@link Lucene40Codec} that uses
  * {@link FixedGapTermsIndexWriter}.
  */
-public class Lucene40WithOrds extends PostingsFormat {
+public final class Lucene40WithOrds extends PostingsFormat {
     
   public Lucene40WithOrds() {
     super("Lucene40WithOrds");

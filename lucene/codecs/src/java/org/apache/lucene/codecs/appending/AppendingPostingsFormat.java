@@ -33,7 +33,7 @@ import org.apache.lucene.index.SegmentWriteState;
 /**
  * Appending postings impl.
  */
-class AppendingPostingsFormat extends PostingsFormat {
+final class AppendingPostingsFormat extends PostingsFormat {
   public static String CODEC_NAME = "Appending";
   
   public AppendingPostingsFormat() {

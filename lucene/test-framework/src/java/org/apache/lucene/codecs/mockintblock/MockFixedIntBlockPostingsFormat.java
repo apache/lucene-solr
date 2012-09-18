@@ -49,7 +49,7 @@ import org.apache.lucene.util.IOUtils;
  * used here just writes each block as a series of vInt.
  */
 
-public class MockFixedIntBlockPostingsFormat extends PostingsFormat {
+public final class MockFixedIntBlockPostingsFormat extends PostingsFormat {
 
   private final int blockSize;
 

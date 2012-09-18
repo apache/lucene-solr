@@ -52,6 +52,10 @@ New Features
 
 API Changes
 
+* LUCENE-4391: All methods of Lucene40Codec but getPostingsFormatForField are
+  now final. To reuse functionality of Lucene40, you should extend FilterCodec
+  and delegate to Lucene40 instead of extending Lucene40Codec. (Adrien Grand)
+
 * LUCENE-4299: Added Terms.hasPositions() and Terms.hasOffsets().
   Previously you had no real way to know that a term vector field
   had positions or offsets, since this can be configured on a 

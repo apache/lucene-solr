@@ -80,7 +80,7 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  * </ul>
  * @lucene.experimental
  */
-public class BloomFilteringPostingsFormat extends PostingsFormat {
+public final class BloomFilteringPostingsFormat extends PostingsFormat {
   
   public static final String BLOOM_CODEC_NAME = "BloomFilter";
   public static final int BLOOM_CODEC_VERSION = 1;

@@ -71,7 +71,7 @@ import org.apache.lucene.util.automaton.Transition;
  *
  * @lucene.experimental */
 
-public class DirectPostingsFormat extends PostingsFormat {
+public final class DirectPostingsFormat extends PostingsFormat {
 
   private final int minSkipCount;
   private final int lowFreqCutoff;

@@ -63,7 +63,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public FieldsConsumer fieldsConsumer(SegmentWriteState state)
+  public final FieldsConsumer fieldsConsumer(SegmentWriteState state)
       throws IOException {
     return new FieldsWriter(state);
   }
@@ -220,7 +220,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public FieldsProducer fieldsProducer(SegmentReadState state)
+  public final FieldsProducer fieldsProducer(SegmentReadState state)
       throws IOException {
     return new FieldsReader(state);
   }
