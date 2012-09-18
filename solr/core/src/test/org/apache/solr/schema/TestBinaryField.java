@@ -81,7 +81,7 @@ public class TestBinaryField extends LuceneTestCase {
     jetty.start();
     port = jetty.getLocalPort();
 
-    String url = "http://localhost:" + jetty.getLocalPort() + context;
+    String url = "http://127.0.0.1:" + jetty.getLocalPort() + context;
     server = new HttpSolrServer(url);
   }
 
