@@ -326,36 +326,54 @@ public class Overseer {
       }
       
       private ClusterState setShardLeader(ClusterState state, String collection, String sliceName, String leaderUrl) {
-        
-        final Map<String, Map<String, Slice>> newStates = new LinkedHashMap<String,Map<String,Slice>>();
-        newStates.putAll(state.getCollectionStates());
-        
-        final Map<String, Slice> slices = newStates.get(collection);
+
+        final Map<String, Map<String, Slice>> newStates = new LinkedHashMap<String,Map<String,Slice>>(state.getCollectionStates());
+
+        Map<String, Slice> slices = newStates.get(collection);
 
         if(slices==null) {
           log.error("Could not mark shard leader for non existing collection:" + collection);
           return state;
         }
-        
-        if (!slices.containsKey(sliceName)) {
+
+        // make a shallow copy and add it to the new collection
+        slices = new LinkedHashMap<String,Slice>(slices);
+        newStates.put(collection, slices);
+
+
+        Slice slice = slices.get(sliceName);
+        if (slice == null) {
           log.error("Could not mark leader for non existing slice:" + sliceName);
           return state;
         } else {
-          final Map<String,Replica> newShards = new LinkedHashMap<String,Replica>();
-          for(Entry<String, Replica> shard: slices.get(sliceName).getReplicasMap().entrySet()) {
-            Map<String, Object> newShardProps = new LinkedHashMap<String,Object>();
-            newShardProps.putAll(shard.getValue().getProperties());
-            
-            newShardProps.remove(ZkStateReader.LEADER_PROP);  //clean any previously existed flag
-            
-            ZkCoreNodeProps zkCoreNodeProps = new ZkCoreNodeProps(new ZkNodeProps(newShardProps));
-            if(leaderUrl!=null && leaderUrl.equals(zkCoreNodeProps.getCoreUrl())) {
-              newShardProps.put(ZkStateReader.LEADER_PROP,"true");
+          // TODO: consider just putting the leader property on the shard, not on individual replicas
+
+          Replica oldLeader = slice.getLeader();
+
+          final Map<String,Replica> newReplicas = new LinkedHashMap<String,Replica>();
+
+          for (Replica replica : slice.getReplicas()) {
+
+            // TODO: this should only be calculated once and cached somewhere?
+            String coreURL = ZkCoreNodeProps.getCoreUrl(replica.getStr(ZkStateReader.BASE_URL_PROP), replica.getStr(ZkStateReader.CORE_NAME_PROP));
+
+            if (replica == oldLeader && !coreURL.equals(leaderUrl)) {
+              Map<String,Object> replicaProps = new LinkedHashMap<String,Object>(replica.getProperties());
+              replicaProps.remove(Slice.LEADER);
+              replica = new Replica(replica.getName(), replicaProps);
+            } else if (coreURL.equals(leaderUrl)) {
+              Map<String,Object> replicaProps = new LinkedHashMap<String,Object>(replica.getProperties());
+              replicaProps.put(Slice.LEADER, "true");  // TODO: allow booleans instead of strings
+              replica = new Replica(replica.getName(), replicaProps);
             }
-            newShards.put(shard.getKey(), new Replica(shard.getKey(), newShardProps));
+
+            newReplicas.put(replica.getName(), replica);
           }
-          Slice slice = new Slice(sliceName, newShards);
-          slices.put(sliceName, slice);
+
+          Map<String,Object> newSliceProps = slice.shallowCopy();
+          newSliceProps.put(Slice.REPLICAS, newReplicas);
+          Slice newSlice = new Slice(slice.getName(), newReplicas, slice.getProperties());
+          slices.put(newSlice.getName(), newSlice);
         }
         return new ClusterState(state.getLiveNodes(), newStates);
       }
