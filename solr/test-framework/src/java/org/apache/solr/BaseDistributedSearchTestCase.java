@@ -86,8 +86,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected String shards;
   protected String[] shardsArr;
   // Some ISPs redirect to their own web site for domains that don't exist, causing this to fail
-  // protected String[] deadServers = {"does_not_exist_54321.com:33331/solr","localhost:33332/solr"};
-  protected String[] deadServers = {"[::1]:33332/solr"};
+  // protected String[] deadServers = {"does_not_exist_54321.com:33331/solr","127.0.0.1:33332/solr"};
+  protected String[] deadServers = {"[ff01::114]:33332/solr", "[ff01::083]:33332/solr", "[ff01::213]:33332/solr"};
   protected File testDir;
   protected SolrServer controlClient;
 
@@ -267,7 +267,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected SolrServer createNewSolrServer(int port) {
     try {
       // setup the server...
-      String url = "http://localhost:" + port + context;
+      String url = "http://127.0.0.1:" + port + context;
       HttpSolrServer s = new HttpSolrServer(url);
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       s.setDefaultMaxConnectionsPerHost(100);

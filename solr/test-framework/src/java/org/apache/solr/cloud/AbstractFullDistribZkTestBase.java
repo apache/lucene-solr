@@ -334,8 +334,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       JettySolrRunner j = this.jettys.get(i);
       JettySolrRunner j2 = this.jettys.get(i + (numJettys / 2 - 1));
       if (sb.length() > 0) sb.append(',');
-      sb.append("localhost:").append(j.getLocalPort()).append(context);
-      sb.append("|localhost:").append(j2.getLocalPort()).append(context);
+      sb.append("127.0.0.1:").append(j.getLocalPort()).append(context);
+      sb.append("|127.0.0.1:").append(j2.getLocalPort()).append(context);
     }
     shards = sb.toString();
     
@@ -1198,7 +1198,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected SolrServer createNewSolrServer(int port) {
     try {
       // setup the server...
-      String url = "http://localhost:" + port + context + "/"
+      String url = "http://127.0.0.1:" + port + context + "/"
           + DEFAULT_COLLECTION;
       HttpSolrServer s = new HttpSolrServer(url);
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);

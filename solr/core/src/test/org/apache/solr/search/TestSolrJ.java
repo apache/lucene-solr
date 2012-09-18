@@ -48,7 +48,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
   public static void main(String[] args) throws Exception {
     // String addr = "http://odin.local:80/solr";
     // String addr = "http://odin.local:8983/solr";
-    String addr = "http://localhost:8983/solr";
+    String addr = "http://127.0.0.1:8983/solr";
 
     int i = 0;
     final int nDocs = Integer.parseInt(args[i++]);
@@ -162,7 +162,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
 
 
   public void doCommitPerf() throws Exception {
-    HttpSolrServer client = new HttpSolrServer("http://localhost:8983/solr");
+    HttpSolrServer client = new HttpSolrServer("http://127.0.0.1:8983/solr");
 
     long start = System.currentTimeMillis();
 

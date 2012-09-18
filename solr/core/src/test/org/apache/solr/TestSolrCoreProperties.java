@@ -50,7 +50,7 @@ public class TestSolrCoreProperties extends LuceneTestCase {
     solrJetty = new JettySolrRunner(getHomeDir(), "/solr", 0);
 
     solrJetty.start();
-    String url = "http://localhost:" + solrJetty.getLocalPort() + "/solr";
+    String url = "http://127.0.0.1:" + solrJetty.getLocalPort() + "/solr";
     client = new HttpSolrServer(url);
 
   }
