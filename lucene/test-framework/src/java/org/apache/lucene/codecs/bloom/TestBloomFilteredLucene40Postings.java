@@ -34,7 +34,7 @@ import org.apache.lucene.index.SegmentWriteState;
  * APPLICATION This is not a realistic application of Bloom Filters as they
  * ordinarily are larger and operate on only primary key type fields.
  */
-public class TestBloomFilteredLucene40Postings extends PostingsFormat {
+public final class TestBloomFilteredLucene40Postings extends PostingsFormat {
   
   private BloomFilteringPostingsFormat delegate;
   

@@ -40,7 +40,7 @@ import org.apache.lucene.util.OpenBitSet;
 /**
  * Just like {@link Lucene40PostingsFormat} but with additional asserts.
  */
-public class AssertingPostingsFormat extends PostingsFormat {
+public final class AssertingPostingsFormat extends PostingsFormat {
   private final PostingsFormat in = new Lucene40PostingsFormat();
   
   public AssertingPostingsFormat() {

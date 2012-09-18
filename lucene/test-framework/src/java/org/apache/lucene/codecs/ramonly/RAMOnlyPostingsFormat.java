@@ -57,7 +57,7 @@ import org.apache.lucene.util.IOUtils;
  *
  *  NOTE: this codec sorts terms by reverse-unicode-order! */
 
-public class RAMOnlyPostingsFormat extends PostingsFormat {
+public final class RAMOnlyPostingsFormat extends PostingsFormat {
 
   // For fun, test that we can override how terms are
   // sorted, and basic things still work -- this comparator

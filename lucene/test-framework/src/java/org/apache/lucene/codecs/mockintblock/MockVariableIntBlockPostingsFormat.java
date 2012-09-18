@@ -53,7 +53,7 @@ import org.apache.lucene.util.IOUtils;
  * int is <= 3, else 2*baseBlockSize.
  */
 
-public class MockVariableIntBlockPostingsFormat extends PostingsFormat {
+public final class MockVariableIntBlockPostingsFormat extends PostingsFormat {
   private final int baseBlockSize;
   
   public MockVariableIntBlockPostingsFormat() {

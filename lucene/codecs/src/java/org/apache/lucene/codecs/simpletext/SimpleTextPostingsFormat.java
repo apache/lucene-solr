@@ -34,7 +34,7 @@ import org.apache.lucene.index.IndexFileNames;
  *  any text editor, and even edit it to alter your index.
  *
  *  @lucene.experimental */
-public class SimpleTextPostingsFormat extends PostingsFormat {
+public final class SimpleTextPostingsFormat extends PostingsFormat {
   
   public SimpleTextPostingsFormat() {
     super("SimpleText");

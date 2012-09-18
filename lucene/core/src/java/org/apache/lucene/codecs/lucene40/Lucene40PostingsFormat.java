@@ -269,7 +269,7 @@ import org.apache.lucene.util.fst.FST; // javadocs
 // TODO: this class could be created by wrapping
 // BlockTreeTermsDict around Lucene40PostingsBaseFormat; ie
 // we should not duplicate the code from that class here:
-public class Lucene40PostingsFormat extends PostingsFormat {
+public final class Lucene40PostingsFormat extends PostingsFormat {
 
   private final int minBlockSize;
   private final int maxBlockSize;

@@ -42,7 +42,7 @@ import org.apache.lucene.util.BytesRef;
  * This is here just to test the core sep codec
  * classes.
  */
-public class MockSepPostingsFormat extends PostingsFormat {
+public final class MockSepPostingsFormat extends PostingsFormat {
 
   public MockSepPostingsFormat() {
     super("MockSep");

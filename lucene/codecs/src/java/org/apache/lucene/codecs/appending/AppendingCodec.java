@@ -18,22 +18,9 @@ package org.apache.lucene.codecs.appending;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.LiveDocsFormat;
-import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.StoredFieldsFormat;
-import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
-import org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40NormsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
 
 /**
  * This codec uses an index format that is very similar to
@@ -42,57 +29,22 @@ import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
  *
  * @lucene.experimental
  */
-public class AppendingCodec extends Codec {
+public final class AppendingCodec extends FilterCodec {
+
   public AppendingCodec() {
     super("Appending");
   }
 
   private final PostingsFormat postings = new AppendingPostingsFormat();
-  private final SegmentInfoFormat infos = new Lucene40SegmentInfoFormat();
-  private final StoredFieldsFormat fields = new Lucene40StoredFieldsFormat();
-  private final FieldInfosFormat fieldInfos = new Lucene40FieldInfosFormat();
-  private final TermVectorsFormat vectors = new Lucene40TermVectorsFormat();
-  private final DocValuesFormat docValues = new Lucene40DocValuesFormat();
-  private final NormsFormat norms = new Lucene40NormsFormat();
-  private final LiveDocsFormat liveDocs = new Lucene40LiveDocsFormat();
-  
+
+  @Override
+  protected Codec delegate() {
+    return Codec.forName("Lucene40");
+  }
+
   @Override
   public PostingsFormat postingsFormat() {
     return postings;
   }
 
-  @Override
-  public StoredFieldsFormat storedFieldsFormat() {
-    return fields;
-  }
-  
-  @Override
-  public TermVectorsFormat termVectorsFormat() {
-    return vectors;
-  }
-
-  @Override
-  public DocValuesFormat docValuesFormat() {
-    return docValues;
-  }
-
-  @Override
-  public SegmentInfoFormat segmentInfoFormat() {
-    return infos;
-  }
-  
-  @Override
-  public FieldInfosFormat fieldInfosFormat() {
-    return fieldInfos;
-  }
-  
-  @Override
-  public NormsFormat normsFormat() {
-    return norms;
-  }
-  
-  @Override
-  public LiveDocsFormat liveDocsFormat() {
-    return liveDocs;
-  }
 }

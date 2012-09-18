@@ -25,22 +25,9 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.LiveDocsFormat;
-import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.StoredFieldsFormat;
-import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
-import org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40NormsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
 import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -1120,49 +1107,14 @@ public class TestAddIndexes extends LuceneTestCase {
     dir.close();
   }
   
-  private static class UnRegisteredCodec extends Codec {
+  private static final class UnRegisteredCodec extends FilterCodec {
     public UnRegisteredCodec() {
       super("NotRegistered");
     }
 
     @Override
-    public PostingsFormat postingsFormat() {
-      return PostingsFormat.forName("Lucene40");
-    }
-
-    @Override
-    public DocValuesFormat docValuesFormat() {
-      return new Lucene40DocValuesFormat();
-    }
-
-    @Override
-    public StoredFieldsFormat storedFieldsFormat() {
-      return new Lucene40StoredFieldsFormat();
-    }
-    
-    @Override
-    public TermVectorsFormat termVectorsFormat() {
-      return new Lucene40TermVectorsFormat();
-    }
-    
-    @Override
-    public FieldInfosFormat fieldInfosFormat() {
-      return new Lucene40FieldInfosFormat();
-    }
-
-    @Override
-    public SegmentInfoFormat segmentInfoFormat() {
-      return new Lucene40SegmentInfoFormat();
-    }
-
-    @Override
-    public NormsFormat normsFormat() {
-      return new Lucene40NormsFormat();
-    }
-    
-    @Override
-    public LiveDocsFormat liveDocsFormat() {
-      return new Lucene40LiveDocsFormat();
+    protected Codec delegate() {
+      return Codec.forName("Lucene40");
     }
   }
   
