@@ -80,7 +80,7 @@ public class RandomCodec extends Lucene40Codec {
       }
       previousMappings.put(name, codec);
       // Safety:
-      assert previousMappings.size() < 10000;
+      assert previousMappings.size() < 10000: "test went insane";
     }
     return codec;
   }
@@ -119,7 +119,7 @@ public class RandomCodec extends Lucene40Codec {
     Collections.shuffle(formats, random);
 
     // Avoid too many open files:
-    formats.subList(4, formats.size()).clear();
+    formats = formats.subList(0, 4);
   }
 
   public RandomCodec(Random random) {
