@@ -43,6 +43,11 @@ public class Slice extends ZkNodeProps {
     this(name, replicas, null);
   }
 
+  /**
+   * @param name  The name of the slice
+   * @param replicas The replicas of the slice.  This is used directly and a copy is not made.  If null, replicas will be constructed from props.
+   * @param props  The properties of the slice - a shallow copy will always be made.
+   */
   public Slice(String name, Map<String,Replica> replicas, Map<String,Object> props) {
     super( props==null ? new LinkedHashMap<String,Object>(2) : new LinkedHashMap<String,Object>(props));
     this.name = name;
