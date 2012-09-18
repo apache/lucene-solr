@@ -1889,4 +1889,50 @@ public class TestIndexWriter extends LuceneTestCase {
       dir.close();
     }
   }
+
+  // LUCENE-4398
+  public void testRotatingFieldNames() throws Exception {
+    Directory dir = newFSDirectory(_TestUtil.getTempDir("TestIndexWriter.testChangingFields"));
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setRAMBufferSizeMB(0.2);
+    iwc.setMaxBufferedDocs(-1);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    int upto = 0;
+
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+    ft.setOmitNorms(true);
+
+    int firstDocCount = -1;
+    for(int iter=0;iter<10;iter++) {
+      final int startFlushCount = w.getFlushCount();
+      int docCount = 0;
+      while(w.getFlushCount() == startFlushCount) {
+        Document doc = new Document();
+        for(int i=0;i<10;i++) {
+          doc.add(new Field("field" + (upto++), "content", ft));
+        }
+        w.addDocument(doc);
+        docCount++;
+      }
+
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + iter + " flushed after docCount=" + docCount);
+      }
+
+      if (iter == 0) {
+        firstDocCount = docCount;
+      }
+
+      assertTrue("flushed after too few docs: first segment flushed at docCount=" + firstDocCount + ", but current segment flushed after docCount=" + docCount + "; iter=" + iter, ((float) docCount) / firstDocCount > 0.9);
+
+      if (upto > 5000) {
+        // Start re-using field names after a while
+        // ... important because otherwise we can OOME due
+        // to too many FieldInfo instances.
+        upto = 0;
+      }
+    }
+    w.close();
+    dir.close();
+  }
 }
