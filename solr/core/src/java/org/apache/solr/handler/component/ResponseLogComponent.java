@@ -17,11 +17,16 @@ package org.apache.solr.handler.component;
  */
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Set;
 
+import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.response.ResultContext;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.SolrIndexSearcher;
 
 /**
  * Adds to the log file the document IDs that are sent in the query response.
@@ -62,32 +67,45 @@ public class ResponseLogComponent extends SearchComponent {
     SolrParams params = rb.req.getParams();
     if (!params.getBool(COMPONENT_NAME, false)) return;
     
+    IndexSchema schema = rb.req.getSchema();
+    if (schema.getUniqueKeyField() == null) return;
+
     ResultContext rc = (ResultContext) rb.rsp.getValues().get("response");
+    SolrIndexSearcher searcher = rb.req.getSearcher();    
+    
     if (rc.docs.hasScores()) {
-      processScores(rb, rc.docs);
+      processScores(rb, rc.docs, schema, searcher);
     } else {
-      processIds(rb, rc.docs);
+      processIds(rb, rc.docs, schema, searcher);
     }
   }
 
-  protected void processIds(ResponseBuilder rb, DocList dl) {
+  protected void processIds(ResponseBuilder rb, DocList dl, IndexSchema schema,
+      SolrIndexSearcher searcher) throws IOException {
+    
     StringBuilder sb = new StringBuilder();
+
+    Set<String> fields = Collections.singleton(schema.getUniqueKeyField().getName());
     for(DocIterator iter = dl.iterator(); iter.hasNext();) {
-        sb.append(iter.nextDoc())
-          .append(',');
+
+      sb.append(schema.printableUniqueKey(searcher.doc(iter.nextDoc(), fields)))
+        .append(',');
     }
     if (sb.length() > 0) {
       rb.rsp.addToLog("responseLog", sb.substring(0, sb.length() - 1));
     }  
   }
   
-  protected void processScores(ResponseBuilder rb, DocList dl) {
+  protected void processScores(ResponseBuilder rb, DocList dl, IndexSchema schema,
+      SolrIndexSearcher searcher) throws IOException {
+    
     StringBuilder sb = new StringBuilder();
+    Set<String> fields = Collections.singleton(schema.getUniqueKeyField().getName());
     for(DocIterator iter = dl.iterator(); iter.hasNext();) {
-        sb.append(iter.nextDoc())
-          .append(':')
-          .append(iter.score())
-          .append(',');
+      sb.append(schema.printableUniqueKey(searcher.doc(iter.nextDoc(), fields)))
+        .append(':')
+        .append(iter.score())
+        .append(',');
     }
     if (sb.length() > 0) {
       rb.rsp.addToLog("responseLog", sb.substring(0, sb.length() - 1));

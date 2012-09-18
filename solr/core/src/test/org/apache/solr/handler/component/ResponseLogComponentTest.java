@@ -30,7 +30,7 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
   public static void beforeTest() throws Exception {
     initCore("solrconfig-response-log-component.xml","schema12.xml");
     assertNull(h.validateUpdate(adoc("id", "1", "subject", "aa")));
-    assertNull(h.validateUpdate(adoc("id", "2", "subject", "aa")));
+    assertNull(h.validateUpdate(adoc("id", "two", "subject", "aa")));
     assertNull(h.validateUpdate(adoc("id", "3", "subject", "aa")));
     assertU(commit());
   }
@@ -46,11 +46,9 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
       NamedList<Object> entries = qr.getToLog();
       String responseLog = (String) entries.get("responseLog");
       assertNotNull(responseLog);
-      assertTrue(responseLog.matches("\\d+,\\d+"));
+      assertTrue(responseLog.matches("\\w+,\\w+"));
     } finally {
-      if (req != null) {
-        req.close();
-      }
+      req.close();
     }
   }
 
@@ -65,11 +63,9 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
       NamedList<Object> entries = qr.getToLog();
       String responseLog = (String) entries.get("responseLog");
       assertNotNull(responseLog);
-      assertTrue(responseLog.matches("\\d+:\\d+\\.\\d+,\\d+:\\d+\\.\\d+"));
+      assertTrue(responseLog.matches("\\w+:\\d+\\.\\d+,\\w+:\\d+\\.\\d+"));
     } finally {
-      if (req != null) {
-        req.close();
-      }
+      req.close();
     }
   }
   
@@ -85,9 +81,7 @@ public class ResponseLogComponentTest extends SolrTestCaseJ4 {
       String responseLog = (String) entries.get("responseLog");
       assertNull(responseLog);
     } finally {
-      if (req != null) {
-        req.close();
-      }
+      req.close();
     }    
   }
 }
