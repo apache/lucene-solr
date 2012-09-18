@@ -15,8 +15,6 @@
  limitations under the License.
 */
 
-var cookie_analysis_verbose = 'analysis_verbose';
-
 // #/:core/analysis
 sammy.get
 (
@@ -26,7 +24,7 @@ sammy.get
     var active_core = this.active_core;
     var core_basepath = active_core.attr( 'data-basepath' );
     var content_element = $( '#content' );
-        
+ 
     $.get
     (
       'tpl/analysis.html',
@@ -39,6 +37,8 @@ sammy.get
         var analysis_form = $( 'form', analysis_element );
         var analysis_result = $( '#analysis-result', analysis_element );
         analysis_result.hide();
+
+        var verbose_link = $( '.verbose_output a', analysis_element );
 
         var type_or_name = $( '#type_or_name', analysis_form );
         var schema_browser_element = $( '#tor_schema' );
@@ -133,6 +133,11 @@ sammy.get
                 }
               }
 
+              if( 'undefined' !== typeof context.params.verbose_output )
+              {
+                verbose_link.trigger( 'toggle', !!context.params.verbose_output.match( /^(1|true)$/ ) );
+              }
+
               if( 0 !== fields )
               {
                 analysis_form
@@ -193,20 +198,18 @@ sammy.get
             );
         }
                         
-        var verbose_link = $( '.verbose_output a', analysis_element );
-
         verbose_link
           .die( 'toggle' )
           .live
           (
             'toggle',
-            function( event )
+            function( event, state )
             {
               $( this ).parent()
-                .toggleClass( 'active' );
+                .toggleClass( 'active', state );
                             
               analysis_result
-                .toggleClass( 'verbose_output' );
+                .toggleClass( 'verbose_output', state );
                             
               check_empty_spacer();
             }
@@ -217,18 +220,12 @@ sammy.get
             'click',
             function( event )
             {
-              $.cookie( cookie_analysis_verbose, $.cookie( cookie_analysis_verbose ) ? null : true );
+              $( this ).parent()
+                .toggleClass( 'active' );
 
-              $( this )
-                .trigger( 'toggle' );
+              analysis_form.trigger( 'submit' );
             }
           );
-
-        if( $.cookie( cookie_analysis_verbose ) )
-        {
-          verbose_link
-            .trigger( 'toggle' );
-        }
 
         var button = $( 'button', analysis_form )
 
@@ -238,6 +235,7 @@ sammy.get
                           
           var type_or_name = $( '#type_or_name', analysis_form ).val().split( '=' );
           params.push( { name: 'analysis.' + type_or_name[0], value: type_or_name[1] } );
+          params.push( { name: 'verbose_output', value: $( '.verbose_output', analysis_element ).hasClass( 'active' ) ? 1 : 0 } );
 
           return params;
         }
@@ -261,10 +259,13 @@ sammy.get
             'execute',
             function( event )
             {
+              var url = core_basepath + '/analysis/field?wt=json&analysis.showmatch=true&' + context.path.split( '?' ).pop();
+              url = url.replace( /&verbose_output=\d/, '' );
+
               $.ajax
               (
                 {
-                  url : core_basepath + '/analysis/field?wt=json&analysis.showmatch=true&' + context.path.split( '?' ).pop(),
+                  url : url,
                   dataType : 'json',
                   beforeSend : function( xhr, settings )
                   {

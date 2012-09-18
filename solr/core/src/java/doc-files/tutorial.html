@@ -596,7 +596,7 @@ There is a handy <a href="http://localhost:8983/solr/#/collection1/analysis">Ana
 where you can see how a text value is broken down into words by both Index time nad Query time analysis chains for a field or field type.  This page shows the resulting tokens after they pass through each filter in the chains.
 </p>
 <p>
-  <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&amp;analysis.query=&amp;analysis.fieldtype=text_en_splitting">This url</a>
+  <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&amp;analysis.query=&amp;analysis.fieldtype=text_en_splitting&amp;verbose_output=0">This url</a>
   shows the tokens created from 
   "<span class="codefrag">Canon Power-Shot SD500</span>" 
   using the 
@@ -607,14 +607,14 @@ where you can see how a text value is broken down into words by both Index time 
   <span class="codefrag">power</span>, <span class="codefrag">shot</span> 
   are indexed, using tokens that have the same "position".
   (Compare the previous output with
-  <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&amp;analysis.query=&amp;analysis.fieldtype=text_general">The tokens produced using the text_general field type</a>.)
+  <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&amp;analysis.query=&amp;analysis.fieldtype=text_general&amp;verbose_output=0">The tokens produced using the text_general field type</a>.)
 </p>
 
 <p>
-Mousing over the section label to the left of the section will display the full name of the analyzer component at that stage of the chain.  Toggling the "Verbose Output" checkbox will show/hide the detailed token attributes.
+Mousing over the section label to the left of the section will display the full name of the analyzer component at that stage of the chain.  Toggling the "Verbose Output" checkbox will <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&amp;analysis.query=&amp;analysis.fieldtype=text_en_splitting&amp;verbose_output=1">show/hide the detailed token attributes</a>.
 </p>
 <p>
-When both <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&amp;analysis.query=power+shot+sd-500&amp;analysis.fieldtype=text_en_splitting">Index and Query</a>
+When both <a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Canon+Power-Shot+SD500&amp;analysis.query=power+shot+sd-500&amp;analysis.fieldtype=text_en_splitting&amp;verbose_output=0">Index and Query</a>
 values are provided, two tables will be displayed side by side showing the 
 results of each chain.  Terms in the Index chain results that are equivilent 
 to the final terms produced by the Query chain will be highlighted.
@@ -623,17 +623,16 @@ to the final terms produced by the Query chain will be highlighted.
   Other interesting examples:
 </p>
 <ul>
-  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=Four+score+and+seven+years+ago+our+fathers+brought+forth+on+this+continent+a+new+nation%2C+conceived+in+liberty+and+dedicated+to+the+proposition+that+all+men+are+created+equal.%0A&amp;analysis.query=liberties+and+equality&amp;analysis.fieldtype=text_en">English stemming and stop-words</a> 
+  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldvalue=A+new+nation%2C+conceived+in+liberty+and+dedicated+to+the+proposition+that+all+men+are+created+equal.%0A&amp;analysis.query=liberties+and+equality&amp;analysis.fieldtype=text_en&amp;verbose_output=0">English stemming and stop-words</a> 
     using the <span class="codefrag">text_en</span> field type
   </li>
-  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldtype=text_cjk&amp;analysis.fieldvalue=%EF%BD%B6%EF%BE%80%EF%BD%B6%EF%BE%85&amp;analysis.query=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A">Half-width katakana normalization with bi-graming</a> 
+  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldtype=text_cjk&amp;analysis.fieldvalue=%EF%BD%B6%EF%BE%80%EF%BD%B6%EF%BE%85&amp;analysis.query=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A&amp;verbose_output=1">Half-width katakana normalization with bi-graming</a> 
     using the <span class="codefrag">text_cjk</span> field type
   </li>
-  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldtype=text_ja&amp;analysis.fieldvalue=%E7%A7%81%E3%81%AF%E5%88%B6%E9%99%90%E3%82%B9%E3%83%94%E3%83%BC%E3%83%89%E3%82%92%E8%B6%85%E3%81%88%E3%82%8B%E3%80%82">Japanese morphological decomposition with part-of-speech filtering</a>
+  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldtype=text_ja&amp;analysis.fieldvalue=%E7%A7%81%E3%81%AF%E5%88%B6%E9%99%90%E3%82%B9%E3%83%94%E3%83%BC%E3%83%89%E3%82%92%E8%B6%85%E3%81%88%E3%82%8B%E3%80%82&amp;verbose_output=1">Japanese morphological decomposition with part-of-speech filtering</a>
     using the <span class="codefrag">text_ja</span> field type 
   </li>
-  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldtype=text_ar&amp;analysis.fieldvalue=%D9%84%D8%A7+%D8%A3%D8%AA%D9%83%D9%84%D9%85+%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9
-">Arabic stop-words, normalization, and stemming</a>
+  <li><a href="http://localhost:8983/solr/#/collection1/analysis?analysis.fieldtype=text_ar&amp;analysis.fieldvalue=%D9%84%D8%A7+%D8%A3%D8%AA%D9%83%D9%84%D9%85+%D8%A7%D9%84%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9&amp;verbose_output=1">Arabic stop-words, normalization, and stemming</a>
     using the <span class="codefrag">text_ar</span> field type 
   </li>
 </ul>
