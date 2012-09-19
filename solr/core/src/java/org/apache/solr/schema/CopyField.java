@@ -74,7 +74,7 @@ public class CopyField {
   }
 
   /**
-   * @return tha maximum number of chars in source field to copy to destination field.
+   * @return the maximum number of chars in source field to copy to destination field.
    */
   public int getMaxChars() {
     return maxChars;
