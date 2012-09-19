@@ -22,8 +22,8 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * <p>
- * This class provides a {@link Field} that enables storing
- * of a per-document {@link BytesRef} value.  The values are
+ * Field that stores
+ * a per-document {@link BytesRef} value.  The values are
  * stored directly with no sharing, which is a good fit when
  * the fields don't share (many) values, such as a title
  * field.  If values may be shared it's better to use {@link
