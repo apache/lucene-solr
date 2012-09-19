@@ -193,6 +193,11 @@ Optimizations
 
 Build
 
+* LUCENE-4406, LUCENE-4407: Upgrade to randomizedtesting 2.0.1.
+  Workaround for broken test output XMLs due to non-XML text unicode
+  chars in strings. Added printing of failed tests at the end of a
+  test run (Dawid Weiss)
+
 * LUCENE-4252: Detect/Fail tests when they leak RAM in static fields
   (Robert Muir, Dawid Weiss)
 

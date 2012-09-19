@@ -168,7 +168,7 @@
   <classpathentry kind="lib" path="solr/contrib/velocity/lib/commons-beanutils-1.7.0.jar"/>
   <classpathentry kind="lib" path="solr/contrib/velocity/lib/commons-collections-3.2.1.jar"/>
   <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-  <classpathentry kind="lib" path="lucene/test-framework/lib/randomizedtesting-runner-2.0.0.jar"/>
+  <classpathentry kind="lib" path="lucene/test-framework/lib/randomizedtesting-runner-2.0.1.jar"/>
   <classpathentry kind="lib" path="solr/contrib/extraction/lib/apache-mime4j-core-0.7.2.jar"/>
   <classpathentry kind="lib" path="solr/contrib/extraction/lib/apache-mime4j-dom-0.7.2.jar"/>
   <classpathentry kind="lib" path="solr/contrib/extraction/lib/fontbox-1.7.0.jar"/>
