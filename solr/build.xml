@@ -199,6 +199,7 @@
         <exclude name="example/start.jar" />
         <exclude name="example/exampledocs/post.jar" />
         <exclude name="example/solr-webapp/**" />
+        <exclude name="package/**"/>
       </additional-excludes>
       <additional-filters>
         <replaceregex pattern="jetty([^/]+)$" replace="jetty" flags="gi" />
