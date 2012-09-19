@@ -245,6 +245,9 @@ Bug Fixes
 
 * SOLR-3759: Various fixes to the example-DIH configs (Ahmet Arslan, hossman)
 
+* SOLR-3777: Dataimport-UI does not send unchecked checkboxes (Glenn MacStravic
+  via steffkes)
+
 Other Changes
 ----------------------
 
