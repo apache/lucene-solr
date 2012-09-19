@@ -40,6 +40,8 @@ import java.util.Collections;
  * with these scores.
  */
 public abstract class Scorer extends DocIdSetIterator {
+  /** the Scorer's parent Weight. in some cases this may be null */
+  // TODO can we clean this up?
   protected final Weight weight;
 
   /**

@@ -23,21 +23,31 @@ package org.apache.lucene.util;
  *
  *  @lucene.internal */
 public final class LongsRef implements Comparable<LongsRef>, Cloneable {
-
+  /** An empty long array for convenience */
   public static final long[] EMPTY_LONGS = new long[0];
 
+  /** The contents of the LongsRef. Should never be {@code null}. */
   public long[] longs;
+  /** Offset of first valid long. */
   public int offset;
+  /** Length of used longs. */
   public int length;
 
+  /** Create a LongsRef with {@link #EMPTY_LONGS} */
   public LongsRef() {
     longs = EMPTY_LONGS;
   }
 
+  /** 
+   * Create a LongsRef pointing to a new array of size <code>capacity</code>.
+   * Offset and length will both be zero.
+   */
   public LongsRef(int capacity) {
     longs = new long[capacity];
   }
 
+  /** This instance will directly reference longs w/o making a copy.
+   * longs should not be null */
   public LongsRef(long[] longs, int offset, int length) {
     assert longs != null;
     assert offset >= 0;

@@ -78,6 +78,10 @@ import org.apache.lucene.util.Constants;
  */
 public class MMapDirectory extends FSDirectory {
   private boolean useUnmapHack = UNMAP_SUPPORTED;
+  /** 
+   * Default max chunk size.
+   * @see #MMapDirectory(File, LockFactory, int)
+   */
   public static final int DEFAULT_MAX_BUFF = Constants.JRE_IS_64BIT ? (1 << 30) : (1 << 28);
   final int chunkSizePower;
 
