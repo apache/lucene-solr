@@ -248,6 +248,9 @@ Bug Fixes
 * SOLR-3777: Dataimport-UI does not send unchecked checkboxes (Glenn MacStravic
   via steffkes)
 
+* SOLR-3850: DataImportHandler "cacheKey" parameter was incorrectly renamed "cachePk"
+  (James Dyer)
+
 Other Changes
 ----------------------
 
