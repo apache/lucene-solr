@@ -856,13 +856,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
           String value = te.term().utf8ToString();
           cp.clear();
           cp.add(value, Consts.DEFAULT_DELIMITER);
-          int ordinal = findCategory(cp);
-          if (ordinal < 0) {
-            // NOTE: call addCategory so that it works well in a multi-threaded
-            // environment, in case e.g. a thread just added the category, after
-            // the findCategory() call above failed to find it.
-            ordinal = addCategory(cp);
-          }
+          final int ordinal = addCategory(cp);
           docs = te.docs(null, docs, 0);
           ordinalMap.addMapping(docs.nextDoc() + base, ordinal);
         }
