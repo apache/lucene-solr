@@ -36,7 +36,7 @@ import org.apache.lucene.analysis.util.OpenStringBuilder;
 @SuppressWarnings("fallthrough")
 %%
 
-%unicode 6.0
+%unicode 6.1
 %apiprivate
 %type int
 %final
