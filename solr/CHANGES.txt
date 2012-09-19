@@ -300,6 +300,10 @@ Other Changes
 * SOLR-3845: Rename numReplicas to replicationFactor in Collections API.
   (yonik, Mark Miller)
 
+* SOLR-3815: SolrCloud - Add properties such as "range" to shards, which changes
+  the clusterstate.json and puts the shard replicas under "replicas". (yonik)
+
+
 ==================  4.0.0-BETA ===================
 
 

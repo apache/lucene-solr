@@ -377,7 +377,7 @@ public class Overseer {
         }
         return new ClusterState(state.getLiveNodes(), newStates);
       }
-      
+
       /*
        * Remove core from cloudstate
        */
@@ -393,13 +393,10 @@ public class Overseer {
             LinkedHashMap<String, Slice> newSlices = new LinkedHashMap<String, Slice>();
             for(Slice slice: slices.values()) {
               if(slice.getReplicasMap().containsKey(coreNodeName)) {
-                LinkedHashMap<String, Replica> newShards = new LinkedHashMap<String, Replica>();
-                newShards.putAll(slice.getReplicasMap());
-                newShards.remove(coreNodeName);
-                
-                Slice newSlice = new Slice(slice.getName(), newShards);
+                Map<String, Replica> newReplicas = slice.getReplicasCopy();
+                newReplicas.remove(coreNodeName);
+                Slice newSlice = new Slice(slice.getName(), newReplicas, slice.getProperties());
                 newSlices.put(slice.getName(), newSlice);
-
               } else {
                 newSlices.put(slice.getName(), slice);
               }

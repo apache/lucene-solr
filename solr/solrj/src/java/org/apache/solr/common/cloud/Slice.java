@@ -39,10 +39,6 @@ public class Slice extends ZkNodeProps {
   private final Map<String,Replica> replicas;
   private final Replica leader;
 
-  public Slice(String name, Map<String,Replica> replicas) {
-    this(name, replicas, null);
-  }
-
   /**
    * @param name  The name of the slice
    * @param replicas The replicas of the slice.  This is used directly and a copy is not made.  If null, replicas will be constructed from props.

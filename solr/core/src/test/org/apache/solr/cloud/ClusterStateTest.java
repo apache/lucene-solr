@@ -45,9 +45,9 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     props.put("prop2", "value2");
     Replica replica = new Replica("node1", props);
     sliceToProps.put("node1", replica);
-    Slice slice = new Slice("shard1", sliceToProps);
+    Slice slice = new Slice("shard1", sliceToProps, null);
     slices.put("shard1", slice);
-    Slice slice2 = new Slice("shard2", sliceToProps);
+    Slice slice2 = new Slice("shard2", sliceToProps, null);
     slices.put("shard2", slice2);
     collectionStates.put("collection1", slices);
     collectionStates.put("collection2", slices);
