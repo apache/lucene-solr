@@ -106,7 +106,7 @@ public class RandomIndexWriter implements Closeable {
     flushAt = _TestUtil.nextInt(r, 10, 1000);
     codec = w.getConfig().getCodec();
     if (LuceneTestCase.VERBOSE) {
-      System.out.println("RIW config=" + w.getConfig());
+      System.out.println("RIW dir=" + dir + " config=" + w.getConfig());
       System.out.println("codec default=" + codec.getName());
     }
     /* TODO: find some way to make this random...
