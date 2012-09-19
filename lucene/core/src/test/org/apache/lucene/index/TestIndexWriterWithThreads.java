@@ -513,7 +513,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
   // LUCENE-4147
   public void testRollbackAndCommitWithThreads() throws Exception {
-    final BaseDirectoryWrapper d = newFSDirectory(_TestUtil.getTempDir("RollbackAndCommitWithThreads"));
+    final BaseDirectoryWrapper d = newDirectory();
     if (d instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)d).setPreventDoubleWrite(false);
     }
@@ -524,7 +524,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     writerRef.set(new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))));
     final LineFileDocs docs = new LineFileDocs(random());
     final Thread[] threads = new Thread[threadCount];
-    final int iters = atLeast(1000);
+    final int iters = atLeast(100);
     final AtomicBoolean failed = new AtomicBoolean();
     final Lock rollbackLock = new ReentrantLock();
     final Lock commitLock = new ReentrantLock();
