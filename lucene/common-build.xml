@@ -131,6 +131,9 @@
   <property name="tests.showFailure" value="true" />
   <property name="tests.showIgnored" value="true" />
 
+  <!-- Display at most this many failures as a summary at the end of junit4 run. -->
+  <property name="tests.showNumFailures" value="10" />
+
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
   <property name="javac.source" value="1.6"/>
@@ -919,6 +922,7 @@
                     maxClassNameColumns="${tests.maxClassNameColumns}"
                     
                     timestamps="${tests.timestamps}"
+                    showNumFailures="${tests.showNumFailures}"
                 />
 
                 <!-- Emits full status for all tests, their relative order on slaves. -->
