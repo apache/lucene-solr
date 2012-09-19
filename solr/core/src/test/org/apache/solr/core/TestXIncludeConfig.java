@@ -17,22 +17,20 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.update.processor.RegexReplaceProcessorFactory;
+
 import org.apache.solr.util.AbstractSolrTestCase;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.junit.Assume;
 
-/**
- *
- *
- **/
 public class TestXIncludeConfig extends AbstractSolrTestCase {
-  protected boolean supports;
 
   @Override
   public String getSchemaFile() {
-    return "schema.xml";
+    return "schema-xinclude.xml";
   }
 
   //public String getSolrConfigFile() { return "solrconfig.xml"; }
@@ -43,28 +41,35 @@ public class TestXIncludeConfig extends AbstractSolrTestCase {
 
   @Override
   public void setUp() throws Exception {
-    supports = true;
     javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     try {
       //see whether it even makes sense to run this test
       dbf.setXIncludeAware(true);
       dbf.setNamespaceAware(true);
     } catch (UnsupportedOperationException e) {
-      supports = false;
+      Assume.assumeTrue(false);
     }
     super.setUp();
   }
 
   public void testXInclude() throws Exception {
-    //Figure out whether this JVM supports XInclude anyway, if it doesn't then don't run this test????
-    // TODO: figure out a better way to handle this.
-    if (supports == true){
-      SolrCore core = h.getCore();
-      SolrRequestHandler solrRequestHandler = core.getRequestHandler("includedHandler");
-      assertNotNull("Solr Req Handler is null", solrRequestHandler);
-    } else {
-      log.info("Didn't run testXInclude, because this XML DocumentBuilderFactory doesn't support it");
-    }
+    SolrCore core = h.getCore();
 
+    assertNotNull("includedHandler is null", 
+                  core.getRequestHandler("includedHandler"));
+
+    UpdateRequestProcessorChain chain 
+      = core.getUpdateProcessingChain("special-include");
+    assertNotNull("chain is missing included processor", chain);
+    assertEquals("chain with inclued processor is wrong size", 
+                 1, chain.getFactories().length);
+    assertEquals("chain has wrong included processor",
+                 RegexReplaceProcessorFactory.class,
+                 chain.getFactories()[0].getClass());
+
+    assertNotNull("ft-included is null",
+                  core.getSchema().getFieldTypeByName("ft-included"));
+    assertNotNull("field-included is null",
+                  core.getSchema().getFieldOrNull("field-included"));
   }
 }

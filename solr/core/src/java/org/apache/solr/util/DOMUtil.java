@@ -31,6 +31,8 @@ import org.w3c.dom.NodeList;
  */
 public class DOMUtil {
 
+  public static final String XML_RESERVED_PREFIX = "xml";
+
   public static Map<String,String> toMap(NamedNodeMap attrs) {
     return toMapExcept(attrs);
   }
@@ -39,6 +41,10 @@ public class DOMUtil {
     Map<String,String> args = new HashMap<String,String>();
     outer: for (int j=0; j<attrs.getLength(); j++) {
       Node attr = attrs.item(j);
+
+      // automaticly exclude things in the xml namespace, ie: xml:base
+      if (XML_RESERVED_PREFIX.equals(attr.getPrefix())) continue outer;
+
       String attrName = attr.getNodeName();
       for (String ex : exclusions)
         if (ex.equals(attrName)) continue outer;
