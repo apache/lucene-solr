@@ -34,8 +34,11 @@ import org.apache.lucene.util.BytesRef;
  * @lucene.experimental
  */
 public class MultiSimilarity extends Similarity {
+  /** the sub-similarities used to create the combined score */
   protected final Similarity sims[];
   
+  /** Creates a MultiSimilarity which will sum the scores
+   * of the provided <code>sims</code>. */
   public MultiSimilarity(Similarity sims[]) {
     this.sims = sims;
   }

@@ -29,6 +29,13 @@ import org.apache.lucene.search.Explanation;
  * @lucene.experimental
  */
 public abstract class BasicModel {
+  
+  /**
+   * Sole constructor. (For invocation by subclass 
+   * constructors, typically implicit.)
+   */
+  public BasicModel() {}
+
   /** Returns the informative content score. */
   public abstract float score(BasicStats stats, float tfn);
   

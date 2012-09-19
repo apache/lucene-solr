@@ -32,10 +32,18 @@ import static org.apache.lucene.search.similarities.SimilarityBase.log2;
 public class NormalizationH2 extends Normalization {
   private final float c;
   
+  /**
+   * Creates NormalizationH2 with the supplied parameter <code>c</code>.
+   * @param c hyper-parameter that controls the term frequency 
+   * normalization with respect to the document length.
+   */
   public NormalizationH2(float c) {
     this.c = c;
   }
 
+  /**
+   * Calls {@link #NormalizationH2(float) NormalizationH2(1)}
+   */
   public NormalizationH2() {
     this(1);
   }
@@ -50,6 +58,10 @@ public class NormalizationH2 extends Normalization {
     return "2";
   }
   
+  /**
+   * Returns the <code>c</code> parameter.
+   * @see #NormalizationH2(float)
+   */
   public float getC() {
     return c;
   }

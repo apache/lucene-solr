@@ -30,10 +30,18 @@ package org.apache.lucene.search.similarities;
 public class NormalizationH1 extends Normalization {
   private final float c;
   
+  /**
+   * Creates NormalizationH1 with the supplied parameter <code>c</code>.
+   * @param c hyper-parameter that controls the term frequency 
+   * normalization with respect to the document length.
+   */
   public NormalizationH1(float c) {
     this.c = c;
   }
   
+  /**
+   * Calls {@link #NormalizationH1(float) NormalizationH1(1)}
+   */
   public NormalizationH1() {
     this(1);
   }
@@ -48,6 +56,10 @@ public class NormalizationH1 extends Normalization {
     return "1";
   }
   
+  /**
+   * Returns the <code>c</code> parameter.
+   * @see #NormalizationH1(float)
+   */
   public float getC() {
     return c;
   }

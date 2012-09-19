@@ -25,6 +25,10 @@ package org.apache.lucene.search.similarities;
  * @lucene.experimental
  */
 public class DistributionLL extends Distribution {
+
+  /** Sole constructor: parameter-free */
+  public DistributionLL() {}
+
   @Override
   public final float score(BasicStats stats, float tfn, float lambda) {
     return (float)-Math.log(lambda / (tfn + lambda));

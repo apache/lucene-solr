@@ -26,6 +26,13 @@ import org.apache.lucene.search.Explanation;
  * @lucene.experimental
  */
 public abstract class Distribution {
+  
+  /**
+   * Sole constructor. (For invocation by subclass 
+   * constructors, typically implicit.)
+   */
+  public Distribution() {}
+
   /** Computes the score. */
   public abstract float score(BasicStats stats, float tfn, float lambda);
   

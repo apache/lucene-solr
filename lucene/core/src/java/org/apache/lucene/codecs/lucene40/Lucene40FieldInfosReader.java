@@ -100,8 +100,7 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
     }
   }
 
-  public DocValues.Type getDocValuesType(
-      final byte b) {
+  private static DocValues.Type getDocValuesType(final byte b) {
     switch(b) {
       case 0:
         return null;

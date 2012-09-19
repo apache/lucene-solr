@@ -24,6 +24,9 @@ import org.apache.lucene.util.BytesRef;
 /** Expert: Default scoring implementation. */
 public class DefaultSimilarity extends TFIDFSimilarity {
   
+  /** Sole constructor: parameter-free */
+  public DefaultSimilarity() {}
+  
   /** Implemented as <code>overlap / maxOverlap</code>. */
   public float coord(int overlap, int maxOverlap) {
     return overlap / (float)maxOverlap;
@@ -76,7 +79,10 @@ public class DefaultSimilarity extends TFIDFSimilarity {
     return (float)(Math.log(numDocs/(double)(docFreq+1)) + 1.0);
   }
     
-  // Default true
+  /** 
+   * True if overlap tokens (tokens with a position of increment of zero) are
+   * discounted from the document's length.
+   */
   protected boolean discountOverlaps = true;
 
   /** Determines whether overlap tokens (Tokens with
@@ -92,7 +98,10 @@ public class DefaultSimilarity extends TFIDFSimilarity {
     discountOverlaps = v;
   }
 
-  /** @see #setDiscountOverlaps */
+  /**
+   * Returns true if overlap tokens are discounted from the document's length. 
+   * @see #setDiscountOverlaps 
+   */
   public boolean getDiscountOverlaps() {
     return discountOverlaps;
   }

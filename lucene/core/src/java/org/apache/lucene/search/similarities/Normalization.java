@@ -27,6 +27,13 @@ import org.apache.lucene.search.Explanation;
  * @lucene.experimental
  */
 public abstract class Normalization {
+  
+  /**
+   * Sole constructor. (For invocation by subclass 
+   * constructors, typically implicit.)
+   */
+  public Normalization() {}
+
   /** Returns the normalized term frequency.
    * @param len the field length. */
   public abstract float tfn(BasicStats stats, float tf, float len);
@@ -50,6 +57,10 @@ public abstract class Normalization {
 
   /** Implementation used when there is no normalization. */
   public static final class NoNormalization extends Normalization {
+    
+    /** Sole constructor: parameter-free */
+    public NoNormalization() {}
+    
     @Override
     public final float tfn(BasicStats stats, float tf, float len) {
       return tf;
