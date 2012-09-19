@@ -26,7 +26,7 @@ import org.apache.lucene.util.NumericUtils;
 
 /**
  * <p>
- * This class provides a {@link Field} that enables indexing of long values
+ * Field that indexes <code>long</code> values
  * for efficient range filtering and sorting. Here's an example usage:
  * 
  * <pre class="prettyprint">

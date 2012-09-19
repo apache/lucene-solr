@@ -22,8 +22,8 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * <p>
- * This class provides a {@link Field} that enables storing
- * of a per-document {@link BytesRef} value, indexed for
+ * Field that stores
+ * a per-document {@link BytesRef} value, indexed for
  * sorting.  Here's an example usage:
  * 
  * <pre class="prettyprint">
