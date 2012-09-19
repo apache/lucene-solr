@@ -144,7 +144,7 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
       # Make a fake release to hold pre-release sections and items
       push @releases, [ undef, undef, undef, $sections ];
     }
-    push @$sections, [ undef, $items ];
+    push @$sections, [ '', $items ];
   }
 
   my $type;
@@ -443,15 +443,17 @@ for my $rel (@releases) {
 
     my $list_item = "li";
     if ($release) {
-      if ($heading and $heading eq 'Detailed Change List') {
-        print "  <$subheader>$heading</$subheader>\n";
-        next;
-      } elsif ($has_release_sections and $heading) {
-        print "  <li><a id=\"$relid.$sectid\"",
-              " href=\"javascript:toggleList('$relid.$sectid')\">",
-              ($heading || ''), "</a>&nbsp;&nbsp;&nbsp;$numItemsStr\n"
+      if ($heading) {
+        if ($heading eq 'Detailed Change List') {
+          print "  <$subheader>$heading</$subheader>\n";
+          next;
+        } elsif ($has_release_sections) {
+          print "  <li><a id=\"$relid.$sectid\"",
+                " href=\"javascript:toggleList('$relid.$sectid')\">$heading</a>",
+                "&nbsp;&nbsp;&nbsp;$numItemsStr\n"
+        }
       }
-    } else {
+    } else { # $release is not defined
       print "<h2>$heading</h2>\n" if ($heading);
       $list_item = "p";
     }
