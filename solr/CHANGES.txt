@@ -251,6 +251,11 @@ Bug Fixes
 * SOLR-3850: DataImportHandler "cacheKey" parameter was incorrectly renamed "cachePk"
   (James Dyer)
 
+* SOLR-3087: Fixed DOMUtil so that code doing attribute validation will 
+  automaticly ignore nodes in the resserved "xml" prefix - in particular this 
+  fixes some bugs related to xinclude and fieldTypes.
+  (Amit Nithian, hossman)
+
 Other Changes
 ----------------------
 

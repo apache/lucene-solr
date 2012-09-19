@@ -1,5 +1,4 @@
-<?xml version="1.0" ?>
-
+<?xml version="1.0" encoding="UTF-8" ?>
 <!--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -16,18 +15,12 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-
-<config>
-  <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
-  <xi:include href="foobar-missing.xml" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <xi:fallback>
-      <xi:include href="solrconfig-reqHandler.incl" xmlns:xi="http://www.w3.org/2001/XInclude"/>
-    </xi:fallback>
-  </xi:include>
-
-  <updateRequestProcessorChain name="special-include" xmlns:xi="http://www.w3.org/2001/XInclude">
-    <xi:include href="solrconfig-snippet-processor.xml" />
-  </updateRequestProcessorChain>
-
-</config>
+<schema name="xinclude" version="1.5" xmlns:xi="http://www.w3.org/2001/XInclude">
+ <types>
+  <fieldType name="string" class="solr.StrField"/>
+  <xi:include href="schema-snippet-type.xml" />
+ </types>
+ <fields>
+   <xi:include href="schema-snippet-field.xml" />
+ </fields>
+</schema>
