@@ -191,7 +191,7 @@ public class TestAddTaxonomy extends LuceneTestCase {
 
   public void testConcurrency() throws Exception {
     // tests that addTaxonomy and addCategory work in parallel
-    final int numCategories = atLeast(5000);
+    final int numCategories = atLeast(10000);
     
     // build an input taxonomy index
     Directory src = newDirectory();
