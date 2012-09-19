@@ -50,7 +50,7 @@ final class DocFieldProcessor extends DocConsumer {
   public void flush(Collection<DocConsumerPerThread> threads, SegmentWriteState state) throws IOException {
 
     Map<DocFieldConsumerPerThread, Collection<DocFieldConsumerPerField>> childThreadsAndFields = new HashMap<DocFieldConsumerPerThread, Collection<DocFieldConsumerPerField>>();
-    for ( DocConsumerPerThread thread : threads) {
+    for (DocConsumerPerThread thread : threads) {
       DocFieldProcessorPerThread perThread = (DocFieldProcessorPerThread) thread;
       childThreadsAndFields.put(perThread.consumer, perThread.fields());
       perThread.trimFields(state);

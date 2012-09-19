@@ -79,6 +79,26 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       nextPerField = null;
   }
 
+  @Override
+  public void close() {
+    if (perThread.termsHash.trackAllocations) {
+      try {
+        if (postingsHash != null) {
+          bytesUsed(-postingsHash.length * RamUsageEstimator.NUM_BYTES_INT);
+          postingsHash = null;
+        }
+        if (postingsArray != null) {
+          bytesUsed(-postingsArray.bytesPerPosting() * postingsArray.size);
+          postingsArray = null;
+        }
+      } finally {
+        if (nextPerField != null) {
+          nextPerField.close();
+        }
+      }
+    }
+  }
+
   private void initPostingsArray() {
     postingsArray = consumer.createPostingsArray(2);
     bytesUsed(postingsArray.size * postingsArray.bytesPerPosting());

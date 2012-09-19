@@ -90,7 +90,7 @@ public class RandomIndexWriter implements Closeable {
     w = new MockIndexWriter(r, dir, c);
     flushAt = _TestUtil.nextInt(r, 10, 1000);
     if (LuceneTestCase.VERBOSE) {
-      System.out.println("RIW config=" + w.getConfig());
+      System.out.println("RIW dir=" + dir + " config=" + w.getConfig());
     }
 
     // Make sure we sometimes test indices that don't get

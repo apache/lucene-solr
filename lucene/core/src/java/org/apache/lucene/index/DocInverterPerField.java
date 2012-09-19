@@ -61,6 +61,11 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
   }
 
   @Override
+  public void close() {
+    consumer.close();
+  }
+
+  @Override
   public void processFields(final Fieldable[] fields,
                             final int count) throws IOException {
 

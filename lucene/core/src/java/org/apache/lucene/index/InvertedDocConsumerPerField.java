@@ -41,4 +41,6 @@ abstract class InvertedDocConsumerPerField {
 
   // Called on hitting an aborting exception
   abstract void abort();
+
+  abstract void close();
 }

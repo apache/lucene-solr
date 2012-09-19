@@ -28,6 +28,12 @@ Bug Fixes:
   had a custom Similarity where coord(1,1) != 1F, then the rewritten
   query would be scored differently.  (Robert Muir)
 
+* LUCENE-4398: If you index many different field names in your
+  documents then due to a bug in how it measures its RAM
+  usage, IndexWriter would flush each segment too early eventually
+  reaching the point where it flushes after every doc.  (Tim Smith via
+  Mike McCandless)
+
 Documentation
 
 * LUCENE-4302: Fix facet userguide to have HTML loose doctype like

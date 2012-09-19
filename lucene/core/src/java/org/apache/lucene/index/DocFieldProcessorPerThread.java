@@ -146,6 +146,8 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
           if (state.infoStream != null)
             state.infoStream.println("  purge field=" + perField.fieldInfo.name);
 
+          perField.consumer.close();
+
           totalFieldCount--;
 
         } else {
