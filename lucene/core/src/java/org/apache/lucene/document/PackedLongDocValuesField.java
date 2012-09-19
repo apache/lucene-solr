@@ -36,7 +36,7 @@ import org.apache.lucene.index.AtomicReader;      // javadocs
  * If you also need to store the value, you should add a
  * separate {@link StoredField} instance.
  * 
- * @see DocValues for further information
+ * @see DocValues
  * */
 
 public class PackedLongDocValuesField extends StoredField {

@@ -34,7 +34,7 @@ import org.apache.lucene.util.BytesRef;
  * If you also need to store the value, you should add a
  * separate {@link StoredField} instance.
  * 
- * @see DocValues for further information
+ * @see DocValues
  * */
 
 public class SortedBytesDocValuesField extends StoredField {
