@@ -830,13 +830,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         if (term.field() != Consts.FULL) break;
         cp.clear();
         cp.add(term.text(), Consts.DEFAULT_DELIMITER);
-        int ordinal = findCategory(cp);
-        if (ordinal < 0) {
-          // NOTE: call addCategory so that it works well in a multi-threaded
-          // environment, in case e.g. a thread just added the category, after
-          // the findCategory() call above failed to find it.
-          ordinal = addCategory(cp);
-        }
+        final int ordinal = addCategory(cp);
         docs.seek(term);
         docs.next();
         ordinalMap.addMapping(docs.doc(), ordinal);
