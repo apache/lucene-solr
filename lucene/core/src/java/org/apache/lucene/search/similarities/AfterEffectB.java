@@ -24,6 +24,10 @@ import org.apache.lucene.search.Explanation;
  * @lucene.experimental
  */
 public class AfterEffectB extends AfterEffect {
+
+  /** Sole constructor: parameter-free */
+  public AfterEffectB() {}
+
   @Override
   public final float score(BasicStats stats, float tfn) {
     long F = stats.getTotalTermFreq()+1;

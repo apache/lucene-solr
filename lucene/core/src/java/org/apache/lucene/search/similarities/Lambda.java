@@ -26,6 +26,13 @@ import org.apache.lucene.search.Explanation;
  * @lucene.experimental
  */
 public abstract class Lambda {
+  
+  /**
+   * Sole constructor. (For invocation by subclass 
+   * constructors, typically implicit.)
+   */
+  public Lambda() {}
+
   /** Computes the lambda parameter. */
   public abstract float lambda(BasicStats stats);
   /** Explains the lambda parameter. */

@@ -34,6 +34,12 @@ import org.apache.lucene.search.TermStatistics;
  * @lucene.experimental
  */
 public abstract class PerFieldSimilarityWrapper extends Similarity {
+  
+  /**
+   * Sole constructor. (For invocation by subclass 
+   * constructors, typically implicit.)
+   */
+  public PerFieldSimilarityWrapper() {}
 
   @Override
   public final void computeNorm(FieldInvertState state, Norm norm) {

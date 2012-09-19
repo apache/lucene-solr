@@ -32,6 +32,10 @@ import static org.apache.lucene.search.similarities.SimilarityBase.log2;
  * @lucene.experimental
  */
 public class BasicModelD extends BasicModel {
+  
+  /** Sole constructor: parameter-free */
+  public BasicModelD() {}
+  
   @Override
   public final float score(BasicStats stats, float tfn) {
     // we have to ensure phi is always < 1 for tiny TTF values, otherwise nphi can go negative,
