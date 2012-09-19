@@ -528,6 +528,13 @@ sammy.get
                   array.push( { name : 'rows', value: rows } );
                 }
 
+                $( 'input:checkbox', form ).not( ':checked' )
+                  .each( function( i, input )
+                  {
+                    array.push( { name: input.name, value: 'false' } );
+                  }
+                );
+
                 var custom_parameters = $( '#custom_parameters', form ).val();
                 if( custom_parameters.length )
                 {
