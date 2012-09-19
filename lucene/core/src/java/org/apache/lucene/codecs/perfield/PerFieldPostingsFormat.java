@@ -225,8 +225,11 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     return new FieldsReader(state);
   }
 
-  // NOTE: only called during writing; for reading we read
-  // all we need from the index (ie we save the field ->
-  // format mapping)
+  /** 
+   * Returns the postings format that should be used for writing 
+   * new segments of <code>field</code>.
+   * <p>
+   * The field to format mapping is written to the index, so
+   * this method is only invoked when writing, not when reading. */
   public abstract PostingsFormat getPostingsFormatForField(String field);
 }
