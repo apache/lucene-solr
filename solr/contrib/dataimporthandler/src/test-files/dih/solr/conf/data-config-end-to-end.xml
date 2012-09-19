@@ -12,7 +12,7 @@
       <field column="COUNTRY_CODE" sourceColName="COUNTRY_CODES" splitBy="," />
  
 <!-- 
- Instead of using 'cachePk'/'cacheLookup' as done below, we could have done:
+ Instead of using 'cacheKey'/'cacheLookup' as done below, we could have done:
   where="CODE=People.COUNTRY_CODE"
 --> 
       <entity 
@@ -20,7 +20,7 @@
         processor="SqlEntityProcessor"
         dataSource="hsqldb" 
         cacheImpl="SortedMapBackedCache"
-        cachePk="CODE"
+        cacheKey="CODE"
         cacheLookup="People.COUNTRY_CODE"
         
         query="SELECT CODE, COUNTRY_NAME FROM COUNTRIES"
