@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.common.SolrException;
-import org.apache.zookeeper.SolrZooKeeper;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

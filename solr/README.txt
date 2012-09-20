@@ -31,7 +31,7 @@ Getting Started
 See the "example" directory for an example Solr setup.  A tutorial
 using the example setup can be found at
    http://lucene.apache.org/solr/tutorial.html
-or linked from "docs/api/index.html" in a binary distribution.
+or linked from "docs/index.html" in a binary distribution.
 Also, there are Solr clients for many programming languages, see 
    http://wiki.apache.org/solr/IntegratingSolr
 
@@ -54,7 +54,7 @@ dist/apache-solr-XX.jar
   Apache Solr Plugins (see http://wiki.apache.org/solr/SolrPlugins for
   more information).
 
-docs/api/index.html
+docs/index.html
   The Apache Solr Javadoc API documentation and Tutorial
 
 
