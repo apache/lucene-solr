@@ -275,7 +275,7 @@
     </sequential>
   </macrodef>
 
-  <target name="define-lucene-javadoc-url">
+  <target name="define-lucene-javadoc-url" unless="lucene.javadoc.url">
     <script language="javascript"><![CDATA[
       var url, version = project.getProperty('version');
       if (version.contains('-SNAPSHOT')) {
