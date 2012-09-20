@@ -37,7 +37,7 @@
     </ant>
   </target>
 
-  <target name="compile-core" depends="compile-solr-core, compile-test-framework">
+  <target name="compile-core" depends="resolve, compile-solr-core, compile-test-framework">
     <compile srcdir="${src.dir}" destdir="${build.dir}/classes/java">
       <classpath refid="test.base.classpath"/>
     </compile>
