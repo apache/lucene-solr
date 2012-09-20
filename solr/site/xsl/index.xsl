@@ -36,7 +36,7 @@
         <title><xsl:text>Apache Solr </xsl:text><xsl:value-of select="$version"/><xsl:text> Documentation</xsl:text></title>
       </head>
       <body>
-        <div><img src="solr.png"/></div>
+        <div><a href="http://lucene.apache.org/solr/"><img src="solr.png" title="Apache Solr Logo" alt="Solr" border="0"/></a></div>
         <h1><xsl:text>Apache Solr </xsl:text><xsl:value-of select="$version"/><xsl:text> Documentation</xsl:text></h1>
         <p>Solr is the popular, blazing fast open source enterprise search platform from the Apache Lucene project.
         Its major features include powerful full-text search, hit highlighting, faceted search, dynamic clustering,
