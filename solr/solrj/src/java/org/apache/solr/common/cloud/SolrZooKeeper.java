@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.zookeeper.ClientCnxn;
 import org.apache.zookeeper.Watcher;
@@ -30,7 +30,7 @@ import org.apache.zookeeper.ZooKeeper;
 
 // we use this class to expose nasty stuff for tests
 public class SolrZooKeeper extends ZooKeeper {
-  List<Thread> spawnedThreads = new CopyOnWriteArrayList<Thread>();
+  Set<Thread> spawnedThreads = new CopyOnWriteArraySet<Thread>();
   
   // for test debug
   //static Map<SolrZooKeeper,Exception> clients = new ConcurrentHashMap<SolrZooKeeper,Exception>();
@@ -61,7 +61,7 @@ public class SolrZooKeeper extends ZooKeeper {
    * @param ms the number of milliseconds to pause.
    */
   public void pauseCnxn(final long ms) {
-    Thread t = new Thread() {
+    final Thread t = new Thread() {
       public void run() {
         try {
           synchronized (cnxn) {
@@ -72,11 +72,15 @@ public class SolrZooKeeper extends ZooKeeper {
             }
             Thread.sleep(ms);
           }
-        } catch (InterruptedException e) {}
+        } catch (InterruptedException e) {
+          // ignore
+        } finally {
+          spawnedThreads.remove(this);
+        }
       }
     };
-    t.start();
     spawnedThreads.add(t);
+    t.start();
   }
 
   @Override
