@@ -33,6 +33,19 @@
         <path refid="solr.base.classpath"/>
   </path>
 
+  <!-- Specialized to depend on nothing -->
+  <target name="javadocs" depends="compile-core">
+    <sequential>
+      <mkdir dir="${javadoc.dir}/${name}"/>
+      <solr-invoke-javadoc>
+        <solrsources>
+          <packageset dir="${src.dir}"/>
+        </solrsources>
+      </solr-invoke-javadoc>
+      <solr-jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
+     </sequential>
+  </target>
+
   <target name="dist" depends="common-solr.dist">
     <mkdir  dir="${dist}/solrj-lib" />
     <copy todir="${dist}/solrj-lib">

@@ -200,21 +200,52 @@
   <target name="lucene-javadocs" depends="javadocs-lucene-core,javadocs-analyzers-common,javadocs-analyzers-icu,javadocs-analyzers-kuromoji,javadocs-analyzers-phonetic,javadocs-analyzers-smartcn,javadocs-analyzers-morfologik,javadocs-analyzers-stempel,javadocs-analyzers-uima,javadocs-suggest,javadocs-grouping,javadocs-queries,javadocs-queryparser,javadocs-highlighter,javadocs-memory,javadocs-misc,javadocs-spatial,javadocs-test-framework"/>
 
   <!-- create javadocs for the current module -->
-  <target name="javadocs" depends="compile-core,define-lucene-javadoc-url,lucene-javadocs">
+  <target name="javadocs" depends="compile-core,define-lucene-javadoc-url,lucene-javadocs,javadocs-solr-core">
    	<sequential>
       <mkdir dir="${javadoc.dir}/${name}"/>
       <solr-invoke-javadoc>
         <solrsources>
           <packageset dir="${src.dir}"/>
         </solrsources>
+        <links>
+          <link href="../solr-solrj"/>
+          <link href="../solr-core"/>
+        </links>
       </solr-invoke-javadoc>
       <solr-jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
      </sequential>
   </target>
 
+  <target name="check-solr-core-javadocs-uptodate" unless="solr-core-javadocs.uptodate">
+    <uptodate property="solr-core-javadocs.uptodate" targetfile="${build.dir}/solr-core/apache-solr-core-${version}-javadoc.jar">
+       <srcfiles dir="${common-solr.dir}/core/src/java" includes="**/*.java"/>
+    </uptodate>
+  </target>
+
+  <target name="check-solrj-javadocs-uptodate" unless="solrj-javadocs.uptodate">
+    <uptodate property="solrj-javadocs.uptodate" targetfile="${build.dir}/solr-solrj/apache-solr-solrj-${version}-javadoc.jar">
+       <srcfiles dir="${common-solr.dir}/solrj/src/java" includes="**/*.java"/>
+    </uptodate>
+  </target>
+
+  <target name="javadocs-solr-core" depends="check-solr-core-javadocs-uptodate" unless="solr-core-javadocs.uptodate">
+    <ant dir="${common-solr.dir}/core" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="solr-core-javadocs.uptodate" value="true"/>
+  </target>
+
+  <target name="javadocs-solrj" depends="check-solrj-javadocs-uptodate" unless="solrj-javadocs.uptodate">
+    <ant dir="${common-solr.dir}/solrj" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="solrj-javadocs.uptodate" value="true"/>
+  </target>
+
   <!-- macro to create solr javadocs with links to lucene. make sure calling task depends on lucene-javadocs -->
   <macrodef name="solr-invoke-javadoc">
       <element name="solrsources" optional="yes"/>
+      <element name="links" optional="yes"/>
       <attribute name="destdir" default="${javadoc.dir}/${name}"/>
       <attribute name="title" default="${Name} ${version} ${name} API"/>
       <attribute name="overview" default="${src.dir}/overview.html"/>
@@ -240,6 +271,7 @@
           <link offline="true" href="${lucene.javadoc.url}memory" packagelistloc="${lucenedocs}/memory"/>
           <link offline="true" href="${lucene.javadoc.url}misc" packagelistloc="${lucenedocs}/misc"/>
           <link offline="true" href="${lucene.javadoc.url}spatial" packagelistloc="${lucenedocs}/spatial"/>
+          <links/>
           <link href=""/>
         </sources>
       </invoke-javadoc>

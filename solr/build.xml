@@ -177,20 +177,10 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
-  <target name="javadocs-solr-core">
-    <ant dir="core" target="javadocs" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
   
   <!-- Solrj targets -->
   <target name="test-solrj" description="Test java client">
     <ant dir="solrj" target="test" inheritAll="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-    </ant>
-  </target>
-  <target name="javadocs-solrj">
-    <ant dir="solrj" target="javadocs" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
