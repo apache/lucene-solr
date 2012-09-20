@@ -19,7 +19,6 @@ package org.apache.solr.common.cloud;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -45,16 +44,6 @@ public class SolrZooKeeper extends ZooKeeper {
     return cnxn;
   }
   
-  SelectableChannel getSendThreadChannel() throws Exception {
-    final Field sendThreadFld = cnxn.getClass().getDeclaredField("sendThread");
-    sendThreadFld.setAccessible(true);
-    Object sendThread = sendThreadFld.get(cnxn);
-    final Field sockKeyFld = sendThread.getClass().getDeclaredField("sockKey");
-    sockKeyFld.setAccessible(true);
-    final SelectionKey sockKey = (SelectionKey) sockKeyFld.get(sendThread);
-    return sockKey.channel();
-  }
-  
   /**
    * Cause this ZooKeeper object to stop receiving from the ZooKeeperServer
    * for the given number of milliseconds.
@@ -64,9 +53,20 @@ public class SolrZooKeeper extends ZooKeeper {
     final Thread t = new Thread() {
       public void run() {
         try {
+          final ClientCnxn cnxn = getConnection();
           synchronized (cnxn) {
             try {
-              getSendThreadChannel().close();
+              final Field sendThreadFld = cnxn.getClass().getDeclaredField("sendThread");
+              sendThreadFld.setAccessible(true);
+              Object sendThread = sendThreadFld.get(cnxn);
+              if (sendThread != null) {
+                final Field sockKeyFld = sendThread.getClass().getDeclaredField("sockKey");
+                sockKeyFld.setAccessible(true);
+                final SelectionKey sockKey = (SelectionKey) sockKeyFld.get(sendThread);
+                if (sockKey != null) {
+                  sockKey.channel().close();
+                }
+              }
             } catch (Exception e) {
               throw new RuntimeException("Closing Zookeeper send channel failed.", e);
             }
