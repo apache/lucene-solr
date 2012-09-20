@@ -256,6 +256,8 @@ Bug Fixes
   fixes some bugs related to xinclude and fieldTypes.
   (Amit Nithian, hossman)
 
+* SOLR-3783: Fixed Pivot Faceting to work with facet.missing=true (hossman)
+
 Other Changes
 ----------------------
 
