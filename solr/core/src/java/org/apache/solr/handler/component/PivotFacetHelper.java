@@ -32,6 +32,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.index.Term;
 
 import java.io.IOException;
@@ -103,22 +104,38 @@ public class PivotFacetHelper
     for (Map.Entry<String, Integer> kv : superFacets) {
       // Only sub-facet if parent facet has positive count - still may not be any values for the sub-field though
       if (kv.getValue() >= minMatch ) {
-        // don't reuse the same BytesRef  each time since we will be constructing Term
-        // objects that will most likely be cached.
-        BytesRef termval = new BytesRef();
-        ftype.readableToIndexed(kv.getKey(), termval);
-        
+
+        // may be null when using facet.missing
+        final String fieldValue = kv.getKey(); 
+
+        // don't reuse the same BytesRef each time since we will be 
+        // constructing Term objects used in TermQueries that may be cached.
+        BytesRef termval = null;
+
         SimpleOrderedMap<Object> pivot = new SimpleOrderedMap<Object>();
         pivot.add( "field", field );
-        pivot.add( "value", ftype.toObject(sfield, termval) );
+        if (null == fieldValue) {
+          pivot.add( "value", null );
+        } else {
+          termval = new BytesRef();
+          ftype.readableToIndexed(fieldValue, termval);
+          pivot.add( "value", ftype.toObject(sfield, termval) );
+        }
         pivot.add( "count", kv.getValue() );
         
         if( subField == null ) {
           values.add( pivot );
         }
         else {
-          Query query = new TermQuery(new Term(field, termval));
-          DocSet subset = searcher.getDocSet(query, docs);
+          DocSet subset = null;
+          if ( null == termval ) {
+            DocSet hasVal = searcher.getDocSet
+              (new TermRangeQuery(field, null, null, false, false));
+            subset = docs.andNot(hasVal);
+          } else {
+            Query query = new TermQuery(new Term(field, termval));
+            subset = searcher.getDocSet(query, docs);
+          }
           SimpleFacets sf = getFacetImplementation(rb.req, subset, rb.req.getParams());
           
           NamedList<Integer> nl = sf.getTermCounts(subField);
@@ -134,6 +151,7 @@ public class PivotFacetHelper
     fnames.push( nextField );
     return values;
   }
+
 // TODO: This is code from various patches to support distributed search.
 //  Some parts may be helpful for whoever implements distributed search.
 //

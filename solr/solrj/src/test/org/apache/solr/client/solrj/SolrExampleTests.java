@@ -939,8 +939,15 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
   }
 
   @Test
-  public void testPivotFacet() throws Exception
-  {    
+  public void testPivotFacets() throws Exception {
+    doPivotFacetTest(false);
+  }
+    
+  public void testPivotFacetsMissing() throws Exception {
+    doPivotFacetTest(true);
+  }
+    
+  private void doPivotFacetTest(boolean missing) throws Exception {
     SolrServer server = getSolrServer();
     
     // Empty the database...
@@ -961,13 +968,14 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     docs.add( makeTestDoc( "id", id++, "features", "bbb",  "cat", "b", "inStock", true ) );
     docs.add( makeTestDoc( "id", id++, "features", "bbb",  "cat", "b", "inStock", false ) );
     docs.add( makeTestDoc( "id", id++, "features", "bbb",  "cat", "b", "inStock", true ) );
-    docs.add( makeTestDoc( "id", id++ ) ); // something not matching
+    docs.add( makeTestDoc( "id", id++,  "cat", "b" ) ); // something not matching all fields
     server.add( docs );
     server.commit();
     
     SolrQuery query = new SolrQuery( "*:*" );
     query.addFacetPivotField("features,cat", "cat,features", "features,cat,inStock" );
     query.setFacetMinCount( 0 );
+    query.setFacetMissing( missing );
     query.setRows( 0 );
     
     QueryResponse rsp = server.query( query );
@@ -991,10 +999,12 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     //  features=aaa (5)
     //    cat=a (3)
     //    cat=b (2)
-    
-    List<PivotField> pivot = pivots.getVal( 0 );
+    //  features missing (1)
+    //    cat=b (1)
+
     assertEquals( "features,cat", pivots.getName( 0 ) );
-    assertEquals( 2, pivot.size() );
+    List<PivotField> pivot = pivots.getVal( 0 );
+    assertEquals( missing ? 3 : 2, pivot.size() );
     
     PivotField ff = pivot.get( 0 );
     assertEquals( "features", ff.getField() );
@@ -1007,27 +1017,72 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertEquals(   4, counts.get(0).getCount() );
     assertEquals( "a", counts.get(1).getValue() );
     assertEquals(   2, counts.get(1).getCount() );
-    
 
-    //  PIVOT: cat,features
-    //  cat=b (6)
-    //    features=bbb (4)
-    //    features=aaa (2)
-    //  cat=a (5)
-    //    features=aaa (3)
-    //    features=bbb (2)
-    
     ff = pivot.get( 1 );
     assertEquals( "features", ff.getField() );
     assertEquals( "aaa", ff.getValue() );
     assertEquals( 5, ff.getCount() );
     counts = ff.getPivot();
     assertEquals( 2, counts.size() );
+    assertEquals( "cat", counts.get(0).getField() );
     assertEquals( "a", counts.get(0).getValue() );
     assertEquals(   3, counts.get(0).getCount() );
     assertEquals( "b", counts.get(1).getValue() );
     assertEquals(   2, counts.get(1).getCount() );
-    
+
+    if (missing) {
+      ff = pivot.get( 2 );
+      assertEquals( "features", ff.getField() );
+      assertEquals( null, ff.getValue() );
+      assertEquals( 1, ff.getCount() );
+      counts = ff.getPivot();
+      assertEquals( 1, counts.size() );
+      assertEquals( "cat", counts.get(0).getField() );
+      assertEquals( "b", counts.get(0).getValue() );
+      assertEquals( 1, counts.get(0).getCount() );
+    }
+
+    //  PIVOT: cat,features
+    //  cat=b (7)
+    //    features=bbb (4)
+    //    features=aaa (2)
+    //    features missing (1)
+    //  cat=a (5)
+    //    features=aaa (3)
+    //    features=bbb (2)
+
+    assertEquals( "cat,features", pivots.getName( 1 ) );
+    pivot = pivots.getVal( 1 );
+    assertEquals( 2, pivot.size() );
+
+    ff = pivot.get( 0 );
+    assertEquals( "cat", ff.getField() );
+    assertEquals( "b", ff.getValue() );
+    assertEquals( 7, ff.getCount() );
+    counts = ff.getPivot();
+    assertEquals( missing ? 3 : 2, counts.size() );
+    assertEquals( "features", counts.get(0).getField() );
+    assertEquals( "bbb", counts.get(0).getValue() );
+    assertEquals( 4, counts.get(0).getCount() );
+    assertEquals( "aaa", counts.get(1).getValue() );
+    assertEquals( 2, counts.get(1).getCount() );
+    if ( missing ) {
+      assertEquals( null, counts.get(2).getValue() );
+      assertEquals( 1, counts.get(2).getCount() );
+    }
+
+    ff = pivot.get( 1 );
+    assertEquals( "cat", ff.getField() );
+    assertEquals( "a", ff.getValue() );
+    assertEquals( 5, ff.getCount() );
+    counts = ff.getPivot();
+    assertEquals( 2, counts.size() );
+    assertEquals( "features", counts.get(0).getField() );
+    assertEquals( "aaa", counts.get(0).getValue() );
+    assertEquals( 3, counts.get(0).getCount() );
+    assertEquals( "bbb", counts.get(1).getValue() );
+    assertEquals( 2, counts.get(1).getCount() );
+
     // Three deep:
     //  PIVOT: features,cat,inStock
     //  features=bbb (6)
@@ -1044,10 +1099,13 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     //    cat=b (2)
     //      inStock=false (1)
     //      inStock=true (1)
-    
-    pivot = pivots.getVal( 2 );
+    //  features missing (1)
+    //    cat=b (1)
+    //      inStock missing (1)
+
     assertEquals( "features,cat,inStock", pivots.getName( 2 ) );
-    assertEquals( 2, pivot.size() );
+    pivot = pivots.getVal( 2 );
+    assertEquals( missing ? 3 : 2, pivot.size() );
     PivotField p = pivot.get( 1 ).getPivot().get(0);     // get(1) should be features=AAAA, then get(0) should be cat=a
     assertEquals( "cat", p.getField() );
     assertEquals( "a", p.getValue() );
@@ -1057,6 +1115,25 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertEquals( "inStock",    counts.get(0).getField() );
     assertEquals( Boolean.TRUE, counts.get(0).getValue() );
     assertEquals(  2,           counts.get(0).getCount() );
+
+    if (missing) {
+      p = pivot.get( 2 );
+      assertEquals( "features", p.getField() );
+      assertEquals( null, p.getValue() );
+      assertEquals( 1, p.getCount() );
+      assertEquals( 1, p.getPivot().size() );
+      p = p.getPivot().get(0);
+      assertEquals( "cat", p.getField() );
+      assertEquals( "b", p.getValue() );
+      assertEquals( 1, p.getCount() );
+      assertEquals( 1, p.getPivot().size() );
+      p = p.getPivot().get(0);
+      assertEquals( "inStock", p.getField() );
+      assertEquals( null, p.getValue() );
+      assertEquals( 1, p.getCount() );
+      assertEquals( null, p.getPivot() );
+    }
+
   }
   
   public static SolrInputDocument makeTestDoc( Object ... kvp )
