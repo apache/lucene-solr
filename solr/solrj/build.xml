@@ -34,7 +34,7 @@
   </path>
 
   <!-- Specialized to depend on nothing -->
-  <target name="javadocs" depends="compile-core">
+  <target name="javadocs" depends="compile-core,define-lucene-javadoc-url">
     <sequential>
       <mkdir dir="${javadoc.dir}/${name}"/>
       <solr-invoke-javadoc>
