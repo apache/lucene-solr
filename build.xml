@@ -45,7 +45,7 @@
     </sequential>
   </target>
 
-  <target name="javadocs" description="Generate Lucene and Solr javadocs">
+  <target name="documentation" description="Generate Lucene and Solr Documentation">
     <sequential>
       <subant target="documentation" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
