@@ -281,7 +281,7 @@ public class FieldType implements IndexableFieldType  {
    * {@inheritDoc}
    * <p>
    * The default is {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS}.
-   * @see #setIndexOptions(FieldInfo.IndexOptions)
+   * @see #setIndexOptions(org.apache.lucene.index.FieldInfo.IndexOptions)
    */
   public IndexOptions indexOptions() {
     return this.indexOptions;
