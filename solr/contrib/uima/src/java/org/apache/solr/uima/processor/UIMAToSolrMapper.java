@@ -54,7 +54,7 @@ public class UIMAToSolrMapper {
    * @param typeName             name of UIMA type to map
    * @param featureFieldsmapping
    */
-  public void map(String typeName, Map<String, MapField> featureFieldsmapping) throws FieldMappingException {
+  void map(String typeName, Map<String, MapField> featureFieldsmapping) throws FieldMappingException {
     try {
       Type type = cas.getTypeSystem().getType(typeName);
       for (FSIterator<FeatureStructure> iterator = cas.getFSIndexRepository().getAllIndexedFS(type); iterator

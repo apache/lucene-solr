@@ -40,7 +40,7 @@ public class SolrUIMAConfiguration {
   
   private String logField;
 
-  public SolrUIMAConfiguration(String aePath, String[] fieldsToAnalyze, boolean fieldsMerging,
+  SolrUIMAConfiguration(String aePath, String[] fieldsToAnalyze, boolean fieldsMerging,
           Map<String, Map<String, MapField>> typesFeaturesFieldsMapping,
           Map<String, Object> runtimeParameters, boolean ignoreErrors, String logField) {
     this.aePath = aePath;
@@ -60,7 +60,7 @@ public class SolrUIMAConfiguration {
     return fieldsMerging;
   }
 
-  public Map<String, Map<String, MapField>> getTypesFeaturesFieldsMapping() {
+  Map<String, Map<String, MapField>> getTypesFeaturesFieldsMapping() {
     return typesFeaturesFieldsMapping;
   }
 
