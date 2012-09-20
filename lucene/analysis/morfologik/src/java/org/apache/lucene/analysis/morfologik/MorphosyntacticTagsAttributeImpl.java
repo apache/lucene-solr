@@ -29,6 +29,9 @@ import org.apache.lucene.util.AttributeImpl;
 public class MorphosyntacticTagsAttributeImpl extends AttributeImpl 
   implements MorphosyntacticTagsAttribute, Cloneable {
   
+  /** Initializes this attribute with no tags */
+  public MorphosyntacticTagsAttributeImpl() {}
+  
   /**
    * A list of potential tag variants for the current token.
    */

@@ -64,6 +64,9 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
   private IndexSearcher searcher;
   private Analyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
 
+  /** for instantiation by the servlet container */
+  public FormBasedXmlQueryDemo() {}
+
   @Override
   public void init(ServletConfig config) throws ServletException {
     super.init(config);

@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.commons.codec.Encoder;
 import org.apache.commons.codec.language.*;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -61,8 +62,11 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 public class PhoneticFilterFactory extends TokenFilterFactory
   implements ResourceLoaderAware
 {
+  /** parameter name: either a short name or a full class name */
   public static final String ENCODER = "encoder";
+  /** parameter name: true if encoded tokens should be added as synonyms */
   public static final String INJECT = "inject"; // boolean
+  /** parameter name: restricts the length of the phonetic code */
   public static final String MAX_CODE_LENGTH = "maxCodeLength";
   private static final String PACKAGE_CONTAINING_ENCODERS = "org.apache.commons.codec.language.";
 
@@ -83,6 +87,9 @@ public class PhoneticFilterFactory extends TokenFilterFactory
   private Class<? extends Encoder> clazz = null;
   private Method setMaxCodeLenMethod = null;
   private Integer maxCodeLength = null;
+  
+  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
+  public PhoneticFilterFactory() {}
 
   @Override
   public void inform(ResourceLoader loader) throws IOException {

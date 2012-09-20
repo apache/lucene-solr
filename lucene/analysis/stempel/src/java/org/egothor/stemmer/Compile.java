@@ -74,7 +74,10 @@ public class Compile {
   static boolean backward;
   static boolean multi;
   static Trie trie;
-  
+
+  /** no instantiation */
+  private Compile() {}
+
   /**
    * Entry point to the Compile application.
    * <p>

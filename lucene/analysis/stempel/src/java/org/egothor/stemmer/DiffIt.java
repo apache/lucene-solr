@@ -67,6 +67,9 @@ import java.util.StringTokenizer;
  */
 public class DiffIt {
   
+  /** no instantiation */
+  private DiffIt() {}
+  
   static int get(int i, String s) {
     try {
       return Integer.parseInt(s.substring(i, i + 1));

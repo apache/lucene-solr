@@ -30,6 +30,9 @@ import com.ibm.icu.lang.UScript;
 public class ScriptAttributeImpl extends AttributeImpl implements ScriptAttribute, Cloneable {
   private int code = UScript.COMMON;
   
+  /** Initializes this attribute with <code>UScript.COMMON</code> */
+  public ScriptAttributeImpl() {}
+  
   public int getCode() {
     return code;
   }

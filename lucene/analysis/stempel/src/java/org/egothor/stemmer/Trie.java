@@ -376,6 +376,7 @@ public class Trie {
     return by.optimize(this);
   }
   
+  /** writes debugging info to the printstream */
   public void printInfo(PrintStream out, CharSequence prefix) {
     out.println(prefix + "nds " + rows.size() + " cmds " + cmds.size()
         + " cells " + getCells() + " valcells " + getCellsVal() + " pntcells "

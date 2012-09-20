@@ -21,12 +21,17 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.pl.PolishAnalyzer;
 import org.apache.lucene.analysis.stempel.StempelFilter;
 import org.apache.lucene.analysis.stempel.StempelStemmer;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
  * Factory for {@link StempelFilter} using a Polish stemming table.
  */
 public class StempelPolishStemFilterFactory extends TokenFilterFactory {  
+  
+  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
+  public StempelPolishStemFilterFactory() {}
+
   public TokenStream create(TokenStream input) {
     return new StempelFilter(input, new StempelStemmer(PolishAnalyzer.getDefaultTable()));
   }

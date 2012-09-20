@@ -25,6 +25,12 @@ import com.ibm.icu.text.BreakIterator;
  * @lucene.experimental
  */
 public abstract class ICUTokenizerConfig {
+  
+  /**
+   * Sole constructor. (For invocation by subclass 
+   * constructors, typically implicit.)
+   */
+  public ICUTokenizerConfig() {}
   /** Return a breakiterator capable of processing a given script. */
   public abstract BreakIterator getBreakIterator(int script);
   /** Return a token type value for a given script and BreakIterator

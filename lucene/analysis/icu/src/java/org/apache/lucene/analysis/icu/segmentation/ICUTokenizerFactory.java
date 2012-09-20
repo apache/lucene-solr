@@ -21,10 +21,15 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.icu.segmentation.ICUTokenizer;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.TokenizerFactory;
 
 /** Factory for {@link ICUTokenizer} */
 public class ICUTokenizerFactory extends TokenizerFactory {
+  
+  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
+  public ICUTokenizerFactory() {}
+
   // TODO: add support for custom configs
   @Override
   public Tokenizer create(Reader input) {

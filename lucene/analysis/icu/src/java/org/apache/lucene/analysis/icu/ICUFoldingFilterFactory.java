@@ -2,7 +2,7 @@ package org.apache.lucene.analysis.icu;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.icu.ICUFoldingFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -25,6 +25,9 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** Factory for {@link ICUFoldingFilter} */
 public class ICUFoldingFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+
+  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
+  public ICUFoldingFilterFactory() {}
 
   @Override
   public TokenStream create(TokenStream input) {
