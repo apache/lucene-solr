@@ -100,7 +100,7 @@ public class ToParentBlockJoinQuery extends Query {
    * 
    * @param childQuery Query matching child documents.
    * @param parentsFilter Filter (must produce FixedBitSet
-   * per-seegment) identifying the parent documents.
+   * per-segment) identifying the parent documents.
    * @param scoreMode How to aggregate multiple child scores
    * into a single parent score.
    **/

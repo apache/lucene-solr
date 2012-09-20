@@ -250,7 +250,7 @@
       <check-missing-javadocs dir="build/docs/facet" level="class"/>
       <check-missing-javadocs dir="build/docs/grouping" level="class"/>
       <check-missing-javadocs dir="build/docs/highlighter" level="class"/>
-      <check-missing-javadocs dir="build/docs/join" level="class"/>
+      <check-missing-javadocs dir="build/docs/join" level="method"/>
       <check-missing-javadocs dir="build/docs/memory" level="class"/>
       <check-missing-javadocs dir="build/docs/misc" level="class"/>
       <!-- queries: problems -->

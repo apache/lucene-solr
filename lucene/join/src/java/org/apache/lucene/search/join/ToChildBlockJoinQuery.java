@@ -59,6 +59,14 @@ public class ToChildBlockJoinQuery extends Query {
   private final Query origParentQuery;
   private final boolean doScores;
 
+  /**
+   * Create a ToChildBlockJoinQuery.
+   * 
+   * @param parentQuery Query that matches parent documents
+   * @param parentsFilter Filter (must produce FixedBitSet
+   * per-segment) identifying the parent documents.
+   * @param doScores true if parent scores should be calculated
+   */
   public ToChildBlockJoinQuery(Query parentQuery, Filter parentsFilter, boolean doScores) {
     super();
     this.origParentQuery = parentQuery;
