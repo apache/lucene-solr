@@ -25,7 +25,7 @@
   </target>
 
   <target name="precommit" description="Run basic checks before committing"
-          depends="check-svn-working-copy,validate,javadocs-lint"/>
+          depends="check-svn-working-copy,validate,documentation-lint"/>
 
   <target name="test" description="Test both Lucene and Solr">
     <sequential>
@@ -47,16 +47,16 @@
 
   <target name="javadocs" description="Generate Lucene and Solr javadocs">
     <sequential>
-      <subant target="javadocs" inheritall="false" failonerror="true">
+      <subant target="documentation" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
         <fileset dir="solr" includes="build.xml" />
       </subant>
     </sequential>
   </target>
 
-  <target name="javadocs-lint">
+  <target name="documentation-lint">
     <sequential>
-      <subant target="javadocs-lint" inheritall="false" failonerror="true">
+      <subant target="documentation-lint" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
         <fileset dir="solr" includes="build.xml" />
       </subant>
@@ -305,7 +305,7 @@
   </target>
 
   <!-- Jenkins tasks -->
-  <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-javadocs-lint,jar-checksums,check-svn-working-copy" description="Runs the Jenkins hourly test runs"/>
+  <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-documentation-lint,jar-checksums,check-svn-working-copy" description="Runs the Jenkins hourly test runs"/>
   
   <target name="jenkins-clover" description="Runs nightly clover builds on Jenkins">
     <antcall target="-jenkins-clover">
@@ -325,11 +325,11 @@
     description="Runs the nightly Maven build on Jenkins, including artifact deployment"/>
   
   <!-- we need this extra condition, as we want to match only on "true", not solely if property is set: -->
-  <property name="disable.javadocs-lint" value="false" />
-  <condition property="-disable.javadocs-lint">
-    <istrue value="${disable.javadocs-lint}"/>
+  <property name="disable.documentation-lint" value="false" />
+  <condition property="-disable.documentation-lint">
+    <istrue value="${disable.documentation-lint}"/>
   </condition>
-  <target name="-jenkins-javadocs-lint" unless="-disable.javadocs-lint">
-    <antcall target="javadocs-lint"/> 
+  <target name="-jenkins-documentation-lint" unless="-disable.documentation-lint">
+    <antcall target="documentation-lint"/> 
   </target>
 </project>

@@ -26,7 +26,7 @@
     <echo message="Use 'ant clean' to clean compiled files." />
     <echo message="Use 'ant compile' to compile the source code." />
     <echo message="Use 'ant dist' to build the project WAR and JAR files." />
-    <echo message="Use 'ant javadocs' to build javadocs under build/docs/api" />
+    <echo message="Use 'ant documentation' to build documentation." />
     <echo message="Use 'ant generate-maven-artifacts' to generate maven artifacts." />
     <echo message="Use 'ant package' to generate zip, tgz for distribution." />
     <!--<echo message="Use 'ant luke' to start luke.  see: http://luke.googlecode.com" />-->
@@ -138,12 +138,47 @@
   <target name="compile-test" description="Compile unit tests."
           depends="compile-solr-test-framework, compile-test-solr-core, compile-test-solrj, compile-test-contrib"/>
   <target name="javadocs" description="Calls javadocs-all, javadocs-solrj, and javadocs-test-framework"
-          depends="javadocs-all,javadocs-solrj,javadocs-test-framework"/>
+          depends="javadocs-solr-core,javadocs-solrj,javadocs-test-framework,javadocs-contrib"/>
+  <target name="documentation" description="Generate all documentation"
+    depends="javadocs,changes-to-html,process-webpages"/>
   <target name="compile-core" depends="compile-solr-core" unless="solr.core.compiled"/>
   
+  <target name="process-webpages" depends="resolve-pegdown">
+    <makeurl property="process-webpages.buildfiles" separator="|">
+      <fileset dir="." includes="core/build.xml,test-framework/build.xml,solrj/build.xml,contrib/**/build.xml"/>
+    </makeurl>
+    <!--
+      The XSL input file is ignored completely, but XSL expects one to be given,
+      so we pass ourself (${ant.file}) here. The list of module build.xmls is given
+      via string parameter, that must be splitted by the XSL at '|'.
+    --> 
+    <xslt in="${ant.file}" out="${javadoc.dir}/index.html" style="site/xsl/index.xsl" force="true">
+      <outputproperty name="method" value="html"/>
+      <outputproperty name="version" value="4.0"/>
+      <outputproperty name="encoding" value="UTF-8"/>
+      <outputproperty name="indent" value="yes"/>
+      <param name="buildfiles" expression="${process-webpages.buildfiles}"/>
+      <param name="version" expression="${version}"/>
+    </xslt>
+    
+    <pegdown todir="${javadoc.dir}">
+      <fileset dir="." includes="MIGRATE.txt,JRE_VERSION_MIGRATION.txt"/>
+      <globmapper from="*.txt" to="*.html"/>
+    </pegdown>
+
+    <copy todir="${javadoc.dir}">
+      <fileset dir="site/html" includes="**/*"/>
+    </copy>
+  </target>
+
   <!-- Solr core targets -->
   <target name="test-solr-core" description="Test solr core">
     <ant dir="core" target="test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  <target name="javadocs-solr-core">
+    <ant dir="core" target="javadocs" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
@@ -430,7 +465,7 @@
                             dist/solrj-lib/*
                             dist/test-framework/**"
                   excludes="**/*.tgz **/*.zip **/*.md5 **/*src*.jar **/*docs*.jar **/*.sha1" />
-      <tarfileset dir="${dest}/docs"
+      <tarfileset dir="${javadoc.dir}"
                   prefix="${fullnamever}/docs" />
     </tar>
     <make-checksums file="${package.dir}/${fullnamever}.tgz"/>
@@ -496,66 +531,12 @@
     </sequential>
   </target>
 
-  <!-- since we build across all contribs, we must ensure all deps
-       are resolved -->
-  <target name="javadocs-all"
-          depends="resolve,prep-lucene-jars,javadocs-dep,lucene-javadocs,define-lucene-javadoc-url"
-          description="Generate javadoc for core, java client and contrib">
-    <sequential>
-      <mkdir dir="${dest}/docs/api"/>
- 
-      <!-- TODO: optimize this, thats stupid here: -->
-      <subant target="module-jars-to-solr">
-        <fileset dir="contrib/analysis-extras" includes="build.xml"/>
-      </subant>
-
-      <!-- TODO: optimize this, thats stupid here: -->
-      <subant target="module-jars-to-solr">
-        <fileset dir="contrib/uima" includes="build.xml"/>
-      </subant>
-
-      <path id="javadoc.classpath">
-        <path refid="test.classpath"/>
-        <fileset dir="${dest}/contrib">
-          <include name="**/lucene-libs/**/*.jar"/>
-        </fileset>
-        <fileset dir="contrib">
-          <include name="**/lib/**/*.jar"/>
-          <exclude name="**/analysis-extras/lib/**/*icu4j*.jar"/> <!-- extraction/lib/ has this one -->
-        </fileset>
-        <pathelement location="${dest}/solr-solrj/classes/java"/>
-      </path>
- 
-      <solr-invoke-javadoc destdir="${dest}/docs/api"
-                      overview="core/src/java/overview.html">
-        <solrsources>
-          <packageset dir="core/src/java" />
-          <packageset dir="solrj/src/java" />
-          <packageset dir="contrib/analysis-extras/src/java"/>
-          <packageset dir="contrib/clustering/src/java"/>
-          <packageset dir="contrib/dataimporthandler/src/java"/>
-          <packageset dir="contrib/dataimporthandler-extras/src/java"/>
-          <packageset dir="contrib/extraction/src/java"/>
-          <packageset dir="contrib/langid/src/java"/>
-          <packageset dir="contrib/uima/src/java"/>
-          <group title="Core" packages="org.apache.*" />
-          <group title="SolrJ" packages="org.apache.solr.common.*,org.apache.solr.client.solrj.*,org.apache.zookeeper.*" />
-          <group title="contrib: Clustering" packages="org.apache.solr.handler.clustering*" />
-          <group title="contrib: DataImportHandler" packages="org.apache.solr.handler.dataimport*" />
-          <group title="contrib: Solr Cell" packages="org.apache.solr.handler.extraction*" />
-          <group title="contrib: Solr LangId" packages="org.apache.solr.update.processor.LanguageIdentifier*,org.apache.solr.update.processor.LangIdParams*,org.apache.solr.update.processor.DetectedLanguage*" />
-          <group title="contrib: Solr UIMA" packages="org.apache.solr.uima*" />
-        </solrsources>
-      </solr-invoke-javadoc>
-    </sequential>
-  </target>
-
   <!-- TODO: does solr have any other docs we should check? -->
   <!-- TODO: also integrate checkJavaDocs.py, which does more checks -->
-  <target name="javadocs-lint" depends="javadocs">
-    <check-broken-links dir="build/docs"/>
+  <target name="documentation-lint" depends="documentation">
+    <check-broken-links dir="${javadoc.dir}"/>
     <!-- TODO: add missing package.htmls and bump this to level=package -->
-    <check-missing-javadocs dir="build/docs" level="none"/>
+    <check-missing-javadocs dir="${javadoc.dir}" level="none"/>
   </target>
  
   <!-- install-maven-tasks is *not* a useless dependency. do not remove -->

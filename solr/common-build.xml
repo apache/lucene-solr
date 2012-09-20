@@ -37,16 +37,16 @@
   <property name="javac.target" value="1.6"/>
   <property name="javac.args" value=""/>
   
-  <property name="dest" value="${common-solr.dir}/build" />
+  <property name="dest" location="${common-solr.dir}/build" />
   <property name="build.dir" location="${dest}/${ant.project.name}"/>
   <property name="dist" location="${common-solr.dir}/dist"/>
   <property name="package.dir" location="${common-solr.dir}/package"/>
   <property name="maven.dist.dir" location="${package.dir}/maven"/>
   <property name="lucene-libs" location="${dest}/lucene-libs" />
-  <property name="tests.userdir" value="src/test-files"/>
-  <property name="example" value="${common-solr.dir}/example" />
-  <property name="javadoc.dir" location="${build.dir}/docs/api"/>
-  <property name="tests.loggingfile" value="${common-solr.dir}/testlogging.properties"/>
+  <property name="tests.userdir" location="src/test-files"/>
+  <property name="example" location="${common-solr.dir}/example" />
+  <property name="javadoc.dir" location="${dest}/docs"/>
+  <property name="tests.loggingfile" location="${common-solr.dir}/testlogging.properties"/>
   <property name="tests.cleanthreads.sysprop" value="perClass"/>
 
   <property name="changes.target.dir" value="${dest}/docs/changes"/>
@@ -202,20 +202,20 @@
   <!-- create javadocs for the current module -->
   <target name="javadocs" depends="compile-core,define-lucene-javadoc-url,lucene-javadocs">
    	<sequential>
-      <mkdir dir="${javadoc.dir}"/>
+      <mkdir dir="${javadoc.dir}/${name}"/>
       <solr-invoke-javadoc>
         <solrsources>
           <packageset dir="${src.dir}"/>
         </solrsources>
       </solr-invoke-javadoc>
-      <solr-jarify basedir="${javadoc.dir}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
+      <solr-jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
      </sequential>
   </target>
 
   <!-- macro to create solr javadocs with links to lucene. make sure calling task depends on lucene-javadocs -->
   <macrodef name="solr-invoke-javadoc">
       <element name="solrsources" optional="yes"/>
-      <attribute name="destdir" default="${javadoc.dir}"/>
+      <attribute name="destdir" default="${javadoc.dir}/${name}"/>
       <attribute name="title" default="${Name} ${version} ${name} API"/>
       <attribute name="overview" default="${src.dir}/overview.html"/>
     <sequential>
@@ -393,8 +393,13 @@
   <target name="compile-contrib" description="Compile contrib modules">
   	<contrib-crawl target="compile-core"/>
   </target>
+  
   <target name="compile-test-contrib" description="Compile contrib modules' tests">
   	<contrib-crawl target="compile-test"/>
+  </target>
+
+  <target name="javadocs-contrib" description="Compile contrib modules">
+  	<contrib-crawl target="javadocs"/>
   </target>
 
   <target name="contribs-add-to-war">

@@ -48,7 +48,7 @@
   <target name="javadocs"
           depends="compile-core,jar-test-framework,lucene-javadocs,javadocs-test-framework,define-lucene-javadoc-url">
     <sequential>
-      <mkdir dir="${javadoc.dir}"/>
+      <mkdir dir="${javadoc.dir}/${name}"/>
       <!-- NOTE: explicitly not using solr-invoke-javadoc, or attempting to 
 	   link to lucene-test-framework because if we did javadoc would 
 	   attempt to link class refs in in org.apache.lucene, causing 
@@ -56,7 +56,7 @@
 	   lucene-test-framework was first, or broken links to things like 
 	   LuceneTestCase if lucene-core was first)
       -->
-      <invoke-javadoc destdir="${javadoc.dir}" 
+      <invoke-javadoc destdir="${javadoc.dir}/${name}" 
 		      title="${Name} ${version} Test Framework API">
 	<sources>
 	  <link offline="true" href="${javadoc.link.junit}"
@@ -64,11 +64,7 @@
 	  <packageset dir="${src.dir}"/>
 	</sources>
       </invoke-javadoc>
-      <solr-jarify basedir="${javadoc.dir}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
-      <mkdir dir="${dest}/docs/api/test-framework"/>
-      <copy todir="${dest}/docs/api/test-framework">
-        <fileset dir="${javadoc.dir}"/>
-      </copy>
+      <solr-jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
     </sequential>
   </target>
 
