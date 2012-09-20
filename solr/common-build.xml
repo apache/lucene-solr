@@ -25,9 +25,6 @@
   
   <property name="Name" value="Solr" />
   <property name="version" value="5.0-SNAPSHOT"/>
-  <condition property="version.contains.SNAPSHOT">
-    <contains casesensitive="true" string="${version}" substring="-SNAPSHOT"/>
-  </condition>
   <property name="fullname" value="apache-${ant.project.name}"/>
   <property name="fullnamever" value="${fullname}-${version}"/>
   <property name="final.name" value="${fullnamever}"/>
@@ -278,23 +275,19 @@
     </sequential>
   </macrodef>
 
-  <target name="define-lucene-javadoc-url"
-          depends="define-lucene-javadoc-url-SNAPSHOT,define-lucene-javadoc-url-release"/>
-
-  <target name="define-lucene-javadoc-url-SNAPSHOT" if="version.contains.SNAPSHOT">
-    <makeurl file="${common.dir}/build/docs/" validate="false" property="lucene.javadoc.url"/>
-  </target>
-
-  <target name="define-lucene-javadoc-url-release" unless="version.contains.SNAPSHOT">
-    <loadproperties>
-      <propertyresource name="version"/>
-      <filterchain>
-        <replaceregex pattern="[.]" replace="_" flags="g"/>
-        <prefixlines prefix="underscore.version="/>
-      </filterchain>
-    </loadproperties>
-    <property name="lucene.javadoc.url"
-              value="http://lucene.apache.org/java/${underscore.version}/"/>
+  <target name="define-lucene-javadoc-url">
+    <script language="javascript"><![CDATA[
+      var url, version = project.getProperty('version');
+      if (version.contains('-SNAPSHOT')) {
+        importClass(java.io.File);
+        url = new File(project.getProperty('common.dir'), 'build' + File.separator + 'docs').toURI().toASCIIString();
+        if (!(/\/$/.test(url))) url += '/';
+      } else {
+        version = version.replace('.', '_');
+        url = 'http://lucene.apache.org/java/' + version + '/';
+      }
+      project.setProperty('lucene.javadoc.url', url);
+    ]]></script>
   </target>
 
   <target name="jar-src" depends="init">
