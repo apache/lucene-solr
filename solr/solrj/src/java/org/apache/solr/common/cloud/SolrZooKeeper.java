@@ -68,7 +68,7 @@ public class SolrZooKeeper extends ZooKeeper {
             try {
               getSendThreadChannel().close();
             } catch (Exception e) {
-              throw new RuntimeException("Closing zookeper send channel failed.", e);
+              throw new RuntimeException("Closing Zookeeper send channel failed.", e);
             }
             Thread.sleep(ms);
           }
