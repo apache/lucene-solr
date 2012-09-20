@@ -26,7 +26,7 @@ import org.apache.lucene.util.BytesRef;
  * For example, this can be used by {@link MultiTermQuery}s
  * that need only visit one term, but want to preserve
  * MultiTermQuery semantics such as {@link
- * MultiTermQuery#rewriteMethod}.
+ * MultiTermQuery#getRewriteMethod}.
  */
 public final class SingleTermsEnum extends FilteredTermsEnum {
   private final BytesRef singleRef;

@@ -191,7 +191,6 @@ public  class LeaderElector {
   /**
    * Returns int list given list of form n_0000000001, n_0000000003, etc.
    * 
-   * @param string seqs
    * @return int seqs
    */
   private List<Integer> getSeqs(List<String> seqs) {

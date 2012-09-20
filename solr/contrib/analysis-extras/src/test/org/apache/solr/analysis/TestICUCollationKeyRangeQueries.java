@@ -17,6 +17,7 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.lucene.collation.ICUCollationKeyFilterFactory; // javadocs
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 

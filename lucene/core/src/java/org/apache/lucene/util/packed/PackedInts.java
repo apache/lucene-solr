@@ -780,7 +780,6 @@ public class PackedInts {
    * @param bitsPerValue the number of bits per value
    * @param mem          how much memory the iterator is allowed to use to read-ahead (likely to speed up iteration)
    * @return             a ReaderIterator
-   * @throws IOException
    * @see PackedInts#getWriterNoHeader(DataOutput, Format, int, int, int)
    * @lucene.internal
    */
@@ -822,7 +821,6 @@ public class PackedInts {
    * @param valueCount   how many values the stream holds
    * @param bitsPerValue the number of bits per value
    * @return a direct Reader
-   * @throws IOException
    * @lucene.internal
    */
   public static Reader getDirectReaderNoHeader(IndexInput in, Format format,
@@ -953,7 +951,6 @@ public class PackedInts {
    * @param bitsPerValue the number of bits per value
    * @param mem          how much memory (in bytes) can be used to speed up serialization
    * @return             a Writer
-   * @throws IOException
    * @see PackedInts#getReaderIteratorNoHeader(DataInput, Format, int, int, int, int)
    * @see PackedInts#getReaderNoHeader(DataInput, Format, int, int, int)
    * @lucene.internal

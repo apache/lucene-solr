@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.Bits; // javadocs
 import org.apache.lucene.util.BytesRef;
 
 /** Also iterates through positions. */

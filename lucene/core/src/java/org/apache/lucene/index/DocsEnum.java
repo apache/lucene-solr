@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.Bits; // javadocs
 
 /** Iterates through the documents and term freqs.
  *  NOTE: you must first call {@link #nextDoc} before using

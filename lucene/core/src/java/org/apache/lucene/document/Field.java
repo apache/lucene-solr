@@ -606,7 +606,7 @@ public class Field implements IndexableField {
     
     /** Creates a new TokenStream that returns a String as single token.
      * <p>Warning: Does not initialize the value, you must call
-     * {@link #setValue()} afterwards!
+     * {@link #setValue(String)} afterwards!
      */
     StringTokenStream() {
     }
