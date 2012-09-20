@@ -1,4 +1,4 @@
-package org.apache.zookeeper;
+package org.apache.solr.common.cloud;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,6 +24,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import org.apache.zookeeper.ClientCnxn;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
 
 // we use this class to expose nasty stuff for tests
 public class SolrZooKeeper extends ZooKeeper {
@@ -53,6 +57,8 @@ public class SolrZooKeeper extends ZooKeeper {
         try {
           synchronized (cnxn) {
             try {
+              // nocommit: reflect me, move me somewehre else as static method,
+              // something. i am only used by tests! the rest of this file is clean.
               ((SocketChannel) cnxn.sendThread.sockKey.channel()).socket()
                   .close();
             } catch (Exception e) {
