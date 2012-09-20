@@ -22,6 +22,7 @@
 >
   <xsl:param name="buildfiles"/>
   <xsl:param name="version"/>
+  <xsl:param name="luceneJavadocUrl"/>
   
   <!--
     NOTE: This template matches the root element of any given input XML document!
@@ -56,6 +57,7 @@
           <ul>
             <li><a href="changes/Changes.html">Changes</a>: List of changes in this release.</li>
             <li><a href="tutorial.html">Solr Tutorial</a>: This document covers the basics of running Solr using an example schema, and some sample data.</li>
+            <li><a href="{$luceneJavadocUrl}index.html">Lucene Documentation</a></li>
           </ul>
         <h2>API Javadocs</h2>
         <xsl:call-template name="modules"/>

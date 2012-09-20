@@ -143,7 +143,7 @@
     depends="javadocs,changes-to-html,process-webpages"/>
   <target name="compile-core" depends="compile-solr-core" unless="solr.core.compiled"/>
   
-  <target name="process-webpages" depends="resolve-pegdown">
+  <target name="process-webpages" depends="define-lucene-javadoc-url"> <!--depends="resolve-pegdown">-->
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="core/build.xml,test-framework/build.xml,solrj/build.xml,contrib/**/build.xml"/>
     </makeurl>
@@ -159,12 +159,15 @@
       <outputproperty name="indent" value="yes"/>
       <param name="buildfiles" expression="${process-webpages.buildfiles}"/>
       <param name="version" expression="${version}"/>
+      <param name="luceneJavadocUrl" expression="${lucene.javadoc.url}"/>
     </xslt>
     
+    <!--nothing at the moment:
     <pegdown todir="${javadoc.dir}">
       <fileset dir="." includes="MIGRATE.txt,JRE_VERSION_MIGRATION.txt"/>
       <globmapper from="*.txt" to="*.html"/>
     </pegdown>
+    -->
 
     <copy todir="${javadoc.dir}">
       <fileset dir="site/html" includes="**/*"/>
