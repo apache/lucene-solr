@@ -235,18 +235,18 @@
            can prevent the modules that don't have problems
            from getting any worse -->
       <check-missing-javadocs dir="build/docs/analyzers-common" level="class"/>
-      <check-missing-javadocs dir="build/docs/analyzers-icu" level="class"/>
+      <check-missing-javadocs dir="build/docs/analyzers-icu" level="method"/>
       <check-missing-javadocs dir="build/docs/analyzers-kuromoji" level="class"/>
-      <check-missing-javadocs dir="build/docs/analyzers-morfologik" level="class"/>
-      <check-missing-javadocs dir="build/docs/analyzers-phonetic" level="class"/>
+      <check-missing-javadocs dir="build/docs/analyzers-morfologik" level="method"/>
+      <check-missing-javadocs dir="build/docs/analyzers-phonetic" level="method"/>
       <check-missing-javadocs dir="build/docs/analyzers-smartcn" level="class"/>
-      <check-missing-javadocs dir="build/docs/analyzers-stempel" level="class"/>
+      <check-missing-javadocs dir="build/docs/analyzers-stempel" level="method"/>
       <check-missing-javadocs dir="build/docs/analyzers-uima" level="class"/>
       <check-missing-javadocs dir="build/docs/benchmark" level="class"/>
       <check-missing-javadocs dir="build/docs/classification" level="method"/>
       <check-missing-javadocs dir="build/docs/codecs" level="class"/>
       <check-missing-javadocs dir="build/docs/core" level="class"/>
-      <check-missing-javadocs dir="build/docs/demo" level="class"/>
+      <check-missing-javadocs dir="build/docs/demo" level="method"/>
       <check-missing-javadocs dir="build/docs/facet" level="class"/>
       <check-missing-javadocs dir="build/docs/grouping" level="class"/>
       <check-missing-javadocs dir="build/docs/highlighter" level="class"/>

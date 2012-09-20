@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilter;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -36,13 +37,18 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class DoubleMetaphoneFilterFactory extends TokenFilterFactory
 {
+  /** parameter name: true if encoded tokens should be added as synonyms */
   public static final String INJECT = "inject"; 
+  /** parameter name: restricts the length of the phonetic code */
   public static final String MAX_CODE_LENGTH = "maxCodeLength"; 
-
+  /** default maxCodeLength if not specified */
   public static final int DEFAULT_MAX_CODE_LENGTH = 4;
 
   private boolean inject = true;
   private int maxCodeLength = DEFAULT_MAX_CODE_LENGTH;
+
+  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
+  public DoubleMetaphoneFilterFactory() {}
 
   @Override
   public void init(Map<String, String> args) {

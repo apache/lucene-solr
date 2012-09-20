@@ -21,7 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.icu.ICUNormalizer2Filter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -47,6 +47,9 @@ import com.ibm.icu.text.UnicodeSet;
  */
 public class ICUNormalizer2FilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
   private Normalizer2 normalizer;
+
+  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
+  public ICUNormalizer2FilterFactory() {}
 
   // TODO: support custom normalization
   @Override

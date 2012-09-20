@@ -21,7 +21,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.icu.ICUTransformFilter;
-import org.apache.lucene.analysis.util.AbstractAnalysisFactory;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.MultiTermAwareComponent;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
@@ -39,6 +39,9 @@ import com.ibm.icu.text.Transliterator;
  */
 public class ICUTransformFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
   private Transliterator transliterator;
+  
+  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
+  public ICUTransformFilterFactory() {}
   
   // TODO: add support for custom rules
   @Override

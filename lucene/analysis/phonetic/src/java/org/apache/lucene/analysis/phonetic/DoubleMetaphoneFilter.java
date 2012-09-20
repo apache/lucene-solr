@@ -38,6 +38,10 @@ public final class DoubleMetaphoneFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
 
+  /** Creates a DoubleMetaphoneFilter with the specified maximum code length, 
+   *  and either adding encoded forms as synonyms (<code>inject=true</code>) or
+   *  replacing them.
+   */
   public DoubleMetaphoneFilter(TokenStream input, int maxCodeLength, boolean inject) {
     super(input);
     this.encoder.setMaxCodeLen(maxCodeLength);

@@ -32,13 +32,19 @@ import java.io.IOException;
  */
 public final class PhoneticFilter extends TokenFilter 
 {
+  /** true if encoded tokens should be added as synonyms */
   protected boolean inject = true; 
+  /** phonetic encoder */
   protected Encoder encoder = null;
-  
+  /** captured state, non-null when <code>inject=true</code> and a token is buffered */
   protected State save = null;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
 
+  /** Creates a PhoneticFilter with the specified encoder, and either
+   *  adding encoded forms as synonyms (<code>inject=true</code>) or
+   *  replacing them.
+   */
   public PhoneticFilter(TokenStream in, Encoder encoder, boolean inject) {
     super(in);
     this.encoder = encoder;

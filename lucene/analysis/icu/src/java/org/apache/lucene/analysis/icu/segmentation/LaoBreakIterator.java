@@ -73,6 +73,10 @@ public class LaoBreakIterator extends BreakIterator {
     laoSet.freeze();
   }
   
+  /** 
+   * Creates a new iterator, performing the backtracking verification
+   * across the provided <code>rules</code>.
+   */
   public LaoBreakIterator(RuleBasedBreakIterator rules) {
     this.rules = (RuleBasedBreakIterator) rules.clone();
     this.verify = (RuleBasedBreakIterator) rules.clone();
