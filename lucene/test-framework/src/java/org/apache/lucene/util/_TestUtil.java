@@ -29,7 +29,12 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -72,6 +77,8 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.FilteredQuery;
+import org.apache.lucene.search.FilteredQuery.FilterStrategy;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.CompoundFileDirectory;
@@ -975,4 +982,29 @@ public class _TestUtil {
       }
     }
   }
+    
+  
+  public static final FilterStrategy randomFilterStrategy(final Random random) {
+    switch(random.nextInt(6)) {
+      case 5:
+      case 4:
+        return new FilteredQuery.RandomAccessFilterStrategy() {
+          @Override
+          protected boolean useRandomAccess(Bits bits, int firstFilterDoc) {
+            return random.nextBoolean();
+          }
+        };
+      case 3:
+        return FilteredQuery.RANDOM_ACCESS_FILTER_STRATEGY;
+      case 2:
+        return FilteredQuery.LEAP_FROG_FILTER_FIRST_STRATEGY;
+      case 1:
+        return FilteredQuery.LEAP_FROG_QUERY_FIRST_STRATEGY;
+      case 0: 
+        return FilteredQuery.QUERY_FIRST_FILTER_STRATEGY;
+      default:
+        return FilteredQuery.RANDOM_ACCESS_FILTER_STRATEGY;
+    }
+  }
+
 }

@@ -5,6 +5,10 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 5.0.0 =======================
+New Features
+
+* LUCENE-4410: FilteredQuery now exposes a FilterStrategy that exposes
+  how filters are applied during query execution. (Simon Willnauer) 
 
 Changes in backwards compatibility policy
 
@@ -49,7 +53,7 @@ New Features
 
 * SOLR-3441: ElisionFilterFactory is now MultiTermAware
   (Jack Krupansky via hossman)
-
+  
 API Changes
 
 * LUCENE-4391: All methods of Lucene40Codec but getPostingsFormatForField are
