@@ -46,8 +46,8 @@
   <property name="tests.loggingfile" location="${common-solr.dir}/testlogging.properties"/>
   <property name="tests.cleanthreads.sysprop" value="perClass"/>
 
-  <property name="changes.target.dir" value="${dest}/docs/changes"/>
-  <property name="license.dir" value="${common-solr.dir}/licenses"/>
+  <property name="changes.target.dir" location="${dest}/docs/changes"/>
+  <property name="license.dir" location="${common-solr.dir}/licenses"/>
 
   <import file="${common-solr.dir}/../lucene/module-build.xml"/>
 
