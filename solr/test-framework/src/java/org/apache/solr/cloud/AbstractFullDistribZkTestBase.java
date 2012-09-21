@@ -257,7 +257,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     System.setProperty("collection", "control_collection");
     String numShards = System.getProperty(ZkStateReader.NUM_SHARDS_PROP);
     System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
-    controlJetty = createJetty(new File(getSolrHome()), testDir + "/control/data",
+    
+    File controlJettyDir = new File(TEMP_DIR,
+            getClass().getName() + "-controljetty-" + System.currentTimeMillis());
+    org.apache.commons.io.FileUtils.copyDirectory(new File(getSolrHome()), controlJettyDir);
+
+    controlJetty = createJetty(controlJettyDir, testDir + "/control/data",
         "control_shard");
     System.clearProperty("collection");
     if(numShards != null) {
@@ -290,7 +295,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       if (sb.length() > 0) sb.append(',');
       int cnt = this.jettyIntCntr.incrementAndGet();
       File jettyDir = new File(TEMP_DIR,
-          "solrtest-" + "jetty" + cnt + "-" + System.currentTimeMillis());
+          getClass().getName() + "-jetty" + cnt + "-" + System.currentTimeMillis());
       jettyDir.mkdirs();
       org.apache.commons.io.FileUtils.copyDirectory(new File(getSolrHome()), jettyDir);
       JettySolrRunner j = createJetty(jettyDir, testDir + "/jetty"
