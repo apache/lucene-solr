@@ -47,10 +47,18 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
   private final BytesRef scratch = new BytesRef();
   private final Comparator<BytesRef> comparator;
   
+  /** 
+   * Calls {@link #SortedTermFreqIteratorWrapper(TermFreqIterator, Comparator, boolean) 
+   * SortedTermFreqIteratorWrapper(source, comparator, false)}
+   */
   public SortedTermFreqIteratorWrapper(TermFreqIterator source, Comparator<BytesRef> comparator) throws IOException {
     this(source, comparator, false);
   }
   
+  /**
+   * Creates a new sorted wrapper. if <code>compareRawBytes</code> is true, then
+   * only the bytes (not the weight) will be used for comparison.
+   */
   public SortedTermFreqIteratorWrapper(TermFreqIterator source, Comparator<BytesRef> comparator, boolean compareRawBytes) throws IOException {
     this.source = source;
     this.comparator = comparator;
@@ -162,6 +170,7 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
     }
   }
   
+  /** encodes an entry (bytes+weight) to the provided writer */
   protected void encode(ByteSequencesWriter writer, ByteArrayDataOutput output, byte[] buffer, BytesRef spare, long weight) throws IOException {
     if (spare.length + 8 >= buffer.length) {
       buffer = ArrayUtil.grow(buffer, spare.length + 8);
@@ -172,6 +181,7 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
     writer.write(buffer, 0, output.getPosition());
   }
   
+  /** decodes the weight at the current position */
   protected long decode(BytesRef scratch, ByteArrayDataInput tmpInput) {
     tmpInput.reset(scratch.bytes);
     tmpInput.skipBytes(scratch.length - 8); // suggestion + separator

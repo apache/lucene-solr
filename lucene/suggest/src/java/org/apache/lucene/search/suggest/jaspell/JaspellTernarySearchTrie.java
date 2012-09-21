@@ -160,6 +160,10 @@ public class JaspellTernarySearchTrie {
     this(Locale.ROOT);
   }
   
+  /**
+   * Constructs an empty Ternary Search Trie,
+   * specifying the Locale used for lowercasing.
+   */
   public JaspellTernarySearchTrie(Locale locale) {
     this.locale = locale;
   }

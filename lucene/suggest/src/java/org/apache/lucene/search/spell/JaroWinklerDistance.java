@@ -27,6 +27,13 @@ import java.util.Arrays;
 public class JaroWinklerDistance implements StringDistance {
 
   private float threshold = 0.7f;
+  
+  /**
+   * Creates a new distance metric with the default threshold
+   * for the Jaro Winkler bonus (0.7)
+   * @see #setThreshold(float)
+   */
+  public JaroWinklerDistance() {}
 
   private int[] matches(String s1, String s2) {
     String max, min;

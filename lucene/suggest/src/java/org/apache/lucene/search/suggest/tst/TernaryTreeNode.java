@@ -22,6 +22,9 @@ package org.apache.lucene.search.suggest.tst;
  */
 
 public class TernaryTreeNode {
+  
+  /** Creates a new empty node */ 
+  public TernaryTreeNode() {}
   /** the character stored by a node. */
   char splitchar;
   /** a reference object to the node containing character smaller than this node's character. */
