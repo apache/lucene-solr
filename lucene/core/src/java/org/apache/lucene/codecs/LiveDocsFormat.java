@@ -29,6 +29,12 @@ import org.apache.lucene.util.MutableBits;
 /** Format for live/deleted documents
  * @lucene.experimental */
 public abstract class LiveDocsFormat {
+
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected LiveDocsFormat() {
+  }
+
   /** Creates a new MutableBits, with all bits set, for the specified size. */
   public abstract MutableBits newLiveDocs(int size) throws IOException;
 

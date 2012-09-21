@@ -30,6 +30,11 @@ import org.apache.lucene.store.IOContext;
 
 public abstract class SegmentInfoReader {
 
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected SegmentInfoReader() {
+  }
+
   /**
    * Read {@link SegmentInfo} data from a directory.
    * @param directory directory to read from

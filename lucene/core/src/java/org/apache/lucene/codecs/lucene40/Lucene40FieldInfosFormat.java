@@ -99,6 +99,10 @@ public class Lucene40FieldInfosFormat extends FieldInfosFormat {
   private final FieldInfosReader reader = new Lucene40FieldInfosReader();
   private final FieldInfosWriter writer = new Lucene40FieldInfosWriter();
   
+  /** Sole constructor. */
+  public Lucene40FieldInfosFormat() {
+  }
+
   @Override
   public FieldInfosReader getFieldInfosReader() throws IOException {
     return reader;

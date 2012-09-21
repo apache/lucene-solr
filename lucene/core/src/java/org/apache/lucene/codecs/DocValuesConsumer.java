@@ -49,9 +49,17 @@ import org.apache.lucene.util.BytesRef;
  */
 public abstract class DocValuesConsumer {
 
+  /** Spare {@link BytesRef} that subclasses can reuse. */
   protected final BytesRef spare = new BytesRef();
 
+  /** Returns the {@link Type} of this consumer. */
   protected abstract Type getType();
+
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected DocValuesConsumer() {
+  }
+
   /**
    * Adds the given {@link IndexableField} instance to this
    * {@link DocValuesConsumer}

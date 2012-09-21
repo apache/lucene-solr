@@ -28,6 +28,16 @@ import org.apache.lucene.index.SegmentInfo;
  * @lucene.experimental
  */
 public abstract class SegmentInfoFormat {
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected SegmentInfoFormat() {
+  }
+
+  /** Returns the {@link SegmentInfoReader} for reading
+   *  {@link SegmentInfo} instances. */
   public abstract SegmentInfoReader getSegmentInfoReader();
+
+  /** Returns the {@link SegmentInfoWriter} for writing
+   *  {@link SegmentInfo} instances. */
   public abstract SegmentInfoWriter getSegmentInfoWriter();
 }

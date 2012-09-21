@@ -44,6 +44,11 @@ import org.apache.lucene.util.Bits;
  */
 public abstract class StoredFieldsWriter implements Closeable {
   
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected StoredFieldsWriter() {
+  }
+
   /** Called before writing the stored fields of the document.
    *  {@link #writeField(FieldInfo, IndexableField)} will be called
    *  <code>numStoredFields</code> times. Note that this is
@@ -112,8 +117,10 @@ public abstract class StoredFieldsWriter implements Closeable {
 
     for (IndexableField field : doc) {
       if (field.fieldType().stored()) {
-        writeField(fieldInfos.fieldInfo(field.name()), field);
+      writeField(fieldInfos.fieldInfo(field.name()), field);
       }
     }
   }
+
+  public abstract void close() throws IOException;
 }

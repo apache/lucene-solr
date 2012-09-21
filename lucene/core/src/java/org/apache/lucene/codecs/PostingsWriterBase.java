@@ -40,8 +40,19 @@ import org.apache.lucene.index.FieldInfo;
 // TermsDict + PostingsReader/WriterBase == PostingsConsumer/Producer
 public abstract class PostingsWriterBase extends PostingsConsumer implements Closeable {
 
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected PostingsWriterBase() {
+  }
+
+  /** Called once after startup, before any terms have been
+   *  added.  Implementations typically write a header to
+   *  the provided {@code termsOut}. */
   public abstract void start(IndexOutput termsOut) throws IOException;
 
+  /** Start a new term.  Note that a matching call to {@link
+   *  #finishTerm(TermStats)} is done, only if the term has at least one
+   *  document. */
   public abstract void startTerm() throws IOException;
 
   /** Flush count terms starting at start "backwards", as a
@@ -50,10 +61,13 @@ public abstract class PostingsWriterBase extends PostingsConsumer implements Clo
    *  the stack. */
   public abstract void flushTermsBlock(int start, int count) throws IOException;
 
-  /** Finishes the current term */
+  /** Finishes the current term.  The provided {@link
+   *  TermStats} contains the term's summary statistics. */
   public abstract void finishTerm(TermStats stats) throws IOException;
 
+  /** Called when the writing switches to another field. */
   public abstract void setField(FieldInfo fieldInfo);
 
+  @Override
   public abstract void close() throws IOException;
 }

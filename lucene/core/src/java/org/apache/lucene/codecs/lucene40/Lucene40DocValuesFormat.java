@@ -130,6 +130,10 @@ import org.apache.lucene.util.packed.PackedInts; // javadocs
  */
 public class Lucene40DocValuesFormat extends DocValuesFormat {
 
+  /** Sole constructor. */
+  public Lucene40DocValuesFormat() {
+  }
+
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
     return new Lucene40DocValuesConsumer(state, Lucene40DocValuesConsumer.DOC_VALUES_SEGMENT_SUFFIX);

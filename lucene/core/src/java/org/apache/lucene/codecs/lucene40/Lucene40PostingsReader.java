@@ -59,6 +59,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
   // private String segment;
 
+  /** Sole constructor. */
   public Lucene40PostingsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo segmentInfo, IOContext ioContext, String segmentSuffix) throws IOException {
     boolean success = false;
     IndexInput freqIn = null;

@@ -49,6 +49,7 @@ public class Lucene40SkipListWriter extends MultiLevelSkipListWriter {
   private long curFreqPointer;
   private long curProxPointer;
 
+  /** Sole constructor. */
   public Lucene40SkipListWriter(int skipInterval, int numberOfSkipLevels, int docCount, IndexOutput freqOutput, IndexOutput proxOutput) {
     super(skipInterval, numberOfSkipLevels, docCount);
     this.freqOutput = freqOutput;

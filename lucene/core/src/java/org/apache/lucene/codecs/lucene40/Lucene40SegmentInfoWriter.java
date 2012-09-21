@@ -37,6 +37,10 @@ import org.apache.lucene.util.IOUtils;
  */
 public class Lucene40SegmentInfoWriter extends SegmentInfoWriter {
 
+  /** Sole constructor. */
+  public Lucene40SegmentInfoWriter() {
+  }
+
   /** Save a single segment's info. */
   @Override
   public void write(Directory dir, SegmentInfo si, FieldInfos fis, IOContext ioContext) throws IOException {

@@ -43,6 +43,7 @@ package org.apache.lucene.codecs;
  */
 public abstract class FilterCodec extends Codec {
 
+  /** Sole constructor. */
   public FilterCodec(String name) {
     super(name);
   }

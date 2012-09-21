@@ -36,6 +36,11 @@ public class BlockTermState extends OrdTermState {
   /** fp into the terms dict primary file (_X.tim) that holds this term */
   public long blockFilePointer;
 
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected BlockTermState() {
+  }
+
   @Override
   public void copyFrom(TermState _other) {
     assert _other instanceof BlockTermState : "can not copy from " + _other.getClass().getName();

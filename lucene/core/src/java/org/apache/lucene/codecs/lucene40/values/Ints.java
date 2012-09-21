@@ -38,19 +38,29 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.experimental
  */
 public final class Ints {
+  /** Codec name, written in the header. */
   protected static final String CODEC_NAME = "Ints";
+
+  /** Initial version. */
   protected static final int VERSION_START = 0;
+
+  /** Current version. */
   protected static final int VERSION_CURRENT = VERSION_START;
 
+  /** Sole constructor. */
   private Ints() {
   }
   
+  /** Creates and returns a {@link DocValuesConsumer} to
+   *  write int values. */
   public static DocValuesConsumer getWriter(Directory dir, String id, Counter bytesUsed,
       Type type, IOContext context) {
     return type == Type.VAR_INTS ? new PackedIntValues.PackedIntsWriter(dir, id,
         bytesUsed, context) : new IntsWriter(dir, id, bytesUsed, context, type);
   }
 
+  /** Creates and returns a {@link DocValues} to
+   *  read previously written int values. */
   public static DocValues getValues(Directory dir, String id, int numDocs,
       Type type, IOContext context) throws IOException {
     return type == Type.VAR_INTS ? new PackedIntValues.PackedIntsReader(dir, id,

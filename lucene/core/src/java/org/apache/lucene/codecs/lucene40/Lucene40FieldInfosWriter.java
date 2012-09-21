@@ -21,10 +21,10 @@ import java.io.IOException;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -51,6 +51,10 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
   static final byte STORE_PAYLOADS = 0x20;
   static final byte OMIT_TERM_FREQ_AND_POSITIONS = 0x40;
   static final byte OMIT_POSITIONS = -128;
+
+  /** Sole constructor. */
+  public Lucene40FieldInfosWriter() {
+  }
   
   @Override
   public void write(Directory directory, String segmentName, FieldInfos infos, IOContext context) throws IOException {
@@ -93,6 +97,8 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
     }
   }
 
+  /** Returns the byte used to encode the {@link
+   *  Type} for each field. */
   public byte docValuesByte(Type type) {
     if (type == null) {
       return 0;

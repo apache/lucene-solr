@@ -83,11 +83,18 @@ import org.apache.lucene.util.fst.Util;
 
 public class BlockTreeTermsWriter extends FieldsConsumer {
 
+  /** Suggested default value for the {@code
+   *  minItemsInBlock} parameter to {@link
+   *  #BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
   public final static int DEFAULT_MIN_BLOCK_SIZE = 25;
+
+  /** Suggested default value for the {@code
+   *  maxItemsInBlock} parameter to {@link
+   *  #BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
   public final static int DEFAULT_MAX_BLOCK_SIZE = 48;
 
   //public final static boolean DEBUG = false;
-  public final static boolean SAVE_DOT_FILES = false;
+  private final static boolean SAVE_DOT_FILES = false;
 
   static final int OUTPUT_FLAGS_NUM_BITS = 2;
   static final int OUTPUT_FLAGS_MASK = 0x3;
@@ -97,15 +104,21 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   /** Extension of terms file */
   static final String TERMS_EXTENSION = "tim";
   final static String TERMS_CODEC_NAME = "BLOCK_TREE_TERMS_DICT";
-  // Initial format
+
+  /** Initial terms format. */
   public static final int TERMS_VERSION_START = 0;
+
+  /** Current terms format. */
   public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_START;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
   final static String TERMS_INDEX_CODEC_NAME = "BLOCK_TREE_TERMS_INDEX";
-  // Initial format
+
+  /** Initial index format. */
   public static final int TERMS_INDEX_VERSION_START = 0;
+
+  /** Current index format. */
   public static final int TERMS_INDEX_VERSION_CURRENT = TERMS_INDEX_VERSION_START;
 
   private final IndexOutput out;
@@ -174,22 +187,26 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
     }
     this.indexOut = indexOut;
   }
-  
+
+  /** Writes the terms file header. */
   protected void writeHeader(IndexOutput out) throws IOException {
     CodecUtil.writeHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT); 
     out.writeLong(0);                             // leave space for end index pointer    
   }
 
+  /** Writes the index file header. */
   protected void writeIndexHeader(IndexOutput out) throws IOException {
     CodecUtil.writeHeader(out, TERMS_INDEX_CODEC_NAME, TERMS_INDEX_VERSION_CURRENT); 
     out.writeLong(0);                             // leave space for end index pointer    
   }
 
+  /** Writes the terms file trailer. */
   protected void writeTrailer(IndexOutput out, long dirStart) throws IOException {
     out.seek(CodecUtil.headerLength(TERMS_CODEC_NAME));
     out.writeLong(dirStart);    
   }
 
+  /** Writes the index file trailer. */
   protected void writeIndexTrailer(IndexOutput indexOut, long dirStart) throws IOException {
     indexOut.seek(CodecUtil.headerLength(TERMS_INDEX_CODEC_NAME));
     indexOut.writeLong(dirStart);    

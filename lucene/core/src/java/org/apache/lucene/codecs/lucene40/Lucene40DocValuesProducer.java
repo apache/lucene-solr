@@ -44,6 +44,7 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.experimental
  */
 public class Lucene40DocValuesProducer extends PerDocProducerBase {
+  /** Maps field name to {@link DocValues} instance. */
   protected final TreeMap<String,DocValues> docValues;
   private final Directory cfs;
   /**

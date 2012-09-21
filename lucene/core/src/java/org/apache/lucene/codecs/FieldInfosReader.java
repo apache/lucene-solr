@@ -28,5 +28,12 @@ import org.apache.lucene.store.IOContext;
  * @lucene.experimental
  */
 public abstract class FieldInfosReader {
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected FieldInfosReader() {
+  }
+
+  /** Read the {@link FieldInfos} previously written with {@link
+   *  FieldInfosWriter}. */
   public abstract FieldInfos read(Directory directory, String segmentName, IOContext iocontext) throws IOException;
 }

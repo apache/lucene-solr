@@ -30,6 +30,10 @@ import org.apache.lucene.store.IOContext;
  */
 
 public abstract class SegmentInfoWriter {
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected SegmentInfoWriter() {
+  }
 
   /**
    * Write {@link SegmentInfo} data. 

@@ -66,6 +66,10 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
 
   /** Extension of deletes */
   static final String DELETES_EXTENSION = "del";
+
+  /** Sole constructor. */
+  public Lucene40LiveDocsFormat() {
+  }
   
   @Override
   public MutableBits newLiveDocs(int size) throws IOException {

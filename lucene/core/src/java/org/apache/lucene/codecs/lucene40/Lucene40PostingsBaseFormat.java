@@ -34,6 +34,7 @@ import org.apache.lucene.index.SegmentWriteState;
 // TODO: should these also be named / looked up via SPI?
 public final class Lucene40PostingsBaseFormat extends PostingsBaseFormat {
 
+  /** Sole constructor. */
   public Lucene40PostingsBaseFormat() {
     super("Lucene40");
   }

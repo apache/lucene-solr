@@ -53,6 +53,11 @@ import org.apache.lucene.util.FixedBitSet;
  */
 public abstract class TermsConsumer {
 
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected TermsConsumer() {
+  }
+
   /** Starts a new term in this field; this may be called
    *  with no corresponding call to finish if the term had
    *  no docs. */

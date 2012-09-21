@@ -64,7 +64,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
     return new Lucene40StoredFieldsReader(fieldInfos, numTotalDocs, size, fieldsStream.clone(), indexStream.clone());
   }
   
-  // Used only by clone
+  /** Used only by clone. */
   private Lucene40StoredFieldsReader(FieldInfos fieldInfos, int numTotalDocs, int size, IndexInput fieldsStream, IndexInput indexStream) {
     this.fieldInfos = fieldInfos;
     this.numTotalDocs = numTotalDocs;
@@ -73,6 +73,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
     this.indexStream = indexStream;
   }
 
+  /** Sole constructor. */
   public Lucene40StoredFieldsReader(Directory d, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
     final String segment = si.name;
     boolean success = false;
@@ -128,6 +129,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
     }
   }
 
+  /** Returns number of documents. */
   public final int size() {
     return size;
   }
@@ -136,6 +138,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
     indexStream.seek(HEADER_LENGTH_IDX + docID * 8L);
   }
 
+  @Override
   public final void visitDocument(int n, StoredFieldVisitor visitor) throws IOException {
     seekIndex(n);
     fieldsStream.seek(indexStream.readLong());

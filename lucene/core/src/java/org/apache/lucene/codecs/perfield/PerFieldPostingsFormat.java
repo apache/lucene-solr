@@ -53,11 +53,19 @@ import org.apache.lucene.util.IOUtils;
  */
 
 public abstract class PerFieldPostingsFormat extends PostingsFormat {
+  /** Name of this {@link PostingsFormat}. */
   public static final String PER_FIELD_NAME = "PerField40";
-  
+
+  /** {@link FieldInfo} attribute name used to store the
+   *  format name for each field. */
   public static final String PER_FIELD_FORMAT_KEY = PerFieldPostingsFormat.class.getSimpleName() + ".format";
+
+  /** {@link FieldInfo} attribute name used to store the
+   *  segment suffix name for each field. */
   public static final String PER_FIELD_SUFFIX_KEY = PerFieldPostingsFormat.class.getSimpleName() + ".suffix";
 
+  
+  /** Sole constructor. */
   public PerFieldPostingsFormat() {
     super(PER_FIELD_NAME);
   }
