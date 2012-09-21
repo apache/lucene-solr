@@ -222,7 +222,7 @@ public class FilteredQuery extends Query {
     private final DocIdSetIterator secondary;
     private final DocIdSetIterator primary;
     private final Scorer scorer;
-    private int primaryDoc = -1;
+    protected int primaryDoc = -1;
     protected int secondaryDoc = -1;
 
     protected LeapFrogScorer(Weight weight, DocIdSetIterator primary, DocIdSetIterator secondary, Scorer scorer) {
@@ -289,8 +289,7 @@ public class FilteredQuery extends Query {
 
     @Override
     public final int docID() {
-      assert scorer.docID() == primaryDoc;
-      return primaryDoc;
+      return secondaryDoc;
     }
     
     @Override
@@ -314,6 +313,7 @@ public class FilteredQuery extends Query {
     protected PrimaryAdvancedLeapFrogScorer(Weight weight, int firstFilteredDoc, DocIdSetIterator filterIter, Scorer other) {
       super(weight, filterIter, other, other);
       this.firstFilteredDoc = firstFilteredDoc;
+      this.primaryDoc = firstFilteredDoc; // initialize to prevent and advance call to move it further
     }
 
     @Override
@@ -564,9 +564,9 @@ public class FilteredQuery extends Query {
       // we pass null as acceptDocs, as our filter has already respected acceptDocs, no need to do twice
       final Scorer scorer = weight.scorer(context, true, false, null);
       if (scorerFirst) {
-        return (scorer == null) ? null : new LeapFrogScorer(weight, filterIter, scorer, scorer);  
-      } else {
         return (scorer == null) ? null : new LeapFrogScorer(weight, scorer, filterIter, scorer);  
+      } else {
+        return (scorer == null) ? null : new LeapFrogScorer(weight, filterIter, scorer, scorer);  
       }
     }
     

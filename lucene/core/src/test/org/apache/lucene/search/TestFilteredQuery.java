@@ -17,13 +17,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.BitSet;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -31,6 +34,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.DocIdBitSet;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -376,6 +380,151 @@ public class TestFilteredQuery extends LuceneTestCase {
       };
     }
     return _TestUtil.randomFilterStrategy(random);
+  }
+  
+  /*
+   * Test if the QueryFirst strategy calls the bits only if
+   * the document has been matched by the query and not otherwise
+   */
+  public void testQueryFirstFilterStrategy() throws IOException {
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter (random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    int numDocs = atLeast(50);
+    int totalDocsWithZero = 0;
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      int num = random().nextInt(5);
+      if (num == 0) {
+        totalDocsWithZero++;
+      }
+      doc.add (newTextField("field", ""+num, Field.Store.YES));
+      writer.addDocument (doc);  
+    }
+    IndexReader reader = writer.getReader();
+    writer.close ();
+    
+    IndexSearcher searcher = newSearcher(reader);
+    Query query = new FilteredQuery(new TermQuery(new Term("field", "0")), new Filter() {
+      @Override
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs)
+          throws IOException {
+        final boolean nullBitset = random().nextInt(10) == 5;
+        final AtomicReader reader = context.reader();
+        DocsEnum termDocsEnum = reader.termDocsEnum(new Term("field", "0"));
+        final BitSet bitSet = new BitSet(reader.maxDoc());
+        if (termDocsEnum != null) {
+          int d;
+          while((d = termDocsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+            bitSet.set(d, true);
+          }
+        }
+        return new DocIdSet() {
+          
+          @Override
+          public Bits bits() throws IOException {
+            if (nullBitset) {
+              return null;
+            }
+            return new Bits() {
+
+              @Override
+              public boolean get(int index) {
+                assertTrue("filter was called for a non-matching doc", bitSet.get(index));
+                return bitSet.get(index);
+              }
+
+              @Override
+              public int length() {
+                return bitSet.length();
+              }
+              
+            };
+          }
+          @Override
+          public DocIdSetIterator iterator() throws IOException {
+            assertTrue("iterator should not be called if bitset is present", nullBitset);
+            return reader.termDocsEnum(new Term("field", "0"));
+          }
+          
+        };
+      }
+    }, FilteredQuery.QUERY_FIRST_FILTER_STRATEGY);
+    
+    TopDocs search = searcher.search(query, 10);
+    assertEquals(totalDocsWithZero, search.totalHits);
+    IOUtils.close(reader, writer, directory);
+     
+  }
+  
+  /*
+   * Test if the leapfrog strategy works correctly in terms
+   * of advancing / next the right thing first
+   */
+  public void testLeapFrogStrategy() throws IOException {
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter (random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    int numDocs = atLeast(50);
+    int totalDocsWithZero = 0;
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      int num = random().nextInt(10);
+      if (num == 0) {
+        totalDocsWithZero++;
+      }
+      doc.add (newTextField("field", ""+num, Field.Store.YES));
+      writer.addDocument (doc);  
+    }
+    IndexReader reader = writer.getReader();
+    writer.close ();
+    final boolean queryFirst = random().nextBoolean();
+    IndexSearcher searcher = newSearcher(reader);
+    Query query = new FilteredQuery(new TermQuery(new Term("field", "0")), new Filter() {
+      @Override
+      public DocIdSet getDocIdSet(final AtomicReaderContext context, Bits acceptDocs)
+          throws IOException {
+        return new DocIdSet() {
+          
+          @Override
+          public Bits bits() throws IOException {
+             return null;
+          }
+          @Override
+          public DocIdSetIterator iterator() throws IOException {
+            final DocsEnum termDocsEnum = context.reader().termDocsEnum(new Term("field", "0"));
+            return new DocIdSetIterator() {
+              boolean nextCalled;
+              boolean advanceCalled;
+              @Override
+              public int nextDoc() throws IOException {
+                assertTrue("queryFirst: "+ queryFirst + " advanced: " + advanceCalled + " next: "+ nextCalled, nextCalled || advanceCalled ^ !queryFirst);  
+                nextCalled = true;
+                return termDocsEnum.nextDoc();
+              }
+              
+              @Override
+              public int docID() {
+                return termDocsEnum.docID();
+              }
+              
+              @Override
+              public int advance(int target) throws IOException {
+                assertTrue("queryFirst: "+ queryFirst + " advanced: " + advanceCalled + " next: "+ nextCalled, advanceCalled || nextCalled ^ queryFirst);  
+                advanceCalled = true;
+                return termDocsEnum.advance(target);
+              }
+            };
+          }
+          
+        };
+      }
+        }, queryFirst ? FilteredQuery.LEAP_FROG_QUERY_FIRST_STRATEGY : random()
+            .nextBoolean() ? FilteredQuery.RANDOM_ACCESS_FILTER_STRATEGY
+            : FilteredQuery.LEAP_FROG_FILTER_FIRST_STRATEGY);  // if filterFirst, we can use random here since bits are null
+    
+    TopDocs search = searcher.search(query, 10);
+    assertEquals(totalDocsWithZero, search.totalHits);
+    IOUtils.close(reader, writer, directory);
+     
   }
 }
 
