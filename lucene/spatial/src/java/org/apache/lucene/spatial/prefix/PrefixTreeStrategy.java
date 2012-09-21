@@ -37,6 +37,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * Abstract SpatialStrategy which provides common functionality for those 
+ * Strategys which use {@link SpatialPrefixTree}s
  * @lucene.internal
  */
 public abstract class PrefixTreeStrategy extends SpatialStrategy {

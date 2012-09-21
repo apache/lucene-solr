@@ -31,10 +31,16 @@ import java.util.List;
 import java.util.Locale;
 
 /**
+ * Implementation of {@link SpatialPrefixTree} which uses a quad tree
+ * (http://en.wikipedia.org/wiki/Quadtree)
+ *
  * @lucene.experimental
  */
 public class QuadPrefixTree extends SpatialPrefixTree {
 
+  /**
+   * Factory for creating {@link QuadPrefixTree} instances with useful defaults
+   */
   public static class Factory extends SpatialPrefixTreeFactory {
 
     @Override

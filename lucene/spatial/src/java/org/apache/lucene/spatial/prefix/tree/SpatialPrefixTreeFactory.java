@@ -23,6 +23,9 @@ import com.spatial4j.core.distance.DistanceUtils;
 import java.util.Map;
 
 /**
+ * Abstract Factory for creating {@link SpatialPrefixTree} instances with useful
+ * defaults and passed on configurations defined in a Map.
+ *
  * @lucene.experimental
  */
 public abstract class SpatialPrefixTreeFactory {

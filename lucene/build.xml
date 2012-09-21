@@ -256,7 +256,7 @@
       <!-- queries: problems -->
       <!-- queryparser: problems -->
       <check-missing-javadocs dir="build/docs/sandbox" level="class"/>
-      <!-- spatial: problems -->
+      <check-missing-javadocs dir="build/docs/spatial" level="class"/>
       <check-missing-javadocs dir="build/docs/suggest" level="class"/>
       <check-missing-javadocs dir="build/docs/test-framework" level="class"/>
 

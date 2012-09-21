@@ -35,6 +35,9 @@ import java.util.List;
  */
 public class GeohashPrefixTree extends SpatialPrefixTree {
 
+  /**
+   * Factory for creating {@link GeohashPrefixTree} instances with useful defaults
+   */
   public static class Factory extends SpatialPrefixTreeFactory {
 
     @Override
