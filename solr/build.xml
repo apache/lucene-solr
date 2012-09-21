@@ -420,7 +420,7 @@
 
   <target name="create-package"
           description="Packages the Solr Binary Distribution"
-          depends="init-dist, dist, example, javadocs, changes-to-html">
+          depends="init-dist, dist, example, documentation">
     <mkdir dir="${dest}/${fullnamever}"/>
     <delete includeemptydirs="true">
       <fileset dir="${example}/solr-webapp" includes="**/*"/>
