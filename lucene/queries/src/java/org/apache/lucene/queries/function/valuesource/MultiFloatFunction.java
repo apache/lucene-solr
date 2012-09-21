@@ -28,9 +28,9 @@ import java.io.IOException;
 
 
 /**
- *
- *
- **/ // a simple function of multiple sources
+ * Abstract {@link ValueSource} implementation which wraps multiple ValueSources
+ * and applies an extendible float function to their values.
+ **/
 public abstract class MultiFloatFunction extends ValueSource {
   protected final ValueSource[] sources;
 

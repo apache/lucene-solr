@@ -155,6 +155,9 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
     };
   }
 
+  /**
+   * Custom Exception to be thrown when the DocTermsIndex for a field cannot be generated
+   */
   public static final class DocTermsIndexException extends RuntimeException {
 
     public DocTermsIndexException(final String fieldName, final RuntimeException cause) {

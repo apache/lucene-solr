@@ -22,7 +22,10 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueBool;
 
-
+/**
+ * Abstract {@link FunctionValues} implementation which supports retrieving boolean values.
+ * Implementations can control how the boolean values are loaded through {@link #boolVal(int)}}
+ */
 public abstract class BoolDocValues extends FunctionValues {
   protected final ValueSource vs;
 

@@ -24,6 +24,10 @@ import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 
+/**
+ * {@link Scorer} which returns the result of {@link FunctionValues#floatVal(int)} as
+ * the score for a document.
+ */
 public class ValueSourceScorer extends Scorer {
   protected final IndexReader reader;
   private int doc = -1;
