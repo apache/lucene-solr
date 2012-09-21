@@ -46,7 +46,7 @@ public class HighFrequencyDictionary implements Dictionary {
    * Creates a new Dictionary, pulling source terms from
    * the specified <code>field</code> in the provided <code>reader</code>.
    * <p>
-   * Terms appearing in less than <code>thres</code> percentage of documents
+   * Terms appearing in less than <code>thresh</code> percentage of documents
    * will be excluded.
    */
   public HighFrequencyDictionary(IndexReader reader, String field, float thresh) {
