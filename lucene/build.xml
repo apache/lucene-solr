@@ -257,7 +257,7 @@
       <!-- queryparser: problems -->
       <!-- sandbox: problems -->
       <!-- spatial: problems -->
-      <!-- suggest: problems -->
+      <check-missing-javadocs dir="build/docs/suggest" level="method"/>
       <!-- test-framework: problems -->
 
       <!-- too much to fix core/ for now, but enforce full javadocs for key packages -->

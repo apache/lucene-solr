@@ -33,6 +33,10 @@ public class UnsortedTermFreqIteratorWrapper extends BufferingTermFreqIteratorWr
   private final int[] ords;
   private int currentOrd = -1;
   private final BytesRef spare = new BytesRef();
+  /** 
+   * Creates a new iterator, wrapping the specified iterator and
+   * returning elements in a random order.
+   */
   public UnsortedTermFreqIteratorWrapper(TermFreqIterator source) throws IOException {
     super(source);
     ords = new int[entries.size()];

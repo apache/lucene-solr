@@ -37,9 +37,14 @@ public abstract class Lookup {
    * Result of a lookup.
    */
   public static final class LookupResult implements Comparable<LookupResult> {
+    /** the key's text */
     public final CharSequence key;
+    /** the key's weight */
     public final long value;
     
+    /**
+     * Create a new result from a key+weight pair.
+     */
     public LookupResult(CharSequence key, long value) {
       this.key = key;
       this.value = value;
@@ -86,6 +91,9 @@ public abstract class Lookup {
    */
   public static final class LookupPriorityQueue extends PriorityQueue<LookupResult> {
   // TODO: should we move this out of the interface into a utility class?
+    /**
+     * Creates a new priority queue of the specified size.
+     */
     public LookupPriorityQueue(int size) {
       super(size);
     }

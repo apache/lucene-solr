@@ -31,6 +31,10 @@ import java.util.Comparator;
  *
  */
 public final class SuggestWordQueue extends PriorityQueue<SuggestWord> {
+  /**
+   * Default comparator: score then frequency.
+   * @see SuggestWordScoreComparator
+   */
   public static final Comparator<SuggestWord> DEFAULT_COMPARATOR = new SuggestWordScoreComparator();
 
 

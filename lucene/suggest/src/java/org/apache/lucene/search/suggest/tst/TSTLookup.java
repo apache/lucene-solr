@@ -42,6 +42,12 @@ import org.apache.lucene.util.UnicodeUtil;
 public class TSTLookup extends Lookup {
   TernaryTreeNode root = new TernaryTreeNode();
   TSTAutocomplete autocomplete = new TSTAutocomplete();
+  
+  /** 
+   * Creates a new TSTLookup with an empty Ternary Search Tree.
+   * @see #build(TermFreqIterator)
+   */
+  public TSTLookup() {}
 
   @Override
   public void build(TermFreqIterator tfit) throws IOException {
@@ -65,12 +71,22 @@ public class TSTLookup extends Lookup {
     autocomplete.balancedTree(tokens.toArray(), vals.toArray(), 0, tokens.size() - 1, root);
   }
 
+  /** 
+   * Adds a new node if <code>key</code> already exists,
+   * otherwise replaces its value.
+   * <p>
+   * This method always returns true.
+   */
   public boolean add(CharSequence key, Object value) {
     autocomplete.insert(root, key, value, 0);
     // XXX we don't know if a new node was created
     return true;
   }
 
+  /**
+   * Returns the value for the specified key, or null
+   * if the key does not exist.
+   */
   public Object get(CharSequence key) {
     List<TernaryTreeNode> list = autocomplete.prefixCompletion(root, key, 0);
     if (list == null || list.isEmpty()) {

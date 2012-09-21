@@ -27,14 +27,15 @@ import java.io.*;
 /**
  * Lucene Dictionary: terms taken from the given field
  * of a Lucene index.
- *
- * When using IndexReader.terms(Term) the code must not call next() on TermEnum
- * as the first call to TermEnum, see: http://issues.apache.org/jira/browse/LUCENE-6
  */
 public class LuceneDictionary implements Dictionary {
   private IndexReader reader;
   private String field;
 
+  /**
+   * Creates a new Dictionary, pulling source terms from
+   * the specified <code>field</code> in the provided <code>reader</code>
+   */
   public LuceneDictionary(IndexReader reader, String field) {
     this.reader = reader;
     this.field = field;

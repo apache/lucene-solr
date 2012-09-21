@@ -123,14 +123,25 @@ public final class Sort {
    * Sort info (debugging mostly).
    */
   public class SortInfo {
+    /** number of temporary files created when merging partitions */
     public int tempMergeFiles;
+    /** number of partition merges */
     public int mergeRounds;
+    /** number of lines of data read */
     public int lines;
+    /** time spent merging sorted partitions (in milliseconds) */
     public long mergeTime;
+    /** time spent sorting data (in milliseconds) */
     public long sortTime;
+    /** total time spent (in milliseconds) */
     public long totalTime;
+    /** time spent in i/o read (in milliseconds) */
     public long readTime;
+    /** read buffer size (in bytes) */
     public final long bufferSize = ramBufferSize.bytes;
+    
+    /** create a new SortInfo (with empty statistics) for debugging */
+    public SortInfo() {}
     
     @Override
     public String toString() {

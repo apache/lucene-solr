@@ -40,8 +40,19 @@ public class WordBreakSpellChecker {
   private int maxChanges = 1;
   private int maxEvaluations = 1000;
   
+  /** Term that can be used to prohibit adjacent terms from being combined */
   public static final Term SEPARATOR_TERM = new Term("", "");
   
+  /** 
+   * Creates a new spellchecker with default configuration values
+   * @see #setMaxChanges(int)
+   * @see #setMaxCombineWordLength(int)
+   * @see #setMaxEvaluations(int)
+   * @see #setMinBreakWordLength(int)
+   * @see #setMinSuggestionFrequency(int)
+   */
+  public WordBreakSpellChecker() {}
+
   /**
    * <p>
    * Determines the order to list word break suggestions
@@ -347,22 +358,43 @@ public class WordBreakSpellChecker {
     return word;
   }
   
+  /**
+   * Returns the minimum frequency a term must have
+   * to be part of a suggestion.
+   * @see #setMinSuggestionFrequency(int)
+   */
   public int getMinSuggestionFrequency() {
     return minSuggestionFrequency;
   }
   
+  /**
+   * Returns the maximum length of a combined suggestion
+   * @see #setMaxCombineWordLength(int)
+   */
   public int getMaxCombineWordLength() {
     return maxCombineWordLength;
   }
   
+  /**
+   * Returns the minimum size of a broken word
+   * @see #setMinBreakWordLength(int)
+   */
   public int getMinBreakWordLength() {
     return minBreakWordLength;
   }
   
+  /**
+   * Returns the maximum number of changes to perform on the input
+   * @see #setMaxChanges(int)
+   */
   public int getMaxChanges() {
     return maxChanges;
   }
   
+  /**
+   * Returns the maximum number of word combinations to evaluate.
+   * @see #setMaxEvaluations(int)
+   */
   public int getMaxEvaluations() {
     return maxEvaluations;
   }
@@ -374,7 +406,7 @@ public class WordBreakSpellChecker {
    * {@link SuggestMode#SUGGEST_MORE_POPULAR}
    * </p>
    * 
-   * @param minSuggestionFrequency
+   * @see #getMinSuggestionFrequency()
    */
   public void setMinSuggestionFrequency(int minSuggestionFrequency) {
     this.minSuggestionFrequency = minSuggestionFrequency;
@@ -386,7 +418,7 @@ public class WordBreakSpellChecker {
    * terms. Default=20
    * </p>
    * 
-   * @param maxCombineWordLength
+   * @see #getMaxCombineWordLength()
    */
   public void setMaxCombineWordLength(int maxCombineWordLength) {
     this.maxCombineWordLength = maxCombineWordLength;
@@ -397,7 +429,7 @@ public class WordBreakSpellChecker {
    * The minimum length to break words down to. Default=1
    * </p>
    * 
-   * @param minBreakWordLength
+   * @see #getMinBreakWordLength()
    */
   public void setMinBreakWordLength(int minBreakWordLength) {
     this.minBreakWordLength = minBreakWordLength;
@@ -409,7 +441,7 @@ public class WordBreakSpellChecker {
    * original term(s). Default=1
    * </p>
    * 
-   * @param maxChanges
+   * @see #getMaxChanges()
    */
   public void setMaxChanges(int maxChanges) {
     this.maxChanges = maxChanges;
@@ -422,7 +454,7 @@ public class WordBreakSpellChecker {
    * performance.
    * </p>
    * 
-   * @param maxEvaluations
+   * @see #getMaxEvaluations()
    */
   public void setMaxEvaluations(int maxEvaluations) {
     this.maxEvaluations = maxEvaluations;

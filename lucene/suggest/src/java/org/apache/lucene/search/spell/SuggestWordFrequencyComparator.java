@@ -20,10 +20,16 @@ import java.util.Comparator;
 
 
 /**
- *  Frequency first, then score.  Must have 
+ *  Frequency first, then score.
  *
  **/
 public class SuggestWordFrequencyComparator implements Comparator<SuggestWord> {
+  
+  /**
+   * Creates a new comparator that will compare by {@link SuggestWord#freq},
+   * then by {@link SuggestWord#score}, then by {@link SuggestWord#string}.
+   */
+  public SuggestWordFrequencyComparator() {}
 
   public int compare(SuggestWord first, SuggestWord second) {
     // first criteria: the frequency

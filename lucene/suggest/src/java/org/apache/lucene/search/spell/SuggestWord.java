@@ -28,6 +28,11 @@ package org.apache.lucene.search.spell;
 public final class SuggestWord{
   
   /**
+   * Creates a new empty suggestion with null text.
+   */
+  public SuggestWord() {}
+  
+  /**
    * the score of the word
    */
   public float score;
