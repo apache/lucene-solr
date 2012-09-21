@@ -22,6 +22,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.search.Query;
 
+/** Base class for composite queries (such as AND/OR/NOT) */
 public abstract class ComposedQuery extends SrndQuery { 
   
   public ComposedQuery(List<SrndQuery> qs, boolean operatorInfix, String opName) {

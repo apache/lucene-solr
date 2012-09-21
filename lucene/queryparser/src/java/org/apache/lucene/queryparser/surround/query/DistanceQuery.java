@@ -26,6 +26,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 
+/** Factory for NEAR queries */
 public class DistanceQuery extends ComposedQuery implements DistanceSubQuery {
   public DistanceQuery(
       List<SrndQuery> queries,

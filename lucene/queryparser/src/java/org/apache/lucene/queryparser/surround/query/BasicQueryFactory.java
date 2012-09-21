@@ -29,6 +29,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 
+/** Factory for creating basic term queries */
 public class BasicQueryFactory {
   public BasicQueryFactory(int maxBasicQueries) {
     this.maxBasicQueries = maxBasicQueries;
