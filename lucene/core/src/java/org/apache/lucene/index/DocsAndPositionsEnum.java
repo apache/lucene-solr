@@ -31,7 +31,12 @@ public abstract class DocsAndPositionsEnum extends DocsEnum {
   /** Flag to pass to  {@link TermsEnum#docsAndPositions(Bits,DocsAndPositionsEnum,int)}
    *  if you require payloads in the returned enum. */
   public static final int FLAG_PAYLOADS = 0x2;
-  
+
+  /** Sole constructor. (For invocation by subclass 
+   * constructors, typically implicit.) */
+  protected DocsAndPositionsEnum() {
+  }
+
   /** Returns the next position.  You should only call this
    *  up to {@link DocsEnum#freq()} times else
    *  the behavior is not defined.  If positions were not

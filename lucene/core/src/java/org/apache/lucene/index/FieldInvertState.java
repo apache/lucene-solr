@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.index;
 
+import org.apache.lucene.analysis.TokenStream; // javadocs
 import org.apache.lucene.util.AttributeSource;
 
 /**
@@ -36,10 +37,14 @@ public final class FieldInvertState {
   float boost;
   AttributeSource attributeSource;
 
+  /** Creates {code FieldInvertState} for the specified
+   *  field name. */
   public FieldInvertState(String name) {
     this.name = name;
   }
   
+  /** Creates {code FieldInvertState} for the specified
+   *  field name and values for all fields. */
   public FieldInvertState(String name, int position, int length, int numOverlap, int offset, float boost) {
     this.name = name;
     this.position = position;
@@ -79,6 +84,7 @@ public final class FieldInvertState {
     return length;
   }
 
+  /** Set length value. */
   public void setLength(int length) {
     this.length = length;
   }
@@ -91,6 +97,8 @@ public final class FieldInvertState {
     return numOverlap;
   }
 
+  /** Set number of terms with {@code positionIncrement ==
+   *  0}. */
   public void setNumOverlap(int numOverlap) {
     this.numOverlap = numOverlap;
   }
@@ -112,7 +120,8 @@ public final class FieldInvertState {
   public float getBoost() {
     return boost;
   }
-  
+
+  /** Set boost value. */
   public void setBoost(float boost) {
     this.boost = boost;
   }
@@ -132,7 +141,10 @@ public final class FieldInvertState {
   public int getUniqueTermCount() {
     return uniqueTermCount;
   }
-  
+
+  /** Returns the {@link AttributeSource} from the {@link
+   *  TokenStream} that provided the indexed tokens for this
+   *  field. */
   public AttributeSource getAttributeSource() {
     return attributeSource;
   }

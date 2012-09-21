@@ -41,6 +41,12 @@ public final class MultiTerms extends Terms {
   private final boolean hasPositions;
   private final boolean hasPayloads;
 
+  /** Sole constructor.
+   *
+   * @param subs The {@link Terms} instances of all sub-readers. 
+   * @param subSlices A parallel array (matching {@code
+   *        subs}) describing the sub-reader slices.
+   */
   public MultiTerms(Terms[] subs, ReaderSlice[] subSlices) throws IOException {
     this.subs = subs;
     this.subSlices = subSlices;

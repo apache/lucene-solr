@@ -67,6 +67,8 @@ public final class IndexUpgrader {
     System.exit(1);
   }
 
+  /** Main method to run {code IndexUpgrader} from the
+   *  command-line. */
   @SuppressWarnings("deprecation")
   public static void main(String[] args) throws IOException {
     String path = null;
@@ -132,7 +134,8 @@ public final class IndexUpgrader {
     this.iwc = iwc;
     this.deletePriorCommits = deletePriorCommits;
   }
-  
+
+  /** Perform the upgrade. */
   public void upgrade() throws IOException {
     if (!DirectoryReader.indexExists(dir)) {
       throw new IndexNotFoundException(dir.toString());

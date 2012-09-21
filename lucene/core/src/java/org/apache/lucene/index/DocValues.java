@@ -78,11 +78,17 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 public abstract class DocValues implements Closeable {
 
+  /** Zero length DocValues array. */
   public static final DocValues[] EMPTY_ARRAY = new DocValues[0];
 
   private volatile SourceCache cache = new SourceCache.DirectSourceCache();
   private final Object cacheLock = new Object();
   
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected DocValues() {
+  }
+
   /**
    * Loads a new {@link Source} instance for this {@link DocValues} field
    * instance. Source instances returned from this method are not cached. It is
@@ -173,9 +179,12 @@ public abstract class DocValues implements Closeable {
    * @see DocValues#getDirectSource()
    */
   public static abstract class Source {
-    
+
+    /** {@link Type} of this {@code Source}. */
     protected final Type type;
 
+    /** Sole constructor. (For invocation by subclass 
+     *  constructors, typically implicit.) */
     protected Source(Type type) {
       this.type = type;
     }
@@ -261,6 +270,8 @@ public abstract class DocValues implements Closeable {
 
     private final Comparator<BytesRef> comparator;
 
+    /** Sole constructor. (For invocation by subclass 
+     * constructors, typically implicit.) */
     protected SortedSource(Type type, Comparator<BytesRef> comparator) {
       super(type);
       this.comparator = comparator;
@@ -685,6 +696,11 @@ public abstract class DocValues implements Closeable {
    */
   public static abstract class SourceCache {
 
+    /** Sole constructor. (For invocation by subclass 
+     * constructors, typically implicit.) */
+    protected SourceCache() {
+    }
+
     /**
      * Atomically loads a {@link Source} into the cache from the given
      * {@link DocValues} and returns it iff no other {@link Source} has already
@@ -716,6 +732,10 @@ public abstract class DocValues implements Closeable {
      */
     public static final class DirectSourceCache extends SourceCache {
       private Source ref;
+
+      /** Sole constructor. */
+      public DirectSourceCache() {
+      }
 
       public synchronized Source load(DocValues values) throws IOException {
         if (ref == null) {

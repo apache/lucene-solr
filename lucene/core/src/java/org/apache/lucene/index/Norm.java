@@ -46,6 +46,10 @@ public final class Norm  {
   private Field field;
   private BytesRef spare;
   
+  /** Sole constructor. */
+  public Norm() {
+  }
+
   /**
    * Returns the {@link IndexableField} representation for this norm
    */

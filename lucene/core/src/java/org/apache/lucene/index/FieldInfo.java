@@ -84,6 +84,8 @@ public final class FieldInfo {
   };
 
   /**
+   * Sole Constructor.
+   *
    * @lucene.experimental
    */
   public FieldInfo(String name, boolean indexed, int number, boolean storeTermVector, 

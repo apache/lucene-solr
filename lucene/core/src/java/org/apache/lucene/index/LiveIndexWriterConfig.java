@@ -46,21 +46,56 @@ public class LiveIndexWriterConfig {
   private volatile int termIndexInterval; // TODO: this should be private to the codec, not settable here
 
   // modified by IndexWriterConfig
+  /** {@link IndexDeletionPolicy} controlling when commit
+   *  points are deleted. */
   protected volatile IndexDeletionPolicy delPolicy;
+
+  /** {@link IndexCommit} that {@link IndexWriter} is
+   *  opened on. */
   protected volatile IndexCommit commit;
+
+  /** {@link OpenMode} that {@link IndexWriter} is opened
+   *  with. */
   protected volatile OpenMode openMode;
+
+  /** {@link Similarity} to use when encoding norms. */
   protected volatile Similarity similarity;
+
+  /** {@link MergeScheduler} to use for running merges. */
   protected volatile MergeScheduler mergeScheduler;
+
+  /** Timeout when trying to obtain the write lock on init. */
   protected volatile long writeLockTimeout;
+
+  /** {@link IndexingChain} that determines how documents are
+   *  indexed. */
   protected volatile IndexingChain indexingChain;
+
+  /** {@link Codec} used to write new segments. */
   protected volatile Codec codec;
+
+  /** {@link InfoStream} for debugging messages. */
   protected volatile InfoStream infoStream;
+
+  /** {@link MergePolicy} for selecting merges. */
   protected volatile MergePolicy mergePolicy;
+
+  /** {@code DocumentsWriterPerThreadPool} to control how
+   *  threads are allocated to {@code DocumentsWriterPerThread}. */
   protected volatile DocumentsWriterPerThreadPool indexerThreadPool;
+
+  /** True if readers should be pooled. */
   protected volatile boolean readerPooling;
+
+  /** {@link FlushPolicy} to control when segments are
+   *  flushed. */
   protected volatile FlushPolicy flushPolicy;
+
+  /** Sets the hard upper bound on RAM usage for a single
+   *  segment, after which the segment is forced to flush. */
   protected volatile int perThreadHardLimitMB;
 
+  /** {@link Version} that {@link IndexWriter} should emulate. */
   protected final Version matchVersion;
 
   // used by IndexWriterConfig
@@ -372,7 +407,9 @@ public class LiveIndexWriterConfig {
     return this;
   }
 
-  /** @see #setReaderTermsIndexDivisor(int) */
+  /** Returns the {@code termInfosIndexDivisor}.
+   * 
+   * @see #setReaderTermsIndexDivisor(int) */
   public int getReaderTermsIndexDivisor() {
     return readerTermsIndexDivisor;
   }
@@ -494,7 +531,8 @@ public class LiveIndexWriterConfig {
     return flushPolicy;
   }
   
-  /**
+  /** Returns {@link InfoStream} used for debugging.
+   *
    * @see IndexWriterConfig#setInfoStream(InfoStream)
    */
   public InfoStream getInfoStream() {

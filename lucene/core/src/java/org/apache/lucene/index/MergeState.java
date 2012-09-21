@@ -24,7 +24,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.packed.PackedInts;
 
-/** Holds common state used during segment merging
+/** Holds common state used during segment merging.
  *
  * @lucene.experimental */
 public class MergeState {
@@ -35,10 +35,14 @@ public class MergeState {
   public static abstract class DocMap {
     private final Bits liveDocs;
 
+    /** Sole constructor. (For invocation by subclass 
+     *  constructors, typically implicit.) */
     protected DocMap(Bits liveDocs) {
       this.liveDocs = liveDocs;
     }
 
+    /** Creates a {@link DocMap} instance appropriate for
+     *  this reader. */
     public static DocMap build(AtomicReader reader) {
       final int maxDoc = reader.maxDoc();
       final int numDeletes = reader.numDeletedDocs();
@@ -82,6 +86,7 @@ public class MergeState {
       return new DirectDocMap(liveDocs, docIds, del);
     }
 
+    /** Returns the mapped docID corresponding to the provided one. */
     public int get(int docId) {
       if (liveDocs == null || liveDocs.get(docId)) {
         return remap(docId);
@@ -90,16 +95,22 @@ public class MergeState {
       }
     }
 
+    /** Returns the mapped docID corresponding to the provided one. */
     public abstract int remap(int docId);
 
+    /** Returns the total number of documents, ignoring
+     *  deletions. */
     public abstract int maxDoc();
 
+    /** Returns the number of not-deleted documents. */
     public final int numDocs() {
       return maxDoc() - numDeletedDocs();
     }
 
+    /** Returns the number of deleted documents. */
     public abstract int numDeletedDocs();
 
+    /** Returns true if there are any deletions. */
     public boolean hasDeletions() {
       return numDeletedDocs() > 0;
     }
@@ -184,21 +195,45 @@ public class MergeState {
     }
   }
 
+  /** {@link SegmentInfo} of the newly merged segment. */
   public SegmentInfo segmentInfo;
+
+  /** {@link FieldInfos} of the newly merged segment. */
   public FieldInfos fieldInfos;
-  public List<AtomicReader> readers;                  // Readers being merged
-  public DocMap[] docMaps;                            // Maps docIDs around deletions
-  public int[] docBase;                               // New docID base per reader
+
+  /** Readers being merged. */
+  public List<AtomicReader> readers;
+
+  /** Maps docIDs around deletions. */
+  public DocMap[] docMaps;
+
+  /** New docID base per reader. */
+  public int[] docBase;
+
+  /** Holds the CheckAbort instance, which is invoked
+   *  periodically to see if the merge has been aborted. */
   public CheckAbort checkAbort;
+  
+  /** InfoStream for debugging messages. */
   public InfoStream infoStream;
 
-  // Updated per field;
+  /** Current field being merged. */
   public FieldInfo fieldInfo;
   
   // TODO: get rid of this? it tells you which segments are 'aligned' (e.g. for bulk merging)
   // but is this really so expensive to compute again in different components, versus once in SM?
+  
+  /** {@link SegmentReader}s that have identical field
+   * name/number mapping, so their stored fields and term
+   * vectors may be bulk merged. */
   public SegmentReader[] matchingSegmentReaders;
+
+  /** How many {@link #matchingSegmentReaders} are set. */
   public int matchedCount;
+
+  /** Sole constructor. */
+  MergeState() {
+  }
   
   /**
    * Class for recording units of work when merging segments.
@@ -207,6 +242,8 @@ public class MergeState {
     private double workCount;
     private final MergePolicy.OneMerge merge;
     private final Directory dir;
+
+    /** Creates a #CheckAbort instance. */
     public CheckAbort(MergePolicy.OneMerge merge, Directory dir) {
       this.merge = merge;
       this.dir = dir;
