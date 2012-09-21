@@ -427,7 +427,7 @@ public class FilteredQuery extends Query {
    * Note: This strategy uses the filter to lead the iteration.
    * </p> 
    */
-  public static final FilterStrategy LEAP_FROG_FILTER_FIRST_STRATEGY = new LeapFrogFilterStragey(false);
+  public static final FilterStrategy LEAP_FROG_FILTER_FIRST_STRATEGY = new LeapFrogFilterStrategy(false);
   
   /**
    * A filter strategy that uses a "leap-frog" approach (also called "zig-zag join"). 
@@ -439,7 +439,7 @@ public class FilteredQuery extends Query {
    * Note: This strategy uses the query to lead the iteration.
    * </p> 
    */
-  public static final FilterStrategy LEAP_FROG_QUERY_FIRST_STRATEGY = new LeapFrogFilterStragey(true);
+  public static final FilterStrategy LEAP_FROG_QUERY_FIRST_STRATEGY = new LeapFrogFilterStrategy(true);
   
   /**
    * A filter strategy that advances the Query or rather its {@link Scorer} first and consults the
@@ -544,11 +544,11 @@ public class FilteredQuery extends Query {
     }
   }
   
-  private static final class LeapFrogFilterStragey extends FilterStrategy {
+  private static final class LeapFrogFilterStrategy extends FilterStrategy {
     
     private final boolean scorerFirst;
     
-    private LeapFrogFilterStragey(boolean scorerFirst) {
+    private LeapFrogFilterStrategy(boolean scorerFirst) {
       this.scorerFirst = scorerFirst;
     }
     @Override
