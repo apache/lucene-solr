@@ -140,6 +140,11 @@ New Features
 * SOLR-3825: Added optional capability to log what ids are in a response
         (Scott Stults via gsingers)
 
+* SOLR-3821: Added 'df' to the UI Query form (steffkes)
+
+* SOLR-3822: Added hover titles to the edismax params on the UI Query form 
+  (steffkes)
+
 Optimizations
 ----------------------
 
