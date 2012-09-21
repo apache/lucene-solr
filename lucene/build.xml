@@ -55,6 +55,10 @@
           description="Runs all unit tests (core, modules and back-compat)"
   />
 
+  <target name="pitest" depends="pitest-modules"
+          description="Runs pitests (core, modules and back-compat)"
+  />
+
   <path id="backwards.test.compile.classpath">
     <path refid="junit-path"/>
     <path refid="ant-path"/>
@@ -142,6 +146,11 @@
   <!-- Validation (license/notice/api checks). -->
   <target name="validate" depends="check-licenses,rat-sources,check-forbidden-apis" description="Validate stuff." />
 
+  <!-- Validation here depends on compile-tools: but we want to compile modules' tools too -->
+  <target name="compile-tools" depends="common.compile-tools">
+  	<modules-crawl target="compile-tools" failonerror="true"/>
+  </target>
+
   <target name="check-licenses" depends="compile-tools,resolve,load-custom-tasks" description="Validate license stuff.">
     <license-check-macro dir="${basedir}" licensedir="${common.dir}/licenses" />
   </target>
@@ -216,38 +225,46 @@
   <target name="javadocs" description="Generate javadoc" depends="javadocs-lucene-core, javadocs-modules, javadocs-test-framework"/>
 
   <!-- we check for broken links across all documentation -->
-  <target name="javadocs-lint" depends="documentation">
+  <target name="documentation-lint" depends="documentation">
     <sequential>
       <check-broken-links dir="build/docs"/>
-      <!-- TODO: change this level=class -->
-      <check-missing-javadocs dir="build/docs" level="package"/>
+      <!-- TODO: change this level=method -->
+      <check-missing-javadocs dir="build/docs" level="class"/>
       <!-- too many classes to fix overall to just enable
-           the above to be level="class" right now, but we
+           the above to be level="method" right now, but we
            can prevent the modules that don't have problems
            from getting any worse -->
-      <check-missing-javadocs dir="build/docs/analyzers-common" level="class"/>
-      <check-missing-javadocs dir="build/docs/analyzers-icu" level="class"/>
-      <check-missing-javadocs dir="build/docs/analyzers-kuromoji" level="class"/>
-      <check-missing-javadocs dir="build/docs/analyzers-morfologik" level="class"/>
-      <check-missing-javadocs dir="build/docs/analyzers-phonetic" level="class"/>
-      <check-missing-javadocs dir="build/docs/analyzers-smartcn" level="class"/>
-      <check-missing-javadocs dir="build/docs/analyzers-stempel" level="class"/>
-      <check-missing-javadocs dir="build/docs/analyzers-uima" level="class"/>
-      <check-missing-javadocs dir="build/docs/benchmark" level="class"/>
+      <!-- analyzers-common: problems -->
+      <check-missing-javadocs dir="build/docs/analyzers-icu" level="method"/>
+      <!-- analyzers-kuromoji: problems -->
+      <check-missing-javadocs dir="build/docs/analyzers-morfologik" level="method"/>
+      <check-missing-javadocs dir="build/docs/analyzers-phonetic" level="method"/>
+      <!-- analyzers-smartcn: problems -->
+      <check-missing-javadocs dir="build/docs/analyzers-stempel" level="method"/>
+      <!-- analyzers-uima: problems -->
+      <!-- benchmark: problems -->
+      <check-missing-javadocs dir="build/docs/classification" level="method"/>
+      <!-- codecs: problems -->
       <!-- core: problems -->
-      <check-missing-javadocs dir="build/docs/demo" level="class"/>
-      <check-missing-javadocs dir="build/docs/facet" level="class"/>
+      <check-missing-javadocs dir="build/docs/demo" level="method"/>
+      <!-- facet: problems -->
       <!-- grouping: problems -->
       <!-- highlighter: problems -->
-      <check-missing-javadocs dir="build/docs/join" level="class"/>
-      <check-missing-javadocs dir="build/docs/memory" level="class"/>
-      <check-missing-javadocs dir="build/docs/misc" level="class"/>
+      <check-missing-javadocs dir="build/docs/join" level="method"/>
+      <check-missing-javadocs dir="build/docs/memory" level="method"/>
+      <!-- misc: problems -->
       <!-- queries: problems -->
       <!-- queryparser: problems -->
-      <check-missing-javadocs dir="build/docs/sandbox" level="class"/>
+      <!-- sandbox: problems -->
       <!-- spatial: problems -->
-      <check-missing-javadocs dir="build/docs/suggest" level="class"/>
+      <check-missing-javadocs dir="build/docs/suggest" level="method"/>
       <!-- test-framework: problems -->
+
+      <!-- too much to fix core/ for now, but enforce full javadocs for key packages -->
+      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/analysis" level="method"/>
+      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/document" level="method"/>
+      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/search/similarities" level="method"/>
+      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/index" level="method"/>
     </sequential>
   </target>
   
@@ -284,13 +301,15 @@
                    failonerror="true"/>
   </target>
 
-  <target name="rat-sources">
-    <sequential>
-       <ant dir="core" target="rat-sources" inheritall="false"/>
-       <ant dir="test-framework" target="rat-sources" inheritall="false"/>
-       <ant dir="tools" target="rat-sources" inheritall="false"/>
-       <modules-crawl target="rat-sources" failonerror="true"/>
-    </sequential>
+  <!-- rat-sources-typedef is *not* a useless dependency. do not remove -->
+  <target name="rat-sources" depends="rat-sources-typedef">
+    <subant target="rat-sources" failonerror="true" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+      <fileset dir="tools" includes="build.xml"/>
+    </subant>
+    <modules-crawl target="rat-sources"/>
   </target>
 
   <!-- ================================================================== -->
@@ -428,12 +447,8 @@
 
   </target>
 
-
-  <!-- TODO: these dependencies are bogus: we only
-       call this from prepare-release so it shouldn't require
-       'package' and 'javadocs' again -->
-  <target name="generate-maven-artifacts"
-          depends="install-maven-tasks, filter-pom-templates, package, javadocs">
+  <!-- install-maven-tasks is *not* a useless dependency. do not remove -->
+  <target name="generate-maven-artifacts" depends="install-maven-tasks">
     <sequential>
       <subant target="dist-maven" failonerror="true" inheritall="false">
         <propertyset refid="uptodate.and.compiled.properties"/>
@@ -445,21 +460,23 @@
     </sequential>
   </target>
 	
+  <target name="-validate-maven-dependencies" depends="compile-tools, install-maven-tasks, load-custom-tasks">
+    <sequential>
+      <subant target="-validate-maven-dependencies" failonerror="true" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
+        <fileset dir="${common.dir}/core" includes="build.xml"/>
+        <fileset dir="${common.dir}/test-framework" includes="build.xml"/>
+      </subant>
+      
+      <modules-crawl target="-validate-maven-dependencies"/>
+    </sequential>
+  </target>
+	
   <!-- ================================================================== -->
   <!-- support for signing the artifacts using gpg                        -->
   <!-- ================================================================== -->
   <target name="sign-artifacts">
     <sign-artifacts-macro artifacts.dir="${dist.dir}"/>
-  </target>
-
-  <!-- ================================================================== -->
-  <!-- Build the JavaCC files into the source tree                        -->
-  <!-- ================================================================== -->
-
-  <target name="javacc" depends="javacc-check">
-  	<subant target="javacc" failonerror="true" inheritall="false">
-  	  <fileset dir="${common.dir}/queryparser" includes="build.xml"/>
-  	</subant>
   </target>
 
   <target name="build-modules" depends="compile-test"
@@ -480,26 +497,12 @@
     <modules-crawl target="test" failonerror="true"/>
   </target>
 
-  <!--
-   compile changes.txt into an html file
-   -->
-  <macrodef name="build-changes">
-    <attribute name="changes.src.dir" default="${changes.src.dir}"/>
-    <attribute name="changes.target.dir" default="${changes.target.dir}"/>
-    <sequential>
-      <mkdir dir="@{changes.target.dir}"/>
-      <exec executable="perl" input="CHANGES.txt" output="@{changes.target.dir}/Changes.html"
-            failonerror="true" logError="true">
-        <arg value="@{changes.src.dir}/changes2html.pl"/>
-      </exec>
-      <copy todir="@{changes.target.dir}">
-        <fileset dir="@{changes.src.dir}" includes="*.css"/>
-      </copy>
-    </sequential>
-  </macrodef>
-
   <target name="changes-to-html">
     <build-changes changes.src.dir="${changes.src.dir}" changes.target.dir="${changes.target.dir}" />
+  </target>
+
+  <target name="pitest-modules" depends="compile-test">
+    <modules-crawl target="pitest" failonerror="false"/>
   </target>
 
   <!--

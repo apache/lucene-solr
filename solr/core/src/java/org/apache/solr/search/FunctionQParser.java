@@ -213,7 +213,7 @@ public class FunctionQParser extends QParser {
    * Parse a list of ValueSource.  Must be the final set of arguments
    * to a ValueSource.
    * 
-   * @return List<ValueSource>
+   * @return List&lt;ValueSource&gt;
    * @throws ParseException
    */
   public List<ValueSource> parseValueSourceList() throws ParseException {

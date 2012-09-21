@@ -44,7 +44,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
   {
     try {
       // setup the server...
-      String url = "http://localhost:"+port+context;       // smaller queue size hits locks more often
+      String url = "http://127.0.0.1:"+port+context;       // smaller queue size hits locks more often
       ConcurrentUpdateSolrServer s = new ConcurrentUpdateSolrServer( url, 2, 5 ) {
         
         public Throwable lastError = null;

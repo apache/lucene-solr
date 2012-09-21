@@ -146,7 +146,12 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
   private static String getFieldXPathPrefix(String field) {
     return "//lst[@name='fields']/lst[@name='"+field+"']/str";
   }
-
+  private static String field(String field) {
+    return "//lst[@name='fields']/lst[@name='"+field+"']/";
+  }
+  private static String dynfield(String field) {
+    return "//lst[@name='dynamicFields']/lst[@name='"+field+"']/";
+  }
   @Test
   public void testFlParam() {
     SolrQueryRequest req = req("qt", "/admin/luke", "fl", "solr_t solr_s", "show", "all");
@@ -179,4 +184,21 @@ public class LukeRequestHandlerTest extends AbstractSolrTestCase {
       fail("Caught unexpected exception " + e.getMessage());
     }
   }
+
+  public void testCopyFieldLists() throws Exception {
+    SolrQueryRequest req = req("qt", "/admin/luke", "show", "schema");
+
+    String xml = h.query(req);
+    String r = h.validateXPath
+      (xml,
+       field("text") + "/arr[@name='copySources']/str[.='title']",
+       field("text") + "/arr[@name='copySources']/str[.='subject']",
+       field("title") + "/arr[@name='copyDests']/str[.='text']",
+       field("title") + "/arr[@name='copyDests']/str[.='title_stemmed']",
+       // :TODO: SOLR-3798
+       //dynfield("bar_copydest_*") + "/arr[@name='copySource']/str[.='foo_copysource_*']",
+       dynfield("foo_copysource_*") + "/arr[@name='copyDests']/str[.='bar_copydest_*']");
+    assertEquals(xml, null, r);
+  }
+
 }

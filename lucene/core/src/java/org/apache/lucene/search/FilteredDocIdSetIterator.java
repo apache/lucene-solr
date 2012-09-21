@@ -28,7 +28,7 @@ import java.io.IOException;
 public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
   protected DocIdSetIterator _innerIter;
   private int doc;
-	
+
   /**
    * Constructor.
    * @param innerIter Underlying DocIdSetIterator.
@@ -40,7 +40,7 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
     _innerIter = innerIter;
     doc = -1;
   }
-	
+
   /**
    * Validation method to determine whether a docid should be in the result set.
    * @param doc docid to be tested
@@ -48,7 +48,7 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
    * @see #FilteredDocIdSetIterator(DocIdSetIterator)
    */
   protected abstract boolean match(int doc);
-	
+
   @Override
   public int docID() {
     return doc;

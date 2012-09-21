@@ -64,8 +64,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.producer", "extractedProducer",
             "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
             "fmap.Creation-Date", "extractedDate",
-            "fmap.AAPL:Keywords", "ignored_a",
-            "fmap.xmpTPg:NPages", "ignored_a",
+            "uprefix", "ignored_",
             "fmap.Author", "extractedAuthor",
             "fmap.content", "extractedContent",
            "literal.id", "one",
@@ -81,6 +80,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.Author", "extractedAuthor",
             "fmap.language", "extractedLanguage",
             "literal.id", "two",
+            "uprefix", "ignored_",
             "fmap.content", "extractedContent",
             "fmap.Last-Modified", "extractedDate"
     );
@@ -136,6 +136,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
             "fmap.Author", "extractedAuthor",
             "literal.id", "three",
+            "uprefix", "ignored_",
             "fmap.content", "extractedContent",
             "fmap.language", "extractedLanguage",
             "fmap.Last-Modified", "extractedDate"
@@ -144,7 +145,22 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ(req("stream_name:version_control.xml"), "//*[@numFound='1']");
 
-
+    loadLocal("extraction/word2003.doc", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+            "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+            "fmap.Author", "extractedAuthor",
+            "literal.id", "four",
+            "uprefix", "ignored_",
+            "fmap.content", "extractedContent",
+            "fmap.language", "extractedLanguage",
+            "fmap.Last-Modified", "extractedDate"
+    );
+    assertQ(req("title:\"Word 2003 Title\""), "//*[@numFound='0']");
+    // There is already a PDF file with this content:
+    assertQ(req("extractedContent:\"This is a test of PDF and Word extraction in Solr, it is only a test\""), "//*[@numFound='1']");
+    assertU(commit());
+    assertQ(req("title:\"Word 2003 Title\""), "//*[@numFound='1']");
+    // now 2 of them:
+    assertQ(req("extractedContent:\"This is a test of PDF and Word extraction in Solr, it is only a test\""), "//*[@numFound='2']");
   }
 
 
@@ -162,8 +178,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
         //"fmap.content_type", "abcxyz",
         "commit", "true"  // test immediate commit
       );
-      assertTrue(false);
-
+      fail("Should throw SolrException");
     } catch (SolrException e) {
       //do nothing
     } finally {
@@ -206,6 +221,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.Author", "extractedAuthor",
             "fmap.content", "extractedContent",
             "literal.id", "one",
+            "uprefix", "ignored_",
             "fmap.language", "extractedLanguage",
             "literal.extractionLiteralMV", "one",
             "literal.extractionLiteralMV", "two",
@@ -374,9 +390,8 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     loadLocal("extraction/arabic.pdf", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
         "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
         "fmap.Creation-Date", "extractedDate",
-        "fmap.AAPL:Keywords", "ignored_a",
-        "fmap.xmpTPg:NPages", "ignored_a",
         "fmap.Author", "extractedAuthor",
+        "uprefix", "ignored_",
         "fmap.content", "wdf_nocase",
        "literal.id", "one",
         "fmap.Last-Modified", "extractedDate");
@@ -404,8 +419,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       loadLocal("extraction/password-is-solrcell.docx", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
           "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
           "fmap.Creation-Date", "extractedDate",
-          "fmap.AAPL:Keywords", "ignored_a",
-          "fmap.xmpTPg:NPages", "ignored_a",
+          "uprefix", "ignored_",
           "fmap.Author", "extractedAuthor",
           "fmap.content", "wdf_nocase",
           "literal.id", "one",
@@ -462,8 +476,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.content", "extractedContent",
             "fmap.language", "extractedLanguage",
             "fmap.Creation-Date", "extractedDate",
-            "fmap.AAPL:Keywords", "ignored_a",
-            "fmap.xmpTPg:NPages", "ignored_a",
+            "uprefix", "ignored_",
             "fmap.Last-Modified", "extractedDate");
 
     // Here the literal value should override the Tika-parsed title:
@@ -478,8 +491,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.content", "extractedContent",
             "fmap.language", "extractedLanguage",
             "fmap.Creation-Date", "extractedDate",
-            "fmap.AAPL:Keywords", "ignored_a",
-            "fmap.xmpTPg:NPages", "ignored_a",
+            "uprefix", "ignored_",
             "fmap.Last-Modified", "extractedDate");
 
     // Here we mimic the old behaviour where literals are added, not overridden
@@ -498,8 +510,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "fmap.content", "extractedContent",
             "fmap.language", "extractedLanguage",
             "fmap.Creation-Date", "extractedDate",
-            "fmap.AAPL:Keywords", "ignored_a",
-            "fmap.xmpTPg:NPages", "ignored_a",
+            "uprefix", "ignored_",
             "fmap.Last-Modified", "extractedDate");
 
     assertU(commit());

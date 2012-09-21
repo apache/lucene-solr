@@ -37,6 +37,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -252,15 +253,15 @@ public class GenerateUTR30DataFiles {
       if (it.codepoint != UnicodeSetIterator.IS_STRING) {
         if (numericValue) {
           for (int cp = it.codepoint ; cp <= it.codepointEnd ; ++cp) {
-            builder.append(String.format("%04X", cp)).append('>');
-            builder.append(String.format("%04X", 0x30 + UCharacter.getNumericValue(cp)));
+            builder.append(String.format(Locale.ROOT, "%04X", cp)).append('>');
+            builder.append(String.format(Locale.ROOT, "%04X", 0x30 + UCharacter.getNumericValue(cp)));
             builder.append("   # ").append(UCharacter.getName(cp));
             builder.append("\n");
           }
         } else {
-          builder.append(String.format("%04X", it.codepoint));
+          builder.append(String.format(Locale.ROOT, "%04X", it.codepoint));
           if (it.codepointEnd > it.codepoint) {
-            builder.append("..").append(String.format("%04X", it.codepointEnd));
+            builder.append("..").append(String.format(Locale.ROOT, "%04X", it.codepointEnd));
           }
           builder.append('>').append(rightHandSide).append("\n");
         }

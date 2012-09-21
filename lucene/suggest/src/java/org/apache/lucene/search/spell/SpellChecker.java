@@ -58,7 +58,7 @@ import org.apache.lucene.util.Version;
  *
  * <p>Example Usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *  SpellChecker spellchecker = new SpellChecker(spellIndexDirectory);
  *  // To index a field of a user index:
  *  spellchecker.indexDictionary(new LuceneDictionary(my_lucene_reader, a_field));
@@ -187,6 +187,10 @@ public class SpellChecker implements java.io.Closeable {
     this.comparator = comparator;
   }
 
+  /**
+   * Gets the comparator in use for ranking suggestions.
+   * @see #setComparator(Comparator)
+   */
   public Comparator<SuggestWord> getComparator() {
     return comparator;
   }
@@ -283,7 +287,7 @@ public class SpellChecker implements java.io.Closeable {
    */
   public String[] suggestSimilar(String word, int numSug, IndexReader ir,
       String field, SuggestMode suggestMode) throws IOException {
-  	return suggestSimilar(word, numSug, ir, field, suggestMode, this.accuracy);
+    return suggestSimilar(word, numSug, ir, field, suggestMode, this.accuracy);
   }
   
   /**
@@ -498,7 +502,7 @@ public class SpellChecker implements java.io.Closeable {
 
       final IndexReader reader = searcher.getIndexReader();
       if (reader.maxDoc() > 0) {
-        for (final AtomicReaderContext ctx : reader.getTopReaderContext().leaves()) {
+        for (final AtomicReaderContext ctx : reader.leaves()) {
           Terms terms = ctx.reader().terms(F_WORD);
           if (terms != null)
             termsEnums.add(terms.iterator(null));

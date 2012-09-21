@@ -40,6 +40,7 @@
   <path id="classpath" refid="base.classpath"/>
   
   <path id="test.base.classpath">
+    <pathelement location="${common.dir}/build/codecs/classes/java"/>
     <pathelement location="${common.dir}/build/test-framework/classes/java"/>
     <path refid="classpath"/>
     <path refid="junit-path"/>
@@ -89,6 +90,28 @@
       <jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
     </sequential>
   </macrodef>
+
+  <property name="test-framework.jar" value="${common.dir}/build/test-framework/lucene-test-framework-${version}.jar"/>
+  <target name="check-test-framework-uptodate" unless="test-framework.uptodate">
+    <module-uptodate name="test-framework" jarfile="${test-framework.jar}" property="test-framework.uptodate"/>
+  </target>
+  <target name="jar-test-framework" unless="test-framework.uptodate" depends="check-test-framework-uptodate">
+    <ant dir="${common.dir}/test-framework" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="test-framework.uptodate" value="true"/>
+  </target>
+
+  <property name="test-framework-javadoc.jar" value="${common.dir}/build/test-framework/lucene-test-framework-${version}-javadoc.jar"/>
+  <target name="check-test-framework-javadocs-uptodate" unless="test-framework-javadocs.uptodate">
+    <module-uptodate name="test-framework" jarfile="${test-framework-javadoc.jar}" property="test-framework-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-test-framework" unless="test-framework-javadocs.uptodate" depends="check-test-framework-javadocs-uptodate">
+    <ant dir="${common.dir}/test-framework" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="test-framework-javadocs.uptodate" value="true"/>
+  </target>
 
   <property name="queryparser.jar" value="${common.dir}/build/queryparser/lucene-queryparser-${version}.jar"/>
   <target name="check-queryparser-uptodate" unless="queryparser.uptodate">
@@ -154,6 +177,28 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="queries-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="classification.jar" value="${common.dir}/build/classification/lucene-classification-${version}.jar"/>
+  <target name="check-classification-uptodate" unless="classification.uptodate">
+    <module-uptodate name="classification" jarfile="${classification.jar}" property="classification.uptodate"/>
+  </target>
+  <target name="jar-classification" unless="classification.uptodate" depends="check-classification-uptodate">
+    <ant dir="${common.dir}/classification" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="classification.uptodate" value="true"/>
+  </target>
+
+  <property name="classification-javadoc.jar" value="${common.dir}/build/classification/lucene-classification-${version}-javadoc.jar"/>
+  <target name="check-classification-javadocs-uptodate" unless="classification-javadocs.uptodate">
+    <module-uptodate name="classification" jarfile="${classification-javadoc.jar}" property="classification-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-classification" unless="classification-javadocs.uptodate" depends="check-classification-javadocs-uptodate">
+    <ant dir="${common.dir}/classification" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="classification-javadocs.uptodate" value="true"/>
   </target>
   
   <property name="facet.jar" value="${common.dir}/build/facet/lucene-facet-${version}.jar"/>
@@ -333,6 +378,28 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
     <property name="analyzers-morfologik-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="codecs.jar" value="${common.dir}/build/codecs/lucene-codecs-${version}.jar"/>
+  <target name="check-codecs-uptodate" unless="codecs.uptodate">
+    <module-uptodate name="codecs" jarfile="${codecs.jar}" property="codecs.uptodate"/>
+  </target>
+  <target name="jar-codecs" unless="codecs.uptodate" depends="check-codecs-uptodate">
+    <ant dir="${common.dir}/codecs" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="codecs.uptodate" value="true"/>
+  </target>
+
+  <property name="codecs-javadoc.jar" value="${common.dir}/build/codecs/lucene-codecs-${version}-javadoc.jar"/>
+  <target name="check-codecs-javadocs-uptodate" unless="codecs-javadocs.uptodate">
+    <module-uptodate name="codecs" jarfile="${codecs-javadoc.jar}" property="codecs-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-codecs" unless="codecs-javadocs.uptodate" depends="check-codecs-javadocs-uptodate">
+    <ant dir="${common.dir}/codecs" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="codecs-javadocs.uptodate" value="true"/>
   </target>
 
   <property name="grouping.jar" value="${common.dir}/build/grouping/lucene-grouping-${version}.jar"/>

@@ -25,7 +25,7 @@ import java.util.Map;
  */
 
 /**
- *
+ * Factory for {@link SpanQueryBuilder}s
  */
 public class SpanQueryBuilderFactory implements SpanQueryBuilder {
 

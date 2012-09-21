@@ -36,24 +36,24 @@ import org.apache.lucene.util.AttributeSource;
  * It is also useful for doing things like entity extraction or proper noun analysis as
  * part of the analysis workflow and saving off those tokens for use in another field.
  *
- * <pre>
-TeeSinkTokenFilter source1 = new TeeSinkTokenFilter(new WhitespaceTokenizer(reader1));
+ * <pre class="prettyprint">
+TeeSinkTokenFilter source1 = new TeeSinkTokenFilter(new WhitespaceTokenizer(version, reader1));
 TeeSinkTokenFilter.SinkTokenStream sink1 = source1.newSinkTokenStream();
 TeeSinkTokenFilter.SinkTokenStream sink2 = source1.newSinkTokenStream();
 
-TeeSinkTokenFilter source2 = new TeeSinkTokenFilter(new WhitespaceTokenizer(reader2));
+TeeSinkTokenFilter source2 = new TeeSinkTokenFilter(new WhitespaceTokenizer(version, reader2));
 source2.addSinkTokenStream(sink1);
 source2.addSinkTokenStream(sink2);
 
-TokenStream final1 = new LowerCaseFilter(source1);
+TokenStream final1 = new LowerCaseFilter(version, source1);
 TokenStream final2 = source2;
 TokenStream final3 = new EntityDetect(sink1);
 TokenStream final4 = new URLDetect(sink2);
 
-d.add(new Field("f1", final1));
-d.add(new Field("f2", final2));
-d.add(new Field("f3", final3));
-d.add(new Field("f4", final4));
+d.add(new TextField("f1", final1, Field.Store.NO));
+d.add(new TextField("f2", final2, Field.Store.NO));
+d.add(new TextField("f3", final3, Field.Store.NO));
+d.add(new TextField("f4", final4, Field.Store.NO));
  * </pre>
  * In this example, <code>sink1</code> and <code>sink2</code> will both get tokens from both
  * <code>reader1</code> and <code>reader2</code> after whitespace tokenizer
@@ -63,9 +63,9 @@ d.add(new Field("f4", final4));
  * add another sink and then pass all tokens to the sinks at once using {@link #consumeAllTokens}.
  * This TokenFilter is exhausted after this. In the above example, change
  * the example above to:
- * <pre>
+ * <pre class="prettyprint">
 ...
-TokenStream final1 = new LowerCaseFilter(source1.newSinkTokenStream());
+TokenStream final1 = new LowerCaseFilter(version, source1.newSinkTokenStream());
 TokenStream final2 = source2.newSinkTokenStream();
 sink1.consumeAllTokens();
 sink2.consumeAllTokens();

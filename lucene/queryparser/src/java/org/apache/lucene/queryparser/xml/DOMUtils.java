@@ -26,7 +26,7 @@ import java.io.Reader;
  */
 
 /**
- *
+ * Helper methods for parsing XML
  */
 public class DOMUtils {
 
@@ -212,7 +212,7 @@ public class DOMUtils {
     }
 
     return doc;
-	}	
+  }
 }
 
 

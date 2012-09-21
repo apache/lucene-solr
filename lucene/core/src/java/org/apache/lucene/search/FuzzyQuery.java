@@ -28,12 +28,21 @@ import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 /** Implements the fuzzy search query. The similarity measurement
- * is based on the Damerau-Levenshtein (optimal string alignment) algorithm.
+ * is based on the Damerau-Levenshtein (optimal string alignment) algorithm,
+ * though you can explicitly choose classic Levenshtein by passing <code>false</code>
+ * to the <code>transpositions</code> parameter.
  * 
  * <p>This query uses {@link MultiTermQuery.TopTermsScoringBooleanQueryRewrite}
  * as default. So terms will be collected and scored according to their
  * edit distance. Only the top terms are used for building the {@link BooleanQuery}.
  * It is not recommended to change the rewrite mode for fuzzy queries.
+ * 
+ * <p>At most, this query will match terms up to 
+ * {@value org.apache.lucene.util.automaton.LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE} edits. 
+ * Higher distances (especially with transpositions enabled), are generally not useful and 
+ * will match a significant amount of the term dictionary. If you really want this, consider
+ * using an n-gram indexing technique (such as the SpellChecker in the 
+ * <a href="{@docRoot}/../suggest/overview-summary.html">suggest module</a>) instead.
  */
 public class FuzzyQuery extends MultiTermQuery {
   

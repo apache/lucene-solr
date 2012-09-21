@@ -27,7 +27,10 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-
+/**
+ * Abstract {@link ValueSource} implementation which wraps multiple ValueSources
+ * and applies an extendible boolean function to their values.
+ **/
 public abstract class MultiBoolFunction extends BoolFunction {
   protected final List<ValueSource> sources;
 
@@ -50,7 +53,7 @@ public abstract class MultiBoolFunction extends BoolFunction {
     return new BoolDocValues(this) {
       @Override
       public boolean boolVal(int doc) {
-	      return func(doc, vals);
+        return func(doc, vals);
       }
 
       @Override

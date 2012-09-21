@@ -26,6 +26,13 @@ import org.apache.lucene.util.BytesRef;
 import java.io.IOException;
 import java.util.Map;
 
+/**
+ * Function that returns {@link DocsEnum#freq()} for the
+ * supplied term in every document.
+ * <p>
+ * If the term does not exist in the document, returns 0.
+ * If frequencies are omitted, returns 1.
+ */
 public class TermFreqValueSource extends DocFreqValueSource {
   public TermFreqValueSource(String field, String val, String indexedField, BytesRef indexedBytes) {
     super(field, val, indexedField, indexedBytes);

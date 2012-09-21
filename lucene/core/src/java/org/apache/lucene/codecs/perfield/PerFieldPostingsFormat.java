@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.perfield;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -34,7 +35,6 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.UnmodifiableIterator;
 
 /**
  * Enables per field format support.
@@ -63,7 +63,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public FieldsConsumer fieldsConsumer(SegmentWriteState state)
+  public final FieldsConsumer fieldsConsumer(SegmentWriteState state)
       throws IOException {
     return new FieldsWriter(state);
   }
@@ -199,7 +199,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     @Override
     public Iterator<String> iterator() {
-      return new UnmodifiableIterator<String>(fields.keySet().iterator());
+      return Collections.unmodifiableSet(fields.keySet()).iterator();
     }
 
     @Override
@@ -220,13 +220,16 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
   }
 
   @Override
-  public FieldsProducer fieldsProducer(SegmentReadState state)
+  public final FieldsProducer fieldsProducer(SegmentReadState state)
       throws IOException {
     return new FieldsReader(state);
   }
 
-  // NOTE: only called during writing; for reading we read
-  // all we need from the index (ie we save the field ->
-  // format mapping)
+  /** 
+   * Returns the postings format that should be used for writing 
+   * new segments of <code>field</code>.
+   * <p>
+   * The field to format mapping is written to the index, so
+   * this method is only invoked when writing, not when reading. */
   public abstract PostingsFormat getPostingsFormatForField(String field);
 }

@@ -18,14 +18,24 @@ package org.apache.lucene.codecs;
  */
 
 import java.io.IOException;
+import java.util.ServiceLoader;
 import java.util.Set;
 
+import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat; // javadocs
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.util.NamedSPILoader;
 
 /** 
  * Encodes/decodes terms, postings, and proximity data.
+ * <p>
+ * Note, when extending this class, the name ({@link #getName}) may
+ * written into the index in certain configurations. In order for the segment 
+ * to be read, the name must resolve to your implementation via {@link #forName(String)}.
+ * This method uses Java's 
+ * {@link ServiceLoader Service Provider Interface} to resolve codec names.
+ * <p>
+ * @see ServiceLoader
  * @lucene.experimental */
 public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
 
@@ -38,11 +48,21 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
    */
   private final String name;
   
+  /**
+   * Creates a new postings format.
+   * <p>
+   * The provided name will be written into the index segment in some configurations
+   * (such as when using {@link PerFieldPostingsFormat}): in such configurations,
+   * for the segment to be read this class should be registered with Java's
+   * SPI mechanism (registered in META-INF/ of your jar file, etc).
+   * @param name must be all ascii alphanumeric, and less than 128 characters in length.
+   */
   protected PostingsFormat(String name) {
     NamedSPILoader.checkServiceName(name);
     this.name = name;
   }
 
+  /** Returns this posting format's name */
   @Override
   public final String getName() {
     return name;

@@ -22,7 +22,10 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueLong;
 
-
+/**
+ * Abstract {@link FunctionValues} implementation which supports retrieving long values.
+ * Implementations can control how the long values are loaded through {@link #longVal(int)}}
+ */
 public abstract class LongDocValues extends FunctionValues {
   protected final ValueSource vs;
 

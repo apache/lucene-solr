@@ -21,11 +21,10 @@ import org.apache.lucene.index.DocValues;
 
 /**
  * <p>
- * This class provides a {@link Field} that enables storing
- * of a per-document short value for scoring, sorting or value retrieval. Here's an
- * example usage:
+ * Field that stores a per-document <code>short</code> value for scoring, 
+ * sorting or value retrieval. Here's an example usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *   document.add(new ShortDocValuesField(name, (short) 22));
  * </pre>
  * 
@@ -33,17 +32,26 @@ import org.apache.lucene.index.DocValues;
  * If you also need to store the value, you should add a
  * separate {@link StoredField} instance.
  * 
- * @see DocValues for further information
+ * @see DocValues
  * */
 
-public class ShortDocValuesField extends Field {
+public class ShortDocValuesField extends StoredField {
 
+  /**
+   * Type for 16-bit short DocValues.
+   */
   public static final FieldType TYPE = new FieldType();
   static {
     TYPE.setDocValueType(DocValues.Type.FIXED_INTS_16);
     TYPE.freeze();
   }
 
+  /** 
+   * Creates a new DocValues field with the specified 16-bit short value 
+   * @param name field name
+   * @param value 16-bit short value
+   * @throws IllegalArgumentException if the field name is null
+   */
   public ShortDocValuesField(String name, short value) {
     super(name, TYPE);
     fieldsData = Short.valueOf(value);

@@ -115,7 +115,11 @@ public class LineEntityProcessor extends EntityProcessorBase {
              "Problem reading from input", exp);
       }
   
-      if (line == null) return null; // end of input       
+      // end of input
+      if (line == null) {
+        closeResources();
+        return null;
+      }
 
       // First scan whole line to see if we want it
       if (acceptLineRegex != null && ! acceptLineRegex.matcher(line).find()) continue;
@@ -126,13 +130,17 @@ public class LineEntityProcessor extends EntityProcessorBase {
       return row;
     }
   }
+  
+  public void closeResources() {
+    if (reader != null) {
+      IOUtils.closeQuietly(reader);
+    }
+    reader= null;
+  }
 
     @Override
     public void destroy() {
-      if (reader != null) {
-        IOUtils.closeQuietly(reader);
-      }
-      reader= null;
+      closeResources();
       super.destroy();
     }
 

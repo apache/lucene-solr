@@ -26,17 +26,17 @@ import org.apache.lucene.util.NumericUtils;
 
 /**
  * <p>
- * This class provides a {@link Field} that enables indexing of float values
+ * Field that indexes <code>float</code> values
  * for efficient range filtering and sorting. Here's an example usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  * document.add(new FloatField(name, 6.0F, Field.Store.NO));
  * </pre>
  * 
  * For optimal performance, re-use the <code>FloatField</code> and
  * {@link Document} instance for more than one document:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *  FloatField field = new FloatField(name, 0.0F, Field.Store.NO);
  *  Document document = new Document();
  *  document.add(field);
@@ -114,6 +114,10 @@ import org.apache.lucene.util.NumericUtils;
 
 public final class FloatField extends Field {
   
+  /** 
+   * Type for a FloatField that is not stored:
+   * normalization factors, frequencies, and positions are omitted.
+   */
   public static final FieldType TYPE_NOT_STORED = new FieldType();
   static {
     TYPE_NOT_STORED.setIndexed(true);
@@ -124,6 +128,10 @@ public final class FloatField extends Field {
     TYPE_NOT_STORED.freeze();
   }
 
+  /** 
+   * Type for a stored FloatField:
+   * normalization factors, frequencies, and positions are omitted.
+   */
   public static final FieldType TYPE_STORED = new FieldType();
   static {
     TYPE_STORED.setIndexed(true);
@@ -137,14 +145,26 @@ public final class FloatField extends Field {
 
   /** Creates a stored or un-stored FloatField with the provided value
    *  and default <code>precisionStep</code> {@link
-   *  NumericUtils#PRECISION_STEP_DEFAULT} (4). */
+   *  NumericUtils#PRECISION_STEP_DEFAULT} (4). 
+   *  @param name field name
+   *  @param value 32-bit double value
+   *  @param stored Store.YES if the content should also be stored
+   *  @throws IllegalArgumentException if the field name is null.
+   */
   public FloatField(String name, float value, Store stored) {
     super(name, stored == Store.YES ? TYPE_STORED : TYPE_NOT_STORED);
     fieldsData = Float.valueOf(value);
   }
   
   /** Expert: allows you to customize the {@link
-   *  FieldType}. */
+   *  FieldType}. 
+   *  @param name field name
+   *  @param value 32-bit float value
+   *  @param type customized field type: must have {@link FieldType#numericType()}
+   *         of {@link FieldType.NumericType#FLOAT}.
+   *  @throws IllegalArgumentException if the field name or type is null, or
+   *          if the field type does not have a FLOAT numericType()
+   */
   public FloatField(String name, float value, FieldType type) {
     super(name, type);
     if (type.numericType() != FieldType.NumericType.FLOAT) {

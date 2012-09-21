@@ -82,6 +82,7 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
     this(groupField, DEFAULT_INITIAL_SIZE);
   }
 
+  @Override
   public void collect(int doc) throws IOException {
     int key = index.getOrd(doc);
     if (!ordSet.exists(key)) {
@@ -91,13 +92,12 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
     }
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  @Override
   public Collection<BytesRef> getGroups() {
     return groups;
   }
 
+  @Override
   public void setNextReader(AtomicReaderContext context) throws IOException {
     index = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
 

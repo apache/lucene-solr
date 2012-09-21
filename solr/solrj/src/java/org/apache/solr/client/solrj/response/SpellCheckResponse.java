@@ -45,41 +45,41 @@ public class SpellCheckResponse {
       String n = sugg.getName(i);
       if ("correctlySpelled".equals(n)) {
         correctlySpelled = (Boolean) sugg.getVal(i);
-			} else if ("collationInternalRank".equals(n)){
-				//continue;
-			} else if ("collation".equals(n)) {
-				List<Object> collationInfo = sugg.getAll(n);
-				collations = new ArrayList<Collation>(collationInfo.size());
-				for (Object o : collationInfo) {
-					if (o instanceof String) {
-						collations.add(new Collation()
-								.setCollationQueryString((String) o));
-					} else if (o instanceof NamedList) {
+      } else if ("collationInternalRank".equals(n)){
+        //continue;
+      } else if ("collation".equals(n)) {
+        List<Object> collationInfo = sugg.getAll(n);
+        collations = new ArrayList<Collation>(collationInfo.size());
+        for (Object o : collationInfo) {
+          if (o instanceof String) {
+            collations.add(new Collation()
+                .setCollationQueryString((String) o));
+          } else if (o instanceof NamedList) {
             @SuppressWarnings("unchecked")
-						NamedList<Object> expandedCollation = (NamedList<Object>) o;
-						String collationQuery 
+            NamedList<Object> expandedCollation = (NamedList<Object>) o;
+            String collationQuery
               = (String) expandedCollation.get("collationQuery");
-						int hits = (Integer) expandedCollation.get("hits");
+            int hits = (Integer) expandedCollation.get("hits");
             @SuppressWarnings("unchecked")
-						NamedList<String> misspellingsAndCorrections 
+            NamedList<String> misspellingsAndCorrections
               = (NamedList<String>) expandedCollation.get("misspellingsAndCorrections");
 
-						Collation collation = new Collation();
-						collation.setCollationQueryString(collationQuery);
-						collation.setNumberOfHits(hits);
+            Collation collation = new Collation();
+            collation.setCollationQueryString(collationQuery);
+            collation.setNumberOfHits(hits);
 
-						for (int ii = 0; ii < misspellingsAndCorrections.size(); ii++) {
-							String misspelling = misspellingsAndCorrections.getName(ii);
-							String correction = misspellingsAndCorrections.getVal(ii);
-							collation.addMisspellingsAndCorrection(new Correction(
-									misspelling, correction));
-						}
-						collations.add(collation);
-					} else {
-						throw new AssertionError(
-								"Should get Lists of Strings or List of NamedLists here.");
-					}
-				} 	
+            for (int ii = 0; ii < misspellingsAndCorrections.size(); ii++) {
+              String misspelling = misspellingsAndCorrections.getName(ii);
+              String correction = misspellingsAndCorrections.getVal(ii);
+              collation.addMisspellingsAndCorrection(new Correction(
+                  misspelling, correction));
+            }
+            collations.add(collation);
+          } else {
+            throw new AssertionError(
+                "Should get Lists of Strings or List of NamedLists here.");
+          }
+        }
       } else {
         @SuppressWarnings("unchecked")
         Suggestion s = new Suggestion(n, (NamedList<Object>) sugg.getVal(i));
@@ -129,7 +129,7 @@ public class SpellCheckResponse {
    * @return all collations
    */
   public List<Collation> getCollatedResults() {
-  	return collations;
+    return collations;
   }
 
   public static class Suggestion {
@@ -219,62 +219,62 @@ public class SpellCheckResponse {
 
   }
 
-	public class Collation {
-		private String collationQueryString;
-		private List<Correction> misspellingsAndCorrections = new ArrayList<Correction>();
-		private long numberOfHits;
+  public class Collation {
+    private String collationQueryString;
+    private List<Correction> misspellingsAndCorrections = new ArrayList<Correction>();
+    private long numberOfHits;
 
-		public long getNumberOfHits() {
-			return numberOfHits;
-		}
+    public long getNumberOfHits() {
+      return numberOfHits;
+    }
 
-		public void setNumberOfHits(long numberOfHits) {
-			this.numberOfHits = numberOfHits;
-		}
+    public void setNumberOfHits(long numberOfHits) {
+      this.numberOfHits = numberOfHits;
+    }
 
-		public String getCollationQueryString() {
-			return collationQueryString;
-		}
+    public String getCollationQueryString() {
+      return collationQueryString;
+    }
 
-		public Collation setCollationQueryString(String collationQueryString) {
-			this.collationQueryString = collationQueryString;
-			return this;
-		}
+    public Collation setCollationQueryString(String collationQueryString) {
+      this.collationQueryString = collationQueryString;
+      return this;
+    }
 
-		public List<Correction> getMisspellingsAndCorrections() {
-			return misspellingsAndCorrections;
-		}
+    public List<Correction> getMisspellingsAndCorrections() {
+      return misspellingsAndCorrections;
+    }
 
-		public Collation addMisspellingsAndCorrection(Correction correction) {
-			this.misspellingsAndCorrections.add(correction);
-			return this;
-		}
+    public Collation addMisspellingsAndCorrection(Correction correction) {
+      this.misspellingsAndCorrections.add(correction);
+      return this;
+    }
 
-	}
+  }
 
-	public class Correction {
-		private String original;
-		private String correction;
+  public class Correction {
+    private String original;
+    private String correction;
 
-		public Correction(String original, String correction) {
-			this.original = original;
-			this.correction = correction;
-		}
+    public Correction(String original, String correction) {
+      this.original = original;
+      this.correction = correction;
+    }
 
-		public String getOriginal() {
-			return original;
-		}
+    public String getOriginal() {
+      return original;
+    }
 
-		public void setOriginal(String original) {
-			this.original = original;
-		}
+    public void setOriginal(String original) {
+      this.original = original;
+    }
 
-		public String getCorrection() {
-			return correction;
-		}
+    public String getCorrection() {
+      return correction;
+    }
 
-		public void setCorrection(String correction) {
-			this.correction = correction;
-		}
-	}
+    public void setCorrection(String correction) {
+      this.correction = correction;
+    }
+  }
 }

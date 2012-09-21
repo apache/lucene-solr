@@ -243,12 +243,11 @@ public class SnapPuller {
    * downloaded. It also downloads the conf files (if they are modified).
    *
    * @param core the SolrCore
-   * @param force force a replication in all cases 
+   * @param forceReplication force a replication in all cases 
    * @return true on success, false if slave is already in sync
    * @throws IOException if an exception occurs
    */
-  @SuppressWarnings("unchecked")
-  boolean fetchLatestIndex(SolrCore core, boolean force) throws IOException, InterruptedException {
+  boolean fetchLatestIndex(SolrCore core, boolean forceReplication) throws IOException, InterruptedException {
     successfulInstall = false;
     replicationStartTime = System.currentTimeMillis();
     try {
@@ -278,7 +277,7 @@ public class SnapPuller {
       }
       
       if (latestVersion == 0L) {
-        if (force && commit.getGeneration() != 0) {
+        if (forceReplication && commit.getGeneration() != 0) {
           // since we won't get the files for an empty index,
           // we just clear ours and commit
           RefCounted<IndexWriter> iw = core.getUpdateHandler().getSolrCoreState().getIndexWriter(core);
@@ -297,7 +296,7 @@ public class SnapPuller {
         return true;
       }
       
-      if (!force && IndexDeletionPolicyWrapper.getCommitTimestamp(commit) == latestVersion) {
+      if (!forceReplication && IndexDeletionPolicyWrapper.getCommitTimestamp(commit) == latestVersion) {
         //master and slave are already in sync just return
         LOG.info("Slave in sync with master.");
         successfulInstall = true;
@@ -318,10 +317,11 @@ public class SnapPuller {
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generateion of master is older than that of the slave , it means they are not compatible to be copied
       // then a new index direcory to be created and all the files need to be copied
-      boolean isFullCopyNeeded = IndexDeletionPolicyWrapper.getCommitTimestamp(commit) >= latestVersion || force;
+      boolean isFullCopyNeeded = IndexDeletionPolicyWrapper.getCommitTimestamp(commit) >= latestVersion || forceReplication;
       File tmpIndexDir = createTempindexDir(core);
-      if (isIndexStale())
+      if (isIndexStale()) {
         isFullCopyNeeded = true;
+      }
       LOG.info("Starting download to " + tmpIndexDir + " fullCopy=" + isFullCopyNeeded);
       successfulInstall = false;
       boolean deleteTmpIdxDir = true;
@@ -384,7 +384,7 @@ public class SnapPuller {
             // may be closed
             core.getDirectoryFactory().doneWithDirectory(oldDirectory);
           }
-          doCommit();
+          doCommit(isFullCopyNeeded);
         }
         
         replicationStartTime = 0;
@@ -533,11 +533,11 @@ public class SnapPuller {
     return sb;
   }
 
-  private void doCommit() throws IOException {
+  private void doCommit(boolean isFullCopyNeeded) throws IOException {
     SolrQueryRequest req = new LocalSolrQueryRequest(solrCore,
         new ModifiableSolrParams());
     // reboot the writer on the new index and get a new searcher
-    solrCore.getUpdateHandler().newIndexWriter(true);
+    solrCore.getUpdateHandler().newIndexWriter(isFullCopyNeeded);
     
     try {
       // first try to open an NRT searcher so that the new 
@@ -555,7 +555,10 @@ public class SnapPuller {
      }
 
       // update our commit point to the right dir
-      solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
+      CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
+      cuc.waitSearcher = false;
+      cuc.openSearcher = false;
+      solrCore.getUpdateHandler().commit(cuc);
 
     } finally {
       req.close();
@@ -979,6 +982,14 @@ public class SnapPuller {
 
       this.file = new File(copy2Dir, saveAs);
       
+      File parentDir = this.file.getParentFile();
+      if( ! parentDir.exists() ){
+        if ( ! parentDir.mkdirs() ) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                                  "Failed to create (sub)directory for file: " + saveAs);
+        }
+      }
+      
       this.fileOutputStream = new FileOutputStream(file);
       this.fileChannel = this.fileOutputStream.getChannel();
 
@@ -1151,7 +1162,7 @@ public class SnapPuller {
         params.set(FILE, fileName);
       }
       if (useInternal) {
-        params.set(COMPRESSION, "internal"); 
+        params.set(COMPRESSION, "true"); 
       }
       //use checksum
       if (this.includeChecksum) {

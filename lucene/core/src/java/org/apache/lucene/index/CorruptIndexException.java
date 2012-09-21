@@ -24,6 +24,7 @@ import java.io.IOException;
  * an inconsistency in the index.
  */
 public class CorruptIndexException extends IOException {
+  /** Sole constructor. */
   public CorruptIndexException(String message) {
     super(message);
   }

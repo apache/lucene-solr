@@ -721,6 +721,58 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
   } 
 
+  public void testCountValues() throws Exception {
+
+    SolrInputDocument d = null;
+
+    // trivial 
+    d = processAdd("count",       
+                   doc(f("id", "1111"),
+                       f("count_field", "aaa", "bbb", "ccc")));
+
+    assertNotNull(d);
+    assertEquals(3, d.getFieldValue("count_field"));
+
+    // edge case: no values to count, means no count 
+    // (use default if you want one)
+    d = processAdd("count",       
+                   doc(f("id", "1111")));
+
+    assertNotNull(d);
+    assertFalse(d.containsKey("count_field"));
+
+    // typical usecase: clone and count 
+    d = processAdd("clone-then-count",       
+                   doc(f("id", "1111"),
+                       f("category", "scifi", "war", "space"),
+                       f("editors", "John W. Campbell"),
+                       f("list_price", 1000)));
+    assertNotNull(d);
+    assertEquals(Arrays.asList("scifi", "war", "space"),
+                 d.getFieldValues("category"));
+    assertEquals(3,
+                 d.getFieldValue("category_count"));
+    assertEquals(Arrays.asList("John W. Campbell"),
+                 d.getFieldValues("editors"));
+    assertEquals(1000,d.getFieldValue("list_price"));
+
+    // typical usecase: clone and count demonstrating default
+    d = processAdd("clone-then-count",       
+                   doc(f("id", "1111"),
+                       f("editors", "Anonymous"),
+                       f("list_price", 1000)));
+    assertNotNull(d);
+    assertEquals(0,
+                 d.getFieldValue("category_count"));
+    assertEquals(Arrays.asList("Anonymous"),
+                 d.getFieldValues("editors"));
+    assertEquals(1000,d.getFieldValue("list_price"));
+
+    
+
+
+  } 
+
   public void testCloneCombinations() throws Exception {
 
     SolrInputDocument d = null;

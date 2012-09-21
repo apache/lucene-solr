@@ -149,7 +149,7 @@ public class AnalysisAfterCoreReloadTest extends AbstractSolrTestCase {
   private SolrServer createServer( String name ) {
     try {
       // setup the server...
-      String url = "http://localhost:"+port+context+"/"+name;
+      String url = "http://127.0.0.1:"+port+context+"/"+name;
       HttpSolrServer s = new HttpSolrServer( url );
       s.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
       s.setDefaultMaxConnectionsPerHost(100);

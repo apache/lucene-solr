@@ -28,7 +28,7 @@ import org.w3c.dom.Element;
  */
 
 /**
- *
+ * Builder for {@link DuplicateFilter}
  */
 public class DuplicateFilterBuilder implements FilterBuilder {
 

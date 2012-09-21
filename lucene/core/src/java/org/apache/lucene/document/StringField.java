@@ -50,7 +50,12 @@ public final class StringField extends Field {
     TYPE_STORED.freeze();
   }
 
-  /** Creates a new StringField. */
+  /** Creates a new StringField. 
+   *  @param name field name
+   *  @param value String value
+   *  @param stored Store.YES if the content should also be stored
+   *  @throws IllegalArgumentException if the field name or value is null.
+   */
   public StringField(String name, String value, Store stored) {
     super(name, value, stored == Store.YES ? TYPE_STORED : TYPE_NOT_STORED);
   }

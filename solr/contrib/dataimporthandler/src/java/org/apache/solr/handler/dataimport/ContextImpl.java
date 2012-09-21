@@ -193,7 +193,7 @@ public class ContextImpl extends Context {
     }
   }
 
-  public void setDoc(DocBuilder.DocWrapper docWrapper) {
+  void setDoc(DocBuilder.DocWrapper docWrapper) {
     this.doc = docWrapper;
   }
 

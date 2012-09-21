@@ -44,6 +44,12 @@ public class JaspellLookup extends Lookup {
   JaspellTernarySearchTrie trie = new JaspellTernarySearchTrie();
   private boolean usePrefix = true;
   private int editDistance = 2;
+  
+  /** 
+   * Creates a new empty trie 
+   * @see #build(TermFreqIterator)
+   * */
+  public JaspellLookup() {}
 
   @Override
   public void build(TermFreqIterator tfit) throws IOException {
@@ -68,12 +74,22 @@ public class JaspellLookup extends Lookup {
     }
   }
 
+  /** 
+   * Adds a new node if <code>key</code> already exists,
+   * otherwise replaces its value.
+   * <p>
+   * This method always returns false.
+   */
   public boolean add(CharSequence key, Object value) {
     trie.put(key, value);
     // XXX
     return false;
   }
 
+  /**
+   * Returns the value for the specified key, or null
+   * if the key does not exist.
+   */
   public Object get(CharSequence key) {
     return trie.get(key);
   }

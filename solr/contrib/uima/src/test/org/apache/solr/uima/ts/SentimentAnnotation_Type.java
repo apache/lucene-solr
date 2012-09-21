@@ -1,4 +1,3 @@
-
 /* First created by JCasGen Fri Mar 04 13:08:40 CET 2011 */
 package org.apache.solr.uima.ts;
 
@@ -23,17 +22,17 @@ public class SentimentAnnotation_Type extends Annotation_Type {
   private final FSGenerator fsGenerator = 
     new FSGenerator() {
       public FeatureStructure createFS(int addr, CASImpl cas) {
-  			 if (SentimentAnnotation_Type.this.useExistingInstance) {
-  			   // Return eq fs instance if already created
-  		     FeatureStructure fs = SentimentAnnotation_Type.this.jcas.getJfsFromCaddr(addr);
-  		     if (null == fs) {
-  		       fs = new SentimentAnnotation(addr, SentimentAnnotation_Type.this);
-  			   SentimentAnnotation_Type.this.jcas.putJfsFromCaddr(addr, fs);
-  			   return fs;
-  		     }
-  		     return fs;
+        if (SentimentAnnotation_Type.this.useExistingInstance) {
+          // Return eq fs instance if already created
+          FeatureStructure fs = SentimentAnnotation_Type.this.jcas.getJfsFromCaddr(addr);
+          if (null == fs) {
+            fs = new SentimentAnnotation(addr, SentimentAnnotation_Type.this);
+            SentimentAnnotation_Type.this.jcas.putJfsFromCaddr(addr, fs);
+            return fs;
+          }
+          return fs;
         } else return new SentimentAnnotation(addr, SentimentAnnotation_Type.this);
-  	  }
+      }
     };
   /** @generated */
   public final static int typeIndexID = SentimentAnnotation.typeIndexID;
@@ -62,7 +61,7 @@ public class SentimentAnnotation_Type extends Annotation_Type {
 
 
   /** initialize variables to correspond with Cas Type and Features
-	* @generated */
+  * @generated */
   public SentimentAnnotation_Type(JCas jcas, Type casType) {
     super(jcas, casType);
     casImpl.getFSClassRegistry().addGeneratorForType((TypeImpl)this.casType, getFSGenerator());

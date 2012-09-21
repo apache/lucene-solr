@@ -24,12 +24,13 @@ import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -44,6 +45,15 @@ import org.apache.lucene.spatial.util.CachingDoubleValueSource;
 import org.apache.lucene.spatial.util.ValueSourceFilter;
 
 /**
+ * Simple {@link SpatialStrategy} which represents Points in two numeric {@link DoubleField}s.
+ *
+ * Note, currently only Points can be indexed by this Strategy.  At query time, the bounding
+ * box of the given Shape is used to create {@link NumericRangeQuery}s to efficiently
+ * find Points within the Shape.
+ *
+ * Due to the simple use of numeric fields, this Strategy provides support for sorting by
+ * distance through {@link DistanceValueSource}
+ *
  * @lucene.experimental
  */
 public class TwoDoublesStrategy extends SpatialStrategy {
@@ -77,49 +87,65 @@ public class TwoDoublesStrategy extends SpatialStrategy {
   }
 
   @Override
-  public IndexableField[] createIndexableFields(Shape shape) {
-    if( shape instanceof Point ) {
-      Point point = (Point)shape;
-      FieldType doubleFieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
-      doubleFieldType.setNumericPrecisionStep(precisionStep);
-      IndexableField[] f = new IndexableField[2];
-      f[0] = new DoubleField(fieldNameX, point.getX(), doubleFieldType);
-      f[1] = new DoubleField(fieldNameY, point.getY(), doubleFieldType);
-      return f;
-    }
-    if( !ignoreIncompatibleGeometry ) {
-      throw new IllegalArgumentException( "TwoDoublesStrategy can not index: "+shape );
-    }
-    return new IndexableField[0]; // nothing (solr does not support null)
+  public Field[] createIndexableFields(Shape shape) {
+    if (shape instanceof Point)
+      return createIndexableFields((Point) shape);
+    throw new IllegalArgumentException("Can only index Point, not " + shape);
+  }
+
+  /** @see #createIndexableFields(com.spatial4j.core.shape.Shape) */
+  public Field[] createIndexableFields(Point point) {
+    FieldType doubleFieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
+    doubleFieldType.setNumericPrecisionStep(precisionStep);
+    Field[] f = new Field[2];
+    f[0] = new DoubleField(fieldNameX, point.getX(), doubleFieldType);
+    f[1] = new DoubleField(fieldNameY, point.getY(), doubleFieldType);
+    return f;
   }
 
   @Override
-  public ValueSource makeValueSource(SpatialArgs args) {
-    Point p = args.getShape().getCenter();
-    return new DistanceValueSource(this, p, ctx.getDistCalc());
+  public ValueSource makeDistanceValueSource(Point queryPoint) {
+    return new DistanceValueSource(this, queryPoint);
   }
 
   @Override
   public Filter makeFilter(SpatialArgs args) {
-    if( args.getShape() instanceof Circle) {
-      if( SpatialOperation.is( args.getOperation(),
-          SpatialOperation.Intersects,
-          SpatialOperation.IsWithin )) {
-        Circle circle = (Circle)args.getShape();
-        Query bbox = makeWithin(circle.getBoundingBox());
-
-        // Make the ValueSource
-        ValueSource valueSource = makeValueSource(args);
-
-        return new ValueSourceFilter(
-            new QueryWrapperFilter( bbox ), valueSource, 0, circle.getDistance() );
-      }
-    }
-    return new QueryWrapperFilter( makeQuery(args) );
+    //unwrap the CSQ from makeQuery
+    ConstantScoreQuery csq = makeQuery(args);
+    Filter filter = csq.getFilter();
+    if (filter != null)
+      return filter;
+    else
+      return new QueryWrapperFilter(csq.getQuery());
   }
 
   @Override
-  public Query makeQuery(SpatialArgs args) {
+  public ConstantScoreQuery makeQuery(SpatialArgs args) {
+    if(! SpatialOperation.is( args.getOperation(),
+        SpatialOperation.Intersects,
+        SpatialOperation.IsWithin ))
+      throw new UnsupportedSpatialOperation(args.getOperation());
+    Shape shape = args.getShape();
+    if (shape instanceof Rectangle) {
+      Rectangle bbox = (Rectangle) shape;
+      return new ConstantScoreQuery(makeWithin(bbox));
+    } else if (shape instanceof Circle) {
+      Circle circle = (Circle)shape;
+      Rectangle bbox = circle.getBoundingBox();
+      ValueSourceFilter vsf = new ValueSourceFilter(
+          new QueryWrapperFilter(makeWithin(bbox)),
+          makeDistanceValueSource(circle.getCenter()),
+          0,
+          circle.getRadius() );
+      return new ConstantScoreQuery(vsf);
+    } else {
+      throw new InvalidShapeException("Only Rectangles and Circles are currently supported, " +
+          "found [" + shape.getClass() + "]");//TODO
+    }
+  }
+
+  //TODO this is basically old code that hasn't been verified well and should probably be removed
+  public Query makeQueryDistanceScore(SpatialArgs args) {
     // For starters, just limit the bbox
     Shape shape = args.getShape();
     if (!(shape instanceof Rectangle || shape instanceof Circle)) {
@@ -151,10 +177,10 @@ public class TwoDoublesStrategy extends SpatialStrategy {
         Circle circle = (Circle)args.getShape();
 
         // Make the ValueSource
-        valueSource = makeValueSource(args);
+        valueSource = makeDistanceValueSource(shape.getCenter());
 
         ValueSourceFilter vsf = new ValueSourceFilter(
-            new QueryWrapperFilter( spatial ), valueSource, 0, circle.getDistance() );
+            new QueryWrapperFilter( spatial ), valueSource, 0, circle.getRadius() );
 
         spatial = new FilteredQuery( new MatchAllDocsQuery(), vsf );
       }
@@ -171,7 +197,7 @@ public class TwoDoublesStrategy extends SpatialStrategy {
       valueSource = new CachingDoubleValueSource(valueSource);
     }
     else {
-      valueSource = makeValueSource(args);
+      valueSource = makeDistanceValueSource(shape.getCenter());
     }
     Query spatialRankingQuery = new FunctionQuery(valueSource);
     BooleanQuery bq = new BooleanQuery();
@@ -182,49 +208,40 @@ public class TwoDoublesStrategy extends SpatialStrategy {
 
   /**
    * Constructs a query to retrieve documents that fully contain the input envelope.
-   * @return the spatial query
    */
   private Query makeWithin(Rectangle bbox) {
-    Query qX = NumericRangeQuery.newDoubleRange(
-      fieldNameX,
-      precisionStep,
-      bbox.getMinX(),
-      bbox.getMaxX(),
-      true,
-      true);
-    Query qY = NumericRangeQuery.newDoubleRange(
-      fieldNameY,
-      precisionStep,
-      bbox.getMinY(),
-      bbox.getMaxY(),
-      true,
-      true);
-
     BooleanQuery bq = new BooleanQuery();
-    bq.add(qX,BooleanClause.Occur.MUST);
-    bq.add(qY,BooleanClause.Occur.MUST);
+    BooleanClause.Occur MUST = BooleanClause.Occur.MUST;
+    if (bbox.getCrossesDateLine()) {
+      //use null as performance trick since no data will be beyond the world bounds
+      bq.add(rangeQuery(fieldNameX, null/*-180*/, bbox.getMaxX()), BooleanClause.Occur.SHOULD );
+      bq.add(rangeQuery(fieldNameX, bbox.getMinX(), null/*+180*/), BooleanClause.Occur.SHOULD );
+      bq.setMinimumNumberShouldMatch(1);//must match at least one of the SHOULD
+    } else {
+      bq.add(rangeQuery(fieldNameX, bbox.getMinX(), bbox.getMaxX()), MUST);
+    }
+    bq.add(rangeQuery(fieldNameY, bbox.getMinY(), bbox.getMaxY()), MUST);
     return bq;
+  }
+
+  private NumericRangeQuery<Double> rangeQuery(String fieldName, Double min, Double max) {
+    return NumericRangeQuery.newDoubleRange(
+        fieldName,
+        precisionStep,
+        min,
+        max,
+        true,
+        true);//inclusive
   }
 
   /**
    * Constructs a query to retrieve documents that fully contain the input envelope.
-   * @return the spatial query
    */
-  Query makeDisjoint(Rectangle bbox) {
-    Query qX = NumericRangeQuery.newDoubleRange(
-      fieldNameX,
-      precisionStep,
-      bbox.getMinX(),
-      bbox.getMaxX(),
-      true,
-      true);
-    Query qY = NumericRangeQuery.newDoubleRange(
-      fieldNameY,
-      precisionStep,
-      bbox.getMinY(),
-      bbox.getMaxY(),
-      true,
-      true);
+  private Query makeDisjoint(Rectangle bbox) {
+    if (bbox.getCrossesDateLine())
+      throw new UnsupportedOperationException("makeDisjoint doesn't handle dateline cross");
+    Query qX = rangeQuery(fieldNameX, bbox.getMinX(), bbox.getMaxX());
+    Query qY = rangeQuery(fieldNameY, bbox.getMinY(), bbox.getMaxY());
 
     BooleanQuery bq = new BooleanQuery();
     bq.add(qX,BooleanClause.Occur.MUST_NOT);

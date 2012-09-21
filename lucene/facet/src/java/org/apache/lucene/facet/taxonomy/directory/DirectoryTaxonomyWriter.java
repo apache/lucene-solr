@@ -29,6 +29,7 @@ import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.cl2o.Cl2oTaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.lru.LruTaxonomyWriterCache;
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
@@ -409,14 +410,16 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     DirectoryReader reader = readerManager.acquire();
     try {
       final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter));
-      int base = 0;
-      for (AtomicReader r : reader.getSequentialSubReaders()) {
-        DocsEnum docs = r.termDocsEnum(null, Consts.FULL, catTerm, 0);
-        if (docs != null) {
-          doc = docs.nextDoc() + base;
-          break;
+      for (AtomicReaderContext ctx : reader.leaves()) {
+        Terms terms = ctx.reader().terms(Consts.FULL);
+        if (terms != null) {
+          TermsEnum termsEnum = terms.iterator(null);
+          if (termsEnum.seekExact(catTerm, true)) {
+            // TODO: is it really ok that null is passed here as liveDocs?
+            DocsEnum docs = termsEnum.docs(null, null, 0);
+            doc = docs.nextDoc() + ctx.docBase;
+          }
         }
-        base += r.maxDoc(); // we don't have deletions, so it's ok to call maxDoc
       }
     } finally {
       readerManager.release(reader);
@@ -452,14 +455,16 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     DirectoryReader reader = readerManager.acquire();
     try {
       final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter, prefixLen));
-      int base = 0;
-      for (AtomicReader r : reader.getSequentialSubReaders()) {
-        DocsEnum docs = r.termDocsEnum(null, Consts.FULL, catTerm, 0);
-        if (docs != null) {
-          doc = docs.nextDoc() + base;
-          break;
+      for (AtomicReaderContext ctx : reader.leaves()) {
+        Terms terms = ctx.reader().terms(Consts.FULL);
+        if (terms != null) {
+          TermsEnum termsEnum = terms.iterator(null);
+          if (termsEnum.seekExact(catTerm, true)) {
+            // TODO: is it really ok that null is passed here as liveDocs?
+            DocsEnum docs = termsEnum.docs(null, null, 0);
+            doc = docs.nextDoc() + ctx.docBase;
+          }
         }
-        base += r.maxDoc(); // we don't have deletions, so it's ok to call maxDoc
       }
     } finally {
       readerManager.release(reader);
@@ -752,9 +757,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       CategoryPath cp = new CategoryPath();
       TermsEnum termsEnum = null;
       DocsEnum docsEnum = null;
-      int base = 0;
-      for (AtomicReader r : reader.getSequentialSubReaders()) {
-        Terms terms = r.terms(Consts.FULL);
+      for (AtomicReaderContext ctx : reader.leaves()) {
+        Terms terms = ctx.reader().terms(Consts.FULL);
         if (terms != null) { // cannot really happen, but be on the safe side
           termsEnum = terms.iterator(termsEnum);
           while (termsEnum.next() != null) {
@@ -768,7 +772,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
               cp.clear();
               cp.add(t.utf8ToString(), delimiter);
               docsEnum = termsEnum.docs(null, docsEnum, 0);
-              boolean res = cache.put(cp, docsEnum.nextDoc() + base);
+              boolean res = cache.put(cp, docsEnum.nextDoc() + ctx.docBase);
               assert !res : "entries should not have been evicted from the cache";
             } else {
               // the cache is full and the next put() will evict entries from it, therefore abort the iteration.
@@ -780,7 +784,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         if (aborted) {
           break;
         }
-        base += r.maxDoc(); // we don't have any deletions, so we're ok
       }
     } finally {
       readerManager.release(reader);
@@ -845,20 +848,15 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       int base = 0;
       TermsEnum te = null;
       DocsEnum docs = null;
-      for (AtomicReader ar : r.getSequentialSubReaders()) {
-        Terms terms = ar.terms(Consts.FULL);
+      for (final AtomicReaderContext ctx : r.leaves()) {
+        final AtomicReader ar = ctx.reader();
+        final Terms terms = ar.terms(Consts.FULL);
         te = terms.iterator(te);
         while (te.next() != null) {
           String value = te.term().utf8ToString();
           cp.clear();
           cp.add(value, Consts.DEFAULT_DELIMITER);
-          int ordinal = findCategory(cp);
-          if (ordinal < 0) {
-            // NOTE: call addCategory so that it works well in a multi-threaded
-            // environment, in case e.g. a thread just added the category, after
-            // the findCategory() call above failed to find it.
-            ordinal = addCategory(cp);
-          }
+          final int ordinal = addCategory(cp);
           docs = te.docs(null, docs, 0);
           ordinalMap.addMapping(docs.nextDoc() + base, ordinal);
         }

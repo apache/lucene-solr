@@ -54,11 +54,40 @@
 
   <path id="classpath">
     <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/java"/>
-    <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/test"/>
     <fileset dir="${common-solr.dir}/contrib/dataimporthandler/lib" excludes="${common.classpath.excludes}"/>
     <fileset dir="${common-solr.dir}/contrib/extraction/lib" excludes="${common.classpath.excludes}"/>
     <path refid="solr.base.classpath"/>
   </path>
+
+  <path id="test.classpath">
+    <path refid="solr.test.base.classpath"/>
+    <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/test"/>
+    <path refid="classpath"/>
+  </path>
+
+  <!-- TODO: make this nicer like lucene? -->
+  <target name="javadocs" depends="compile-core,define-lucene-javadoc-url,lucene-javadocs,javadocs-solr-core,javadocs-dataimporthandler">
+        <sequential>
+      <mkdir dir="${javadoc.dir}/${name}"/>
+      <solr-invoke-javadoc>
+        <solrsources>
+          <packageset dir="${src.dir}"/>
+        </solrsources>
+        <links>
+          <link href="../solr-solrj"/>
+          <link href="../solr-core"/>
+          <link href="../solr-dataimporthandler"/>
+        </links>
+      </solr-invoke-javadoc>
+      <solr-jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
+     </sequential>
+  </target>
+
+  <target name="javadocs-dataimporthandler">
+    <ant dir="${common-solr.dir}/contrib/dataimporthandler" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
 
   <target name="compile-core" depends="compile-solr-dataimporthandler,resolve-extraction-libs,solr-contrib-build.compile-core"/>
   <target name="compile-test" depends="compile-solr-dataimporthandler-tests, common-solr.compile-test"/>

@@ -42,11 +42,6 @@ public class MockCharFilter extends CharFilter {
   public MockCharFilter(Reader in) {
     this(in, 0);
   }
-
-  @Override
-  public void close() throws IOException {
-    in.close();
-  }
   
   int currentOffset = -1;
   int delta = 0;
@@ -66,7 +61,7 @@ public class MockCharFilter extends CharFilter {
     }
     
     // otherwise actually read one    
-    int ch = in.read();
+    int ch = input.read();
     if (ch < 0)
       return ch;
     

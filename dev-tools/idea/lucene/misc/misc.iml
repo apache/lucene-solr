@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" inherit-compiler-output="false">
-    <output url="file://$MODULE_DIR$/../build/misc/classes/java" />
-    <output-test url="file://$MODULE_DIR$/../build/misc/classes/test" />
+    <output url="file://$MODULE_DIR$/../../idea-build/lucene/misc/classes/java" />
+    <output-test url="file://$MODULE_DIR$/../../idea-build/lucene/misc/classes/test" />
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src/test" isTestSource="true" />
@@ -11,6 +11,7 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
-    <orderEntry type="module" module-name="lucene" />
+    <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
+    <orderEntry type="module" module-name="lucene-core" />
   </component>
 </module>

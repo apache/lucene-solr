@@ -27,6 +27,16 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
     assertConfigs("bad_solrconfig.xml","schema.xml","unset.sys.property");
   }
 
+  public void testUpdateLogButNoVersionField() throws Exception {
+    
+    System.setProperty("enable.update.log", "true");
+    try {
+      assertConfigs("solrconfig.xml", "schema12.xml", "_version_");
+    } finally {
+      System.clearProperty("enable.update.log");
+    }
+  }
+
   public void testBogusScriptEngine() throws Exception {
     // sanity check
     Assume.assumeTrue(null == (new ScriptEngineManager()).getEngineByName("giberish"));
@@ -47,6 +57,11 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("javascript"));
     assertConfigs("bad-solrconfig-invalid-scriptfile.xml",
                   "schema.xml","currency.xml");
+  }
+
+  public void testBogusMergePolicy() throws Exception {
+    assertConfigs("bad-mp-solrconfig.xml", "schema-minimal.xml",
+                  "DummyMergePolicy");
   }
 
 }

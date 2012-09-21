@@ -17,6 +17,7 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader; // javadocs
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
@@ -24,6 +25,11 @@ import org.apache.lucene.search.IndexSearcher;
 import java.io.IOException;
 import java.util.Map;
 
+/**
+ * Returns the value of {@link IndexReader#maxDoc()}
+ * for every document. This is the number of documents
+ * including deletions.
+ */
 public class MaxDocValueSource extends ValueSource {
   public String name() {
     return "maxdoc";

@@ -38,7 +38,11 @@ public interface CharTermAttribute extends Attribute, CharSequence, Appendable {
    *  #resizeBuffer(int)} to increase it.  After
    *  altering the buffer be sure to call {@link
    *  #setLength} to record the number of valid
-   *  characters that were placed into the termBuffer. */
+   *  characters that were placed into the termBuffer. 
+   *  <p>
+   *  <b>NOTE</b>: The returned buffer may be larger than
+   *  the valid {@link #length()}.
+   */
   public char[] buffer();
 
   /** Grows the termBuffer to at least size newSize, preserving the

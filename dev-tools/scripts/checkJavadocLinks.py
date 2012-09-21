@@ -23,6 +23,9 @@ import urllib.parse as urlparse
 reHyperlink = re.compile(r'<a(\s+.*?)>', re.I)
 reAtt = re.compile(r"""(?:\s+([a-z]+)\s*=\s*("[^"]*"|'[^']?'|[^'"\s]+))+""", re.I)
 
+# Char ::= #x9 | #xA | #xD | [#x20-#xD7FF] | [#xE000-#xFFFD] | [#x10000-#x10FFFF] /* any Unicode character, excluding the surrogate blocks, FFFE, and FFFF. */
+reValidChar = re.compile("^[^\u0000-\u0008\u000B-\u000C\u000E-\u001F\uFFFE\uFFFF]*$")
+
 # silly emacs: '
 
 class FindHyperlinks(HTMLParser):
@@ -79,6 +82,12 @@ class FindHyperlinks(HTMLParser):
                    
 def parse(baseURL, html):
   global failures
+  # look for broken unicode
+  if not reValidChar.match(html):
+    print(' WARNING: invalid characters detected in: %s' % baseURL)
+    failures = True
+    return [], []
+
   parser = FindHyperlinks(baseURL)
   try:
     parser.feed(html)
@@ -127,6 +136,9 @@ def checkAll(dirName):
         # Somehow even w/ java 7 generaged javadocs,
         # deprecated-list.html can fail to escape generics types
         fullPath = os.path.join(root, f).replace(os.path.sep,'/')
+        fullPath = 'file:%s' % urlparse.quote(fullPath)
+        # parse and unparse the URL to "normalize" it
+        fullPath = urlparse.urlunparse(urlparse.urlparse(fullPath))
         #print '  %s' % fullPath
         allFiles[fullPath] = parse(fullPath, open('%s/%s' % (root, f), encoding='UTF-8').read())
 
@@ -157,6 +169,12 @@ def checkAll(dirName):
         # don't check external links
 
         if link.find('lucene.apache.org/java/docs/mailinglists.html') != -1:
+          # OK
+          pass
+        elif link == 'http://lucene.apache.org/core/':
+          # OK
+          pass
+        elif link == 'http://lucene.apache.org/solr/':
           # OK
           pass
         elif link.find('lucene.apache.org/java/docs/discussion.html') != -1:
@@ -194,30 +212,26 @@ def checkAll(dirName):
         # on annotations it seems?
         pass
       elif link.startswith('file:'):
-        filepath = urlparse.unquote(urlparse.urlparse(link).path)
-        if not (os.path.exists(filepath) or os.path.exists(filepath[1:])):
-          if not printed:
-            printed = True
-            print()
-            print(fullPath)
-          print('  BROKEN LINK: %s' % link)
-      elif link not in allFiles:
-        # We only load HTML... so if the link is another resource (eg
-        # SweetSpotSimilarity refs
-        # lucene/build/docs/misc/org/apache/lucene/misc/doc-files/ss.gnuplot) then it's OK:
-        if not os.path.exists(link):
-          if not printed:
-            printed = True
-            print()
-            print(fullPath)
-          print('  BROKEN LINK: %s' % link)
+        if link not in allFiles:
+          filepath = urlparse.unquote(urlparse.urlparse(link).path)
+          if not (os.path.exists(filepath) or os.path.exists(filepath[1:])):
+            if not printed:
+              printed = True
+              print()
+              print(fullPath)
+            print('  BROKEN LINK: %s' % link)
       elif anchor is not None and anchor not in allFiles[link][1]:
         if not printed:
           printed = True
           print()
           print(fullPath)
         print('  BROKEN ANCHOR: %s' % origLink)
-
+      else:
+        if not printed:
+          printed = True
+          print()
+          print(fullPath)
+        print('  BROKEN URL SCHEME: %s' % origLink)
     failures = failures or printed
 
   return failures   

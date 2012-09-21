@@ -38,31 +38,31 @@ import org.apache.lucene.util.Version;
  */
 
 public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
-	
+  
   @Override
   public void setUp() throws Exception {
     super.setUp();
     assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiWordFilter.DBBI_AVAILABLE);
   }
-	/* 
-	 * testcase for offsets
-	 */
-	public void testOffsets() throws Exception {
-		assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET), "การที่ได้ต้องแสดงว่างานดี", 
-		    new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
-				new int[] { 0, 3, 6, 9, 13, 17, 20, 23 },
-				new int[] { 3, 6, 9, 13, 17, 20, 23, 25 });
-	}
-	
-	public void testStopWords() throws Exception {
-	  assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT), "การที่ได้ต้องแสดงว่างานดี", 
-	      new String[] { "แสดง", "งาน", "ดี" },
-	      new int[] { 13, 20, 23 },
-	      new int[] { 17, 23, 25 },
-	      new int[] { 5, 2, 1 });
-	}
-	
-	public void testTokenType() throws Exception {
+  /* 
+   * testcase for offsets
+   */
+  public void testOffsets() throws Exception {
+    assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET), "การที่ได้ต้องแสดงว่างานดี", 
+        new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
+        new int[] { 0, 3, 6, 9, 13, 17, 20, 23 },
+        new int[] { 3, 6, 9, 13, 17, 20, 23, 25 });
+  }
+  
+  public void testStopWords() throws Exception {
+    assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT), "การที่ได้ต้องแสดงว่างานดี", 
+        new String[] { "แสดง", "งาน", "ดี" },
+        new int[] { 13, 20, 23 },
+        new int[] { 17, 23, 25 },
+        new int[] { 5, 2, 1 });
+  }
+  
+  public void testTokenType() throws Exception {
       assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET), "การที่ได้ต้องแสดงว่างานดี ๑๒๓", 
                        new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี", "๑๒๓" },
                        new String[] { "<SOUTHEAST_ASIAN>", "<SOUTHEAST_ASIAN>", 
@@ -70,31 +70,31 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
                                       "<SOUTHEAST_ASIAN>", "<SOUTHEAST_ASIAN>",
                                       "<SOUTHEAST_ASIAN>", "<SOUTHEAST_ASIAN>",
                                       "<NUM>" });
-	}
+  }
 
-	/*
-	 * Test that position increments are adjusted correctly for stopwords.
-	 */
-	// note this test uses stopfilter's stopset
-	public void testPositionIncrements() throws Exception {
-	  final ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+  /*
+   * Test that position increments are adjusted correctly for stopwords.
+   */
+  // note this test uses stopfilter's stopset
+  public void testPositionIncrements() throws Exception {
+    final ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
     assertAnalyzesTo(analyzer, "การที่ได้ต้อง the แสดงว่างานดี", 
         new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
         new int[] { 0, 3, 6, 9, 18, 22, 25, 28 },
         new int[] { 3, 6, 9, 13, 22, 25, 28, 30 },
         new int[] { 1, 1, 1, 1, 2, 1, 1, 1 });
-	 
-	  // case that a stopword is adjacent to thai text, with no whitespace
+   
+    // case that a stopword is adjacent to thai text, with no whitespace
     assertAnalyzesTo(analyzer, "การที่ได้ต้องthe แสดงว่างานดี", 
         new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
         new int[] { 0, 3, 6, 9, 17, 21, 24, 27 },
         new int[] { 3, 6, 9, 13, 21, 24, 27, 29 },
         new int[] { 1, 1, 1, 1, 2, 1, 1, 1 });
-	}
-	
-	public void testReusableTokenStream() throws Exception {
-	  ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
-	  assertAnalyzesToReuse(analyzer, "", new String[] {});
+  }
+  
+  public void testReusableTokenStream() throws Exception {
+    ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET);
+    assertAnalyzesToReuse(analyzer, "", new String[] {});
 
       assertAnalyzesToReuse(
           analyzer,
@@ -105,8 +105,8 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
           analyzer,
           "บริษัทชื่อ XY&Z - คุยกับ xyz@demo.com",
           new String[] { "บริษัท", "ชื่อ", "xy", "z", "คุย", "กับ", "xyz", "demo.com" });
-	}
-	
+  }
+  
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     checkRandomData(random(), new ThaiAnalyzer(TEST_VERSION_CURRENT), 1000*RANDOM_MULTIPLIER);

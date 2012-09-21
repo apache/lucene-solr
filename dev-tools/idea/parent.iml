@@ -4,6 +4,13 @@
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/.idea" />
       <excludeFolder url="file://$MODULE_DIR$/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/lucene/build" />
+      <excludeFolder url="file://$MODULE_DIR$/lucene/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/lucene/benchmark/temp" />
+      <excludeFolder url="file://$MODULE_DIR$/lucene/benchmark/work" />
+      <excludeFolder url="file://$MODULE_DIR$/solr/build" />
+      <excludeFolder url="file://$MODULE_DIR$/solr/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/solr/package" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

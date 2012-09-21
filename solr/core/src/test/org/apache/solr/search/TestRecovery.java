@@ -25,6 +25,7 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateHandler;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -864,6 +865,72 @@ public class TestRecovery extends SolrTestCaseJ4 {
     }
   }
 
+
+  //
+  // test that a corrupt tlog doesn't stop us from coming up
+  //
+  @Test
+  public void testCorruptLog() throws Exception {
+    try {
+      DirectUpdateHandler2.commitOnClose = false;
+
+      File logDir = h.getCore().getUpdateHandler().getUpdateLog().getLogDir();
+
+      clearIndex();
+      assertU(commit());
+
+      assertU(adoc("id","G1"));
+      assertU(adoc("id","G2"));
+      assertU(adoc("id","G3"));
+
+      h.close();
+
+
+      String[] files = UpdateLog.getLogList(logDir);
+      Arrays.sort(files);
+      RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length-1]), "rw");
+      long len = raf.length();
+      raf.seek(0);  // seek to start
+      raf.write(new byte[(int)len]);  // zero out file
+      raf.close();
+
+
+      ignoreException("Failure to open existing log file");  // this is what the corrupted log currently produces... subject to change.
+      createCore();
+      resetExceptionIgnores();
+
+      // just make sure it responds
+      assertJQ(req("q","*:*") ,"/response/numFound==0");
+
+      //
+      // Now test that the bad log file doesn't mess up retrieving latest versions
+      //
+
+      updateJ(jsonAdd(sdoc("id","G4", "_version_","104")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(jsonAdd(sdoc("id","G5", "_version_","105")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+      updateJ(jsonAdd(sdoc("id","G6", "_version_","106")), params(DISTRIB_UPDATE_PARAM,FROM_LEADER));
+
+      // This currently skips the bad log file and also returns the version of the clearIndex (del *:*)
+      // assertJQ(req("qt","/get", "getVersions","6"), "/versions==[106,105,104]");
+      assertJQ(req("qt","/get", "getVersions","3"), "/versions==[106,105,104]");
+
+      assertU(commit());
+
+      assertJQ(req("q","*:*") ,"/response/numFound==3");
+
+      // This messes up some other tests (on windows) if we don't remove the bad log.
+      // This *should* hopefully just be because the tests are too fragile and not because of real bugs - but it should be investigated further.
+      deleteLogs();
+
+    } finally {
+      DirectUpdateHandler2.commitOnClose = true;
+      UpdateLog.testing_logReplayHook = null;
+      UpdateLog.testing_logReplayFinishHook = null;
+    }
+  }
+
+
+
   // in rare circumstances, two logs can be left uncapped (lacking a commit at the end signifying that all the content in the log was committed)
   @Test
   public void testRecoveryMultipleLogs() throws Exception {
@@ -974,13 +1041,19 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
     h.close();
 
-    String[] files = UpdateLog.getLogList(logDir);
-    for (String file : files) {
-      new File(logDir, file).delete();
-    }
+    try {
+      String[] files = UpdateLog.getLogList(logDir);
+      for (String file : files) {
+        new File(logDir, file).delete();
+      }
 
-    assertEquals(0, UpdateLog.getLogList(logDir).length);
-    createCore();
+      assertEquals(0, UpdateLog.getLogList(logDir).length);
+    } finally {
+      // make sure we create the core again, even if the assert fails so it won't mess
+      // up the next test.
+      createCore();
+      assertJQ(req("q","*:*") ,"/response/numFound==");   // ensure it works
+    }
   }
 
   private static Long getVer(SolrQueryRequest req) throws Exception {

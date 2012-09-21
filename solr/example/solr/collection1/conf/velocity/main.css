@@ -197,3 +197,12 @@ li.show {
 .group-value{
   font-weight: bold;
 }
+
+.error {
+  color: white;
+  background-color: red;
+  left: 210px;
+  width:80%;
+  position: relative;
+
+}

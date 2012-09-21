@@ -528,10 +528,22 @@ sammy.get
                   array.push( { name : 'rows', value: rows } );
                 }
 
+                $( 'input:checkbox', form ).not( ':checked' )
+                  .each( function( i, input )
+                  {
+                    array.push( { name: input.name, value: 'false' } );
+                  }
+                );
+
                 var custom_parameters = $( '#custom_parameters', form ).val();
                 if( custom_parameters.length )
                 {
-                  array.push( { name : 'custom_parameters', value: custom_parameters } );
+                  var params = custom_parameters.split( '&' );
+                  for( var i in params )
+                  {
+                    var tmp = params[i].split( '=' );
+                    array.push( { name : tmp[0], value: tmp[1] } );
+                  }
                 }
               },
               success : function( response, text_status, xhr )

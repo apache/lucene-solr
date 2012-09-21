@@ -29,6 +29,11 @@ import java.io.IOException;
 */
 public abstract class MergeScheduler implements Closeable {
 
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected MergeScheduler() {
+  }
+
   /** Run the merges provided by {@link IndexWriter#getNextMerge()}. */
   public abstract void merge(IndexWriter writer) throws IOException;
 

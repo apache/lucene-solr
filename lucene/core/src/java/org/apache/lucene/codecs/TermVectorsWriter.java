@@ -20,6 +20,7 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Iterator;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -27,8 +28,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
-import org.apache.lucene.index.PayloadProcessorProvider.ReaderPayloadProcessor;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -170,12 +169,7 @@ public abstract class TermVectorsWriter implements Closeable {
       final AtomicReader reader = mergeState.readers.get(i);
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
-      // set PayloadProcessor
-      if (mergeState.payloadProcessorProvider != null) {
-        mergeState.currentReaderPayloadProcessor = mergeState.readerPayloadProcessor[i];
-      } else {
-        mergeState.currentReaderPayloadProcessor = null;
-      }
+
       for (int docID = 0; docID < maxDoc; docID++) {
         if (liveDocs != null && !liveDocs.get(docID)) {
           // skip deleted docs
@@ -194,19 +188,21 @@ public abstract class TermVectorsWriter implements Closeable {
   }
   
   /** Safe (but, slowish) default method to write every
-   *  vector field in the document.  This default
-   *  implementation requires that the vectors implement
-   *  both Fields.size and
-   *  Terms.size. */
+   *  vector field in the document. */
   protected final void addAllDocVectors(Fields vectors, MergeState mergeState) throws IOException {
     if (vectors == null) {
       startDocument(0);
       return;
     }
 
-    final int numFields = vectors.size();
+    int numFields = vectors.size();
     if (numFields == -1) {
-      throw new IllegalStateException("vectors.size() must be implemented (it returned -1)");
+      // count manually! TODO: Maybe enforce that Fields.size() returns something valid?
+      numFields = 0;
+      for (final Iterator<String> it = vectors.iterator(); it.hasNext(); ) {
+        it.next();
+        numFields++;
+      }
     }
     startDocument(numFields);
     
@@ -215,10 +211,9 @@ public abstract class TermVectorsWriter implements Closeable {
     TermsEnum termsEnum = null;
     DocsAndPositionsEnum docsAndPositionsEnum = null;
     
-    final ReaderPayloadProcessor readerPayloadProcessor = mergeState.currentReaderPayloadProcessor;
-    PayloadProcessor payloadProcessor = null;
-
+    int fieldCount = 0;
     for(String fieldName : vectors) {
+      fieldCount++;
       final FieldInfo fieldInfo = mergeState.fieldInfos.fieldInfo(fieldName);
 
       assert lastFieldName == null || fieldName.compareTo(lastFieldName) > 0: "lastFieldName=" + lastFieldName + " fieldName=" + fieldName;
@@ -235,9 +230,14 @@ public abstract class TermVectorsWriter implements Closeable {
       final boolean hasPayloads = terms.hasPayloads();
       assert !hasPayloads || hasPositions;
       
-      final int numTerms = (int) terms.size();
+      int numTerms = (int) terms.size();
       if (numTerms == -1) {
-        throw new IllegalStateException("terms.size() must be implemented (it returned -1)");
+        // count manually. It is stupid, but needed, as Terms.size() is not a mandatory statistics function
+        numTerms = 0;
+        termsEnum = terms.iterator(termsEnum);
+        while(termsEnum.next() != null) {
+          numTerms++;
+        }
       }
       
       startField(fieldInfo, numTerms, hasPositions, hasOffsets, hasPayloads);
@@ -250,10 +250,6 @@ public abstract class TermVectorsWriter implements Closeable {
         final int freq = (int) termsEnum.totalTermFreq();
         
         startTerm(termsEnum.term(), freq);
-        
-        if (hasPayloads && readerPayloadProcessor != null) {
-          payloadProcessor = readerPayloadProcessor.getProcessor(fieldName, termsEnum.term());
-        }
 
         if (hasPositions || hasOffsets) {
           docsAndPositionsEnum = termsEnum.docsAndPositions(null, docsAndPositionsEnum);
@@ -268,17 +264,7 @@ public abstract class TermVectorsWriter implements Closeable {
             final int startOffset = docsAndPositionsEnum.startOffset();
             final int endOffset = docsAndPositionsEnum.endOffset();
             
-            BytesRef payload = docsAndPositionsEnum.getPayload();
-                
-            if (payloadProcessor != null && payload != null) {
-              // to not violate the D&P api, we must give the processor a private copy
-              payload = BytesRef.deepCopyOf(payload);
-              payloadProcessor.processPayload(payload);
-              if (payload.length == 0) {
-                // don't let PayloadProcessors corrumpt the index
-                payload = null;
-              }
-            }
+            final BytesRef payload = docsAndPositionsEnum.getPayload();
 
             assert !hasPositions || pos >= 0;
             addPosition(pos, startOffset, endOffset, payload);
@@ -287,6 +273,7 @@ public abstract class TermVectorsWriter implements Closeable {
       }
       assert termCount == numTerms;
     }
+    assert fieldCount == numFields;
   }
   
   /** Return the BytesRef Comparator used to sort terms

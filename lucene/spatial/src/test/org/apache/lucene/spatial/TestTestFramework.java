@@ -18,7 +18,6 @@ package org.apache.lucene.spatial;
  */
 
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.simple.SimpleSpatialContext;
 import com.spatial4j.core.shape.Rectangle;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.apache.lucene.spatial.query.SpatialOperation;
@@ -40,10 +39,10 @@ public class TestTestFramework extends LuceneTestCase {
 
   @Test
   public void testQueries() throws IOException {
-    String name = StrategyTestCase.QTEST_Cities_IsWithin_BBox;
+    String name = StrategyTestCase.QTEST_Cities_Intersects_BBox;
 
     InputStream in = getClass().getClassLoader().getResourceAsStream(name);
-    SpatialContext ctx = SimpleSpatialContext.GEO_KM;
+    SpatialContext ctx = SpatialContext.GEO;
     Iterator<SpatialTestQuery> iter = SpatialTestQuery.getTestQueries(
         new SpatialArgsParser(), ctx, name, in );
     List<SpatialTestQuery> tests = new ArrayList<SpatialTestQuery>();
@@ -57,7 +56,7 @@ public class TestTestFramework extends LuceneTestCase {
     Assert.assertEquals( 1, sf.ids.size() );
     Assert.assertTrue( sf.ids.get(0).equals( "G5391959" ) );
     Assert.assertTrue( sf.args.getShape() instanceof Rectangle);
-    Assert.assertEquals( SpatialOperation.IsWithin, sf.args.getOperation() );
+    Assert.assertEquals( SpatialOperation.Intersects, sf.args.getOperation() );
   }
 
 }

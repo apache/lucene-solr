@@ -18,4 +18,13 @@
 -->
 <ivy-module version="2.0">
     <info organisation="org.apache.solr" module="dataimporthandler-extras"/>
+
+    <!--
+        NOTE: In order to reduce Jar duplication, the build.xml file for 
+        contrib/dataimporthandler-extras explicitly includes all deps from 
+        contrib/extraction rather then specify them here.
+        
+        https://issues.apache.org/jira/browse/SOLR-3848
+    -->
+
 </ivy-module>

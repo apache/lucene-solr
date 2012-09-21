@@ -72,7 +72,7 @@ public abstract class DocIdSet {
    * external disk access (as {@link Bits} interface cannot throw
    * {@link IOException}). This is generally true for bit sets
    * like {@link org.apache.lucene.util.FixedBitSet}, which return
-   * itsself if they are used as {@code DocIdSet}.
+   * itself if they are used as {@code DocIdSet}.
    */
   public Bits bits() throws IOException {
     return null;

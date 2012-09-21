@@ -27,94 +27,21 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-core</artifactId>
-  <packaging>jar</packaging>
-  <name>Lucene Core</name>
-  <description>Apache Lucene Java Core</description>
-  <properties>
-    <module-directory>lucene/core</module-directory>
-    <top-level>../../..</top-level>
-    <module-path>${top-level}/${module-directory}</module-path>
-  </properties>
-  <scm>
-    <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
-    <developerConnection>scm:svn:${vc-dev-base-url}/${module-directory}</developerConnection>
-    <url>${vc-browse-base-url}/${module-directory}</url>
-  </scm>
-  <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.ant</groupId>
-      <artifactId>ant</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.ant</groupId>
-      <artifactId>ant-junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.carrotsearch.randomizedtesting</groupId>
-      <artifactId>randomizedtesting-runner</artifactId>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
+  <artifactId>lucene-core-aggregator</artifactId>
+  <packaging>pom</packaging>
+  <name>Lucene Core aggregator POM</name>
+  <modules>
+    <module>src/java</module>
+    <module>src/test</module>
+  </modules>
   <build>
-    <sourceDirectory>${module-path}/src/java</sourceDirectory>
-    <resources>
-      <resource>
-        <directory>${module-path}/src/resources</directory>
-      </resource>
-    </resources>
-    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
-    <testResources>
-      <testResource>
-        <directory>${top-level}/lucene/test-framework/src/resources</directory>
-      </testResource>
-      <testResource>
-        <directory>${top-level}/lucene/test-framework/src/java</directory>
-        <excludes>
-          <exclude>**/*.java</exclude>
-        </excludes>
-      </testResource>
-      <testResource>
-        <directory>${project.build.testSourceDirectory}</directory>
-        <excludes>
-          <exclude>**/*.java</exclude>
-        </excludes>
-      </testResource>
-    </testResources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
+        <artifactId>maven-deploy-plugin</artifactId>
         <configuration>
-          <systemPropertyVariables>
-            <lucene.version>${project.version}</lucene.version>
-          </systemPropertyVariables>
+          <skip>true</skip>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>add-test-source</id>
-            <phase>generate-test-sources</phase>
-            <goals>
-              <goal>add-test-source</goal>
-            </goals>
-            <configuration>
-              <sources>
-                <source>${top-level}/lucene/test-framework/src/java</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

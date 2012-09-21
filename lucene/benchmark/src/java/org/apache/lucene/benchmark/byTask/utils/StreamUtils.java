@@ -37,43 +37,43 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
  */
 public class StreamUtils {
 
-	/** Buffer size used across the benchmark package */
-	public static final int BUFFER_SIZE = 1 << 16; // 64K
-	
-	/** File format type */
-	public enum Type {
-		/** BZIP2 is automatically used for <b>.bz2</b> and <b>.bzip2</b> extensions. */
-		BZIP2(CompressorStreamFactory.BZIP2),
-		/** GZIP is automatically used for <b>.gz</b> and <b>.gzip</b> extensions. */
-		GZIP(CompressorStreamFactory.GZIP),
-		/** Plain text is used for anything which is not GZIP or BZIP. */
-		PLAIN(null);
-		private final String csfType;
-		Type(String csfType) {
-			this.csfType = csfType;
-		}
-		private InputStream inputStream(InputStream in) throws IOException {
-			try {
-				return csfType==null ? in : new CompressorStreamFactory().createCompressorInputStream(csfType, in);
-			} catch (CompressorException e) {
-    		IOException ioe = new IOException(e.getMessage());
-    		ioe.initCause(e);
-    		throw ioe;			}  
-		}
-		private OutputStream outputStream(OutputStream os) throws IOException {
-			try {
-				return csfType==null ? os : new CompressorStreamFactory().createCompressorOutputStream(csfType, os);
-			} catch (CompressorException e) {
-				IOException ioe = new IOException(e.getMessage());
-				ioe.initCause(e);
-				throw ioe;  
-			}  
-		}
-	}
-	
+  /** Buffer size used across the benchmark package */
+  public static final int BUFFER_SIZE = 1 << 16; // 64K
+
+  /** File format type */
+  public enum Type {
+    /** BZIP2 is automatically used for <b>.bz2</b> and <b>.bzip2</b> extensions. */
+    BZIP2(CompressorStreamFactory.BZIP2),
+    /** GZIP is automatically used for <b>.gz</b> and <b>.gzip</b> extensions. */
+    GZIP(CompressorStreamFactory.GZIP),
+    /** Plain text is used for anything which is not GZIP or BZIP. */
+    PLAIN(null);
+    private final String csfType;
+    Type(String csfType) {
+      this.csfType = csfType;
+    }
+    private InputStream inputStream(InputStream in) throws IOException {
+      try {
+        return csfType==null ? in : new CompressorStreamFactory().createCompressorInputStream(csfType, in);
+      } catch (CompressorException e) {
+        IOException ioe = new IOException(e.getMessage());
+        ioe.initCause(e);
+        throw ioe;      }
+    }
+    private OutputStream outputStream(OutputStream os) throws IOException {
+      try {
+        return csfType==null ? os : new CompressorStreamFactory().createCompressorOutputStream(csfType, os);
+      } catch (CompressorException e) {
+        IOException ioe = new IOException(e.getMessage());
+        ioe.initCause(e);
+        throw ioe;
+      }
+    }
+  }
+
   private static final Map<String,Type> extensionToType = new HashMap<String,Type>();
   static {
-  	// these in are lower case, we will lower case at the test as well
+    // these in are lower case, we will lower case at the test as well
     extensionToType.put(".bz2", Type.BZIP2);
     extensionToType.put(".bzip", Type.BZIP2);
     extensionToType.put(".gz", Type.GZIP);
@@ -95,14 +95,14 @@ public class StreamUtils {
 
   /** Return the type of the file, or null if unknown */
   private static Type fileType(File file) {
-  	Type type = null;
+    Type type = null;
     String fileName = file.getName();
     int idx = fileName.lastIndexOf('.');
     if (idx != -1) {
       type = extensionToType.get(fileName.substring(idx).toLowerCase(Locale.ROOT));
     }
     return type==null ? Type.PLAIN : type;
-	}
+  }
   
   /**
    * Returns an {@link OutputStream} over the requested file, identifying

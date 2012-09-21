@@ -38,10 +38,20 @@ public class PlainTextDictionary implements Dictionary {
 
   private BufferedReader in;
 
+  /**
+   * Creates a dictionary based on a File.
+   * <p>
+   * NOTE: content is treated as UTF-8
+   */
   public PlainTextDictionary(File file) throws IOException {
     in = new BufferedReader(IOUtils.getDecodingReader(file, IOUtils.CHARSET_UTF_8));
   }
 
+  /**
+   * Creates a dictionary based on an inputstream.
+   * <p>
+   * NOTE: content is treated as UTF-8
+   */
   public PlainTextDictionary(InputStream dictFile) {
     in = new BufferedReader(IOUtils.getDecodingReader(dictFile, IOUtils.CHARSET_UTF_8));
   }

@@ -75,6 +75,6 @@ public class UserDictionaryTest extends LuceneTestCase {
   @Test
   public void testRead() throws IOException {
     UserDictionary dictionary = TestJapaneseTokenizer.readDict();
-    assertNotNull(dictionary);		
+    assertNotNull(dictionary);
   }
 }

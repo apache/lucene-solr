@@ -28,6 +28,8 @@ import org.apache.lucene.util.Bits;
 import java.io.IOException;
 
 /**
+ * Filter that matches all documents where a valuesource is
+ * in between a range of <code>min</code> and <code>max</code> inclusive.
  * @lucene.internal
  */
 public class ValueSourceFilter extends Filter {
@@ -55,7 +57,7 @@ public class ValueSourceFilter extends Filter {
       @Override
       public boolean match(int doc) {
         double val = values.doubleVal( doc );
-        return val > min && val < max;
+        return val >= min && val <= max;
       }
     };
   }

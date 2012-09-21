@@ -173,10 +173,10 @@ class PHPSerializedWriter extends JSONWriter {
   
   @Override
   public void writeMapOpener(int size) throws IOException, IllegalArgumentException {
-  	// negative size value indicates that something has gone wrong
-  	if (size < 0) {
-  		throw new IllegalArgumentException("Map size must not be negative");
-  	}
+    // negative size value indicates that something has gone wrong
+    if (size < 0) {
+      throw new IllegalArgumentException("Map size must not be negative");
+    }
     writer.write("a:"+size+":{");
   }
   
@@ -192,10 +192,10 @@ class PHPSerializedWriter extends JSONWriter {
 
   @Override
   public void writeArrayOpener(int size) throws IOException, IllegalArgumentException {
-  	// negative size value indicates that something has gone wrong
-  	if (size < 0) {
-  		throw new IllegalArgumentException("Array size must not be negative");
-  	}
+    // negative size value indicates that something has gone wrong
+    if (size < 0) {
+      throw new IllegalArgumentException("Array size must not be negative");
+    }
     writer.write("a:"+size+":{");
   }
 

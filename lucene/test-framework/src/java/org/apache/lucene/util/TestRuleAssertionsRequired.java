@@ -32,7 +32,10 @@ public class TestRuleAssertionsRequired implements TestRule {
       public void evaluate() throws Throwable {
         try {
           assert false;
-          throw new Exception("Test class requires assertions, enable assertions globally (-ea) or for Solr/Lucene subpackages only.");
+          String msg = "Test class requires enabled assertions, enable globally (-ea)" +
+              " or for Solr/Lucene subpackages only: " + description.getClassName();
+          System.err.println(msg);
+          throw new Exception(msg);
         } catch (AssertionError e) {
           // Ok, enabled.
         }

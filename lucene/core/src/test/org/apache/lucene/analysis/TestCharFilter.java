@@ -17,6 +17,7 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
@@ -51,6 +52,11 @@ public class TestCharFilter extends LuceneTestCase {
     }
 
     @Override
+    public int read(char[] cbuf, int off, int len) throws IOException {
+      return input.read(cbuf, off, len);
+    }
+
+    @Override
     protected int correct(int currentOff) {
       return currentOff + 1;
     }
@@ -60,6 +66,11 @@ public class TestCharFilter extends LuceneTestCase {
 
     protected CharFilter2(Reader in) {
       super(in);
+    }
+    
+    @Override
+    public int read(char[] cbuf, int off, int len) throws IOException {
+      return input.read(cbuf, off, len);
     }
 
     @Override

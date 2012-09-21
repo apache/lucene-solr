@@ -38,6 +38,7 @@ import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -140,6 +141,9 @@ public class TestPostingsFormat extends LuceneTestCase {
 
   private static List<FieldAndTerm> allTerms;
 
+  private static long totalPostings;
+  private static long totalPayloadBytes;
+
   @BeforeClass
   public static void createPostings() throws IOException {
 
@@ -153,6 +157,8 @@ public class TestPostingsFormat extends LuceneTestCase {
     int numMediumTerms = 0;
     int numBigTerms = 0;
     int numManyPositions = 0;
+    totalPostings = 0;
+    totalPayloadBytes = 0;
     while (fieldUpto < numFields) {
       String field = _TestUtil.randomSimpleString(random());
       if (fields.containsKey(field)) {
@@ -248,6 +254,7 @@ public class TestPostingsFormat extends LuceneTestCase {
           int pos = 0;
           int offset = 0;
           int posSpacing = _TestUtil.nextInt(random(), 1, 100);
+          totalPostings += freq;
           for(int posUpto=0;posUpto<freq;posUpto++) {
             if (posUpto == 0 && random().nextBoolean()) {
               // Sometimes index pos = 0
@@ -273,6 +280,7 @@ public class TestPostingsFormat extends LuceneTestCase {
 
             if (position.payload != null) {
               random().nextBytes(position.payload); 
+              totalPayloadBytes += position.payload.length;
             }
 
             position.startOffset = offset + random().nextInt(5);
@@ -379,10 +387,13 @@ public class TestPostingsFormat extends LuceneTestCase {
 
     FieldInfos newFieldInfos = new FieldInfos(newFieldInfoArray);
 
+    // Estimate that flushed segment size will be 25% of
+    // what we use in RAM:
+    long bytes =  totalPostings * 8 + totalPayloadBytes;
+
     SegmentWriteState writeState = new SegmentWriteState(null, dir,
                                                          segmentInfo, newFieldInfos,
-                                                         32, null, IOContext.DEFAULT);
-
+                                                         32, null, new IOContext(new FlushInfo(maxDocID, bytes)));
     FieldsConsumer fieldsConsumer = Codec.getDefault().postingsFormat().fieldsConsumer(writeState);
 
     for(Map.Entry<String,Map<BytesRef,List<Posting>>> fieldEnt : fields.entrySet()) {
@@ -933,6 +944,7 @@ public class TestPostingsFormat extends LuceneTestCase {
     // NOTE: you can also test "weaker" index options than
     // you indexed with:
     testTerms(fieldsProducer, EnumSet.allOf(Option.class), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    //testTerms(fieldsProducer, EnumSet.complementOf(EnumSet.of(Option.THREADS)), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
 
     fieldsProducer.close();
     dir.close();

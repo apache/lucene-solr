@@ -5,8 +5,30 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 5.0.0 =======================
+New Features
+
+* LUCENE-4410: FilteredQuery now exposes a FilterStrategy that exposes
+  how filters are applied during query execution. (Simon Willnauer) 
+
+Changes in backwards compatibility policy
+
+* LUCENE-3312: The API of oal.document was restructured to
+  differentiate between stored documents and indexed documents.
+  IndexReader.document(int) now returns StorableDocument
+  instead of Document. In most cases a simple replacement
+  of the return type is enough to upgrade (see MIGRATE.txt).
+  (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
+  Robert Muir)
 
 ======================= Lucene 4.0.0 =======================
+
+Changes in backwards compatibility policy
+
+* LUCENE-4392: Class org.apache.lucene.util.SortedVIntList has been removed.
+  (Adrien Grand)
+
+* LUCENE-4393: RollingCharBuffer has been moved to the o.a.l.analysis.util
+  package of lucene-analysis-common. (Adrien Grand)
 
 New Features
 
@@ -15,7 +37,28 @@ New Features
   that you must store term vector positions to store payloads.
   (Robert Muir)
 
+* LUCENE-3892: Add a new BlockPostingsFormat that bulk-encodes docs,
+  freqs and positions in large (size 128) packed-int blocks for faster
+  search performance.  This was from Han Jiang's 2012 Google Summer of
+  Code project (Han Jiang, Adrien Grand, Robert Muir, Mike McCandless)
+
+* LUCENE-4323: Added support for an absolute maximum CFS segment size
+  (in MiB) to LogMergePolicy and TieredMergePolicy.
+  (Alexey Lef via Uwe Schindler)
+  
+* LUCENE-4339: Allow deletes against 3.x segments for easier upgrading.
+  Lucene3x Codec is still otherwise read-only, you should not set it
+  as the default Codec on IndexWriter, because it cannot write new segments.
+  (Mike McCandless, Robert Muir)
+
+* SOLR-3441: ElisionFilterFactory is now MultiTermAware
+  (Jack Krupansky via hossman)
+  
 API Changes
+
+* LUCENE-4391: All methods of Lucene40Codec but getPostingsFormatForField are
+  now final. To reuse functionality of Lucene40, you should extend FilterCodec
+  and delegate to Lucene40 instead of extending Lucene40Codec. (Adrien Grand)
 
 * LUCENE-4299: Added Terms.hasPositions() and Terms.hasOffsets().
   Previously you had no real way to know that a term vector field
@@ -30,6 +73,57 @@ API Changes
 * Removed FieldsEnum. Fields API instead implements Iterable<String>
   and exposes Iterator, so you can iterate over field names with
   for (String field : fields) instead.  (Robert Muir)
+
+* LUCENE-4152: added IndexReader.leaves(), which lets you enumerate
+  the leaf atomic reader contexts for all readers in the tree.
+  (Uwe Schindler, Robert Muir)
+
+* LUCENE-4304: removed PayloadProcessorProvider. If you want to change
+  payloads (or other things) when merging indexes, its recommended
+  to just use a FilterAtomicReader + IndexWriter.addIndexes. See the
+  OrdinalMappingAtomicReader and TaxonomyMergeUtils in the facets
+  module if you want an example of this.
+  (Mike McCandless, Uwe Schindler, Shai Erera, Robert Muir)
+
+* LUCENE-4304: Make CompositeReader.getSequentialSubReaders()
+  protected. To get atomic leaves of any IndexReader use the new method
+  leaves() (LUCENE-4152), which lists AtomicReaderContexts including
+  the doc base of each leaf.  (Uwe Schindler, Robert Muir)
+
+* LUCENE-4307: Renamed IndexReader.getTopReaderContext to 
+  IndexReader.getContext.  (Robert Muir)
+
+* LUCENE-4316: Deprecate Fields.getUniqueTermCount and remove it from
+  AtomicReader. If you really want the unique term count across all
+  fields, just sum up Terms.size() across those fields. This method
+  only exists so that this statistic can be accessed for Lucene 3.x 
+  segments, which don't support Terms.size().  (Uwe Schindler, Robert Muir)
+
+* LUCENE-4321: Change CharFilter to extend Reader directly, as FilterReader
+  overdelegates (read(), read(char[], int, int), skip, etc). This made it
+  hard to implement CharFilters that were correct. Instead only close() is
+  delegated by default: read(char[], int, int) and correct(int) are abstract
+  so that its obvious which methods you should implement.  The protected 
+  inner Reader is 'input' like CharFilter in the 3.x series, instead of 'in'.  
+  (Dawid Weiss, Uwe Schindler, Robert Muir)
+
+* LUCENE-3309: The expert FieldSelector API, used to load only certain
+  fields in a stored document, has been replaced with the simpler
+  StoredFieldVisitor API.  (Mike McCandless)
+
+* LUCENE-4343: Made Tokenizer.setReader final. This is a setter that should
+  not be overriden by subclasses: per-stream initialization should happen
+  in reset().  (Robert Muir)
+
+* LUCENE-4377: Remove IndexInput.copyBytes(IndexOutput, long). 
+  Use DataOutput.copyBytes(DataInput, long) instead.
+  (Mike McCandless, Robert Muir)
+
+* LUCENE-4355: Simplify AtomicReader's sugar methods such as termDocsEnum,
+  termPositionsEnum, docFreq, and totalTermFreq to only take Term as a
+  parameter. If you want to do expert things such as pass a different
+  Bits as liveDocs, then use the flex apis (fields(), terms(), etc) directly.
+  (Mike McCandless, Robert Muir)
 
 Bug Fixes
 
@@ -52,10 +146,82 @@ Bug Fixes
   upgraded to 3.x, then to Lucene 4.0-ALPHA or -BETA, you should run 
   CheckIndex. If it fails, then you need to upgrade again to 4.0  (Robert Muir)
 
+* LUCENE-4303: PhoneticFilterFactory and SnowballPorterFilterFactory load their
+  encoders / stemmers via the ResourceLoader now instead of Class.forName().
+  Solr users should now no longer have to embed these in its war. (David Smiley)
+
+* SOLR-3737: StempelPolishStemFilterFactory loaded its stemmer table incorrectly.
+  Also, ensure immutability and use only one instance of this table in RAM (lazy
+  loaded) since its quite large. (sausarkar, Steven Rowe, Robert Muir)
+
+* LUCENE-4310: MappingCharFilter was failing to match input strings
+  containing non-BMP Unicode characters.  (Dawid Weiss, Robert Muir,
+  Mike McCandless)
+
+* LUCENE-4224: Add in-order scorer to query time joining and the
+  out-of-order scorer throws an UOE. (Martijn van Groningen, Robert Muir)
+
+* LUCENE-4333: Fixed NPE in TermGroupFacetCollector when faceting on mv fields.
+  (Jesse MacVicar, Martijn van Groningen)
+
+* LUCENE-4218: Document.get(String) and Field.stringValue() again return
+  values for numeric fields, like Lucene 3.x and consistent with the documentation.
+  (Jamie, Uwe Schindler, Robert Muir)
+
+* NRTCachingDirectory was always caching a newly flushed segment in
+  RAM, instead of checking the estimated size of the segment
+  to decide whether to cache it. (Mike McCandless)
+
+* LUCENE-3720: fix memory-consumption issues with BeiderMorseFilter.
+  (Thomas Neidhart via Robert Muir)
+
+* LUCENE-4401: Fix bug where DisjunctionSumScorer would sometimes call score()
+  on a subscorer that had already returned NO_MORE_DOCS.  (Liu Chao, Robert Muir)
+
+Optimizations
+
+* LUCENE-4322: Decrease lucene-core JAR size. The core JAR size had increased a
+  lot because of generated code introduced in LUCENE-4161 and LUCENE-3892.
+  (Adrien Grand)
+
+* LUCENE-4317: Improve reuse of internal TokenStreams and StringReader
+  in oal.document.Field.  (Uwe Schindler, Chris Male, Robert Muir)
+
+* LUCENE-4327: Support out-of-order scoring in FilteredQuery for higher
+  performance.  (Mike McCandless, Robert Muir)
+
+* LUCENE-4364: Optimize MMapDirectory to not make a mapping per-cfs-slice,
+  instead one map per .cfs file. This reduces the total number of maps.
+  Additionally factor out a (package-private) generic 
+  ByteBufferIndexInput from MMapDirectory.  (Uwe Schindler, Robert Muir)
+
 Build
+
+* LUCENE-4406, LUCENE-4407: Upgrade to randomizedtesting 2.0.1.
+  Workaround for broken test output XMLs due to non-XML text unicode
+  chars in strings. Added printing of failed tests at the end of a
+  test run (Dawid Weiss)
+
+* LUCENE-4252: Detect/Fail tests when they leak RAM in static fields
+  (Robert Muir, Dawid Weiss)
+
+* LUCENE-4360: Support running the same test suite multiple times in 
+  parallel (Dawid Weiss)
 
 * LUCENE-3985: Upgrade to randomizedtesting 2.0.0. Added support for 
   thread leak detection. Added support for suite timeouts. (Dawid Weiss)
+
+* LUCENE-4354: Corrected maven dependencies to be consistent with
+  the licenses/ folder and the binary release. Some had different
+  versions or additional unnecessary dependencies. (selckin via Robert Muir)
+
+* LUCENE-4340: Move all non-default codec, postings format and terms
+  dictionary implementations to lucene/codecs. (Adrien Grand)
+
+Documentation
+
+* LUCENE-4302: Fix facet userguide to have HTML loose doctype like
+  all other javadocs.  (Karl Nicholas via Uwe Schindler)
 
 ======================= Lucene 4.0.0-BETA =======================
 
@@ -812,7 +978,7 @@ API Changes
 
 * LUCENE-3866: IndexReaderContext.leaves() is now the preferred way to access
   atomic sub-readers of any kind of IndexReader (for AtomicReaders it returns
-  itsself as only leaf with docBase=0).  (Uwe Schindler)
+  itself as only leaf with docBase=0).  (Uwe Schindler)
 
 New features
 
@@ -1190,6 +1356,13 @@ New features
 
 * LUCENE-4108: add replaceTaxonomy to DirectoryTaxonomyWriter, which replaces
   the taxonomy in place with the given one. (Shai Erera)
+
+* LUCENE-3030: new BlockTree terms dictionary (used by the default
+  Lucene40 postings format) uses less RAM (for the terms index) and
+  disk space (for all terms and metadata) and gives sizable
+  performance gains for terms dictionary intensive operations like
+  FuzzyQuery, direct spell checker and primary-key lookup (Mike
+  McCandless).
 
 Optimizations
 
@@ -2235,7 +2408,7 @@ Changes in backwards compatibility policy
   (Mike McCandless, Shai Erera)
 
 * LUCENE-3084: MergePolicy.OneMerge.segments was changed from
-  SegmentInfos to a List<SegmentInfo>. SegmentInfos itsself was changed
+  SegmentInfos to a List<SegmentInfo>. SegmentInfos itself was changed
   to no longer extend Vector<SegmentInfo> (to update code that is using
   Vector-API, use the new asList() and asSet() methods returning unmodifiable
   collections; modifying SegmentInfos is now only possible through
@@ -7476,7 +7649,7 @@ Infrastructure
 11. Fixed bugs in GermanAnalyzer (gschwarz)
 
 
-1.2 RC2:
+1.2 RC2
  - added sources to distribution
  - removed broken build scripts and libraries from distribution
  - SegmentsReader: fixed potential race condition
@@ -7491,7 +7664,8 @@ Infrastructure
  - JDK 1.1 compatibility fix: disabled lock files for JDK 1.1,
    since they rely on a feature added in JDK 1.2.
 
-1.2 RC1 (first Apache release):
+1.2 RC1
+  - first Apache release
   - packages renamed from com.lucene to org.apache.lucene
   - license switched from LGPL to Apache
   - ant-only build -- no more makefiles
@@ -7502,7 +7676,8 @@ Infrastructure
   - Analyzers can choose tokenizer based on field name
   - misc bug fixes.
 
-1.01b (last Sourceforge release)
+1.01b
+ . last Sourceforge release
  . a few bug fixes
  . new Query Parser
  . new prefix query (search for "foo*" matches "food")

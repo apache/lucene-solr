@@ -65,6 +65,7 @@ import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.update.VersionInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.LogUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
@@ -409,7 +410,7 @@ public final class SolrCore implements SolrInfoMBean {
   // protect via synchronized(SolrCore.class)
   private static Set<String> dirs = new HashSet<String>();
 
-  void initIndex() {
+  void initIndex(boolean reload) {
     try {
       String indexDir = getNewIndexDir();
       boolean indexExists = getDirectoryFactory().exists(indexDir);
@@ -421,7 +422,7 @@ public final class SolrCore implements SolrInfoMBean {
 
       initIndexReaderFactory();
 
-      if (indexExists && firstTime) {
+      if (indexExists && firstTime && !reload) {
         // to remove locks, the directory must already exist... so we create it
         // if it didn't exist already...
         Directory dir = directoryFactory.get(indexDir, getSolrConfig().indexConfig.lockType);
@@ -444,7 +445,7 @@ public final class SolrCore implements SolrInfoMBean {
         log.warn(logid+"Solr index directory '" + new File(indexDir) + "' doesn't exist."
                 + " Creating new index...");
 
-        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, schema, solrConfig.indexConfig, solrDelPolicy, codec, false);
+        SolrIndexWriter writer = SolrIndexWriter.create("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, schema, solrConfig.indexConfig, solrDelPolicy, codec, false);
         writer.close();
       }
 
@@ -479,6 +480,13 @@ public final class SolrCore implements SolrInfoMBean {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
+      // The JVM likes to wrap our helpful SolrExceptions in things like
+      // "InvocationTargetException" that have no useful getMessage
+      if (null != e.getCause() && e.getCause() instanceof SolrException) {
+        SolrException inner = (SolrException) e.getCause();
+        throw inner;
+      }
+
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " failed to instantiate " +cast.getName(), e);
     }
   }
@@ -502,6 +510,13 @@ public final class SolrCore implements SolrInfoMBean {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
+      // The JVM likes to wrap our helpful SolrExceptions in things like
+      // "InvocationTargetException" that have no useful getMessage
+      if (null != e.getCause() && e.getCause() instanceof SolrException) {
+        SolrException inner = (SolrException) e.getCause();
+        throw inner;
+      }
+
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " failed to instantiate " + UpdateHandler.class.getName(), e);
     }
   }
@@ -579,6 +594,25 @@ public final class SolrCore implements SolrInfoMBean {
       schema = new IndexSchema(config, IndexSchema.DEFAULT_SCHEMA_FILE, null);
     }
 
+    if (null != cd && null != cd.getCloudDescriptor()) {
+      // we are evidently running in cloud mode.  
+      //
+      // In cloud mode, version field is required for correct consistency
+      // ideally this check would be more fine grained, and individual features
+      // would assert it when they initialize, but DistribuedUpdateProcessor
+      // is currently a big ball of wax that does more then just distributing
+      // updates (ie: partial document updates), so it needs to work in no cloud
+      // mode as well, and can't assert version field support on init.
+
+      try {
+        Object ignored = VersionInfo.getAndCheckVersionField(schema);
+      } catch (SolrException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                                "Schema will not work with SolrCloud mode: " +
+                                e.getMessage(), e);
+      }
+    }
+
     //Initialize JMX
     if (config.jmxConfig.enabled) {
       infoRegistry = new JmxMonitoredMap<String, SolrInfoMBean>(name, String.valueOf(this.hashCode()), config.jmxConfig);
@@ -610,7 +644,7 @@ public final class SolrCore implements SolrInfoMBean {
       this.isReloaded = true;
     }
     
-    initIndex();
+    initIndex(prev != null);
 
     initWriters();
     initQParsers();
@@ -775,7 +809,8 @@ public final class SolrCore implements SolrInfoMBean {
   // this core current usage count
   private final AtomicInteger refCount = new AtomicInteger(1);
 
-  final void open() {
+  /** expert: increments the core reference count */
+  public void open() {
     refCount.incrementAndGet();
   }
   
@@ -791,7 +826,7 @@ public final class SolrCore implements SolrInfoMBean {
    * <p>   
    * <p>
    * The behavior of this method is determined by the result of decrementing
-   * the core's reference count (A core is created with a refrence count of 1)...
+   * the core's reference count (A core is created with a reference count of 1)...
    * </p>
    * <ul>
    *   <li>If reference count is > 0, the usage count is decreased by 1 and no
@@ -862,7 +897,15 @@ public final class SolrCore implements SolrInfoMBean {
     }
 
     try {
-      if (updateHandler != null) updateHandler.close();
+      if (null != updateHandler) {
+        updateHandler.close();
+      } else {
+        if (null != directoryFactory) {
+          // :HACK: normally we rely on updateHandler to do this, 
+          // but what if updateHandler failed to init?
+          directoryFactory.close();
+        }
+      }
     } catch (Throwable e) {
       SolrException.log(log,e);
     }
@@ -948,14 +991,14 @@ public final class SolrCore implements SolrInfoMBean {
   }
 
   /**
-   * Returns an unmodifieable Map containing the registered handlers of the specified type.
+   * Returns an unmodifiable Map containing the registered handlers of the specified type.
    */
   public Map<String,SolrRequestHandler> getRequestHandlers(Class clazz) {
     return reqHandlers.getAll(clazz);
   }
   
   /**
-   * Returns an unmodifieable Map containing the registered handlers
+   * Returns an unmodifiable Map containing the registered handlers
    */
   public Map<String,SolrRequestHandler> getRequestHandlers() {
     return reqHandlers.getRequestHandlers();
@@ -973,8 +1016,8 @@ public final class SolrCore implements SolrInfoMBean {
    *   http://${host}:${port}/${context}/select?qt=${handlerName}
    * </pre>  
    * 
-   * Handlers <em>must</em> be initalized before getting registered.  Registered
-   * handlers can immediatly accept requests.
+   * Handlers <em>must</em> be initialized before getting registered.  Registered
+   * handlers can immediately accept requests.
    * 
    * This call is thread safe.
    *  
@@ -1160,7 +1203,7 @@ public final class SolrCore implements SolrInfoMBean {
   }
 
 
-  /** Opens a new searcher and returns a RefCounted<SolrIndexSearcher> with it's reference incremented.
+  /** Opens a new searcher and returns a RefCounted&lt;SolrIndexSearcher&gt; with it's reference incremented.
    *
    * "realtime" means that we need to open quickly for a realtime view of the index, hence don't do any
    * autowarming and add to the _realtimeSearchers queue rather than the _searchers queue (so it won't
@@ -1169,7 +1212,7 @@ public final class SolrCore implements SolrInfoMBean {
    *
    * realtimeSearcher is updated to the latest opened searcher, regardless of the value of "realtime".
    *
-   * This method aquires openSearcherLock - do not call with searckLock held!
+   * This method acquires openSearcherLock - do not call with searckLock held!
    */
   public RefCounted<SolrIndexSearcher> openNewSearcher(boolean updateHandlerReopens, boolean realtime) {
     SolrIndexSearcher tmp;
@@ -1554,7 +1597,7 @@ public final class SolrCore implements SolrInfoMBean {
         } catch (Throwable e) {
           // do not allow decref() operations to fail since they are typically called in finally blocks
           // and throwing another exception would be very unexpected.
-          SolrException.log(log, "Error closing searcher:", e);
+          SolrException.log(log, "Error closing searcher:" + this, e);
         }
       }
     };
@@ -1941,7 +1984,7 @@ public final class SolrCore implements SolrInfoMBean {
   /**
    *
    * @param registry The map to which the instance should be added to. The key is the name attribute
-   * @param type The type of the Plugin. These should be standard ones registerd by type.getName() in SolrConfig
+   * @param type The type of the Plugin. These should be standard ones registered by type.getName() in SolrConfig
    * @return     The default if any
    */
   public <T> T initPlugins(Map<String, T> registry, Class<T> type) {

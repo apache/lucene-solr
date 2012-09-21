@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 /**
- * Exposes flex API, merged from flex API of sub-segments.
+ * Exposes {@link TermsEnum} API, merged from {@link TermsEnum} API of sub-segments.
  * This does a merge sort, by term text, of the sub-readers.
  *
  * @lucene.experimental
@@ -60,14 +60,20 @@ public final class MultiTermsEnum extends TermsEnum {
     }
   }
 
+  /** Returns how many sub-reader slices contain the current
+   *  term.  @see #getMatchArray */
   public int getMatchCount() {
     return numTop;
   }
 
+  /** Returns sub-reader slices positioned to the current term. */
   public TermsEnumWithSlice[] getMatchArray() {
     return top;
   }
 
+  /** Sole constructor.
+   *  @param slices Which sub-reader slices we should
+   *  merge. */
   public MultiTermsEnum(ReaderSlice[] slices) {
     queue = new TermMergeQueue(slices.length);
     top = new TermsEnumWithSlice[slices.length];
@@ -401,8 +407,8 @@ public final class MultiTermsEnum extends TermsEnum {
         subDocs[upto].slice = entry.subSlice;
         upto++;
       } else {
-        // One of our subs cannot provide a docsenum:
-        assert false;
+        // should this be an error?
+        assert false : "One of our subs cannot provide a docsenum";
       }
     }
 

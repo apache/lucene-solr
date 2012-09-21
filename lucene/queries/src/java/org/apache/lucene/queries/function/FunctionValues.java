@@ -87,7 +87,14 @@ public abstract class FunctionValues {
   public int numOrd() { throw new UnsupportedOperationException(); }
   public abstract String toString(int doc);
 
-  /** @lucene.experimental  */
+  /**
+   * Abstraction of the logic required to fill the value of a specified doc into
+   * a reusable {@link MutableValue}.  Implementations of {@link FunctionValues}
+   * are encouraged to define their own implementations of ValueFiller if their
+   * value is not a float.
+   *
+   * @lucene.experimental
+   */
   public static abstract class ValueFiller {
     /** MutableValue will be reused across calls */
     public abstract MutableValue getValue();

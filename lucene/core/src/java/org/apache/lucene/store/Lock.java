@@ -21,7 +21,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
 import java.io.IOException;
 
 /** An interprocess mutex lock.
- * <p>Typical use might look like:<pre>
+ * <p>Typical use might look like:<pre class="prettyprint">
  * new Lock.With(directory.makeLock("my.lock")) {
  *     public Object doBody() {
  *       <i>... code to execute while locked ...</i>
@@ -135,7 +135,7 @@ public abstract class Lock {
          return doBody();
       } finally {
         if (locked)
-	      lock.release();
+          lock.release();
       }
     }
   }

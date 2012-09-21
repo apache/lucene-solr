@@ -30,6 +30,11 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 public abstract class Terms {
 
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected Terms() {
+  }
+
   /** Returns an iterator that will step through all
    *  terms. This method will not return null.  If you have
    *  a previous TermsEnum, for example from a different
@@ -114,5 +119,6 @@ public abstract class Terms {
   /** Returns true if documents in this field store payloads. */
   public abstract boolean hasPayloads();
 
+  /** Zero-length array of {@link Terms}. */
   public final static Terms[] EMPTY_ARRAY = new Terms[0];
 }

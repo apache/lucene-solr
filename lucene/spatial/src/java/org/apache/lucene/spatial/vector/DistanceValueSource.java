@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * An implementation of the Lucene ValueSource model to support spatial relevance ranking.
+ * An implementation of the Lucene ValueSource model that returns the distance.
  *
  * @lucene.internal
  */
@@ -38,15 +38,13 @@ public class DistanceValueSource extends ValueSource {
 
   private TwoDoublesStrategy strategy;
   private final Point from;
-  private final DistanceCalculator calculator;
 
   /**
    * Constructor.
    */
-  public DistanceValueSource(TwoDoublesStrategy strategy, Point from, DistanceCalculator calc) {
+  public DistanceValueSource(TwoDoublesStrategy strategy, Point from) {
     this.strategy = strategy;
     this.from = from;
-    this.calculator = calc;
   }
 
   /**
@@ -54,9 +52,8 @@ public class DistanceValueSource extends ValueSource {
    */
   @Override
   public String description() {
-    return "DistanceValueSource("+calculator+")";
+    return "DistanceValueSource("+strategy+", "+from+")";
   }
-
 
   /**
    * Returns the FunctionValues used by the function query.
@@ -71,6 +68,11 @@ public class DistanceValueSource extends ValueSource {
     final Bits validY =  FieldCache.DEFAULT.getDocsWithField(reader, strategy.getFieldNameY());
 
     return new FunctionValues() {
+
+      private final Point from = DistanceValueSource.this.from;
+      private final DistanceCalculator calculator = strategy.getSpatialContext().getDistCalc();
+      private final double nullValue = (strategy.getSpatialContext().isGeo() ? 180 : Double.MAX_VALUE);
+
       @Override
       public float floatVal(int doc) {
         return (float) doubleVal(doc);
@@ -79,10 +81,11 @@ public class DistanceValueSource extends ValueSource {
       @Override
       public double doubleVal(int doc) {
         // make sure it has minX and area
-        if (validX.get(doc) && validY.get(doc)) {
+        if (validX.get(doc)) {
+          assert validY.get(doc);
           return calculator.distance(from, ptX[doc], ptY[doc]);
         }
-        return 0;
+        return nullValue;
       }
 
       @Override
@@ -92,11 +95,6 @@ public class DistanceValueSource extends ValueSource {
     };
   }
 
-  /**
-   * Determines if this ValueSource is equal to another.
-   * @param o the ValueSource to compare
-   * @return <code>true</code> if the two objects are based upon the same query envelope
-   */
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
@@ -104,18 +102,14 @@ public class DistanceValueSource extends ValueSource {
 
     DistanceValueSource that = (DistanceValueSource) o;
 
-    if (calculator != null ? !calculator.equals(that.calculator) : that.calculator != null) return false;
-    if (strategy != null ? !strategy.equals(that.strategy) : that.strategy != null) return false;
-    if (from != null ? !from.equals(that.from) : that.from != null) return false;
+    if (!from.equals(that.from)) return false;
+    if (!strategy.equals(that.strategy)) return false;
 
     return true;
   }
 
   @Override
   public int hashCode() {
-    int result = strategy != null ? strategy.hashCode() : 0;
-    result = 31 * result + (calculator != null ? calculator.hashCode() : 0);
-    result = 31 * result + (from != null ? from.hashCode() : 0);
-    return result;
+    return from.hashCode();
   }
 }

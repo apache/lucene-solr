@@ -20,6 +20,7 @@ package org.apache.solr.util;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.BCDUtils;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 
@@ -36,10 +37,9 @@ public class TestNumberUtils extends LuceneTestCase {
     rng = random();
   }
 
-  private static String arrstr(char[] arr, int start, int end) {
-    String str="[";
-    for (int i=start; i<end; i++) str += arr[i]+"("+(int)arr[i]+"),";
-    return str+"]";
+  @AfterClass
+  public static void cleanup() {
+    rng = null;
   }
 
   static int[] special = {0,10,100,1000,10000,Integer.MAX_VALUE, Integer.MIN_VALUE};
@@ -84,8 +84,7 @@ public class TestNumberUtils extends LuceneTestCase {
     return dspecial[((int)j&0x7fffffff) % dspecial.length]* ((i & 0x20)==0?1:-1) + ((i&0x03)-1);
   }
 
-
-  public static void test(Comparable n1, Comparable n2, Converter conv) {
+  public static <T extends Comparable<T>> void test(T n1, T n2, Converter conv) {
     String s1=n1.toString();
     String s2=n2.toString();
     String v1 = conv.toInternal(s1);
@@ -125,8 +124,6 @@ public class TestNumberUtils extends LuceneTestCase {
   public void testConverters()
   {
     int iter=1000;
-    int arrsz=100000;
-    int num=12345;
 
     // INTEGERS
     List<Converter> converters = new ArrayList<Converter>();
@@ -137,9 +134,7 @@ public class TestNumberUtils extends LuceneTestCase {
     
     for( Converter c : converters ) {
       for (int i=0; i<iter; i++) {
-        Comparable n1 = getSpecial();
-        Comparable n2 = getSpecial();
-        test( n1, n2, c );
+        test(getSpecial(), getSpecial(), c );
       }
     }
 
@@ -150,9 +145,7 @@ public class TestNumberUtils extends LuceneTestCase {
     converters.add( new Base100S() );
     for( Converter c : converters ) {
       for (int i=0; i<iter; i++) {
-        Comparable n1 = getLongSpecial();
-        Comparable n2 = getLongSpecial();
-        test( n1, n2, c );
+        test(getLongSpecial(), getLongSpecial(), c );
       }
     }
 
@@ -162,9 +155,7 @@ public class TestNumberUtils extends LuceneTestCase {
     converters.add( new SortFloat() );
     for( Converter c : converters ) {
       for (int i=0; i<iter; i++) {
-        Comparable n1 = getFloatSpecial();
-        Comparable n2 = getFloatSpecial();
-        test( n1, n2, c );
+        test(getFloatSpecial(), getFloatSpecial(), c );
       }
     }
 
@@ -173,9 +164,7 @@ public class TestNumberUtils extends LuceneTestCase {
     converters.add( new SortDouble() );
     for( Converter c : converters ) {
       for (int i=0; i<iter; i++) {
-        Comparable n1 = getDoubleSpecial();
-        Comparable n2 = getDoubleSpecial();
-        test( n1, n2, c );
+        test(getDoubleSpecial(), getDoubleSpecial(), c );
       }
     }
   }

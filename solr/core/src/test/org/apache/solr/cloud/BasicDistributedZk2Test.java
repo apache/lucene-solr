@@ -39,11 +39,7 @@ import org.apache.solr.servlet.SolrDispatchFilter;
  * work as expected.
  */
 public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
-  
-  public BasicDistributedZk2Test() {
-    super();
-  }
-  
+
   /*
    * (non-Javadoc)
    * 
@@ -107,7 +103,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       ZkNodeProps leaderProps = zkStateReader.getLeaderProps(
           DEFAULT_COLLECTION, SHARD2);
       
-      String nodeName = leaderProps.get(ZkStateReader.NODE_NAME_PROP);
+      String nodeName = leaderProps.getStr(ZkStateReader.NODE_NAME_PROP);
       chaosMonkey.stopShardExcept(SHARD2, nodeName);
       
       SolrServer client = getClient(nodeName);
@@ -227,7 +223,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     
     query("q", "*:*", "sort", "n_tl1 desc");
     
-    // try adding a doc with CloudSolrServer
+
     cloudClient.setDefaultCollection(DEFAULT_COLLECTION);
 
     long numFound2 = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
@@ -239,6 +235,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     
     controlClient.add(doc);
     
+    // try adding a doc with CloudSolrServer
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
     // ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);

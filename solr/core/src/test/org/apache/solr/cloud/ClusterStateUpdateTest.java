@@ -25,6 +25,7 @@ import java.util.Set;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -139,7 +140,7 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
     System.setProperty("solrcloud.update.delay", "1");
     
    
-    Map<String,String> props2 = new HashMap<String,String>();
+    Map<String,Object> props2 = new HashMap<String,Object>();
     props2.put("configName", "conf1");
     ZkNodeProps zkProps2 = new ZkNodeProps(props2);
     
@@ -173,7 +174,7 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
       slices = clusterState2.getSlices("testcore");
       
       if (slices != null && slices.containsKey("shard1")
-          && slices.get("shard1").getShards().size() > 0) {
+          && slices.get("shard1").getReplicasMap().size() > 0) {
         break;
       }
       Thread.sleep(500);
@@ -185,17 +186,17 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
     Slice slice = slices.get("shard1");
     assertEquals("shard1", slice.getName());
 
-    Map<String,ZkNodeProps> shards = slice.getShards();
+    Map<String,Replica> shards = slice.getReplicasMap();
 
     assertEquals(1, shards.size());
 
-    ZkNodeProps zkProps = shards.get(host + ":1661_solr_testcore");
+    Replica zkProps = shards.get(host + ":1661_solr_testcore");
 
     assertNotNull(zkProps);
 
-    assertEquals(host + ":1661_solr", zkProps.get(ZkStateReader.NODE_NAME_PROP));
+    assertEquals(host + ":1661_solr", zkProps.getStr(ZkStateReader.NODE_NAME_PROP));
 
-    assertEquals("http://" + host + ":1661/solr", zkProps.get(ZkStateReader.BASE_URL_PROP));
+    assertEquals("http://" + host + ":1661/solr", zkProps.getStr(ZkStateReader.BASE_URL_PROP));
 
     Set<String> liveNodes = clusterState2.getLiveNodes();
     assertNotNull(liveNodes);

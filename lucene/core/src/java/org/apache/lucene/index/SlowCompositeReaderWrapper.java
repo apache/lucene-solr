@@ -37,7 +37,7 @@ import org.apache.lucene.index.MultiReader; // javadoc
  * <p><b>NOTE</b>: this class almost always results in a
  * performance hit.  If this is important to your use case,
  * you'll get better performance by gathering the sub readers using
- * {@link IndexReader#getTopReaderContext()} to get the
+ * {@link IndexReader#getContext()} to get the
  * atomic leaves and then operate per-AtomicReader,
  * instead of using this class.
  */
@@ -60,7 +60,9 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
       return (AtomicReader) reader;
     }
   }
-  
+
+  /** Sole constructor, wrapping the provided {@link
+   *  CompositeReader}. */
   public SlowCompositeReaderWrapper(CompositeReader reader) throws IOException {
     super();
     in = reader;

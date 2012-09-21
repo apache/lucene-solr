@@ -27,112 +27,20 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.solr</groupId>
-  <artifactId>solr-solrj</artifactId>
-  <packaging>jar</packaging>
-  <name>Apache Solr Solrj</name>
-  <description>Apache Solr Solrj</description>
-  <properties>
-    <module-directory>solr/solrj</module-directory>
-    <top-level>../../..</top-level>
-    <module-path>${top-level}/${module-directory}</module-path>
-  </properties>
-  <scm>
-    <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
-    <developerConnection>scm:svn:${vc-dev-base-url}/${module-directory}</developerConnection>
-    <url>${vc-browse-base-url}/${module-directory}</url>
-  </scm>
-  <dependencies>
-    <dependency>
-      <groupId>org.apache.zookeeper</groupId>
-      <artifactId>zookeeper</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.jms</groupId>
-          <artifactId>jms</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.sun.jmx</groupId>
-          <artifactId>jmxri</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.sun.jdmk</groupId>
-          <artifactId>jmxtools</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>log4j</groupId>
-          <artifactId>log4j</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>jline</groupId>
-          <artifactId>jline</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <!-- Need log4j api so long as Zookeeper does; see https://issues.apache.org/jira/browse/ZOOKEEPER-850 -->
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>log4j-over-slf4j</artifactId>
-      <optional>true</optional>  <!-- let the end user decide... they may be using log4j directly! -->
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>jcl-over-slf4j</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpmime</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-      <!-- HttpSolrServer requires this dependency. -->
-      <exclusions>
-        <exclusion>
-          <groupId>commons-logging</groupId>
-          <artifactId>commons-logging</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpmime</artifactId>
-      <!-- HttpSolrServer requires this dependency. -->
-    </dependency>
-    <!-- Technically, this is optional in SolrJ; but it's fast. SOLR-2852 -->
-    <dependency>
-      <groupId>org.codehaus.woodstox</groupId>
-      <artifactId>wstx-asl</artifactId>
-      <scope>runtime</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>stax</groupId>
-          <artifactId>stax-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-  </dependencies>
+  <artifactId>solr-solrj-aggregator</artifactId>
+  <packaging>pom</packaging>
+  <name>Apache Solr Solrj aggregator POM</name>
+  <modules>
+    <module>src/java</module>
+    <module>src/test</module>
+  </modules>
   <build>
-    <sourceDirectory>${module-path}/src/java</sourceDirectory>
-    <testSourceDirectory>${module-path}/src/test</testSourceDirectory>
-    <testResources/>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
+        <artifactId>maven-deploy-plugin</artifactId>
         <configuration>
-          <skip>true</skip> <!-- Tests are run from solr-core module -->
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <skip>true</skip> <!-- This skips test compilation - tests are run from solr-core module -->
+          <skip>true</skip>
         </configuration>
       </plugin>
     </plugins>

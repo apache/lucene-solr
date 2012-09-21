@@ -24,6 +24,7 @@ import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -88,7 +89,7 @@ public class Floats {
     }
     
     @Override
-    public void add(int docID, IndexableField value) throws IOException {
+    public void add(int docID, StorableField value) throws IOException {
       template.toBytes(value.numericValue().doubleValue(), bytesRef);
       bytesSpareField.setBytesValue(bytesRef);
       super.add(docID, bytesSpareField);

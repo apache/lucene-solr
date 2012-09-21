@@ -26,6 +26,10 @@ import org.apache.lucene.search.IndexSearcher;
 import java.io.IOException;
 import java.util.Map;
 
+/**
+ * Abstract {@link ValueSource} implementation which wraps two ValueSources
+ * and applies an extendible float function to their values.
+ **/
 public abstract class DualFloatFunction extends ValueSource {
   protected final ValueSource a;
   protected final ValueSource b;
@@ -54,11 +58,12 @@ public abstract class DualFloatFunction extends ValueSource {
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
-	return func(doc, aVals, bVals);
+        return func(doc, aVals, bVals);
       }
+
       @Override
       public String toString(int doc) {
-	return name() + '(' + aVals.toString(doc) + ',' + bVals.toString(doc) + ')';
+        return name() + '(' + aVals.toString(doc) + ',' + bVals.toString(doc) + ')';
       }
     };
   }

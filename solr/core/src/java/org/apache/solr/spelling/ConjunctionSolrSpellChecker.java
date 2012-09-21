@@ -139,7 +139,7 @@ public class ConjunctionSolrSpellChecker extends SolrSpellChecker {
     Map<Token, Integer> combinedTokenFrequency = new HashMap<Token, Integer>();
     Map<Token, List<LinkedHashMap<String, Integer>>> allSuggestions = new LinkedHashMap<Token, List<LinkedHashMap<String, Integer>>>();
     for(SpellingResult result : results) {
-    	if(result.getTokenFrequency()!=null) {
+      if(result.getTokenFrequency()!=null) {
         combinedTokenFrequency.putAll(result.getTokenFrequency());
       }
       for(Map.Entry<Token, LinkedHashMap<String, Integer>> entry : result.getSuggestions().entrySet()) {

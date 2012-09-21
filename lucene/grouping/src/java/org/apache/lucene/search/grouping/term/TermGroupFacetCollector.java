@@ -187,6 +187,22 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
     public void collect(int doc) throws IOException {
       int groupOrd = groupFieldTermsIndex.getOrd(doc);
+      if (facetFieldDocTermOrds.isEmpty()) {
+        int segmentGroupedFacetsIndex = groupOrd * (facetFieldDocTermOrds.numTerms() + 1);
+        if (facetPrefix != null || segmentGroupedFacetHits.exists(segmentGroupedFacetsIndex)) {
+          return;
+        }
+
+        segmentTotalCount++;
+        segmentFacetCounts[facetFieldDocTermOrds.numTerms()]++;
+
+        segmentGroupedFacetHits.put(segmentGroupedFacetsIndex);
+        groupedFacetHits.add(
+            new GroupedFacetHit(groupOrd == 0 ? null : groupFieldTermsIndex.lookup(groupOrd, new BytesRef()), null)
+        );
+        return;
+      }
+
       if (facetOrdTermsEnum != null) {
         reuse = facetFieldDocTermOrds.lookup(doc, reuse);
       }

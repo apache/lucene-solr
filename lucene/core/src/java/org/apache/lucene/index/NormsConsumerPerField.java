@@ -51,7 +51,7 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
       similarity.computeNorm(fieldState, norm);
       
       if (norm.type() != null) {
-        IndexableField field = norm.field();
+        StorableField field = norm.field();
         // some similarity might not compute any norms
         DocValuesConsumer consumer = getConsumer(norm.type());
         consumer.add(docState.docID, field);

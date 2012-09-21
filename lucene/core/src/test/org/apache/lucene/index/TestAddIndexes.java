@@ -25,22 +25,9 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.LiveDocsFormat;
-import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.StoredFieldsFormat;
-import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
-import org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40NormsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
 import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -1106,10 +1093,11 @@ public class TestAddIndexes extends LuceneTestCase {
     IndexReader[] readers = new IndexReader[] { DirectoryReader.open(dirs[0]), DirectoryReader.open(dirs[1]) };
     
     Directory dir = new MockDirectoryWrapper(random(), new RAMDirectory());
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy());
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy(true));
     LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
-    lmp.setUseCompoundFile(true);
-    lmp.setNoCFSRatio(1.0); // Force creation of CFS
+    // Force creation of CFS:
+    lmp.setNoCFSRatio(1.0);
+    lmp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
     IndexWriter w3 = new IndexWriter(dir, conf);
     w3.addIndexes(readers);
     w3.close();
@@ -1119,49 +1107,14 @@ public class TestAddIndexes extends LuceneTestCase {
     dir.close();
   }
   
-  private static class UnRegisteredCodec extends Codec {
+  private static final class UnRegisteredCodec extends FilterCodec {
     public UnRegisteredCodec() {
       super("NotRegistered");
     }
 
     @Override
-    public PostingsFormat postingsFormat() {
-      return PostingsFormat.forName("Lucene40");
-    }
-
-    @Override
-    public DocValuesFormat docValuesFormat() {
-      return new Lucene40DocValuesFormat();
-    }
-
-    @Override
-    public StoredFieldsFormat storedFieldsFormat() {
-      return new Lucene40StoredFieldsFormat();
-    }
-    
-    @Override
-    public TermVectorsFormat termVectorsFormat() {
-      return new Lucene40TermVectorsFormat();
-    }
-    
-    @Override
-    public FieldInfosFormat fieldInfosFormat() {
-      return new Lucene40FieldInfosFormat();
-    }
-
-    @Override
-    public SegmentInfoFormat segmentInfoFormat() {
-      return new Lucene40SegmentInfoFormat();
-    }
-
-    @Override
-    public NormsFormat normsFormat() {
-      return new Lucene40NormsFormat();
-    }
-    
-    @Override
-    public LiveDocsFormat liveDocsFormat() {
-      return new Lucene40LiveDocsFormat();
+    protected Codec delegate() {
+      return Codec.forName("Lucene40");
     }
   }
   
@@ -1246,7 +1199,7 @@ public class TestAddIndexes extends LuceneTestCase {
     w.close();
     assertEquals(2, r3.numDocs());
     for(int docID=0;docID<2;docID++) {
-      Document d = r3.document(docID);
+      StoredDocument d = r3.document(docID);
       if (d.get("id").equals("1")) {
         assertEquals("doc1 field1", d.get("f1"));
       } else {

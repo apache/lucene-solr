@@ -35,7 +35,7 @@ import org.apache.lucene.util.IOUtils;
  *
  * Use it like this:
  *
- * <pre>
+ * <pre class="prettyprint">
  *   SearcherLifetimeManager mgr = new SearcherLifetimeManager();
  * </pre>
  *
@@ -44,7 +44,7 @@ import org.apache.lucene.util.IOUtils;
  * using {@link SearcherManager} or {@link NRTManager}), and
  * then record this searcher:
  *
- * <pre>
+ * <pre class="prettyprint">
  *   // Record the current searcher, and save the returend
  *   // token into user's search results (eg as a  hidden
  *   // HTML form field):
@@ -55,7 +55,7 @@ import org.apache.lucene.util.IOUtils;
  * clicks next page, drills down/up, etc., take the token
  * that you saved from the previous search and:
  *
- * <pre>
+ * <pre class="prettyprint">
  *   // If possible, obtain the same searcher as the last
  *   // search:
  *   IndexSearcher searcher = mgr.acquire(token);
@@ -78,7 +78,7 @@ import org.apache.lucene.util.IOUtils;
  * that's periodically reopening your searchers, you should
  * periodically prune old searchers:
  *
- * <pre>
+ * <pre class="prettyprint">
  *   mgr.prune(new PruneByAge(600.0));
  * </pre>
  *

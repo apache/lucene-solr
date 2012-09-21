@@ -152,6 +152,7 @@ public class FSTCompletionBuilder {
   }
 
   /**
+   * Creates an FSTCompletion with the specified options.
    * @param buckets
    *          The number of buckets for weight discretization. Buckets are used
    *          in {@link #add(BytesRef, int)} and must be smaller than the number

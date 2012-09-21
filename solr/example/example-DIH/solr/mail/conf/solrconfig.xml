@@ -26,6 +26,13 @@
   -->
   <luceneMatchVersion>LUCENE_50</luceneMatchVersion>
 
+  <!--
+      NOTE: In order to reduce Jar duplication, dataimporthandler-extras 
+      explicitly requires the deps from contrib/extraction.
+      See https://issues.apache.org/jira/browse/SOLR-3848
+  -->
+  <lib dir="../../../../contrib/extraction/lib" />
+
   <lib dir="../../../../contrib/dataimporthandler/lib/" regex=".*jar$" />
   <lib dir="../../../../dist/" regex="apache-solr-dataimporthandler-.*\.jar" />
   
@@ -521,17 +528,6 @@
     </arr>
   </requestHandler>
 
-<!--
-  <requestHandler name="/update/extract" class="org.apache.solr.handler.extraction.ExtractingRequestHandler">
-    <lst name="defaults">
-      <str name="ext.map.Last-Modified">last_modified</str>
-      <bool name="ext.ignore.und.fl">true</bool>
-    </lst>
-  </requestHandler>
--->
-
-
-
   <searchComponent name="termsComp" class="org.apache.solr.handler.component.TermsComponent"/>
 
   <requestHandler name="/autoSuggest" class="org.apache.solr.handler.component.SearchHandler">
@@ -572,6 +568,22 @@
   </requestHandler>
   -->
   <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
+  
+  <!-- ping/healthcheck -->
+  <requestHandler name="/admin/ping" class="solr.PingRequestHandler">
+    <lst name="invariants">
+      <str name="q">solrpingquery</str>
+    </lst>
+    <lst name="defaults">
+      <str name="echoParams">all</str>
+    </lst>
+    <!-- An optional feature of the PingRequestHandler is to configure the 
+         handler with a "healthcheckFile" which can be used to enable/disable 
+         the PingRequestHandler.
+         relative paths are resolved against the data dir 
+      -->
+    <!-- <str name="healthcheckFile">server-enabled.txt</str> -->
+  </requestHandler>
 
   <!-- Echo the request contents back to the client -->
   <requestHandler name="/debug/dump" class="solr.DumpRequestHandler" >

@@ -41,7 +41,7 @@ import org.apache.lucene.util.IOUtils;
 // TODO: if we create PulsingPostingsBaseFormat then we
 // can simplify this? note: I don't like the *BaseFormat
 // hierarchy, maybe we can clean that up...
-public class NestedPulsingPostingsFormat extends PostingsFormat {
+public final class NestedPulsingPostingsFormat extends PostingsFormat {
   public NestedPulsingPostingsFormat() {
     super("NestedPulsing");
   }
@@ -81,7 +81,7 @@ public class NestedPulsingPostingsFormat extends PostingsFormat {
       pulsingReaderInner = new PulsingPostingsReader(docsReader);
       pulsingReader = new PulsingPostingsReader(pulsingReaderInner);
       FieldsProducer ret = new BlockTreeTermsReader(
-                                                    state.dir, state.fieldInfos, state.segmentInfo.name,
+                                                    state.dir, state.fieldInfos, state.segmentInfo,
                                                     pulsingReader,
                                                     state.context,
                                                     state.segmentSuffix,

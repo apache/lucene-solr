@@ -591,6 +591,10 @@
 
    <dynamicField name="random_*" type="random" />
 
+   <!-- unused, for testing luke copyFields -->
+   <dynamicField name="foo_copysource_*" type="ignored" multiValued="true"/>
+   <dynamicField name="bar_copydest_*" type="ignored" multiValued="true"/>
+
  </fields>
 
  <defaultSearchField>text</defaultSearchField>
@@ -601,5 +605,7 @@
 
    <copyField source="title" dest="text"/>
    <copyField source="subject" dest="text"/>
+
+   <copyField source="foo_copysource_*" dest="bar_copydest_*" />
  
 </schema>

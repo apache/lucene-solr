@@ -115,8 +115,8 @@ HiraganaEx = {Hiragana} ({Format} | {Extend})*
 
 %%
 
-// UAX#29 WB1. 	sot 	÷ 	
-//        WB2. 		÷ 	eot
+// UAX#29 WB1.   sot   ÷
+//        WB2.     ÷   eot
 //
 <<EOF>> { return StandardTokenizerInterface.YYEOF; }
 
@@ -166,7 +166,7 @@ HiraganaEx = {Hiragana} ({Format} | {Extend})*
 //    annex.  That means that satisfactory treatment of languages like Chinese
 //    or Thai requires special handling.
 // 
-// In Unicode 6.0, only one character has the \p{Line_Break = Contingent_Break}
+// In Unicode 6.1, only one character has the \p{Line_Break = Contingent_Break}
 // property: U+FFFC ( ￼ ) OBJECT REPLACEMENT CHARACTER.
 //
 // In the ICU implementation of UAX#29, \p{Line_Break = Complex_Context}

@@ -47,21 +47,23 @@ import org.apache.lucene.util.NumericUtils;
  *
  * <p>Here's an example usage, for an <code>int</code> field:
  *
- * <pre>
- *  Field field = new Field(name, new NumericTokenStream(precisionStep).setIntValue(value));
- *  field.setOmitNorms(true);
- *  field.setIndexOptions(IndexOptions.DOCS_ONLY);
+ * <pre class="prettyprint">
+ *  FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
+ *  fieldType.setOmitNorms(true);
+ *  fieldType.setIndexOptions(IndexOptions.DOCS_ONLY);
+ *  Field field = new Field(name, new NumericTokenStream(precisionStep).setIntValue(value), fieldType);
  *  document.add(field);
  * </pre>
  *
  * <p>For optimal performance, re-use the TokenStream and Field instance
  * for more than one document:
  *
- * <pre>
+ * <pre class="prettyprint">
  *  NumericTokenStream stream = new NumericTokenStream(precisionStep);
- *  Field field = new Field(name, stream);
- *  field.setOmitNorms(true);
- *  field.setIndexOptions(IndexOptions.DOCS_ONLY);
+ *  FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
+ *  fieldType.setOmitNorms(true);
+ *  fieldType.setIndexOptions(IndexOptions.DOCS_ONLY);
+ *  Field field = new Field(name, stream, fieldType);
  *  Document document = new Document();
  *  document.add(field);
  *
@@ -144,6 +146,12 @@ public final class NumericTokenStream extends TokenStream {
     private long value = 0L;
     private int valueSize = 0, shift = 0, precisionStep = 0;
     private BytesRef bytes = new BytesRef();
+    
+    /** 
+     * Creates, but does not yet initialize this attribute instance
+     * @see #init(long, int, int, int)
+     */
+    public NumericTermAttributeImpl() {}
 
     public BytesRef getBytesRef() {
       return bytes;

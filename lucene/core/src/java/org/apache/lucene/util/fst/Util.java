@@ -89,7 +89,7 @@ public final class Util {
    *  pair where the output is equal to the target, and will
    *  return null if that output does not exist.
    *
-   *  <p>NOTE: this only works with FST<Long>, only
+   *  <p>NOTE: this only works with {@code FST<Long>}, only
    *  works when the outputs are ascending in order with
    *  the inputs and only works when you shared
    *  the outputs (pass doShare=true to {@link
@@ -766,6 +766,19 @@ public final class Util {
       return "0x" + Integer.toHexString(label);
     }
   }
+
+  /** Just maps each UTF16 unit (char) to the ints in an
+   *  IntsRef. */
+  public static IntsRef toUTF16(CharSequence s, IntsRef scratch) {
+    final int charLimit = s.length();
+    scratch.offset = 0;
+    scratch.length = charLimit;
+    scratch.grow(charLimit);
+    for (int idx = 0; idx < charLimit; idx++) {
+      scratch.ints[idx] = (int) s.charAt(idx);
+    }
+    return scratch;
+  }    
 
   /** Decodes the Unicode codepoints from the provided
    *  CharSequence and places them in the provided scratch

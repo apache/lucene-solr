@@ -17,21 +17,18 @@ package org.apache.solr.schema;
  */
 
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.positions.IntervalIterator;
 
-import com.spatial4j.core.context.ParseUtils;
+import com.spatial4j.core.io.ParseUtils;
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.simple.SimpleSpatialContext;
-import com.spatial4j.core.distance.DistanceCalculator;
 import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.distance.GeodesicSphereDistCalc;
 import com.spatial4j.core.exception.InvalidShapeException;
 import com.spatial4j.core.shape.Rectangle;
 import org.apache.lucene.util.Bits;
@@ -62,10 +59,10 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   }
 
   @Override
-  public IndexableField[] createFields(SchemaField field, Object value, float boost) {
+  public StorableField[] createFields(SchemaField field, Object value, float boost) {
     String externalVal = value.toString();
     //we could have tileDiff + 3 fields (two for the lat/lon, one for storage)
-    IndexableField[] f = new IndexableField[(field.indexed() ? 2 : 0) + (field.stored() ? 1 : 0)];
+    StorableField[] f = new StorableField[(field.indexed() ? 2 : 0) + (field.stored() ? 1 : 0)];
     if (field.indexed()) {
       int i = 0;
       double[] latLon;
@@ -149,9 +146,8 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     double latCenter = point[LAT];
     double lonCenter = point[LON];
     
-    DistanceCalculator distCalc = new GeodesicSphereDistCalc.Haversine(options.units.earthRadius());
-    SpatialContext ctx = new SimpleSpatialContext(options.units,distCalc,null);
-    Rectangle bbox = DistanceUtils.calcBoxByDistFromPtDEG(latCenter, lonCenter, options.distance, ctx);
+    double distDeg = DistanceUtils.dist2Degrees(options.distance, options.radius);
+    Rectangle bbox = DistanceUtils.calcBoxByDistFromPtDEG(latCenter, lonCenter, distDeg, SpatialContext.GEO, null);
     double latMin = bbox.getMinY();
     double latMax = bbox.getMaxY();
     double lonMin, lonMax, lon2Min, lon2Max;
@@ -246,7 +242,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
     writer.writeStr(name, f.stringValue(), false);
   }
 
@@ -260,7 +256,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   //It never makes sense to create a single field, so make it impossible to happen
 
   @Override
-  public IndexableField createField(SchemaField field, Object value, float boost) {
+  public StorableField createField(SchemaField field, Object value, float boost) {
     throw new UnsupportedOperationException("LatLonType uses multiple fields.  field=" + field.getName());
   }
 
@@ -403,8 +399,8 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
       this.lon2 = SpatialDistanceQuery.this.lon2;
       this.calcDist = SpatialDistanceQuery.this.calcDist;
 
-      this.latCenterRad = SpatialDistanceQuery.this.latCenter * HaversineConstFunction.DEGREES_TO_RADIANS;
-      this.lonCenterRad = SpatialDistanceQuery.this.lonCenter * HaversineConstFunction.DEGREES_TO_RADIANS;
+      this.latCenterRad = SpatialDistanceQuery.this.latCenter * DistanceUtils.DEGREES_TO_RADIANS;
+      this.lonCenterRad = SpatialDistanceQuery.this.lonCenter * DistanceUtils.DEGREES_TO_RADIANS;
       this.latCenterRad_cos = this.calcDist ? Math.cos(latCenterRad) : 0;
       this.dist = SpatialDistanceQuery.this.dist;
       this.planetRadius = SpatialDistanceQuery.this.planetRadius;
@@ -433,8 +429,8 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     }
 
     double dist(double lat, double lon) {
-      double latRad = lat * HaversineConstFunction.DEGREES_TO_RADIANS;
-      double lonRad = lon * HaversineConstFunction.DEGREES_TO_RADIANS;
+      double latRad = lat * DistanceUtils.DEGREES_TO_RADIANS;
+      double lonRad = lon * DistanceUtils.DEGREES_TO_RADIANS;
       
       // haversine, specialized to avoid a cos() call on latCenterRad
       double diffX = latCenterRad - latRad;
@@ -604,7 +600,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
   /** Returns a hash code value for this object. */
   @Override
   public int hashCode() {
-    // don't bother making the hash expensive - the center latitude + min longitude will be very uinque 
+    // don't bother making the hash expensive - the center latitude + min longitude will be very unique
     long hash = Double.doubleToLongBits(latCenter);
     hash = hash * 31 + Double.doubleToLongBits(lonMin);
     hash = hash * 31 + (long)super.hashCode();

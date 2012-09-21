@@ -38,6 +38,12 @@ import org.apache.lucene.util.IntsRef;
  *  for merging results from multiple DirectSpellCheckers.
  */
 public final class LuceneLevenshteinDistance implements StringDistance {
+  
+  /**
+   * Creates a new comparator, mimicing the behavior of Lucene's internal
+   * edit distance.
+   */
+  public LuceneLevenshteinDistance() {}
 
   @Override
   public float getDistance(String target, String other) {

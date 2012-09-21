@@ -318,16 +318,10 @@ public final class WikipediaTokenizer extends Tokenizer {
   */
   @Override
   public void reset() throws IOException {
-    super.reset();
+    scanner.yyreset(input);
     tokens = null;
     scanner.reset();
     first = true;
-  }
-
-  @Override
-  public void setReader(Reader reader) throws IOException {
-    super.setReader(reader);
-    scanner.yyreset(input);
   }
 
   @Override

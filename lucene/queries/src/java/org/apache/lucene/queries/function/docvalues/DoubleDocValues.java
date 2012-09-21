@@ -22,6 +22,10 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDouble;
 
+/**
+ * Abstract {@link FunctionValues} implementation which supports retrieving double values.
+ * Implementations can control how the double values are loaded through {@link #doubleVal(int)}}
+ */
 public abstract class DoubleDocValues extends FunctionValues {
   protected final ValueSource vs;
 

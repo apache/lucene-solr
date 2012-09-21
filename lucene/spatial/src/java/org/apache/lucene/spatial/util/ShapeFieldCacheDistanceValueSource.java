@@ -17,6 +17,7 @@ package org.apache.lucene.spatial.util;
  * limitations under the License.
  */
 
+import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceCalculator;
 import com.spatial4j.core.shape.Point;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -38,26 +39,29 @@ import java.util.Map;
 public class ShapeFieldCacheDistanceValueSource extends ValueSource {
 
   private final ShapeFieldCacheProvider<Point> provider;
-  private final DistanceCalculator calculator;
+  private final SpatialContext ctx;
   private final Point from;
 
-  public ShapeFieldCacheDistanceValueSource(Point from, DistanceCalculator calc, ShapeFieldCacheProvider<Point> provider) {
+  public ShapeFieldCacheDistanceValueSource(SpatialContext ctx, ShapeFieldCacheProvider<Point> provider, Point from) {
+    this.ctx = ctx;
     this.from = from;
     this.provider = provider;
-    this.calculator = calc;
   }
 
   @Override
   public String description() {
-    return getClass().getSimpleName()+"("+calculator+")";
+    return getClass().getSimpleName()+"("+provider+", "+from+")";
   }
 
   @Override
-  public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final ShapeFieldCache<Point> cache =
-      provider.getCache(readerContext.reader());
-
+  public FunctionValues getValues(Map context, final AtomicReaderContext readerContext) throws IOException {
     return new FunctionValues() {
+      private final ShapeFieldCache<Point> cache =
+          provider.getCache(readerContext.reader());
+      private final Point from = ShapeFieldCacheDistanceValueSource.this.from;
+      private final DistanceCalculator calculator = ctx.getDistCalc();
+      private final double nullValue = (ctx.isGeo() ? 180 : Double.MAX_VALUE);
+
       @Override
       public float floatVal(int doc) {
         return (float) doubleVal(doc);
@@ -73,7 +77,7 @@ public class ShapeFieldCacheDistanceValueSource extends ValueSource {
           }
           return v;
         }
-        return Double.NaN; // ?? maybe max?
+        return nullValue;
       }
 
       @Override
@@ -90,16 +94,15 @@ public class ShapeFieldCacheDistanceValueSource extends ValueSource {
 
     ShapeFieldCacheDistanceValueSource that = (ShapeFieldCacheDistanceValueSource) o;
 
-    if (calculator != null ? !calculator.equals(that.calculator) : that.calculator != null) return false;
-    if (from != null ? !from.equals(that.from) : that.from != null) return false;
+    if (!ctx.equals(that.ctx)) return false;
+    if (!from.equals(that.from)) return false;
+    if (!provider.equals(that.provider)) return false;
 
     return true;
   }
 
   @Override
   public int hashCode() {
-    int result = calculator != null ? calculator.hashCode() : 0;
-    result = 31 * result + (from != null ? from.hashCode() : 0);
-    return result;
+    return from.hashCode();
   }
 }

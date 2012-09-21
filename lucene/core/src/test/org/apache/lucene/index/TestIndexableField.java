@@ -24,8 +24,8 @@ import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -39,7 +39,7 @@ import org.apache.lucene.util._TestUtil;
 
 public class TestIndexableField extends LuceneTestCase {
 
-  private class MyField implements IndexableField {
+  private class MyField implements IndexableField, StorableField {
 
     private final int counter;
     private final IndexableFieldType fieldType = new IndexableFieldType() {
@@ -89,7 +89,7 @@ public class TestIndexableField extends LuceneTestCase {
       }
 
       @Override
-      public DocValues.Type docValueType() {
+      public Type docValueType() {
         return null;
       }
     };
@@ -183,35 +183,100 @@ public class TestIndexableField extends LuceneTestCase {
       final int finalBaseCount = baseCount;
       baseCount += fieldCount-1;
 
-      w.addDocument(new Iterable<IndexableField>() {
+      IndexDocument d = new IndexDocument() {
         @Override
-        public Iterator<IndexableField> iterator() {
-          return new Iterator<IndexableField>() {
-            int fieldUpto;
-
+        public Iterable<? extends IndexableField> indexableFields() {
+          return new Iterable<IndexableField>() {
             @Override
-            public boolean hasNext() {
-              return fieldUpto < fieldCount;
-            }
+            public Iterator<IndexableField> iterator() {
+              return new Iterator<IndexableField>() {
+                int fieldUpto = 0;
+                private IndexableField next;
 
-            @Override
-            public IndexableField next() {
-              assert fieldUpto < fieldCount;
-              if (fieldUpto == 0) {
-                fieldUpto = 1;
-                return newStringField("id", ""+finalDocCount, Field.Store.YES);
-              } else {
-                return new MyField(finalBaseCount + (fieldUpto++-1));
-              }
-            }
+                @Override
+                public boolean hasNext() {
+                  if (fieldUpto >= fieldCount) return false;
 
-            @Override
-            public void remove() {
-              throw new UnsupportedOperationException();
+                  next = null;
+                  if (fieldUpto == 0) {
+                    fieldUpto = 1;
+                    next = newStringField("id", ""+finalDocCount, Field.Store.YES);
+                  } else {
+                    next = new MyField(finalBaseCount + (fieldUpto++-1));
+                  }
+                  
+                  if (next != null && next.fieldType().indexed()) return true;
+                  else return this.hasNext();
+                }
+
+                @Override
+                public IndexableField next() {
+                  assert fieldUpto <= fieldCount;
+                  if (next == null && !hasNext()) {
+                    return null;
+                  }
+                  else {
+                    return next;
+                  }
+                }
+
+                @Override
+                public void remove() {
+                  throw new UnsupportedOperationException();
+                }
+              };
             }
           };
         }
-        });
+
+        @Override
+        public Iterable<? extends StorableField> storableFields() {
+          return new Iterable<StorableField>() {
+            @Override
+            public Iterator<StorableField> iterator() {
+              return new Iterator<StorableField>() {
+                int fieldUpto = 0;
+                private StorableField next = null;
+
+                @Override
+                public boolean hasNext() {
+
+                  if (fieldUpto == fieldCount) return false;
+                  
+                  next = null;
+                  if (fieldUpto == 0) {
+                    fieldUpto = 1;
+                    next = newStringField("id", ""+finalDocCount, Field.Store.YES);
+                  } else {
+                    next = new MyField(finalBaseCount + (fieldUpto++-1));
+                  }
+                  
+                  if (next != null && next.fieldType().stored()) return true;
+                  else return this.hasNext();
+                }
+
+                @Override
+                public StorableField next() {
+                  assert fieldUpto <= fieldCount;
+                  if (next == null && !hasNext()) {
+                    return null;
+                  }
+                  else {
+                    return next;
+                  }
+                }
+
+                @Override
+                public void remove() {
+                  throw new UnsupportedOperationException();
+                }
+              };
+            }
+          };
+        }
+      };
+      
+      w.addDocument(d);
     }
 
     final IndexReader r = w.getReader();
@@ -223,10 +288,11 @@ public class TestIndexableField extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("TEST: verify doc id=" + id + " (" + fieldsPerDoc[id] + " fields) counter=" + counter);
       }
+
       final TopDocs hits = s.search(new TermQuery(new Term("id", ""+id)), 1);
       assertEquals(1, hits.totalHits);
       final int docID = hits.scoreDocs[0].doc;
-      final Document doc = s.doc(docID);
+      final StoredDocument doc = s.doc(docID);
       final int endCounter = counter + fieldsPerDoc[id];
       while(counter < endCounter) {
         final String name = "f" + counter;
@@ -245,7 +311,7 @@ public class TestIndexableField extends LuceneTestCase {
 
         // stored:
         if (stored) {
-          IndexableField f = doc.getField(name);
+          StorableField f = doc.getField(name);
           assertNotNull("doc " + id + " doesn't have field f" + counter, f);
           if (binary) {
             assertNotNull("doc " + id + " doesn't have field f" + counter, f);

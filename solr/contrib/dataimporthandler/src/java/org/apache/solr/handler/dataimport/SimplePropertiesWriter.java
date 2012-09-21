@@ -30,15 +30,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SimplePropertiesWriter implements DIHPropertiesWriter {
-	private static final Logger log = LoggerFactory.getLogger(SimplePropertiesWriter.class);
+  private static final Logger log = LoggerFactory.getLogger(SimplePropertiesWriter.class);
 
-	static final String IMPORTER_PROPERTIES = "dataimport.properties";
+  static final String IMPORTER_PROPERTIES = "dataimport.properties";
 
-	static final String LAST_INDEX_KEY = "last_index_time";
+  static final String LAST_INDEX_KEY = "last_index_time";
 
-	private String persistFilename = IMPORTER_PROPERTIES;
+  private String persistFilename = IMPORTER_PROPERTIES;
 
-	private String configDir = null;
+  private String configDir = null;
 
 
 
@@ -48,15 +48,15 @@ public class SimplePropertiesWriter implements DIHPropertiesWriter {
       String persistFileName = dataImporter.getHandlerName();
 
       this.configDir = configDir;
-	  if(persistFileName != null){
+    if(persistFileName != null){
         persistFilename = persistFileName + ".properties";
       }
     }
 
 
 
-	
-	private File getPersistFile() {
+
+  private File getPersistFile() {
     String filePath = configDir;
     if (configDir != null && !configDir.endsWith(File.separator))
       filePath += File.separator;
@@ -71,53 +71,53 @@ public class SimplePropertiesWriter implements DIHPropertiesWriter {
     }
 
     @Override
-	public void persist(Properties p) {
-		OutputStream propOutput = null;
+  public void persist(Properties p) {
+    OutputStream propOutput = null;
 
-		Properties props = readIndexerProperties();
+    Properties props = readIndexerProperties();
 
-		try {
-			props.putAll(p);
-			String filePath = configDir;
-			if (configDir != null && !configDir.endsWith(File.separator))
-				filePath += File.separator;
-			filePath += persistFilename;
-			propOutput = new FileOutputStream(filePath);
-			props.store(propOutput, null);
-			log.info("Wrote last indexed time to " + persistFilename);
-		} catch (Exception e) {
-			throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Unable to persist Index Start Time", e);
-		} finally {
-			try {
-				if (propOutput != null)
-					propOutput.close();
-			} catch (IOException e) {
-				propOutput = null;
-			}
-		}
-	}
+    try {
+      props.putAll(p);
+      String filePath = configDir;
+      if (configDir != null && !configDir.endsWith(File.separator))
+        filePath += File.separator;
+      filePath += persistFilename;
+      propOutput = new FileOutputStream(filePath);
+      props.store(propOutput, null);
+      log.info("Wrote last indexed time to " + persistFilename);
+    } catch (Exception e) {
+      throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Unable to persist Index Start Time", e);
+    } finally {
+      try {
+        if (propOutput != null)
+          propOutput.close();
+      } catch (IOException e) {
+        propOutput = null;
+      }
+    }
+  }
 
-	@Override
-	public Properties readIndexerProperties() {
-		Properties props = new Properties();
-		InputStream propInput = null;
+  @Override
+  public Properties readIndexerProperties() {
+    Properties props = new Properties();
+    InputStream propInput = null;
 
-		try {
-			propInput = new FileInputStream(configDir + persistFilename);
-			props.load(propInput);
-			log.info("Read " + persistFilename);
-		} catch (Exception e) {
-			log.warn("Unable to read: " + persistFilename);
-		} finally {
-			try {
-				if (propInput != null)
-					propInput.close();
-			} catch (IOException e) {
-				propInput = null;
-			}
-		}
+    try {
+      propInput = new FileInputStream(configDir + persistFilename);
+      props.load(propInput);
+      log.info("Read " + persistFilename);
+    } catch (Exception e) {
+      log.warn("Unable to read: " + persistFilename);
+    } finally {
+      try {
+        if (propInput != null)
+          propInput.close();
+      } catch (IOException e) {
+        propInput = null;
+      }
+    }
 
-		return props;
-	}
+    return props;
+  }
 
 }

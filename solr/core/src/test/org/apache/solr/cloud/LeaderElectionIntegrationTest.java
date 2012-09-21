@@ -211,11 +211,12 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   @Test
   public void testLeaderElectionAfterClientTimeout() throws Exception {
     // TODO: work out the best timing here...
-    System.setProperty("zkClientTimeout", "500");
+    System.setProperty("zkClientTimeout", Integer.toString(ZkTestServer.TICK_TIME * 2 + 100));
     // timeout the leader
     String leader = getLeader();
     int leaderPort = getLeaderPort(leader);
-    containerMap.get(leaderPort).getZkController().getZkClient().getSolrZooKeeper().pauseCnxn(2000);
+    ZkController zkController = containerMap.get(leaderPort).getZkController();
+    zkController.getZkClient().getSolrZooKeeper().pauseCnxn(zkController.getClientTimeout() + 100);
     
     for (int i = 0; i < 60; i++) { // wait till leader is changed
       if (leaderPort != getLeaderPort(getLeader())) {
@@ -223,6 +224,9 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       }
       Thread.sleep(100);
     }
+    
+    // make sure we have waited long enough for the first leader to have come back
+    Thread.sleep(ZkTestServer.TICK_TIME * 2 + 100);
     
     if (VERBOSE) System.out.println("kill everyone");
     // kill everyone but the first leader that should have reconnected by now
@@ -232,11 +236,15 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
       }
     }
 
-    for (int i = 0; i < 60; i++) { // wait till leader is changed
-      if (leaderPort == getLeaderPort(getLeader())) {
-        break;
+    for (int i = 0; i < 320; i++) { // wait till leader is changed
+      try {
+        if (leaderPort == getLeaderPort(getLeader())) {
+          break;
+        }
+        Thread.sleep(100);
+      } catch (Exception e) {
+        continue;
       }
-      Thread.sleep(100);
     }
 
     // the original leader should be leader again now - everyone else is down
@@ -249,7 +257,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   private String getLeader() throws InterruptedException {
     
     ZkNodeProps props = reader.getLeaderProps("collection1", "shard1", 30000);
-    String leader = props.get(ZkStateReader.NODE_NAME_PROP);
+    String leader = props.getStr(ZkStateReader.NODE_NAME_PROP);
     
     return leader;
   }

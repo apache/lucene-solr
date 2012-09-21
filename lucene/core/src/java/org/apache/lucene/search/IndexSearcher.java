@@ -39,6 +39,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -83,7 +84,7 @@ public class IndexSearcher {
   // in the next release
   protected final IndexReaderContext readerContext;
   protected final List<AtomicReaderContext> leafContexts;
-  // used with executor - each slice holds a set of leafs executed within one thread
+  /** used with executor - each slice holds a set of leafs executed within one thread */
   protected final LeafSlice[] leafSlices;
 
   // These are only used for multi-threaded search
@@ -123,7 +124,7 @@ public class IndexSearcher {
    * 
    * @lucene.experimental */
   public IndexSearcher(IndexReader r, ExecutorService executor) {
-    this(r.getTopReaderContext(), executor);
+    this(r.getContext(), executor);
   }
 
   /**
@@ -139,7 +140,7 @@ public class IndexSearcher {
    * href="https://issues.apache.org/jira/browse/LUCENE-2239">LUCENE-2239</a>).
    * 
    * @see IndexReaderContext
-   * @see IndexReader#getTopReaderContext()
+   * @see IndexReader#getContext()
    * @lucene.experimental
    */
   public IndexSearcher(IndexReaderContext context, ExecutorService executor) {
@@ -155,7 +156,7 @@ public class IndexSearcher {
    * Creates a searcher searching the provided top-level {@link IndexReaderContext}.
    *
    * @see IndexReaderContext
-   * @see IndexReader#getTopReaderContext()
+   * @see IndexReader#getContext()
    * @lucene.experimental
    */
   public IndexSearcher(IndexReaderContext context) {
@@ -182,7 +183,7 @@ public class IndexSearcher {
   }
 
   /** Sugar for <code>.getIndexReader().document(docID)</code> */
-  public Document doc(int docID) throws IOException {
+  public StoredDocument doc(int docID) throws IOException {
     return reader.document(docID);
   }
 
@@ -192,11 +193,11 @@ public class IndexSearcher {
   }
 
   /** Sugar for <code>.getIndexReader().document(docID, fieldsToLoad)</code> */
-  public final Document document(int docID, Set<String> fieldsToLoad) throws IOException {
+  public final StoredDocument document(int docID, Set<String> fieldsToLoad) throws IOException {
     return reader.document(docID, fieldsToLoad);
   }
 
-  /** Expert: Set the Similarity implementation used by this Searcher.
+  /** Expert: Set the Similarity implementation used by this IndexSearcher.
    *
    */
   public void setSimilarity(Similarity similarity) {
@@ -640,7 +641,7 @@ public class IndexSearcher {
   
   /**
    * Returns this searchers the top-level {@link IndexReaderContext}.
-   * @see IndexReader#getTopReaderContext()
+   * @see IndexReader#getContext()
    */
   /* sugar for #getReader().getTopReaderContext() */
   public IndexReaderContext getTopReaderContext() {

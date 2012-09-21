@@ -40,16 +40,19 @@ import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.parser.SyntaxParser;
 import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 
+/**
+ * Parser for the standard Lucene syntax
+ */
 public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserConstants {
 
-        private static final int CONJ_NONE =0;
-        private static final int CONJ_AND =2;
-        private static final int CONJ_OR =2;
+  private static final int CONJ_NONE =0;
+  private static final int CONJ_AND =2;
+  private static final int CONJ_OR =2;
 
 
    // syntax parser constructor
    public StandardSyntaxParser() {
-        this(new FastCharStream(new StringReader("")));
+     this(new FastCharStream(new StringReader("")));
   }
      /** Parses a query string, returning a {@link org.apache.lucene.queryparser.flexible.core.nodes.QueryNode}.
      *  @param query  the query string to be parsed.
@@ -140,10 +143,10 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
 
 // This makes sure that there is no garbage after the query string
   final public QueryNode TopLevelQuery(CharSequence field) throws ParseException {
-        QueryNode q;
+  QueryNode q;
     q = Query(field);
     jj_consume_token(0);
-                {if (true) return q;}
+     {if (true) return q;}
     throw new Error("Missing return statement in function");
   }
 
@@ -181,23 +184,23 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         break label_1;
       }
       c = DisjQuery(field);
-             if (clauses == null) {
-                 clauses = new Vector<QueryNode>();
-                 clauses.addElement(first);
-             }
-         clauses.addElement(c);
+       if (clauses == null) {
+           clauses = new Vector<QueryNode>();
+           clauses.addElement(first);
+        }
+        clauses.addElement(c);
     }
         if (clauses != null) {
-                {if (true) return new BooleanQueryNode(clauses);}
-        } else {
-                {if (true) return first;}
-        }
+        {if (true) return new BooleanQueryNode(clauses);}
+      } else {
+          {if (true) return first;}
+      }
     throw new Error("Missing return statement in function");
   }
 
   final public QueryNode DisjQuery(CharSequence field) throws ParseException {
-        QueryNode first, c;
-        Vector<QueryNode> clauses = null;
+  QueryNode first, c;
+  Vector<QueryNode> clauses = null;
     first = ConjQuery(field);
     label_2:
     while (true) {
@@ -218,7 +221,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
      clauses.addElement(c);
     }
     if (clauses != null) {
-            {if (true) return new OrQueryNode(clauses);}
+      {if (true) return new OrQueryNode(clauses);}
     } else {
         {if (true) return first;}
     }
@@ -226,8 +229,8 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
   }
 
   final public QueryNode ConjQuery(CharSequence field) throws ParseException {
-        QueryNode first, c;
-        Vector<QueryNode> clauses = null;
+  QueryNode first, c;
+  Vector<QueryNode> clauses = null;
     first = ModClause(field);
     label_3:
     while (true) {
@@ -248,7 +251,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
      clauses.addElement(c);
     }
     if (clauses != null) {
-            {if (true) return new AndQueryNode(clauses);}
+      {if (true) return new AndQueryNode(clauses);}
     } else {
         {if (true) return first;}
     }
@@ -269,27 +272,27 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
 //     if (mods == ModifierQueryNode.Modifier.MOD_NONE) firstQuery=q;
 //     
 //     // do not create modifier nodes with MOD_NONE
-//    	if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
-//    		q = new ModifierQueryNode(q, mods);
-//    	}
-//    	clauses.add(q);
+//      if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
+//          q = new ModifierQueryNode(q, mods);
+//         }
+//      clauses.add(q);
 //   }
 //   (
 //     conj=Conjunction() mods=Modifiers() q=Clause(field)
 //     { 
-// 	    // do not create modifier nodes with MOD_NONE
-// 	   	if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
-// 	   		q = new ModifierQueryNode(q, mods);
-// 	   	}
-// 	   	clauses.add(q);
-// 	   	//TODO: figure out what to do with AND and ORs
+//       // do not create modifier nodes with MOD_NONE
+//         if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
+//          q = new ModifierQueryNode(q, mods);
+//         }
+//          clauses.add(q);
+//        //TODO: figure out what to do with AND and ORs
 //   }
 //   )*
 //     {
 //      if (clauses.size() == 1 && firstQuery != null)
 //         return firstQuery;
 //       else {
-//   		return new BooleanQueryNode(clauses);
+//       return new BooleanQueryNode(clauses);
 //       }
 //     }
 // }
@@ -298,10 +301,10 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
   ModifierQueryNode.Modifier mods;
     mods = Modifiers();
     q = Clause(field);
-                if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
-                        q = new ModifierQueryNode(q, mods);
-                }
-                {if (true) return q;}
+        if (mods != ModifierQueryNode.Modifier.MOD_NONE) {
+           q = new ModifierQueryNode(q, mods);
+        }
+        {if (true) return q;}
     throw new Error("Missing return statement in function");
   }
 
@@ -375,18 +378,18 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         }
         switch (operator.kind) {
             case OP_LESSTHAN:
-                lowerInclusive = true;
-                upperInclusive = false;
+              lowerInclusive = true;
+              upperInclusive = false;
 
-                qLower = new FieldQueryNode(field,
+               qLower = new FieldQueryNode(field,
                                          "*", term.beginColumn, term.endColumn);
-                        qUpper = new FieldQueryNode(field,
+            qUpper = new FieldQueryNode(field,
                                  EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
 
                 break;
             case OP_LESSTHANEQ:
-                lowerInclusive = true;
-                upperInclusive = true;
+              lowerInclusive = true;
+              upperInclusive = true;
 
                 qLower = new FieldQueryNode(field,
                                          "*", term.beginColumn, term.endColumn);
@@ -394,8 +397,8 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
                                          EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
                 break;
             case OP_MORETHAN:
-                lowerInclusive = false;
-                upperInclusive = true;
+              lowerInclusive = false;
+              upperInclusive = true;
 
                 qLower = new FieldQueryNode(field,
                                          EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
@@ -403,8 +406,8 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
                                          "*", term.beginColumn, term.endColumn);
                 break;
             case OP_MORETHANEQ:
-                lowerInclusive = true;
-                upperInclusive = true;
+              lowerInclusive = true;
+              upperInclusive = true;
 
                 qLower = new FieldQueryNode(field,
                                          EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
@@ -485,18 +488,18 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       }
     }
       if (boost != null) {
-                  float f = (float)1.0;
-                  try {
-                    f = Float.valueOf(boost.image).floatValue();
-                    // avoid boosting null queries, such as those caused by stop words
-                if (q != null) {
-                        q = new BoostQueryNode(q, f);
-                }
-                  } catch (Exception ignored) {
-                        /* Should this be handled somehow? (defaults to "no boost", if
+      float f = (float)1.0;
+      try {
+        f = Float.valueOf(boost.image).floatValue();
+        // avoid boosting null queries, such as those caused by stop words
+          if (q != null) {
+            q = new BoostQueryNode(q, f);
+          }
+      } catch (Exception ignored) {
+        /* Should this be handled somehow? (defaults to "no boost", if
              * boost number is invalid)
              */
-                  }
+      }
       }
       if (group) { q = new GroupQueryNode(q);}
       {if (true) return q;}
@@ -519,7 +522,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case TERM:
         term = jj_consume_token(TERM);
-                         q = new FieldQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
+                    q = new FieldQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
         break;
       case REGEXPTERM:
         term = jj_consume_token(REGEXPTERM);
@@ -561,16 +564,16 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         ;
       }
        if (fuzzy) {
-          float fms = defaultMinSimilarity;
-          try {
+           float fms = defaultMinSimilarity;
+           try {
             fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
-          } catch (Exception ignored) { }
-         if(fms < 0.0f){
-           {if (true) throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_LIMITS));}
-         } else if (fms >= 1.0f && fms != (int) fms) {
-           {if (true) throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_EDITS));}
-         }
-         q = new FuzzyQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), fms, term.beginColumn, term.endColumn);
+           } catch (Exception ignored) { }
+           if(fms < 0.0f){
+                {if (true) throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_LIMITS));}
+          } else if (fms >= 1.0f && fms != (int) fms) {
+            {if (true) throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_EDITS));}
+          }
+          q = new FuzzyQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), fms, term.beginColumn, term.endColumn);
        } else if (regexp) {
          String re = term.image.substring(1, term.image.length()-1);
          q = new RegexpQueryNode(field, re, 0, re.length());
@@ -653,9 +656,9 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
           }
 
           qLower = new FieldQueryNode(field,
-                                               EscapeQuerySyntaxImpl.discardEscapeChar(goop1.image), goop1.beginColumn, goop1.endColumn);
-                  qUpper = new FieldQueryNode(field,
-                                               EscapeQuerySyntaxImpl.discardEscapeChar(goop2.image), goop2.beginColumn, goop2.endColumn);
+                                   EscapeQuerySyntaxImpl.discardEscapeChar(goop1.image), goop1.beginColumn, goop1.endColumn);
+      qUpper = new FieldQueryNode(field,
+                                   EscapeQuerySyntaxImpl.discardEscapeChar(goop2.image), goop2.beginColumn, goop2.endColumn);
           q = new TermRangeQueryNode(qLower, qUpper, startInc ? true : false, endInc ? true : false);
       break;
     case QUOTED:
@@ -687,8 +690,8 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
            }
            catch (Exception ignored) {
             /* Should this be handled somehow? (defaults to "no PhraseSlop", if
-	         * slop number is invalid)
-	         */
+           * slop number is invalid)
+           */
            }
          }
       break;
@@ -697,20 +700,20 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       jj_consume_token(-1);
       throw new ParseException();
     }
-          if (boost != null) {
-                  float f = (float)1.0;
-                  try {
-                    f = Float.valueOf(boost.image).floatValue();
-                    // avoid boosting null queries, such as those caused by stop words
-                if (q != null) {
-                        q = new BoostQueryNode(q, f);
-                }
-                  } catch (Exception ignored) {
-                        /* Should this be handled somehow? (defaults to "no boost", if
-	         * boost number is invalid)
-	         */
-                  }
+    if (boost != null) {
+      float f = (float)1.0;
+      try {
+        f = Float.valueOf(boost.image).floatValue();
+        // avoid boosting null queries, such as those caused by stop words
+          if (q != null) {
+            q = new BoostQueryNode(q, f);
           }
+      } catch (Exception ignored) {
+        /* Should this be handled somehow? (defaults to "no boost", if
+           * boost number is invalid)
+           */
+      }
+    }
       {if (true) return q;}
     throw new Error("Missing return statement in function");
   }
@@ -729,30 +732,6 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     finally { jj_save(1, xla); }
   }
 
-  private boolean jj_3R_4() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_scan_token(15)) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(16)) return true;
-    }
-    if (jj_3R_6()) return true;
-    return false;
-  }
-
-  private boolean jj_3R_6() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_7()) {
-    jj_scanpos = xsp;
-    if (jj_3R_8()) {
-    jj_scanpos = xsp;
-    if (jj_3R_9()) return true;
-    }
-    }
-    return false;
-  }
-
   private boolean jj_3_2() {
     if (jj_scan_token(TERM)) return true;
     Token xsp;
@@ -769,23 +748,8 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     return false;
   }
 
-  private boolean jj_3R_10() {
-    if (jj_scan_token(TERM)) return true;
-    return false;
-  }
-
   private boolean jj_3R_11() {
     if (jj_scan_token(REGEXPTERM)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_8() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_12()) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(27)) return true;
-    }
     return false;
   }
 
@@ -800,8 +764,18 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     return false;
   }
 
-  private boolean jj_3R_9() {
-    if (jj_scan_token(QUOTED)) return true;
+  private boolean jj_3R_8() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_12()) {
+    jj_scanpos = xsp;
+    if (jj_scan_token(27)) return true;
+    }
+    return false;
+  }
+
+  private boolean jj_3R_10() {
+    if (jj_scan_token(TERM)) return true;
     return false;
   }
 
@@ -815,6 +789,11 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     if (jj_scan_token(28)) return true;
     }
     }
+    return false;
+  }
+
+  private boolean jj_3R_9() {
+    if (jj_scan_token(QUOTED)) return true;
     return false;
   }
 
@@ -837,6 +816,30 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     if (jj_scan_token(22)) {
     jj_scanpos = xsp;
     if (jj_scan_token(28)) return true;
+    }
+    }
+    return false;
+  }
+
+  private boolean jj_3R_4() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_scan_token(15)) {
+    jj_scanpos = xsp;
+    if (jj_scan_token(16)) return true;
+    }
+    if (jj_3R_6()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_6() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_7()) {
+    jj_scanpos = xsp;
+    if (jj_3R_8()) {
+    jj_scanpos = xsp;
+    if (jj_3R_9()) return true;
     }
     }
     return false;
@@ -983,7 +986,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       return (jj_ntk = jj_nt.kind);
   }
 
-  private java.util.List jj_expentries = new java.util.ArrayList();
+  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<int[]>();
   private int[] jj_expentry;
   private int jj_kind = -1;
   private int[] jj_lasttokens = new int[100];
@@ -998,7 +1001,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       for (int i = 0; i < jj_endpos; i++) {
         jj_expentry[i] = jj_lasttokens[i];
       }
-      jj_entries_loop: for (java.util.Iterator it = jj_expentries.iterator(); it.hasNext();) {
+      jj_entries_loop: for (java.util.Iterator<?> it = jj_expentries.iterator(); it.hasNext();) {
         int[] oldentry = (int[])(it.next());
         if (oldentry.length == jj_expentry.length) {
           for (int i = 0; i < jj_expentry.length; i++) {
@@ -1046,7 +1049,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     jj_add_error_token(0, 0);
     int[][] exptokseq = new int[jj_expentries.size()][];
     for (int i = 0; i < jj_expentries.size(); i++) {
-      exptokseq[i] = (int[])jj_expentries.get(i);
+      exptokseq[i] = jj_expentries.get(i);
     }
     return new ParseException(token, exptokseq, tokenImage);
   }

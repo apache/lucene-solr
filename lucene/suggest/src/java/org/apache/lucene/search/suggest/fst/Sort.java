@@ -37,7 +37,9 @@ import org.apache.lucene.util.PriorityQueue;
  * @lucene.internal
  */
 public final class Sort {
+  /** Convenience constant for megabytes */
   public final static long MB = 1024 * 1024;
+  /** Convenience constant for gigabytes */
   public final static long GB = MB * 1024;
   
   /**
@@ -121,14 +123,25 @@ public final class Sort {
    * Sort info (debugging mostly).
    */
   public class SortInfo {
+    /** number of temporary files created when merging partitions */
     public int tempMergeFiles;
+    /** number of partition merges */
     public int mergeRounds;
+    /** number of lines of data read */
     public int lines;
+    /** time spent merging sorted partitions (in milliseconds) */
     public long mergeTime;
+    /** time spent sorting data (in milliseconds) */
     public long sortTime;
+    /** total time spent (in milliseconds) */
     public long totalTime;
+    /** time spent in i/o read (in milliseconds) */
     public long readTime;
+    /** read buffer size (in bytes) */
     public final long bufferSize = ramBufferSize.bytes;
+    
+    /** create a new SortInfo (with empty statistics) for debugging */
+    public SortInfo() {}
     
     @Override
     public String toString() {
@@ -148,6 +161,7 @@ public final class Sort {
   private int maxTempFiles;
   private final Comparator<BytesRef> comparator;
   
+  /** Default comparator: sorts in binary (codepoint) order */
   public static final Comparator<BytesRef> DEFAULT_COMPARATOR = BytesRef.getUTF8SortedAsUnicodeComparator();
 
   /**
@@ -160,6 +174,12 @@ public final class Sort {
     this(DEFAULT_COMPARATOR, BufferSize.automatic(), defaultTempDir(), MAX_TEMPFILES);
   }
   
+  /**
+   * Defaults constructor with a custom comparator.
+   * 
+   * @see #defaultTempDir()
+   * @see BufferSize#automatic()
+   */
   public Sort(Comparator<BytesRef> comparator) throws IOException {
     this(comparator, BufferSize.automatic(), defaultTempDir(), MAX_TEMPFILES);
   }
@@ -401,25 +421,41 @@ public final class Sort {
   public static class ByteSequencesWriter implements Closeable {
     private final DataOutput os;
 
+    /** Constructs a ByteSequencesWriter to the provided File */
     public ByteSequencesWriter(File file) throws IOException {
       this(new DataOutputStream(
           new BufferedOutputStream(
               new FileOutputStream(file))));
     }
 
+    /** Constructs a ByteSequencesWriter to the provided DataOutput */
     public ByteSequencesWriter(DataOutput os) {
       this.os = os;
     }
 
+    /**
+     * Writes a BytesRef.
+     * @see #write(byte[], int, int)
+     */
     public void write(BytesRef ref) throws IOException {
       assert ref != null;
       write(ref.bytes, ref.offset, ref.length);
     }
 
+    /**
+     * Writes a byte array.
+     * @see #write(byte[], int, int)
+     */
     public void write(byte [] bytes) throws IOException {
       write(bytes, 0, bytes.length);
     }
 
+    /**
+     * Writes a byte array.
+     * <p>
+     * The length is written as a <code>short</code>, followed
+     * by the bytes.
+     */
     public void write(byte [] bytes, int off, int len) throws IOException {
       assert bytes != null;
       assert off >= 0 && off + len <= bytes.length;
@@ -446,12 +482,14 @@ public final class Sort {
   public static class ByteSequencesReader implements Closeable {
     private final DataInput is;
 
+    /** Constructs a ByteSequencesReader from the provided File */
     public ByteSequencesReader(File file) throws IOException {
       this(new DataInputStream(
           new BufferedInputStream(
               new FileInputStream(file))));
     }
 
+    /** Constructs a ByteSequencesReader from the provided DataInput */
     public ByteSequencesReader(DataInput is) {
       this.is = is;
     }
@@ -513,6 +551,7 @@ public final class Sort {
     }
   }
 
+  /** Returns the comparator in use to sort entries */
   public Comparator<BytesRef> getComparator() {
     return comparator;
   }  

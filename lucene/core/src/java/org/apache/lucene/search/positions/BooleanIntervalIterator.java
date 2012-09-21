@@ -18,8 +18,6 @@ package org.apache.lucene.search.positions;
  */
 import org.apache.lucene.search.Scorer;
 
-import com.sun.tools.javac.resources.compiler;
-
 import java.io.IOException;
 import java.util.List;
 

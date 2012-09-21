@@ -18,6 +18,10 @@ package org.apache.lucene.queryparser.surround.query;
 
 import java.io.IOException;
 
+/**
+ * Interface for queries that can be nested as subqueries
+ * into a span near.
+ */
 public interface DistanceSubQuery {
   /** When distanceSubQueryNotAllowed() returns non null, the reason why the subquery
    * is not allowed as a distance subquery is returned.

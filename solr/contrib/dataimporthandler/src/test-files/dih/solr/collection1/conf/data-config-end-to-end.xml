@@ -20,7 +20,7 @@
         processor="SqlEntityProcessor"
         dataSource="hsqldb" 
         cacheImpl="SortedMapBackedCache"
-        cachePk="CODE"
+        cacheKey="CODE"
         cacheLookup="People.COUNTRY_CODE"
         
         query="SELECT CODE, COUNTRY_NAME FROM COUNTRIES"

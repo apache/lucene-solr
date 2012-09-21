@@ -28,7 +28,9 @@ import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.GeneralField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeSource.State;
@@ -81,13 +83,8 @@ public class PreAnalyzedField extends FieldType {
     return new SolrAnalyzer() {
       
       @Override
-      protected TokenStreamComponents createComponents(String fieldName,
-          Reader reader) {
-        try {
-          return new TokenStreamComponents(new PreAnalyzedTokenizer(reader, parser));
-        } catch (IOException e) {
-          return null;
-        }
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        return new TokenStreamComponents(new PreAnalyzedTokenizer(reader, parser));
       }
       
     };
@@ -99,9 +96,9 @@ public class PreAnalyzedField extends FieldType {
   }
 
   @Override
-  public IndexableField createField(SchemaField field, Object value,
+  public StorableField createField(SchemaField field, Object value,
           float boost) {
-    IndexableField f = null;
+    StorableField f = null;
     try {
       f = fromString(field, String.valueOf(value), boost);
     } catch (Exception e) {
@@ -117,7 +114,7 @@ public class PreAnalyzedField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f)
+  public void write(TextResponseWriter writer, String name, StorableField f)
           throws IOException {
     writer.writeStr(name, f.stringValue(), true);
   }
@@ -164,11 +161,12 @@ public class PreAnalyzedField extends FieldType {
   }
   
   
-  public IndexableField fromString(SchemaField field, String val, float boost) throws Exception {
+  public StorableField fromString(SchemaField field, String val, float boost) throws Exception {
     if (val == null || val.trim().length() == 0) {
       return null;
     }
     PreAnalyzedTokenizer parse = new PreAnalyzedTokenizer(new StringReader(val), parser);
+    parse.reset(); // consume
     Field f = (Field)super.createField(field, val, boost);
     if (parse.getStringValue() != null) {
       f.setStringValue(parse.getStringValue());
@@ -195,11 +193,11 @@ public class PreAnalyzedField extends FieldType {
     private String stringValue = null;
     private byte[] binaryValue = null;
     private PreAnalyzedParser parser;
+    private Reader lastReader;
     
-    public PreAnalyzedTokenizer(Reader reader, PreAnalyzedParser parser) throws IOException {
+    public PreAnalyzedTokenizer(Reader reader, PreAnalyzedParser parser) {
       super(reader);
       this.parser = parser;
-      setReader(reader);
     }
     
     public boolean hasTokenStream() {
@@ -229,24 +227,30 @@ public class PreAnalyzedField extends FieldType {
       return true;
     }
   
-    public final void reset() {
+    @Override
+    public final void reset() throws IOException {
+      // NOTE: this acts like rewind if you call it again
+      if (input != lastReader) {
+        lastReader = input;
+        cachedStates.clear();
+        stringValue = null;
+        binaryValue = null;
+        ParseResult res = parser.parse(input, this);
+        if (res != null) {
+          stringValue = res.str;
+          binaryValue = res.bin;
+          if (res.states != null) {
+            cachedStates.addAll(res.states);
+          }
+        }
+      }
       it = cachedStates.iterator();
     }
 
     @Override
-    public void setReader(Reader input) throws IOException {
-      super.setReader(input);
-      cachedStates.clear();
-      stringValue = null;
-      binaryValue = null;
-      ParseResult res = parser.parse(input, this);
-      if (res != null) {
-        stringValue = res.str;
-        binaryValue = res.bin;
-        if (res.states != null) {
-          cachedStates.addAll(res.states);
-        }
-      }
+    public void close() throws IOException {
+      super.close();
+      lastReader = null; // just a ref, null for gc
     }
   }
   

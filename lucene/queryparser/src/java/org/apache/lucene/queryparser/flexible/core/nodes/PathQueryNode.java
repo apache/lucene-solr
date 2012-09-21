@@ -31,7 +31,7 @@ import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax.Type
  * <p>
  * Example how the text parser creates these objects:
  * </p>
- * <pre>
+ * <pre class="prettyprint">
  * List values = ArrayList(); 
  * values.add(new PathQueryNode.QueryText("company", 1, 7)); 
  * values.add(new PathQueryNode.QueryText("USA", 9, 12)); 
@@ -41,6 +41,9 @@ import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax.Type
  */
 public class PathQueryNode extends QueryNodeImpl {
 
+  /**
+   * Term text with a beginning and end position
+   */
   public static class QueryText implements Cloneable {
     CharSequence value = null;
     /**

@@ -41,7 +41,6 @@ import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.TestDistributedSearch;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -57,7 +56,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * Test for ReplicationHandler
@@ -134,7 +132,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   private static SolrServer createNewSolrServer(int port) {
     try {
       // setup the server...
-      String url = "http://localhost:" + port + context;
+      String url = "http://127.0.0.1:" + port + context;
       HttpSolrServer s = new HttpSolrServer(url);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
@@ -318,7 +316,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       index(masterClient, "id", i, "name", "name = " + i);
     }
 
-    String masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=disableReplication";
+    String masterUrl = "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/replication?command=disableReplication";
     URL url = new URL(masterUrl);
     InputStream stream = url.openStream();
     try {
@@ -355,7 +353,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(1, slaveQueryResult.getNumFound());
 
-    masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=enableReplication";
+    masterUrl = "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/replication?command=enableReplication";
     url = new URL(masterUrl);
     stream = url.openStream();
     try {
@@ -413,6 +411,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
 
     slaveJetty.stop();
+
+    // setup an xslt dir to force subdir file replication
+    File masterXsltDir = new File(master.getConfDir() + File.separator + "xslt");
+    File masterXsl = new File(masterXsltDir, "dummy.xsl");
+    assertTrue(masterXsltDir.mkdir());
+    assertTrue(masterXsl.createNewFile());
+
+    File slaveXsltDir = new File(slave.getConfDir() + File.separator + "xslt");
+    File slaveXsl = new File(slaveXsltDir, "dummy.xsl");
+    assertFalse(slaveXsltDir.exists());
+
     slaveJetty = createJetty(slave);
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
@@ -427,6 +436,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveQueryRsp = rQuery(1, "*:*", slaveClient);
     SolrDocument d = ((SolrDocumentList) slaveQueryRsp.get("response")).get(0);
     assertEquals("newname = 2000", (String) d.getFieldValue("newname"));
+
+    assertTrue(slaveXsltDir.isDirectory());
+    assertTrue(slaveXsl.exists());
 
   }
 
@@ -456,7 +468,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(null, cmp);
 
     // start stop polling test
-    String slaveURL = "http://localhost:" + slaveJetty.getLocalPort() + "/solr/replication?command=disablepoll";
+    String slaveURL = "http://127.0.0.1:" + slaveJetty.getLocalPort() + "/solr/replication?command=disablepoll";
     URL url = new URL(slaveURL);
     InputStream stream = url.openStream();
     try {
@@ -482,7 +494,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, slaveQueryResult.getNumFound());
 
     // re-enable replication
-    slaveURL = "http://localhost:" + slaveJetty.getLocalPort() + "/solr/replication?command=enablepoll";
+    slaveURL = "http://127.0.0.1:" + slaveJetty.getLocalPort() + "/solr/replication?command=enablepoll";
     url = new URL(slaveURL);
     stream = url.openStream();
     try {
@@ -517,8 +529,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, masterQueryResult.getNumFound());
 
     // snappull
-    String masterUrl = "http://localhost:" + slaveJetty.getLocalPort() + "/solr/replication?command=fetchindex&masterUrl=";
-    masterUrl += "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication";
+    String masterUrl = "http://127.0.0.1:" + slaveJetty.getLocalPort() + "/solr/replication?command=fetchindex&masterUrl=";
+    masterUrl += "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/replication";
     URL url = new URL(masterUrl);
     InputStream stream = url.openStream();
     try {
@@ -543,8 +555,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     slaveClient.commit();
     
-    masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=fetchindex&masterUrl=";
-    masterUrl += "http://localhost:" + slaveJetty.getLocalPort() + "/solr/replication";
+    masterUrl = "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/replication?command=fetchindex&masterUrl=";
+    masterUrl += "http://127.0.0.1:" + slaveJetty.getLocalPort() + "/solr/replication";
     url = new URL(masterUrl);
     stream = url.openStream();
     try {
@@ -808,7 +820,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       @Override
       public void run() {
         String masterUrl = 
-          "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=" + ReplicationHandler.CMD_BACKUP + 
+          "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/replication?command=" + ReplicationHandler.CMD_BACKUP + 
           (addNumberToKeepInRequest ? "&" + backupKeepParamName + "=1" : "");
         URL url;
         InputStream stream = null;
@@ -838,7 +850,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       }
       @Override
       public void run() {
-        String masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=" + ReplicationHandler.CMD_DETAILS;
+        String masterUrl = "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/replication?command=" + ReplicationHandler.CMD_DETAILS;
         URL url;
         InputStream stream = null;
         try {
@@ -928,13 +940,13 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   /* character copy of file using UTF-8 */
   private static void copyFile(File src, File dst) throws IOException {
-    copyFile(src, dst, null);
+    copyFile(src, dst, null, false);
   }
 
   /**
    * character copy of file using UTF-8. If port is non-null, will be substituted any time "TEST_PORT" is found.
    */
-  private static void copyFile(File src, File dst, Integer port) throws IOException {
+  private static void copyFile(File src, File dst, Integer port, boolean internalCompression) throws IOException {
     BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(src), "UTF-8"));
     Writer out = new OutputStreamWriter(new FileOutputStream(dst), "UTF-8");
 
@@ -942,6 +954,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       if (null != port)
         line = line.replace("TEST_PORT", port.toString());
+      
+      line = line.replace("COMPRESSION", internalCompression?"internal":"false");
+
       out.write(line);
     }
     in.close();
@@ -1020,10 +1035,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     public void copyConfigFile(String srcFile, String destFile) 
       throws IOException {
-
       copyFile(getFile(srcFile), 
                new File(confDir, destFile),
-               testPort);
+               testPort, random().nextBoolean());
     }
 
   }

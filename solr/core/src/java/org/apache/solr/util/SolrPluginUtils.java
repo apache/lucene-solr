@@ -19,6 +19,8 @@ package org.apache.solr.util;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
@@ -229,57 +231,69 @@ public class SolrPluginUtils {
    * @return The debug info
    * @throws java.io.IOException if there was an IO error
    */
-  public static NamedList doStandardDebug(SolrQueryRequest req,
-                                          String userQuery,
-                                          Query query,
-                                          DocList results, boolean dbgQuery, boolean dbgResults)
-    throws IOException {
-
-    NamedList dbg = null;
-
-    dbg = new SimpleOrderedMap();
-
-    SolrIndexSearcher searcher = req.getSearcher();
-    IndexSchema schema = req.getSchema();
-
-    boolean explainStruct
-            = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT, false);
-
+  public static NamedList doStandardDebug(
+          SolrQueryRequest req,
+          String userQuery,
+          Query query,
+          DocList results,
+          boolean dbgQuery,
+          boolean dbgResults)
+          throws IOException 
+  {
+    NamedList dbg = new SimpleOrderedMap();
+    doStandardQueryDebug(req, userQuery, query, dbgQuery, dbg);
+    doStandardResultsDebug(req, query, results, dbgResults, dbg);
+    return dbg;
+  }
+  
+  public static void doStandardQueryDebug(
+          SolrQueryRequest req,
+          String userQuery,
+          Query query,
+          boolean dbgQuery,
+          NamedList dbg)
+  {
     if (dbgQuery) {
       /* userQuery may have been pre-processed .. expose that */
       dbg.add("rawquerystring", req.getParams().get(CommonParams.Q));
       dbg.add("querystring", userQuery);
 
-      /* QueryParsing.toString isn't perfect, use it to see converted
+     /* QueryParsing.toString isn't perfect, use it to see converted
       * values, use regular toString to see any attributes of the
       * underlying Query it may have missed.
       */
-      dbg.add("parsedquery", QueryParsing.toString(query, schema));
+      dbg.add("parsedquery", QueryParsing.toString(query, req.getSchema()));
       dbg.add("parsedquery_toString", query.toString());
     }
-
+  }
+  
+  public static void doStandardResultsDebug(
+          SolrQueryRequest req,
+          Query query,
+          DocList results,
+          boolean dbgResults,
+          NamedList dbg) throws IOException
+  {
     if (dbgResults) {
-      NamedList<Explanation> explain
-              = getExplanations(query, results, searcher, schema);
-      dbg.add("explain", explainStruct ?
-              explanationsToNamedLists(explain) :
-              explanationsToStrings(explain));
+      SolrIndexSearcher searcher = req.getSearcher();
+      IndexSchema schema = req.getSchema();
+      boolean explainStruct = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT, false);
+
+      NamedList<Explanation> explain = getExplanations(query, results, searcher, schema);
+      dbg.add("explain", explainStruct
+              ? explanationsToNamedLists(explain)
+              : explanationsToStrings(explain));
 
       String otherQueryS = req.getParams().get(CommonParams.EXPLAIN_OTHER);
       if (otherQueryS != null && otherQueryS.length() > 0) {
-        DocList otherResults = doSimpleQuery
-                (otherQueryS, req, 0, 10);
+        DocList otherResults = doSimpleQuery(otherQueryS, req, 0, 10);
         dbg.add("otherQuery", otherQueryS);
-        NamedList<Explanation> explainO
-                = getExplanations(query, otherResults, searcher, schema);
-        dbg.add("explainOther", explainStruct ?
-                explanationsToNamedLists(explainO) :
-                explanationsToStrings(explainO));
+        NamedList<Explanation> explainO = getExplanations(query, otherResults, searcher, schema);
+        dbg.add("explainOther", explainStruct
+                ? explanationsToNamedLists(explainO)
+                : explanationsToStrings(explainO));
       }
     }
-
-
-    return dbg;
   }
 
   public static NamedList<Object> explanationToNamedList(Explanation e) {
@@ -332,7 +346,7 @@ public class SolrPluginUtils {
     for (int i=0; i<docs.size(); i++) {
       int id = iterator.nextDoc();
 
-      Document doc = searcher.doc(id);
+      StoredDocument doc = searcher.doc(id);
       String strid = schema.printableUniqueKey(doc);
 
       explainList.add(strid, searcher.explain(query, id) );
@@ -848,10 +862,10 @@ public class SolrPluginUtils {
     while (dit.hasNext()) {
       int docid = dit.nextDoc();
 
-      Document luceneDoc = searcher.doc(docid, fields);
+      StoredDocument luceneDoc = searcher.doc(docid, fields);
       SolrDocument doc = new SolrDocument();
       
-      for( IndexableField field : luceneDoc) {
+      for( StorableField field : luceneDoc) {
         if (null == fields || fields.contains(field.name())) {
           SchemaField sf = schema.getField( field.name() );
           doc.addField( field.name(), sf.getType().toObject( field ) );

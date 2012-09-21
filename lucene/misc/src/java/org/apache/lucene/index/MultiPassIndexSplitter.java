@@ -185,7 +185,7 @@ public class MultiPassIndexSplitter {
     }
     
     private static FakeDeleteAtomicIndexReader[] initSubReaders(IndexReader reader) {
-      final List<AtomicReaderContext> leaves = reader.getTopReaderContext().leaves();
+      final List<AtomicReaderContext> leaves = reader.leaves();
       final FakeDeleteAtomicIndexReader[] subs = new FakeDeleteAtomicIndexReader[leaves.size()];
       int i = 0;
       for (final AtomicReaderContext ctx : leaves) {

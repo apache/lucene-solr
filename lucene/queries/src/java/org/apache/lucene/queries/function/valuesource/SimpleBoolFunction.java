@@ -26,7 +26,13 @@ import org.apache.lucene.search.IndexSearcher;
 import java.io.IOException;
 import java.util.Map;
 
-
+/**
+ * {@link BoolFunction} implementation which applies an extendible boolean
+ * function to the values of a single wrapped {@link ValueSource}.
+ *
+ * Functions this can be used for include whether a field has a value or not,
+ * or inverting the boolean value of the wrapped ValueSource.
+ */
 public abstract class SimpleBoolFunction extends BoolFunction {
   protected final ValueSource source;
 
@@ -44,11 +50,11 @@ public abstract class SimpleBoolFunction extends BoolFunction {
     return new BoolDocValues(this) {
       @Override
       public boolean boolVal(int doc) {
-	      return func(doc, vals);
+        return func(doc, vals);
       }
       @Override
       public String toString(int doc) {
-	      return name() + '(' + vals.toString(doc) + ')';
+        return name() + '(' + vals.toString(doc) + ')';
       }
     };
   }

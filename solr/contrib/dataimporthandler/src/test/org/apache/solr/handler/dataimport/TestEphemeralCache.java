@@ -101,7 +101,7 @@ public class TestEphemeralCache extends AbstractDataImportHandlerTestCase {
       "       processor=\"SqlEntityProcessor\"" +
       "       cacheImpl=\"org.apache.solr.handler.dataimport.DestroyCountCache\"" +
       "       cacheName=\"CHILD\"" +
-      "       cachePk=\"id\"" +
+      "       cacheKey=\"id\"" +
       "       cacheLookup=\"PARENT.id\"" +
       "       fieldNames=\"id,         child1a_mult_s, child1b_s\"" +
       "       fieldTypes=\"BIGDECIMAL, STRING,         STRING\"" +
@@ -111,7 +111,7 @@ public class TestEphemeralCache extends AbstractDataImportHandlerTestCase {
       "       name=\"CHILD_2\"" +
       "       processor=\"SqlEntityProcessor\"" +
       "       cacheImpl=\"org.apache.solr.handler.dataimport.DestroyCountCache\"" +
-      "       cachePk=\"id\"" +
+      "       cacheKey=\"id\"" +
       "       cacheLookup=\"PARENT.id\"" +
       "       query=\"SELECT * FROM CHILD_2\"       " +
       "     />" +

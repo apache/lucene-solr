@@ -22,8 +22,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.util.BytesRef;
-
 /** Base class for implementing {@link CompositeReader}s based on an array
  * of sub-readers. The implementing class has to add code for
  * correctly refcounting and closing the sub-readers.
@@ -125,11 +123,25 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
   }
 
   @Override
-  public final int docFreq(String field, BytesRef t) throws IOException {
+  public final int docFreq(Term term) throws IOException {
     ensureOpen();
     int total = 0;          // sum freqs in subreaders
     for (int i = 0; i < subReaders.length; i++) {
-      total += subReaders[i].docFreq(field, t);
+      total += subReaders[i].docFreq(term);
+    }
+    return total;
+  }
+  
+  @Override
+  public final long totalTermFreq(Term term) throws IOException {
+    ensureOpen();
+    long total = 0;        // sum freqs in subreaders
+    for (int i = 0; i < subReaders.length; i++) {
+      long sub = subReaders[i].totalTermFreq(term);
+      if (sub == -1) {
+        return -1;
+      }
+      total += sub;
     }
     return total;
   }
@@ -151,7 +163,7 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
   }
   
   @Override
-  public final List<? extends R> getSequentialSubReaders() {
+  protected final List<? extends R> getSequentialSubReaders() {
     return subReadersList;
   }
 }

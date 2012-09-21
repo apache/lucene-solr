@@ -19,10 +19,11 @@ package org.apache.lucene.spatial.query;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.exception.InvalidShapeException;
-import com.spatial4j.core.exception.InvalidSpatialArgument;
+import com.spatial4j.core.io.ShapeReadWriter;
 import com.spatial4j.core.shape.Shape;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -30,7 +31,7 @@ import java.util.StringTokenizer;
  * Parses a string that usually looks like "OPERATION(SHAPE)" into a {@link SpatialArgs}
  * object. The set of operations supported are defined in {@link SpatialOperation}, such
  * as "Intersects" being a common one. The shape portion is defined by {@link
- * SpatialContext#readShape(String)}. There are some optional name-value pair parameters
+ * ShapeReadWriter#readShape(String)}. There are some optional name-value pair parameters
  * that follow the closing parenthesis.  Example:
  * <pre>
  *   Intersects(-10,20,-8,22) distPec=0.025
@@ -44,45 +45,62 @@ import java.util.StringTokenizer;
  */
 public class SpatialArgsParser {
 
+  public static final String DIST_ERR_PCT = "distErrPct";
+  public static final String DIST_ERR = "distErr";
+
+  /** Writes a close approximation to the parsed input format. */
+  static String writeSpatialArgs(SpatialArgs args) {
+    StringBuilder str = new StringBuilder();
+    str.append(args.getOperation().getName());
+    str.append('(');
+    str.append(args.getShape().toString());
+    if (args.getDistErrPct() != null)
+      str.append(" distErrPct=").append(String.format(Locale.ROOT, "%.2f%%", args.getDistErrPct() * 100d));
+    if (args.getDistErr() != null)
+      str.append(" distErr=").append(args.getDistErr());
+    str.append(')');
+    return str.toString();
+  }
+
   /**
-   * Parses a string such as "Intersects(-10,20,-8,22) distPec=0.025".
+   * Parses a string such as "Intersects(-10,20,-8,22) distErrPct=0.025".
    *
    * @param v   The string to parse. Mandatory.
    * @param ctx The spatial context. Mandatory.
    * @return Not null.
-   * @throws InvalidSpatialArgument If there is a problem parsing the string.
-   * @throws InvalidShapeException  Thrown from {@link SpatialContext#readShape(String)}
+   * @throws IllegalArgumentException If there is a problem parsing the string.
+   * @throws InvalidShapeException  Thrown from {@link ShapeReadWriter#readShape(String)}
    */
-  public SpatialArgs parse(String v, SpatialContext ctx) throws InvalidSpatialArgument, InvalidShapeException {
+  public SpatialArgs parse(String v, SpatialContext ctx) throws IllegalArgumentException, InvalidShapeException {
     int idx = v.indexOf('(');
     int edx = v.lastIndexOf(')');
 
     if (idx < 0 || idx > edx) {
-      throw new InvalidSpatialArgument("missing parens: " + v, null);
+      throw new IllegalArgumentException("missing parens: " + v, null);
     }
 
     SpatialOperation op = SpatialOperation.get(v.substring(0, idx).trim());
 
     String body = v.substring(idx + 1, edx).trim();
     if (body.length() < 1) {
-      throw new InvalidSpatialArgument("missing body : " + v, null);
+      throw new IllegalArgumentException("missing body : " + v, null);
     }
 
-    Shape shape = ctx.readShape(body);
+    Shape shape = new ShapeReadWriter(ctx).readShape(body);
     SpatialArgs args = new SpatialArgs(op, shape);
 
     if (v.length() > (edx + 1)) {
       body = v.substring(edx + 1).trim();
       if (body.length() > 0) {
         Map<String, String> aa = parseMap(body);
-        args.setMin(readDouble(aa.remove("min")));
-        args.setMax(readDouble(aa.remove("max")));
-        args.setDistPrecision(readDouble(aa.remove("distPrec")));
+        args.setDistErrPct(readDouble(aa.remove(DIST_ERR_PCT)));
+        args.setDistErr(readDouble(aa.remove(DIST_ERR)));
         if (!aa.isEmpty()) {
-          throw new InvalidSpatialArgument("unused parameters: " + aa, null);
+          throw new IllegalArgumentException("unused parameters: " + aa, null);
         }
       }
     }
+    args.validate();
     return args;
   }
 
@@ -94,6 +112,8 @@ public class SpatialArgsParser {
     return v == null ? defaultValue : Boolean.parseBoolean(v);
   }
 
+  /** Parses "a=b c=d f" (whitespace separated) into name-value pairs. If there
+   * is no '=' as in 'f' above then it's short for f=f. */
   protected static Map<String, String> parseMap(String body) {
     Map<String, String> map = new HashMap<String, String>();
     StringTokenizer st = new StringTokenizer(body, " \n\t");

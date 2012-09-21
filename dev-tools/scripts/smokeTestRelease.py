@@ -441,7 +441,7 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
 
   if project == 'lucene':
     # TODO: clean this up to not be a list of modules that we must maintain
-    extras = ('analysis', 'benchmark', 'core', 'demo', 'docs', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'sandbox', 'spatial', 'suggest', 'test-framework', 'licenses')
+    extras = ('analysis', 'benchmark', 'classification', 'codecs', 'core', 'demo', 'docs', 'facet', 'grouping', 'highlighter', 'join', 'memory', 'misc', 'queries', 'queryparser', 'sandbox', 'spatial', 'suggest', 'test-framework', 'licenses')
     if isSrc:
       extras += ('build.xml', 'common-build.xml', 'module-build.xml', 'ivy-settings.xml', 'backwards', 'tools', 'site')
   else:
@@ -486,13 +486,14 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
       run('%s; ant javadocs' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
       checkJavadocpath('%s/build/docs' % unpackPath)
     else:
+      os.chdir('solr')
       print('    run tests w/ Java 6...')
       run('%s; ant test' % javaExe('1.6'), '%s/test.log' % unpackPath)
 
       # test javadocs
       print('    generate javadocs w/ Java 6...')
       run('%s; ant javadocs' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
-      checkJavadocpath('%s/build/docs' % unpackPath)
+      checkJavadocpath('%s/solr/build/docs' % unpackPath, False)
 
       print('    run tests w/ Java 7...')
       run('%s; ant test' % javaExe('1.7'), '%s/test.log' % unpackPath)
@@ -500,9 +501,8 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
       # test javadocs
       print('    generate javadocs w/ Java 7...')
       run('%s; ant javadocs' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
-      checkJavadocpath('%s/build/docs' % unpackPath)
+      checkJavadocpath('%s/solr/build/docs' % unpackPath, False)
 
-      os.chdir('solr')
       print('    test solr example w/ Java 6...')
       run('%s; ant clean example' % javaExe('1.6'), '%s/antexample.log' % unpackPath)
       testSolrExample(unpackPath, JAVA6_HOME, True)
@@ -546,7 +546,7 @@ def testNotice(unpackPath):
   if solrNotice.find(expected) == -1:
     raise RuntimeError('Solr\'s NOTICE.txt does not have the verbatim copy, plus header/footer, of Lucene\'s NOTICE.txt')
   
-def readSolrOutput(p, startupEvent, logFile):
+def readSolrOutput(p, startupEvent, failureEvent, logFile):
   f = open(logFile, 'wb')
   try:
     while True:
@@ -556,8 +556,13 @@ def readSolrOutput(p, startupEvent, logFile):
       f.write(line)
       f.flush()
       # print 'SOLR: %s' % line.strip()
-      if line.decode('UTF-8').find('Started SocketConnector@0.0.0.0:8983') != -1:
+      if not startupEvent.isSet() and line.find(b'Started SocketConnector@0.0.0.0:8983') != -1:
         startupEvent.set()
+  except:
+    print()
+    print('Exception reading Solr output:')
+    traceback.print_exc()
+    failureEvent.set()
   finally:
     f.close()
     
@@ -572,7 +577,8 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   server = subprocess.Popen(['java', '-jar', 'start.jar'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
 
   startupEvent = threading.Event()
-  serverThread = threading.Thread(target=readSolrOutput, args=(server.stderr, startupEvent, logFile))
+  failureEvent = threading.Event()
+  serverThread = threading.Thread(target=readSolrOutput, args=(server.stderr, startupEvent, failureEvent, logFile))
   serverThread.setDaemon(True)
   serverThread.start()
 
@@ -609,12 +615,15 @@ def testSolrExample(unpackPath, javaPath, isSrc):
         # Shouldn't happen unless something is seriously wrong...
         print('***WARNING***: Solr instance didn\'t respond to SIGKILL; ignoring...')
 
+  if failureEvent.isSet():
+    raise RuntimeError('exception while reading Solr output')
+    
   os.chdir('..')
     
-def checkJavadocpath(path):
+def checkJavadocpath(path, failOnMissing=True):
   # check for level='package'
   # we fail here if its screwed up
-  if checkJavaDocs.checkPackageSummaries(path, 'package'):
+  if failOnMissing and checkJavaDocs.checkPackageSummaries(path, 'package'):
     raise RuntimeError('missing javadocs package summaries!')
     
   # now check for level='class'

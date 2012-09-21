@@ -17,7 +17,7 @@
 
 package org.apache.lucene.spatial.prefix.tree;
 
-import com.spatial4j.core.context.simple.SimpleSpatialContext;
+import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 
@@ -28,13 +28,13 @@ import org.junit.Test;
 public class SpatialPrefixTreeTest extends LuceneTestCase {
 
   //TODO plug in others and test them
-  private SimpleSpatialContext ctx;
+  private SpatialContext ctx;
   private SpatialPrefixTree trie;
 
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    ctx = SimpleSpatialContext.GEO_KM;
+    ctx = SpatialContext.GEO;
     trie = new GeohashPrefixTree(ctx,4);
   }
 

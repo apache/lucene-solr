@@ -91,7 +91,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     writer.close(true);
 
     DirectoryReader reader = DirectoryReader.open(dir, 1);
-    assertEquals(1, reader.getSequentialSubReaders().size());
+    assertEquals(1, reader.leaves().size());
 
     IndexSearcher searcher = new IndexSearcher(reader);
 
@@ -881,7 +881,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public int docId(AtomicReader reader, Term term) throws IOException {
     int docFreq = reader.docFreq(term);
     assertEquals(1, docFreq);
-    DocsEnum termDocsEnum = reader.termDocsEnum(null, term.field, term.bytes, 0);
+    DocsEnum termDocsEnum = reader.termDocsEnum(term);
     int nextDoc = termDocsEnum.nextDoc();
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, termDocsEnum.nextDoc());
     return nextDoc;
@@ -1041,5 +1041,35 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     }
     w.close();
     d.close();
+  }
+  
+  public void testDocValuesUnstored() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwconfig.setMergePolicy(newLogMergePolicy());
+    IndexWriter writer = new IndexWriter(dir, iwconfig);
+    for (int i = 0; i < 50; i++) {
+      Document doc = new Document();
+      doc.add(new PackedLongDocValuesField("dv", i));
+      doc.add(new TextField("docId", "" + i, Field.Store.YES));
+      writer.addDocument(doc);
+    }
+    DirectoryReader r = writer.getReader();
+    SlowCompositeReaderWrapper slow = new SlowCompositeReaderWrapper(r);
+    FieldInfos fi = slow.getFieldInfos();
+    FieldInfo dvInfo = fi.fieldInfo("dv");
+    assertTrue(dvInfo.hasDocValues());
+    DocValues dv = slow.docValues("dv");
+    Source source = dv.getDirectSource();
+    for (int i = 0; i < 50; i++) {
+      assertEquals(i, source.getInt(i));
+      StoredDocument d = slow.document(i);
+      // cannot use d.get("dv") due to another bug!
+      assertNull(d.getField("dv"));
+      assertEquals(Integer.toString(i), d.get("docId"));
+    }
+    slow.close();
+    writer.close();
+    dir.close();
   }
 }

@@ -98,9 +98,6 @@
         <directory>${module-path}/src/test-files</directory>
       </testResource>
       <testResource>
-        <directory>${top-level}/solr/core/src/test-files</directory>
-      </testResource>
-      <testResource>
         <directory>${top-level}/dev-tools/maven/solr</directory>
         <includes>
           <include>maven.testlogging.properties</include>

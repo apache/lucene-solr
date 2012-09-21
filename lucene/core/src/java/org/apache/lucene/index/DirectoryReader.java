@@ -49,8 +49,11 @@ import org.apache.lucene.store.Directory;
  (non-Lucene) objects instead.
 */
 public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> {
+
+  /** Default termInfosIndexDivisor. */
   public static final int DEFAULT_TERMS_INDEX_DIVISOR = 1;
 
+  /** The index directory. */
   protected final Directory directory;
   
   /** Returns a IndexReader reading the index in the given

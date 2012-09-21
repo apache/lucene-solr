@@ -27,7 +27,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
@@ -40,7 +39,45 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
-  
+
+
+  public void testShareSchema() throws IOException, ParserConfigurationException, SAXException {
+    
+    final File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName()
+        + "_shareSchema");
+
+    if (solrHomeDirectory.exists()) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
+    }
+    assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
+    
+    FileUtils.copyDirectory(new File(SolrTestCaseJ4.TEST_HOME()), solrHomeDirectory);
+    
+    File fconf = new File(solrHomeDirectory, "solr.xml");
+
+    final CoreContainer cores = new CoreContainer(solrHomeDirectory.getAbsolutePath());
+    System.setProperty("shareSchema", "true");
+    cores.load(solrHomeDirectory.getAbsolutePath(), fconf);
+    try {
+      cores.setPersistent(false);
+      assertTrue(cores.isShareSchema());
+      
+      CoreDescriptor descriptor1 = new CoreDescriptor(cores, "core1", "./collection1");
+      SolrCore core1 = cores.create(descriptor1);
+      
+      CoreDescriptor descriptor2 = new CoreDescriptor(cores, "core2", "./collection1");
+      SolrCore core2 = cores.create(descriptor2);
+      
+      assertSame(core1.getSchema(), core2.getSchema());
+      
+      core1.close();
+      core2.close();
+    } finally {
+      cores.shutdown();
+      System.clearProperty("shareSchema");
+    }
+  }
+
   @Test
   public void testPersist() throws Exception {
     final File workDir = new File(TEMP_DIR, this.getClass().getName()
@@ -196,8 +233,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       //assert cero cores
       assertEquals("There should not be cores", 0, cores.getCores().size());
       
+      FileUtils.copyDirectory(new File(SolrTestCaseJ4.TEST_HOME(), "collection1"), solrHomeDirectory);
       //add a new core
-      CoreDescriptor coreDescriptor = new CoreDescriptor(cores, "core1", SolrTestCaseJ4.TEST_HOME() + "/collection1");
+      CoreDescriptor coreDescriptor = new CoreDescriptor(cores, "core1", solrHomeDirectory.getAbsolutePath());
       SolrCore newCore = cores.create(coreDescriptor);
       cores.register(newCore, false);
       

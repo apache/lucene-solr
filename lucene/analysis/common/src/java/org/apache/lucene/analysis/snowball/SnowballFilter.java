@@ -44,7 +44,7 @@ public final class SnowballFilter extends TokenFilter {
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
-  
+
   public SnowballFilter(TokenStream input, SnowballProgram stemmer) {
     super(input);
     this.stemmer = stemmer;
@@ -62,7 +62,9 @@ public final class SnowballFilter extends TokenFilter {
    */
   public SnowballFilter(TokenStream in, String name) {
     super(in);
-    try {      
+    //Class.forName is frowned upon in place of the ResourceLoader but in this case,
+    // the factory will use the other constructor so that the program is already loaded.
+    try {
       Class<? extends SnowballProgram> stemClass =
         Class.forName("org.tartarus.snowball.ext." + name + "Stemmer").asSubclass(SnowballProgram.class);
       stemmer = stemClass.newInstance();

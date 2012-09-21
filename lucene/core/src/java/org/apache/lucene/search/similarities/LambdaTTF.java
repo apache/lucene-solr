@@ -24,6 +24,10 @@ import org.apache.lucene.search.Explanation;
  * @lucene.experimental
  */
 public class LambdaTTF extends Lambda {  
+  
+  /** Sole constructor: parameter-free */
+  public LambdaTTF() {}
+
   @Override
   public final float lambda(BasicStats stats) {
     return (stats.getTotalTermFreq()+1F) / (stats.getNumberOfDocuments()+1F);

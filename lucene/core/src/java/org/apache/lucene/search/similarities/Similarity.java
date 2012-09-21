@@ -109,6 +109,12 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  */
 public abstract class Similarity {
   
+  /**
+   * Sole constructor. (For invocation by subclass 
+   * constructors, typically implicit.)
+   */
+  public Similarity() {}
+  
   /** Hook to integrate coordinate-level matching.
    * <p>
    * By default this is disabled (returns <code>1</code>), as with
@@ -193,6 +199,13 @@ public abstract class Similarity {
    * Frequencies are integers (the term or phrase frequency within the document)
    */
   public static abstract class ExactSimScorer {
+    
+    /**
+     * Sole constructor. (For invocation by subclass 
+     * constructors, typically implicit.)
+     */
+    public ExactSimScorer() {}
+
     /**
      * Score a single document
      * @param doc document id
@@ -224,6 +237,13 @@ public abstract class Similarity {
    * {@link SloppySimScorer#computeSlopFactor(int)}.
    */
   public static abstract class SloppySimScorer {
+    
+    /**
+     * Sole constructor. (For invocation by subclass 
+     * constructors, typically implicit.)
+     */
+    public SloppySimScorer() {}
+
     /**
      * Score a single document
      * @param doc document id within the inverted index segment
@@ -258,6 +278,12 @@ public abstract class Similarity {
    * subclass. Examples include idf, average field length, etc.
    */
   public static abstract class SimWeight {
+    
+    /**
+     * Sole constructor. (For invocation by subclass 
+     * constructors, typically implicit.)
+     */
+    public SimWeight() {}
     
     /** The value for normalization of contained query clauses (e.g. sum of squared weights).
      * <p>

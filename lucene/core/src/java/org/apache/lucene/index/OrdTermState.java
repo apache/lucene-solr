@@ -23,7 +23,13 @@ package org.apache.lucene.index;
  * @lucene.experimental
  */
 public class OrdTermState extends TermState {
+  /** Term ordinal, i.e. it's position in the full list of
+   *  sorted terms. */
   public long ord;
+
+  /** Sole constructor. */
+  public OrdTermState() {
+  }
   
   @Override
   public void copyFrom(TermState other) {

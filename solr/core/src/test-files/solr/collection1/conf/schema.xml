@@ -399,9 +399,11 @@
   <fieldType name="latLon" class="solr.LatLonType" subFieldType="double"/>
 
   <!-- Currency type -->
-  <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml"/>
-  <fieldType name="mock_currency" class="solr.CurrencyField" providerClass="solr.MockExchangeRateProvider" foo="bar" />
-  <fieldType name="openexchangeratesorg_currency" class="solr.CurrencyField" 
+  <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false" />
+  <fieldType name="mock_currency" class="solr.CurrencyField" providerClass="solr.MockExchangeRateProvider" foo="bar" multiValued="false" />
+  <fieldType name="openexchangeratesorg_currency" 
+             class="solr.CurrencyField" 
+             multiValued="false"
              providerClass="solr.OpenExchangeRatesOrgProvider"
              ratesFileLocation="open-exchange-rates.json" />
 

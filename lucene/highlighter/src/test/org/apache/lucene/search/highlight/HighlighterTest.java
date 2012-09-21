@@ -42,6 +42,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
@@ -97,7 +98,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
 
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      Document doc = searcher.doc(hits.scoreDocs[i].doc);
+      StoredDocument doc = searcher.doc(hits.scoreDocs[i].doc);
       String storedField = doc.get(FIELD_NAME);
 
       TokenStream stream = TokenSources.getAnyTokenStream(searcher
@@ -1656,7 +1657,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     TopDocs hits = searcher.search(query, null, 10);
     for( int i = 0; i < hits.totalHits; i++ ){
-      Document doc = searcher.doc( hits.scoreDocs[i].doc );
+      StoredDocument doc = searcher.doc( hits.scoreDocs[i].doc );
       String result = h.getBestFragment( a, "t_text1", doc.get( "t_text1" ));
       if (VERBOSE) System.out.println("result:" +  result);
       assertEquals("more <B>random</B> words for second field", result);

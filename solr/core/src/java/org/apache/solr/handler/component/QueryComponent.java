@@ -863,8 +863,7 @@ public class QueryComponent extends SearchComponent
           queue.insertWithOverflow(shardDoc);
         } // end for-each-doc-in-response
       } // end for-each-response
-
-
+      
       // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
       // So we want to pop the last documents off the queue to get
       // the docs offset -> queuesize
@@ -880,6 +879,9 @@ public class QueryComponent extends SearchComponent
         resultIds.put(shardDoc.id.toString(), shardDoc);
       }
 
+      // Add hits for distributed requests
+      // https://issues.apache.org/jira/browse/SOLR-3518
+      rb.rsp.addToLog("hits", numFound);
 
       SolrDocumentList responseDocs = new SolrDocumentList();
       if (maxScore!=null) responseDocs.setMaxScore(maxScore);

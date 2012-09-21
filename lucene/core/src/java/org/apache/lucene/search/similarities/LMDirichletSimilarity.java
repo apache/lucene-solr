@@ -40,13 +40,13 @@ public class LMDirichletSimilarity extends LMSimilarity {
   /** The &mu; parameter. */
   private final float mu;
   
-  /** @param mu the &mu; parameter. */
+  /** Instantiates the similarity with the provided &mu; parameter. */
   public LMDirichletSimilarity(CollectionModel collectionModel, float mu) {
     super(collectionModel);
     this.mu = mu;
   }
   
-  /** @param mu the &mu; parameter. */
+  /** Instantiates the similarity with the provided &mu; parameter. */
   public LMDirichletSimilarity(float mu) {
     this.mu = mu;
   }

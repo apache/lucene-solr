@@ -129,7 +129,7 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
   
   /** Returns an iterator on the clauses in this query. It implements the {@link Iterable} interface to
    * make it possible to do:
-   * <pre>for (FilterClause clause : booleanFilter) {}</pre>
+   * <pre class="prettyprint">for (FilterClause clause : booleanFilter) {}</pre>
    */
   public final Iterator<FilterClause> iterator() {
     return clauses().iterator();

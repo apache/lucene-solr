@@ -41,13 +41,13 @@ import org.apache.lucene.util.Bits;
  */
 
 public class TestTransactionRollback extends LuceneTestCase {
-	
+
   private static final String FIELD_RECORD_ID = "record_id";
   private Directory dir;
-	
+
   //Rolls back index to a chosen ID
   private void rollBackLast(int id) throws Exception {
-		
+
     // System.out.println("Attempting to rollback to "+id);
     String ids="-"+id;
     IndexCommit last=null;
@@ -62,7 +62,7 @@ public class TestTransactionRollback extends LuceneTestCase {
 
     if (last==null)
       throw new RuntimeException("Couldn't find commit point "+id);
-		
+
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())).setIndexDeletionPolicy(
         new RollbackDeletionPolicy(id)).setIndexCommit(last));
@@ -72,22 +72,22 @@ public class TestTransactionRollback extends LuceneTestCase {
     w.close();
   }
 
-  public void testRepeatedRollBacks() throws Exception {		
+  public void testRepeatedRollBacks() throws Exception {
 
     int expectedLastRecordId=100;
     while (expectedLastRecordId>10) {
-      expectedLastRecordId -=10;			
+      expectedLastRecordId -=10;
       rollBackLast(expectedLastRecordId);
       
       BitSet expecteds = new BitSet(100);
       expecteds.set(1,(expectedLastRecordId+1),true);
-      checkExpecteds(expecteds);			
+      checkExpecteds(expecteds);
     }
   }
-	
+
   private void checkExpecteds(BitSet expecteds) throws Exception {
     IndexReader r = DirectoryReader.open(dir);
-		
+
     //Perhaps not the most efficient approach but meets our
     //needs here.
     final Bits liveDocs = MultiFields.getLiveDocs(r);
@@ -114,7 +114,7 @@ public class TestTransactionRollback extends LuceneTestCase {
       Collection files = comm.getFileNames();
       for (Iterator iterator2 = files.iterator(); iterator2.hasNext();) {
         String filename = (String) iterator2.next();
-        System.out.print(filename+", ");				
+        System.out.print(filename+", ");
       }
       System.out.println();
     }
@@ -133,7 +133,7 @@ public class TestTransactionRollback extends LuceneTestCase {
       Document doc=new Document();
       doc.add(newTextField(FIELD_RECORD_ID, ""+currentRecordId, Field.Store.YES));
       w.addDocument(doc);
-			
+
       if (currentRecordId%10 == 0) {
         Map<String,String> data = new HashMap<String,String>();
         data.put("index", "records 1-"+currentRecordId);
@@ -177,16 +177,16 @@ public class TestTransactionRollback extends LuceneTestCase {
                              " UserData="+commit.getUserData() +")  ("+(commits.size()-1)+" commit points left) files=");
             Collection files = commit.getFileNames();
             for (Iterator iterator2 = files.iterator(); iterator2.hasNext();) {
-              System.out.print(" "+iterator2.next());				
+              System.out.print(" "+iterator2.next());
             }
             System.out.println();
             */
-						
-            commit.delete();									
+
+            commit.delete();
           }
         }
       }
-    }		
+    }
   }
 
   class DeleteLastCommitPolicy implements IndexDeletionPolicy {
@@ -198,7 +198,7 @@ public class TestTransactionRollback extends LuceneTestCase {
     }
   }
 
-  public void testRollbackDeletionPolicy() throws Exception {		
+  public void testRollbackDeletionPolicy() throws Exception {
     for(int i=0;i<2;i++) {
       // Unless you specify a prior commit point, rollback
       // should not work:
@@ -209,7 +209,7 @@ public class TestTransactionRollback extends LuceneTestCase {
       r.close();
     }
   }
-	
+
   // Keeps all commit points (used to build index)
   class KeepAllDeletionPolicy implements IndexDeletionPolicy {
     public void onCommit(List<? extends IndexCommit> commits) throws IOException {}

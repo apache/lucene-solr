@@ -18,7 +18,8 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.GeneralField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
@@ -71,9 +72,8 @@ public class BoolField extends PrimitiveFieldType {
         boolean done = false;
 
         @Override
-        public void setReader(Reader input) throws IOException {
+        public void reset() throws IOException {
           done = false;
-          super.setReader(input);
         }
 
         @Override
@@ -112,12 +112,12 @@ public class BoolField extends PrimitiveFieldType {
   }
 
   @Override
-  public String toExternal(IndexableField f) {
+  public String toExternal(StorableField f) {
     return indexedToReadable(f.stringValue());
   }
 
   @Override
-  public Boolean toObject(IndexableField f) {
+  public Boolean toObject(StorableField f) {
     return Boolean.valueOf( toExternal(f) );
   }
 
@@ -146,7 +146,7 @@ public class BoolField extends PrimitiveFieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
     writer.writeBool(name, f.stringValue().charAt(0) == 'T');
   }
 }

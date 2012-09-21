@@ -86,7 +86,7 @@ public class TimeLimitingCollector extends Collector {
    * set the baseline through this method in your prelude.
    * <p>
    * Example usage:
-   * <pre>
+   * <pre class="prettyprint">
    *   Counter clock = ...;
    *   long baseline = clock.get();
    *   // ... prepare search
@@ -225,6 +225,8 @@ public class TimeLimitingCollector extends Collector {
   }
 
   /**
+   * Thread used to timeout search requests.
+   * Can be stopped completely with {@link TimerThread#stopTimer()}
    * @lucene.experimental
    */
   public static final class TimerThread extends Thread  {

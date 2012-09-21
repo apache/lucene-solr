@@ -22,8 +22,8 @@ import java.io.Reader;
 import java.util.Map;
 
 import org.apache.lucene.analysis.CharFilter; // javadocs
+import org.apache.lucene.analysis.util.RollingCharBuffer;
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.RollingCharBuffer;
 import org.apache.lucene.util.fst.CharSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Outputs;
@@ -67,8 +67,8 @@ public class MappingCharFilter extends BaseCharFilter {
 
   @Override
   public void reset() throws IOException {
-    super.reset();
-    buffer.reset(in);
+    input.reset();
+    buffer.reset(input);
     replacement = null;
     inputOff = 0;
   }

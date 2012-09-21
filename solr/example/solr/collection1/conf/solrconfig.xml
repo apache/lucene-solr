@@ -37,13 +37,19 @@
   -->
   <luceneMatchVersion>LUCENE_50</luceneMatchVersion>
 
-  <!-- lib directives can be used to instruct Solr to load an Jars
+  <!-- <lib/> directives can be used to instruct Solr to load an Jars
        identified and use them to resolve any "plugins" specified in
        your solrconfig.xml or schema.xml (ie: Analyzers, Request
        Handlers, etc...).
 
        All directories and paths are resolved relative to the
        instanceDir.
+
+       Please note that <lib/> directives are processed in the order
+       that they appear in your solrconfig.xml file, and are "stacked" 
+       on top of each other when building a ClassLoader - so if you have 
+       plugin jars with dependencies on other jars, the "lower level" 
+       dependency jars should be loaded first.
 
        If a "./lib" directory exists in your instanceDir, all files
        found in it are included as if you had used the following
@@ -55,26 +61,25 @@
   <!-- A 'dir' option by itself adds any files found in the directory 
        to the classpath, this is useful for including all jars in a
        directory.
-    -->
-  <!--
-     <lib dir="../add-everything-found-in-this-dir-to-the-classpath" />
-  -->
 
-  <!-- When a 'regex' is specified in addition to a 'dir', only the
+       When a 'regex' is specified in addition to a 'dir', only the
        files in that directory which completely match the regex
        (anchored on both ends) will be included.
+
+       The examples below can be used to load some solr-contribs along 
+       with their external dependencies.
     -->
-  <lib dir="../../../dist/" regex="apache-solr-cell-\d.*\.jar" />
   <lib dir="../../../contrib/extraction/lib" regex=".*\.jar" />
+  <lib dir="../../../dist/" regex="apache-solr-cell-\d.*\.jar" />
 
-  <lib dir="../../../dist/" regex="apache-solr-clustering-\d.*\.jar" />
   <lib dir="../../../contrib/clustering/lib/" regex=".*\.jar" />
+  <lib dir="../../../dist/" regex="apache-solr-clustering-\d.*\.jar" />
 
-  <lib dir="../../../dist/" regex="apache-solr-langid-\d.*\.jar" />
   <lib dir="../../../contrib/langid/lib/" regex=".*\.jar" />
+  <lib dir="../../../dist/" regex="apache-solr-langid-\d.*\.jar" />
 
-  <lib dir="../../../dist/" regex="apache-solr-velocity-\d.*\.jar" />
   <lib dir="../../../contrib/velocity/lib" regex=".*\.jar" />
+  <lib dir="../../../dist/" regex="apache-solr-velocity-\d.*\.jar" />
 
   <!-- If a 'dir' option (with or without a regex) is used and nothing
        is found that matches, it will be ignored
@@ -82,8 +87,8 @@
   <lib dir="/total/crap/dir/ignored" /> 
 
   <!-- an exact 'path' can be used instead of a 'dir' to specify a 
-       specific file.  This will cause a serious error to be logged if 
-       it can't be loaded.
+       specific jar file.  This will cause a serious error to be logged 
+       if it can't be loaded.
     -->
   <!--
      <lib path="../a-jar-that-does-not-exist.jar" /> 
@@ -954,7 +959,18 @@
        </lst>
        -->
   </requestHandler>
-  
+
+  <!-- for back compat with clients using /update/json and /update/csv -->  
+  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler">
+        <lst name="defaults">
+         <str name="stream.contentType">application/json</str>
+       </lst>
+  </requestHandler>
+  <requestHandler name="/update/csv" class="solr.CSVRequestHandler">
+        <lst name="defaults">
+         <str name="stream.contentType">application/csv</str>
+       </lst>
+  </requestHandler>
 
   <!-- Solr Cell Update Request Handler
 
@@ -1093,30 +1109,33 @@
 
        http://wiki.apache.org/solr/SolrReplication 
 
-       In the example below, remove the <lst name="master"> section if
-       this is just a slave and remove  the <lst name="slave"> section
-       if this is just a master.
+       It is also neccessary for SolrCloud to function (in Cloud mode, the 
+       replication handler is used to bulk transfer segments when nodes 
+       are added or need to recover).
+
+       https://wiki.apache.org/solr/SolrCloud/
     -->
-  <!--
-     <requestHandler name="/replication" class="solr.ReplicationHandler" >
+  <requestHandler name="/replication" class="solr.ReplicationHandler" > 
+    <!--
+       To enable simple master/slave replication, uncomment one of the 
+       sections below, depending on wether this solr instance should be 
+       the "master" or a "slave".  If this instance is a "slave" you will 
+       also need to fill in the masterUrl to point to a real machine.
+    -->
+    <!--
        <lst name="master">
          <str name="replicateAfter">commit</str>
          <str name="replicateAfter">startup</str>
          <str name="confFiles">schema.xml,stopwords.txt</str>
        </lst>
+    -->
+    <!--
        <lst name="slave">
-         <str name="masterUrl">http://localhost:8983/solr</str>
+         <str name="masterUrl">http://your-master-hostname:8983/solr</str>
          <str name="pollInterval">00:00:60</str>
        </lst>
-     </requestHandler>
     -->
-    
-    <!-- Solr Replication for SolrCloud Recovery
-    
-         This is the config need for SolrCloud's recovery replication.
-    -->
-	<requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" /> 
-
+  </requestHandler>
 
   <!-- Search Components
 
@@ -1430,6 +1449,7 @@
   <requestHandler name="/terms" class="solr.SearchHandler" startup="lazy">
      <lst name="defaults">
       <bool name="terms">true</bool>
+      <bool name="distrib">false</bool>
     </lst>     
     <arr name="components">
       <str>terms</str>

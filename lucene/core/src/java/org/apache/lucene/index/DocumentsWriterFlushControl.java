@@ -396,11 +396,11 @@ final class DocumentsWriterFlushControl  {
     return flushingWriters.size();
   }
   
-  public boolean doApplyAllDeletes() {	
+  public boolean doApplyAllDeletes() {
     return flushDeletes.getAndSet(false);
   }
 
-  public void setApplyAllDeletes() {	
+  public void setApplyAllDeletes() {
     flushDeletes.set(true);
   }
   

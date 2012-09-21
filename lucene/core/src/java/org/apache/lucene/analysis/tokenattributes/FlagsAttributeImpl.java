@@ -19,30 +19,17 @@ package org.apache.lucene.analysis.tokenattributes;
 
 import org.apache.lucene.util.AttributeImpl;
 
-/**
- * This attribute can be used to pass different flags down the tokenizer chain,
- * eg from one TokenFilter to another one. 
- * @lucene.experimental While we think this is here to stay, we may want to change it to be a long.
- */
+/** Default implementation of {@link FlagsAttribute}. */
 public class FlagsAttributeImpl extends AttributeImpl implements FlagsAttribute, Cloneable {
   private int flags = 0;
   
-  /**
-   * <p/>
-   *
-   * Get the bitset for any bits that have been set.  This is completely distinct from {@link TypeAttribute#type()}, although they do share similar purposes.
-   * The flags can be used to encode information about the token for use by other {@link org.apache.lucene.analysis.TokenFilter}s.
-   *
-   *
-   * @return The bits
-   */
+  /** Initialize this attribute with no bits set */
+  public FlagsAttributeImpl() {}
+  
   public int getFlags() {
     return flags;
   }
 
-  /**
-   * @see #getFlags()
-   */
   public void setFlags(int flags) {
     this.flags = flags;
   }

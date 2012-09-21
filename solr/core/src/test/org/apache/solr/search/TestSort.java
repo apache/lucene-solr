@@ -198,7 +198,7 @@ public class TestSort extends SolrTestCaseJ4 {
       DirectoryReader reader = DirectoryReader.open(dir);
       IndexSearcher searcher = new IndexSearcher(reader);
       // System.out.println("segments="+searcher.getIndexReader().getSequentialSubReaders().length);
-      assertTrue(reader.getSequentialSubReaders().size() > 1);
+      assertTrue(reader.leaves().size() > 1);
 
       for (int i=0; i<qiter; i++) {
         Filter filt = new Filter() {

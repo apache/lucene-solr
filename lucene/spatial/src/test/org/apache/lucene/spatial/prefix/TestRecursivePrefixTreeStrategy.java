@@ -17,18 +17,12 @@ package org.apache.lucene.spatial.prefix;
  * limitations under the License.
  */
 
-import com.spatial4j.core.context.simple.SimpleSpatialContext;
+import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.io.GeohashUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
-import com.spatial4j.core.shape.simple.PointImpl;
-import com.spatial4j.core.util.GeohashUtils;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
@@ -43,8 +37,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static java.lang.Math.toRadians;
-
 public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
 
   private int maxLength;
@@ -52,7 +44,7 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
   //Tests should call this first.
   private void init(int maxLength) {
     this.maxLength = maxLength;
-    this.ctx = SimpleSpatialContext.GEO_KM;
+    this.ctx = SpatialContext.GEO;
     GeohashPrefixTree grid = new GeohashPrefixTree(ctx, maxLength);
     this.strategy = new RecursivePrefixTreeStrategy(grid, getClass().getSimpleName());
   }
@@ -65,8 +57,51 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
     //execute queries for each prefix grid scan level
     for(int i = 0; i <= maxLength; i++) {
       ((RecursivePrefixTreeStrategy)strategy).setPrefixGridScanLevel(i);
-      executeQueries(SpatialMatchConcern.FILTER, QTEST_Cities_IsWithin_BBox);
+      executeQueries(SpatialMatchConcern.FILTER, QTEST_Cities_Intersects_BBox);
     }
+  }
+
+  @Test
+  public void testOneMeterPrecision() {
+    init(GeohashPrefixTree.getMaxLevelsPossible());
+    GeohashPrefixTree grid = (GeohashPrefixTree) ((RecursivePrefixTreeStrategy) strategy).getGrid();
+    //DWS: I know this to be true.  11 is needed for one meter
+    double degrees = DistanceUtils.dist2Degrees(0.001, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+    assertEquals(11, grid.getLevelForDistance(degrees));
+  }
+
+  @Test
+  public void testPrecision() throws IOException{
+    init(GeohashPrefixTree.getMaxLevelsPossible());
+
+    Point iPt = ctx.makePoint(2.8028712999999925, 48.3708044);//lon, lat
+    addDocument(newDoc("iPt", iPt));
+    commit();
+
+    Point qPt = ctx.makePoint(2.4632387000000335, 48.6003516);
+
+    final double KM2DEG = DistanceUtils.dist2Degrees(1, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+    final double DEG2KM = 1 / KM2DEG;
+
+    final double DIST = 35.75;//35.7499...
+    assertEquals(DIST, ctx.getDistCalc().distance(iPt, qPt) * DEG2KM, 0.001);
+
+    //distErrPct will affect the query shape precision. The indexed precision
+    // was set to nearly zilch via init(GeohashPrefixTree.getMaxLevelsPossible());
+    final double distErrPct = 0.025; //the suggested default, by the way
+    final double distMult = 1+distErrPct;
+
+    assertTrue(35.74*distMult >= DIST);
+    checkHits(q(qPt, 35.74 * KM2DEG, distErrPct), 1, null);
+
+    assertTrue(30*distMult < DIST);
+    checkHits(q(qPt, 30 * KM2DEG, distErrPct), 0, null);
+
+    assertTrue(33*distMult < DIST);
+    checkHits(q(qPt, 33 * KM2DEG, distErrPct), 0, null);
+
+    assertTrue(34*distMult < DIST);
+    checkHits(q(qPt, 34 * KM2DEG, distErrPct), 0, null);
   }
 
   @Test
@@ -74,71 +109,80 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
     init(12);
 
     //1. Iterate test with the cluster at some worldly point of interest
-    Point[] clusterCenters = new Point[]{new PointImpl(0,0), new PointImpl(0,90),new PointImpl(0,-90)};
+    Point[] clusterCenters = new Point[]{ctx.makePoint(-180,0), ctx.makePoint(0,90), ctx.makePoint(0,-90)};
     for (Point clusterCenter : clusterCenters) {
       //2. Iterate on size of cluster (a really small one and a large one)
       String hashCenter = GeohashUtils.encodeLatLon(clusterCenter.getY(), clusterCenter.getX(), maxLength);
       //calculate the number of degrees in the smallest grid box size (use for both lat & lon)
       String smallBox = hashCenter.substring(0,hashCenter.length()-1);//chop off leaf precision
       Rectangle clusterDims = GeohashUtils.decodeBoundary(smallBox,ctx);
-      double smallDegrees = Math.max(clusterDims.getMaxX()-clusterDims.getMinX(),clusterDims.getMaxY()-clusterDims.getMinY());
-      assert smallDegrees < 1;
-      double largeDegrees = 20d;//good large size; don't use >=45 for this test code to work
-      double[] sideDegrees = {largeDegrees,smallDegrees};
-      for (double sideDegree : sideDegrees) {
-        //3. Index random points in this cluster box
+      double smallRadius = Math.max(clusterDims.getMaxX()-clusterDims.getMinX(),clusterDims.getMaxY()-clusterDims.getMinY());
+      assert smallRadius < 1;
+      double largeRadius = 20d;//good large size; don't use >=45 for this test code to work
+      double[] radiusDegs = {largeRadius,smallRadius};
+      for (double radiusDeg : radiusDegs) {
+        //3. Index random points in this cluster circle
         deleteAll();
         List<Point> points = new ArrayList<Point>();
         for(int i = 0; i < 20; i++) {
-          double x = random().nextDouble()*sideDegree - sideDegree/2 + clusterCenter.getX();
-          double y = random().nextDouble()*sideDegree - sideDegree/2 + clusterCenter.getY();
-          final Point pt = normPointXY(x, y);
+          //Note that this will not result in randomly distributed points in the
+          // circle, they will be concentrated towards the center a little. But
+          // it's good enough.
+          Point pt = ctx.getDistCalc().pointOnBearing(clusterCenter,
+              random().nextDouble() * radiusDeg, random().nextInt() * 360, ctx, null);
+          pt = alignGeohash(pt);
           points.add(pt);
           addDocument(newDoc("" + i, pt));
         }
         commit();
 
-        //3. Use 4 query centers. Each is radially out from each corner of cluster box by twice distance to box edge.
-        for(double qcXoff : new double[]{sideDegree,-sideDegree}) {//query-center X offset from cluster center
-          for(double qcYoff : new double[]{sideDegree,-sideDegree}) {//query-center Y offset from cluster center
-            Point queryCenter = normPointXY(qcXoff + clusterCenter.getX(),
-                qcYoff + clusterCenter.getY());
-            double[] distRange = calcDistRange(queryCenter,clusterCenter,sideDegree);
-            //4.1 query a small box getting nothing
-            checkHits(queryCenter, distRange[0]*0.99, 0, null);
-            //4.2 Query a large box enclosing the cluster, getting everything
-            checkHits(queryCenter, distRange[1]*1.01, points.size(), null);
-            //4.3 Query a medium box getting some (calculate the correct solution and verify)
-            double queryDist = distRange[0] + (distRange[1]-distRange[0])/2;//average
+        //3. Use some query centers. Each is twice the cluster's radius away.
+        for(int ri = 0; ri < 4; ri++) {
+          Point queryCenter = ctx.getDistCalc().pointOnBearing(clusterCenter,
+              radiusDeg*2, random().nextInt(360), ctx, null);
+          queryCenter = alignGeohash(queryCenter);
+          //4.1 Query a small box getting nothing
+          checkHits(q(queryCenter, radiusDeg - smallRadius/2), 0, null);
+          //4.2 Query a large box enclosing the cluster, getting everything
+          checkHits(q(queryCenter, radiusDeg*3 + smallRadius/2), points.size(), null);
+          //4.3 Query a medium box getting some (calculate the correct solution and verify)
+          double queryDist = radiusDeg * 2;
 
-            //Find matching points.  Put into int[] of doc ids which is the same thing as the index into points list.
-            int[] ids = new int[points.size()];
-            int ids_sz = 0;
-            for (int i = 0; i < points.size(); i++) {
-              Point point = points.get(i);
-              if (ctx.getDistCalc().distance(queryCenter, point) <= queryDist)
-                ids[ids_sz++] = i;
-            }
-            ids = Arrays.copyOf(ids, ids_sz);
-            //assert ids_sz > 0 (can't because randomness keeps us from being able to)
-
-            checkHits(queryCenter, queryDist, ids.length, ids);
+          //Find matching points.  Put into int[] of doc ids which is the same thing as the index into points list.
+          int[] ids = new int[points.size()];
+          int ids_sz = 0;
+          for (int i = 0; i < points.size(); i++) {
+            Point point = points.get(i);
+            if (ctx.getDistCalc().distance(queryCenter, point) <= queryDist)
+              ids[ids_sz++] = i;
           }
+          ids = Arrays.copyOf(ids, ids_sz);
+          //assert ids_sz > 0 (can't because randomness keeps us from being able to)
+
+          checkHits(q(queryCenter, queryDist), ids.length, ids);
         }
 
-      }//for sideDegree
+      }//for radiusDeg
 
     }//for clusterCenter
 
   }//randomTest()
 
-  //TODO can we use super.runTestQueries() ?
-  private void checkHits(Point pt, double dist, int assertNumFound, int[] assertIds) {
-    Shape shape = ctx.makeCircle(pt,dist);
+  /** Query point-distance (in degrees) with zero error percent. */
+  private SpatialArgs q(Point pt, double distDEG) {
+    return q(pt, distDEG, 0.0);
+  }
+
+  private SpatialArgs q(Point pt, double distDEG, double distErrPct) {
+    Shape shape = ctx.makeCircle(pt, distDEG);
     SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects,shape);
-    args.setDistPrecision(0.0);
+    args.setDistErrPct(distErrPct);
+    return args;
+  }
+
+  private void checkHits(SpatialArgs args, int assertNumFound, int[] assertIds) {
     SearchResults got = executeQuery(strategy.makeQuery(args), 100);
-    assertEquals(""+shape,assertNumFound,got.numFound);
+    assertEquals("" + args, assertNumFound, got.numFound);
     if (assertIds != null) {
       Set<Integer> gotIds = new HashSet<Integer>();
       for (SearchResult result : got.results) {
@@ -150,42 +194,8 @@ public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
     }
   }
 
-  //
-  private Document newDoc(String id, Shape shape) {
-    Document doc = new Document();
-    doc.add(new StringField("id", id, Field.Store.YES));
-    for (IndexableField f : strategy.createIndexableFields(shape)) {
-      doc.add(f);
-    }
-    if (storeShape)
-      doc.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
-    return doc;
-  }
-
-  private double[] calcDistRange(Point startPoint, Point targetCenter, double targetSideDegrees) {
-    double min = Double.MAX_VALUE;
-    double max = Double.MIN_VALUE;
-    for(double xLen : new double[]{targetSideDegrees,-targetSideDegrees}) {
-      for(double yLen : new double[]{targetSideDegrees,-targetSideDegrees}) {
-        Point p2 = normPointXY(targetCenter.getX() + xLen / 2, targetCenter.getY() + yLen / 2);
-        double d = ctx.getDistCalc().distance(startPoint, p2);
-        min = Math.min(min,d);
-        max = Math.max(max,d);
-      }
-    }
-    return new double[]{min,max};
-  }
-
-  /** Normalize x & y (put in lon-lat ranges) & ensure geohash round-trip for given precision. */
-  private Point normPointXY(double x, double y) {
-    //put x,y as degrees into double[] as radians
-    double[] latLon = {y*DistanceUtils.DEG_180_AS_RADS, toRadians(x)};
-    DistanceUtils.normLatRAD(latLon);
-    DistanceUtils.normLatRAD(latLon);
-    double x2 = Math.toDegrees(latLon[1]);
-    double y2 = Math.toDegrees(latLon[0]);
-    //overwrite latLon, units is now degrees
-
-    return GeohashUtils.decode(GeohashUtils.encodeLatLon(y2, x2, maxLength),ctx);
+  /** NGeohash round-trip for given precision. */
+  private Point alignGeohash(Point p) {
+    return GeohashUtils.decode(GeohashUtils.encodeLatLon(p.getY(), p.getX(), maxLength), ctx);
   }
 }

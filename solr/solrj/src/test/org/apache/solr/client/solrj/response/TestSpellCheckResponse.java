@@ -108,7 +108,7 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
   
   @Test
   public void testSpellCheckCollationResponse() throws Exception {
-  	getSolrServer();
+    getSolrServer();
     server.deleteByQuery("*:*");
     server.commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();
@@ -156,27 +156,27 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
     assertEquals(2, collations.size());
     for(Collation collation : collations)
     {
-    	assertTrue("name:(+faith +hope +love)".equals(collation.getCollationQueryString()) || "name:(+faith +hope +loaves)".equals(collation.getCollationQueryString()));
+      assertTrue("name:(+faith +hope +love)".equals(collation.getCollationQueryString()) || "name:(+faith +hope +loaves)".equals(collation.getCollationQueryString()));
       assertTrue(collation.getNumberOfHits()==1);
-    	
-    	List<Correction> misspellingsAndCorrections = collation.getMisspellingsAndCorrections();
-    	assertTrue(misspellingsAndCorrections.size()==3);
-    	for(Correction correction : misspellingsAndCorrections)
-    	{    	
-    		if("fauth".equals(correction.getOriginal()))
-    		{
-    			assertTrue("faith".equals(correction.getCorrection()));
-    		} else if("home".equals(correction.getOriginal()))
-    		{
-    			assertTrue("hope".equals(correction.getCorrection()));
-    		} else if("loane".equals(correction.getOriginal()))
-    		{
-    			assertTrue("love".equals(correction.getCorrection()) || "loaves".equals(correction.getCorrection()));
-    		} else
-    		{
-    			fail("Original Word Should have been either fauth, home or loane.");
-    		}	    	
-    	}
+
+      List<Correction> misspellingsAndCorrections = collation.getMisspellingsAndCorrections();
+      assertTrue(misspellingsAndCorrections.size()==3);
+      for(Correction correction : misspellingsAndCorrections)
+      {
+        if("fauth".equals(correction.getOriginal()))
+        {
+          assertTrue("faith".equals(correction.getCorrection()));
+        } else if("home".equals(correction.getOriginal()))
+        {
+          assertTrue("hope".equals(correction.getCorrection()));
+        } else if("loane".equals(correction.getOriginal()))
+        {
+          assertTrue("love".equals(correction.getCorrection()) || "loaves".equals(correction.getCorrection()));
+        } else
+        {
+          fail("Original Word Should have been either fauth, home or loane.");
+        }
+      }
     }
     
     query.set(SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, false);

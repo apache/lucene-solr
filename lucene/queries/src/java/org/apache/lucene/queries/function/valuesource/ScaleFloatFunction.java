@@ -115,11 +115,11 @@ public class ScaleFloatFunction extends ValueSource {
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
-	return (vals.floatVal(doc) - minSource) * scale + min;
+        return (vals.floatVal(doc) - minSource) * scale + min;
       }
       @Override
       public String toString(int doc) {
-	return "scale(" + vals.toString(doc) + ",toMin=" + min + ",toMax=" + max
+        return "scale(" + vals.toString(doc) + ",toMin=" + min + ",toMax=" + max
                 + ",fromMin=" + minSource
                 + ",fromMax=" + maxSource
                 + ")";

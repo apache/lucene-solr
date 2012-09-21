@@ -58,6 +58,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -69,13 +70,14 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.SolrCmdDistributor.Request;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.junit.Before;
 
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
  * work as expected.
  */
 @Slow
-public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
+public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   
   private static final String DEFAULT_COLLECTION = "collection1";
   private static final boolean DEBUG = false;
@@ -108,8 +110,19 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
   CompletionService<Request> completionService;
   Set<Future<Request>> pending;
   
+  
+  @Before
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    System.setProperty("numShards", Integer.toString(sliceCount));
+  }
+
+  
   public BasicDistributedZkTest() {
     fixShardCount = true;
+    
+    sliceCount = 2;
     shardCount = 3;
     completionService = new ExecutorCompletionService<Request>(executor);
     pending = new HashSet<Future<Request>>();
@@ -137,6 +150,14 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
   public void doTest() throws Exception {
     // setLoggingLevel(null);
 
+    
+    // make sure we have leaders for each shard
+    for (int j = 1; j < sliceCount; j++) {
+      zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard" + j, 10000);
+    }      // make sure we again have leaders for each shard
+    
+    waitForRecoveriesToFinish(false);
+    
     del("*:*");
 
     indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
@@ -179,74 +200,74 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
 
     // random value sort
     for (String f : fieldNames) {
-      query("q","*:*", "sort",f+" desc");
-      query("q","*:*", "sort",f+" asc");
+      query(false, new String[] {"q","*:*", "sort",f+" desc"});
+      query(false, new String[] {"q","*:*", "sort",f+" asc"});
     }
 
     // these queries should be exactly ordered and scores should exactly match
-    query("q","*:*", "sort",i1+" desc");
-    query("q","*:*", "sort",i1+" asc");
-    query("q","*:*", "sort",i1+" desc", "fl","*,score");
-    query("q","*:*", "sort","n_tl1 asc", "fl","*,score"); 
-    query("q","*:*", "sort","n_tl1 desc");
+    query(false, new String[] {"q","*:*", "sort",i1+" desc"});
+    query(false, new String[] {"q","*:*", "sort",i1+" asc"});
+    query(false, new String[] {"q","*:*", "sort",i1+" desc", "fl","*,score"});
+    query(false, new String[] {"q","*:*", "sort","n_tl1 asc", "fl","*,score"}); 
+    query(false, new String[] {"q","*:*", "sort","n_tl1 desc"});
     handle.put("maxScore", SKIPVAL);
-    query("q","{!func}"+i1);// does not expect maxScore. So if it comes ,ignore it. JavaBinCodec.writeSolrDocumentList()
+    query(false, new String[] {"q","{!func}"+i1});// does not expect maxScore. So if it comes ,ignore it. JavaBinCodec.writeSolrDocumentList()
     //is agnostic of request params.
     handle.remove("maxScore");
-    query("q","{!func}"+i1, "fl","*,score");  // even scores should match exactly here
+    query(false, new String[] {"q","{!func}"+i1, "fl","*,score"});  // even scores should match exactly here
 
     handle.put("highlighting", UNORDERED);
     handle.put("response", UNORDERED);
 
     handle.put("maxScore", SKIPVAL);
-    query("q","quick");
-    query("q","all","fl","id","start","0");
-    query("q","all","fl","foofoofoo","start","0");  // no fields in returned docs
-    query("q","all","fl","id","start","100");
+    query(false, new String[] {"q","quick"});
+    query(false, new String[] {"q","all","fl","id","start","0"});
+    query(false, new String[] {"q","all","fl","foofoofoo","start","0"});  // no fields in returned docs
+    query(false, new String[] {"q","all","fl","id","start","100"});
 
     handle.put("score", SKIPVAL);
-    query("q","quick","fl","*,score");
-    query("q","all","fl","*,score","start","1");
-    query("q","all","fl","*,score","start","100");
+    query(false, new String[] {"q","quick","fl","*,score"});
+    query(false, new String[] {"q","all","fl","*,score","start","1"});
+    query(false, new String[] {"q","all","fl","*,score","start","100"});
 
-    query("q","now their fox sat had put","fl","*,score",
-            "hl","true","hl.fl",t1);
+    query(false, new String[] {"q","now their fox sat had put","fl","*,score",
+            "hl","true","hl.fl",t1});
 
-    query("q","now their fox sat had put","fl","foofoofoo",
-            "hl","true","hl.fl",t1);
+    query(false, new String[] {"q","now their fox sat had put","fl","foofoofoo",
+            "hl","true","hl.fl",t1});
 
-    query("q","matchesnothing","fl","*,score");  
+    query(false, new String[] {"q","matchesnothing","fl","*,score"});  
 
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1);
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","count");
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","count", "facet.mincount",2);
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","index");
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","index", "facet.mincount",2);
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1,"facet.limit",1);
-    query("q","*:*", "rows",100, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*");
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.offset",1);
-    query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.mincount",2);
+    query(false, new Object[] {"q","*:*", "rows",100, "facet","true", "facet.field",t1});
+    query(false, new Object[] {"q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","count"});
+    query(false, new Object[] {"q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","count", "facet.mincount",2});
+    query(false, new Object[] {"q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","index"});
+    query(false, new Object[] {"q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","index", "facet.mincount",2});
+    query(false, new Object[] {"q","*:*", "rows",100, "facet","true", "facet.field",t1,"facet.limit",1});
+    query(false, new Object[] {"q","*:*", "rows",100, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*"});
+    query(false, new Object[] {"q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.offset",1});
+    query(false, new Object[] {"q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.mincount",2});
 
     // test faceting multiple things at once
-    query("q","*:*", "rows",100, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*"
-    ,"facet.field",t1);
+    query(false, new Object[] {"q","*:*", "rows",100, "facet","true", "facet.query","quick", "facet.query","all", "facet.query","*:*"
+    ,"facet.field",t1});
 
     // test filter tagging, facet exclusion, and naming (multi-select facet support)
-    query("q","*:*", "rows",100, "facet","true", "facet.query","{!key=myquick}quick", "facet.query","{!key=myall ex=a}all", "facet.query","*:*"
+    query(false, new Object[] {"q","*:*", "rows",100, "facet","true", "facet.query","{!key=myquick}quick", "facet.query","{!key=myall ex=a}all", "facet.query","*:*"
     ,"facet.field","{!key=mykey ex=a}"+t1
     ,"facet.field","{!key=other ex=b}"+t1
     ,"facet.field","{!key=again ex=a,b}"+t1
     ,"facet.field",t1
-    ,"fq","{!tag=a}id:[1 TO 7]", "fq","{!tag=b}id:[3 TO 9]"
+    ,"fq","{!tag=a}id:[1 TO 7]", "fq","{!tag=b}id:[3 TO 9]"}
     );
-    query("q", "*:*", "facet", "true", "facet.field", "{!ex=t1}SubjectTerms_mfacet", "fq", "{!tag=t1}SubjectTerms_mfacet:(test 1)", "facet.limit", "10", "facet.mincount", "1");
+    query(false, new Object[] {"q", "*:*", "facet", "true", "facet.field", "{!ex=t1}SubjectTerms_mfacet", "fq", "{!tag=t1}SubjectTerms_mfacet:(test 1)", "facet.limit", "10", "facet.mincount", "1"});
 
     // test field that is valid in schema but missing in all shards
-    query("q","*:*", "rows",100, "facet","true", "facet.field",missingField, "facet.mincount",2);
+    query(false, new Object[] {"q","*:*", "rows",100, "facet","true", "facet.field",missingField, "facet.mincount",2});
     // test field that is valid in schema and missing in some shards
-    query("q","*:*", "rows",100, "facet","true", "facet.field",oddField, "facet.mincount",2);
+    query(false, new Object[] {"q","*:*", "rows",100, "facet","true", "facet.field",oddField, "facet.mincount",2});
 
-    query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", i1);
+    query(false, new Object[] {"q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", i1});
 
     /*** TODO: the failure may come back in "exception"
     try {
@@ -262,9 +283,9 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
     // This makes it much more likely that we may not get the top facet values and hence
     // we turn of that checking.
     handle.put("facet_fields", SKIPVAL);    
-    query("q","*:*", "rows",0, "facet","true", "facet.field",t1,"facet.limit",5, "facet.shard.limit",5);
+    query(false, new Object[] {"q","*:*", "rows",0, "facet","true", "facet.field",t1,"facet.limit",5, "facet.shard.limit",5});
     // check a complex key name
-    query("q","*:*", "rows",0, "facet","true", "facet.field","{!key='a b/c \\' \\} foo'}"+t1,"facet.limit",5, "facet.shard.limit",5);
+    query(false, new Object[] {"q","*:*", "rows",0, "facet","true", "facet.field","{!key='a b/c \\' \\} foo'}"+t1,"facet.limit",5, "facet.shard.limit",5});
     handle.remove("facet_fields");
 
 
@@ -276,20 +297,20 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
         index_specific(i, id,100, i1, 107 ,t1,"oh no, a duplicate!");
       }
       commit();
-      query("q","duplicate", "hl","true", "hl.fl", t1);
-      query("q","fox duplicate horses", "hl","true", "hl.fl", t1);
-      query("q","*:*", "rows",100);
+      query(false, new Object[] {"q","duplicate", "hl","true", "hl.fl", t1});
+      query(false, new Object[] {"q","fox duplicate horses", "hl","true", "hl.fl", t1});
+      query(false, new Object[] {"q","*:*", "rows",100});
     }
 
     // test debugging
     handle.put("explain", SKIPVAL);
     handle.put("debug", UNORDERED);
     handle.put("time", SKIPVAL);
-    query("q","now their fox sat had put","fl","*,score",CommonParams.DEBUG_QUERY, "true");
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG_QUERY, "true");
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING);
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
-    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
+    query(false, new Object[] {"q","now their fox sat had put","fl","*,score",CommonParams.DEBUG_QUERY, "true"});
+    query(false, new Object[] {"q", "id:[1 TO 5]", CommonParams.DEBUG_QUERY, "true"});
+    query(false, new Object[] {"q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING});
+    query(false, new Object[] {"q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS});
+    query(false, new Object[] {"q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY});
 
     // TODO: This test currently fails because debug info is obtained only
     // on shards with matches.
@@ -331,7 +352,7 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
       int numShards = _TestUtil.nextInt(random(), 0, shardCount) + 1;
       int numReplicas = _TestUtil.nextInt(random(), 0, 5) + 1;
       params.set("numShards", numShards);
-      params.set("numReplicas", numReplicas);
+      params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, numReplicas);
       String collectionName = "awholynewcollection_" + i;
       int clientIndex = random().nextInt(2);
       List<Integer> list = new ArrayList<Integer>();
@@ -342,8 +363,14 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
       SolrRequest request = new QueryRequest(params);
       request.setPath("/admin/collections");
    
-      clients.get(clientIndex).request(request);
+      final String baseUrl = ((HttpSolrServer) clients.get(clientIndex)).getBaseURL().substring(
+          0,
+          ((HttpSolrServer) clients.get(clientIndex)).getBaseURL().length()
+              - DEFAULT_COLLECTION.length() - 1);
+      
+      createNewSolrServer("", baseUrl).request(request);
     }
+    
     
     Set<Entry<String,List<Integer>>> collectionInfosEntrySet = collectionInfos.entrySet();
     for (Entry<String,List<Integer>> entry : collectionInfosEntrySet) {
@@ -356,7 +383,11 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
       HttpSolrServer collectionClient = new HttpSolrServer(url);
       
       // poll for a second - it can take a moment before we are ready to serve
-      waitForNon404or503(collectionClient);
+      waitForNon403or404or503(collectionClient);
+    }
+    
+    for (int i = 0; i < cnt; i++) {
+      waitForRecoveriesToFinish("awholynewcollection_" + i, zkStateReader, false);
     }
     
     List<String> collectionNameList = new ArrayList<String>();
@@ -399,7 +430,12 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
     request.setPath("/admin/collections");
     
     // we can use this client because we just want base url
-    clients.get(0).request(request);
+    final String baseUrl = ((HttpSolrServer) clients.get(0)).getBaseURL().substring(
+        0,
+        ((HttpSolrServer) clients.get(0)).getBaseURL().length()
+            - DEFAULT_COLLECTION.length() - 1);
+    
+    createNewSolrServer("", baseUrl).request(request);
 
     // reloads make take a short while
     boolean allTimesAreCorrect = waitForReloads(collectionName, urlToTimeBefore);
@@ -412,7 +448,7 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
  
-    clients.get(0).request(request);
+    createNewSolrServer("", baseUrl).request(request);
     
     // ensure its out of the state
     checkForMissingCollection(collectionName);
@@ -459,11 +495,11 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
       Iterator<Entry<String,Slice>> it = slices.entrySet().iterator();
       while (it.hasNext()) {
         Entry<String,Slice> sliceEntry = it.next();
-        Map<String,ZkNodeProps> sliceShards = sliceEntry.getValue().getShards();
-        Iterator<Entry<String,ZkNodeProps>> shardIt = sliceShards.entrySet()
+        Map<String,Replica> sliceShards = sliceEntry.getValue().getReplicasMap();
+        Iterator<Entry<String,Replica>> shardIt = sliceShards.entrySet()
             .iterator();
         while (shardIt.hasNext()) {
-          Entry<String,ZkNodeProps> shardEntry = shardIt.next();
+          Entry<String,Replica> shardEntry = shardIt.next();
           ZkCoreNodeProps coreProps = new ZkCoreNodeProps(shardEntry.getValue());
           CoreAdminResponse mcr = CoreAdminRequest.getStatus(
               coreProps.getCoreName(),
@@ -488,11 +524,11 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
     
     for (Map.Entry<String,Slice> entry : slices.entrySet()) {
       Slice slice = entry.getValue();
-      Map<String,ZkNodeProps> shards = slice.getShards();
-      Set<Map.Entry<String,ZkNodeProps>> shardEntries = shards.entrySet();
-      for (Map.Entry<String,ZkNodeProps> shardEntry : shardEntries) {
+      Map<String,Replica> shards = slice.getReplicasMap();
+      Set<Map.Entry<String,Replica>> shardEntries = shards.entrySet();
+      for (Map.Entry<String,Replica> shardEntry : shardEntries) {
         final ZkNodeProps node = shardEntry.getValue();
-        if (clusterState.liveNodesContain(node.get(ZkStateReader.NODE_NAME_PROP))) {
+        if (clusterState.liveNodesContain(node.getStr(ZkStateReader.NODE_NAME_PROP))) {
           return new ZkCoreNodeProps(node).getCoreUrl();
         }
       }
@@ -501,7 +537,7 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
     throw new RuntimeException("Could not find a live node for collection:" + collection);
   }
 
-  private void waitForNon404or503(HttpSolrServer collectionClient)
+  private void waitForNon403or404or503(HttpSolrServer collectionClient)
       throws Exception {
     SolrException exp = null;
     long timeoutAt = System.currentTimeMillis() + 30000;
@@ -512,7 +548,7 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
       try {
         collectionClient.query(new SolrQuery("*:*"));
       } catch (SolrException e) {
-        if (!(e.code() == 403 || e.code() == 503)) {
+        if (!(e.code() == 403 || e.code() == 503 || e.code() == 404)) {
           throw e;
         }
         exp = e;
@@ -534,7 +570,6 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
     boolean found = false;
     boolean sliceMatch = false;
     while (System.currentTimeMillis() < timeoutAt) {
-      solrj.getZkStateReader().updateClusterState(true);
       ClusterState clusterState = solrj.getZkStateReader().getClusterState();
       Map<String,Map<String,Slice>> collections = clusterState
           .getCollectionStates();
@@ -543,35 +578,16 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
         // did we find expectedSlices slices/shards?
         if (slices.size() == expectedSlices) {
           sliceMatch = true;
-          found = true;
-          // also make sure each are active
-          Iterator<Entry<String,Slice>> it = slices.entrySet().iterator();
-          while (it.hasNext()) {
-            Entry<String,Slice> sliceEntry = it.next();
-            Map<String,ZkNodeProps> sliceShards = sliceEntry.getValue()
-                .getShards();
-            Iterator<Entry<String,ZkNodeProps>> shardIt = sliceShards
-                .entrySet().iterator();
-            while (shardIt.hasNext()) {
-              Entry<String,ZkNodeProps> shardEntry = shardIt.next();
-              if (!shardEntry.getValue().get(ZkStateReader.STATE_PROP)
-                  .equals(ZkStateReader.ACTIVE)) {
-                found = false;
-                break;
-              }
-            }
-          }
-          if (found) break;
+
         }
+        found = true;
+        break;
       }
-      Thread.sleep(100);
+      Thread.sleep(500);
     }
     if (!found) {
-      printLayout();
       if (!sliceMatch) {
         fail("Could not find new " + expectedSlices + " slice collection called " + collectionName);
-      } else {
-        fail("Found expected # of slices, but some nodes are not active for collection called " + collectionName);
       }
     }
   }
@@ -647,6 +663,8 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
 
   // cloud level test mainly needed just to make sure that versions and errors are propagated correctly
   private void doOptimisticLockingAndUpdating() throws Exception {
+    printLayout();
+    
     SolrInputDocument sd =  sdoc("id", 1000, "_version_", -1);
     indexDoc(sd);
 
@@ -716,10 +734,14 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   private void testANewCollectionInOneInstanceWithManualShardAssignement() throws Exception {
+    System.clearProperty("numShards");
     List<SolrServer> collectionClients = new ArrayList<SolrServer>();
     SolrServer client = clients.get(0);
     otherCollectionClients.put(oneInstanceCollection2, collectionClients);
-    String baseUrl = ((HttpSolrServer) client).getBaseURL();
+    final String baseUrl = ((HttpSolrServer) client).getBaseURL().substring(
+        0,
+        ((HttpSolrServer) client).getBaseURL().length()
+            - DEFAULT_COLLECTION.length() - 1);
     createCollection(oneInstanceCollection2, collectionClients, baseUrl, 1, "slice1");
     createCollection(oneInstanceCollection2, collectionClients, baseUrl, 2, "slice2");
     createCollection(oneInstanceCollection2, collectionClients, baseUrl, 3, "slice2");
@@ -742,7 +764,9 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
     
     assertAllActive(oneInstanceCollection2, solrj.getZkStateReader());
     
-   // TODO: enable when we don't falsely get slice1... 
+    printLayout();
+    
+   // TODO: enable when we don't falsely get slice1...
    // solrj.getZkStateReader().getLeaderUrl(oneInstanceCollection2, "slice1", 30000);
    // solrj.getZkStateReader().getLeaderUrl(oneInstanceCollection2, "slice2", 30000);
     client2.add(getDoc(id, "1")); 
@@ -777,13 +801,16 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
     zkStateReader.updateClusterState(true);
     Map<String,Slice> slices = zkStateReader.getClusterState().getSlices(oneInstanceCollection2);
     assertNotNull(slices);
-    String roles = slices.get("slice1").getShards().values().iterator().next().get(ZkStateReader.ROLES_PROP);
+    String roles = slices.get("slice1").getReplicasMap().values().iterator().next().getStr(ZkStateReader.ROLES_PROP);
     assertEquals("none", roles);
   }
 
   private void testSearchByCollectionName() throws SolrServerException {
     SolrServer client = clients.get(0);
-    String baseUrl = ((HttpSolrServer) client).getBaseURL();
+    final String baseUrl = ((HttpSolrServer) client).getBaseURL().substring(
+        0,
+        ((HttpSolrServer) client).getBaseURL().length()
+            - DEFAULT_COLLECTION.length() - 1);
     
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
@@ -797,7 +824,10 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
     List<SolrServer> collectionClients = new ArrayList<SolrServer>();
     SolrServer client = clients.get(0);
     otherCollectionClients.put(oneInstanceCollection , collectionClients);
-    String baseUrl = ((HttpSolrServer) client).getBaseURL();
+    final String baseUrl = ((HttpSolrServer) client).getBaseURL().substring(
+        0,
+        ((HttpSolrServer) client).getBaseURL().length()
+            - DEFAULT_COLLECTION.length() - 1);
     createCollection(oneInstanceCollection, collectionClients, baseUrl, 1);
     createCollection(oneInstanceCollection, collectionClients, baseUrl, 2);
     createCollection(oneInstanceCollection, collectionClients, baseUrl, 3);
@@ -960,13 +990,17 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
     int unique = 0;
     for (final SolrServer client : clients) {
       unique++;
+      final String baseUrl = ((HttpSolrServer) client).getBaseURL()
+          .substring(
+              0,
+              ((HttpSolrServer) client).getBaseURL().length()
+                  - DEFAULT_COLLECTION.length() -1);
       final int frozeUnique = unique;
       Callable call = new Callable() {
         public Object call() {
           HttpSolrServer server;
           try {
-            server = new HttpSolrServer(
-                ((HttpSolrServer) client).getBaseURL());
+            server = new HttpSolrServer(baseUrl);
             
             Create createCmd = new Create();
             createCmd.setCoreName(collection);
@@ -982,8 +1016,7 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
         }
       };
      
-      collectionClients.add(createNewSolrServer(collection,
-          ((HttpSolrServer) client).getBaseURL()));
+      collectionClients.add(createNewSolrServer(collection, baseUrl));
       pending.add(completionService.submit(call));
       while (pending != null && pending.size() > 0) {
         
@@ -1042,6 +1075,7 @@ public class BasicDistributedZkTest extends AbstractDistribZkTestBase {
     if (solrj != null) {
       solrj.shutdown();
     }
+    System.clearProperty("numShards");
     System.clearProperty("zkHost");
   }
 }

@@ -23,6 +23,6 @@ import org.w3c.dom.Element;
  * expected to be thread-safe so that they can be used to simultaneously parse multiple XML documents.
  */
 public interface QueryBuilder {
-	
-	public Query getQuery(Element e) throws ParserException;
+
+  public Query getQuery(Element e) throws ParserException;
 }

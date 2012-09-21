@@ -25,6 +25,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
@@ -79,7 +80,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     IndexSearcher indexSearcher = new IndexSearcher(directoryReader);
     TopDocs result = indexSearcher.search(new MatchAllDocsQuery(), 1);
     assertTrue(result.totalHits > 0);
-    Document d = indexSearcher.doc(result.scoreDocs[0].doc);
+    StoredDocument d = indexSearcher.doc(result.scoreDocs[0].doc);
     assertNotNull(d);
     assertNotNull(d.getField("title"));
     assertEquals(dummyTitle, d.getField("title").stringValue());
@@ -99,7 +100,7 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
     directoryReader = DirectoryReader.open(dir);
     indexSearcher = new IndexSearcher(directoryReader);
     result = indexSearcher.search(new MatchAllDocsQuery(), 2);
-    Document d1 = indexSearcher.doc(result.scoreDocs[1].doc);
+    StoredDocument d1 = indexSearcher.doc(result.scoreDocs[1].doc);
     assertNotNull(d1);
     assertNotNull(d1.getField("title"));
     assertEquals(dogmasTitle, d1.getField("title").stringValue());

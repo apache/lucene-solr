@@ -23,9 +23,9 @@ import org.w3c.dom.Element;
  */
 
 /**
- * 
+ * Interface for building {@link Filter}s
  */
 public interface FilterBuilder {
 
-	 public Filter getFilter(Element e) throws ParserException;
+   public Filter getFilter(Element e) throws ParserException;
 }

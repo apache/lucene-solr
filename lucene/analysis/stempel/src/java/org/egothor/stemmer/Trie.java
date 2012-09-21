@@ -332,7 +332,7 @@ public class Trie {
    * @param key the key
    * @param cmd the patch command
    */
-  public void add(CharSequence key, CharSequence cmd) {
+  void add(CharSequence key, CharSequence cmd) {
     if (key == null || cmd == null) {
       return;
     }
@@ -376,6 +376,7 @@ public class Trie {
     return by.optimize(this);
   }
   
+  /** writes debugging info to the printstream */
   public void printInfo(PrintStream out, CharSequence prefix) {
     out.println(prefix + "nds " + rows.size() + " cmds " + cmds.size()
         + " cells " + getCells() + " valcells " + getCellsVal() + " pntcells "

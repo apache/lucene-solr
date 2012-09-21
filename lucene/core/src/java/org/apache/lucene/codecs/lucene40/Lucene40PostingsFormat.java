@@ -159,7 +159,7 @@ import org.apache.lucene.util.fst.FST; // javadocs
  * with the frequency of the term in that document (except when frequencies are
  * omitted: {@link IndexOptions#DOCS_ONLY}).</p>
  * <ul>
- *   <li>FreqFile (.frq) --&gt; Header, &lt;TermFreqs, SkipData&gt; <sup>TermCount</sup></li>
+ *   <li>FreqFile (.frq) --&gt; Header, &lt;TermFreqs, SkipData?&gt; <sup>TermCount</sup></li>
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>TermFreqs --&gt; &lt;TermFreq&gt; <sup>DocFreq</sup></li>
  *   <li>TermFreq --&gt; DocDelta[, Freq?]</li>
@@ -269,7 +269,7 @@ import org.apache.lucene.util.fst.FST; // javadocs
 // TODO: this class could be created by wrapping
 // BlockTreeTermsDict around Lucene40PostingsBaseFormat; ie
 // we should not duplicate the code from that class here:
-public class Lucene40PostingsFormat extends PostingsFormat {
+public final class Lucene40PostingsFormat extends PostingsFormat {
 
   private final int minBlockSize;
   private final int maxBlockSize;
@@ -314,7 +314,7 @@ public class Lucene40PostingsFormat extends PostingsFormat {
       FieldsProducer ret = new BlockTreeTermsReader(
                                                     state.dir,
                                                     state.fieldInfos,
-                                                    state.segmentInfo.name,
+                                                    state.segmentInfo,
                                                     postings,
                                                     state.context,
                                                     state.segmentSuffix,

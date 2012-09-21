@@ -27,10 +27,10 @@ import org.apache.lucene.index.FieldInfo;
  * Extension of {@link PostingsConsumer} to support pluggable term dictionaries.
  * <p>
  * This class contains additional hooks to interact with the provided
- * term dictionaries such as {@link BlockTreeTermsWriter} and 
- * {@link BlockTermsWriter}. If you want to re-use one of these existing
- * implementations and are only interested in customizing the format of
- * the postings list, extend this class instead.
+ * term dictionaries such as {@link BlockTreeTermsWriter}. If you want
+ * to re-use an existing implementation and are only interested in
+ * customizing the format of the postings list, extend this class
+ * instead.
  * 
  * @see PostingsReaderBase
  * @lucene.experimental

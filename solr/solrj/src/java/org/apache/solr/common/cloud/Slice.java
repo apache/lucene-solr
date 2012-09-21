@@ -17,48 +17,81 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
+import org.apache.noggit.JSONUtil;
 import org.apache.noggit.JSONWriter;
 
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * A Slice contains immutable information about all shards that share the same
- * shard id (shard leader and replicas).
+ * A Slice contains immutable information about a logical shard (all replicas that share the same shard id).
  */
-public class Slice implements JSONWriter.Writable {
-  private final Map<String,ZkNodeProps> shards;
+public class Slice extends ZkNodeProps {
+  public static String REPLICAS = "replicas";
+  public static String RANGE = "range";
+  public static String LEADER = "leader";       // FUTURE: do we want to record the leader as a slice property in the JSON (as opposed to isLeader as a replica property?)
+
   private final String name;
+  private final HashPartitioner.Range range;
+  private final Integer replicationFactor;
+  private final Map<String,Replica> replicas;
+  private final Replica leader;
 
-  public Slice(String name, Map<String,ZkNodeProps> shards) {
-    this.shards = shards;
+  /**
+   * @param name  The name of the slice
+   * @param replicas The replicas of the slice.  This is used directly and a copy is not made.  If null, replicas will be constructed from props.
+   * @param props  The properties of the slice - a shallow copy will always be made.
+   */
+  public Slice(String name, Map<String,Replica> replicas, Map<String,Object> props) {
+    super( props==null ? new LinkedHashMap<String,Object>(2) : new LinkedHashMap<String,Object>(props));
     this.name = name;
-  }
-  
-  /**
-   * Get properties for all shards in this slice.
-   * 
-   * @return map containing coreNodeName as the key, see
-   *         {@link ZkStateReader#getCoreNodeName(String, String)}, ZKNodeProps
-   *         as the value.
-   */
-  public Map<String,ZkNodeProps> getShards() {
-    return Collections.unmodifiableMap(shards);
+
+    Object rangeObj = propMap.get(RANGE);
+    HashPartitioner.Range tmpRange = null;
+    if (rangeObj instanceof HashPartitioner.Range) {
+      tmpRange = (HashPartitioner.Range)rangeObj;
+    } else if (rangeObj != null) {
+      HashPartitioner hp = new HashPartitioner();
+      tmpRange = hp.fromString(rangeObj.toString());
+    }
+    range = tmpRange;
+
+    replicationFactor = null;  // future
+
+    // add the replicas *after* the other properties (for aesthetics, so it's easy to find slice properties in the JSON output)
+    this.replicas = replicas != null ? replicas : makeReplicas((Map<String,Object>)propMap.get(REPLICAS));
+    propMap.put(REPLICAS, this.replicas);
+
+    leader = findLeader();
   }
 
-  /**
-   * Get a copy of the shards data this object holds.
-   */
-  public Map<String,ZkNodeProps> getShardsCopy() {
-    Map<String,ZkNodeProps> shards = new HashMap<String,ZkNodeProps>();
-    for (Map.Entry<String,ZkNodeProps> entry : this.shards.entrySet()) {
-      ZkNodeProps zkProps = new ZkNodeProps(entry.getValue());
-      shards.put(entry.getKey(), zkProps);
+
+  private Map<String,Replica> makeReplicas(Map<String,Object> genericReplicas) {
+    if (genericReplicas == null) return new HashMap<String,Replica>(1);
+    Map<String,Replica> result = new LinkedHashMap<String, Replica>(genericReplicas.size());
+    for (Map.Entry<String,Object> entry : genericReplicas.entrySet()) {
+      String name = entry.getKey();
+      Object val = entry.getValue();
+      Replica r;
+      if (val instanceof Replica) {
+        r = (Replica)val;
+      } else {
+        r = new Replica(name, (Map<String,Object>)val);
+      }
+      result.put(name, r);
     }
-    return shards;
+    return result;
   }
-  
+
+  private Replica findLeader() {
+    for (Replica replica : replicas.values()) {
+      if (replica.getStr(LEADER) != null) return replica;
+    }
+    return null;
+  }
+
   /**
    * Return slice name (shard id).
    */
@@ -66,13 +99,35 @@ public class Slice implements JSONWriter.Writable {
     return name;
   }
 
+  /**
+   * Gets the list of replicas for this slice.
+   */
+  public Collection<Replica> getReplicas() {
+    return replicas.values();
+  }
+
+  /**
+   * Get the map of coreNodeName to replicas for this slice.
+   */
+  public Map<String, Replica> getReplicasMap() {
+    return replicas;
+  }
+
+  public Map<String,Replica> getReplicasCopy() {
+    return new LinkedHashMap<String,Replica>(replicas);
+  }
+
+  public Replica getLeader() {
+    return leader;
+  }
+
   @Override
   public String toString() {
-    return "Slice [shards=" + shards + ", name=" + name + "]";
+    return name + ':' + JSONUtil.toJSON(propMap);
   }
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    jsonWriter.write(shards);
+    jsonWriter.write(propMap);
   }
 }

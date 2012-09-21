@@ -38,7 +38,7 @@ import org.apache.lucene.util.Bits;
  * <p>
  * Since {@link Weight} creates {@link Scorer} instances for a given
  * {@link AtomicReaderContext} ({@link #scorer(AtomicReaderContext, 
- * boolean, boolean, boolean, boolean, boolean, Bits)})
+ * boolean, boolean, PostingFeatures, Bits)})
  * callers must maintain the relationship between the searcher's top-level
  * {@link IndexReaderContext} and the context used to create a {@link Scorer}. 
  * <p>
@@ -53,7 +53,7 @@ import org.apache.lucene.util.Bits;
  * <li>The query normalization factor is passed to {@link #normalize(float, float)}. At
  * this point the weighting is complete.
  * <li>A <code>Scorer</code> is constructed by
- * {@link #scorer(AtomicReaderContext, boolean, boolean, boolean, boolean, boolean, Bits)}.
+ * {@link #scorer(AtomicReaderContext, boolean, boolean, PostingFeatures, Bits)}.
  * </ol>
  * 
  * @since 2.9
@@ -119,7 +119,7 @@ public abstract class Weight {
    * Returns true iff this implementation scores docs only out of order. This
    * method is used in conjunction with {@link Collector}'s
    * {@link Collector#acceptsDocsOutOfOrder() acceptsDocsOutOfOrder} and
-   * {@link #scorer(AtomicReaderContext, boolean, boolean, boolean, boolean, boolean, Bits)} to
+   * {@link #scorer(AtomicReaderContext, boolean, boolean, PostingFeatures, Bits)} to
    * create a matching {@link Scorer} instance for a given {@link Collector}, or
    * vice versa.
    * <p>

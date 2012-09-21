@@ -136,7 +136,7 @@ NUM        = ({ALPHANUM} {P} {HAS_DIGIT}
 TAGS = "<"\/?{ALPHANUM}({WHITESPACE}*{ALPHANUM}=\"{ALPHANUM}\")*">"
 
 // punctuation
-P	         = ("_"|"-"|"/"|"."|",")
+P           = ("_"|"-"|"/"|"."|",")
 
 // at least one digit
 HAS_DIGIT  =

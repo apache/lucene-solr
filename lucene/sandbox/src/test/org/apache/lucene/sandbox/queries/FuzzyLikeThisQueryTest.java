@@ -23,6 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -88,7 +89,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
     TopDocs topDocs = searcher.search(flt, 1);
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertTrue("score docs must match 1 doc", (sd != null) && (sd.length > 0));
-    Document doc = searcher.doc(sd[0].doc);
+    StoredDocument doc = searcher.doc(sd[0].doc);
     assertEquals("Should match most similar not most rare variant", "2", doc.get("id"));
   }
 
@@ -104,7 +105,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
     TopDocs topDocs = searcher.search(flt, 1);
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertTrue("score docs must match 1 doc", (sd != null) && (sd.length > 0));
-    Document doc = searcher.doc(sd[0].doc);
+    StoredDocument doc = searcher.doc(sd[0].doc);
     assertEquals("Should match most similar when using 2 words", "2", doc.get("id"));
   }
 
@@ -119,7 +120,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
     TopDocs topDocs = searcher.search(flt, 1);
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertTrue("score docs must match 1 doc", (sd != null) && (sd.length > 0));
-    Document doc = searcher.doc(sd[0].doc);
+    StoredDocument doc = searcher.doc(sd[0].doc);
     assertEquals("Should match most similar when using 2 words", "2", doc.get("id"));
   }
 

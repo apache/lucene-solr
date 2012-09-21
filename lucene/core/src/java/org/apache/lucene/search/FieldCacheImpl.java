@@ -52,7 +52,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * @since   lucene 1.4
  */
 class FieldCacheImpl implements FieldCache {
-	
+
   private Map<Class<?>,Cache> caches;
   FieldCacheImpl() {
     init();
@@ -173,7 +173,7 @@ class FieldCacheImpl implements FieldCache {
         ((AtomicReader)key).addReaderClosedListener(purgeReader); 
       } else {
         // last chance
-        reader.addReaderClosedListener(purgeReader); 				
+        reader.addReaderClosedListener(purgeReader);
       }
     }
   }
@@ -286,7 +286,7 @@ class FieldCacheImpl implements FieldCache {
 
   /** Expert: Every composite-key in the internal cache is of this type. */
   static class Entry {
-    final String field;        // which Fieldable
+    final String field;        // which Field
     final Object custom;       // which custom comparator or parser
 
     /** Creates one of these objects for a custom comparator/parser. */
@@ -1110,14 +1110,8 @@ class FieldCacheImpl implements FieldCache {
         // Try for coarse estimate for number of bits; this
         // should be an underestimate most of the time, which
         // is fine -- GrowableWriter will reallocate as needed
-        long numUniqueTerms = 0;
-        try {
-          numUniqueTerms = terms.size();
-        } catch (UnsupportedOperationException uoe) {
-          numUniqueTerms = -1;
-        }
-        if (numUniqueTerms != -1) {
-
+        long numUniqueTerms = terms.size();
+        if (numUniqueTerms != -1L) {
           if (numUniqueTerms > termCountHardLimit) {
             // app is misusing the API (there is more than
             // one term per doc); in this case we make best
@@ -1248,13 +1242,8 @@ class FieldCacheImpl implements FieldCache {
         // Try for coarse estimate for number of bits; this
         // should be an underestimate most of the time, which
         // is fine -- GrowableWriter will reallocate as needed
-        long numUniqueTerms = 0;
-        try {
-          numUniqueTerms = terms.size();
-        } catch (UnsupportedOperationException uoe) {
-          numUniqueTerms = -1;
-        }
-        if (numUniqueTerms != -1) {
+        long numUniqueTerms = terms.size();
+        if (numUniqueTerms != -1L) {
           if (numUniqueTerms > termCountHardLimit) {
             numUniqueTerms = termCountHardLimit;
           }

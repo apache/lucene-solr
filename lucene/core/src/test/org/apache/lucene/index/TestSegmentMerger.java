@@ -82,7 +82,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     final SegmentInfo si = new SegmentInfo(mergedDir, Constants.LUCENE_MAIN_VERSION, mergedSegment, -1, false, codec, null, null);
 
     SegmentMerger merger = new SegmentMerger(si, InfoStream.getDefault(), mergedDir, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL,
-                                             MergeState.CheckAbort.NONE, null, new FieldInfos.FieldNumbers(), newIOContext(random()));
+                                             MergeState.CheckAbort.NONE, new FieldInfos.FieldNumbers(), newIOContext(random()));
     merger.add(reader1);
     merger.add(reader2);
     MergeState mergeState = merger.merge();
@@ -96,11 +96,11 @@ public class TestSegmentMerger extends LuceneTestCase {
                                                    DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);
-    Document newDoc1 = mergedReader.document(0);
+    StoredDocument newDoc1 = mergedReader.document(0);
     assertTrue(newDoc1 != null);
     //There are 2 unstored fields on the document
     assertTrue(DocHelper.numFields(newDoc1) == DocHelper.numFields(doc1) - DocHelper.unstored.size());
-    Document newDoc2 = mergedReader.document(1);
+    StoredDocument newDoc2 = mergedReader.document(1);
     assertTrue(newDoc2 != null);
     assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
 

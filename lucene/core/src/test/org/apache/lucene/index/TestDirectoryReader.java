@@ -61,10 +61,10 @@ public class TestDirectoryReader extends LuceneTestCase {
     assertTrue(reader != null);
     assertTrue(reader instanceof StandardDirectoryReader);
     
-    Document newDoc1 = reader.document(0);
+    StoredDocument newDoc1 = reader.document(0);
     assertTrue(newDoc1 != null);
     assertTrue(DocHelper.numFields(newDoc1) == DocHelper.numFields(doc1) - DocHelper.unstored.size());
-    Document newDoc2 = reader.document(1);
+    StoredDocument newDoc2 = reader.document(1);
     assertTrue(newDoc2 != null);
     assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
     Terms vector = reader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
@@ -386,11 +386,11 @@ void assertTermDocsCount(String msg,
       writer.addDocument(doc);
       writer.close();
       DirectoryReader reader = DirectoryReader.open(dir);
-      Document doc2 = reader.document(reader.maxDoc() - 1);
-      IndexableField[] fields = doc2.getFields("bin1");
+      StoredDocument doc2 = reader.document(reader.maxDoc() - 1);
+      StorableField[] fields = doc2.getFields("bin1");
       assertNotNull(fields);
       assertEquals(1, fields.length);
-      IndexableField b1 = fields[0];
+      StorableField b1 = fields[0];
       assertTrue(b1.binaryValue() != null);
       BytesRef bytesRef = b1.binaryValue();
       assertEquals(bin.length, bytesRef.length);
@@ -549,7 +549,7 @@ public void testFilesOpenClose() throws IOException {
     assertEquals("IndexReaders have different values for numDocs.", index1.numDocs(), index2.numDocs());
     assertEquals("IndexReaders have different values for maxDoc.", index1.maxDoc(), index2.maxDoc());
     assertEquals("Only one IndexReader has deletions.", index1.hasDeletions(), index2.hasDeletions());
-    assertEquals("Single segment test differs.", index1.getSequentialSubReaders().size() == 1, index2.getSequentialSubReaders().size() == 1);
+    assertEquals("Single segment test differs.", index1.leaves().size() == 1, index2.leaves().size() == 1);
     
     // check field names
     FieldInfos fieldInfos1 = MultiFields.getMergedFieldInfos(index1);
@@ -595,13 +595,13 @@ public void testFilesOpenClose() throws IOException {
     // check stored fields
     for (int i = 0; i < index1.maxDoc(); i++) {
       if (liveDocs1 == null || liveDocs1.get(i)) {
-        Document doc1 = index1.document(i);
-        Document doc2 = index2.document(i);
-        List<IndexableField> field1 = doc1.getFields();
-        List<IndexableField> field2 = doc2.getFields();
+        StoredDocument doc1 = index1.document(i);
+        StoredDocument doc2 = index2.document(i);
+        List<StorableField> field1 = doc1.getFields();
+        List<StorableField> field2 = doc2.getFields();
         assertEquals("Different numbers of fields for doc " + i + ".", field1.size(), field2.size());
-        Iterator<IndexableField> itField1 = field1.iterator();
-        Iterator<IndexableField> itField2 = field2.iterator();
+        Iterator<StorableField> itField1 = field1.iterator();
+        Iterator<StorableField> itField2 = field2.iterator();
         while (itField1.hasNext()) {
           Field curField1 = (Field) itField1.next();
           Field curField2 = (Field) itField2.next();
@@ -785,7 +785,7 @@ public void testFilesOpenClose() throws IOException {
     DirectoryReader r2 = DirectoryReader.openIfChanged(r);
     assertNotNull(r2);
     r.close();
-    AtomicReader sub0 = r2.getSequentialSubReaders().get(0);
+    AtomicReader sub0 = r2.leaves().get(0).reader();
     final int[] ints2 = FieldCache.DEFAULT.getInts(sub0, "number", false);
     r2.close();
     assertTrue(ints == ints2);
@@ -807,16 +807,17 @@ public void testFilesOpenClose() throws IOException {
   
     DirectoryReader r = DirectoryReader.open(dir);
     AtomicReader r1 = getOnlySegmentReader(r);
-    assertEquals(36, r1.getUniqueTermCount());
+    assertEquals(26, r1.terms("field").size());
+    assertEquals(10, r1.terms("number").size());
     writer.addDocument(doc);
     writer.commit();
     DirectoryReader r2 = DirectoryReader.openIfChanged(r);
     assertNotNull(r2);
     r.close();
   
-    List<? extends AtomicReader> subs = r2.getSequentialSubReaders();
-    for(AtomicReader s : subs) {
-      assertEquals(36, s.getUniqueTermCount());
+    for(AtomicReaderContext s : r2.leaves()) {
+      assertEquals(26, s.reader().terms("field").size());
+      assertEquals(10, s.reader().terms("number").size());
     }
     r2.close();
     writer.close();
@@ -842,7 +843,7 @@ public void testFilesOpenClose() throws IOException {
       // expected
     }
   
-    assertEquals(-1, ((SegmentReader) r.getSequentialSubReaders().get(0)).getTermInfosIndexDivisor());
+    assertEquals(-1, ((SegmentReader) r.leaves().get(0).reader()).getTermInfosIndexDivisor());
     writer = new IndexWriter(
         dir,
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
@@ -857,11 +858,11 @@ public void testFilesOpenClose() throws IOException {
     assertNotNull(r2);
     assertNull(DirectoryReader.openIfChanged(r2));
     r.close();
-    List<? extends AtomicReader> subReaders = r2.getSequentialSubReaders();
-    assertEquals(2, subReaders.size());
-    for(AtomicReader s : subReaders) {
+    List<AtomicReaderContext> leaves = r2.leaves();
+    assertEquals(2, leaves.size());
+    for(AtomicReaderContext ctx : leaves) {
       try {
-        s.docFreq(new Term("field", "f"));
+        ctx.reader().docFreq(new Term("field", "f"));
         fail("did not hit expected exception");
       } catch (IllegalStateException ise) {
         // expected
@@ -1081,7 +1082,7 @@ public void testFilesOpenClose() throws IOException {
     Set<String> fieldsToLoad = new HashSet<String>();
     assertEquals(0, r.document(0, fieldsToLoad).getFields().size());
     fieldsToLoad.add("field1");
-    Document doc2 = r.document(0, fieldsToLoad);
+    StoredDocument doc2 = r.document(0, fieldsToLoad);
     assertEquals(1, doc2.getFields().size());
     assertEquals("foobar", doc2.get("field1"));
     r.close();

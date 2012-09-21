@@ -37,7 +37,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 public class TestPatternTokenizer extends BaseTokenStreamTestCase 
 {
-	public void testSplitting() throws Exception 
+  public void testSplitting() throws Exception 
   {
     String qpattern = "\\'([^\\']+)\\'"; // get stuff between "'"
     String[][] tests = {
@@ -71,8 +71,8 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
         }
       }*/
     } 
-	}
-	
+  }
+
   public void testOffsetCorrection() throws Exception {
     final String INPUT = "G&uuml;nther G&uuml;nther is here";
 
@@ -111,6 +111,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
     // assign bogus values
     in.clearAttributes();
     termAtt.setEmpty().append("bogusTerm");
+    in.reset();
     while (in.incrementToken()) {
       if (out.length() > 0)
         out.append(' ');

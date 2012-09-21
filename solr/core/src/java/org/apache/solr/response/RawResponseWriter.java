@@ -96,7 +96,7 @@ public class RawResponseWriter implements BinaryQueryResponseWriter
   }
 
 public void write(OutputStream out, SolrQueryRequest request,
-		SolrQueryResponse response) throws IOException {
+    SolrQueryResponse response) throws IOException {
     Object obj = response.getValues().get( CONTENT );
     if( obj != null && (obj instanceof ContentStream ) ) {
       // copy the contents to the writer...
@@ -110,8 +110,8 @@ public void write(OutputStream out, SolrQueryRequest request,
     }
     else {
       //getBaseWriter( request ).write( writer, request, response );
-    	throw new IOException("did not find a CONTENT object");
+      throw new IOException("did not find a CONTENT object");
     }
-	
-}
+
+  }
 }

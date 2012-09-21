@@ -20,14 +20,10 @@ package org.apache.lucene.spatial;
 import com.carrotsearch.randomizedtesting.annotations.Name;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.simple.SimpleSpatialContext;
+import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.io.ShapeReadWriter;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -38,6 +34,7 @@ import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.spatial.vector.TwoDoublesStrategy;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -55,39 +52,36 @@ public class PortedSolr3Test extends StrategyTestCase {
   public static Iterable<Object[]> parameters() {
     List<Object[]> ctorArgs = new ArrayList<Object[]>();
 
-    SpatialContext ctx = SimpleSpatialContext.GEO_KM;
+    SpatialContext ctx = SpatialContext.GEO;
     SpatialPrefixTree grid;
     SpatialStrategy strategy;
 
     grid = new GeohashPrefixTree(ctx,12);
     strategy = new RecursivePrefixTreeStrategy(grid, "recursive_geohash");
-    ctorArgs.add(new Object[]{new Param(strategy, "recursive_geohash")});
+    ctorArgs.add(new Object[]{new Param(strategy)});
 
     grid = new QuadPrefixTree(ctx,25);
     strategy = new RecursivePrefixTreeStrategy(grid, "recursive_quad");
-    ctorArgs.add(new Object[]{new Param(strategy, "recursive_quad")});
+    ctorArgs.add(new Object[]{new Param(strategy)});
 
     grid = new GeohashPrefixTree(ctx,12);
     strategy = new TermQueryPrefixTreeStrategy(grid, "termquery_geohash");
-    ctorArgs.add(new Object[]{new Param(strategy, "termquery_geohash")});
+    ctorArgs.add(new Object[]{new Param(strategy)});
+
+    strategy = new TwoDoublesStrategy(ctx, "twodoubles");
+    ctorArgs.add(new Object[]{new Param(strategy)});
 
     return ctorArgs;
   }
   
-  // this is a hack for clover!
+  // this is a hack for clover! (otherwise strategy.toString() used as file name)
   static class Param {
     SpatialStrategy strategy;
-    String description;
 
-    Param(SpatialStrategy strategy, String description) {
-      this.strategy = strategy;
-      this.description = description;
-    }
+    Param(SpatialStrategy strategy) { this.strategy = strategy; }
     
     @Override
-    public String toString() {
-      return description;
-    }
+    public String toString() { return strategy.getFieldName(); }
   }
 
 //  private String fieldName;
@@ -121,6 +115,7 @@ public class PortedSolr3Test extends StrategyTestCase {
   public void testIntersections() throws Exception {
     setupDocs();
     //Try some edge cases
+      //NOTE: 2nd arg is distance in kilometers
     checkHitsCircle("1,1", 175, 3, 5, 6, 7);
     checkHitsCircle("0,179.8", 200, 2, 8, 9);
     checkHitsCircle("89.8, 50", 200, 2, 10, 11);//this goes over the north pole
@@ -156,63 +151,22 @@ public class PortedSolr3Test extends StrategyTestCase {
     checkHitsBBox("43.517030,-96.789603", 110, 1, 17);
   }
 
-  /**
-   * This test is similar to a Solr 3 spatial test.
-   */
-  @Test
-  public void testDistanceOrder() throws IOException {
-    adoc("100","1,2");
-    adoc("101","4,-1");
-    commit();
-
-    //query closer to #100
-    checkHitsOrdered("Intersects(Circle(3,4 d=1000))", "101", "100");
-    //query closer to #101
-    checkHitsOrdered("Intersects(Circle(4,0 d=1000))", "100", "101");
-  }
-
-  private void checkHitsOrdered(String spatialQ, String... ids) {
-    SpatialArgs args = this.argsParser.parse(spatialQ,ctx);
-    Query query = strategy.makeQuery(args);
-    SearchResults results = executeQuery(query, 100);
-    String[] resultIds = new String[results.numFound];
-    int i = 0;
-    for (SearchResult result : results.results) {
-      resultIds[i++] = result.document.get("id");
-    }
-    assertArrayEquals("order matters",ids, resultIds);
-  }
-
   //---- these are similar to Solr test methods
-  
-  private void adoc(String idStr, String shapeStr) throws IOException {
-    Shape shape = ctx.readShape(shapeStr);
-    addDocument(newDoc(idStr,shape));
+
+  private void checkHitsCircle(String ptStr, double distKM, int assertNumFound, int... assertIds) {
+    _checkHits(false, ptStr, distKM, assertNumFound, assertIds);
+  }
+  private void checkHitsBBox(String ptStr, double distKM, int assertNumFound, int... assertIds) {
+    _checkHits(true, ptStr, distKM, assertNumFound, assertIds);
   }
 
-  @SuppressWarnings("unchecked")
-  private Document newDoc(String id, Shape shape) {
-    Document doc = new Document();
-    doc.add(new StringField("id", id, Field.Store.YES));
-    for (IndexableField f : strategy.createIndexableFields(shape)) {
-      doc.add(f);
-    }
-    if (storeShape)
-      doc.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
-    return doc;
-  }
-
-  private void checkHitsCircle(String ptStr, double dist, int assertNumFound, int... assertIds) {
-    _checkHits(SpatialOperation.Intersects, ptStr, dist, assertNumFound, assertIds);
-  }
-  private void checkHitsBBox(String ptStr, double dist, int assertNumFound, int... assertIds) {
-    _checkHits(SpatialOperation.BBoxIntersects, ptStr, dist, assertNumFound, assertIds);
-  }
-
-  @SuppressWarnings("unchecked")
-  private void _checkHits(SpatialOperation op, String ptStr, double dist, int assertNumFound, int... assertIds) {
-    Point pt = (Point) ctx.readShape(ptStr);
-    Shape shape = ctx.makeCircle(pt,dist);
+  private void _checkHits(boolean bbox, String ptStr, double distKM, int assertNumFound, int... assertIds) {
+    SpatialOperation op = SpatialOperation.Intersects;
+    Point pt = (Point) new ShapeReadWriter(ctx).readShape(ptStr);
+    double distDEG = DistanceUtils.dist2Degrees(distKM, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+    Shape shape = ctx.makeCircle(pt, distDEG);
+    if (bbox)
+      shape = shape.getBoundingBox();
 
     SpatialArgs args = new SpatialArgs(op,shape);
     //args.setDistPrecision(0.025);

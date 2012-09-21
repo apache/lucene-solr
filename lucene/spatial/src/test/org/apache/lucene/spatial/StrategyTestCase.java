@@ -19,6 +19,7 @@ package org.apache.lucene.spatial;
  */
 
 import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.io.ShapeReadWriter;
 import com.spatial4j.core.io.sample.SampleData;
 import com.spatial4j.core.io.sample.SampleDataReader;
 import com.spatial4j.core.shape.Shape;
@@ -26,7 +27,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.junit.Assert;
 
@@ -51,7 +56,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
 
   public static final String QTEST_States_IsWithin_BBox   = "states-IsWithin-BBox.txt";
   public static final String QTEST_States_Intersects_BBox = "states-Intersects-BBox.txt";
-  public static final String QTEST_Cities_IsWithin_BBox = "cities-IsWithin-BBox.txt";
+  public static final String QTEST_Cities_Intersects_BBox = "cities-Intersects-BBox.txt";
   public static final String QTEST_Simple_Queries_BBox = "simple-Queries-BBox.txt";
 
   private Logger log = Logger.getLogger(getClass().getName());
@@ -84,16 +89,24 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       Document document = new Document();
       document.add(new StringField("id", data.id, Field.Store.YES));
       document.add(new StringField("name", data.name, Field.Store.YES));
-      Shape shape = ctx.readShape(data.shape);
-      for (IndexableField f : strategy.createIndexableFields(shape)) {
-        document.add(f);
+      Shape shape = new ShapeReadWriter(ctx).readShape(data.shape);
+      shape = convertShapeFromGetDocuments(shape);
+      if (shape != null) {
+        for (Field f : strategy.createIndexableFields(shape)) {
+          document.add(f);
+        }
+        if (storeShape)
+          document.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
       }
-      if (storeShape)
-        document.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
 
       documents.add(document);
     }
     return documents;
+  }
+
+  /** Subclasses may override to transform or remove a shape for indexing */
+  protected Shape convertShapeFromGetDocuments(Shape shape) {
+    return shape;
   }
 
   protected Iterator<SampleData> getSampleData(String testDataFile) throws IOException {
@@ -117,7 +130,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       SearchResults got = executeQuery(strategy.makeQuery(q.args), 100);
       if (storeShape && got.numFound > 0) {
         //check stored value is there & parses
-        assertNotNull(ctx.readShape(got.results.get(0).document.get(strategy.getFieldName())));
+        assertNotNull(new ShapeReadWriter(ctx).readShape(got.results.get(0).document.get(strategy.getFieldName())));
       }
       if (concern.orderIsImportant) {
         Iterator<String> ids = q.ids.iterator();
@@ -159,4 +172,47 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       }
     }
   }
+
+  protected void adoc(String id, String shapeStr) throws IOException {
+    Shape shape = shapeStr==null ? null : new ShapeReadWriter(ctx).readShape(shapeStr);
+    addDocument(newDoc(id, shape));
+  }
+  protected void adoc(String id, Shape shape) throws IOException {
+    addDocument(newDoc(id, shape));
+  }
+
+  protected Document newDoc(String id, Shape shape) {
+    Document doc = new Document();
+    doc.add(new StringField("id", id, Field.Store.YES));
+    if (shape != null) {
+      for (Field f : strategy.createIndexableFields(shape)) {
+        doc.add(f);
+      }
+      if (storeShape)
+        doc.add(new StoredField(strategy.getFieldName(), ctx.toString(shape)));
+    }
+    return doc;
+  }
+
+  /** scores[] are in docId order */
+  protected void checkValueSource(ValueSource vs, float scores[], float delta) throws IOException {
+    FunctionQuery q = new FunctionQuery(vs);
+
+//    //TODO is there any point to this check?
+//    int expectedDocs[] = new int[scores.length];//fill with ascending 0....length-1
+//    for (int i = 0; i < expectedDocs.length; i++) {
+//      expectedDocs[i] = i;
+//    }
+//    CheckHits.checkHits(random(), q, "", indexSearcher, expectedDocs);
+
+    TopDocs docs = indexSearcher.search(q, 1000);//calculates the score
+    for (int i = 0; i < docs.scoreDocs.length; i++) {
+      ScoreDoc gotSD = docs.scoreDocs[i];
+      float expectedScore = scores[gotSD.doc];
+      assertEquals("Not equal for doc "+gotSD.doc, expectedScore, gotSD.score, delta);
+    }
+
+    CheckHits.checkExplanations(q, "", indexSearcher);
+  }
+
 }

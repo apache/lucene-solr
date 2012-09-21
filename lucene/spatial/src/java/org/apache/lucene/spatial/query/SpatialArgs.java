@@ -17,9 +17,9 @@ package org.apache.lucene.spatial.query;
  * limitations under the License.
  */
 
-import java.util.Locale;
-
-import com.spatial4j.core.exception.InvalidSpatialArgument;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 
 /**
@@ -29,46 +29,72 @@ import com.spatial4j.core.shape.Shape;
  */
 public class SpatialArgs {
 
-  public static final double DEFAULT_DIST_PRECISION = 0.025d;
+  public static final double DEFAULT_DISTERRPCT = 0.025d;
 
   private SpatialOperation operation;
   private Shape shape;
-  private double distPrecision = DEFAULT_DIST_PRECISION;
-
-  // Useful for 'distance' calculations
-  private Double min;
-  private Double max;
-
-  public SpatialArgs(SpatialOperation operation) {
-    this.operation = operation;
-  }
+  private Double distErrPct;
+  private Double distErr;
 
   public SpatialArgs(SpatialOperation operation, Shape shape) {
+    if (operation == null || shape == null)
+      throw new NullPointerException("operation and shape are required");
     this.operation = operation;
     this.shape = shape;
   }
 
-  /** Check if the arguments make sense -- throw an exception if not */
-  public void validate() throws InvalidSpatialArgument {
-    if (operation.isTargetNeedsArea() && !shape.hasArea()) {
-      throw new InvalidSpatialArgument(operation + " only supports geometry with area");
+  /**
+   * Computes the distance given a shape and the {@code distErrPct}.  The
+   * algorithm is the fraction of the distance from the center of the query
+   * shape to its furthest bounding box corner.
+   *
+   * @param shape Mandatory.
+   * @param distErrPct 0 to 0.5
+   * @param ctx Mandatory
+   * @return A distance (in degrees).
+   */
+  public static double calcDistanceFromErrPct(Shape shape, double distErrPct, SpatialContext ctx) {
+    if (distErrPct < 0 || distErrPct > 0.5) {
+      throw new IllegalArgumentException("distErrPct " + distErrPct + " must be between [0 to 0.5]");
     }
+    if (distErrPct == 0 || shape instanceof Point) {
+      return 0;
+    }
+    Rectangle bbox = shape.getBoundingBox();
+    //The diagonal distance should be the same computed from any opposite corner,
+    // and this is the longest distance that might be occurring within the shape.
+    double diagonalDist = ctx.getDistCalc().distance(
+        ctx.makePoint(bbox.getMinX(), bbox.getMinY()), bbox.getMaxX(), bbox.getMaxY());
+    return diagonalDist * 0.5 * distErrPct;
+  }
+
+  /**
+   * Gets the error distance that specifies how precise the query shape is. This
+   * looks at {@link #getDistErr()}, {@link #getDistErrPct()}, and {@code
+   * defaultDistErrPct}.
+   * @param ctx
+   * @param defaultDistErrPct 0 to 0.5
+   * @return >= 0
+   */
+  public double resolveDistErr(SpatialContext ctx, double defaultDistErrPct) {
+    if (distErr != null)
+      return distErr;
+    double distErrPct = (this.distErrPct != null ? this.distErrPct : defaultDistErrPct);
+    return calcDistanceFromErrPct(shape, distErrPct, ctx);
+  }
+
+  /** Check if the arguments make sense -- throw an exception if not */
+  public void validate() throws IllegalArgumentException {
+    if (operation.isTargetNeedsArea() && !shape.hasArea()) {
+      throw new IllegalArgumentException(operation + " only supports geometry with area");
+    }
+    if (distErr != null && distErrPct != null)
+      throw new IllegalArgumentException("Only distErr or distErrPct can be specified.");
   }
 
   @Override
   public String toString() {
-    StringBuilder str = new StringBuilder();
-    str.append(operation.getName()).append('(');
-    str.append(shape.toString());
-    if (min != null) {
-      str.append(" min=").append(min);
-    }
-    if (max != null) {
-      str.append(" max=").append(max);
-    }
-    str.append(" distPrec=").append(String.format(Locale.ROOT, "%.2f%%", distPrecision / 100d));
-    str.append(')');
-    return str.toString();
+    return SpatialArgsParser.writeSpatialArgs(this);
   }
 
   //------------------------------------------------
@@ -83,10 +109,7 @@ public class SpatialArgs {
     this.operation = operation;
   }
 
-  /** Considers {@link SpatialOperation#BBoxWithin} in returning the shape. */
   public Shape getShape() {
-    if (shape != null && (operation == SpatialOperation.BBoxWithin || operation == SpatialOperation.BBoxIntersects))
-      return shape.getBoundingBox();
     return shape;
   }
 
@@ -95,35 +118,33 @@ public class SpatialArgs {
   }
 
   /**
-   * The fraction of the distance from the center of the query shape to its nearest edge
-   * that is considered acceptable error. The algorithm for computing the distance to the
-   * nearest edge is actually a little different. It normalizes the shape to a square
-   * given it's bounding box area:
-   * <pre>sqrt(shape.bbox.area)/2</pre>
-   * And the error distance is beyond the shape such that the shape is a minimum shape.
+   * A measure of acceptable error of the shape as a fraction.  This effectively
+   * inflates the size of the shape but should not shrink it.
+   *
+   * @return 0 to 0.5
+   * @see #calcDistanceFromErrPct(com.spatial4j.core.shape.Shape, double,
+   *      com.spatial4j.core.context.SpatialContext)
    */
-  public Double getDistPrecision() {
-    return distPrecision;
+  public Double getDistErrPct() {
+    return distErrPct;
   }
 
-  public void setDistPrecision(Double distPrecision) {
-    if (distPrecision != null)
-      this.distPrecision = distPrecision;
+  public void setDistErrPct(Double distErrPct) {
+    if (distErrPct != null)
+      this.distErrPct = distErrPct;
   }
 
-  public Double getMin() {
-    return min;
+  /**
+   * The acceptable error of the shape.  This effectively inflates the
+   * size of the shape but should not shrink it.
+   *
+   * @return >= 0
+   */
+  public Double getDistErr() {
+    return distErr;
   }
 
-  public void setMin(Double min) {
-    this.min = min;
-  }
-
-  public Double getMax() {
-    return max;
-  }
-
-  public void setMax(Double max) {
-    this.max = max;
+  public void setDistErr(Double distErr) {
+    this.distErr = distErr;
   }
 }

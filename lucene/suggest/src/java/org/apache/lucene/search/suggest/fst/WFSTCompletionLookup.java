@@ -52,10 +52,9 @@ import org.apache.lucene.util.fst.Util.MinResult;
  * then walks the <i>n</i> shortest paths to retrieve top-ranked
  * suggestions.
  * <p>
- * <b>NOTE</b>: Although the {@link TermFreqIterator} API specifies
- * floating point weights, input weights should be whole numbers.
- * Input weights will be cast to a java integer, and any
- * negative, infinite, or NaN values will be rejected.
+ * <b>NOTE</b>:
+ * Input weights must be between 0 and {@link Integer#MAX_VALUE}, any
+ * other values will be rejected.
  * 
  * @see Util#shortestPaths(FST, FST.Arc, Comparator, int)
  * @lucene.experimental

@@ -241,7 +241,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     }
 
     public String getUrl() {
-      return "http://localhost:" + port + "/solr";
+      return "http://127.0.0.1:" + port + "/solr";
     }
 
     public String getSchemaFile() {

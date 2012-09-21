@@ -105,15 +105,24 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
   }
   
   /**
-   * This will add a field to the document.  If fields already exist with this name
-   * it will append the collection
+   * This will add a field to the document.  If fields already exist with this
+   * name it will append value to the collection. If the value is Collection,
+   * each value will be added independently.
    */
   @SuppressWarnings("unchecked")
   public void addField(String name, Object value) 
   { 
     Object existing = _fields.get(name);
     if (existing == null) {
-      this.setField( name, value );
+      if( value instanceof Collection ) {
+        Collection<Object> c = new ArrayList<Object>( 3 );
+        for ( Object o : (Collection<Object>)value ) {
+          c.add(o);
+        }
+        this.setField( name, c );
+      } else {
+        this.setField( name, value );
+      }
       return;
     }
     

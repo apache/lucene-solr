@@ -28,71 +28,71 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
-	private static final Token TOKEN_AYE = new Token("AYE", 0, 3);
-	private static final Token TOKEN_BEE = new Token("BEE", 4, 7);
-	private static final Token TOKEN_AYE_BEE = new Token("AYE BEE", 0, 7);
-	private static final Token TOKEN_CEE = new Token("CEE", 8, 11);
-	
-	private LinkedHashMap<String, Integer> AYE;
-	private LinkedHashMap<String, Integer> BEE;
-	private LinkedHashMap<String, Integer> AYE_BEE;
-	private LinkedHashMap<String, Integer> CEE;
-	
-	@Override
+  private static final Token TOKEN_AYE = new Token("AYE", 0, 3);
+  private static final Token TOKEN_BEE = new Token("BEE", 4, 7);
+  private static final Token TOKEN_AYE_BEE = new Token("AYE BEE", 0, 7);
+  private static final Token TOKEN_CEE = new Token("CEE", 8, 11);
+
+  private LinkedHashMap<String, Integer> AYE;
+  private LinkedHashMap<String, Integer> BEE;
+  private LinkedHashMap<String, Integer> AYE_BEE;
+  private LinkedHashMap<String, Integer> CEE;
+
+  @Override
   @Before
-	public void setUp() throws Exception {
-	  super.setUp();
+  public void setUp() throws Exception {
+    super.setUp();
 
-		AYE = new LinkedHashMap<String, Integer>();
-		AYE.put("I", 0);
-		AYE.put("II", 0);
-		AYE.put("III", 0);
-		AYE.put("IV", 0);
-		AYE.put("V", 0);
-		AYE.put("VI", 0);
-		AYE.put("VII", 0);
-		AYE.put("VIII", 0);
-		
-		BEE = new LinkedHashMap<String, Integer>();
-		BEE.put("alpha", 0);
-		BEE.put("beta", 0);
-		BEE.put("gamma", 0);
-		BEE.put("delta", 0);
-		BEE.put("epsilon", 0);
-		BEE.put("zeta", 0);
-		BEE.put("eta", 0);
-		BEE.put("theta", 0);
-		BEE.put("iota", 0);
-		
-		AYE_BEE = new LinkedHashMap<String, Integer>();
-		AYE_BEE.put("one-alpha", 0);
-		AYE_BEE.put("two-beta", 0);
-		AYE_BEE.put("three-gamma", 0);
-		AYE_BEE.put("four-delta", 0);
-		AYE_BEE.put("five-epsilon", 0);
-		AYE_BEE.put("six-zeta", 0);
-		AYE_BEE.put("seven-eta", 0);
-		AYE_BEE.put("eight-theta", 0);
-		AYE_BEE.put("nine-iota", 0);
-		
+    AYE = new LinkedHashMap<String, Integer>();
+    AYE.put("I", 0);
+    AYE.put("II", 0);
+    AYE.put("III", 0);
+    AYE.put("IV", 0);
+    AYE.put("V", 0);
+    AYE.put("VI", 0);
+    AYE.put("VII", 0);
+    AYE.put("VIII", 0);
 
-		CEE = new LinkedHashMap<String, Integer>();
-		CEE.put("one", 0);
-		CEE.put("two", 0);
-		CEE.put("three", 0);
-		CEE.put("four", 0);
-		CEE.put("five", 0);
-		CEE.put("six", 0);
-		CEE.put("seven", 0);
-		CEE.put("eight", 0);
-		CEE.put("nine", 0);
-		CEE.put("ten", 0);
-	}
-	
-	@Test
-	public void testScalability() throws Exception {
-	  Map<Token, LinkedHashMap<String, Integer>> lotsaSuggestions = new LinkedHashMap<Token, LinkedHashMap<String, Integer>>();
-	  lotsaSuggestions.put(TOKEN_AYE , AYE);
+    BEE = new LinkedHashMap<String, Integer>();
+    BEE.put("alpha", 0);
+    BEE.put("beta", 0);
+    BEE.put("gamma", 0);
+    BEE.put("delta", 0);
+    BEE.put("epsilon", 0);
+    BEE.put("zeta", 0);
+    BEE.put("eta", 0);
+    BEE.put("theta", 0);
+    BEE.put("iota", 0);
+
+    AYE_BEE = new LinkedHashMap<String, Integer>();
+    AYE_BEE.put("one-alpha", 0);
+    AYE_BEE.put("two-beta", 0);
+    AYE_BEE.put("three-gamma", 0);
+    AYE_BEE.put("four-delta", 0);
+    AYE_BEE.put("five-epsilon", 0);
+    AYE_BEE.put("six-zeta", 0);
+    AYE_BEE.put("seven-eta", 0);
+    AYE_BEE.put("eight-theta", 0);
+    AYE_BEE.put("nine-iota", 0);
+
+
+    CEE = new LinkedHashMap<String, Integer>();
+    CEE.put("one", 0);
+    CEE.put("two", 0);
+    CEE.put("three", 0);
+    CEE.put("four", 0);
+    CEE.put("five", 0);
+    CEE.put("six", 0);
+    CEE.put("seven", 0);
+    CEE.put("eight", 0);
+    CEE.put("nine", 0);
+    CEE.put("ten", 0);
+  }
+
+  @Test
+  public void testScalability() throws Exception {
+    Map<Token, LinkedHashMap<String, Integer>> lotsaSuggestions = new LinkedHashMap<Token, LinkedHashMap<String, Integer>>();
+    lotsaSuggestions.put(TOKEN_AYE , AYE);
     lotsaSuggestions.put(TOKEN_BEE , BEE);
     lotsaSuggestions.put(TOKEN_CEE , CEE);
     
@@ -112,15 +112,15 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
     lotsaSuggestions.put(new Token("BEE4", 4, 7),  BEE);
     lotsaSuggestions.put(new Token("CEE4", 8, 11), CEE);
     
-		PossibilityIterator iter = new PossibilityIterator(lotsaSuggestions, 1000, 10000, false);
-		int count = 0;
-		while (iter.hasNext()) {			
-			PossibilityIterator.RankedSpellPossibility rsp = iter.next();
-			count++;
-		}
-		assertTrue(count==1000);
-		
-		lotsaSuggestions.put(new Token("AYE_BEE1", 0, 7), AYE_BEE);
+    PossibilityIterator iter = new PossibilityIterator(lotsaSuggestions, 1000, 10000, false);
+    int count = 0;
+    while (iter.hasNext()) {
+      PossibilityIterator.RankedSpellPossibility rsp = iter.next();
+      count++;
+    }
+    assertTrue(count==1000);
+
+    lotsaSuggestions.put(new Token("AYE_BEE1", 0, 7), AYE_BEE);
     lotsaSuggestions.put(new Token("AYE_BEE2", 0, 7), AYE_BEE);
     lotsaSuggestions.put(new Token("AYE_BEE3", 0, 7), AYE_BEE);
     lotsaSuggestions.put(new Token("AYE_BEE4", 0, 7), AYE_BEE);
@@ -131,62 +131,62 @@ public class SpellPossibilityIteratorTest extends SolrTestCaseJ4 {
       count++;
     }
     assertTrue(count<100);
-	}
-	
-	@Test
-	public void testSpellPossibilityIterator() throws Exception {
-	  Map<Token, LinkedHashMap<String, Integer>> suggestions = new LinkedHashMap<Token, LinkedHashMap<String, Integer>>();
-	  suggestions.put(TOKEN_AYE , AYE);
+  }
+
+  @Test
+  public void testSpellPossibilityIterator() throws Exception {
+    Map<Token, LinkedHashMap<String, Integer>> suggestions = new LinkedHashMap<Token, LinkedHashMap<String, Integer>>();
+    suggestions.put(TOKEN_AYE , AYE);
     suggestions.put(TOKEN_BEE , BEE);
     suggestions.put(TOKEN_CEE , CEE);
     
-		PossibilityIterator iter = new PossibilityIterator(suggestions, 1000, 10000, false);
-		int count = 0;
-		while (iter.hasNext()) {
-			
-		  PossibilityIterator.RankedSpellPossibility rsp = iter.next();
-			if(count==0) {
-				assertTrue("I".equals(rsp.corrections.get(0).getCorrection()));
-				assertTrue("alpha".equals(rsp.corrections.get(1).getCorrection()));
-				assertTrue("one".equals(rsp.corrections.get(2).getCorrection()));
-			}
-			count++;
-		}
-		assertTrue(("Three maps (8*9*10) should return 720 iterations but instead returned " + count), count == 720);
+    PossibilityIterator iter = new PossibilityIterator(suggestions, 1000, 10000, false);
+    int count = 0;
+    while (iter.hasNext()) {
 
-		suggestions.remove(TOKEN_CEE);
-		iter = new PossibilityIterator(suggestions, 100, 10000, false);
-		count = 0;
-		while (iter.hasNext()) {
-			iter.next();
-			count++;
-		}
-		assertTrue(("Two maps (8*9) should return 72 iterations but instead returned " + count), count == 72);
+      PossibilityIterator.RankedSpellPossibility rsp = iter.next();
+      if(count==0) {
+        assertTrue("I".equals(rsp.corrections.get(0).getCorrection()));
+        assertTrue("alpha".equals(rsp.corrections.get(1).getCorrection()));
+        assertTrue("one".equals(rsp.corrections.get(2).getCorrection()));
+      }
+      count++;
+    }
+    assertTrue(("Three maps (8*9*10) should return 720 iterations but instead returned " + count), count == 720);
 
-		suggestions.remove(TOKEN_BEE);
-		iter = new PossibilityIterator(suggestions, 5, 10000, false);
-		count = 0;
-		while (iter.hasNext()) {
-			iter.next();
-			count++;
-		}
-		assertTrue(("We requested 5 suggestions but got " + count), count == 5);
+    suggestions.remove(TOKEN_CEE);
+    iter = new PossibilityIterator(suggestions, 100, 10000, false);
+    count = 0;
+    while (iter.hasNext()) {
+      iter.next();
+      count++;
+    }
+    assertTrue(("Two maps (8*9) should return 72 iterations but instead returned " + count), count == 72);
 
-		suggestions.remove(TOKEN_AYE);
-		iter = new PossibilityIterator(suggestions, Integer.MAX_VALUE, 10000, false);
-		count = 0;
-		while (iter.hasNext()) {
-			iter.next();
-			count++;
-		}
-		assertTrue(("No maps should return 0 iterations but instead returned " + count), count == 0);
+    suggestions.remove(TOKEN_BEE);
+    iter = new PossibilityIterator(suggestions, 5, 10000, false);
+    count = 0;
+    while (iter.hasNext()) {
+      iter.next();
+      count++;
+    }
+    assertTrue(("We requested 5 suggestions but got " + count), count == 5);
 
-	}
-	
-	@Test
+    suggestions.remove(TOKEN_AYE);
+    iter = new PossibilityIterator(suggestions, Integer.MAX_VALUE, 10000, false);
+    count = 0;
+    while (iter.hasNext()) {
+      iter.next();
+      count++;
+    }
+    assertTrue(("No maps should return 0 iterations but instead returned " + count), count == 0);
+
+  }
+
+  @Test
   public void testOverlappingTokens() throws Exception {
-	  Map<Token, LinkedHashMap<String, Integer>> overlappingSuggestions = new LinkedHashMap<Token, LinkedHashMap<String, Integer>>();
-	  overlappingSuggestions.put(TOKEN_AYE, AYE);
+    Map<Token, LinkedHashMap<String, Integer>> overlappingSuggestions = new LinkedHashMap<Token, LinkedHashMap<String, Integer>>();
+    overlappingSuggestions.put(TOKEN_AYE, AYE);
     overlappingSuggestions.put(TOKEN_BEE, BEE);
     overlappingSuggestions.put(TOKEN_AYE_BEE, AYE_BEE);
     overlappingSuggestions.put(TOKEN_CEE, CEE);

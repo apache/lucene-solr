@@ -43,7 +43,7 @@ public class TestTermQuery extends LuceneTestCase {
   private String fieldName = "field";
 
   /**
-   * Simple testcase for {@link TermScorer#positions()}
+   * Simple testcase for {@link TermScorer#positions(boolean)}
    */
   public void testPositionsSimple() throws IOException {
     Directory directory = newDirectory();
@@ -74,7 +74,7 @@ public class TestTermQuery extends LuceneTestCase {
 
     for (int i = 0; i < 39 * RANDOM_MULTIPLIER; i++) {
       TermQuery one = new TermQuery(new Term(fieldName, "1"));
-      IndexReaderContext topReaderContext = reader.getTopReaderContext();
+      IndexReaderContext topReaderContext = reader.getContext();
       List<AtomicReaderContext> leaves = topReaderContext.leaves();
       Weight weight = one.createWeight(searcher);
       for (AtomicReaderContext atomicReaderContext : leaves) {
@@ -169,7 +169,7 @@ public class TestTermQuery extends LuceneTestCase {
 
     for (int i = 0; i < 39 * RANDOM_MULTIPLIER; i++) {
       TermQuery one = new TermQuery(new Term(fieldName, "" + term));
-      IndexReaderContext topReaderContext = reader.getTopReaderContext();
+      IndexReaderContext topReaderContext = reader.getContext();
       List<AtomicReaderContext> leaves = topReaderContext.leaves();
       Weight weight = one.createWeight(searcher);
       for (AtomicReaderContext atomicReaderContext : leaves) {
@@ -254,7 +254,7 @@ public class TestTermQuery extends LuceneTestCase {
 
     for (int i = 0; i < 39 * RANDOM_MULTIPLIER; i++) {
       TermQuery one = new TermQuery(new Term(fieldName, "even"));
-      IndexReaderContext topReaderContext = reader.getTopReaderContext();
+      IndexReaderContext topReaderContext = reader.getContext();
       List<AtomicReaderContext> leaves = topReaderContext.leaves();
       Weight weight = one.createWeight(searcher);
       Interval interval = null;

@@ -1,8 +1,13 @@
 #menu-wrapper
 {
   position: absolute;
-  top: 0;
+  top: 90px;
   width: 150px;
+}
+
+.has-environment #menu-wrapper
+{
+  top: 130px;
 }
 
 #menu-wrapper a

@@ -28,21 +28,21 @@ public interface Dictionary {
   /**
    * Get left id of specified word
    * @param wordId
-   * @return	left id
+   * @return left id
    */
   public int getLeftId(int wordId);
   
   /**
    * Get right id of specified word
    * @param wordId
-   * @return	left id
+   * @return left id
    */
   public int getRightId(int wordId);
   
   /**
    * Get word cost of specified word
    * @param wordId
-   * @return	left id
+   * @return left id
    */
   public int getWordCost(int wordId);
   

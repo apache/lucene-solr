@@ -47,7 +47,7 @@ import org.apache.lucene.util.IOUtils;
  *
  * <p>Here's a simple example usage:
  *
- * <pre>
+ * <pre class="prettyprint">
  *   Directory fsDir = FSDirectory.open(new File("/path/to/index"));
  *   NRTCachingDirectory cachedFSDir = new NRTCachingDirectory(fsDir, 5.0, 60.0);
  *   IndexWriterConfig conf = new IndexWriterConfig(Version.LUCENE_32, analyzer);
@@ -267,9 +267,16 @@ public class NRTCachingDirectory extends Directory {
   /** Subclass can override this to customize logic; return
    *  true if this file should be written to the RAMDirectory. */
   protected boolean doCacheWrite(String name, IOContext context) {
-    final MergeInfo merge = context.mergeInfo;
     //System.out.println(Thread.currentThread().getName() + ": CACHE check merge=" + merge + " size=" + (merge==null ? 0 : merge.estimatedMergeBytes));
-    return !name.equals(IndexFileNames.SEGMENTS_GEN) && (merge == null || merge.estimatedMergeBytes <= maxMergeSizeBytes) && cache.sizeInBytes() <= maxCachedBytes;
+
+    long bytes = 0;
+    if (context.mergeInfo != null) {
+      bytes = context.mergeInfo.estimatedMergeBytes;
+    } else if (context.flushInfo != null) {
+      bytes = context.flushInfo.estimatedSegmentSize;
+    }
+
+    return !name.equals(IndexFileNames.SEGMENTS_GEN) && (bytes <= maxMergeSizeBytes) && (bytes + cache.sizeInBytes()) <= maxCachedBytes;
   }
 
   private final Object uncacheLock = new Object();
@@ -293,7 +300,7 @@ public class NRTCachingDirectory extends Directory {
       IndexInput in = null;
       try {
         in = cache.openInput(fileName, context);
-        in.copyBytes(out, in.length());
+        out.copyBytes(in, in.length());
       } finally {
         IOUtils.close(in, out);
       }

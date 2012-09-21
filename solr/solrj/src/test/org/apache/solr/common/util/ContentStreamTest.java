@@ -17,22 +17,16 @@
 
 package org.apache.solr.common.util;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.net.ConnectException;
-import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrResourceLoader;
 
 /**
@@ -66,50 +60,17 @@ public class ContentStreamTest extends LuceneTestCase
 
   public void testURLStream() throws IOException 
   {
-    byte[] content = null;
-    String contentType = null;
-    URL url = new URL( "http://svn.apache.org/repos/asf/lucene/dev/trunk/" );
-    InputStream in = null;
-    try {
-      HttpURLConnection conn = (HttpURLConnection)url.openConnection();
-      conn.setConnectTimeout(1000);
-      conn.setReadTimeout(1000);
-      conn.connect();
-      int code = conn.getResponseCode();
-      assumeTrue("wrong response code from server: " + code, 200 == code);
-      in = conn.getInputStream();
-      contentType = conn.getContentType();
-      content = IOUtils.toByteArray(in);
-
-      assumeTrue("not enough content for test to be useful",
-                 content.length > 10 ); 
-
-    } catch (IOException ex) {
-      assumeNoException("Unable to connect to " + url + " to run the test.", ex);
-    }finally {
-      if (in != null) {
-        IOUtils.closeQuietly(in);
-      }
-    }
+    InputStream is = new SolrResourceLoader(null, null).openResource( "solrj/README" );
+    assertNotNull( is );
+    File file = new File(TEMP_DIR, "README");
+    FileOutputStream os = new FileOutputStream(file);
+    IOUtils.copy(is, os);
+    os.close();
     
-    
-    ContentStreamBase stream = new ContentStreamBase.URLStream( url );
-    in = stream.getStream();  // getStream is needed before getSize is valid
-    assertEquals( content.length, stream.getSize().intValue() );
-    
-    try {
-      assertTrue( IOUtils.contentEquals( 
-          new ByteArrayInputStream(content), in ) );
-    } 
-    finally {
-      IOUtils.closeQuietly(in);
-    }
-
-    String charset = ContentStreamBase.getCharsetFromContentType(contentType);
-    if (charset == null)
-      charset = ContentStreamBase.DEFAULT_CHARSET;
-    // Re-open the stream and this time use a reader
-    stream = new ContentStreamBase.URLStream( url );
-    assertTrue( IOUtils.contentEquals( new StringReader(new String(content, charset)), stream.getReader() ) );
+    ContentStreamBase stream = new ContentStreamBase.URLStream( new URL(file.toURI().toASCIIString()) );
+    assertTrue( IOUtils.contentEquals( new FileInputStream( file ), stream.getStream() ) );
+    assertEquals( file.length(), stream.getSize().intValue() );
+    assertTrue( IOUtils.contentEquals( new InputStreamReader(new FileInputStream(file), "UTF-8"), stream.getReader() ) );
+    assertEquals( file.length(), stream.getSize().intValue() );
   }
 }

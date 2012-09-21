@@ -32,7 +32,13 @@ import org.apache.lucene.util.BytesRef;
  * @lucene.experimental
  */
 public final class TermContext {
-  public final IndexReaderContext topReaderContext; // for asserting!
+
+  /** Holds the {@link IndexReaderContext} of the top-level
+   *  {@link IndexReader}, used internally only for
+   *  asserting.
+   *
+   *  @lucene.internal */
+  public final IndexReaderContext topReaderContext;
   private final TermState[] states;
   private int docFreq;
   private long totalTermFreq;

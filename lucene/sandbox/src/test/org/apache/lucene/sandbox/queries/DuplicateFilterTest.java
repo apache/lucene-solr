@@ -87,7 +87,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(tq, df, 1000).scoreDocs;
 
     for (ScoreDoc hit : hits) {
-      Document d = searcher.doc(hit.doc);
+      StoredDocument d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
       assertFalse("No duplicate urls should be returned", results.contains(url));
       results.add(url);
@@ -101,7 +101,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
     boolean dupsFound = false;
 
     for (ScoreDoc hit : hits) {
-      Document d = searcher.doc(hit.doc);
+      StoredDocument d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
       if (!dupsFound)
         dupsFound = results.contains(url);
@@ -118,7 +118,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
     assertTrue("Filtered searching should have found some matches", hits.length > 0);
 
     for (ScoreDoc hit : hits) {
-      Document d = searcher.doc(hit.doc);
+      StoredDocument d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
       assertFalse("No duplicate urls should be returned", results.contains(url));
       results.add(url);
@@ -132,7 +132,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(tq, df, 1000).scoreDocs;
     assertTrue("Filtered searching should have found some matches", hits.length > 0);
     for (ScoreDoc hit : hits) {
-      Document d = searcher.doc(hit.doc);
+      StoredDocument d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
       DocsEnum td = _TestUtil.docs(random(), reader,
                                    KEY_FIELD,
@@ -156,7 +156,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(tq, df, 1000).scoreDocs;
     assertTrue("Filtered searching should have found some matches", hits.length > 0);
     for (ScoreDoc hit : hits) {
-      Document d = searcher.doc(hit.doc);
+      StoredDocument d = searcher.doc(hit.doc);
       String url = d.get(KEY_FIELD);
       DocsEnum td = _TestUtil.docs(random(), reader,
                                    KEY_FIELD,

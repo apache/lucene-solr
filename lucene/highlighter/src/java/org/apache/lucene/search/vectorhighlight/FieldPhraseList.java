@@ -118,6 +118,9 @@ public class FieldPhraseList {
     getPhraseList().add( wpi );
   }
   
+  /**
+   * Represents the list of term offsets and boost for some text
+   */
   public static class WeightedPhraseInfo {
 
     private String text;  // unnecessary member, just exists for debugging purpose
@@ -230,6 +233,9 @@ public class FieldPhraseList {
       return seqnum;
     }
 
+    /**
+     * Term offsets (start + end)
+     */
     public static class Toffs {
       private int startOffset;
       private int endOffset;

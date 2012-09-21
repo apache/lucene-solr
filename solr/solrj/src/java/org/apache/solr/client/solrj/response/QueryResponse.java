@@ -443,7 +443,7 @@ public class QueryResponse extends SolrResponseBase
     return _facetPivot;
   }
   
-  /** get 
+  /** get
    * 
    * @param name the name of the
    * @return the FacetField by name or null if it does not exist

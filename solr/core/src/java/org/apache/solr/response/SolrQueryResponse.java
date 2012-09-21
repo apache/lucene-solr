@@ -194,8 +194,8 @@ public class SolrQueryResponse {
   /** Repsonse header to be logged */ 
   public NamedList<Object> getResponseHeader() {
     @SuppressWarnings("unchecked")
-	  SimpleOrderedMap<Object> header = (SimpleOrderedMap<Object>) values.get("responseHeader");
-	  return header;
+    SimpleOrderedMap<Object> header = (SimpleOrderedMap<Object>) values.get("responseHeader");
+    return header;
   }
   
   /** Add a value to be logged.
@@ -204,7 +204,7 @@ public class SolrQueryResponse {
    * @param val value of the thing to log
    */
   public void addToLog(String name, Object val) {
-	  toLog.add(name, val);
+    toLog.add(name, val);
   }
   
   /** Get loggable items.
@@ -212,7 +212,7 @@ public class SolrQueryResponse {
    * @return things to log
    */
   public NamedList<Object> getToLog() {
-	  return toLog;
+    return toLog;
   }
   
   /**

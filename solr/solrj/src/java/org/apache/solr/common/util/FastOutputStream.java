@@ -57,8 +57,8 @@ public class FastOutputStream extends OutputStream implements DataOutput {
 
   public void write(byte b) throws IOException {
     if (pos >= buf.length) {
-      flush(buf, 0, buf.length);
       written += pos;
+      flush(buf, 0, buf.length);
       pos=0;
     }
     buf[pos++] = b;
@@ -66,28 +66,39 @@ public class FastOutputStream extends OutputStream implements DataOutput {
 
   @Override
   public void write(byte arr[], int off, int len) throws IOException {
-    int space = buf.length - pos;
-    if (len < space) {
-      System.arraycopy(arr, off, buf, pos, len);
-      pos += len;
-    } else if (len<buf.length) {
-      // if the data to write is small enough, buffer it.
-      System.arraycopy(arr, off, buf, pos, space);
-      flush(buf, 0, buf.length);
-      written += buf.length;
-      pos = len-space;
-      System.arraycopy(arr, off+space, buf, 0, pos);
-    } else {
-      if (pos>0) {
-        flush(buf,0,pos);  // flush
-        written += pos;
-        pos=0;
+
+    for(;;) {
+      int space = buf.length - pos;
+
+      if (len <= space) {
+        System.arraycopy(arr, off, buf, pos, len);
+        pos += len;
+        return;
+      } else if (len > buf.length) {
+        if (pos>0) {
+          flush(buf,0,pos);  // flush
+          written += pos;
+          pos=0;
+        }
+        // don't buffer, just write to sink
+        flush(arr, off, len);
+        written += len;
+        return;
       }
-      // don't buffer, just write to sink
-      flush(arr, off, len);
-      written += len;            
+
+      // buffer is too big to fit in the free space, but
+      // not big enough to warrant writing on its own.
+      // write whatever we can fit, then flush and iterate.
+
+      System.arraycopy(arr, off, buf, pos, space);
+      written += buf.length;  // important to do this first, since buf.length can change after a flush!
+      flush(buf, 0, buf.length);
+      pos = 0;
+      off += space;
+      len -= space;
     }
   }
+
 
   /** reserve at least len bytes at the end of the buffer.
    * Invalid if len > buffer.length
@@ -182,8 +193,8 @@ public class FastOutputStream extends OutputStream implements DataOutput {
    */
   public void flushBuffer() throws IOException {
     if (pos > 0) {
-      flush(buf, 0, pos);
       written += pos;
+      flush(buf, 0, pos);
       pos=0;
     }
   }

@@ -41,6 +41,11 @@ public class BM25Similarity extends Similarity {
   private final float b;
   // TODO: should we add a delta like sifaka.cs.uiuc.edu/~ylv2/pub/sigir11-bm25l.pdf ?
 
+  /**
+   * BM25 with the supplied parameter values.
+   * @param k1 Controls non-linear term frequency normalization (saturation).
+   * @param b Controls to what degree document length normalizes tf values.
+   */
   public BM25Similarity(float k1, float b) {
     this.k1 = k1;
     this.b  = b;
@@ -98,17 +103,23 @@ public class BM25Similarity extends Similarity {
     return NORM_TABLE[b & 0xFF];
   }
   
-  // Default true
+  /** 
+   * True if overlap tokens (tokens with a position of increment of zero) are
+   * discounted from the document's length.
+   */
   protected boolean discountOverlaps = true;
 
-  /** Determines whether overlap tokens (Tokens with 0 position increment) are 
+  /** Sets whether overlap tokens (Tokens with 0 position increment) are 
    *  ignored when computing norm.  By default this is true, meaning overlap
    *  tokens do not count when computing norms. */
   public void setDiscountOverlaps(boolean v) {
     discountOverlaps = v;
   }
 
-  /** @see #setDiscountOverlaps */
+  /**
+   * Returns true if overlap tokens are discounted from the document's length. 
+   * @see #setDiscountOverlaps 
+   */
   public boolean getDiscountOverlaps() {
     return discountOverlaps;
   }
@@ -130,6 +141,28 @@ public class BM25Similarity extends Similarity {
     norm.setByte(encodeNormValue(state.getBoost(), numTerms));
   }
 
+  /**
+   * Computes a score factor for a simple term and returns an explanation
+   * for that score factor.
+   * 
+   * <p>
+   * The default implementation uses:
+   * 
+   * <pre class="prettyprint">
+   * idf(docFreq, searcher.maxDoc());
+   * </pre>
+   * 
+   * Note that {@link CollectionStatistics#maxDoc()} is used instead of
+   * {@link org.apache.lucene.index.IndexReader#numDocs() IndexReader#numDocs()} because also 
+   * {@link TermStatistics#docFreq()} is used, and when the latter 
+   * is inaccurate, so is {@link CollectionStatistics#maxDoc()}, and in the same direction.
+   * In addition, {@link CollectionStatistics#maxDoc()} is more efficient to compute
+   *   
+   * @param collectionStats collection-level statistics
+   * @param termStats term-level statistics for the term
+   * @return an Explain object that includes both an idf score factor 
+             and an explanation for the term.
+   */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats) {
     final long df = termStats.docFreq();
     final long max = collectionStats.maxDoc();
@@ -137,6 +170,19 @@ public class BM25Similarity extends Similarity {
     return new Explanation(idf, "idf(docFreq=" + df + ", maxDocs=" + max + ")");
   }
 
+  /**
+   * Computes a score factor for a phrase.
+   * 
+   * <p>
+   * The default implementation sums the idf factor for
+   * each term in the phrase.
+   * 
+   * @param collectionStats collection-level statistics
+   * @param termStats term-level statistics for the terms in the phrase
+   * @return an Explain object that includes both an idf 
+   *         score factor for the phrase and an explanation 
+   *         for each term.
+   */
   public Explanation idfExplain(CollectionStatistics collectionStats, TermStatistics termStats[]) {
     final long max = collectionStats.maxDoc();
     float idf = 0.0f;
@@ -344,10 +390,18 @@ public class BM25Similarity extends Similarity {
     return "BM25(k1=" + k1 + ",b=" + b + ")";
   }
   
+  /** 
+   * Returns the <code>k1</code> parameter
+   * @see #BM25Similarity(float, float) 
+   */
   public float getK1() {
     return k1;
   }
   
+  /**
+   * Returns the <code>b</code> parameter 
+   * @see #BM25Similarity(float, float) 
+   */
   public float getB() {
     return b;
   }

@@ -23,18 +23,20 @@ import java.util.HashSet;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.StoredFieldVisitor;
 
 /** A {@link StoredFieldVisitor} that creates a {@link
  *  Document} containing all stored fields, or only specific
- *  requested fields provided to {@link #DocumentStoredFieldVisitor(Set)}
+ *  requested fields provided to {@link #DocumentStoredFieldVisitor(Set)}.
+ *  <p>
  *  This is used by {@link IndexReader#document(int)} to load a
  *  document.
  *
  * @lucene.experimental */
 
 public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
-  private final Document doc = new Document();
+  private final StoredDocument doc = new StoredDocument();
   private final Set<String> fieldsToAdd;
 
   /** Load only fields named in the provided <code>Set&lt;String&gt;</code>. */
@@ -67,7 +69,7 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
     ft.setIndexed(fieldInfo.isIndexed());
     ft.setOmitNorms(fieldInfo.omitsNorms());
     ft.setIndexOptions(fieldInfo.getIndexOptions());
-    doc.add(new Field(fieldInfo.name, value, ft));
+    doc.add(new StoredField(fieldInfo.name, value, ft));
   }
 
   @Override
@@ -95,7 +97,14 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
     return fieldsToAdd == null || fieldsToAdd.contains(fieldInfo.name) ? Status.YES : Status.NO;
   }
 
-  public Document getDocument() {
+  /**
+   * Retrieve the visited document.
+   * @return {@link StoredDocument} populated with stored fields. Note that only
+   *         the stored information in the field instances is valid,
+   *         data such as indexing options, term vector options,
+   *         etc is not set.
+   */
+  public StoredDocument getDocument() {
     return doc;
   }
 }

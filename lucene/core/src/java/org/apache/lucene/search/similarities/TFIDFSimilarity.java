@@ -525,6 +525,12 @@ import org.apache.lucene.util.SmallFloat;
  */
 public abstract class TFIDFSimilarity extends Similarity {
   
+  /**
+   * Sole constructor. (For invocation by subclass 
+   * constructors, typically implicit.)
+   */
+  public TFIDFSimilarity() {}
+  
   /** Computes a score factor based on the fraction of all query terms that a
    * document contains.  This value is multiplied into scores.
    *
@@ -597,7 +603,7 @@ public abstract class TFIDFSimilarity extends Similarity {
    * <p>
    * The default implementation uses:
    * 
-   * <pre>
+   * <pre class="prettyprint">
    * idf(docFreq, searcher.maxDoc());
    * </pre>
    * 

@@ -13,54 +13,70 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-Solr example configuration
---------------------------
+Solr example
+------------
 
-To run the default example configuration, use 
+This directory contains an instance of the Jetty Servlet container setup to 
+run Solr using an example configuration.
+
+To run this example:
 
   java -jar start.jar
 
 in this example directory, and when Solr is started connect to 
 
-  http://localhost:8983/solr/admin/
+  http://localhost:8983/solr/
 
 To add documents to the index, use the post.jar (or post.sh script) in
-the exampledocs subdirectory (while Solr is running), for example:
+the example/exampledocs subdirectory (while Solr is running), for example:
 
      cd exampledocs
      java -jar post.jar *.xml
 Or:  sh post.sh *.xml
 
-See also README.txt in the solr subdirectory, and check
-http://wiki.apache.org/solr/SolrResources for a list of tutorials and
-introductory articles.
+For more information about this example please read...
 
-NOTE: This Solr example server references certain Solr jars outside of
-this server directory for non-core modules with <lib> statements in
-solrconfig.xml.  If you make a copy of this example server and wish
-to use the ExtractingRequestHandler (SolrCell), DataImportHandler (DIH),
-UIMA, the clustering component, or other modules in "contrib",
-you will need to copy the required jars into solr/lib or update the paths to
-the jars in your solrconfig.xml.
+ * example/solr/README.txt
+   For more information about the "Solr Home" and Solr specific configuration
+ * http://lucene.apache.org/solr/tutorial.html
+   For a Tutorial using this example configuration
+ * http://wiki.apache.org/solr/SolrResources 
+   For a list of other tutorials and introductory articles.
 
--SolrHome
+Notes About These Examples
+--------------------------
 
-By default, start.jar starts Solr in Jetty using the default solr home
-directory of "./solr/" -- To run other example configurations, you can
-speciy the solr.solr.home system property when starting jetty...
+* SolrHome *
+
+By default, start.jar starts Solr in Jetty using the default Solr Home
+directory of "./solr/" (relative to the working directory of hte servlet 
+container).  To run other example configurations, you can specify the 
+solr.solr.home system property when starting jetty...
 
   java -Dsolr.solr.home=multicore -jar start.jar
-  java -Dsolr.solr.home=example-DIH -jar start.jar
+  java -Dsolr.solr.home=example-DIH/solr -jar start.jar
 
--Logging
+* References to Jar Files Outside This Directory *
 
-By default, Solr will log to the console. This can be convenient when first
-getting started, but eventually you will want to log to a file. To enable
-logging, you can just pass a system property to Jetty on startup:
+Various example SolrHome dirs contained in this directory may use "<lib>"
+statements in the solrconfig.xml file to reference plugin jars outside of 
+this directory for loading "contrib" plugins via relative paths.  
+
+If you make a copy of this example server and wish to use the 
+ExtractingRequestHandler (SolrCell), DataImportHandler (DIH), UIMA, the 
+clustering component, or any other modules in "contrib", you will need to 
+copy the required jars or update the paths to those jars in your 
+solrconfig.xml.
+
+* Logging *
+
+By default, Jetty & Solr will log to the console. This can be convenient when 
+first getting started, but eventually you will want to log to a file. To 
+configure logging, you can just pass a system property to Jetty on startup:
 
   java -Djava.util.logging.config.file=etc/logging.properties -jar start.jar
  
- This will use Java Util Logging to log to a file based on the config in
- etc/logging.properties. Logs will be written in the logs directory. It is
- also possible to setup log4j or other popular logging frameworks.
+This will use Java Util Logging to log to a file based on the config in
+etc/logging.properties. Logs will be written in the logs directory. It is
+also possible to setup log4j or other popular logging frameworks.
 

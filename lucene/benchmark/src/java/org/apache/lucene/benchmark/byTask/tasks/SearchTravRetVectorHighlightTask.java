@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.vectorhighlight.FastVectorHighlighter;
 import org.apache.lucene.search.vectorhighlight.FieldQuery;
@@ -99,7 +100,7 @@ public class SearchTravRetVectorHighlightTask extends SearchTravTask {
     return new BenchmarkHighlighter(){
       @Override
       public int doHighlight(IndexReader reader, int doc, String field,
-          Document document, Analyzer analyzer, String text) throws Exception {
+          StoredDocument document, Analyzer analyzer, String text) throws Exception {
         final FieldQuery fq = highlighter.getFieldQuery( myq, reader);
         String[] fragments = highlighter.getBestFragments(fq, reader, doc, field, fragSize, maxFrags);
         return fragments != null ? fragments.length : 0;
@@ -108,7 +109,7 @@ public class SearchTravRetVectorHighlightTask extends SearchTravTask {
   }
 
   @Override
-  protected Collection<String> getFieldsToHighlight(Document document) {
+  protected Collection<String> getFieldsToHighlight(StoredDocument document) {
     Collection<String> result = super.getFieldsToHighlight(document);
     //if stored is false, then result will be empty, in which case just get all the param fields
     if (paramFields.isEmpty() == false && result.isEmpty() == false) {

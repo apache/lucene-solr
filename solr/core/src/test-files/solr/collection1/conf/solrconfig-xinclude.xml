@@ -25,4 +25,9 @@
       <xi:include href="solrconfig-reqHandler.incl" xmlns:xi="http://www.w3.org/2001/XInclude"/>
     </xi:fallback>
   </xi:include>
+
+  <updateRequestProcessorChain name="special-include" xmlns:xi="http://www.w3.org/2001/XInclude">
+    <xi:include href="solrconfig-snippet-processor.xml" />
+  </updateRequestProcessorChain>
+
 </config>

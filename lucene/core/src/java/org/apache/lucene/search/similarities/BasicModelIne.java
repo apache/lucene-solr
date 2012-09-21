@@ -25,6 +25,10 @@ import static org.apache.lucene.search.similarities.SimilarityBase.log2;
  * @lucene.experimental
  */ 
 public class BasicModelIne extends BasicModel {
+  
+  /** Sole constructor: parameter-free */
+  public BasicModelIne() {}
+
   @Override
   public final float score(BasicStats stats, float tfn) {
     long N = stats.getNumberOfDocuments();

@@ -152,7 +152,7 @@ public abstract class Node implements Comparable<Node> {
     }
     List<Node> copy = new ArrayList<Node>(cells.size());//copy since cells contractually isn't modifiable
     for (Node cell : cells) {
-      SpatialRelation rel = cell.getShape().relate(shapeFilter, spatialPrefixTree.ctx);
+      SpatialRelation rel = cell.getShape().relate(shapeFilter);
       if (rel == SpatialRelation.DISJOINT)
         continue;
       cell.shapeRel = rel;

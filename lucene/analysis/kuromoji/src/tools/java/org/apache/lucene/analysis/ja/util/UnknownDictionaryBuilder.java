@@ -107,22 +107,22 @@ public class UnknownDictionaryBuilder {
         continue;
       }
       
-      if(line.startsWith("0x")) {	// Category mapping
-        String[] values = line.split(" ", 2);	// Split only first space
+      if(line.startsWith("0x")) {  // Category mapping
+        String[] values = line.split(" ", 2);  // Split only first space
         
         if(!values[0].contains("..")) {
           int cp = Integer.decode(values[0]).intValue();
-          dictionary.putCharacterCategory(cp, values[1]);					
+          dictionary.putCharacterCategory(cp, values[1]);
         } else {
           String[] codePoints = values[0].split("\\.\\.");
           int cpFrom = Integer.decode(codePoints[0]).intValue();
           int cpTo = Integer.decode(codePoints[1]).intValue();
           
           for(int i = cpFrom; i <= cpTo; i++){
-            dictionary.putCharacterCategory(i, values[1]);					
+            dictionary.putCharacterCategory(i, values[1]);
           }
         }
-      } else {	// Invoke definition
+      } else {  // Invoke definition
         String[] values = line.split(" "); // Consecutive space is merged above
         String characterClassName = values[0];
         int invoke = Integer.parseInt(values[1]);

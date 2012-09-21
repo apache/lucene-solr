@@ -21,6 +21,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -33,20 +36,21 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.SolrCmdDistributor.Node;
 import org.apache.solr.update.SolrCmdDistributor.Response;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 
 public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
-  
+  private static ThreadPoolExecutor executor;
   
   public SolrCmdDistributorTest() {
     fixShardCount = true;
     shardCount = 4;
     stress = 0;
   }
-  
 
   public static String getSchemaFile() {
     return "schema.xml";
@@ -73,7 +77,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
           getSchemaFile());
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
-      String shardStr = "localhost:" + j.getLocalPort() + context;
+      String shardStr = "127.0.0.1:" + j.getLocalPort() + context;
       shardsArr[i] = shardStr;
       sb.append(shardStr);
     }
@@ -85,7 +89,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   public void doTest() throws Exception {
     del("*:*");
     
-    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(8);
+    SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(5, executor);
     
     ModifiableSolrParams params = new ModifiableSolrParams();
     List<Node> nodes = new ArrayList<Node>();
@@ -119,7 +123,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
     
     // add another 2 docs to control and 3 to client
-    cmdDistrib = new SolrCmdDistributor(8);
+    cmdDistrib = new SolrCmdDistributor(5, executor);
     cmd.solrDoc = sdoc("id", 2);
     cmdDistrib.distribAdd(cmd, nodes, params);
     
@@ -152,7 +156,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     DeleteUpdateCommand dcmd = new DeleteUpdateCommand(null);
     dcmd.id = "2";
     
-    cmdDistrib = new SolrCmdDistributor(8);
+    cmdDistrib = new SolrCmdDistributor(5, executor);
     cmdDistrib.distribDelete(dcmd, nodes, params);
     
     cmdDistrib.distribCommit(ccmd, nodes, params);
@@ -171,19 +175,16 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         .getNumFound();
     assertEquals(results.toString(), 2, numFound);
     
-    // debug stuff
     for (SolrServer c : clients) {
       c.optimize();
-      // distrib optimize is not working right yet, so call it on each client
       //System.out.println(clients.get(0).request(new LukeRequest()));
     }
     
     int id = 5;
     
-    cmdDistrib = new SolrCmdDistributor(8);
+    cmdDistrib = new SolrCmdDistributor(5, executor);
     
-    nodes.clear();
-    int cnt = atLeast(200);
+    int cnt = atLeast(201);
     for (int i = 0; i < cnt; i++) {
       nodes.clear();
       for (SolrServer c : clients) {
@@ -193,25 +194,52 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         HttpSolrServer httpClient = (HttpSolrServer) c;
         nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
             httpClient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
+        System.out.println("node props:" + nodeProps);
         nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
 
       }
+      AddUpdateCommand c = new AddUpdateCommand(null);
+      c.solrDoc = sdoc("id", id++);
+      if (nodes.size() > 0) {
+        cmdDistrib.distribAdd(c, nodes, params);
+      }
+    }
+    
+    nodes.clear();
+    
+    for (SolrServer c : clients) {
+      HttpSolrServer httpClient = (HttpSolrServer) c;
+      nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
+          httpClient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
       
-      cmd.solrDoc = sdoc("id", id++);
-      cmdDistrib.distribAdd(cmd, nodes, params);
+      nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
     }
 
-    cmdDistrib.finish();
-    
     cmdDistrib.distribCommit(ccmd, nodes, params);
+    
+    
+    cmdDistrib.finish();
     
     for (SolrServer c : clients) {
       NamedList<Object> resp = c.request(new LukeRequest());
-      System.out.println(resp);
       assertEquals("SOLR-3428: We only did adds - there should be no deletes",
           ((NamedList<Object>) resp.get("index")).get("numDocs"),
           ((NamedList<Object>) resp.get("index")).get("maxDoc"));
     }
 
+  }
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
+        TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+        new DefaultSolrThreadFactory("cmdDistribExecutor"));
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    ExecutorUtil.shutdownNowAndAwaitTermination(executor);
+    super.tearDown();
   }
 }

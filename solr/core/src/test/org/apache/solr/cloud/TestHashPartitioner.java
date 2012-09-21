@@ -27,18 +27,39 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
   
   public void testMapHashes() throws Exception {
     HashPartitioner hp = new HashPartitioner();
-    
-    for (int i = 1; i <= 30000; i++) {
-      List<Range> ranges = hp.partitionRange(i);
-      
+    List<Range> ranges;
+
+    // make sure the partitioner uses the "natural" boundaries and doesn't suffer from an off-by-one
+    ranges = hp.partitionRange(2, hp.fullRange());
+    assertEquals(Integer.MIN_VALUE, ranges.get(0).min);
+    assertEquals(0x80000000, ranges.get(0).min);
+    assertEquals(0xffffffff, ranges.get(0).max);
+    assertEquals(0x00000000, ranges.get(1).min);
+    assertEquals(0x7fffffff, ranges.get(1).max);
+
+    ranges = hp.partitionRange(2, 0, 0x7fffffff);
+    assertEquals(0x00000000, ranges.get(0).min);
+    assertEquals(0x3fffffff, ranges.get(0).max);
+    assertEquals(0x40000000, ranges.get(1).min);
+    assertEquals(0x7fffffff, ranges.get(1).max);
+
+    for (int i = 1; i <= 30000; i += 13) {
+      ranges = hp.partitionRange(i, hp.fullRange());
       assertEquals(i, ranges.size());
-      
       assertTrue("First range does not start before " + Integer.MIN_VALUE
           + " it is:" + ranges.get(0).min,
           ranges.get(0).min <= Integer.MIN_VALUE);
       assertTrue("Last range does not end after " + Integer.MAX_VALUE
           + " it is:" + ranges.get(ranges.size() - 1).max,
           ranges.get(ranges.size() - 1).max >= Integer.MAX_VALUE);
+
+      for (Range range : ranges) {
+        String s = range.toString();
+        Range newRange = hp.fromString(s);
+        assertEquals(range, newRange);
+      }
+
+
     }
   }
   

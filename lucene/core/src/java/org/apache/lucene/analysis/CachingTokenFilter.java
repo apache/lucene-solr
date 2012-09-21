@@ -38,6 +38,11 @@ public final class CachingTokenFilter extends TokenFilter {
   private Iterator<AttributeSource.State> iterator = null; 
   private AttributeSource.State finalState;
   
+  /**
+   * Create a new CachingTokenFilter around <code>input</code>,
+   * caching its token attributes, which can be replayed again
+   * after a call to {@link #reset()}.
+   */
   public CachingTokenFilter(TokenStream input) {
     super(input);
   }
@@ -67,6 +72,13 @@ public final class CachingTokenFilter extends TokenFilter {
     }
   }
 
+  /**
+   * Rewinds the iterator to the beginning of the cached list.
+   * <p>
+   * Note that this does not call reset() on the wrapped tokenstream ever, even
+   * the first time. You should reset() the inner tokenstream before wrapping
+   * it with CachingTokenFilter.
+   */
   @Override
   public void reset() {
     if(cache != null) {

@@ -20,6 +20,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 
+/** Lowest level base class for surround queries */
 public abstract class SrndQuery implements Cloneable {
   public SrndQuery() {}
   

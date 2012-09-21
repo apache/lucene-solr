@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 
 import org.apache.solr.common.SolrException;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.search.QParser;
 
@@ -68,6 +69,8 @@ public final class SchemaField extends FieldProperties {
     
     // initalize with the required property flag
     required = (properties & REQUIRED) !=0;
+
+    type.checkSchemaField(this);
   }
 
   public String getName() { return name; }
@@ -97,11 +100,11 @@ public final class SchemaField extends FieldProperties {
   boolean isTokenized() { return (properties & TOKENIZED)!=0; }
   boolean isBinary() { return (properties & BINARY)!=0; }
 
-  public IndexableField createField(Object val, float boost) {
+  public StorableField createField(Object val, float boost) {
     return type.createField(this,val,boost);
   }
   
-  public IndexableField[] createFields(Object val, float boost) {
+  public StorableField[] createFields(Object val, float boost) {
     return type.createFields(this,val,boost);
   }
 
@@ -123,7 +126,7 @@ public final class SchemaField extends FieldProperties {
       + "}";
   }
 
-  public void write(TextResponseWriter writer, String name, IndexableField val) throws IOException {
+  public void write(TextResponseWriter writer, String name, StorableField val) throws IOException {
     // name is passed in because it may be null if name should not be used.
     type.write(writer,name,val);
   }
@@ -158,7 +161,7 @@ public final class SchemaField extends FieldProperties {
 
   /** 
    * Sanity checks that the properties of this field type are plausible 
-   * for a field that may be used to get a FieldCacheSource, throwing 
+   * for a field that may be used to get a FieldCacheSource, throwing
    * an appropriate exception (including the field name) if it is not.  
    * FieldType subclasses can choose to call this method in their 
    * getValueSource implementation 
@@ -182,7 +185,7 @@ public final class SchemaField extends FieldProperties {
 
     String defaultValue = null;
     if( props.containsKey( "default" ) ) {
-    	defaultValue = props.get( "default" );
+      defaultValue = props.get( "default" );
     }
     return new SchemaField(name, ft, calcProps(name, ft, props), defaultValue );
   }

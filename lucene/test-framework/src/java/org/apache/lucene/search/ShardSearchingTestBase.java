@@ -42,9 +42,15 @@ import org.apache.lucene.util._TestUtil;
 //   - doc blocks?  so we can test joins/grouping...
 //   - controlled consistency (NRTMgr)
 
+/**
+ * Base test class for simulating distributed search across multiple shards.
+ */
 public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
   // TODO: maybe SLM should throw this instead of returning null...
+  /**
+   * Thrown when the lease for a searcher has expired.
+   */
   public static class SearcherExpiredException extends RuntimeException {
     public SearcherExpiredException(String message) {
       super(message);
@@ -179,7 +185,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     }
     try {
       for(Term term : terms) {
-        final TermContext termContext = TermContext.build(s.getIndexReader().getTopReaderContext(), term, false);
+        final TermContext termContext = TermContext.build(s.getIndexReader().getContext(), term, false);
         stats.put(term, s.termStatistics(term, termContext));
       }
     } finally {
@@ -462,15 +468,17 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
 
     // Get the current (fresh) searcher for this node
     public ShardIndexSearcher acquire() {
-      final ShardIndexSearcher s = currentShardSearcher;
-      // TODO: this isn't thread safe.... in theory the
-      // reader could get decRef'd to 0 before we have a
-      // chance to incRef, ie if a reopen happens right
-      // after the above line, this thread gets stalled, and
-      // the old IR is closed.  But because we use SLM in
-      // this test, this will be exceptionally rare:
-      s.getIndexReader().incRef();
-      return s;
+      while(true) {
+        final ShardIndexSearcher s = currentShardSearcher;
+        // In theory the reader could get decRef'd to 0
+        // before we have a chance to incRef, ie if a reopen
+        // happens right after the above line, this thread
+        // gets stalled, and the old IR is closed.  So we
+        // must try/retry until incRef succeeds:
+        if (s.getIndexReader().tryIncRef()) {
+          return s;
+        }
+      }
     }
 
     public void release(ShardIndexSearcher s) throws IOException {
@@ -604,6 +612,9 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     }
   }
 
+  /**
+   * An IndexSearcher and associated version (lease)
+   */
   protected static class SearcherAndVersion {
     public final IndexSearcher searcher;
     public final long version;

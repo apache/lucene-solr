@@ -27,6 +27,9 @@ import org.apache.lucene.index.MultiFields;
 import java.io.IOException;
 
 
+/**
+ * Query that matches String prefixes
+ */
 public class SrndPrefixQuery extends SimpleTerm {
   private final BytesRef prefixRef;
   public SrndPrefixQuery(String prefix, boolean quoted, char truncator) {

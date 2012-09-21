@@ -425,7 +425,7 @@
    <field name="signatureField" type="string" indexed="true" stored="false"/>
    <field name="uuid" type="uuid" stored="true" />
    <field name="name" type="nametext" indexed="true" stored="true"/>
-   <field name="text" type="text" indexed="true" stored="false"/>
+   <field name="text" type="text" indexed="true" stored="false" multiValued="true" />
    <field name="subject" type="text" indexed="true" stored="true"/>
    <field name="title" type="nametext" indexed="true" stored="true"/>
    <field name="weight" type="float" indexed="true" stored="true"/>
@@ -522,6 +522,9 @@
    <!-- for versioning -->
    <field name="_version_" type="long" indexed="true" stored="true"/>
 
+    
+   <field name="copyfield_source" type="string" indexed="true" stored="true" multiValued="true"/>
+
 
 
    <dynamicField name="*_coordinate"  type="tdouble" indexed="true"  stored="false"/>
@@ -587,5 +590,8 @@
 
    <copyField source="title" dest="text"/>
    <copyField source="subject" dest="text"/>
+
+   <copyField source="copyfield_source" dest="text"/>
+   <copyField source="copyfield_source" dest="copyfield_dest_ss"/>  <!-- copyField into another stored copyField - not best practice --> 
  
 </schema>

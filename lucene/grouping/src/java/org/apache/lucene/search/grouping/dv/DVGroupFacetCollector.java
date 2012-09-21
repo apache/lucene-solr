@@ -262,9 +262,7 @@ public abstract class DVGroupFacetCollector extends AbstractGroupFacetCollector 
           }
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        @Override
         protected void nextTerm() throws IOException {
           mergeTerm = facetFieldSource.getByOrd(mergePos, spare);
         }

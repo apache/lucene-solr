@@ -74,7 +74,7 @@ public class TestCustomNorms extends LuceneTestCase {
     assertEquals(Type.FLOAT_32, normValues.getType());
     float[] norms = (float[]) source.getArray();
     for (int i = 0; i < open.maxDoc(); i++) {
-      Document document = open.document(i);
+      StoredDocument document = open.document(i);
       float expected = Float.parseFloat(document.get(floatTestField));
       assertEquals(expected, norms[i], 0.0f);
     }
@@ -143,7 +143,7 @@ public class TestCustomNorms extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
     assertEquals(numAdded, reader.numDocs());
-    IndexReaderContext topReaderContext = reader.getTopReaderContext();
+    IndexReaderContext topReaderContext = reader.getContext();
     for (final AtomicReaderContext ctx : topReaderContext.leaves()) {
       AtomicReader atomicReader = ctx.reader();
       Source source = random().nextBoolean() ? atomicReader.normValues("foo").getSource() : atomicReader.normValues("foo").getDirectSource();

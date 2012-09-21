@@ -40,6 +40,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -138,7 +139,7 @@ public class SolrDispatchFilter implements Filter
     }
     
     if (this.cores == null) {
-      ((HttpServletResponse)response).sendError( 403, "Server is shutting down" );
+      ((HttpServletResponse)response).sendError( 503, "Server is shutting down" );
       return;
     }
     CoreContainer cores = this.cores;
@@ -335,10 +336,10 @@ public class SolrDispatchFilter implements Filter
       }
       
       // check everyone then
-      Map<String,ZkNodeProps> shards = entry.getValue().getShards();
-      Set<Entry<String,ZkNodeProps>> shardEntries = shards.entrySet();
-      for (Entry<String,ZkNodeProps> shardEntry : shardEntries) {
-        ZkNodeProps zkProps = shardEntry.getValue();
+      Map<String,Replica> shards = entry.getValue().getReplicasMap();
+      Set<Entry<String,Replica>> shardEntries = shards.entrySet();
+      for (Entry<String,Replica> shardEntry : shardEntries) {
+        Replica zkProps = shardEntry.getValue();
         core = checkProps(cores, path, zkProps);
         if (core != null) {
           break done;
@@ -352,8 +353,8 @@ public class SolrDispatchFilter implements Filter
       ZkNodeProps zkProps) {
     String corename;
     SolrCore core = null;
-    if (cores.getZkController().getNodeName().equals(zkProps.get(ZkStateReader.NODE_NAME_PROP))) {
-      corename = zkProps.get(ZkStateReader.CORE_NAME_PROP);
+    if (cores.getZkController().getNodeName().equals(zkProps.getStr(ZkStateReader.NODE_NAME_PROP))) {
+      corename = zkProps.getStr(ZkStateReader.CORE_NAME_PROP);
       core = cores.getCore(corename);
     }
     return core;

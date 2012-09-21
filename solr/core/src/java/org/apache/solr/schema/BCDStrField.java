@@ -17,7 +17,7 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 /**
  *
  */
@@ -27,7 +27,7 @@ public class BCDStrField extends BCDIntField {
    * is not an integer, it will not survive the base10k conversion!
    */
   @Override
-  public String toObject(IndexableField f) {
+  public String toObject(StorableField f) {
     return toExternal(f);
   }
 }

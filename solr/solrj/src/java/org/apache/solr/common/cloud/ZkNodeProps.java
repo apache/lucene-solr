@@ -17,51 +17,55 @@ package org.apache.solr.common.cloud;
  * limitations under the License.
  */
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.Map.Entry;
-
+import org.apache.noggit.JSONUtil;
 import org.apache.noggit.JSONWriter;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 /**
- * ZkNodeProps contains immutable properties for a shard/solr core.
+ * ZkNodeProps contains generic immutable properties.
  */
 public class ZkNodeProps implements JSONWriter.Writable {
 
-  private final Map<String,String> propMap;
+  protected final Map<String,Object> propMap;
 
   /**
    * Construct ZKNodeProps from map.
    */
-  public ZkNodeProps(Map<String,String> propMap) {
-    this.propMap = new HashMap<String,String>();
-    this.propMap.putAll(propMap);
+  public ZkNodeProps(Map<String,Object> propMap) {
+    this.propMap = propMap;
   }
-  
-  /**
-   * Construct ZKNodeProps from information of an existingZKNodeProps.
-   */
-  public ZkNodeProps(ZkNodeProps zkNodeProps) {
-    this.propMap = new HashMap<String,String>();
-    this.propMap.putAll(zkNodeProps.propMap);
-  }
-  
+
+
   /**
    * Constructor that populates the from array of Strings in form key1, value1,
    * key2, value2, ..., keyN, valueN
    */
   public ZkNodeProps(String... keyVals) {
-    if (keyVals.length % 2 != 0) {
+    this( makeMap((Object[])keyVals) );
+  }
+
+  public static ZkNodeProps fromKeyVals(Object... keyVals)  {
+    return new ZkNodeProps( makeMap(keyVals) );
+  }
+
+  public static Map<String,Object> makeMap(Object... keyVals) {
+    if ((keyVals.length & 0x01) != 0) {
       throw new IllegalArgumentException("arguments should be key,value");
     }
-    propMap = new HashMap<String,String>();
+    Map<String,Object> propMap = new HashMap<String,Object>(keyVals.length>>1);
     for (int i = 0; i < keyVals.length; i+=2) {
-      propMap.put(keyVals[i], keyVals[i+1]);
+      propMap.put(keyVals[i].toString(), keyVals[i+1]);
     }
+    return propMap;
   }
- 
+
+
   /**
    * Get property keys.
    */
@@ -72,15 +76,20 @@ public class ZkNodeProps implements JSONWriter.Writable {
   /**
    * Get all properties as map.
    */
-  public Map<String,String> getProperties() {
+  public Map<String, Object> getProperties() {
     return Collections.unmodifiableMap(propMap);
   }
 
+  /** Returns a shallow writable copy of the properties */
+  public Map<String,Object> shallowCopy() {
+    return new LinkedHashMap<String, Object>(propMap);
+  }
+
   /**
-   * Create ZkNodeProps from json string that is typically stored in zookeeper.
+   * Create Replica from json string that is typically stored in zookeeper.
    */
   public static ZkNodeProps load(byte[] bytes) {
-    Map<String, String> props = (Map<String, String>) ZkStateReader.fromJSON(bytes);
+    Map<String, Object> props = (Map<String, Object>) ZkStateReader.fromJSON(bytes);
     return new ZkNodeProps(props);
   }
 
@@ -90,20 +99,28 @@ public class ZkNodeProps implements JSONWriter.Writable {
   }
   
   /**
-   * Get property value.
+   * Get a string property value.
    */
-  public String get(String key) {
+  public String getStr(String key) {
+    Object o = propMap.get(key);
+    return o == null ? null : o.toString();
+  }
+
+  public Object get(String key) {
     return propMap.get(key);
   }
   
   @Override
   public String toString() {
+    return JSONUtil.toJSON(this);
+    /***
     StringBuilder sb = new StringBuilder();
-    Set<Entry<String,String>> entries = propMap.entrySet();
-    for(Entry<String,String> entry : entries) {
+    Set<Entry<String,Object>> entries = propMap.entrySet();
+    for(Entry<String,Object> entry : entries) {
       sb.append(entry.getKey() + "=" + entry.getValue() + "\n");
     }
     return sb.toString();
+    ***/
   }
 
   /**

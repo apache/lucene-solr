@@ -181,10 +181,10 @@ public class TestBasicIntervals extends LuceneTestCase {
    IntervalFilterQuery positionFilterQuery = new IntervalFilterQuery( query, new WithinOrderedFilter(3));
    
    Query rewrite = this.searcher.rewrite(positionFilterQuery);
-   AtomicReader r = this.reader.getTopReaderContext().leaves().get(0).reader();
+   AtomicReader r = this.reader.getContext().leaves().get(0).reader();
    Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
    
-   Scorer scorer = createWeight.scorer(r.getTopReaderContext(), random()
+   Scorer scorer = createWeight.scorer(r.getContext(), random()
        .nextBoolean(), true, PostingFeatures.POSITIONS, r.getLiveDocs());
    IntervalIterator positions = scorer.positions(false);
    positions.scorer.advance(11);
@@ -225,10 +225,10 @@ public class TestBasicIntervals extends LuceneTestCase {
       Query snq = new IntervalFilterQuery(query, new WithinIntervalIterator(
           0));
       Query rewrite = this.searcher.rewrite(snq);
-      AtomicReader r = this.reader.getTopReaderContext().leaves().get(0).reader();
+      AtomicReader r = this.reader.getContext().leaves().get(0).reader();
       Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
       
-      Scorer scorer = createWeight.scorer(r.getTopReaderContext(), random()
+      Scorer scorer = createWeight.scorer(r.getContext(), random()
           .nextBoolean(), true, PostingFeatures.POSITIONS, r.getLiveDocs());
       IntervalIterator positions = scorer.positions(false);
       advanceIter(positions, 4);
@@ -286,9 +286,9 @@ public class TestBasicIntervals extends LuceneTestCase {
 
       Query rewrite = this.searcher.rewrite(new IntervalFilterQuery(topLevel,
           new WithinIntervalIterator(1)));
-      AtomicReader r = this.reader.getTopReaderContext().leaves().get(0).reader();
+      AtomicReader r = this.reader.getContext().leaves().get(0).reader();
       Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
-      Scorer scorer = createWeight.scorer(r.getTopReaderContext(), random()
+      Scorer scorer = createWeight.scorer(r.getContext(), random()
           .nextBoolean(), true, PostingFeatures.POSITIONS, r.getLiveDocs());
       
       IntervalIterator iterator = scorer.positions(false);
@@ -347,10 +347,10 @@ public class TestBasicIntervals extends LuceneTestCase {
       query.add(makeTermQuery(terms[i]), Occur.SHOULD);
     }
     Query rewrite = this.searcher.rewrite(query);
-    AtomicReader r = this.reader.getTopReaderContext().leaves().get(0).reader();
+    AtomicReader r = this.reader.getContext().leaves().get(0).reader();
     Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
     
-    Scorer scorer = createWeight.scorer(r.getTopReaderContext(), true, true, PostingFeatures.POSITIONS, r.getLiveDocs());
+    Scorer scorer = createWeight.scorer(r.getContext(), true, true, PostingFeatures.POSITIONS, r.getLiveDocs());
     return scorer.positions(false);
   }
   

@@ -27,6 +27,9 @@ import java.util.Map;
  * @lucene.experimental
  */
 public final class TwoPhaseCommitTool {
+  
+  /** No instance */
+  private TwoPhaseCommitTool() {}
 
   /**
    * A wrapper of a {@link TwoPhaseCommit}, which delegates all calls to the
@@ -39,6 +42,7 @@ public final class TwoPhaseCommitTool {
     private final TwoPhaseCommit tpc;
     private  final Map<String, String> commitData;
 
+    /** Sole constructor. */
     public TwoPhaseCommitWrapper(TwoPhaseCommit tpc, Map<String, String> commitData) {
       this.tpc = tpc;
       this.commitData = commitData;
@@ -70,12 +74,12 @@ public final class TwoPhaseCommitTool {
    * object fails to prepareCommit().
    */
   public static class PrepareCommitFailException extends IOException {
-    
+
+    /** Sole constructor. */
     public PrepareCommitFailException(Throwable cause, TwoPhaseCommit obj) {
       super("prepareCommit() failed on " + obj);
       initCause(cause);
     }
-    
   }
 
   /**
@@ -83,7 +87,8 @@ public final class TwoPhaseCommitTool {
    * object fails to commit().
    */
   public static class CommitFailException extends IOException {
-    
+
+    /** Sole constructor. */
     public CommitFailException(Throwable cause, TwoPhaseCommit obj) {
       super("commit() failed on " + obj);
       initCause(cause);

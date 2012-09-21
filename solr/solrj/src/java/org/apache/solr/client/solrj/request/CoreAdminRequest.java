@@ -120,8 +120,9 @@ public class CoreAdminRequest extends SolrRequest
     protected String coreNodeName;
     protected String state;
     protected Boolean checkLive;
-    protected Integer pauseFor;
+    protected Boolean onlyIfLeader;
     
+
     public WaitForState() {
       action = CoreAdminAction.PREPRECOVERY;
     }
@@ -158,12 +159,12 @@ public class CoreAdminRequest extends SolrRequest
       this.checkLive = checkLive;
     }
     
-    public Integer getPauseFor() {
-      return pauseFor;
+    public boolean isOnlyIfLeader() {
+      return onlyIfLeader;
     }
 
-    public void setPauseFor(Integer pauseFor) {
-      this.pauseFor = pauseFor;
+    public void setOnlyIfLeader(boolean onlyIfLeader) {
+      this.onlyIfLeader = onlyIfLeader;
     }
     
     @Override
@@ -192,8 +193,8 @@ public class CoreAdminRequest extends SolrRequest
         params.set( "checkLive", checkLive);
       }
       
-      if (pauseFor != null) {
-        params.set( "pauseFor", pauseFor);
+      if (onlyIfLeader != null) {
+        params.set( "onlyIfLeader", onlyIfLeader);
       }
 
       return params;

@@ -19,15 +19,20 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 
 import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.GzipHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
@@ -36,6 +41,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
  * Run solr using jetty
@@ -218,9 +224,29 @@ public class JettySolrRunner {
   }
 
   public void stop() throws Exception {
-    if (!server.isStopped() && !server.isStopping()) {
-      server.stop();
+    // we try and do a bunch of extra stop stuff because
+    // jetty doesn't like to stop if it started
+    // and ended up in a failure state (like when it cannot get the port)
+    if (server.getState().equals(Server.FAILED)) {
+      Connector[] connectors = server.getConnectors();
+      for (Connector connector : connectors) {
+        connector.stop();
+      }
     }
+    Filter filter = dispatchFilter.getFilter();
+    ThreadPool threadPool = server.getThreadPool();
+    server.getServer().stop();
+    server.stop();
+    if (threadPool instanceof QueuedThreadPool) {
+      ((QueuedThreadPool) threadPool).setMaxStopTimeMs(30000);
+      ((QueuedThreadPool) threadPool).stop();
+      ((QueuedThreadPool) threadPool).join();
+    }
+    //server.destroy();
+    if (server.getState().equals(Server.FAILED)) {
+      filter.destroy();
+    }
+    
     server.join();
   }
 

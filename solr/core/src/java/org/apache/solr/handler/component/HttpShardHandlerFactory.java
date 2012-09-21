@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -163,7 +164,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
       SolrException.log(log, e);
     }
     try {
-      commExecutor.shutdownNow();
+      ExecutorUtil.shutdownNowAndAwaitTermination(commExecutor);
     } catch (Throwable e) {
       SolrException.log(log, e);
     }

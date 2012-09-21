@@ -35,9 +35,9 @@ final public class QueryParserUtil {
    * If x fields are specified, this effectively constructs:
    * 
    * <pre>
-   * &lt;code&gt;
+   * <code>
    * (field1:query1) (field2:query2) (field3:query3)...(fieldx:queryx)
-   * &lt;/code&gt;
+   * </code>
    * </pre>
    * 
    * @param queries
@@ -75,23 +75,23 @@ final public class QueryParserUtil {
    * specify certain fields as required, and others as prohibited.
    * <p>
    * 
-   * <pre>
    * Usage:
-   * &lt;code&gt;
+   * <pre class="prettyprint">
+   * <code>
    * String[] fields = {&quot;filename&quot;, &quot;contents&quot;, &quot;description&quot;};
    * BooleanClause.Occur[] flags = {BooleanClause.Occur.SHOULD,
    *                BooleanClause.Occur.MUST,
    *                BooleanClause.Occur.MUST_NOT};
    * MultiFieldQueryParser.parse(&quot;query&quot;, fields, flags, analyzer);
-   * &lt;/code&gt;
+   * </code>
    * </pre>
    *<p>
    * The code above would construct a query:
    * 
    * <pre>
-   * &lt;code&gt;
+   * <code>
    * (filename:query) +(contents:query) -(description:query)
-   * &lt;/code&gt;
+   * </code>
    * </pre>
    * 
    * @param query
@@ -131,24 +131,24 @@ final public class QueryParserUtil {
    * specify certain fields as required, and others as prohibited.
    * <p>
    * 
-   * <pre>
    * Usage:
-   * &lt;code&gt;
+   * <pre class="prettyprint">
+   * <code>
    * String[] query = {&quot;query1&quot;, &quot;query2&quot;, &quot;query3&quot;};
    * String[] fields = {&quot;filename&quot;, &quot;contents&quot;, &quot;description&quot;};
    * BooleanClause.Occur[] flags = {BooleanClause.Occur.SHOULD,
    *                BooleanClause.Occur.MUST,
    *                BooleanClause.Occur.MUST_NOT};
    * MultiFieldQueryParser.parse(query, fields, flags, analyzer);
-   * &lt;/code&gt;
+   * </code>
    * </pre>
    *<p>
    * The code above would construct a query:
    * 
    * <pre>
-   * &lt;code&gt;
+   * <code>
    * (filename:query1) +(contents:query2) -(description:query3)
-   * &lt;/code&gt;
+   * </code>
    * </pre>
    * 
    * @param queries

@@ -21,6 +21,8 @@ import org.apache.lucene.search.Explanation;
 import com.spatial4j.core.shape.Rectangle;
 
 /**
+ * Abstraction of the calculation used to determine how similar two Bounding Boxes are.
+ *
  * @lucene.experimental
  */
 public interface BBoxSimilarity {

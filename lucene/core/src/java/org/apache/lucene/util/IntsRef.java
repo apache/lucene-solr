@@ -23,21 +23,32 @@ package org.apache.lucene.util;
  *
  *  @lucene.internal */
 public final class IntsRef implements Comparable<IntsRef>, Cloneable {
-
+  /** An empty integer array for convenience */
   public static final int[] EMPTY_INTS = new int[0];
 
+  /** The contents of the IntsRef. Should never be {@code null}. */
   public int[] ints;
+  /** Offset of first valid integer. */
   public int offset;
+  /** Length of used ints. */
   public int length;
 
+  /** Create a IntsRef with {@link #EMPTY_INTS} */
   public IntsRef() {
     ints = EMPTY_INTS;
   }
 
+  /** 
+   * Create a IntsRef pointing to a new array of size <code>capacity</code>.
+   * Offset and length will both be zero.
+   */
   public IntsRef(int capacity) {
     ints = new int[capacity];
   }
 
+  /** This instance will directly reference ints w/o making a copy.
+   * ints should not be null.
+   */
   public IntsRef(int[] ints, int offset, int length) {
     assert ints != null;
     assert offset >= 0;

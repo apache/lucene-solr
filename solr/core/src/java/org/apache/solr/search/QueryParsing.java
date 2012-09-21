@@ -226,9 +226,9 @@ public class QueryParsing {
    * <p>
    * The form of the sort specification string currently parsed is:
    * </p>
-   * <pre>>
+   * <pre>
    * SortSpec ::= SingleSort [, SingleSort]*
-   * SingleSort ::= <fieldname> SortDirection
+   * SingleSort ::= &lt;fieldname&gt; SortDirection
    * SortDirection ::= top | desc | bottom | asc
    * </pre>
    * Examples:

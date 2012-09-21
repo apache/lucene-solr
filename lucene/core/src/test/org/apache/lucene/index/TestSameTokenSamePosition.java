@@ -78,7 +78,7 @@ final class BugReproTokenStream extends TokenStream {
       offsetAtt.setOffset(starts[nextTokenIndex], ends[nextTokenIndex]);
       posIncAtt.setPositionIncrement(incs[nextTokenIndex]);
       nextTokenIndex++;
-      return true;			
+      return true;
     } else {
       return false;
     }

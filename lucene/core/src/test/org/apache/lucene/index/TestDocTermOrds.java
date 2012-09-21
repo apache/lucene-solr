@@ -122,7 +122,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     for(int id=0;id<NUM_DOCS;id++) {
       Document doc = new Document();
 
-      doc.add(new IntField("id", id, Field.Store.NO));
+      doc.add(new IntField("id", id, Field.Store.YES));
       
       final int termCount = _TestUtil.nextInt(random(), 0, 20*RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {
@@ -154,11 +154,11 @@ public class TestDocTermOrds extends LuceneTestCase {
       System.out.println("TEST: reader=" + r);
     }
 
-    for(IndexReader subR : r.getSequentialSubReaders()) {
+    for(AtomicReaderContext ctx : r.leaves()) {
       if (VERBOSE) {
-        System.out.println("\nTEST: sub=" + subR);
+        System.out.println("\nTEST: sub=" + ctx.reader());
       }
-      verify((AtomicReader) subR, idToOrds, termsArray, null);
+      verify(ctx.reader(), idToOrds, termsArray, null);
     }
 
     // Also test top-level reader: its enum does not support
@@ -219,7 +219,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     for(int id=0;id<NUM_DOCS;id++) {
       Document doc = new Document();
 
-      doc.add(new IntField("id", id, Field.Store.NO));
+      doc.add(new IntField("id", id, Field.Store.YES));
       
       final int termCount = _TestUtil.nextInt(random(), 0, 20*RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {
@@ -273,11 +273,11 @@ public class TestDocTermOrds extends LuceneTestCase {
         idToOrdsPrefix[id] = newOrdsArray;
       }
 
-      for(IndexReader subR : r.getSequentialSubReaders()) {
+      for(AtomicReaderContext ctx : r.leaves()) {
         if (VERBOSE) {
-          System.out.println("\nTEST: sub=" + subR);
+          System.out.println("\nTEST: sub=" + ctx.reader());
         }
-        verify((AtomicReader) subR, idToOrdsPrefix, termsArray, prefixRef);
+        verify(ctx.reader(), idToOrdsPrefix, termsArray, prefixRef);
       }
 
       // Also test top-level reader: its enum does not support

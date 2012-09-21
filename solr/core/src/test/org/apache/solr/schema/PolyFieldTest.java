@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -83,7 +84,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     assertEquals(pt.getDimension(), 2);
     double[] xy = new double[]{35.0, -79.34};
     String point = xy[0] + "," + xy[1];
-    IndexableField[] fields = home.createFields(point, 2);
+    StorableField[] fields = home.createFields(point, 2);
     assertEquals(fields.length, 3);//should be 3, we have a stored field
     //first two fields contain the values, third is just stored and contains the original
     for (int i = 0; i < 3; i++) {

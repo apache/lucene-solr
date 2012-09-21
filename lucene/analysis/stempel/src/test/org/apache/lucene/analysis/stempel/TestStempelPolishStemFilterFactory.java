@@ -22,7 +22,6 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 
 /**
  * Tests for {@link StempelPolishStemFilterFactory}
@@ -31,7 +30,6 @@ public class TestStempelPolishStemFilterFactory extends BaseTokenStreamTestCase 
   public void testBasics() throws Exception {
     StringReader document = new StringReader("studenta studenci");
     StempelPolishStemFilterFactory factory = new StempelPolishStemFilterFactory();
-    factory.inform(new ClasspathResourceLoader(getClass()));
     TokenStream ts = factory.create(new WhitespaceTokenizer(TEST_VERSION_CURRENT, document));
     assertTokenStreamContents(ts,
         new String[] { "student", "student" });

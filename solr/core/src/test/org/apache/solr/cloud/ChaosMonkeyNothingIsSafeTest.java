@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
   public static Logger log = LoggerFactory.getLogger(ChaosMonkeyNothingIsSafeTest.class);
   
-  private static final int BASE_RUN_LENGTH = 180000;
+  private static final int BASE_RUN_LENGTH = 60000;
 
   @BeforeClass
   public static void beforeSuperClass() {
@@ -56,8 +56,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    // TODO use @Noisy annotation as we expect lots of exceptions
-    //ignoreException(".*");
+    // can help to hide this when testing and looking at logs
+    //ignoreException("shard update error");
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
   
@@ -71,8 +71,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   
   public ChaosMonkeyNothingIsSafeTest() {
     super();
-    sliceCount = 2;
-    shardCount = 6;
+    sliceCount = 1;
+    shardCount = 7;
   }
   
   @Override
@@ -83,9 +83,16 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       handle.put("QTime", SKIPVAL);
       handle.put("timestamp", SKIPVAL);
       
+      // make sure we have leaders for each shard
+      for (int j = 1; j < sliceCount; j++) {
+        zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard" + j, 10000);
+      }      // make sure we again have leaders for each shard
+      
+      waitForRecoveriesToFinish(false);
+      
       // we cannot do delete by query
       // as it's not supported for recovery
-      // del("*:*");
+       del("*:*");
       
       List<StopableThread> threads = new ArrayList<StopableThread>();
       int threadCount = 1;
@@ -105,13 +112,18 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         searchThread.start();
       }
       
-      FullThrottleStopableIndexingThread ftIndexThread = new FullThrottleStopableIndexingThread(
-          clients, i * 50000, true);
-      threads.add(ftIndexThread);
-      ftIndexThread.start();
+      // TODO: only do this sometimes so that we can sometimes compare against control
+      boolean runFullThrottle = random().nextBoolean();
+      if (runFullThrottle) {
+        FullThrottleStopableIndexingThread ftIndexThread = new FullThrottleStopableIndexingThread(
+            clients, i * 50000, true);
+        threads.add(ftIndexThread);
+        ftIndexThread.start();
+      }
       
-      chaosMonkey.startTheMonkey(true, 1500);
-      int runLength = atLeast(BASE_RUN_LENGTH);
+      chaosMonkey.startTheMonkey(true, 10000);
+      //int runLength = atLeast(BASE_RUN_LENGTH);
+      int runLength = BASE_RUN_LENGTH;
       try {
         Thread.sleep(runLength);
       } finally {
@@ -127,17 +139,19 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         indexThread.join();
       }
       
-      // fails will happen...
-      // for (StopableIndexingThread indexThread : threads) {
-      // assertEquals(0, indexThread.getFails());
-      // }
+       // we expect full throttle fails, but not cloud client...
+       for (StopableThread indexThread : threads) {
+         if (indexThread instanceof StopableIndexingThread && !(indexThread instanceof FullThrottleStopableIndexingThread)) {
+           //assertEquals(0, ((StopableIndexingThread) indexThread).getFails());
+         }
+       }
       
       // try and wait for any replications and what not to finish...
       
       Thread.sleep(2000);
       
       // wait until there are no recoveries...
-      waitForThingsToLevelOut(Math.round((runLength / 1000.0f / 5.0f)));
+      waitForThingsToLevelOut(Integer.MAX_VALUE);//Math.round((runLength / 1000.0f / 3.0f)));
       
       // make sure we again have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
@@ -151,13 +165,19 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       zkStateReader.updateClusterState(true);
       assertTrue(zkStateReader.getClusterState().getLiveNodes().size() > 0);
       
-      checkShardConsistency(false, true);
+      
+      // full throttle thread can
+      // have request fails 
+      checkShardConsistency(!runFullThrottle, true);
+      
+      long ctrlDocs = controlClient.query(new SolrQuery("*:*")).getResults()
+      .getNumFound(); 
       
       // ensure we have added more than 0 docs
       long cloudClientDocs = cloudClient.query(new SolrQuery("*:*"))
           .getResults().getNumFound();
       
-      assertTrue(cloudClientDocs > 0);
+      assertTrue("Found " + ctrlDocs + " control docs", cloudClientDocs > 0);
       
       if (VERBOSE) System.out.println("control docs:"
           + controlClient.query(new SolrQuery("*:*")).getResults()

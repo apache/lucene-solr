@@ -23,16 +23,17 @@
   <h1>The Spatial Module for Apache Lucene</h1>
 
   <p>
-    The spatial module is new is Lucene 4, replacing the old contrib module
+    The spatial module is new to Lucene 4, replacing the old "contrib" module
     that came before it. The principle interface to the module is
     a {@link org.apache.lucene.spatial.SpatialStrategy}
     which encapsulates an approach to indexing and searching
     based on shapes.  Different Strategies have different features and
-    performance profiles, which are documented at each Strategy class level.
+    performance profiles, which are documented at each Strategy implementation
+    class level.
   </p>
   <p>
-    For some sample code showing how to use the API, see SpatialExample.java in
-    the tests.
+    For some sample code showing how to use the API, see
+      SpatialExample.java in the tests.
   </p>
   <p>
     The spatial module uses
@@ -57,7 +58,9 @@
     Lucene Spatial Playground (LSP) as an external project.  In ~March 2012, LSP
     split into this new module as part of Lucene and Spatial4j externally. A
     large chunk of the LSP implementation originated as SOLR-2155 which uses
-    trie/prefix-tree algorithms with a geohash encoding.
+    trie/prefix-tree algorithms with a geohash encoding.  That approach is
+    implemented in {@link org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy}
+    today.
   </p>
 
   </body>

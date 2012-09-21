@@ -321,6 +321,10 @@ public class FieldQuery {
     return termOrPhraseNumber++;
   }
   
+  /**
+   * Internal structure of a query for highlighting: represents
+   * a nested query structure
+   */
   public static class QueryPhraseMap {
 
     boolean terminal;

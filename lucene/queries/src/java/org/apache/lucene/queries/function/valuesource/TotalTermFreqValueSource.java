@@ -18,6 +18,7 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
@@ -28,7 +29,10 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * <code>TotalTermFreqValueSource</code> returns the total term freq (sum of term freqs across all docuyments).
+ * <code>TotalTermFreqValueSource</code> returns the total term freq 
+ * (sum of term freqs across all documents).
+ * Returns -1 if frequencies were omitted for the field, or if 
+ * the codec doesn't support this statistic.
  * @lucene.internal
  */
 public class TotalTermFreqValueSource extends ValueSource {
@@ -62,7 +66,7 @@ public class TotalTermFreqValueSource extends ValueSource {
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     long totalTermFreq = 0;
     for (AtomicReaderContext readerContext : searcher.getTopReaderContext().leaves()) {
-      long val = readerContext.reader().totalTermFreq(indexedField, indexedBytes);
+      long val = readerContext.reader().totalTermFreq(new Term(indexedField, indexedBytes));
       if (val == -1) {
         totalTermFreq = -1;
         break;

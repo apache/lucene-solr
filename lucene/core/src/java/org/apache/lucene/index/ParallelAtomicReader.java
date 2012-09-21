@@ -27,7 +27,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.UnmodifiableIterator;
 
 
 /** An {@link AtomicReader} which reads multiple, parallel indexes.  Each index
@@ -163,7 +162,7 @@ public final class ParallelAtomicReader extends AtomicReader {
     
     @Override
     public Iterator<String> iterator() {
-      return new UnmodifiableIterator<String>(fields.keySet().iterator());
+      return Collections.unmodifiableSet(fields.keySet()).iterator();
     }
     
     @Override

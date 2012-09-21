@@ -25,6 +25,8 @@ import java.util.*;
  * @see TernaryTreeNode
  */
 public class TSTAutocomplete {
+  
+  TSTAutocomplete() {}
 
   /**
    * Inserting keys in TST in the order middle,small,big (lexicographic measure)

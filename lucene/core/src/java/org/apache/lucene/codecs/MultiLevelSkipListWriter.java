@@ -26,6 +26,8 @@ import org.apache.lucene.util.MathUtil;
 /**
  * This abstract class writes skip lists with multiple levels.
  * 
+ * <pre>
+ *
  * Example for skipInterval = 3:
  *                                                     c            (skip level 2)
  *                 c                 c                 c            (skip level 1) 
@@ -45,24 +47,33 @@ import org.apache.lucene.util.MathUtil;
  * 
  * While this class takes care of writing the different skip levels,
  * subclasses must define the actual format of the skip data.
+ * </pre>
  * @lucene.experimental
  */
 
 public abstract class MultiLevelSkipListWriter {
-  // number of levels in this skip list
+  /** number of levels in this skip list */
   protected int numberOfSkipLevels;
   
   // the skip interval in the list with level = 0
   private int skipInterval;
+
+  // skipInterval used for level > 0
+  private int skipMultiplier;
   
   // for every skip level a different buffer is used 
   private RAMOutputStream[] skipBuffer;
 
-  protected MultiLevelSkipListWriter(int skipInterval, int maxSkipLevels, int df) {
+  protected MultiLevelSkipListWriter(int skipInterval, int skipMultiplier, int maxSkipLevels, int df) {
     this.skipInterval = skipInterval;
+    this.skipMultiplier = skipMultiplier;
     
     // calculate the maximum number of skip levels for this document frequency
-    numberOfSkipLevels = MathUtil.log(df, skipInterval);
+    if (df <= skipInterval) {
+      numberOfSkipLevels = 1;
+    } else {
+      numberOfSkipLevels = 1+MathUtil.log(df/skipInterval, skipMultiplier);
+    }
     
     // make sure it does not exceed maxSkipLevels
     if (numberOfSkipLevels > maxSkipLevels) {
@@ -70,6 +81,11 @@ public abstract class MultiLevelSkipListWriter {
     }
   }
   
+  // skipMultiplier and skipInterval are the same:
+  protected MultiLevelSkipListWriter(int skipInterval, int maxSkipLevels, int df) {
+    this(skipInterval, skipInterval, maxSkipLevels, df);
+  }
+
   protected void init() {
     skipBuffer = new RAMOutputStream[numberOfSkipLevels];
     for (int i = 0; i < numberOfSkipLevels; i++) {
@@ -77,8 +93,8 @@ public abstract class MultiLevelSkipListWriter {
     }
   }
 
+  /** creates new buffers or empties the existing ones */
   protected void resetSkip() {
-    // creates new buffers or empties the existing ones
     if (skipBuffer == null) {
       init();
     } else {
@@ -95,7 +111,7 @@ public abstract class MultiLevelSkipListWriter {
    * @param skipBuffer the skip buffer to write to
    */
   protected abstract void writeSkipData(int level, IndexOutput skipBuffer) throws IOException;
-  
+
   /**
    * Writes the current skip data to the buffers. The current document frequency determines
    * the max level is skip data is to be written to. 
@@ -104,11 +120,15 @@ public abstract class MultiLevelSkipListWriter {
    * @throws IOException
    */
   public void bufferSkip(int df) throws IOException {
-    int numLevels;
+
+    assert df % skipInterval == 0;
+    int numLevels = 1;
+    df /= skipInterval;
    
     // determine max level
-    for (numLevels = 0; (df % skipInterval) == 0 && numLevels < numberOfSkipLevels; df /= skipInterval) {
+    while ((df % skipMultiplier) == 0 && numLevels < numberOfSkipLevels) {
       numLevels++;
+      df /= skipMultiplier;
     }
     
     long childPointer = 0;
@@ -150,5 +170,4 @@ public abstract class MultiLevelSkipListWriter {
     
     return skipPointer;
   }
-
 }

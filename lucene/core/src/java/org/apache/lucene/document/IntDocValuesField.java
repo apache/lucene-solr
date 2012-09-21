@@ -21,28 +21,36 @@ import org.apache.lucene.index.DocValues;
 
 /**
  * <p>
- * This class provides a {@link Field} that enables storing
- * of a per-document int value for scoring, sorting or value retrieval. Here's an
- * example usage:
+ * Field that stores a per-document <code>int</code> value for scoring, 
+ * sorting or value retrieval. Here's an example usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *   document.add(new IntDocValuesField(name, 22));
  * </pre>
  * 
  * <p>
  * If you also need to store the value, you should add a
  * separate {@link StoredField} instance.
- * @see DocValues for further information
+ * @see DocValues
  * */
 
-public class IntDocValuesField extends Field {
+public class IntDocValuesField extends StoredField {
 
+  /**
+   * Type for 32-bit integer DocValues.
+   */
   public static final FieldType TYPE = new FieldType();
   static {
     TYPE.setDocValueType(DocValues.Type.FIXED_INTS_32);
     TYPE.freeze();
   }
 
+  /** 
+   * Creates a new DocValues field with the specified 32-bit integer value 
+   * @param name field name
+   * @param value 32-bit integer value
+   * @throws IllegalArgumentException if the field name is null
+   */
   public IntDocValuesField(String name, int value) {
     super(name, TYPE);
     fieldsData = Integer.valueOf(value);

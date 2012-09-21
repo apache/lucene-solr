@@ -26,7 +26,7 @@ import org.w3c.dom.Element;
  */
 
 /**
- *
+ * Builder for {@link PayloadTermQuery}
  */
 public class BoostingTermBuilder extends SpanBuilderBase {
 

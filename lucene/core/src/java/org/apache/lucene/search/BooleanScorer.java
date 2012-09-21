@@ -18,15 +18,10 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
-import org.apache.lucene.search.positions.BooleanIntervalIterator;
-import org.apache.lucene.search.positions.ConjunctionIntervalIterator;
-import org.apache.lucene.search.positions.DisjunctionIntervalIterator;
 import org.apache.lucene.search.positions.IntervalIterator;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -119,7 +114,7 @@ final class BooleanScorer extends Scorer {
   // Therefore the only methods that are implemented are score() and doc().
   private static final class BucketScorer extends Scorer {
 
-    float score;
+    double score;
     int doc = NO_MORE_DOCS;
     int freq;
     
@@ -138,7 +133,7 @@ final class BooleanScorer extends Scorer {
     public int nextDoc() { return NO_MORE_DOCS; }
     
     @Override
-    public float score() { return score; }
+    public float score() { return (float)score; }
 
     @Override
     public IntervalIterator positions(boolean collectPositions) throws IOException {
@@ -149,7 +144,7 @@ final class BooleanScorer extends Scorer {
 
   static final class Bucket {
     int doc = -1;            // tells if bucket is valid
-    float score;             // incremental score
+    double score;             // incremental score
     // TODO: break out bool anyProhibited, int
     // numRequiredMatched; then we can remove 32 limit on
     // required clauses
@@ -264,7 +259,12 @@ final class BooleanScorer extends Scorer {
           // clauses
           //&& (current.bits & requiredMask) == requiredMask) {
           
-          // TODO: can we remove this?  
+          // NOTE: Lucene always passes max =
+          // Integer.MAX_VALUE today, because we never embed
+          // a BooleanScorer inside another (even though
+          // that should work)... but in theory an outside
+          // app could pass a different max so we must check
+          // it:
           if (current.doc >= max){
             tmp = current;
             current = current.next;
@@ -333,7 +333,7 @@ final class BooleanScorer extends Scorer {
 
   @Override
   public float freq() throws IOException {
-    return current.coord;
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -355,11 +355,6 @@ final class BooleanScorer extends Scorer {
   
   @Override
   public Collection<ChildScorer> getChildren() {
-    List<ChildScorer> children = new ArrayList<ChildScorer>();
-    for (SubScorer sub = scorers; sub != null; sub = sub.next) {
-      // TODO: fix this if BQ ever sends us required clauses
-      children.add(new ChildScorer(sub.scorer, sub.prohibited ? "MUST_NOT" : "SHOULD"));
-    }
-    return children;
+    throw new UnsupportedOperationException();
   }
 }

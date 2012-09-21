@@ -141,7 +141,7 @@ public class ZkStateReader {
 
           public void command() {
             try {
-            	ZkStateReader.this.createClusterStateWatchersAndUpdate();
+              ZkStateReader.this.createClusterStateWatchersAndUpdate();
             } catch (KeeperException e) {
               log.error("", e);
               throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
@@ -373,31 +373,16 @@ public class ZkStateReader {
 
   public void close() {
     if (closeClient) {
-      try {
-        zkClient.close();
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
-            e);
-      }
+      zkClient.close();
     }
   }
   
   abstract class RunnableWatcher implements Runnable {
-		Watcher watcher;
-		public RunnableWatcher(Watcher watcher){
-			this.watcher = watcher;
-		}
+    Watcher watcher;
+    public RunnableWatcher(Watcher watcher){
+      this.watcher = watcher;
+    }
 
-	}
-  
-  /**
-   * Get shard leader url.
-   */
-  public String getLeaderUrl(String collection, String shard) throws InterruptedException, KeeperException {
-    return getLeaderUrl(collection, shard, 1000);
   }
   
   public String getLeaderUrl(String collection, String shard, int timeout)
@@ -425,7 +410,7 @@ public class ZkStateReader {
       }
       Thread.sleep(50);
     }
-    throw new RuntimeException("No registered leader was found, collection:" + collection + " slice:" + shard);
+    throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "No registered leader was found, collection:" + collection + " slice:" + shard);
   }
 
   /**
@@ -473,10 +458,10 @@ public class ZkStateReader {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST, "Could not find shardId in zk: " + shardId);
     }
     
-    Map<String,ZkNodeProps> shardMap = replicas.getShards();
+    Map<String,Replica> shardMap = replicas.getReplicasMap();
     List<ZkCoreNodeProps> nodes = new ArrayList<ZkCoreNodeProps>(shardMap.size());
     String filterNodeName = thisNodeName + "_" + coreName;
-    for (Entry<String,ZkNodeProps> entry : shardMap.entrySet()) {
+    for (Entry<String,Replica> entry : shardMap.entrySet()) {
       ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
       String coreNodeName = nodeProps.getNodeName() + "_" + nodeProps.getCoreName();
       if (clusterState.liveNodesContain(nodeProps.getNodeName()) && !coreNodeName.equals(filterNodeName)) {

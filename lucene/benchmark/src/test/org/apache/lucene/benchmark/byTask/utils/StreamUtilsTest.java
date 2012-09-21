@@ -57,38 +57,38 @@ public class StreamUtilsTest extends BenchmarkTestCase {
 
   @Test
   public void testGetInputStreamBzip2() throws Exception {
-  	assertReadText(rawBzip2File("bz2"));
-  	assertReadText(rawBzip2File("bzip"));
-  	assertReadText(rawBzip2File("BZ2"));
-  	assertReadText(rawBzip2File("BZIP"));
+    assertReadText(rawBzip2File("bz2"));
+    assertReadText(rawBzip2File("bzip"));
+    assertReadText(rawBzip2File("BZ2"));
+    assertReadText(rawBzip2File("BZIP"));
   }
 
   @Test
   public void testGetOutputStreamBzip2() throws Exception {
-  	assertReadText(autoOutFile("bz2"));
-  	assertReadText(autoOutFile("bzip"));
-  	assertReadText(autoOutFile("BZ2"));
-  	assertReadText(autoOutFile("BZIP"));
+    assertReadText(autoOutFile("bz2"));
+    assertReadText(autoOutFile("bzip"));
+    assertReadText(autoOutFile("BZ2"));
+    assertReadText(autoOutFile("BZIP"));
   }
   
   @Test
   public void testGetOutputStreamGzip() throws Exception {
-  	assertReadText(autoOutFile("gz"));
-  	assertReadText(autoOutFile("gzip"));
-  	assertReadText(autoOutFile("GZ"));
-  	assertReadText(autoOutFile("GZIP"));
+    assertReadText(autoOutFile("gz"));
+    assertReadText(autoOutFile("gzip"));
+    assertReadText(autoOutFile("GZ"));
+    assertReadText(autoOutFile("GZIP"));
   }
 
   @Test
   public void testGetOutputStreamPlain() throws Exception {
-  	assertReadText(autoOutFile("txt"));
-  	assertReadText(autoOutFile("text"));
-  	assertReadText(autoOutFile("TXT"));
-  	assertReadText(autoOutFile("TEXT"));
+    assertReadText(autoOutFile("txt"));
+    assertReadText(autoOutFile("text"));
+    assertReadText(autoOutFile("TXT"));
+    assertReadText(autoOutFile("TEXT"));
   }
   
   private File rawTextFile(String ext) throws Exception {
-    File f = new File(testDir,"testfile." +	ext);
+    File f = new File(testDir,"testfile." +  ext);
     BufferedWriter w = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(f), IOUtils.CHARSET_UTF_8));
     w.write(TEXT);
     w.newLine();
@@ -97,32 +97,32 @@ public class StreamUtilsTest extends BenchmarkTestCase {
   }
   
   private File rawGzipFile(String ext) throws Exception {
-    File f = new File(testDir,"testfile." +	ext);
+    File f = new File(testDir,"testfile." +  ext);
     OutputStream os = new CompressorStreamFactory().createCompressorOutputStream(CompressorStreamFactory.GZIP, new FileOutputStream(f));
     writeText(os);
     return f;
   }
 
   private File rawBzip2File(String ext) throws Exception {
-  	File f = new File(testDir,"testfile." +	ext);
-  	OutputStream os = new CompressorStreamFactory().createCompressorOutputStream(CompressorStreamFactory.BZIP2, new FileOutputStream(f));
-  	writeText(os);
-  	return f;
+    File f = new File(testDir,"testfile." +  ext);
+    OutputStream os = new CompressorStreamFactory().createCompressorOutputStream(CompressorStreamFactory.BZIP2, new FileOutputStream(f));
+    writeText(os);
+    return f;
   }
 
   private File autoOutFile(String ext) throws Exception {
-  	File f = new File(testDir,"testfile." +	ext);
-  	OutputStream os = StreamUtils.outputStream(f);
-  	writeText(os);
-  	return f;
+    File f = new File(testDir,"testfile." +  ext);
+    OutputStream os = StreamUtils.outputStream(f);
+    writeText(os);
+    return f;
   }
 
-	private void writeText(OutputStream os) throws IOException {
-		BufferedWriter w = new BufferedWriter(new OutputStreamWriter(os, IOUtils.CHARSET_UTF_8));
-  	w.write(TEXT);
-  	w.newLine();
-  	w.close();
-	}
+  private void writeText(OutputStream os) throws IOException {
+    BufferedWriter w = new BufferedWriter(new OutputStreamWriter(os, IOUtils.CHARSET_UTF_8));
+    w.write(TEXT);
+    w.newLine();
+    w.close();
+  }
 
   private void assertReadText(File f) throws Exception {
     InputStream ir = StreamUtils.inputStream(f);

@@ -33,6 +33,10 @@ import org.apache.lucene.util.PriorityQueue;
  */
 public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> extends PriorityQueue<T> {
 
+  /**
+   * Extension of ScoreDoc to also store the 
+   * {@link FieldComparator} slot.
+   */
   public static class Entry extends ScoreDoc {
     public int slot;
 

@@ -281,7 +281,7 @@ public final class BytesRefHash {
    *          <p>
    *          Hashcode is defined as:
    * 
-   *          <pre>
+   *          <pre class="prettyprint">
    * int hash = 0;
    * for (int i = offset; i &lt; offset + length; i++) {
    *   hash = 31 * hash + bytes[i];

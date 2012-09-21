@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
+import org.apache.lucene.codecs.block.BlockPostingsFormat;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucene40Postings;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
@@ -79,7 +80,7 @@ public class RandomCodec extends Lucene40Codec {
       }
       previousMappings.put(name, codec);
       // Safety:
-      assert previousMappings.size() < 10000;
+      assert previousMappings.size() < 10000: "test went insane";
     }
     return codec;
   }
@@ -94,6 +95,7 @@ public class RandomCodec extends Lucene40Codec {
 
     add(avoidCodecs,
         new Lucene40PostingsFormat(minItemsPerBlock, maxItemsPerBlock),
+        new BlockPostingsFormat(minItemsPerBlock, maxItemsPerBlock),
         new DirectPostingsFormat(LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : maxItemsPerBlock),
                                  LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : lowFreqCutoff)),
         new Pulsing40PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock),
@@ -117,7 +119,7 @@ public class RandomCodec extends Lucene40Codec {
     Collections.shuffle(formats, random);
 
     // Avoid too many open files:
-    formats.subList(4, formats.size()).clear();
+    formats = formats.subList(0, 4);
   }
 
   public RandomCodec(Random random) {

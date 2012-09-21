@@ -101,9 +101,9 @@ public abstract class PriorityQueue<T> {
    * If this method is extended to return a non-null value, then the following
    * usage pattern is recommended:
    * 
-   * <pre>
+   * <pre class="prettyprint">
    * // extends getSentinelObject() to return a non-null value.
-   * PriorityQueue<MyObject> pq = new MyQueue<MyObject>(numHits);
+   * PriorityQueue&lt;MyObject&gt; pq = new MyQueue&lt;MyObject&gt;(numHits);
    * // save the 'top' element, which is guaranteed to not be null.
    * MyObject pqTop = pq.top();
    * &lt;...&gt;
@@ -177,11 +177,11 @@ public abstract class PriorityQueue<T> {
     time. */
   public final T pop() {
     if (size > 0) {
-      T result = heap[1];			  // save first value
-      heap[1] = heap[size];			  // move last to first
-      heap[size] = null;			  // permit GC of objects
+      T result = heap[1];       // save first value
+      heap[1] = heap[size];     // move last to first
+      heap[size] = null;        // permit GC of objects
       size--;
-      downHeap();				  // adjust heap
+      downHeap();               // adjust heap
       return result;
     } else
       return null;
@@ -191,14 +191,14 @@ public abstract class PriorityQueue<T> {
    * Should be called when the Object at top changes values. Still log(n) worst
    * case, but it's at least twice as fast to
    * 
-   * <pre>
+   * <pre class="prettyprint">
    * pq.top().change();
    * pq.updateTop();
    * </pre>
    * 
    * instead of
    * 
-   * <pre>
+   * <pre class="prettyprint">
    * o = pq.pop();
    * o.change();
    * pq.push(o);
@@ -226,26 +226,26 @@ public abstract class PriorityQueue<T> {
 
   private final void upHeap() {
     int i = size;
-    T node = heap[i];			  // save bottom node
+    T node = heap[i];          // save bottom node
     int j = i >>> 1;
     while (j > 0 && lessThan(node, heap[j])) {
-      heap[i] = heap[j];			  // shift parents down
+      heap[i] = heap[j];       // shift parents down
       i = j;
       j = j >>> 1;
     }
-    heap[i] = node;				  // install saved node
+    heap[i] = node;            // install saved node
   }
 
   private final void downHeap() {
     int i = 1;
-    T node = heap[i];			  // save top node
-    int j = i << 1;				  // find smaller child
+    T node = heap[i];          // save top node
+    int j = i << 1;            // find smaller child
     int k = j + 1;
     if (k <= size && lessThan(heap[k], heap[j])) {
       j = k;
     }
     while (j <= size && lessThan(heap[j], node)) {
-      heap[i] = heap[j];			  // shift up child
+      heap[i] = heap[j];       // shift up child
       i = j;
       j = i << 1;
       k = j + 1;
@@ -253,7 +253,7 @@ public abstract class PriorityQueue<T> {
         j = k;
       }
     }
-    heap[i] = node;				  // install saved node
+    heap[i] = node;            // install saved node
   }
   
   /** This method returns the internal heap array as Object[].

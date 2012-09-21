@@ -43,7 +43,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ZkTestServer {
-  public static final int TICK_TIME = 3000;
+  public static final int TICK_TIME = 1000;
 
   private static Logger log = LoggerFactory.getLogger(ZkTestServer.class);
   
@@ -240,6 +240,7 @@ public class ZkTestServer {
       }
       cnt++;
     }
+    log.info("start zk server on port:" + port);
   }
 
   @SuppressWarnings("deprecation")

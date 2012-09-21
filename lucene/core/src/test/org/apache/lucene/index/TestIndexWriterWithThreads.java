@@ -33,6 +33,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -453,15 +454,23 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
      thread1.join();
      thread2.join();
      
-     assertFalse("Failed due to: " + thread1.failure, thread1.failed);
-     assertFalse("Failed due to: " + thread2.failure, thread2.failed);
-     // now verify that we have two documents in the index
-     IndexReader reader = DirectoryReader.open(dir);
-     assertEquals("IndexReader should have one document per thread running", 2,
+     // ensure the directory is closed if we hit the timeout and throw assume
+     // TODO: can we improve this in LuceneTestCase? I dont know what the logic would be...
+     try {
+       assumeFalse("aborting test: timeout obtaining lock", thread1.failure instanceof LockObtainFailedException);
+       assumeFalse("aborting test: timeout obtaining lock", thread2.failure instanceof LockObtainFailedException);
+
+       assertFalse("Failed due to: " + thread1.failure, thread1.failed);
+       assertFalse("Failed due to: " + thread2.failure, thread2.failed);
+       // now verify that we have two documents in the index
+       IndexReader reader = DirectoryReader.open(dir);
+       assertEquals("IndexReader should have one document per thread running", 2,
          reader.numDocs());
      
-     reader.close();
-     dir.close();
+       reader.close();
+     } finally {
+       dir.close();
+     }
   }
   
   static class DelayedIndexAndCloseRunnable extends Thread {
@@ -504,7 +513,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
   // LUCENE-4147
   public void testRollbackAndCommitWithThreads() throws Exception {
-    final BaseDirectoryWrapper d = newFSDirectory(_TestUtil.getTempDir("RollbackAndCommitWithThreads"));
+    final BaseDirectoryWrapper d = newDirectory();
     if (d instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)d).setPreventDoubleWrite(false);
     }
@@ -515,7 +524,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     writerRef.set(new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))));
     final LineFileDocs docs = new LineFileDocs(random());
     final Thread[] threads = new Thread[threadCount];
-    final int iters = atLeast(1000);
+    final int iters = atLeast(100);
     final AtomicBoolean failed = new AtomicBoolean();
     final Lock rollbackLock = new ReentrantLock();
     final Lock commitLock = new ReentrantLock();

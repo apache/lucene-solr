@@ -18,17 +18,28 @@
 <project name="solr-core" default="default">
   <description>Solr Core</description>
 
-  <!-- hackidty-hack-hack -->
-
-  <property name="ivy.retrieve.pattern" value="${common-solr.dir}/lib/[artifact]-[revision].[ext]"/>
-  <!-- we cannot sync because solr/core and solr/solrj share the same lib/... clean this up! -->
-  <property name="ivy.sync" value="false"/>
-
   <!-- html file for testing -->
-  <property name="rat.excludes" value="**/htmlStripReaderTest.html"/>
+  <property name="rat.excludes" value="**/htmlStripReaderTest.html,**/*.iml"/>
 
   <import file="../common-build.xml"/>
 
   <target name="compile-core" depends="compile-solrj,common-solr.compile-core"/>
 
+  <!-- specialized to ONLY depend on solrj -->
+  <target name="javadocs" depends="compile-core,define-lucene-javadoc-url,lucene-javadocs,javadocs-solrj">
+    <sequential>
+      <mkdir dir="${javadoc.dir}/${name}"/>
+      <solr-invoke-javadoc>
+        <solrsources>
+          <packageset dir="${src.dir}"/>
+        </solrsources>
+        <links>
+          <link href="../solr-solrj"/>
+        </links>
+      </solr-invoke-javadoc>
+      <solr-jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
+     </sequential>
+  </target>
+
+  <target name="dist-maven" depends="dist-maven-src-java"/>
 </project>

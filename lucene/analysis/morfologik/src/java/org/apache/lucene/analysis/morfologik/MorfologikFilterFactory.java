@@ -25,6 +25,7 @@ import morfologik.stemming.PolishStemmer.DICTIONARY;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.morfologik.MorfologikFilter;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -51,6 +52,9 @@ public class MorfologikFilterFactory extends TokenFilterFactory {
   /** Schema attribute. */
   public static final String DICTIONARY_SCHEMA_ATTRIBUTE = "dictionary";
   
+  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
+  public MorfologikFilterFactory() {}
+
   /**
    * {@inheritDoc}
    */

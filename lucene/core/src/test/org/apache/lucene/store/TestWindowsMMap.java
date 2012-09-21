@@ -84,7 +84,7 @@ public class TestWindowsMMap extends LuceneTestCase {
     for(int dx = 0; dx < num; dx ++) {
       String f = randomField();
       Document doc = new Document();
-      doc.add(newTextField("data", f, Field.Store.YES));	
+      doc.add(newTextField("data", f, Field.Store.YES));  
       writer.addDocument(doc);
     }
     

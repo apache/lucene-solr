@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -160,7 +161,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
       
       int id = topdocs.scoreDocs[i].doc;
       float score = topdocs.scoreDocs[i].score;
-      Document doc = s.doc(id);
+      StoredDocument doc = s.doc(id);
       assertEquals(expectedIds[i], doc.get(FIELD_ID));
       boolean scoreEq = Math.abs(expectedScores[i] - score) < tolerance;
       if (!scoreEq) {

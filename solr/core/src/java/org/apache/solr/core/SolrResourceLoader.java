@@ -36,7 +36,6 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.util.hash.HashFunction;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -176,8 +175,6 @@ public class SolrResourceLoader implements ResourceLoader
    * this ResourceLoader.
    */
   void reloadLuceneSPI() {
-    // Hash functions:
-    HashFunction.reloadHashFunctions(this.classLoader);
     // Codecs:
     PostingsFormat.reloadPostingsFormats(this.classLoader);
     Codec.reloadCodecs(this.classLoader);
@@ -634,7 +631,11 @@ public class SolrResourceLoader implements ResourceLoader
 
 
     for (SolrInfoMBean bean : arr) {
-      infoRegistry.put(bean.getName(), bean);
+      try {
+        infoRegistry.put(bean.getName(), bean);
+      } catch (Throwable t) {
+        log.warn("could not register MBean '" + bean.getName() + "'.", t);
+      }
     }
   }
   

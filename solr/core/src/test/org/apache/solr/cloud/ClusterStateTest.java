@@ -25,7 +25,7 @@ import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
 
@@ -38,16 +38,16 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     liveNodes.add("node2");
     
     Map<String,Slice> slices = new HashMap<String,Slice>();
-    Map<String,ZkNodeProps> sliceToProps = new HashMap<String,ZkNodeProps>();
-    Map<String,String> props = new HashMap<String,String>();
+    Map<String,Replica> sliceToProps = new HashMap<String,Replica>();
+    Map<String,Object> props = new HashMap<String,Object>();
 
     props.put("prop1", "value");
     props.put("prop2", "value2");
-    ZkNodeProps zkNodeProps = new ZkNodeProps(props);
-    sliceToProps.put("node1", zkNodeProps);
-    Slice slice = new Slice("shard1", sliceToProps);
+    Replica replica = new Replica("node1", props);
+    sliceToProps.put("node1", replica);
+    Slice slice = new Slice("shard1", sliceToProps, null);
     slices.put("shard1", slice);
-    Slice slice2 = new Slice("shard2", sliceToProps);
+    Slice slice2 = new Slice("shard2", sliceToProps, null);
     slices.put("shard2", slice2);
     collectionStates.put("collection1", slices);
     collectionStates.put("collection2", slices);
@@ -60,8 +60,8 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     assertEquals("Provided liveNodes not used properly", 2, loadedClusterState
         .getLiveNodes().size());
     assertEquals("No collections found", 2, loadedClusterState.getCollections().size());
-    assertEquals("Poperties not copied properly", zkNodeProps.get("prop1"), loadedClusterState.getSlice("collection1", "shard1").getShards().get("node1").get("prop1"));
-    assertEquals("Poperties not copied properly", zkNodeProps.get("prop2"), loadedClusterState.getSlice("collection1", "shard1").getShards().get("node1").get("prop2"));
+    assertEquals("Poperties not copied properly", replica.getStr("prop1"), loadedClusterState.getSlice("collection1", "shard1").getReplicasMap().get("node1").getStr("prop1"));
+    assertEquals("Poperties not copied properly", replica.getStr("prop2"), loadedClusterState.getSlice("collection1", "shard1").getReplicasMap().get("node1").getStr("prop2"));
 
     loadedClusterState = ClusterState.load(null, new byte[0], liveNodes);
     

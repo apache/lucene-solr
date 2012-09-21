@@ -45,4 +45,5 @@
   </target>
 
   <target name="javadocs"/> <!-- to make common-build.xml happy -->
+  <target name="pitest"/> <!-- to make common-build.xml happy -->
 </project>

@@ -30,20 +30,22 @@ import org.apache.lucene.util.Attribute;
 public interface KeywordAttribute extends Attribute {
 
   /**
-   * Returns <code>true</code> iff the current token is a keyword, otherwise
-   * <code>false</code>/
+   * Returns <code>true</code> if the current token is a keyword, otherwise
+   * <code>false</code>
    * 
-   * @return <code>true</code> iff the current token is a keyword, otherwise
-   *         <code>false</code>/
+   * @return <code>true</code> if the current token is a keyword, otherwise
+   *         <code>false</code>
+   * @see #setKeyword(boolean)
    */
   public boolean isKeyword();
 
   /**
-   * Marks the current token as keyword iff set to <code>true</code>.
+   * Marks the current token as keyword if set to <code>true</code>.
    * 
    * @param isKeyword
-   *          <code>true</code> iff the current token is a keyword, otherwise
+   *          <code>true</code> if the current token is a keyword, otherwise
    *          <code>false</code>.
+   * @see #isKeyword()
    */
   public void setKeyword(boolean isKeyword);
 }

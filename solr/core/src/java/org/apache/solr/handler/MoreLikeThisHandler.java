@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
@@ -342,7 +343,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     
     public DocListAndSet getMoreLikeThis( int id, int start, int rows, List<Query> filters, List<InterestingTerm> terms, int flags ) throws IOException
     {
-      Document doc = reader.document(id);
+      StoredDocument doc = reader.document(id);
       rawMLTQuery = mlt.like(id);
       boostedMLTQuery = getBoostedQuery( rawMLTQuery );
       if( terms != null ) {

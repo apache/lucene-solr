@@ -212,9 +212,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     final IndexReader readerFromWriter = writer.getReader();
     AtomicReader r = SlowCompositeReaderWrapper.wrap(readerFromWriter);
 
-    DocsAndPositionsEnum tp = r.termPositionsEnum(r.getLiveDocs(),
-                                                  "content",
-                                                  new BytesRef("a"));
+    DocsAndPositionsEnum tp = r.termPositionsEnum(new Term("content", "a"));
     
     int count = 0;
     assertTrue(tp.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);

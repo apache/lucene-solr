@@ -72,15 +72,11 @@ final class TrieTokenizer extends Tokenizer {
     this.type = type;
     this.precisionStep = precisionStep;
     this.ts = ts;
-
-    setReader(input);
   }
 
   @Override
-  public void setReader(Reader input) {
+  public void reset() {
    try {
-      super.setReader(input);
-      input = super.input;
       char[] buf = new char[32];
       int len = input.read(buf);
       this.startOfs = correctOffset(0);
@@ -113,18 +109,13 @@ final class TrieTokenizer extends Tokenizer {
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to create TrieIndexTokenizer", e);
     }
+    ts.reset();
   }
 
   @Override
   public void close() throws IOException {
     super.close();
     ts.close();
-  }
-  
-  @Override
-  public void reset() throws IOException {
-    super.reset();
-    ts.reset();
   }
 
   @Override

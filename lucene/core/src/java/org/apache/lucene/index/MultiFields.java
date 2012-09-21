@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.MergedIterator;
 
 /**
  * Exposes flex API, merged from flex API of sub-segments.
@@ -39,7 +38,7 @@ import org.apache.lucene.util.MergedIterator;
  *
  * <p><b>NOTE</b>: for composite readers, you'll get better
  * performance by gathering the sub readers using
- * {@link IndexReader#getTopReaderContext()} to get the
+ * {@link IndexReader#getContext()} to get the
  * atomic leaves and then operate per-AtomicReader,
  * instead of using this class.
  *
@@ -60,7 +59,7 @@ public final class MultiFields extends Fields {
    *  It's better to get the sub-readers and iterate through them
    *  yourself. */
   public static Fields getFields(IndexReader reader) throws IOException {
-    final List<AtomicReaderContext> leaves = reader.getTopReaderContext().leaves();
+    final List<AtomicReaderContext> leaves = reader.leaves();
     switch (leaves.size()) {
       case 0:
         // no fields
@@ -90,9 +89,18 @@ public final class MultiFields extends Fields {
     }
   }
 
+  /** Returns a single {@link Bits} instance for this
+   *  reader, merging live Documents on the
+   *  fly.  This method will return null if the reader 
+   *  has no deletions.
+   *
+   *  <p><b>NOTE</b>: this is a very slow way to access live docs.
+   *  For example, each Bits access will require a binary search.
+   *  It's better to get the sub-readers and iterate through them
+   *  yourself. */
   public static Bits getLiveDocs(IndexReader reader) {
     if (reader.hasDeletions()) {
-      final List<AtomicReaderContext> leaves = reader.getTopReaderContext().leaves();
+      final List<AtomicReaderContext> leaves = reader.leaves();
       final int size = leaves.size();
       assert size > 0 : "A reader with deletions must have at least one leave";
       if (size == 1) {
@@ -177,12 +185,17 @@ public final class MultiFields extends Fields {
     return null;
   }
 
+  /**
+   * Expert: construct a new MultiFields instance directly.
+   * @lucene.internal
+   */
+  // TODO: why is this public?
   public MultiFields(Fields[] subs, ReaderSlice[] subSlices) {
     this.subs = subs;
     this.subSlices = subSlices;
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","rawtypes"})
   @Override
   public Iterator<String> iterator() {
     Iterator<String> subIterators[] = new Iterator[subs.length];
@@ -230,6 +243,14 @@ public final class MultiFields extends Fields {
     return -1;
   }
 
+  /** Returns the total number of occurrences of this term
+   *  across all documents (the sum of the freq() for each
+   *  doc that has this term).  This will be -1 if the
+   *  codec doesn't support this measure.  Note that, like
+   *  other term measures, this measure does not take
+   *  deleted documents into account.
+   * @see TermsEnum#totalTermFreq()
+   */
   public static long totalTermFreq(IndexReader r, String field, BytesRef text) throws IOException {
     final Terms terms = getTerms(r, field);
     if (terms != null) {
@@ -251,12 +272,20 @@ public final class MultiFields extends Fields {
    */
   public static FieldInfos getMergedFieldInfos(IndexReader reader) {
     final FieldInfos.Builder builder = new FieldInfos.Builder();
-    for(final AtomicReaderContext ctx : reader.getTopReaderContext().leaves()) {
+    for(final AtomicReaderContext ctx : reader.leaves()) {
       builder.add(ctx.reader().getFieldInfos());
     }
     return builder.finish();
   }
 
+  /** Call this to get the (merged) FieldInfos representing the
+   *  set of indexed fields <b>only</b> for a composite reader. 
+   *  <p>
+   *  NOTE: the returned field numbers will likely not
+   *  correspond to the actual field numbers in the underlying
+   *  readers, and codec metadata ({@link FieldInfo#getAttribute(String)}
+   *  will be unavailable.
+   */
   public static Collection<String> getIndexedFields(IndexReader reader) {
     final Collection<String> fields = new HashSet<String>();
     for(final FieldInfo fieldInfo : getMergedFieldInfos(reader)) {

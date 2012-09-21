@@ -88,6 +88,9 @@ public class DirectSpellChecker {
   /** the string distance to use */
   private StringDistance distance = INTERNAL_LEVENSHTEIN;
 
+  /** Creates a DirectSpellChecker with default configuration values */
+  public DirectSpellChecker() {}
+
   /** Get the maximum number of Levenshtein edit-distances to draw
    *  candidate terms from. */  
   public int getMaxEdits() {
@@ -294,7 +297,7 @@ public class DirectSpellChecker {
    */
   public SuggestWord[] suggestSimilar(Term term, int numSug, IndexReader ir, 
       SuggestMode suggestMode) throws IOException {
-  	return suggestSimilar(term, numSug, ir, suggestMode, this.accuracy);
+    return suggestSimilar(term, numSug, ir, suggestMode, this.accuracy);
   }
   
   /**

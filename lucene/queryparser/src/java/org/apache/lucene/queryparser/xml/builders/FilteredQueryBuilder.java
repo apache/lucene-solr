@@ -30,7 +30,7 @@ import org.w3c.dom.Element;
  */
 
 /**
- *
+ * Builder for {@link FilteredQuery}
  */
 public class FilteredQueryBuilder implements QueryBuilder {
 

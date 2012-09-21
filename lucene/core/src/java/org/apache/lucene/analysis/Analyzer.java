@@ -20,6 +20,7 @@ package org.apache.lucene.analysis;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.CloseableThreadLocal;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.HashMap;
@@ -30,17 +31,63 @@ import java.util.Map;
  * policy for extracting index terms from text.
  * <p>
  * In order to define what analysis is done, subclasses must define their
- * {@link TokenStreamComponents} in {@link #createComponents(String, Reader)}.
+ * {@link TokenStreamComponents TokenStreamComponents} in {@link #createComponents(String, Reader)}.
  * The components are then reused in each call to {@link #tokenStream(String, Reader)}.
+ * <p>
+ * Simple example:
+ * <pre class="prettyprint">
+ * Analyzer analyzer = new Analyzer() {
+ *  {@literal @Override}
+ *   protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+ *     Tokenizer source = new FooTokenizer(reader);
+ *     TokenStream filter = new FooFilter(source);
+ *     filter = new BarFilter(filter);
+ *     return new TokenStreamComponents(source, filter);
+ *   }
+ * };
+ * </pre>
+ * For more examples, see the {@link org.apache.lucene.analysis Analysis package documentation}.
+ * <p>
+ * For some concrete implementations bundled with Lucene, look in the analysis modules:
+ * <ul>
+ *   <li><a href="{@docRoot}/../analyzers-common/overview-summary.html">Common</a>:
+ *       Analyzers for indexing content in different languages and domains.
+ *   <li><a href="{@docRoot}/../analyzers-icu/overview-summary.html">ICU</a>:
+ *       Exposes functionality from ICU to Apache Lucene. 
+ *   <li><a href="{@docRoot}/../analyzers-kuromoji/overview-summary.html">Kuromoji</a>:
+ *       Morphological analyzer for Japanese text.
+ *   <li><a href="{@docRoot}/../analyzers-morfologik/overview-summary.html">Morfologik</a>:
+ *       Dictionary-driven lemmatization for the Polish language.
+ *   <li><a href="{@docRoot}/../analyzers-phonetic/overview-summary.html">Phonetic</a>:
+ *       Analysis for indexing phonetic signatures (for sounds-alike search).
+ *   <li><a href="{@docRoot}/../analyzers-smartcn/overview-summary.html">Smart Chinese</a>:
+ *       Analyzer for Simplified Chinese, which indexes words.
+ *   <li><a href="{@docRoot}/../analyzers-stempel/overview-summary.html">Stempel</a>:
+ *       Algorithmic Stemmer for the Polish Language.
+ *   <li><a href="{@docRoot}/../analyzers-uima/overview-summary.html">UIMA</a>: 
+ *       Analysis integration with Apache UIMA. 
+ * </ul>
  */
-public abstract class Analyzer {
+public abstract class Analyzer implements Closeable {
 
   private final ReuseStrategy reuseStrategy;
 
+  /**
+   * Create a new Analyzer, reusing the same set of components per-thread
+   * across calls to {@link #tokenStream(String, Reader)}. 
+   */
   public Analyzer() {
     this(new GlobalReuseStrategy());
   }
 
+  /**
+   * Expert: create a new Analyzer with a custom {@link ReuseStrategy}.
+   * <p>
+   * NOTE: if you just want to reuse on a per-field basis, its easier to
+   * use a subclass of {@link AnalyzerWrapper} such as 
+   * <a href="{@docRoot}/../analyzers-common/org/apache/lucene/analysis/miscellaneous/PerFieldAnalyzerWrapper.html">
+   * PerFieldAnalyerWrapper</a> instead.
+   */
   public Analyzer(ReuseStrategy reuseStrategy) {
     this.reuseStrategy = reuseStrategy;
   }
@@ -59,20 +106,25 @@ public abstract class Analyzer {
       Reader reader);
 
   /**
-   * Creates a TokenStream that is allowed to be re-use from the previous time
-   * that the same thread called this method.  Callers that do not need to use
-   * more than one TokenStream at the same time from this analyzer should use
-   * this method for better performance.
+   * Returns a TokenStream suitable for <code>fieldName</code>, tokenizing
+   * the contents of <code>reader</code>.
    * <p>
    * This method uses {@link #createComponents(String, Reader)} to obtain an
    * instance of {@link TokenStreamComponents}. It returns the sink of the
    * components and stores the components internally. Subsequent calls to this
    * method will reuse the previously stored components after resetting them
    * through {@link TokenStreamComponents#setReader(Reader)}.
-   * </p>
+   * <p>
+   * <b>NOTE:</b> After calling this method, the consumer must follow the 
+   * workflow described in {@link TokenStream} to properly consume its contents.
+   * See the {@link org.apache.lucene.analysis Analysis package documentation} for
+   * some examples demonstrating this.
    * 
    * @param fieldName the name of the field the created TokenStream is used for
    * @param reader the reader the streams source reads from
+   * @return TokenStream for iterating the analyzed content of <code>reader</code>
+   * @throws AlreadyClosedException if the Analyzer is closed.
+   * @throws IOException if an i/o error occurs.
    */
   public final TokenStream tokenStream(final String fieldName,
                                        final Reader reader) throws IOException {
@@ -89,6 +141,13 @@ public abstract class Analyzer {
   
   /**
    * Override this if you want to add a CharFilter chain.
+   * <p>
+   * The default implementation returns <code>reader</code>
+   * unchanged.
+   * 
+   * @param fieldName IndexableField name being indexed
+   * @param reader original Reader
+   * @return reader, optionally decorated with CharFilter(s)
    */
   protected Reader initReader(String fieldName, Reader reader) {
     return reader;
@@ -105,7 +164,8 @@ public abstract class Analyzer {
    * exact PhraseQuery matches, for instance, across IndexableField instance boundaries.
    *
    * @param fieldName IndexableField name being indexed.
-   * @return position increment gap, added to the next token emitted from {@link #tokenStream(String,Reader)}
+   * @return position increment gap, added to the next token emitted from {@link #tokenStream(String,Reader)}.
+   *         This value must be {@code >= 0}.
    */
   public int getPositionIncrementGap(String fieldName) {
     return 0;
@@ -118,7 +178,8 @@ public abstract class Analyzer {
    * produced at least one token for indexing.
    *
    * @param fieldName the field just indexed
-   * @return offset gap, added to the next token emitted from {@link #tokenStream(String,Reader)}
+   * @return offset gap, added to the next token emitted from {@link #tokenStream(String,Reader)}.
+   *         This value must be {@code >= 0}.
    */
   public int getOffsetGap(String fieldName) {
     return 1;
@@ -137,7 +198,14 @@ public abstract class Analyzer {
    * {@link Analyzer#tokenStream(String, Reader)}.
    */
   public static class TokenStreamComponents {
+    /**
+     * Original source of the tokens.
+     */
     protected final Tokenizer source;
+    /**
+     * Sink tokenstream, such as the outer tokenfilter decorating
+     * the chain. This can be the source if there are no filters.
+     */
     protected final TokenStream sink;
 
     /**
@@ -201,9 +269,12 @@ public abstract class Analyzer {
    * Strategy defining how TokenStreamComponents are reused per call to
    * {@link Analyzer#tokenStream(String, java.io.Reader)}.
    */
-  public static abstract class ReuseStrategy {
+  public static abstract class ReuseStrategy implements Closeable {
 
     private CloseableThreadLocal<Object> storedValue = new CloseableThreadLocal<Object>();
+
+    /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
+    public ReuseStrategy() {}
 
     /**
      * Gets the reusable TokenStreamComponents for the field with the given name
@@ -228,6 +299,7 @@ public abstract class Analyzer {
      * Returns the currently stored value
      *
      * @return Currently stored value or {@code null} if no value is stored
+     * @throws AlreadyClosedException if the ReuseStrategy is closed.
      */
     protected final Object getStoredValue() {
       try {
@@ -245,6 +317,7 @@ public abstract class Analyzer {
      * Sets the stored value
      *
      * @param storedValue Value to store
+     * @throws AlreadyClosedException if the ReuseStrategy is closed.
      */
     protected final void setStoredValue(Object storedValue) {
       try {
@@ -262,8 +335,10 @@ public abstract class Analyzer {
      * Closes the ReuseStrategy, freeing any resources
      */
     public void close() {
-      storedValue.close();
-      storedValue = null;
+      if (storedValue != null) {
+        storedValue.close();
+        storedValue = null;
+      }
     }
   }
 
@@ -272,17 +347,16 @@ public abstract class Analyzer {
    * every field.
    */
   public final static class GlobalReuseStrategy extends ReuseStrategy {
+    
+    /** Creates a new instance, with empty per-thread values */
+    public GlobalReuseStrategy() {}
 
-    /**
-     * {@inheritDoc}
-     */
+    @Override
     public TokenStreamComponents getReusableComponents(String fieldName) {
       return (TokenStreamComponents) getStoredValue();
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    @Override
     public void setReusableComponents(String fieldName, TokenStreamComponents components) {
       setStoredValue(components);
     }
@@ -294,19 +368,18 @@ public abstract class Analyzer {
    */
   public static class PerFieldReuseStrategy extends ReuseStrategy {
 
-    /**
-     * {@inheritDoc}
-     */
+    /** Creates a new instance, with empty per-thread-per-field values */
+    public PerFieldReuseStrategy() {}
+
     @SuppressWarnings("unchecked")
+    @Override
     public TokenStreamComponents getReusableComponents(String fieldName) {
       Map<String, TokenStreamComponents> componentsPerField = (Map<String, TokenStreamComponents>) getStoredValue();
       return componentsPerField != null ? componentsPerField.get(fieldName) : null;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @SuppressWarnings("unchecked")
+    @Override
     public void setReusableComponents(String fieldName, TokenStreamComponents components) {
       Map<String, TokenStreamComponents> componentsPerField = (Map<String, TokenStreamComponents>) getStoredValue();
       if (componentsPerField == null) {

@@ -40,6 +40,9 @@ import org.apache.lucene.codecs.Codec;
  */
 
 public final class IndexFileNames {
+  
+  /** No instance */
+  private IndexFileNames() {}
 
   /** Name of the index segment file */
   public static final String SEGMENTS = "segments";
@@ -184,6 +187,10 @@ public final class IndexFileNames {
     return filename;
   }
   
+  /**
+   * Removes the extension (anything after the first '.'),
+   * otherwise returns the original filename.
+   */
   public static String stripExtension(String filename) {
     int idx = filename.indexOf('.');
     if (idx != -1) {

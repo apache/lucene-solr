@@ -367,12 +367,12 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
           @Override
           public String toString()
           {
-        	  return getKey()+"="+getValue();
+            return getKey()+"="+getValue();
           }
 
-    		  public T setValue(T value) {
+          public T setValue(T value) {
             return list.setVal(index, value);
-    		  }
+          }
         };
         return nv;
       }

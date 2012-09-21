@@ -208,7 +208,7 @@ public class CloudSolrServer extends SolrServer {
       Map<String,ZkNodeProps> nodes = new HashMap<String,ZkNodeProps>();
       List<String> urlList = new ArrayList<String>();
       for (Slice slice : slices.values()) {
-        for (ZkNodeProps nodeProps : slice.getShards().values()) {
+        for (ZkNodeProps nodeProps : slice.getReplicasMap().values()) {
           ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
           String node = coreNodeProps.getNodeName();
           if (!liveNodes.contains(coreNodeProps.getNodeName())
@@ -242,14 +242,16 @@ public class CloudSolrServer extends SolrServer {
       theUrlList.addAll(urlList);
     }
     Collections.shuffle(theUrlList, rand);
-    if (replicas != null) {
+    if (sendToLeaders) {
       ArrayList<String> theReplicas = new ArrayList<String>(replicasList.size());
       theReplicas.addAll(replicasList);
       Collections.shuffle(theReplicas, rand);
-
+    //  System.out.println("leaders:" + theUrlList);
+    //  System.out.println("replicas:" + theReplicas);
       theUrlList.addAll(theReplicas);
     }
-    //System.out.println("########################## MAKING REQUEST TO " + theUrlList);
+ 
+   // System.out.println("########################## MAKING REQUEST TO " + theUrlList);
  
     LBHttpSolrServer.Req req = new LBHttpSolrServer.Req(request, theUrlList);
     LBHttpSolrServer.Rsp rsp = lbServer.request(req);

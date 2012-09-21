@@ -180,14 +180,14 @@ public abstract class Directory implements Closeable {
    * If you want to copy the entire source directory to the destination one, you
    * can do so like this:
    * 
-   * <pre>
+   * <pre class="prettyprint">
    * Directory to; // the directory to copy to
    * for (String file : dir.listAll()) {
    *   dir.copy(to, file, newFile); // newFile can be either file, or a new name
    * }
    * </pre>
    * <p>
-   * <b>NOTE:</b> this method does not check whether <i>dest<i> exist and will
+   * <b>NOTE:</b> this method does not check whether <i>dest</i> exist and will
    * overwrite it if it does.
    */
   public void copy(Directory to, String src, String dest, IOContext context) throws IOException {
@@ -197,7 +197,7 @@ public abstract class Directory implements Closeable {
     try {
       os = to.createOutput(dest, context);
       is = openInput(src, context);
-      is.copyBytes(os, is.length());
+      os.copyBytes(is, is.length());
     } catch (IOException ioe) {
       priorException = ioe;
     } finally {
@@ -229,10 +229,6 @@ public abstract class Directory implements Closeable {
       public void close() throws IOException {
         base.close();
       }
-      @Override
-      public IndexInput openFullSlice() {
-        return (IndexInput) base.clone();
-      }
     };
   }
 
@@ -256,12 +252,6 @@ public abstract class Directory implements Closeable {
      * Returns an {@link IndexInput} slice starting at the given offset with the given length.
      */
     public abstract IndexInput openSlice(String sliceDescription, long offset, long length) throws IOException;
-
-    /**
-     * Returns an {@link IndexInput} slice starting at offset <i>0</i> with a
-     * length equal to the length of the underlying file
-     */
-    public abstract IndexInput openFullSlice() throws IOException;
   }
   
   /** Implementation of an IndexInput that reads from a portion of
@@ -278,7 +268,7 @@ public abstract class Directory implements Closeable {
     
     SlicedIndexInput(final String sliceDescription, final IndexInput base, final long fileOffset, final long length, int readBufferSize) {
       super("SlicedIndexInput(" + sliceDescription + " in " + base + " slice=" + fileOffset + ":" + (fileOffset+length) + ")", readBufferSize);
-      this.base = (IndexInput) base.clone();
+      this.base = base.clone();
       this.fileOffset = fileOffset;
       this.length = length;
     }
@@ -286,7 +276,7 @@ public abstract class Directory implements Closeable {
     @Override
     public SlicedIndexInput clone() {
       SlicedIndexInput clone = (SlicedIndexInput)super.clone();
-      clone.base = (IndexInput)base.clone();
+      clone.base = base.clone();
       clone.fileOffset = fileOffset;
       clone.length = length;
       return clone;
@@ -323,23 +313,6 @@ public abstract class Directory implements Closeable {
     @Override
     public long length() {
       return length;
-    }
-    
-    @Override
-    public void copyBytes(IndexOutput out, long numBytes) throws IOException {
-      // Copy first whatever is in the buffer
-      numBytes -= flushBuffer(out, numBytes);
-      
-      // If there are more bytes left to copy, delegate the copy task to the
-      // base IndexInput, in case it can do an optimized copy.
-      if (numBytes > 0) {
-        long start = getFilePointer();
-        if (start + numBytes > length) {
-          throw new EOFException("read past EOF: " + this);
-        }
-        base.seek(fileOffset + start);
-        base.copyBytes(out, numBytes);
-      }
     }
   }
 }

@@ -53,9 +53,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Clones the values found in any matching <code>source</code> field into 
- * the configured <code>dest<code> field.
+ * the configured <code>dest</code> field.
  * <p>
- * While the <code>dest<code> field must be a single <code>&lt;str&gt;</code>, 
+ * While the <code>dest</code> field must be a single <code>&lt;str&gt;</code>, 
  * the <code>source</code> fields can be configured as either:
  * </p>
  * <ul>

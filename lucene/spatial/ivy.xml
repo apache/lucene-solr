@@ -19,7 +19,7 @@
 <ivy-module version="2.0">
     <info organisation="org.apache.lucene" module="spatial"/>
     <dependencies>
-      <dependency org="com.spatial4j" name="spatial4j" rev="0.2" transitive="false"/>
+      <dependency org="com.spatial4j" name="spatial4j" rev="0.3" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

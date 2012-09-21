@@ -69,10 +69,10 @@ import org.apache.lucene.util.ThreadInterruptedException;
   new index if there is not already an index at the provided path
   and otherwise open the existing index.</p>
 
-  <p>In either case, documents are added with {@link #addDocument(Iterable)
+  <p>In either case, documents are added with {@link #addDocument(IndexDocument)
   addDocument} and removed with {@link #deleteDocuments(Term)} or {@link
   #deleteDocuments(Query)}. A document can be updated with {@link
-  #updateDocument(Term, Iterable) updateDocument} (which just deletes
+  #updateDocument(Term, IndexDocument) updateDocument} (which just deletes
   and then adds the entire document). When finished adding, deleting 
   and updating documents, {@link #close() close} should be called.</p>
 
@@ -259,9 +259,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   // The instance that was passed to the constructor. It is saved only in order
   // to allow users to query an IndexWriter settings.
   private final LiveIndexWriterConfig config;
-
-  // The PayloadProcessorProvider to use when segments are merged
-  private PayloadProcessorProvider payloadProcessorProvider;
 
   DirectoryReader getReader() throws IOException {
     return getReader(true);
@@ -552,6 +549,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
   }
 
+  /**
+   * Used internally to throw an {@link
+   * AlreadyClosedException} if this IndexWriter has been
+   * closed.
+   * <p>
+   * Calls {@link #ensureOpen(boolean) ensureOpen(true)}.
+   * @throws AlreadyClosedException if this IndexWriter is closed
+   */
   protected final void ensureOpen() throws AlreadyClosedException {
     ensureOpen(true);
   }
@@ -763,8 +768,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   /**
-   * Commits all changes to an index and closes all
-   * associated files.  Note that this may be a costly
+   * Commits all changes to an index, waits for pending merges
+   * to complete, and closes all associated files.  
+   * <p>
+   * This is a "slow graceful shutdown" which may take a long time
+   * especially if a big merge is pending: If you only want to close
+   * resources use {@link #rollback()}. If you only want to commit
+   * pending changes and close resources see {@link #close(boolean)}.
+   * <p>
+   * Note that this may be a costly
    * operation, so, try to re-use a single writer instead of
    * closing and opening a new one.  See {@link #commit()} for
    * caveats about write caching done by some IO devices.
@@ -784,7 +796,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * docs in the IndexWriter instance) then you can do
    * something like this:</p>
    *
-   * <pre>
+   * <pre class="prettyprint">
    * try {
    *   writer.close();
    * } finally {
@@ -1026,6 +1038,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     return count;
   }
 
+  /**
+   * Returns true if this index has deletions (including buffered deletions).
+   */
   public synchronized boolean hasDeletions() {
     ensureOpen();
     if (bufferedDeletesStream.any()) {
@@ -1084,7 +1099,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void addDocument(Iterable<? extends IndexableField> doc) throws IOException {
+  public void addDocument(IndexDocument doc) throws IOException {
     addDocument(doc, analyzer);
   }
 
@@ -1092,7 +1107,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * Adds a document to this index, using the provided analyzer instead of the
    * value of {@link #getAnalyzer()}.
    *
-   * <p>See {@link #addDocument(Iterable)} for details on
+   * <p>See {@link #addDocument(IndexDocument)} for details on
    * index and IndexWriter state after an Exception, and
    * flushing/merging temporary free space requirements.</p>
    *
@@ -1103,7 +1118,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void addDocument(Iterable<? extends IndexableField> doc, Analyzer analyzer) throws IOException {
+  public void addDocument(IndexDocument doc, Analyzer analyzer) throws IOException {
     updateDocument(null, doc, analyzer);
   }
 
@@ -1128,7 +1143,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * perhaps to obtain better index compression), in which case
    * you may need to fully re-index your documents at that time.
    *
-   * <p>See {@link #addDocument(Iterable)} for details on
+   * <p>See {@link #addDocument(IndexDocument)} for details on
    * index and IndexWriter state after an Exception, and
    * flushing/merging temporary free space requirements.</p>
    *
@@ -1148,7 +1163,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *
    * @lucene.experimental
    */
-  public void addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
+  public void addDocuments(Iterable<? extends IndexDocument> docs) throws IOException {
     addDocuments(docs, analyzer);
   }
 
@@ -1163,7 +1178,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *
    * @lucene.experimental
    */
-  public void addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer) throws IOException {
+  public void addDocuments(Iterable<? extends IndexDocument> docs, Analyzer analyzer) throws IOException {
     updateDocuments(null, docs, analyzer);
   }
 
@@ -1180,7 +1195,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *
    * @lucene.experimental
    */
-  public void updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
+  public void updateDocuments(Term delTerm, Iterable<? extends IndexDocument> docs) throws IOException {
     updateDocuments(delTerm, docs, analyzer);
   }
 
@@ -1198,7 +1213,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *
    * @lucene.experimental
    */
-  public void updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer) throws IOException {
+  public void updateDocuments(Term delTerm, Iterable<? extends IndexDocument> docs, Analyzer analyzer) throws IOException {
     ensureOpen();
     try {
       boolean success = false;
@@ -1263,7 +1278,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       reader = (AtomicReader) readerIn;
     } else {
       // Composite reader: lookup sub-reader and re-base docID:
-      List<AtomicReaderContext> leaves = readerIn.getTopReaderContext().leaves();
+      List<AtomicReaderContext> leaves = readerIn.leaves();
       int subIndex = ReaderUtil.subIndex(docID, leaves);
       reader = leaves.get(subIndex).reader();
       docID -= leaves.get(subIndex).docBase;
@@ -1395,7 +1410,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void updateDocument(Term term, Iterable<? extends IndexableField> doc) throws IOException {
+  public void updateDocument(Term term, IndexDocument doc) throws IOException {
     ensureOpen();
     updateDocument(term, doc, getAnalyzer());
   }
@@ -1418,7 +1433,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void updateDocument(Term term, Iterable<? extends IndexableField> doc, Analyzer analyzer)
+  public void updateDocument(Term term, IndexDocument doc, Analyzer analyzer)
       throws IOException {
     ensureOpen();
     try {
@@ -2197,7 +2212,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * {@link #prepareFlushedSegment(FlushedSegment)} to obtain the
    * {@link SegmentInfo} for the flushed segment.
    * 
-   * @see #prepareFlushedSegment(FlushedSegment)
+   * @see #prepareFlushedSegment(DocumentsWriterPerThread.FlushedSegment)
    */
   synchronized void publishFlushedSegment(SegmentInfoPerCommit newSegment,
       FrozenBufferedDeletes packet, FrozenBufferedDeletes globalPacket) throws IOException {
@@ -2399,8 +2414,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
                                          false, codec, null, null);
 
       SegmentMerger merger = new SegmentMerger(info, infoStream, trackingDir, config.getTermIndexInterval(),
-                                               MergeState.CheckAbort.NONE, payloadProcessorProvider,
-                                               globalFieldNumberMap, context);
+                                               MergeState.CheckAbort.NONE, globalFieldNumberMap, context);
 
       for (IndexReader reader : readers) {    // add new indexes
         merger.add(reader);
@@ -2833,7 +2847,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       final boolean anySegmentFlushed;
       
       synchronized (fullFlushLock) {
-    	boolean flushSuccess = false;
+      boolean flushSuccess = false;
         try {
           anySegmentFlushed = docWriter.flushAllThreads();
           flushSuccess = true;
@@ -3503,7 +3517,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     final TrackingDirectoryWrapper dirWrapper = new TrackingDirectoryWrapper(directory);
 
     SegmentMerger merger = new SegmentMerger(merge.info.info, infoStream, dirWrapper, config.getTermIndexInterval(), checkAbort,
-                                             payloadProcessorProvider, globalFieldNumberMap, context);
+                                             globalFieldNumberMap, context);
 
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "merging " + segString(merge.segments));
@@ -3751,12 +3765,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     return segmentInfos.size() > 0 ? segmentInfos.info(segmentInfos.size()-1) : null;
   }
 
-  /** @lucene.internal */
+  /** Returns a string description of all segments, for
+   *  debugging.
+   *
+   * @lucene.internal */
   public synchronized String segString() {
     return segString(segmentInfos);
   }
 
-  /** @lucene.internal */
+  /** Returns a string description of the specified
+   *  segments, for debugging.
+   *
+   * @lucene.internal */
   public synchronized String segString(Iterable<SegmentInfoPerCommit> infos) {
     final StringBuilder buffer = new StringBuilder();
     for(final SegmentInfoPerCommit info : infos) {
@@ -3768,7 +3788,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     return buffer.toString();
   }
 
-  /** @lucene.internal */
+  /** Returns a string description of the specified
+   *  segment, for debugging.
+   *
+   * @lucene.internal */
   public synchronized String segString(SegmentInfoPerCommit info) {
     return info.toString(info.info.dir, numDeletedDocs(info) - info.getDelCount());
   }
@@ -3983,6 +4006,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * <p><b>NOTE</b>: warm is called before any deletes have
    * been carried over to the merged segment. */
   public static abstract class IndexReaderWarmer {
+
+    /** Sole constructor. (For invocation by subclass 
+     *  constructors, typically implicit.) */
+    protected IndexReaderWarmer() {
+    }
+
+    /** Invoked on the {@link AtomicReader} for the newly
+     *  merged segment, before that segment is made visible
+     *  to near-real-time readers. */
     public abstract void warm(AtomicReader reader) throws IOException;
   }
 
@@ -4057,38 +4089,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   // Called by DirectoryReader.doClose
   synchronized void deletePendingFiles() throws IOException {
     deleter.deletePendingFiles();
-  }
-
-  /**
-   * Sets the {@link PayloadProcessorProvider} to use when merging payloads.
-   * Note that the given <code>pcp</code> will be invoked for every segment that
-   * is merged, not only external ones that are given through
-   * {@link #addIndexes}. If you want only the payloads of the external segments
-   * to be processed, you can return <code>null</code> whenever a
-   * {@link PayloadProcessorProvider.ReaderPayloadProcessor} is requested for the {@link Directory} of the
-   * {@link IndexWriter}.
-   * <p>
-   * The default is <code>null</code> which means payloads are processed
-   * normally (copied) during segment merges. You can also unset it by passing
-   * <code>null</code>.
-   * <p>
-   * <b>NOTE:</b> the set {@link PayloadProcessorProvider} will be in effect
-   * immediately, potentially for already running merges too. If you want to be
-   * sure it is used for further operations only, such as {@link #addIndexes} or
-   * {@link #forceMerge}, you can call {@link #waitForMerges()} before.
-   */
-  public void setPayloadProcessorProvider(PayloadProcessorProvider pcp) {
-    ensureOpen();
-    payloadProcessorProvider = pcp;
-  }
-
-  /**
-   * Returns the {@link PayloadProcessorProvider} that is used during segment
-   * merges to process payloads.
-   */
-  public PayloadProcessorProvider getPayloadProcessorProvider() {
-    ensureOpen();
-    return payloadProcessorProvider;
   }
   
   /**

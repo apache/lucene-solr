@@ -18,13 +18,13 @@ package org.apache.lucene.spatial.bbox;
  */
 
 import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -92,11 +92,16 @@ public class BBoxStrategy extends SpatialStrategy {
   //---------------------------------
 
   @Override
-  public IndexableField[] createIndexableFields(Shape shape) {
-    Rectangle bbox = shape.getBoundingBox();
+  public Field[] createIndexableFields(Shape shape) {
+    if (shape instanceof Rectangle)
+      return createIndexableFields((Rectangle)shape);
+    throw new IllegalArgumentException("Can only index Rectangle, not " + shape);
+  }
+
+  public Field[] createIndexableFields(Rectangle bbox) {
     FieldType doubleFieldType = new FieldType(DoubleField.TYPE_NOT_STORED);
     doubleFieldType.setNumericPrecisionStep(precisionStep);
-    IndexableField[] fields = new IndexableField[5];
+    Field[] fields = new Field[5];
     fields[0] = new DoubleField(field_minX, bbox.getMinX(), doubleFieldType);
     fields[1] = new DoubleField(field_maxX, bbox.getMaxX(), doubleFieldType);
     fields[2] = new DoubleField(field_minY, bbox.getMinY(), doubleFieldType);
@@ -110,33 +115,44 @@ public class BBoxStrategy extends SpatialStrategy {
   //---------------------------------
 
   @Override
-  public ValueSource makeValueSource(SpatialArgs args) {
+  public ValueSource makeDistanceValueSource(Point queryPoint) {
     return new BBoxSimilarityValueSource(
-        this, new AreaSimilarity(args.getShape().getBoundingBox(), queryPower, targetPower));
+        this, new DistanceSimilarity(this.getSpatialContext(), queryPoint));
   }
 
+  public ValueSource makeBBoxAreaSimilarityValueSource(Rectangle queryBox) {
+    return new BBoxSimilarityValueSource(
+        this, new AreaSimilarity(queryBox, queryPower, targetPower));
+  }
 
   @Override
   public Filter makeFilter(SpatialArgs args) {
-    Query spatial = makeSpatialQuery(args);
-    return new QueryWrapperFilter( spatial );
+    return new QueryWrapperFilter(makeSpatialQuery(args));
   }
 
   @Override
-  public Query makeQuery(SpatialArgs args) {
+  public ConstantScoreQuery makeQuery(SpatialArgs args) {
+    return new ConstantScoreQuery(makeSpatialQuery(args));
+  }
+
+  public Query makeQueryWithValueSource(SpatialArgs args, ValueSource valueSource) {
     BooleanQuery bq = new BooleanQuery();
     Query spatial = makeSpatialQuery(args);
     bq.add(new ConstantScoreQuery(spatial), BooleanClause.Occur.MUST);
-    
+
     // This part does the scoring
-    Query spatialRankingQuery = new FunctionQuery(makeValueSource(args));
+    Query spatialRankingQuery = new FunctionQuery(valueSource);
     bq.add(spatialRankingQuery, BooleanClause.Occur.MUST);
     return bq;
   }
 
 
   private Query makeSpatialQuery(SpatialArgs args) {
-    Rectangle bbox = args.getShape().getBoundingBox();
+    Shape shape = args.getShape();
+    if (!(shape instanceof Rectangle))
+      throw new IllegalArgumentException("Can only query by Rectangle, not " + shape);
+
+    Rectangle bbox = (Rectangle) shape;
     Query spatial = null;
 
     // Useful for understanding Relations:

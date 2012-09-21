@@ -61,7 +61,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
   /**
    * Creates a new DisjunctionMaxQuery
-   * @param disjuncts a Collection<Query> of all the disjuncts to add
+   * @param disjuncts a {@code Collection<Query>} of all the disjuncts to add
    * @param tieBreakerMultiplier   the weight to give to each matching non-maximum disjunct
    */
   public DisjunctionMaxQuery(Collection<Query> disjuncts, float tieBreakerMultiplier) {
@@ -77,14 +77,14 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
   }
 
   /** Add a collection of disjuncts to this disjunction
-   * via Iterable<Query>
+   * via {@code Iterable<Query>}
    * @param disjuncts a collection of queries to add as disjuncts.
    */
   public void add(Collection<Query> disjuncts) {
     this.disjuncts.addAll(disjuncts);
   }
 
-  /** @return An Iterator<Query> over the disjuncts */
+  /** @return An {@code Iterator<Query>} over the disjuncts */
   public Iterator<Query> iterator() {
     return disjuncts.iterator();
   }

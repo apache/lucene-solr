@@ -19,13 +19,13 @@ package org.apache.lucene.analysis.tokenattributes;
 
 import org.apache.lucene.util.AttributeImpl;
 
-/** See {@link PositionLengthAttribute}. */
+/** Default implementation of {@link PositionLengthAttribute}. */
 public class PositionLengthAttributeImpl extends AttributeImpl implements PositionLengthAttribute, Cloneable {
   private int positionLength = 1;
   
-  /** @param positionLength how many positions this token
-   *  spans.  NOTE: this is optional, and most analyzers
-   *  don't change the default value (1). */
+  /** Initializes this attribute with position length of 1. */
+  public PositionLengthAttributeImpl() {}
+  
   public void setPositionLength(int positionLength) {
     if (positionLength < 1) {
       throw new IllegalArgumentException
@@ -34,9 +34,6 @@ public class PositionLengthAttributeImpl extends AttributeImpl implements Positi
     this.positionLength = positionLength;
   }
 
-  /** Returns the position length of this Token.
-   * @see #setPositionLength    
-   */
   public int getPositionLength() {
     return positionLength;
   }

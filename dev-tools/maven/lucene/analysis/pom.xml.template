@@ -41,7 +41,6 @@
     <module>uima</module>
   </modules>
   <build>
-    <directory>build/lucene-analysis-modules-aggregator</directory>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

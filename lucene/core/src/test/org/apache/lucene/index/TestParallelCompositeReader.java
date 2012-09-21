@@ -283,8 +283,8 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertEquals(parallelHits.length, singleHits.length);
     for(int i = 0; i < parallelHits.length; i++) {
       assertEquals(parallelHits[i].score, singleHits[i].score, 0.001f);
-      Document docParallel = parallel.doc(parallelHits[i].doc);
-      Document docSingle = single.doc(singleHits[i].doc);
+      StoredDocument docParallel = parallel.doc(parallelHits[i].doc);
+      StoredDocument docSingle = single.doc(singleHits[i].doc);
       assertEquals(docParallel.get("f1"), docSingle.get("f1"));
       assertEquals(docParallel.get("f2"), docSingle.get("f2"));
       assertEquals(docParallel.get("f3"), docSingle.get("f3"));
@@ -339,13 +339,13 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     if (compositeComposite) {
       rd1 = new MultiReader(DirectoryReader.open(dir1), DirectoryReader.open(dir1));
       rd2 = new MultiReader(DirectoryReader.open(dir2), DirectoryReader.open(dir2));
-      assertEquals(2, rd1.getSequentialSubReaders().size());
-      assertEquals(2, rd2.getSequentialSubReaders().size());
+      assertEquals(2, rd1.getContext().children().size());
+      assertEquals(2, rd2.getContext().children().size());
     } else {
       rd1 = DirectoryReader.open(dir1);
       rd2 = DirectoryReader.open(dir2);
-      assertEquals(3, rd1.getSequentialSubReaders().size());
-      assertEquals(3, rd2.getSequentialSubReaders().size());
+      assertEquals(3, rd1.getContext().children().size());
+      assertEquals(3, rd2.getContext().children().size());
     }
     ParallelCompositeReader pr = new ParallelCompositeReader(rd1, rd2);
     return newSearcher(pr);

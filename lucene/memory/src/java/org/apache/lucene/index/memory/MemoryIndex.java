@@ -78,7 +78,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * numbers of queries over comparatively small transient realtime data (prospective 
  * search). 
  * For example as in 
- * <pre>
+ * <pre class="prettyprint">
  * float score = search(String text, Query query)
  * </pre>
  * <p>
@@ -114,13 +114,12 @@ import org.apache.lucene.util.RamUsageEstimator;
  * 
  * <h4>Example Usage</h4> 
  * 
- * <pre>
- * Analyzer analyzer = PatternAnalyzer.DEFAULT_ANALYZER;
- * //Analyzer analyzer = new SimpleAnalyzer();
+ * <pre class="prettyprint">
+ * Analyzer analyzer = new SimpleAnalyzer(version);
  * MemoryIndex index = new MemoryIndex();
  * index.addField("content", "Readings about Salmons and other select Alaska fishing Manuals", analyzer);
  * index.addField("author", "Tales of James", analyzer);
- * QueryParser parser = new QueryParser("content", analyzer);
+ * QueryParser parser = new QueryParser(version, "content", analyzer);
  * float score = index.search(parser.parse("+author:james +salmon~ +fish* manual~"));
  * if (score &gt; 0.0f) {
  *     System.out.println("it's a match");
@@ -133,7 +132,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * 
  * <h4>Example XQuery Usage</h4> 
  * 
- * <pre>
+ * <pre class="prettyprint">
  * (: An XQuery that finds all books authored by James that have something to do with "salmon fishing manuals", sorted by relevance :)
  * declare namespace lucene = "java:nux.xom.pool.FullTextUtil";
  * declare variable $query := "+salmon~ +fish* manual~"; (: any arbitrary Lucene query can go here :)
@@ -149,7 +148,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * 
  * An instance can be queried multiple times with the same or different queries,
  * but an instance is not thread-safe. If desired use idioms such as:
- * <pre>
+ * <pre class="prettyprint">
  * MemoryIndex index = ...
  * synchronized (index) {
  *    // read and/or write index (i.e. add fields and/or query)

@@ -71,7 +71,7 @@ import org.apache.lucene.util.fst.Util;
 */
 
 /**
- * block-based terms index and dictionary writer.
+ * Block-based terms index and dictionary writer.
  * <p>
  * Writes terms dict and index, block-encoding (column
  * stride) each term's metadata for each set of terms
@@ -724,7 +724,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
           // Write term stats, to separate byte[] blob:
           bytesWriter2.writeVInt(term.stats.docFreq);
           if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-            assert term.stats.totalTermFreq >= term.stats.docFreq;
+            assert term.stats.totalTermFreq >= term.stats.docFreq: term.stats.totalTermFreq + " vs " + term.stats.docFreq;
             bytesWriter2.writeVLong(term.stats.totalTermFreq - term.stats.docFreq);
           }
         }

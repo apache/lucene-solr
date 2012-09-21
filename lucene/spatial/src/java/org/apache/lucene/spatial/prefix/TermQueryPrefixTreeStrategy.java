@@ -44,11 +44,11 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
   @Override
   public Filter makeFilter(SpatialArgs args) {
     final SpatialOperation op = args.getOperation();
-    if (! SpatialOperation.is(op, SpatialOperation.IsWithin, SpatialOperation.Intersects, SpatialOperation.BBoxWithin, SpatialOperation.BBoxIntersects))
+    if (op != SpatialOperation.Intersects)
       throw new UnsupportedSpatialOperation(op);
 
     Shape shape = args.getShape();
-    int detailLevel = grid.getMaxLevelForPrecision(shape, args.getDistPrecision());
+    int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
     List<Node> cells = grid.getNodes(shape, detailLevel, false);
     TermsFilter filter = new TermsFilter();
     for (Node cell : cells) {

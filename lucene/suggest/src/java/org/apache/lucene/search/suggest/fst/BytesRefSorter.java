@@ -47,5 +47,8 @@ public interface BytesRefSorter {
    */
    BytesRefIterator iterator() throws IOException;
    
+  /**
+   * Comparator used to determine the sort order of entries.
+   */
    Comparator<BytesRef> getComparator();
 }

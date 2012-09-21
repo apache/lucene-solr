@@ -27,6 +27,7 @@ import org.apache.commons.codec.language.bm.PhoneticEngine;
 import org.apache.commons.codec.language.bm.RuleType;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.phonetic.BeiderMorseFilter;
+import org.apache.lucene.analysis.util.AbstractAnalysisFactory; // javadocs
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /** 
@@ -46,6 +47,9 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 public class BeiderMorseFilterFactory extends TokenFilterFactory {
   private PhoneticEngine engine;
   private LanguageSet languageSet;
+  
+  /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
+  public BeiderMorseFilterFactory() {}
   
   public void init(Map<String,String> args) {
     super.init(args);

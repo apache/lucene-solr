@@ -18,6 +18,7 @@ package org.apache.lucene.search.similarities;
  */
 
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.similarities.Normalization.NoNormalization;
 
 /**
  * Provides a framework for the family of information-based models, as described
@@ -39,6 +40,32 @@ import org.apache.lucene.search.Explanation;
  * <p>The framework described in the paper has many similarities to the DFR
  * framework (see {@link DFRSimilarity}). It is possible that the two
  * Similarities will be merged at one point.</p>
+ * <p>To construct an IBSimilarity, you must specify the implementations for 
+ * all three components of the Information-Based model.
+ * <ol>
+ *     <li>{@link Distribution}: Probabilistic distribution used to
+ *         model term occurrence
+ *         <ul>
+ *             <li>{@link DistributionLL}: Log-logistic</li>
+ *             <li>{@link DistributionLL}: Smoothed power-law</li>
+ *         </ul>
+ *     </li>
+ *     <li>{@link Lambda}: &lambda;<sub>w</sub> parameter of the
+ *         probability distribution
+ *         <ul>
+ *             <li>{@link LambdaDF}: <code>N<sub>w</sub>/N</code> or average
+ *                 number of documents where w occurs</li>
+ *             <li>{@link LambdaTTF}: <code>F<sub>w</sub>/N</code> or
+ *                 average number of occurrences of w in the collection</li>
+ *         </ul>
+ *     </li>
+ *     <li>{@link Normalization}: Term frequency normalization 
+ *         <blockquote>Any supported DFR normalization (listed in
+ *                      {@link DFRSimilarity})</blockquote>
+ *     </li>
+ * </ol>
+ * <p>
+ * @see DFRSimilarity
  * @lucene.experimental 
  */
 public class IBSimilarity extends SimilarityBase {
@@ -49,6 +76,16 @@ public class IBSimilarity extends SimilarityBase {
   /** The term frequency normalization. */
   protected final Normalization normalization;
   
+  /**
+   * Creates IBSimilarity from the three components.
+   * <p>
+   * Note that <code>null</code> values are not allowed:
+   * if you want no normalization, instead pass 
+   * {@link NoNormalization}.
+   * @param distribution probabilistic distribution modeling term occurrence
+   * @param lambda distribution's &lambda;<sub>w</sub> parameter
+   * @param normalization term frequency normalization
+   */
   public IBSimilarity(Distribution distribution,
                       Lambda lambda,
                       Normalization normalization) {
@@ -92,14 +129,23 @@ public class IBSimilarity extends SimilarityBase {
                  + normalization.toString();
   }
   
+  /**
+   * Returns the distribution
+   */
   public Distribution getDistribution() {
     return distribution;
   }
   
+  /**
+   * Returns the distribution's lambda parameter
+   */
   public Lambda getLambda() {
     return lambda;
   }
-  
+
+  /**
+   * Returns the term frequency normalization
+   */
   public Normalization getNormalization() {
     return normalization;
   }

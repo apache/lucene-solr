@@ -29,9 +29,8 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -40,24 +39,19 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequestExt;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.AdjustableSemaphore;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
 public class SolrCmdDistributor {
-  private static final int MAX_RETRIES_ON_FORWARD = 6;
+  private static final int MAX_RETRIES_ON_FORWARD = 10;
   public static Logger log = LoggerFactory.getLogger(SolrCmdDistributor.class);
-  
-  // TODO: shut this thing down
-  static ThreadPoolExecutor commExecutor = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
-      TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
-      new DefaultSolrThreadFactory("cmdDistribExecutor"));;
 
   static final HttpClient client;
   static AdjustableSemaphore semaphore = new AdjustableSemaphore(8);
@@ -90,15 +84,18 @@ public class SolrCmdDistributor {
     ModifiableSolrParams params;
   }
   
-  public SolrCmdDistributor(int numHosts) {
-    int maxPermits = Math.max(8, (numHosts - 1) * 8);
-    
+  public static interface AbortCheck {
+    public boolean abortCheck();
+  }
+  
+  public SolrCmdDistributor(int numHosts, ThreadPoolExecutor executor) {
+    int maxPermits = Math.max(16, numHosts * 16);
     // limits how many tasks can actually execute at once
     if (maxPermits != semaphore.getMaxPermits()) {
       semaphore.setMaxPermits(maxPermits);
     }
 
-    completionService = new ExecutorCompletionService<Request>(commExecutor);
+    completionService = new ExecutorCompletionService<Request>(executor);
     pending = new HashSet<Future<Request>>();
   }
   
@@ -166,6 +163,8 @@ public class SolrCmdDistributor {
     
     addCommit(ureq, cmd);
     
+    log.info("Distrib commit to:" + nodes);
+    
     for (Node node : nodes) {
       submit(ureq, node);
     }
@@ -203,7 +202,7 @@ public class SolrCmdDistributor {
   void addCommit(UpdateRequestExt ureq, CommitUpdateCommand cmd) {
     if (cmd == null) return;
     ureq.setAction(cmd.optimize ? AbstractUpdateRequest.ACTION.OPTIMIZE
-        : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher);
+        : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher, cmd.maxOptimizeSegments, cmd.softCommit, cmd.expungeDeletes);
   }
   
   boolean flushAdds(int limit) {
@@ -310,12 +309,13 @@ public class SolrCmdDistributor {
     Callable<Request> task = new Callable<Request>() {
       @Override
       public Request call() throws Exception {
-        Request clonedRequest = new Request();
-        clonedRequest.node = sreq.node;
-        clonedRequest.ureq = sreq.ureq;
-        clonedRequest.retries = sreq.retries;
-        
+        Request clonedRequest = null;
         try {
+          clonedRequest = new Request();
+          clonedRequest.node = sreq.node;
+          clonedRequest.ureq = sreq.ureq;
+          clonedRequest.retries = sreq.retries;
+          
           String fullUrl;
           if (!url.startsWith("http://") && !url.startsWith("https://")) {
             fullUrl = "http://" + url;
@@ -325,6 +325,12 @@ public class SolrCmdDistributor {
   
           HttpSolrServer server = new HttpSolrServer(fullUrl,
               client);
+          
+          if (Thread.currentThread().isInterrupted()) {
+            clonedRequest.rspCode = 503;
+            clonedRequest.exception = new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Shutting down.");
+            return clonedRequest;
+          }
           
           clonedRequest.ursp = server.request(clonedRequest.ureq);
           
@@ -345,9 +351,15 @@ public class SolrCmdDistributor {
     try {
       semaphore.acquire();
     } catch (InterruptedException e) {
-      throw new RuntimeException();
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Update thread interrupted", e);
     }
-    pending.add(completionService.submit(task));
+    try {
+      pending.add(completionService.submit(task));
+    } catch (RejectedExecutionException e) {
+      semaphore.release();
+      throw e;
+    }
     
   }
 

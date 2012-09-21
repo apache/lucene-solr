@@ -75,6 +75,12 @@ public class DefaultICUTokenizerConfig extends ICUTokenizerConfig {
   private static final BreakIterator myanmarBreakIterator = 
     readBreakIterator("Myanmar.brk");
   
+  /** 
+   * Creates a new config. This object is lightweight, but the first
+   * time the class is referenced, breakiterators will be initialized.
+   */
+  public DefaultICUTokenizerConfig() {}
+
   @Override
   public BreakIterator getBreakIterator(int script) {
     switch(script) {

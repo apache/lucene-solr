@@ -18,7 +18,7 @@ package org.apache.lucene.analysis.ja;
  */
 
 import org.apache.lucene.analysis.CharFilter;
-import org.apache.lucene.util.RollingCharBuffer;
+import org.apache.lucene.analysis.util.RollingCharBuffer;
 
 import java.io.IOException;
 import java.io.Reader;

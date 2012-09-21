@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.ramonly;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -49,7 +50,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.UnmodifiableIterator;
 
 /** Stores all postings data in RAM, but writes a small
  *  token (header + single int) to identify which "slot" the
@@ -57,7 +57,7 @@ import org.apache.lucene.util.UnmodifiableIterator;
  *
  *  NOTE: this codec sorts terms by reverse-unicode-order! */
 
-public class RAMOnlyPostingsFormat extends PostingsFormat {
+public final class RAMOnlyPostingsFormat extends PostingsFormat {
 
   // For fun, test that we can override how terms are
   // sorted, and basic things still work -- this comparator
@@ -113,7 +113,7 @@ public class RAMOnlyPostingsFormat extends PostingsFormat {
 
     @Override
     public Iterator<String> iterator() {
-      return new UnmodifiableIterator<String>(fieldToTerms.keySet().iterator());
+      return Collections.unmodifiableSet(fieldToTerms.keySet()).iterator();
     }
 
     @Override

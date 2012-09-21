@@ -37,14 +37,14 @@ public class LMJelinekMercerSimilarity extends LMSimilarity {
   /** The &lambda; parameter. */
   private final float lambda;
   
-  /** @param lambda the &lambda; parameter. */
+  /** Instantiates with the specified collectionModel and &lambda; parameter. */
   public LMJelinekMercerSimilarity(
       CollectionModel collectionModel, float lambda) {
     super(collectionModel);
     this.lambda = lambda;
   }
 
-  /** @param lambda the &lambda; parameter. */
+  /** Instantiates with the specified &lambda; parameter. */
   public LMJelinekMercerSimilarity(float lambda) {
     this.lambda = lambda;
   }

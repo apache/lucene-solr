@@ -26,7 +26,7 @@ import org.apache.lucene.queries.function.valuesource.MultiValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.IndexSearcher;
-import com.spatial4j.core.context.ParseUtils;
+import com.spatial4j.core.io.ParseUtils;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.exception.InvalidShapeException;
 import org.apache.solr.common.params.SpatialParams;
@@ -39,20 +39,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static com.spatial4j.core.distance.DistanceUtils.DEGREES_TO_RADIANS;
 
 /**
  * Haversine function with one point constant
  */
 public class HaversineConstFunction extends ValueSource {
-  // TODO: these could go in spatial4j somewhere
-  public static final double DEGREES_TO_RADIANS = Math.PI / 180.0;
-  public static final double RADIANS_TO_DEGREES =  180.0 / Math.PI;
 
   public static ValueSourceParser parser = new ValueSourceParser() {
     @Override
     public ValueSource parse(FunctionQParser fp) throws ParseException
     {
-      // TODO: dispatch through SpatialQueriable in the future?
+      // TODO: dispatch through SpatialQueryable in the future?
       List<ValueSource> sources = fp.parseValueSourceList();
 
       // "m" is a multi-value source, "x" is a single-value source

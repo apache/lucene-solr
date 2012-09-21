@@ -393,7 +393,7 @@ public class DataImporter {
   }
 
   private void checkWritablePersistFile(SolrWriter writer) {
-//  	File persistFile = propWriter.getPersistFile();
+//    File persistFile = propWriter.getPersistFile();
 //    boolean isWritable = persistFile.exists() ? persistFile.canWrite() : persistFile.getParentFile().canWrite();
     if (isDeltaImportSupported && !propWriter.isWritable()) {
       throw new DataImportHandlerException(SEVERE,

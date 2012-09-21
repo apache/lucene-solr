@@ -17,6 +17,16 @@
 
 package org.apache.solr.servlet;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.net.URLEncoder;
+import java.util.Date;
+import java.util.List;
+
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.lucene.util.BytesRef;
 import org.apache.noggit.CharArr;
 import org.apache.noggit.JSONWriter;
@@ -27,16 +37,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.URLEncoder;
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.TimeoutException;
 
 
 /**
@@ -148,13 +148,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
       try {
         zkClient = new SolrZkClient(addr, 10000);
         doClose = true;
-      } catch (TimeoutException e) {
-        writeError(503, "Could not connect to zookeeper at '" + addr + "'\"");
-        zkClient = null;
-        return;
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
+      } catch (Exception e) {
         writeError(503, "Could not connect to zookeeper at '" + addr + "'\"");
         zkClient = null;
         return;
@@ -163,12 +157,8 @@ public final class ZookeeperInfoServlet extends HttpServlet {
     }
 
     public void close() {
-      try {
-        if (doClose) {
-          zkClient.close();
-        }
-      } catch (InterruptedException e) {
-        // ignore exception on close
+      if (doClose) {
+        zkClient.close();
       }
     }
 

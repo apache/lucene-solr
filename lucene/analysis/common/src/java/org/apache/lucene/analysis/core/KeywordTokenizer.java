@@ -94,8 +94,7 @@ public final class KeywordTokenizer extends Tokenizer {
   }
 
   @Override
-  public void setReader(Reader input) throws IOException {
-    super.setReader(input);
+  public void reset() throws IOException {
     this.done = false;
   }
 }

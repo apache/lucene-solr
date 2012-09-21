@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.MergedIterator;
 import org.apache.lucene.index.BufferedDeletesStream.QueryAndLimit;
 
 class CoalescedDeletes {
@@ -48,7 +47,7 @@ class CoalescedDeletes {
 
  public Iterable<Term> termsIterable() {
    return new Iterable<Term>() {
-     @SuppressWarnings("unchecked")
+     @SuppressWarnings({"unchecked","rawtypes"})
      @Override
      public Iterator<Term> iterator() {
        Iterator<Term> subs[] = new Iterator[iterables.size()];

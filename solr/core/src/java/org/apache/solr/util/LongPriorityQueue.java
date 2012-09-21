@@ -152,10 +152,10 @@ public class LongPriorityQueue {
     time.  Only valid if size() > 0.
    */
   public long pop() {
-    long result = heap[1];	          // save first value
-    heap[1] = heap[size];	          // move last to first
+    long result = heap[1];            // save first value
+    heap[1] = heap[size];            // move last to first
     size--;
-    downHeap();				  // adjust heap
+    downHeap();          // adjust heap
     return result;
   }
   
@@ -187,11 +187,11 @@ public class LongPriorityQueue {
    */
   public long[] sort(int n) {
     while (--n >= 0) {
-      long result = heap[1];	          // save first value
-      heap[1] = heap[size];	          // move last to first
+      long result = heap[1];            // save first value
+      heap[1] = heap[size];            // move last to first
       heap[size] = result;                  // place it last
       size--;
-      downHeap();				  // adjust heap
+      downHeap();          // adjust heap
     }
     return heap;
   }
@@ -203,26 +203,26 @@ public class LongPriorityQueue {
 
   private void upHeap() {
     int i = size;
-    long node = heap[i];			  // save bottom node
+    long node = heap[i];        // save bottom node
     int j = i >>> 1;
     while (j > 0 && node < heap[j]) {
-      heap[i] = heap[j];			  // shift parents down
+      heap[i] = heap[j];        // shift parents down
       i = j;
       j = j >>> 1;
     }
-    heap[i] = node;				  // install saved node
+    heap[i] = node;          // install saved node
   }
 
   private void downHeap() {
     int i = 1;
-    long node = heap[i];			  // save top node
-    int j = i << 1;				  // find smaller child
+    long node = heap[i];        // save top node
+    int j = i << 1;          // find smaller child
     int k = j + 1;
     if (k <= size && heap[k] < heap[j]) {
       j = k;
     }
     while (j <= size && heap[j] < node) {
-      heap[i] = heap[j];			  // shift up child
+      heap[i] = heap[j];        // shift up child
       i = j;
       j = i << 1;
       k = j + 1;
@@ -230,6 +230,6 @@ public class LongPriorityQueue {
         j = k;
       }
     }
-    heap[i] = node;				  // install saved node
+    heap[i] = node;          // install saved node
   }
 }

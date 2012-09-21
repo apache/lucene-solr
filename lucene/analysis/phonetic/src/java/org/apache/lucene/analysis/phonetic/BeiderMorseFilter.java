@@ -32,12 +32,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /**
  * TokenFilter for Beider-Morse phonetic encoding.
- * <p>
- * <b><font color="red">
- * WARNING: some inputs can cause extremely high RAM usage! 
- * https://issues.apache.org/jira/browse/CODEC-132
- * </font></b>
- * </p>
  * @see BeiderMorseEncoder
  * @lucene.experimental
  */

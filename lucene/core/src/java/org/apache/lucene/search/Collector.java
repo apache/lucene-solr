@@ -81,8 +81,8 @@ import org.apache.lucene.search.Weight.PostingFeatures;
  * a simple example showing how to collect docIDs into a
  * BitSet:</p>
  * 
- * <pre>
- * Searcher searcher = new IndexSearcher(indexReader);
+ * <pre class="prettyprint">
+ * IndexSearcher searcher = new IndexSearcher(indexReader);
  * final BitSet bits = new BitSet(indexReader.maxDoc());
  * searcher.search(query, new Collector() {
  *   private int docBase;

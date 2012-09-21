@@ -47,7 +47,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   
   private static Logger LOG = LoggerFactory.getLogger(TestSolrEntityProcessorEndToEnd.class);
   
-  //rivate static final String SOLR_SOURCE_URL = "http://localhost:8983/solr";
+  //rivate static final String SOLR_SOURCE_URL = "http://127.0.0.1:8983/solr";
   private static final String SOLR_CONFIG = "dataimport-solrconfig.xml";
   private static final String SOLR_SCHEMA = "dataimport-schema.xml";
   private static final String SOLR_HOME = "dih/solr";
@@ -95,7 +95,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   }
   
   private static String getSourceUrl(int port) {
-    return "http://localhost:" + port + "/solr";
+    return "http://127.0.0.1:" + port + "/solr";
   }
   
   //TODO: fix this test to close its directories

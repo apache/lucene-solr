@@ -34,6 +34,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.*;
 import org.apache.lucene.search.vectorhighlight.BoundaryScanner;
@@ -391,7 +393,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docs.size(); i++) {
       int docId = iterator.nextDoc();
-      Document doc = searcher.doc(docId, fset);
+      StoredDocument doc = searcher.doc(docId, fset);
       NamedList docSummaries = new SimpleOrderedMap();
       for (String fieldName : fieldNames) {
         fieldName = fieldName.trim();
@@ -423,7 +425,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
   
   private void doHighlightingByHighlighter( Query query, SolrQueryRequest req, NamedList docSummaries,
-      int docId, Document doc, String fieldName ) throws IOException {
+      int docId, StoredDocument doc, String fieldName ) throws IOException {
     final SolrIndexSearcher searcher = req.getSearcher();
     final IndexSchema schema = searcher.getSchema();
     
@@ -438,9 +440,9 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     // END: Hack
     
     SolrParams params = req.getParams(); 
-    IndexableField[] docFields = doc.getFields(fieldName);
+    StorableField[] docFields = doc.getFields(fieldName);
     List<String> listFields = new ArrayList<String>();
-    for (IndexableField field : docFields) {
+    for (StorableField field : docFields) {
       listFields.add(field.stringValue());
     }
 
@@ -545,7 +547,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
 
   private void doHighlightingByFastVectorHighlighter( FastVectorHighlighter highlighter, FieldQuery fieldQuery,
-      SolrQueryRequest req, NamedList docSummaries, int docId, Document doc,
+      SolrQueryRequest req, NamedList docSummaries, int docId, StoredDocument doc,
       String fieldName ) throws IOException {
     SolrParams params = req.getParams(); 
     SolrFragmentsBuilder solrFb = getSolrFragmentsBuilder( fieldName, params );
@@ -563,12 +565,12 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       alternateField( docSummaries, params, doc, fieldName );
   }
   
-  private void alternateField( NamedList docSummaries, SolrParams params, Document doc, String fieldName ){
+  private void alternateField( NamedList docSummaries, SolrParams params, StoredDocument doc, String fieldName ){
     String alternateField = params.getFieldParam(fieldName, HighlightParams.ALTERNATE_FIELD);
     if (alternateField != null && alternateField.length() > 0) {
-      IndexableField[] docFields = doc.getFields(alternateField);
+      StorableField[] docFields = doc.getFields(alternateField);
       List<String> listFields = new ArrayList<String>();
-      for (IndexableField field : docFields) {
+      for (StorableField field : docFields) {
         if (field.binaryValue() == null)
           listFields.add(field.stringValue());
       }

@@ -51,15 +51,15 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
   @Override
   public Filter makeFilter(SpatialArgs args) {
     final SpatialOperation op = args.getOperation();
-    if (! SpatialOperation.is(op, SpatialOperation.IsWithin, SpatialOperation.Intersects, SpatialOperation.BBoxWithin, SpatialOperation.BBoxIntersects))
+    if (op != SpatialOperation.Intersects)
       throw new UnsupportedSpatialOperation(op);
 
     Shape shape = args.getShape();
 
-    int detailLevel = grid.getMaxLevelForPrecision(shape,args.getDistPrecision());
+    int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
 
     return new RecursivePrefixTreeFilter(
-        getFieldName(), grid,shape, prefixGridScanLevel, detailLevel);
+        getFieldName(), grid, shape, prefixGridScanLevel, detailLevel);
   }
 }
 

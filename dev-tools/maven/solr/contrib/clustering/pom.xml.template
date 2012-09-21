@@ -86,6 +86,26 @@
           <groupId>org.apache.lucene</groupId>
           <artifactId>lucene-smartcn</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>net.java.dev.rome</groupId>
+          <artifactId>rome</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>net.java.dev.rome</groupId>
+          <artifactId>rome-fetcher</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.jdom</groupId>
+          <artifactId>jdom</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>net.sf.ehcache</groupId>
+          <artifactId>ehcache-core</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.carrot2</groupId>
+          <artifactId>morfologik-stemming</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
   </dependencies>
@@ -95,9 +115,6 @@
     <testResources>
       <testResource>
         <directory>${module-path}/src/test-files</directory>
-      </testResource>
-      <testResource>
-        <directory>${top-level}/solr/core/src/test-files</directory>
       </testResource>
       <testResource>
         <directory>${top-level}/dev-tools/maven/solr</directory>

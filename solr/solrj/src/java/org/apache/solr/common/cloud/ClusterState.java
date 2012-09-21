@@ -92,9 +92,9 @@ public class ClusterState implements JSONWriter.Writable {
       Set<Entry<String,Slice>> slices = state.entrySet();
       for (Entry<String,Slice> sliceEntry : slices) {
         Slice slice = sliceEntry.getValue();
-        Map<String,ZkNodeProps> shards = slice.getShards();
-        Set<Entry<String,ZkNodeProps>> shardsEntries = shards.entrySet();
-        for (Entry<String,ZkNodeProps> shardEntry : shardsEntries) {
+        Map<String,Replica> shards = slice.getReplicasMap();
+        Set<Entry<String,Replica>> shardsEntries = shards.entrySet();
+        for (Entry<String,Replica> shardEntry : shardsEntries) {
           ZkNodeProps props = shardEntry.getValue();
           if (props.containsKey(ZkStateReader.LEADER_PROP)) {
             Map<String,ZkNodeProps> leadersForCollection = leaders.get(collection.getKey());
@@ -122,11 +122,11 @@ public class ClusterState implements JSONWriter.Writable {
   /**
    * Get shard properties or null if shard is not found.
    */
-  public ZkNodeProps getShardProps(final String collection, final String coreNodeName) {
+  public Replica getShardProps(final String collection, final String coreNodeName) {
     Map<String, Slice> slices = getSlices(collection);
     for(Slice slice: slices.values()) {
-      if(slice.getShards().get(coreNodeName)!=null) {
-        return slice.getShards().get(coreNodeName);
+      if(slice.getReplicasMap().get(coreNodeName)!=null) {
+        return slice.getReplicasMap().get(coreNodeName);
       }
     }
     return null;
@@ -185,7 +185,7 @@ public class ClusterState implements JSONWriter.Writable {
   public String getShardId(String coreNodeName) {
     for (Entry<String, Map<String, Slice>> states: collectionStates.entrySet()){
       for(Entry<String, Slice> slices: states.getValue().entrySet()) {
-        for(Entry<String, ZkNodeProps> shards: slices.getValue().getShards().entrySet()){
+        for(Entry<String, Replica> shards: slices.getValue().getReplicasMap().entrySet()){
           if(coreNodeName.equals(shards.getKey())) {
             return slices.getKey();
           }
@@ -226,7 +226,7 @@ public class ClusterState implements JSONWriter.Writable {
     shardList.addAll(shards);
     Collections.sort(shardList);
     
-    ranges = hp.partitionRange(shards.size());
+    ranges = hp.partitionRange(shards.size(), Integer.MIN_VALUE, Integer.MAX_VALUE);
     
     rangeInfo.ranges = ranges;
     rangeInfo.shardList = shardList;
@@ -243,7 +243,7 @@ public class ClusterState implements JSONWriter.Writable {
     
     int cnt = 0;
     for (Range range : rangInfo.ranges) {
-      if (hash < range.max) {
+      if (range.includes(hash)) {
         return rangInfo.shardList.get(cnt);
       }
       cnt++;
@@ -286,21 +286,17 @@ public class ClusterState implements JSONWriter.Writable {
     if (bytes == null || bytes.length == 0) {
       return new ClusterState(version, liveNodes, Collections.<String, Map<String,Slice>>emptyMap());
     }
-    
+    // System.out.println("########## Loading ClusterState:" + new String(bytes));
     LinkedHashMap<String, Object> stateMap = (LinkedHashMap<String, Object>) ZkStateReader.fromJSON(bytes);
     HashMap<String,Map<String, Slice>> state = new HashMap<String,Map<String,Slice>>();
 
     for(String collectionName: stateMap.keySet()){
       Map<String, Object> collection = (Map<String, Object>)stateMap.get(collectionName);
       Map<String, Slice> slices = new LinkedHashMap<String,Slice>();
-      for(String sliceName: collection.keySet()) {
-        Map<String, Map<String, String>> sliceMap = (Map<String, Map<String, String>>)collection.get(sliceName);
-        Map<String, ZkNodeProps> shards = new LinkedHashMap<String,ZkNodeProps>();
-        for(String shardName: sliceMap.keySet()) {
-          shards.put(shardName, new ZkNodeProps(sliceMap.get(shardName)));
-        }
-        Slice slice = new Slice(sliceName, shards);
-        slices.put(sliceName, slice);
+
+      for (Entry<String,Object> sliceEntry : collection.entrySet()) {
+        Slice slice = new Slice(sliceEntry.getKey(), null, (Map<String,Object>)sliceEntry.getValue());
+        slices.put(slice.getName(), slice);
       }
       state.put(collectionName, slices);
     }

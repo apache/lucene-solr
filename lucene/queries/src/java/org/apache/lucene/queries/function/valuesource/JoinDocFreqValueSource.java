@@ -22,7 +22,10 @@ import java.util.Map;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
 import org.apache.lucene.search.FieldCache.DocTerms;
@@ -55,6 +58,8 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
   {
     final DocTerms terms = cache.getTerms(readerContext.reader(), field, PackedInts.FAST);
     final IndexReader top = ReaderUtil.getTopLevelContext(readerContext).reader();
+    Terms t = MultiFields.getTerms(top, qfield);
+    final TermsEnum termsEnum = t == null ? TermsEnum.EMPTY : t.iterator(null);
     
     return new IntDocValues(this) {
       final BytesRef ref = new BytesRef();
@@ -64,8 +69,11 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
       {
         try {
           terms.getTerm(doc, ref);
-          //System.out.println( NAME+"["+field+"="+ref.utf8ToString()+"=("+qfield+":"+v+")]" );
-          return top.docFreq( qfield, ref );
+          if (termsEnum.seekExact(ref, true)) {
+            return termsEnum.docFreq();
+          } else {
+            return 0;
+          }
         } 
         catch (IOException e) {
           throw new RuntimeException("caught exception in function "+description()+" : doc="+doc, e);

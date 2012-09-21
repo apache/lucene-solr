@@ -115,7 +115,7 @@ abstract class AbstractDictionary {
       }
       int b0 = (buffer[0] & 0x0FF) - 161; // Code starts from A1, therefore subtract 0xA1=161
       int b1 = (buffer[1] & 0x0FF) - 161; // There is no Chinese char for the first and last symbol. 
-      											// Therefore, each code page only has 16*6-2=94 characters.
+                                          // Therefore, each code page only has 16*6-2=94 characters.
       return (short) (b0 * 94 + b1);
     } catch (UnsupportedEncodingException e) {
       throw new RuntimeException(e);

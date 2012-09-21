@@ -27,7 +27,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-
+/**
+ * Abstract parent class for {@link ValueSource} implementations that wrap multiple
+ * ValueSources and apply their own logic.
+ */
 public abstract class MultiFunction extends ValueSource {
   protected final List<ValueSource> sources;
 

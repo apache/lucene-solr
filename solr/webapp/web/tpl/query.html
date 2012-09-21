@@ -56,6 +56,11 @@ limitations under the License.
         </label>
         <input type="text" name="fl" id="fl" value="" title="Field list, comma separated.">
 
+        <label for="df">
+          <a rel="help">df</a>
+        </label>
+        <input type="text" name="df" id="df" value="" title="Default search field">
+
         <label for="wt">
           <a rel="help">wt</a>
         </label>
@@ -84,7 +89,7 @@ limitations under the License.
       <fieldset class="dismax optional">
         <legend>
           <label for="dismax" class="checkbox">
-            <input type="checkbox" name="dismax" id="dismax" value="true">
+            <input type="checkbox" name="defType" id="dismax" value="dismax">
             dismax
           </label>
         </legend>
@@ -123,38 +128,38 @@ limitations under the License.
       <fieldset class="edismax optional">
         <legend>
           <label for="edismax" class="checkbox">
-            <input type="checkbox" name="edismax" id="edismax" value="true">
+            <input type="checkbox" name="defType" id="edismax" value="edismax">
             <strong>e</strong>dismax
           </label>
         </legend>
         <div class="fieldset">
 
         <label for="edismax_q_alt">q.alt</label>
-        <input type="text" name="q.alt" id="edismax_q_alt">
+        <input type="text" name="q.alt" id="edismax_q_alt"  title="Alternate query when 'q' is absent.">
 
         <label for="edismax_qf">qf</label>
-        <input type="text" name="qf" id="edismax_qf">
+        <input type="text" name="qf" id="edismax_qf" title="Query fields with optional boosts.">
 
         <label for="edismax_mm">mm</label>
-        <input type="text" name="mm" id="edismax_mm">
+        <input type="text" name="mm" id="edismax_mm" title="Min-should-match expression.">
 
         <label for="edismax_pf">pf</label>
-        <input type="text" name="pf" id="edismax_pf">
+        <input type="text" name="pf" id="edismax_pf" title="Phrase boosted fields.">
 
         <label for="edismax_ps">ps</label>
-        <input type="text" name="ps" id="edismax_ps">
+        <input type="text" name="ps" id="edismax_ps" title="Phrase boost slop.">
 
         <label for="edismax_qs">qs</label>
-        <input type="text" name="qs" id="edismax_qs">
+        <input type="text" name="qs" id="edismax_qs" title="Query string phrase slop.">
 
         <label for="edismax_tie">tie</label>
-        <input type="text" name="tie" id="edismax_tie">
+        <input type="text" name="tie" id="edismax_tie" title="Score tie-breaker. Try 0.1.">
 
         <label for="edismax_bq">bq</label>
-        <input type="text" name="bq" id="edismax_bq">
+        <input type="text" name="bq" id="edismax_bq" title="Boost query.">
 
         <label for="edismax_bf">bf</label>
-        <input type="text" name="bf" id="edismax_bf">
+        <input type="text" name="bf" id="edismax_bf" title="Boost function (added).">
       
         </div>
       </fieldset>

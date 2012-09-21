@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.MergedIterator;
 import org.apache.lucene.util._TestUtil;
 
 public class TestPrefixCodedTerms extends LuceneTestCase {
@@ -70,14 +69,10 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
   
   @SuppressWarnings("unchecked")
   public void testMergeEmpty() {
-    List<Iterator<Term>> subs = Collections.emptyList();
-    Iterator<Term> merged = new MergedIterator<Term>(subs.toArray(new Iterator[0]));
+    Iterator<Term> merged = new MergedIterator<Term>();
     assertFalse(merged.hasNext());
 
-    subs = new ArrayList<Iterator<Term>>();
-    subs.add(new PrefixCodedTerms.Builder().finish().iterator());
-    subs.add(new PrefixCodedTerms.Builder().finish().iterator());
-    merged = new MergedIterator<Term>(subs.toArray(new Iterator[0]));
+    merged = new MergedIterator<Term>(new PrefixCodedTerms.Builder().finish().iterator(), new PrefixCodedTerms.Builder().finish().iterator());
     assertFalse(merged.hasNext());
   }
 
@@ -93,18 +88,14 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     b2.add(t2);
     PrefixCodedTerms pb2 = b2.finish();
     
-    List<Iterator<Term>> subs = new ArrayList<Iterator<Term>>();
-    subs.add(pb1.iterator());
-    subs.add(pb2.iterator());
-    
-    Iterator<Term> merged = new MergedIterator<Term>(subs.toArray(new Iterator[0]));
+    Iterator<Term> merged = new MergedIterator<Term>(pb1.iterator(), pb2.iterator());
     assertTrue(merged.hasNext());
     assertEquals(t1, merged.next());
     assertTrue(merged.hasNext());
     assertEquals(t2, merged.next());
   }
 
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","rawtypes"})
   public void testMergeRandom() {
     PrefixCodedTerms pb[] = new PrefixCodedTerms[_TestUtil.nextInt(random(), 2, 10)];
     Set<Term> superSet = new TreeSet<Term>();

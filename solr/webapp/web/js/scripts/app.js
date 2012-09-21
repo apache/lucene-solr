@@ -258,8 +258,7 @@ var solr_admin = function( app_config )
           {
             show_global_error
             (
-              '<div class="message">There are no SolrCores running — for the current functionality ' +
-              'we require at least one SolrCore, sorry :)</div>'
+              '<div class="message">There are no SolrCores running. <br/> Using the Solr Admin UI currently requires at least one SolrCore.</div>'
             );
             return;
           } // else: we have at least one core....
@@ -295,11 +294,12 @@ var solr_admin = function( app_config )
 
                 // environment
 
+                var wrapper = $( '#wrapper' );
                 var environment_element = $( '#environment' );
                 if( environment_args )
                 {
-                  environment_element
-                    .show();
+                  wrapper
+                    .addClass( 'has-environment' );
 
                   if( environment_args[1] )
                   {
@@ -315,8 +315,8 @@ var solr_admin = function( app_config )
                 }
                 else
                 {
-                  environment_element
-                    .remove();
+                  wrapper
+                    .removeClass( 'has-environment' );
                 }
 
                 // cloud

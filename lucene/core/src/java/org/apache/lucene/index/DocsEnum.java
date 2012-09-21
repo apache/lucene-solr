@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.Bits; // javadocs
 
 /** Iterates through the documents and term freqs.
  *  NOTE: you must first call {@link #nextDoc} before using
@@ -32,6 +33,11 @@ public abstract class DocsEnum extends DocIdSetIterator {
   public static final int FLAG_FREQS = 0x1;
 
   private AttributeSource atts = null;
+
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected DocsEnum() {
+  }
 
   /** Returns term frequency in the current document.  Do
    *  not call this before {@link #nextDoc} is first called,

@@ -68,7 +68,7 @@ import org.apache.lucene.util.Version;
  *
  * <p>
  * Examples of appropriately formatted queries can be found in the <a
- * href="../../../../../../queryparsersyntax.html">query syntax
+ * href="{@docRoot}/org/apache/lucene/queryparser/classic/package-summary.html#package_description">query syntax
  * documentation</a>.
  * </p>
  *
@@ -211,13 +211,13 @@ int Modifiers() : {
 // This makes sure that there is no garbage after the query string
 Query TopLevelQuery(String field) : 
 {
-	Query q;
+  Query q;
 }
 {
-	q=Query(field) <EOF>
-	{
-		return q;
-	}
+  q=Query(field) <EOF>
+  {
+    return q;
+  }
 }
 
 Query Query(String field) :

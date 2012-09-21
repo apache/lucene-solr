@@ -206,6 +206,16 @@
       </analyzer>
     </fieldType>
 
+    <fieldType name="text_fr" class="solr.TextField" positionIncrementGap="100">
+      <analyzer> 
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <!-- removes l', etc -->
+        <filter class="solr.ElisionFilterFactory" ignoreCase="true" />
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.FrenchLightStemFilterFactory"/>
+      </analyzer>
+    </fieldType>
+
 
     <fieldType name="int" class="solr.TrieIntField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="float" class="solr.TrieFloatField" precisionStep="4" omitNorms="true" positionIncrementGap="0"/>
@@ -250,6 +260,7 @@
     <dynamicField name="*_folding" type="text_folding" indexed="true" stored="true"/>
     <dynamicField name="*_stemming" type="text_stemming" indexed="true" stored="true"/>
     <dynamicField name="*_keyword" type="text_keyword" indexed="true" stored="true"/>
+    <dynamicField name="*_fr" type="text_fr" indexed="true" stored="true"/>
 
   </fields>
 

@@ -17,6 +17,7 @@ package org.apache.solr.schema;
  */
 
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.StorableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
@@ -71,7 +72,7 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
     FieldType tmp = amount.getType();
     assertTrue(tmp instanceof CurrencyField);
     String currencyValue = "1.50,EUR";
-    IndexableField[] fields = amount.createFields(currencyValue, 2);
+    StorableField[] fields = amount.createFields(currencyValue, 2);
     assertEquals(fields.length, 3);
 
     // First field is currency code, second is value, third is stored.

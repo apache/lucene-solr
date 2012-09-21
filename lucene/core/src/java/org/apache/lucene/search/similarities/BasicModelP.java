@@ -31,6 +31,9 @@ public class BasicModelP extends BasicModel {
   /** {@code log2(Math.E)}, precomputed. */
   protected static double LOG2_E = log2(Math.E);
   
+  /** Sole constructor: parameter-free */
+  public BasicModelP() {}
+  
   @Override
   public final float score(BasicStats stats, float tfn) {
     float lambda = (float)(stats.getTotalTermFreq()+1) / (stats.getNumberOfDocuments()+1);

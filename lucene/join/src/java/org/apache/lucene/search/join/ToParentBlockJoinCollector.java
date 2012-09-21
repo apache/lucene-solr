@@ -100,7 +100,7 @@ public class ToParentBlockJoinCollector extends Collector {
   private int totalHitCount;
   private float maxScore = Float.NaN;
 
-  /*  Creates a ToParentBlockJoinCollector.  The provided sort must
+  /**  Creates a ToParentBlockJoinCollector.  The provided sort must
    *  not be null.  If you pass true trackScores, all
    *  ToParentBlockQuery instances must not use
    *  ScoreMode.None. */
@@ -463,7 +463,7 @@ public class ToParentBlockJoinCollector extends Collector {
 
   /** Returns the highest score across all collected parent
    *  hits, as long as <code>trackMaxScores=true</code> was passed {@link
-   *  #ToParentBlockJoinCollector on construction}.  Else,
+   *  #ToParentBlockJoinCollector(Sort, int, boolean, boolean) on construction}.  Else,
    *  this returns <code>Float.NaN</code> */
   public float getMaxScore() {
     return maxScore;

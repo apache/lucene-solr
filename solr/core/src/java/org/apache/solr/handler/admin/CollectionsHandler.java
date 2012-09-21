@@ -176,13 +176,13 @@ public class CollectionsHandler extends RequestHandlerBase {
   private void handleCreateAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws InterruptedException, KeeperException {
     log.info("Creating Collection : " + req.getParamString());
-    Integer numReplicas = req.getParams().getInt("numReplicas", 0);
+    Integer numReplicas = req.getParams().getInt(OverseerCollectionProcessor.REPLICATION_FACTOR, 0);
     String name = req.getParams().required().get("name");
     String configName = req.getParams().get("collection.configName");
     String numShards = req.getParams().get("numShards");
     
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-        OverseerCollectionProcessor.CREATECOLLECTION, "numReplicas", numReplicas.toString(), "name", name,
+        OverseerCollectionProcessor.CREATECOLLECTION, OverseerCollectionProcessor.REPLICATION_FACTOR, numReplicas.toString(), "name", name,
         "collection.configName", configName, "numShards", numShards);
 
     // TODO: what if you want to block until the collection is available?

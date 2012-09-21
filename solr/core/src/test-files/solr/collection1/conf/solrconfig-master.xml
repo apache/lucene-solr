@@ -41,7 +41,10 @@
   <requestHandler name="/replication" class="solr.ReplicationHandler">
     <lst name="master">
       <str name="replicateAfter">commit</str>
-      <str name="confFiles">schema.xml</str>
+      <!-- we don't really need dummy.xsl, but we want to be sure subdir 
+           files replicate (see SOLR-3809)
+      -->
+      <str name="confFiles">schema.xml,xslt/dummy.xsl</str>
     </lst>
   </requestHandler>
 

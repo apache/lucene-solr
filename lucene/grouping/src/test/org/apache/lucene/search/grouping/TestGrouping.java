@@ -594,7 +594,7 @@ public class TestGrouping extends LuceneTestCase {
         Document doc = new Document();
         docs.add(doc);
         if (groupValue.group != null) {
-          doc.add(newStringField("group", groupValue.group.utf8ToString(), Field.Store.NO));
+          doc.add(newStringField("group", groupValue.group.utf8ToString(), Field.Store.YES));
         }
         doc.add(newStringField("sort1", groupValue.sort1.utf8ToString(), Field.Store.NO));
         doc.add(newStringField("sort2", groupValue.sort2.utf8ToString(), Field.Store.NO));
@@ -864,7 +864,7 @@ public class TestGrouping extends LuceneTestCase {
           final boolean doCache = random().nextBoolean();
           final boolean doAllGroups = random().nextBoolean();
           if (VERBOSE) {
-            System.out.println("TEST: groupSort=" + groupSort + " docSort=" + docSort + " searchTerm=" + searchTerm + " dF=" + r.docFreq("content", new BytesRef(searchTerm))  +" dFBlock=" + rBlocks.docFreq("content", new BytesRef(searchTerm)) + " topNGroups=" + topNGroups + " groupOffset=" + groupOffset + " docOffset=" + docOffset + " doCache=" + doCache + " docsPerGroup=" + docsPerGroup + " doAllGroups=" + doAllGroups + " getScores=" + getScores + " getMaxScores=" + getMaxScores);
+            System.out.println("TEST: groupSort=" + groupSort + " docSort=" + docSort + " searchTerm=" + searchTerm + " dF=" + r.docFreq(new Term("content", searchTerm))  +" dFBlock=" + rBlocks.docFreq(new Term("content", searchTerm)) + " topNGroups=" + topNGroups + " groupOffset=" + groupOffset + " docOffset=" + docOffset + " doCache=" + doCache + " docsPerGroup=" + docsPerGroup + " doAllGroups=" + doAllGroups + " getScores=" + getScores + " getMaxScores=" + getMaxScores);
           }
 
           final AbstractFirstPassGroupingCollector<?> c1 = createRandomFirstPassCollector("group", groupSort, groupOffset+topNGroups, canUseIDV);

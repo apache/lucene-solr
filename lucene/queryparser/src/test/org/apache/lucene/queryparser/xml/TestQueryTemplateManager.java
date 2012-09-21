@@ -89,7 +89,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
       Properties queryFormProperties = getPropsFromString(queryForm);
 
       //Get the required query XSL template for this test
-//			Templates template=getTemplate(queryFormProperties.getProperty("template"));
+//      Templates template=getTemplate(queryFormProperties.getProperty("template"));
 
       //Transform the queryFormProperties into a Lucene XML query
       Document doc = qtm.getQueryAsDOM(queryFormProperties, queryFormProperties.getProperty("template"));

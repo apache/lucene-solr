@@ -173,20 +173,8 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
   protected void assertSubsetOf(Query q1, Query q2, Filter filter) throws Exception {
     // TRUNK ONLY: test both filter code paths
     if (filter != null && random().nextBoolean()) {
-      final boolean q1RandomAccess = random().nextBoolean();
-      final boolean q2RandomAccess = random().nextBoolean();
-      q1 = new FilteredQuery(q1, filter) {
-        @Override
-        protected boolean useRandomAccess(Bits bits, int firstFilterDoc) {
-          return q1RandomAccess;
-        }
-      };
-      q2 = new FilteredQuery(q2, filter) {
-        @Override
-        protected boolean useRandomAccess(Bits bits, int firstFilterDoc) {
-          return q2RandomAccess;
-        }
-      };
+      q1 = new FilteredQuery(q1, filter, _TestUtil.randomFilterStrategy(random()));
+      q2 = new FilteredQuery(q2, filter,  _TestUtil.randomFilterStrategy(random()));
       filter = null;
     }
     

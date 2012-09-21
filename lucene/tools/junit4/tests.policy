@@ -1,0 +1,68 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Policy file to prevent tests from writing outside the test sandbox directory
+// (must be given as a sysprop: tests.sandbox.dir)
+// This policy also disallows stuff like listening on network ports of interfaces
+// different than 127.0.0.1.
+
+// PLEASE NOTE: You may need to enable other permissions when new tests are added,
+// everything not allowed here is forbidden!
+
+grant {
+  // permissions for file access, write access only to sandbox:
+  permission java.io.FilePermission "<<ALL FILES>>", "read,execute";
+  permission java.io.FilePermission "${tests.sandbox.dir}${/}-", "read,execute,write,delete";
+  permission java.io.FilePermission "${clover.db.dir}${/}-", "read,execute,write,delete";
+  
+  // all possibilities of accepting/binding connections on localhost with ports >=1024:
+  permission java.net.SocketPermission "localhost:1024-", "accept,listen";
+  permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen";
+  permission java.net.SocketPermission "[::1]:1024-", "accept,listen";
+  
+  // This is a special case, because the network config of the ASF Jenkins server is broken,
+  // see: http://freebsd.1045724.n5.nabble.com/jail-external-and-localhost-distinction-td3967320.html
+  permission java.net.SocketPermission "lucene.zones.apache.org:1024-", "accept,listen";
+  
+  // Allow connecting to the internet anywhere
+  permission java.net.SocketPermission "*", "connect,resolve";
+  
+  // Basic permissions needed for Lucene to work:
+  permission java.util.PropertyPermission "*", "read,write";
+  permission java.lang.reflect.ReflectPermission "*";
+  permission java.lang.RuntimePermission "*";
+
+  // These two *have* to be spelled out a seperate
+  permission java.lang.management.ManagementPermission "control";
+  permission java.lang.management.ManagementPermission "monitor";
+
+  // Solr needs those:
+  permission java.net.NetPermission "*";
+  permission java.util.logging.LoggingPermission "control";
+  permission javax.management.MBeanPermission "*", "*";
+  permission javax.management.MBeanServerPermission "*";
+  permission javax.management.MBeanTrustPermission "*";
+  
+  // TIKA uses BouncyCastle and that registers new provider for PDF parsing + MSOffice parsing. Maybe report as bug!
+  permission java.security.SecurityPermission "putProviderProperty.BC";
+  permission java.security.SecurityPermission "insertProvider.BC";
+
+  // Needed for some things in DNS caching in the JVM
+  permission java.security.SecurityPermission "getProperty.networkaddress.cache.ttl";
+  permission java.security.SecurityPermission "getProperty.networkaddress.cache.negative.ttl";
+
+};

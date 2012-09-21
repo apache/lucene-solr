@@ -178,27 +178,5 @@ public class RAMOutputStream extends IndexOutput {
   /** Returns byte usage of all buffers. */
   public long sizeInBytes() {
     return (long) file.numBuffers() * (long) BUFFER_SIZE;
-  }
-  
-  @Override
-  public void copyBytes(DataInput input, long numBytes) throws IOException {
-    assert numBytes >= 0: "numBytes=" + numBytes;
-
-    while (numBytes > 0) {
-      if (bufferPosition == bufferLength) {
-        currentBufferIndex++;
-        switchCurrentBuffer();
-      }
-
-      int toCopy = currentBuffer.length - bufferPosition;
-      if (numBytes < toCopy) {
-        toCopy = (int) numBytes;
-      }
-      input.readBytes(currentBuffer, bufferPosition, toCopy, false);
-      numBytes -= toCopy;
-      bufferPosition += toCopy;
-    }
-
-  }
-  
+  }  
 }

@@ -80,6 +80,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
 
   void verifyPayload(TokenStream ts) throws IOException {
     PayloadAttribute payloadAtt = ts.getAttribute(PayloadAttribute.class);
+    ts.reset();
     for(byte b=1;;b++) {
       boolean hasNext = ts.incrementToken();
       if (!hasNext) break;

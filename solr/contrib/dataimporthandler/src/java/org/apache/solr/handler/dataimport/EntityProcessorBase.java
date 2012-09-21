@@ -133,11 +133,11 @@ public class EntityProcessorBase extends EntityProcessor {
 
   @Override
   public void destroy() {
-  	query = null;
-  	if(cacheSupport!=null){
-  	  cacheSupport.destroyAll();
-  	}
-  	cacheSupport = null;
+    query = null;
+    if(cacheSupport!=null){
+      cacheSupport.destroyAll();
+    }
+    cacheSupport = null;
   }
 
   

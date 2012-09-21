@@ -34,6 +34,8 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 public class FieldInfos implements Iterable<FieldInfo> {
   private final boolean hasFreq;
   private final boolean hasProx;
+  private final boolean hasPayloads;
+  private final boolean hasOffsets;
   private final boolean hasVectors;
   private final boolean hasNorms;
   private final boolean hasDocValues;
@@ -42,28 +44,41 @@ public class FieldInfos implements Iterable<FieldInfo> {
   private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
   private final Collection<FieldInfo> values; // for an unmodifiable iterator
   
+  /**
+   * Constructs a new FieldInfos from an array of FieldInfo objects
+   */
   public FieldInfos(FieldInfo[] infos) {
     boolean hasVectors = false;
     boolean hasProx = false;
+    boolean hasPayloads = false;
+    boolean hasOffsets = false;
     boolean hasFreq = false;
     boolean hasNorms = false;
     boolean hasDocValues = false;
     
     for (FieldInfo info : infos) {
-      assert !byNumber.containsKey(info.number);
-      byNumber.put(info.number, info);
-      assert !byName.containsKey(info.name);
-      byName.put(info.name, info);
+      FieldInfo previous = byNumber.put(info.number, info);
+      if (previous != null) {
+        throw new IllegalArgumentException("duplicate field numbers: " + previous.name + " and " + info.name + " have: " + info.number);
+      }
+      previous = byName.put(info.name, info);
+      if (previous != null) {
+        throw new IllegalArgumentException("duplicate field names: " + previous.number + " and " + info.number + " have: " + info.name);
+      }
       
       hasVectors |= info.hasVectors();
       hasProx |= info.isIndexed() && info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       hasFreq |= info.isIndexed() && info.getIndexOptions() != IndexOptions.DOCS_ONLY;
+      hasOffsets |= info.isIndexed() && info.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       hasNorms |= info.hasNorms();
       hasDocValues |= info.hasDocValues();
+      hasPayloads |= info.hasPayloads();
     }
     
     this.hasVectors = hasVectors;
     this.hasProx = hasProx;
+    this.hasPayloads = hasPayloads;
+    this.hasOffsets = hasOffsets;
     this.hasFreq = hasFreq;
     this.hasNorms = hasNorms;
     this.hasDocValues = hasDocValues;
@@ -79,31 +94,33 @@ public class FieldInfos implements Iterable<FieldInfo> {
   public boolean hasProx() {
     return hasProx;
   }
+
+  /** Returns true if any fields have payloads */
+  public boolean hasPayloads() {
+    return hasPayloads;
+  }
+
+  /** Returns true if any fields have offsets */
+  public boolean hasOffsets() {
+    return hasOffsets;
+  }
   
-  /**
-   * @return true if at least one field has any vectors
-   */
+  /** Returns true if any fields have vectors */
   public boolean hasVectors() {
     return hasVectors;
   }
   
-  /**
-   * @return true if at least one field has any norms
-   */
+  /** Returns true if any fields have norms */
   public boolean hasNorms() {
     return hasNorms;
   }
   
-  /**
-   * @return true if at least one field has doc values
-   */
+  /** Returns true if any fields have DocValues */
   public boolean hasDocValues() {
     return hasDocValues;
   }
   
-  /**
-   * @return number of fields
-   */
+  /** Returns the number of fields */
   public int size() {
     assert byNumber.size() == byName.size();
     return byNumber.size();
@@ -249,11 +266,11 @@ public class FieldInfos implements Iterable<FieldInfo> {
       return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
     }
 
-    // NOTE: this method does not carry over termVector
-    // booleans nor docValuesType; the indexer chain
-    // (TermVectorsConsumerPerField, DocFieldProcessor) must
-    // set these fields when they succeed in consuming
-    // the document:
+    /** NOTE: this method does not carry over termVector
+     *  booleans nor docValuesType; the indexer chain
+     *  (TermVectorsConsumerPerField, DocFieldProcessor) must
+     *  set these fields when they succeed in consuming
+     *  the document */
     public FieldInfo addOrUpdate(String name, IndexableFieldType fieldType) {
       // TODO: really, indexer shouldn't even call this
       // method (it's only called from DocFieldProcessor);

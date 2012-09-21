@@ -17,19 +17,15 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.AttributeImpl;
 
-/**
- *This attribute can be used to mark a token as a keyword. Keyword aware
- * {@link TokenStream}s can decide to modify a token based on the return value
- * of {@link #isKeyword()} if the token is modified. Stemming filters for
- * instance can use this attribute to conditionally skip a term if
- * {@link #isKeyword()} returns <code>true</code>.
- */
+/** Default implementation of {@link KeywordAttribute}. */
 public final class KeywordAttributeImpl extends AttributeImpl implements
     KeywordAttribute {
   private boolean keyword;
+  
+  /** Initialize this attribute with the keyword value as false. */
+  public KeywordAttributeImpl() {}
 
   @Override
   public void clear() {
@@ -57,24 +53,10 @@ public final class KeywordAttributeImpl extends AttributeImpl implements
     return keyword == other.keyword;
   }
 
-  /**
-   * Returns <code>true</code> iff the current token is a keyword, otherwise
-   * <code>false</code>/
-   * 
-   * @return <code>true</code> iff the current token is a keyword, otherwise
-   *         <code>false</code>/
-   */
   public boolean isKeyword() {
     return keyword;
   }
 
-  /**
-   * Marks the current token as keyword iff set to <code>true</code>.
-   * 
-   * @param isKeyword
-   *          <code>true</code> iff the current token is a keyword, otherwise
-   *          <code>false</code>.
-   */
   public void setKeyword(boolean isKeyword) {
     keyword = isKeyword;
   }

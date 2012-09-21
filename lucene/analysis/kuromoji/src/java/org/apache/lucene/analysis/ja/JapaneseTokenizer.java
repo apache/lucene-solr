@@ -38,10 +38,10 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
+import org.apache.lucene.analysis.util.RollingCharBuffer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.RollingCharBuffer;
 import org.apache.lucene.util.fst.FST;
 
 // TODO: somehow factor out a reusable viterbi search here,
@@ -245,14 +245,8 @@ public final class JapaneseTokenizer extends Tokenizer {
   }
 
   @Override
-  public void setReader(Reader input) throws IOException {
-    super.setReader(input);
-    buffer.reset(input);
-  }
-
-  @Override
   public void reset() throws IOException {
-    super.reset();
+    buffer.reset(input);
     resetState();
   }
 
@@ -298,12 +292,12 @@ public final class JapaneseTokenizer extends Tokenizer {
         if (!characterDefinition.isKanji((char) buffer.get(pos2))) {
           allKanji = false;
           break;
-        }				
+        }
       }
-      if (allKanji) {	// Process only Kanji keywords
+      if (allKanji) {  // Process only Kanji keywords
         return (length - SEARCH_MODE_KANJI_LENGTH) * SEARCH_MODE_KANJI_PENALTY;
       } else if (length > SEARCH_MODE_OTHER_LENGTH) {
-        return (length - SEARCH_MODE_OTHER_LENGTH) * SEARCH_MODE_OTHER_PENALTY;								
+        return (length - SEARCH_MODE_OTHER_LENGTH) * SEARCH_MODE_OTHER_PENALTY;
       }
     }
     return 0;
@@ -813,7 +807,7 @@ public final class JapaneseTokenizer extends Tokenizer {
             }
             if (characterId == characterDefinition.getCharacterClass((char) ch) &&
                 isPunctuation((char) ch) == isPunct) {
-              unknownWordLength++;    			
+              unknownWordLength++;
             } else {
               break;
             }

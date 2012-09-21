@@ -71,7 +71,7 @@ public class TestOpenBitSet extends LuceneTestCase {
       // aa = a.prevSetBit(aa-1);
       aa--;
       while ((aa >= 0) && (! a.get(aa))) {
-      	aa--;
+        aa--;
       }
       bb = b.prevSetBit(bb-1);
       assertEquals(aa,bb);
@@ -85,7 +85,7 @@ public class TestOpenBitSet extends LuceneTestCase {
       // aa = a.prevSetBit(aa-1);
       aa--;
       while ((aa >= 0) && (! a.get(aa))) {
-      	aa--;
+        aa--;
       }
       bb = (int) b.prevSetBit((long) (bb-1));
       assertEquals(aa,bb);

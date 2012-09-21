@@ -21,11 +21,10 @@ import org.apache.lucene.index.DocValues;
 
 /**
  * <p>
- * This class provides a {@link Field} that enables storing
- * of a per-document byte value for scoring, sorting or value retrieval. Here's an
- * example usage:
+ * Field that stores a per-document <code>byte</code> value for scoring, 
+ * sorting or value retrieval. Here's an example usage:
  * 
- * <pre>
+ * <pre class="prettyprint">
  *   document.add(new ByteDocValuesField(name, (byte) 22));
  * </pre>
  * 
@@ -33,17 +32,26 @@ import org.apache.lucene.index.DocValues;
  * If you also need to store the value, you should add a
  * separate {@link StoredField} instance.
  * 
- * @see DocValues for further information
+ * @see DocValues
  * */
 
-public class ByteDocValuesField extends Field {
+public class ByteDocValuesField extends StoredField {
 
+  /**
+   * Type for 8-bit byte DocValues.
+   */
   public static final FieldType TYPE = new FieldType();
   static {
     TYPE.setDocValueType(DocValues.Type.FIXED_INTS_8);
     TYPE.freeze();
   }
 
+  /** 
+   * Creates a new DocValues field with the specified 8-bit byte value 
+   * @param name field name
+   * @param value 8-bit byte value
+   * @throws IllegalArgumentException if the field name is null.
+   */
   public ByteDocValuesField(String name, byte value) {
     super(name, TYPE);
     fieldsData = Byte.valueOf(value);

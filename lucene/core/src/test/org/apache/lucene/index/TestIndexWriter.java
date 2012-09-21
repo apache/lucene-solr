@@ -908,8 +908,8 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     IndexReader ir = DirectoryReader.open(dir);
-    Document doc2 = ir.document(0);
-    IndexableField f2 = doc2.getField("binary");
+    StoredDocument doc2 = ir.document(0);
+    StorableField f2 = doc2.getField("binary");
     b = f2.binaryValue().bytes;
     assertTrue(b != null);
     assertEquals(17, b.length, 17);
@@ -1165,8 +1165,8 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     IndexReader ir = DirectoryReader.open(dir);
-    Document doc2 = ir.document(0);
-    IndexableField f3 = doc2.getField("binary");
+    StoredDocument doc2 = ir.document(0);
+    StorableField f3 = doc2.getField("binary");
     b = f3.binaryValue().bytes;
     assertTrue(b != null);
     assertEquals(17, b.length, 17);
@@ -1207,8 +1207,8 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(newField("zzz", "1 2 3", customType));
     w.addDocument(doc);
     IndexReader r = w.getReader();
-    Document doc2 = r.document(0);
-    Iterator<IndexableField> it = doc2.getFields().iterator();
+    StoredDocument doc2 = r.document(0);
+    Iterator<StorableField> it = doc2.getFields().iterator();
     assertTrue(it.hasNext());
     Field f = (Field) it.next();
     assertEquals(f.name(), "zzz");
@@ -1275,7 +1275,10 @@ public class TestIndexWriter extends LuceneTestCase {
       Directory dir = newMockDirectory(); // relies on windows semantics
 
       LogMergePolicy mergePolicy = newLogMergePolicy(true);
-      mergePolicy.setNoCFSRatio(1); // This test expects all of its segments to be in CFS
+      
+      // This test expects all of its segments to be in CFS
+      mergePolicy.setNoCFSRatio(1.0);
+      mergePolicy.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
 
       IndexWriter w = new IndexWriter(
           dir,
@@ -1498,9 +1501,9 @@ public class TestIndexWriter extends LuceneTestCase {
 
     assertNoUnreferencedFiles(dir, "no tv files");
     DirectoryReader r0 = DirectoryReader.open(dir);
-    for (IndexReader r : r0.getSequentialSubReaders()) {
-      SegmentInfoPerCommit s = ((SegmentReader) r).getSegmentInfo();
-      assertFalse(((SegmentReader) r).getFieldInfos().hasVectors());
+    for (AtomicReaderContext ctx : r0.leaves()) {
+      SegmentReader sr = (SegmentReader) ctx.reader();
+      assertFalse(sr.getFieldInfos().hasVectors());
     }
     
     r0.close();
@@ -1542,7 +1545,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     @Override
-    public void setReader(Reader input) throws IOException {
+    public void reset() throws IOException {
        this.upto = 0;
        final StringBuilder b = new StringBuilder();
        final char[] buffer = new char[1024];
@@ -1885,5 +1888,51 @@ public class TestIndexWriter extends LuceneTestCase {
     } finally {
       dir.close();
     }
+  }
+
+  // LUCENE-4398
+  public void testRotatingFieldNames() throws Exception {
+    Directory dir = newFSDirectory(_TestUtil.getTempDir("TestIndexWriter.testChangingFields"));
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setRAMBufferSizeMB(0.2);
+    iwc.setMaxBufferedDocs(-1);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    int upto = 0;
+
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+    ft.setOmitNorms(true);
+
+    int firstDocCount = -1;
+    for(int iter=0;iter<10;iter++) {
+      final int startFlushCount = w.getFlushCount();
+      int docCount = 0;
+      while(w.getFlushCount() == startFlushCount) {
+        Document doc = new Document();
+        for(int i=0;i<10;i++) {
+          doc.add(new Field("field" + (upto++), "content", ft));
+        }
+        w.addDocument(doc);
+        docCount++;
+      }
+
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + iter + " flushed after docCount=" + docCount);
+      }
+
+      if (iter == 0) {
+        firstDocCount = docCount;
+      }
+
+      assertTrue("flushed after too few docs: first segment flushed at docCount=" + firstDocCount + ", but current segment flushed after docCount=" + docCount + "; iter=" + iter, ((float) docCount) / firstDocCount > 0.9);
+
+      if (upto > 5000) {
+        // Start re-using field names after a while
+        // ... important because otherwise we can OOME due
+        // to too many FieldInfo instances.
+        upto = 0;
+      }
+    }
+    w.close();
+    dir.close();
   }
 }

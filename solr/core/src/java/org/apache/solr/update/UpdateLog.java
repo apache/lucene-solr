@@ -17,9 +17,9 @@
 
 package org.apache.solr.update;
 
-import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -31,6 +31,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -60,7 +61,19 @@ public class UpdateLog implements PluginInfoInitialized {
   public boolean trace = log.isTraceEnabled();
 
 
-  public enum SyncLevel { NONE, FLUSH, FSYNC }
+  public enum SyncLevel { NONE, FLUSH, FSYNC;
+    public static SyncLevel getSyncLevel(String level){
+      if (level == null) {
+        return SyncLevel.FLUSH;
+      }
+      try{
+        return SyncLevel.valueOf(level.toUpperCase(Locale.ROOT));
+      } catch(Exception ex){
+        log.warn("There was an error reading the SyncLevel - default to " + SyncLevel.FLUSH, ex);
+        return SyncLevel.FLUSH;
+      }
+    }
+  }
   public enum State { REPLAYING, BUFFERING, APPLYING_BUFFERED, ACTIVE }
 
   public static final int ADD = 0x01;
@@ -81,6 +94,8 @@ public class UpdateLog implements PluginInfoInitialized {
     public int deletes;
     public int deleteByQuery;
     public int errors;
+
+    public boolean failed;
 
     @Override
     public String toString() {
@@ -164,6 +179,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
   public void init(PluginInfo info) {
     dataDir = (String)info.initArgs.get("dir");
+    defaultSyncLevel = SyncLevel.getSyncLevel((String)info.initArgs.get("syncLevel"));
   }
 
   public void init(UpdateHandler uhandler, SolrCore core) {
@@ -201,7 +217,7 @@ public class UpdateLog implements PluginInfoInitialized {
         addOldLog(oldLog, false);  // don't remove old logs on startup since more than one may be uncapped.
       } catch (Exception e) {
         SolrException.log(log, "Failure to open existing log file (non fatal) " + f, e);
-        f.delete();
+        deleteFile(f);
       }
     }
 
@@ -211,8 +227,14 @@ public class UpdateLog implements PluginInfoInitialized {
       newestLogsOnStartup.addFirst(ll);
       if (newestLogsOnStartup.size() >= 2) break;
     }
-    
-    versionInfo = new VersionInfo(this, 256);
+
+    try {
+      versionInfo = new VersionInfo(this, 256);
+    } catch (SolrException e) {
+      log.error("Unable to use updateLog: " + e.getMessage(), e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                              "Unable to use updateLog: " + e.getMessage(), e);
+    }
 
     // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
     UpdateLog.RecentUpdates startingUpdates = getRecentUpdates();
@@ -1111,6 +1133,7 @@ public class UpdateLog implements PluginInfoInitialized {
     public void run() {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(DISTRIB_UPDATE_PARAM, FROMLEADER.toString());
+      params.set(DistributedUpdateProcessor.LOG_REPLAY, "true");
       req = new LocalSolrQueryRequest(uhandler.core, params);
       rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));    // setting request info will help logging
@@ -1119,9 +1142,17 @@ public class UpdateLog implements PluginInfoInitialized {
         for (TransactionLog translog : translogs) {
           doReplay(translog);
         }
+      } catch (SolrException e) {
+        if (e.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
+          SolrException.log(log, e);
+          recoveryInfo.failed = true;
+        } else {
+          recoveryInfo.errors++;
+          SolrException.log(log, e);
+        }
       } catch (Throwable e) {
         recoveryInfo.errors++;
-        SolrException.log(log,e);
+        SolrException.log(log, e);
       } finally {
         // change the state while updates are still blocked to prevent races
         state = State.ACTIVE;
@@ -1269,6 +1300,13 @@ public class UpdateLog implements PluginInfoInitialized {
             recoveryInfo.errors++;
             loglog.warn("REPLAY_ERR: Unexpected log entry or corrupt log.  Entry=" + o, cl);
             // would be caused by a corrupt transaction log
+          }  catch (SolrException ex) {
+            if (ex.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
+              throw ex;
+            }
+            recoveryInfo.errors++;
+            loglog.warn("REYPLAY_ERR: IOException reading log", ex);
+            // could be caused by an incomplete flush if recovering from log
           } catch (Throwable ex) {
             recoveryInfo.errors++;
             loglog.warn("REPLAY_ERR: Exception replaying log", ex);
@@ -1320,6 +1358,26 @@ public class UpdateLog implements PluginInfoInitialized {
       Integer.MAX_VALUE, 1, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
       new DefaultSolrThreadFactory("recoveryExecutor"));
 
+
+  public static void deleteFile(File file) {
+    boolean success = false;
+    try {
+      success = file.delete();
+      if (!success) {
+        log.error("Error deleting file: " + file);
+      }
+    } catch (Exception e) {
+      log.error("Error deleting file: " + file, e);
+    }
+
+    if (!success) {
+      try {
+        file.deleteOnExit();
+      } catch (Exception e) {
+        log.error("Error deleting file on exit: " + file, e);
+      }
+    }
+  }
 }
 
 

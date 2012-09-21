@@ -26,6 +26,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -100,7 +101,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     TopDocs td = searcher.search(q, 10);
     ScoreDoc[] sd = td.scoreDocs;
     for (int i = 0; i < sd.length; i++) {
-      Document doc = searcher.doc(sd[i].doc);
+      StoredDocument doc = searcher.doc(sd[i].doc);
       String id = doc.get("id");
       assertTrue(qString + "matched doc#" + id + " not expected", expecteds
           .contains(id));

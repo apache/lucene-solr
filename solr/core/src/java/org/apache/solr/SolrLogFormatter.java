@@ -19,7 +19,7 @@ package org.apache.solr;
 
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -99,7 +99,7 @@ public class SolrLogFormatter extends Formatter {
     static int maxCoreNum;
     String shortId;
     String url;
-    Map<String, String> coreProps;
+    Map<String, Object> coreProps;
   }
 
   Map<SolrCore, CoreInfo> coreInfoMap = new WeakHashMap<SolrCore, CoreInfo>();    // TODO: use something that survives across a core reload?
@@ -200,7 +200,7 @@ sb.append("(group_name=").append(tg.getName()).append(")");
           info.coreProps = getCoreProps(zkController, core);
         }
 
-        Map<String, String> coreProps = getCoreProps(zkController, core);
+        Map<String, Object> coreProps = getCoreProps(zkController, core);
         if(!coreProps.equals(info.coreProps)) {
           info.coreProps = coreProps;
           final String corePropsString = "coll:" + core.getCoreDescriptor().getCloudDescriptor().getCollectionName() + " core:" + core.getName() + " props:" + coreProps;
@@ -261,9 +261,9 @@ sb.append("(group_name=").append(tg.getName()).append(")");
     return sb.toString();
   }
 
-  private Map<String,String> getCoreProps(ZkController zkController, SolrCore core) {
+  private Map<String,Object> getCoreProps(ZkController zkController, SolrCore core) {
     final String collection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-    ZkNodeProps props = zkController.getClusterState().getShardProps(collection,  ZkStateReader.getCoreNodeName(zkController.getNodeName(), core.getName()));
+    Replica props = zkController.getClusterState().getShardProps(collection,  ZkStateReader.getCoreNodeName(zkController.getNodeName(), core.getName()));
     if(props!=null) {
       return props.getProperties(); 
     }

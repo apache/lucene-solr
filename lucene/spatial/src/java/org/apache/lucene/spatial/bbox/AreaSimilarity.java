@@ -57,7 +57,7 @@ public class AreaSimilarity implements BBoxSimilarity {
 
   public AreaSimilarity(Rectangle queryExtent, double queryPower, double targetPower) {
     this.queryExtent = queryExtent;
-    this.queryArea = queryExtent.getArea();
+    this.queryArea = queryExtent.getArea(null);
 
     this.queryPower = queryPower;
     this.targetPower = targetPower;
@@ -84,7 +84,7 @@ public class AreaSimilarity implements BBoxSimilarity {
     if (target == null || queryArea <= 0) {
       return 0;
     }
-    double targetArea = target.getArea();
+    double targetArea = target.getArea(null);
     if (targetArea <= 0) {
       return 0;
     }

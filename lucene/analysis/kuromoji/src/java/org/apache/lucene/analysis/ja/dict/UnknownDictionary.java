@@ -40,7 +40,7 @@ public final class UnknownDictionary extends BinaryDictionary {
     int length = 1;
     for (int i = 1; i < len; i++) {
       if (characterIdOfFirstCharacter == characterDefinition.getCharacterClass(text[offset+i])){
-        length++;    			
+        length++;
       } else {
         break;
       }

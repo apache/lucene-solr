@@ -22,12 +22,13 @@ import java.util.List;
 import org.apache.lucene.search.SearcherManager; // javadocs
 import org.apache.lucene.store.*;
 
-/** Instances of this reader type can only
-  be used to get stored fields from the underlying AtomicReaders,
-  but it is not possible to directly retrieve postings. To do that, get
-  the sub-readers via {@link #getSequentialSubReaders}.
-  Alternatively, you can mimic an {@link AtomicReader} (with a serious slowdown),
-  by wrapping composite readers with {@link SlowCompositeReaderWrapper}.
+/**
+ Instances of this reader type can only
+ be used to get stored fields from the underlying AtomicReaders,
+ but it is not possible to directly retrieve postings. To do that, get
+ the {@link AtomicReaderContext} for all sub-readers via {@link #leaves()}.
+ Alternatively, you can mimic an {@link AtomicReader} (with a serious slowdown),
+ by wrapping composite readers with {@link SlowCompositeReaderWrapper}.
  
  <p>IndexReader instances for indexes on disk are usually constructed
  with a call to one of the static <code>DirectoryReader.open()</code> methods,
@@ -56,6 +57,8 @@ public abstract class CompositeReader extends IndexReader {
 
   private volatile CompositeReaderContext readerContext = null; // lazy init
 
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
   protected CompositeReader() { 
     super();
   }
@@ -78,16 +81,18 @@ public abstract class CompositeReader extends IndexReader {
   }
   
   /** Expert: returns the sequential sub readers that this
-   *  reader is logically composed of. It contrast to previous
-   *  Lucene versions may not return null.
-   *  If this method returns an empty array, that means this
-   *  reader is a null reader (for example a MultiReader
-   *  that has no sub readers).
+   *  reader is logically composed of. This method may not
+   *  return {@code null}.
+   *  
+   *  <p><b>NOTE:</b> In contrast to previous Lucene versions this method
+   *  is no longer public, code that wants to get all {@link AtomicReader}s
+   *  this composite is composed of should use {@link IndexReader#leaves()}.
+   * @see IndexReader#leaves()
    */
-  public abstract List<? extends IndexReader> getSequentialSubReaders();
+  protected abstract List<? extends IndexReader> getSequentialSubReaders();
 
   @Override
-  public final CompositeReaderContext getTopReaderContext() {
+  public final CompositeReaderContext getContext() {
     ensureOpen();
     // lazy init without thread safety for perf reasons: Building the readerContext twice does not hurt!
     if (readerContext == null) {

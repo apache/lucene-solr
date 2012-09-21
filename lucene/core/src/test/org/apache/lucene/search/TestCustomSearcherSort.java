@@ -194,13 +194,6 @@ public class TestCustomSearcherSort extends LuceneTestCase {
       this.switcher = switcher;
     }
     
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.apache.lucene.search.Searchable#search(org.apache.lucene.search.Query
-     * , org.apache.lucene.search.Filter, int, org.apache.lucene.search.Sort)
-     */
     @Override
     public TopFieldDocs search(Query query, Filter filter, int nDocs, Sort sort)
         throws IOException {
@@ -211,13 +204,6 @@ public class TestCustomSearcherSort extends LuceneTestCase {
       return super.search(bq, filter, nDocs, sort);
     }
     
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.apache.lucene.search.Searchable#search(org.apache.lucene.search.Query
-     * , org.apache.lucene.search.Filter, int)
-     */
     @Override
     public TopDocs search(Query query, Filter filter, int nDocs)
         throws IOException {

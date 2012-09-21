@@ -326,12 +326,12 @@ public class TestJapaneseTokenizer extends BaseTokenStreamTestCase {
   
   public void testSegmentation() throws Exception {
     // Skip tests for Michelle Kwan -- UniDic segments Kwan as ク ワン
-    //		String input = "ミシェル・クワンが優勝しました。スペースステーションに行きます。うたがわしい。";
-    //		String[] surfaceForms = {
-    //				"ミシェル", "・", "クワン", "が", "優勝", "し", "まし", "た", "。",
-    //				"スペース", "ステーション", "に", "行き", "ます", "。",
-    //				"うたがわしい", "。"
-    //		};
+    //   String input = "ミシェル・クワンが優勝しました。スペースステーションに行きます。うたがわしい。";
+    //   String[] surfaceForms = {
+        //        "ミシェル", "・", "クワン", "が", "優勝", "し", "まし", "た", "。",
+        //        "スペース", "ステーション", "に", "行き", "ます", "。",
+        //        "うたがわしい", "。"
+    //   };
     String input = "スペースステーションに行きます。うたがわしい。";
     String[] surfaceForms = {
         "スペース", "ステーション", "に", "行き", "ます", "。",

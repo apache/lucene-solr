@@ -19,7 +19,6 @@ package org.apache.solr.search;
 
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
-import com.spatial4j.core.distance.DistanceUnits;
 import com.spatial4j.core.distance.DistanceUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -79,7 +78,7 @@ public class SpatialFilterQParser extends QParser {
 
       if (type instanceof SpatialQueryable) {
         double radius = localParams.getDouble(SpatialParams.SPHERE_RADIUS, DistanceUtils.EARTH_MEAN_RADIUS_KM);
-        SpatialOptions opts = new SpatialOptions(pointStr, dist, sf, measStr, radius, DistanceUnits.KILOMETERS);
+        SpatialOptions opts = new SpatialOptions(pointStr, dist, sf, measStr, radius);
         opts.bbox = bbox;
         result = ((SpatialQueryable)type).createSpatialQuery(this, opts);
       } else {

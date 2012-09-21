@@ -240,7 +240,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
 
     for(int docCount=0;docCount<numDocs;docCount++) {
       Document doc = new Document();
-      doc.add(new IntField("id", docCount, Field.Store.NO));
+      doc.add(new IntField("id", docCount, Field.Store.YES));
       List<Token> tokens = new ArrayList<Token>();
       final int numTokens = atLeast(100);
       //final int numTokens = atLeast(20);
@@ -289,9 +289,9 @@ public class TestPostingsOffsets extends LuceneTestCase {
     w.close();
 
     final String[] terms = new String[] {"a", "b", "c", "d"};
-    for(IndexReader reader : r.getSequentialSubReaders()) {
+    for(AtomicReaderContext ctx : r.leaves()) {
       // TODO: improve this
-      AtomicReader sub = (AtomicReader) reader;
+      AtomicReader sub = ctx.reader();
       //System.out.println("\nsub=" + sub);
       final TermsEnum termsEnum = sub.fields().terms("content").iterator(null);
       DocsEnum docs = null;
@@ -444,9 +444,9 @@ public class TestPostingsOffsets extends LuceneTestCase {
         makeToken("foo", 1, 0, 3),
         makeToken("foo", 0, 0, 3),
         makeToken("foo", 0, 0, 3)
-     });
+      });
   }
-  
+
   public void testLegalbutVeryLargeOffsets() throws Exception {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));

@@ -24,6 +24,10 @@ import org.apache.lucene.search.Explanation;
  * @lucene.experimental
  */
 public class AfterEffectL extends AfterEffect {
+  
+  /** Sole constructor: parameter-free */
+  public AfterEffectL() {}
+
   @Override
   public final float score(BasicStats stats, float tfn) {
     return 1 / (tfn + 1);

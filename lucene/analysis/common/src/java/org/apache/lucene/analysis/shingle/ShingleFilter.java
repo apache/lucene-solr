@@ -395,7 +395,7 @@ public final class ShingleFilter extends TokenFilter {
       exhausted = true;
     }
     return newTarget;
-	}
+  }
 
   /**
    * <p>Fills {@link #inputWindow} with input stream tokens, if available, 

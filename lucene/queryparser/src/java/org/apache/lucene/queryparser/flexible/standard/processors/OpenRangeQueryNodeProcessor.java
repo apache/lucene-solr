@@ -19,6 +19,7 @@ package org.apache.lucene.queryparser.flexible.standard.processors;
 
 import java.util.List;
 
+import org.apache.lucene.search.TermRangeQuery; // javadocs
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
@@ -26,6 +27,9 @@ import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessor
 import org.apache.lucene.queryparser.flexible.core.util.UnescapedCharSequence;
 import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 
+/**
+ * Processes {@link TermRangeQuery}s with open ranges.
+ */
 public class OpenRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
   
   final public static String OPEN_RANGE_TOKEN = "*";

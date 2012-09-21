@@ -29,10 +29,10 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * In order to increase search efficiency, this filter puts hyphenated words broken into two lines back together.
  * This filter should be used on indexing time only.
  * Example field definition in schema.xml:
- * <pre>
+ * <pre class="prettyprint">
  * &lt;fieldtype name="text" class="solr.TextField" positionIncrementGap="100"&gt;
- * 	&lt;analyzer type="index"&gt;
- * 		&lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
+ *  &lt;analyzer type="index"&gt;
+ *    &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *      &lt;filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/&gt;
  *      &lt;filter class="solr.StopFilterFactory" ignoreCase="true"/&gt;
  *      &lt;filter class="solr.HyphenatedWordsFilterFactory"/&gt;

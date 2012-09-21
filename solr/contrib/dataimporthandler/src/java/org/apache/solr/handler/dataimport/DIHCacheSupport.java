@@ -238,15 +238,13 @@ public class DIHCacheSupport {
    */
   public static final String CACHE_FOREIGN_KEY = "cacheLookup";
 
-
-
   /**
    * <p>
    * Specify the Primary Key field from this Entity to map the input records
    * with
    * </p>
    */
-  public static final String CACHE_PRIMARY_KEY = "cachePk";
+  public static final String CACHE_PRIMARY_KEY = "cacheKey";
   /**
    * <p>
    * If true, a pre-existing cache is re-opened for read-only access.
