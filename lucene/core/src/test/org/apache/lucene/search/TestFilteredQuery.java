@@ -383,12 +383,13 @@ public class TestFilteredQuery extends LuceneTestCase {
   }
   
   /*
-   * Test if the QueryFirst strategy calls the bits only if
-   * the document has been matched by the query and not otherwise
+   * Test if the QueryFirst strategy calls the bits only if the document has
+   * been matched by the query and not otherwise
    */
   public void testQueryFirstFilterStrategy() throws IOException {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter (random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     int numDocs = atLeast(50);
     int totalDocsWithZero = 0;
     for (int i = 0; i < numDocs; i++) {
@@ -397,63 +398,69 @@ public class TestFilteredQuery extends LuceneTestCase {
       if (num == 0) {
         totalDocsWithZero++;
       }
-      doc.add (newTextField("field", ""+num, Field.Store.YES));
-      writer.addDocument (doc);  
+      doc.add(newTextField("field", "" + num, Field.Store.YES));
+      writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
-    writer.close ();
+    writer.close();
     
     IndexSearcher searcher = newSearcher(reader);
-    Query query = new FilteredQuery(new TermQuery(new Term("field", "0")), new Filter() {
-      @Override
-      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs)
-          throws IOException {
-        final boolean nullBitset = random().nextInt(10) == 5;
-        final AtomicReader reader = context.reader();
-        DocsEnum termDocsEnum = reader.termDocsEnum(new Term("field", "0"));
-        final BitSet bitSet = new BitSet(reader.maxDoc());
-        if (termDocsEnum != null) {
-          int d;
-          while((d = termDocsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
-            bitSet.set(d, true);
-          }
-        }
-        return new DocIdSet() {
-          
+    Query query = new FilteredQuery(new TermQuery(new Term("field", "0")),
+        new Filter() {
           @Override
-          public Bits bits() throws IOException {
-            if (nullBitset) {
-              return null;
+          public DocIdSet getDocIdSet(AtomicReaderContext context,
+              Bits acceptDocs) throws IOException {
+            final boolean nullBitset = random().nextInt(10) == 5;
+            final AtomicReader reader = context.reader();
+            DocsEnum termDocsEnum = reader.termDocsEnum(new Term("field", "0"));
+            if (termDocsEnum == null) {
+              return null; // no docs -- return null
             }
-            return new Bits() {
-
+            final BitSet bitSet = new BitSet(reader.maxDoc());
+            int d;
+            while ((d = termDocsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+              bitSet.set(d, true);
+            }
+            return new DocIdSet() {
+              
               @Override
-              public boolean get(int index) {
-                assertTrue("filter was called for a non-matching doc", bitSet.get(index));
-                return bitSet.get(index);
+              public Bits bits() throws IOException {
+                if (nullBitset) {
+                  return null;
+                }
+                return new Bits() {
+                  
+                  @Override
+                  public boolean get(int index) {
+                    assertTrue("filter was called for a non-matching doc",
+                        bitSet.get(index));
+                    return bitSet.get(index);
+                  }
+                  
+                  @Override
+                  public int length() {
+                    return bitSet.length();
+                  }
+                  
+                };
               }
-
+              
               @Override
-              public int length() {
-                return bitSet.length();
+              public DocIdSetIterator iterator() throws IOException {
+                assertTrue(
+                    "iterator should not be called if bitset is present",
+                    nullBitset);
+                return reader.termDocsEnum(new Term("field", "0"));
               }
               
             };
           }
-          @Override
-          public DocIdSetIterator iterator() throws IOException {
-            assertTrue("iterator should not be called if bitset is present", nullBitset);
-            return reader.termDocsEnum(new Term("field", "0"));
-          }
-          
-        };
-      }
-    }, FilteredQuery.QUERY_FIRST_FILTER_STRATEGY);
+        }, FilteredQuery.QUERY_FIRST_FILTER_STRATEGY);
     
     TopDocs search = searcher.search(query, 10);
     assertEquals(totalDocsWithZero, search.totalHits);
     IOUtils.close(reader, writer, directory);
-     
+    
   }
   
   /*
@@ -491,6 +498,9 @@ public class TestFilteredQuery extends LuceneTestCase {
           @Override
           public DocIdSetIterator iterator() throws IOException {
             final DocsEnum termDocsEnum = context.reader().termDocsEnum(new Term("field", "0"));
+            if (termDocsEnum == null) {
+              return null;
+            }
             return new DocIdSetIterator() {
               boolean nextCalled;
               boolean advanceCalled;
