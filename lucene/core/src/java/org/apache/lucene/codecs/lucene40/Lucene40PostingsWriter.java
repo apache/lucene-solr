@@ -92,10 +92,14 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
 
   // private String segment;
 
+  /** Creates a {@link Lucene40PostingsWriter}, with the
+   *  {@link #DEFAULT_SKIP_INTERVAL}. */
   public Lucene40PostingsWriter(SegmentWriteState state) throws IOException {
     this(state, DEFAULT_SKIP_INTERVAL);
   }
   
+  /** Creates a {@link Lucene40PostingsWriter}, with the
+   *  specified {@code skipInterval}. */
   public Lucene40PostingsWriter(SegmentWriteState state, int skipInterval) throws IOException {
     super();
     this.skipInterval = skipInterval;

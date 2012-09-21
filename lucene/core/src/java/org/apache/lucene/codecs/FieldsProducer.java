@@ -29,5 +29,11 @@ import org.apache.lucene.index.Fields;
  */
 
 public abstract class FieldsProducer extends Fields implements Closeable {
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected FieldsProducer() {
+  }
+
+  @Override
   public abstract void close() throws IOException;
 }

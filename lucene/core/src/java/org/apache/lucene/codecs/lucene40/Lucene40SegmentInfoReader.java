@@ -40,6 +40,10 @@ import org.apache.lucene.util.IOUtils;
  */
 public class Lucene40SegmentInfoReader extends SegmentInfoReader {
 
+  /** Sole constructor. */
+  public Lucene40SegmentInfoReader() {
+  }
+
   @Override
   public SegmentInfo read(Directory dir, String segment, IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segment, "", Lucene40SegmentInfoFormat.SI_EXTENSION);

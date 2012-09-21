@@ -16,6 +16,7 @@ package org.apache.lucene.codecs.lucene40;
  * the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -85,6 +86,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
   private IndexOutput fieldsStream;
   private IndexOutput indexStream;
 
+  /** Sole constructor. */
   public Lucene40StoredFieldsWriter(Directory directory, String segment, IOContext context) throws IOException {
     assert directory != null;
     this.directory = directory;

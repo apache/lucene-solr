@@ -26,6 +26,10 @@ import org.apache.lucene.index.SegmentReadState;
  * format for normalization factors
  */
 public abstract class NormsFormat {
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected NormsFormat() {
+  }
 
   /** Returns a {@link PerDocConsumer} to write norms to the
    *  index. */

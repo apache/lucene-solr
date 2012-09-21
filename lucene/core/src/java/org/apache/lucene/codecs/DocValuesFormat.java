@@ -28,6 +28,10 @@ import org.apache.lucene.index.SegmentReadState;
  * @lucene.experimental
  */
 public abstract class DocValuesFormat {
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected DocValuesFormat() {
+  }
 
   /** Consumes (writes) doc values during indexing. */
   public abstract PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException;

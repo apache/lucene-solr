@@ -49,6 +49,11 @@ import org.apache.lucene.util.FixedBitSet;
  */
 public abstract class PostingsConsumer {
 
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected PostingsConsumer() {
+  }
+
   /** Adds a new doc in this term. 
    * <code>freq</code> will be -1 when term frequencies are omitted
    * for the field. */

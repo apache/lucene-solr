@@ -274,10 +274,16 @@ public final class Lucene40PostingsFormat extends PostingsFormat {
   private final int minBlockSize;
   private final int maxBlockSize;
 
+  /** Creates {@code Lucene40PostingsFormat} with default
+   *  settings. */
   public Lucene40PostingsFormat() {
     this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
   }
 
+  /** Creates {@code Lucene40PostingsFormat} with custom
+   *  values for {@code minBlockSize} and {@code
+   *  maxBlockSize} passed to block terms dictionary.
+   *  @see BlockTreeTermsWriter#BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int) */
   public Lucene40PostingsFormat(int minBlockSize, int maxBlockSize) {
     super("Lucene40");
     this.minBlockSize = minBlockSize;

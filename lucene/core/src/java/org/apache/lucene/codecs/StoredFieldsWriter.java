@@ -44,6 +44,11 @@ import org.apache.lucene.index.AtomicReader;
  */
 public abstract class StoredFieldsWriter implements Closeable {
   
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected StoredFieldsWriter() {
+  }
+
   /** Called before writing the stored fields of the document.
    *  {@link #writeField(FieldInfo, StorableField)} will be called
    *  <code>numStoredFields</code> times. Note that this is
@@ -109,7 +114,9 @@ public abstract class StoredFieldsWriter implements Closeable {
     startDocument(storedCount);
 
     for (StorableField field : doc) {
-        writeField(fieldInfos.fieldInfo(field.name()), field);
+      writeField(fieldInfos.fieldInfo(field.name()), field);
     }
   }
+
+  public abstract void close() throws IOException;
 }

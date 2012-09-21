@@ -40,11 +40,16 @@ public abstract class PostingsBaseFormat {
    *  reading the index */
   public final String name;
   
+  /** Sole constructor. */
   protected PostingsBaseFormat(String name) {
     this.name = name;
   }
 
+  /** Creates the {@link PostingsReaderBase} for this
+   *  format. */
   public abstract PostingsReaderBase postingsReaderBase(SegmentReadState state) throws IOException;
 
+  /** Creates the {@link PostingsWriterBase} for this
+   *  format. */
   public abstract PostingsWriterBase postingsWriterBase(SegmentWriteState state) throws IOException;
 }

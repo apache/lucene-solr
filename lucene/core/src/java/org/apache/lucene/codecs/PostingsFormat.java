@@ -42,7 +42,9 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
   private static final NamedSPILoader<PostingsFormat> loader =
     new NamedSPILoader<PostingsFormat>(PostingsFormat.class);
 
+  /** Zero-length {@code PostingsFormat} array. */
   public static final PostingsFormat[] EMPTY = new PostingsFormat[0];
+
   /** Unique name that's used to retrieve this format when
    *  reading the index.
    */

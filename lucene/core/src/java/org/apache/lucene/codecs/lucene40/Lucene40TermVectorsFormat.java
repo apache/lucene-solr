@@ -115,6 +115,10 @@ import org.apache.lucene.store.IOContext;
  */
 public class Lucene40TermVectorsFormat extends TermVectorsFormat {
 
+  /** Sole constructor. */
+  public Lucene40TermVectorsFormat() {
+  }
+  
   @Override
   public TermVectorsReader vectorsReader(Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context) throws IOException {
     return new Lucene40TermVectorsReader(directory, segmentInfo, fieldInfos, context);

@@ -57,6 +57,7 @@ public class Lucene40Codec extends Codec {
     }
   };
 
+  /** Sole constructor. */
   public Lucene40Codec() {
     super("Lucene40");
   }

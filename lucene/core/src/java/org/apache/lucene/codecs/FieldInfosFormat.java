@@ -26,6 +26,11 @@ import org.apache.lucene.index.FieldInfos; // javadocs
  * @lucene.experimental
  */
 public abstract class FieldInfosFormat {
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected FieldInfosFormat() {
+  }
+
   /** Returns a {@link FieldInfosReader} to read field infos
    *  from the index */
   public abstract FieldInfosReader getFieldInfosReader() throws IOException;

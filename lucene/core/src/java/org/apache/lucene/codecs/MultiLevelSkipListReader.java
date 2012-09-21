@@ -17,6 +17,7 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -35,7 +36,7 @@ import org.apache.lucene.util.MathUtil;
  * @lucene.experimental
  */
 
-public abstract class MultiLevelSkipListReader {
+public abstract class MultiLevelSkipListReader implements Closeable {
   /** the maximum number of skip levels possible for this index */
   protected int maxNumberOfSkipLevels; 
   
@@ -53,20 +54,36 @@ public abstract class MultiLevelSkipListReader {
   
   private int docCount;
   private boolean haveSkipped;
-  
-  private IndexInput[] skipStream;    // skipStream for each level
-  private long skipPointer[];         // the start pointer of each skip level
-  private int skipInterval[];         // skipInterval of each level
-  private int[] numSkipped;           // number of docs skipped per level
-    
-  protected int[] skipDoc;            // doc id of current skip entry per level 
-  private int lastDoc;                // doc id of last read skip entry with docId <= target
-  private long[] childPointer;        // child pointer of current skip entry per level
-  private long lastChildPointer;      // childPointer of last read skip entry with docId <= target
+
+  /** skipStream for each level. */
+  private IndexInput[] skipStream;
+
+  /** The start pointer of each skip level. */
+  private long skipPointer[];
+
+  /**  skipInterval of each level. */
+  private int skipInterval[];
+
+  /** Number of docs skipped per level. */
+  private int[] numSkipped;
+
+  /** Doc id of current skip entry per level. */
+  protected int[] skipDoc;            
+
+  /** Doc id of last read skip entry with docId &lt;= target. */
+  private int lastDoc;
+
+  /** Child pointer of current skip entry per level. */
+  private long[] childPointer;
+
+  /** childPointer of last read skip entry with docId &lt;=
+   *  target. */
+  private long lastChildPointer;
   
   private boolean inputIsBuffered;
   private final int skipMultiplier;
 
+  /** Creates a {@code MultiLevelSkipListReader}. */
   protected MultiLevelSkipListReader(IndexInput skipStream, int maxSkipLevels, int skipInterval, int skipMultiplier) {
     this.skipStream = new IndexInput[maxSkipLevels];
     this.skipPointer = new long[maxSkipLevels];
@@ -85,7 +102,9 @@ public abstract class MultiLevelSkipListReader {
     skipDoc = new int[maxSkipLevels];
   }
 
-  // skipMultiplier and skipInterval are the same:
+  /** Creates a {@code MultiLevelSkipListReader}, where
+   *  {@code skipInterval} and {@code skipMultiplier} are
+   *  the same. */
   protected MultiLevelSkipListReader(IndexInput skipStream, int maxSkipLevels, int skipInterval) {
     this(skipStream, maxSkipLevels, skipInterval, skipInterval);
   }
@@ -167,6 +186,7 @@ public abstract class MultiLevelSkipListReader {
     }
   }
 
+  @Override
   public void close() throws IOException {
     for (int i = 1; i < skipStream.length; i++) {
       if (skipStream[i] != null) {
@@ -175,7 +195,7 @@ public abstract class MultiLevelSkipListReader {
     }
   }
 
-  /** initializes the reader */
+  /** Initializes the reader, for reuse on a new term. */
   public void init(long skipPointer, int df) {
     this.skipPointer[0] = skipPointer;
     this.docCount = df;

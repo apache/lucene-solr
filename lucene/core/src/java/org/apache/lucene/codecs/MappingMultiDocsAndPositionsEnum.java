@@ -42,6 +42,10 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
   int doc = -1;
   private MergeState mergeState;
 
+  /** Sole constructor. */
+  public MappingMultiDocsAndPositionsEnum() {
+  }
+
   MappingMultiDocsAndPositionsEnum reset(MultiDocsAndPositionsEnum postingsEnum) {
     this.numSubs = postingsEnum.getNumSubs();
     this.subs = postingsEnum.getSubs();
@@ -50,14 +54,19 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
     return this;
   }
 
+  /** Sets the {@link MergeState}, which is used to re-map
+   *  document IDs. */
   public void setMergeState(MergeState mergeState) {
     this.mergeState = mergeState;
   }
   
+  /** How many sub-readers we are merging.
+   *  @see #getSubs */
   public int getNumSubs() {
     return numSubs;
   }
 
+  /** Returns sub-readers we are merging. */
   public EnumWithSlice[] getSubs() {
     return subs;
   }

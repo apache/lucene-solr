@@ -1,21 +1,5 @@
 package org.apache.lucene.codecs.lucene40;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
-
-import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.FieldInfosReader;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -33,6 +17,22 @@ import org.apache.lucene.store.IndexInput;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.codecs.FieldInfosReader;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+
 /**
  * Lucene 4.0 FieldInfos reader.
  * 
@@ -40,6 +40,10 @@ import org.apache.lucene.store.IndexInput;
  * @see Lucene40FieldInfosFormat
  */
 public class Lucene40FieldInfosReader extends FieldInfosReader {
+
+  /** Sole constructor. */
+  public Lucene40FieldInfosReader() {
+  }
 
   @Override
   public FieldInfos read(Directory directory, String segmentName, IOContext iocontext) throws IOException {

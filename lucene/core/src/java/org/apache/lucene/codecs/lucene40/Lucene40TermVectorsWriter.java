@@ -64,8 +64,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   private final String segment;
   private IndexOutput tvx = null, tvd = null, tvf = null;
   
- 
-
+  /** Sole constructor. */
   public Lucene40TermVectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
     this.directory = directory;
     this.segment = segment;

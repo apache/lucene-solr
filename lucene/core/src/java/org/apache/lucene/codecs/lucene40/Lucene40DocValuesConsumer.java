@@ -36,9 +36,11 @@ public class Lucene40DocValuesConsumer extends DocValuesWriterBase {
   private final Directory mainDirectory;
   private Directory directory;
   private final String segmentSuffix;
+
+  /** Segment suffix used when writing doc values index files. */
   public final static String DOC_VALUES_SEGMENT_SUFFIX = "dv";
 
-
+  /** Sole constructor. */
   public Lucene40DocValuesConsumer(PerDocWriteState state, String segmentSuffix) {
     super(state);
     this.segmentSuffix = segmentSuffix;
