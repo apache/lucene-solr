@@ -109,6 +109,12 @@ public abstract class Lookup {
     }
   }
   
+  /**
+   * Sole constructor. (For invocation by subclass 
+   * constructors, typically implicit.)
+   */
+  public Lookup() {}
+  
   /** Build lookup from a dictionary. Some implementations may require sorted
    * or unsorted keys from the dictionary's iterator - use
    * {@link SortedTermFreqIteratorWrapper} or

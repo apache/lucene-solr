@@ -42,7 +42,9 @@ public class FSTCompletion {
    * A single completion for a given key.
    */
   public static final class Completion implements Comparable<Completion> {
+    /** UTF-8 bytes of the suggestion */
     public final BytesRef utf8;
+    /** source bucket (weight) of the suggestion */
     public final int bucket;
 
     Completion(BytesRef key, int bucket) {
@@ -95,6 +97,7 @@ public class FSTCompletion {
   private boolean higherWeightsFirst;
 
   /**
+   * Constructs an FSTCompletion, specifying higherWeightsFirst and exactFirst.
    * @param automaton
    *          Automaton with completions. See {@link FSTCompletionBuilder}.
    * @param higherWeightsFirst
