@@ -24,6 +24,11 @@ import org.apache.lucene.spatial.util.ShapeFieldCacheProvider;
 import org.apache.lucene.util.BytesRef;
 
 /**
+ * Implementation of {@link ShapeFieldCacheProvider} designed for {@link PrefixTreeStrategy}s.
+ *
+ * Note, due to the fragmented representation of Shapes in these Strategies, this implementation
+ * can only retrieve the central {@link Point} of the original Shapes.
+ *
  * @lucene.internal
  */
 public class PointPrefixTreeFieldCacheProvider extends ShapeFieldCacheProvider<Point> {
