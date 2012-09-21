@@ -228,39 +228,39 @@
   <target name="documentation-lint" depends="documentation">
     <sequential>
       <check-broken-links dir="build/docs"/>
-      <!-- TODO: change this level=class -->
-      <check-missing-javadocs dir="build/docs" level="package"/>
+      <!-- TODO: change this level=method -->
+      <check-missing-javadocs dir="build/docs" level="class"/>
       <!-- too many classes to fix overall to just enable
-           the above to be level="class" right now, but we
+           the above to be level="method" right now, but we
            can prevent the modules that don't have problems
            from getting any worse -->
-      <check-missing-javadocs dir="build/docs/analyzers-common" level="class"/>
+      <!-- analyzers-common: problems -->
       <check-missing-javadocs dir="build/docs/analyzers-icu" level="method"/>
-      <check-missing-javadocs dir="build/docs/analyzers-kuromoji" level="class"/>
+      <!-- analyzers-kuromoji: problems -->
       <check-missing-javadocs dir="build/docs/analyzers-morfologik" level="method"/>
       <check-missing-javadocs dir="build/docs/analyzers-phonetic" level="method"/>
-      <check-missing-javadocs dir="build/docs/analyzers-smartcn" level="class"/>
+      <!-- analyzers-smartcn: problems -->
       <check-missing-javadocs dir="build/docs/analyzers-stempel" level="method"/>
-      <check-missing-javadocs dir="build/docs/analyzers-uima" level="class"/>
-      <check-missing-javadocs dir="build/docs/benchmark" level="class"/>
+      <!-- analyzers-uima: problems -->
+      <!-- benchmark: problems -->
       <check-missing-javadocs dir="build/docs/classification" level="method"/>
-      <check-missing-javadocs dir="build/docs/codecs" level="class"/>
-      <check-missing-javadocs dir="build/docs/core" level="class"/>
+      <!-- codecs: problems -->
+      <!-- core: problems -->
       <check-missing-javadocs dir="build/docs/demo" level="method"/>
-      <check-missing-javadocs dir="build/docs/facet" level="class"/>
-      <check-missing-javadocs dir="build/docs/grouping" level="class"/>
-      <check-missing-javadocs dir="build/docs/highlighter" level="class"/>
+      <!-- facet: problems -->
+      <!-- grouping: problems -->
+      <!-- highlighter: problems -->
       <check-missing-javadocs dir="build/docs/join" level="method"/>
       <check-missing-javadocs dir="build/docs/memory" level="method"/>
-      <check-missing-javadocs dir="build/docs/misc" level="class"/>
-      <check-missing-javadocs dir="build/docs/queries" level="class"/>
+      <!-- misc: problems -->
+      <!-- queries: problems -->
       <!-- queryparser: problems -->
-      <check-missing-javadocs dir="build/docs/sandbox" level="class"/>
-      <check-missing-javadocs dir="build/docs/spatial" level="class"/>
-      <check-missing-javadocs dir="build/docs/suggest" level="class"/>
-      <check-missing-javadocs dir="build/docs/test-framework" level="class"/>
+      <!-- sandbox: problems -->
+      <!-- spatial: problems -->
+      <!-- suggest: problems -->
+      <!-- test-framework: problems -->
 
-      <!-- too much to fix for now, but enforce full javadocs for key packages -->
+      <!-- too much to fix core/ for now, but enforce full javadocs for key packages -->
       <check-missing-javadocs dir="build/docs/core/org/apache/lucene/analysis" level="method"/>
       <check-missing-javadocs dir="build/docs/core/org/apache/lucene/document" level="method"/>
       <check-missing-javadocs dir="build/docs/core/org/apache/lucene/search/similarities" level="method"/>
