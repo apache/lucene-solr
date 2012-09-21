@@ -22,6 +22,10 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
+/**
+ * Abstract {@link FunctionValues} implementation which supports retrieving String values.
+ * Implementations can control how the String values are loaded through {@link #strVal(int)}}
+ */
 public abstract class StrDocValues extends FunctionValues {
   protected final ValueSource vs;
 

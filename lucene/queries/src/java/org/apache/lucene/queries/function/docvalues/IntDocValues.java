@@ -22,7 +22,10 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueInt;
 
-
+/**
+ * Abstract {@link FunctionValues} implementation which supports retrieving int values.
+ * Implementations can control how the int values are loaded through {@link #intVal(int)}
+ */
 public abstract class IntDocValues extends FunctionValues {
   protected final ValueSource vs;
 

@@ -253,7 +253,7 @@
       <check-missing-javadocs dir="build/docs/join" level="method"/>
       <check-missing-javadocs dir="build/docs/memory" level="method"/>
       <check-missing-javadocs dir="build/docs/misc" level="class"/>
-      <!-- queries: problems -->
+      <check-missing-javadocs dir="build/docs/queries" level="class"/>
       <!-- queryparser: problems -->
       <check-missing-javadocs dir="build/docs/sandbox" level="class"/>
       <check-missing-javadocs dir="build/docs/spatial" level="class"/>
