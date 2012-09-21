@@ -168,6 +168,12 @@ def checkAll(dirName):
         if link.find('lucene.apache.org/java/docs/mailinglists.html') != -1:
           # OK
           pass
+        elif link == 'http://lucene.apache.org/core/':
+          # OK
+          pass
+        elif link == 'http://lucene.apache.org/solr/':
+          # OK
+          pass
         elif link.find('lucene.apache.org/java/docs/discussion.html') != -1:
           # OK
           pass
