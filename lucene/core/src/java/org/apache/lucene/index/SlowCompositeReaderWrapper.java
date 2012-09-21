@@ -60,7 +60,9 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
       return (AtomicReader) reader;
     }
   }
-  
+
+  /** Sole constructor, wrapping the provided {@link
+   *  CompositeReader}. */
   public SlowCompositeReaderWrapper(CompositeReader reader) throws IOException {
     super();
     in = reader;

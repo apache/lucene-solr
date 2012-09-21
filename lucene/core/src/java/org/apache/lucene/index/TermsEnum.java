@@ -45,6 +45,11 @@ public abstract class TermsEnum implements BytesRefIterator {
 
   private AttributeSource atts = null;
 
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected TermsEnum() {
+  }
+
   /** Returns the related attributes. */
   public AttributeSource attributes() {
     if (atts == null) atts = new AttributeSource();

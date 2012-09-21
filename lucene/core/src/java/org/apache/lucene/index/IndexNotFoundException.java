@@ -25,6 +25,8 @@ import java.io.FileNotFoundException;
  */
 public final class IndexNotFoundException extends FileNotFoundException {
 
+  /** Creates IndexFileNotFoundException with the
+   *  description message. */
   public IndexNotFoundException(String msg) {
     super(msg);
   }

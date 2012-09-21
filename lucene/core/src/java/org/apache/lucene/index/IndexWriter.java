@@ -3765,12 +3765,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     return segmentInfos.size() > 0 ? segmentInfos.info(segmentInfos.size()-1) : null;
   }
 
-  /** @lucene.internal */
+  /** Returns a string description of all segments, for
+   *  debugging.
+   *
+   * @lucene.internal */
   public synchronized String segString() {
     return segString(segmentInfos);
   }
 
-  /** @lucene.internal */
+  /** Returns a string description of the specified
+   *  segments, for debugging.
+   *
+   * @lucene.internal */
   public synchronized String segString(Iterable<SegmentInfoPerCommit> infos) {
     final StringBuilder buffer = new StringBuilder();
     for(final SegmentInfoPerCommit info : infos) {
@@ -3782,7 +3788,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     return buffer.toString();
   }
 
-  /** @lucene.internal */
+  /** Returns a string description of the specified
+   *  segment, for debugging.
+   *
+   * @lucene.internal */
   public synchronized String segString(SegmentInfoPerCommit info) {
     return info.toString(info.info.dir, numDeletedDocs(info) - info.getDelCount());
   }
@@ -3997,6 +4006,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * <p><b>NOTE</b>: warm is called before any deletes have
    * been carried over to the merged segment. */
   public static abstract class IndexReaderWarmer {
+
+    /** Sole constructor. (For invocation by subclass 
+     *  constructors, typically implicit.) */
+    protected IndexReaderWarmer() {
+    }
+
+    /** Invoked on the {@link AtomicReader} for the newly
+     *  merged segment, before that segment is made visible
+     *  to near-real-time readers. */
     public abstract void warm(AtomicReader reader) throws IOException;
   }
 

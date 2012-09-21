@@ -39,12 +39,21 @@ import org.apache.lucene.store.TrackingDirectoryWrapper;
 public final class SegmentInfo {
   
   // TODO: remove these from this class, for now this is the representation
+  /** Used by some member fields to mean not present (e.g.,
+   *  norms, deletions). */
   public static final int NO = -1;          // e.g. no norms; no deletes;
+
+  /** Used by some member fields to mean present (e.g.,
+   *  norms, deletions). */
   public static final int YES = 1;          // e.g. have norms; have deletes;
 
-  public final String name;     // unique name in dir
+  /** Unique segment name in the directory. */
+  public final String name;
+
   private int docCount;         // number of docs in seg
-  public final Directory dir;   // where segment resides
+
+  /** Where this segment resides. */
+  public final Directory dir;
 
   private boolean isCompoundFile;
 
@@ -67,6 +76,8 @@ public final class SegmentInfo {
     this.diagnostics = diagnostics;
   }
 
+  /** Returns diagnostics saved into the segment when it was
+   *  written. */
   public Map<String, String> getDiagnostics() {
     return diagnostics;
   }
@@ -133,10 +144,13 @@ public final class SegmentInfo {
     this.codec = codec;
   }
 
+  /** Return {@link Codec} that wrote this segment. */
   public Codec getCodec() {
     return codec;
   }
 
+  /** Returns number of documents in this segment (deletions
+   *  are not taken into account). */
   public int getDocCount() {
     if (this.docCount == -1) {
       throw new IllegalStateException("docCount isn't set yet");
@@ -152,12 +166,7 @@ public final class SegmentInfo {
     this.docCount = docCount;
   }
 
-  /*
-   * Return all files referenced by this SegmentInfo.  The
-   * returns List is a locally cached List so you should not
-   * modify it.
-   */
-
+  /** Return all files referenced by this SegmentInfo. */
   public Set<String> files() {
     if (setFiles == null) {
       throw new IllegalStateException("files were not computed yet");
@@ -241,18 +250,23 @@ public final class SegmentInfo {
 
   private Set<String> setFiles;
 
+  /** Sets the files written for this segment. */
   public void setFiles(Set<String> files) {
     checkFileNames(files);
     setFiles = files;
     sizeInBytes = -1;
   }
 
+  /** Add these files to the set of files written for this
+   *  segment. */
   public void addFiles(Collection<String> files) {
     checkFileNames(files);
     setFiles.addAll(files);
     sizeInBytes = -1;
   }
 
+  /** Add this file to the set of files written for this
+   *  segment. */
   public void addFile(String file) {
     checkFileNames(Collections.singleton(file));
     setFiles.add(file);
@@ -298,6 +312,8 @@ public final class SegmentInfo {
   }
   
   /**
+   * Returns the internal codec attributes map.
+   *
    * @return internal codec attributes map. May be null if no mappings exist.
    */
   public Map<String,String> attributes() {

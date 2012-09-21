@@ -23,6 +23,10 @@ import java.io.IOException;
  *  sequentially, using the current thread. */
 public class SerialMergeScheduler extends MergeScheduler {
 
+  /** Sole constructor. */
+  public SerialMergeScheduler() {
+  }
+
   /** Just do the merges in sequence. We do this
    * "synchronized" so that even if the application is using
    * multiple threads, only one merge may run at a time. */

@@ -30,13 +30,26 @@ import org.apache.lucene.util.InfoStream;
  * @lucene.experimental
  */
 public class PerDocWriteState {
+  /** InfoStream used for debugging. */
   public final InfoStream infoStream;
+
+  /** {@link Directory} to write all files to. */
   public final Directory directory;
+
+  /** {@link SegmentInfo} describing this segment. */
   public final SegmentInfo segmentInfo;
+
+  /** Number of bytes allocated in RAM to hold this state. */
   public final Counter bytesUsed;
+
+  /** Segment suffix to pass to {@link
+   * IndexFileNames#segmentFileName(String,String,String)}. */
   public final String segmentSuffix;
+
+  /** {@link IOContext} to use for all file writing. */
   public final IOContext context;
 
+  /** Creates a {@code PerDocWriteState}. */
   public PerDocWriteState(InfoStream infoStream, Directory directory,
       SegmentInfo segmentInfo, Counter bytesUsed,
       String segmentSuffix, IOContext context) {
@@ -48,6 +61,8 @@ public class PerDocWriteState {
     this.context = context;
   }
 
+  /** Creates a {@code PerDocWriteState}, copying fields
+   *  from another and allocating a new {@link #bytesUsed}. */
   public PerDocWriteState(SegmentWriteState state) {
     infoStream = state.infoStream;
     directory = state.directory;
@@ -57,6 +72,9 @@ public class PerDocWriteState {
     context = state.context;
   }
 
+  /** Creates a {@code PerDocWriteState}, copying fields
+   *  from another (copy constructor) but setting a new
+   *  {@link #segmentSuffix}. */
   public PerDocWriteState(PerDocWriteState state, String segmentSuffix) {
     this.infoStream = state.infoStream;
     this.directory = state.directory;

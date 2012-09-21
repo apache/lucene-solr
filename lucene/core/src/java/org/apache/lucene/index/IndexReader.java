@@ -88,6 +88,7 @@ public abstract class IndexReader implements Closeable {
    * @lucene.experimental
    */
   public static interface ReaderClosedListener {
+    /** Invoked when the {@link IndexReader} is closed. */
     public void onClose(IndexReader reader);
   }
 

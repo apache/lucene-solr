@@ -57,6 +57,8 @@ public abstract class CompositeReader extends IndexReader {
 
   private volatile CompositeReaderContext readerContext = null; // lazy init
 
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
   protected CompositeReader() { 
     super();
   }

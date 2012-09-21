@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.codecs.PostingsFormat; // javadocs
+import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat; // javadocs
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.InfoStream;
@@ -27,10 +29,23 @@ import org.apache.lucene.util.MutableBits;
  * @lucene.experimental
  */
 public class SegmentWriteState {
+
+  /** {@link InfoStream} used for debugging messages. */
   public final InfoStream infoStream;
+
+  /** {@link Directory} where this segment will be written
+   *  to. */
   public final Directory directory;
+
+  /** {@link SegmentInfo} describing this segment. */
   public final SegmentInfo segmentInfo;
+
+  /** {@link FieldInfos} describing all fields in this
+   *  segment. */
   public final FieldInfos fieldInfos;
+
+  /** Number of deleted documents set while flushing the
+   *  segment. */
   public int delCountOnFlush;
 
   /** Deletes to apply while we are flushing the segment.  A
@@ -40,9 +55,16 @@ public class SegmentWriteState {
    *  deleted. */
   public final BufferedDeletes segDeletes;
 
-  // Lazily created:
+  /** {@link MutableBits} recording live documents; this is
+   *  only set if there is one or more deleted documents. */
   public MutableBits liveDocs;
 
+  /** Unique suffix for any postings files written for this
+   *  segment.  {@link PerFieldPostingsFormat} sets this for
+   *  each of the postings formats it wraps.  If you create
+   *  a new {@link PostingsFormat} then any files you
+   *  write/read must be derived using this suffix (use
+   *  {@link IndexFileNames#segmentFileName(String,String,String)}). */
   public final String segmentSuffix;
 
   /** Expert: The fraction of terms in the "dictionary" which should be stored
@@ -52,8 +74,11 @@ public class SegmentWriteState {
    * tweaking this is rarely useful.*/
   public int termIndexInterval;                   // TODO: this should be private to the codec, not settable here or in IWC
   
+  /** {@link IOContext} for all writes; you should pass this
+   *  to {@link Directory#createOutput(String,IOContext)}. */
   public final IOContext context;
 
+  /** Sole constructor. */
   public SegmentWriteState(InfoStream infoStream, Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos,
       int termIndexInterval, BufferedDeletes segDeletes, IOContext context) {
     this.infoStream = infoStream;

@@ -25,14 +25,28 @@ import org.apache.lucene.store.DataInput;
  */
 public class IndexFormatTooNewException extends CorruptIndexException {
 
-  /** @lucene.internal */
+  /** Creates an {@code IndexFormatTooNewException}
+   *
+   *  @param resourceDesc describes the file that was too old
+   *  @param version the version of the file that was too old
+   *  @param minVersion the minimum version accepted
+   *  @param maxVersion the maxium version accepted
+   *
+   * @lucene.internal */
   public IndexFormatTooNewException(String resourceDesc, int version, int minVersion, int maxVersion) {
     super("Format version is not supported (resource: " + resourceDesc + "): "
       + version + " (needs to be between " + minVersion + " and " + maxVersion + ")");
     assert resourceDesc != null;
   }
 
-  /** @lucene.internal */
+  /** Creates an {@code IndexFormatTooNewException}
+   *
+   *  @param in the open file that's too old
+   *  @param version the version of the file that was too old
+   *  @param minVersion the minimum version accepted
+   *  @param maxVersion the maxium version accepted
+   *
+   * @lucene.internal */
   public IndexFormatTooNewException(DataInput in, int version, int minVersion, int maxVersion) {
     this(in.toString(), version, minVersion, maxVersion);
   }

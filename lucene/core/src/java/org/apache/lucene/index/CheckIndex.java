@@ -30,6 +30,7 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.PostingsFormat; // javadocs
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType; // for javadocs
 import org.apache.lucene.index.DocValues.SortedSource;
@@ -69,6 +70,9 @@ public class CheckIndex {
    **/
 
   public static class Status {
+
+    Status() {
+    }
 
     /** True if no problems were found with the index. */
     public boolean clean;
@@ -134,6 +138,10 @@ public class CheckIndex {
      * @lucene.experimental
      */
     public static class SegmentInfoStatus {
+
+      SegmentInfoStatus() {
+      }
+
       /** Name of the segment. */
       public String name;
 
@@ -207,6 +215,9 @@ public class CheckIndex {
      * Status from testing field norms.
      */
     public static final class FieldNormStatus {
+      private FieldNormStatus() {
+      }
+
       /** Number of fields successfully tested */
       public long totFields = 0L;
 
@@ -218,6 +229,10 @@ public class CheckIndex {
      * Status from testing term index.
      */
     public static final class TermIndexStatus {
+
+      TermIndexStatus() {
+      }
+
       /** Total term count */
       public long termCount = 0L;
 
@@ -230,6 +245,10 @@ public class CheckIndex {
       /** Exception thrown during term index test (null on success) */
       public Throwable error = null;
 
+      /** Holds details of block allocations in the block
+       *  tree terms dictionary (this is only set if the
+       *  {@link PostingsFormat} for this segment uses block
+       *  tree. */
       public Map<String,BlockTreeTermsReader.Stats> blockTreeStats = null;
     }
 
@@ -237,6 +256,9 @@ public class CheckIndex {
      * Status from testing stored fields.
      */
     public static final class StoredFieldStatus {
+
+      StoredFieldStatus() {
+      }
       
       /** Number of documents tested. */
       public int docCount = 0;
@@ -253,6 +275,9 @@ public class CheckIndex {
      */
     public static final class TermVectorStatus {
       
+      TermVectorStatus() {
+      }
+
       /** Number of documents tested. */
       public int docCount = 0;
       
@@ -267,6 +292,10 @@ public class CheckIndex {
      * Status from testing DocValues
      */
     public static final class DocValuesStatus {
+
+      DocValuesStatus() {
+      }
+
       /** Number of documents tested. */
       public int docCount;
       /** Total number of docValues tested. */

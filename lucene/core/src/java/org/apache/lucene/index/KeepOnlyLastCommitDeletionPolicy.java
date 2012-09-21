@@ -28,6 +28,10 @@ import java.util.List;
 
 public final class KeepOnlyLastCommitDeletionPolicy implements IndexDeletionPolicy {
 
+  /** Sole constructor. */
+  public KeepOnlyLastCommitDeletionPolicy() {
+  }
+
   /**
    * Deletes all commits except the most recent one.
    */

@@ -25,6 +25,11 @@ import java.util.Iterator;
 
 public abstract class Fields implements Iterable<String> {
 
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected Fields() {
+  }
+
   /** Returns an iterator that will step through all fields
    *  names.  This will not return null.  */
   public abstract Iterator<String> iterator();
@@ -38,5 +43,6 @@ public abstract class Fields implements Iterable<String> {
    * {@link #iterator} will return as many field names. */
   public abstract int size();
   
+  /** Zero-length {@code Fields} array. */
   public final static Fields[] EMPTY_ARRAY = new Fields[0];
 }

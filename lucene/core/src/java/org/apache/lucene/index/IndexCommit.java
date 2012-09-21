@@ -73,10 +73,18 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
   */
   public abstract void delete();
 
+  /** Returns true if this commit should be deleted; this is
+   *  only used by {@link IndexWriter} after invoking the
+   *  {@link IndexDeletionPolicy}. */
   public abstract boolean isDeleted();
 
   /** Returns number of segments referenced by this commit. */
   public abstract int getSegmentCount();
+
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected IndexCommit() {
+  }
 
   /** Two IndexCommits are equal if both their Directory and versions are equal. */
   @Override

@@ -50,6 +50,7 @@ import java.util.HashMap;
   */
 public class UpgradeIndexMergePolicy extends MergePolicy {
 
+  /** Wrapped {@link MergePolicy}. */
   protected final MergePolicy base;
 
   /** Wrap the given {@link MergePolicy} and intercept forceMerge requests to

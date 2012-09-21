@@ -68,10 +68,16 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
       return id + " : " + segmentsFileName;
     }
   }
-  
+
+  /** Wraps a provided {@link IndexCommit} and prevents it
+   *  from being deleted. */
   protected class SnapshotCommitPoint extends IndexCommit {
+
+    /** The {@link IndexCommit} we are preventing from deletion. */
     protected IndexCommit cp;
 
+    /** Creates a {@code SnapshotCommitPoint} wrapping the provided
+     *  {@link IndexCommit}. */
     protected SnapshotCommitPoint(IndexCommit cp) {
       this.cp = cp;
     }
@@ -143,8 +149,12 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
   private Map<String, Set<String>> segmentsFileToIDs = new HashMap<String, Set<String>>();
 
   private IndexDeletionPolicy primary;
+
+  /** Most recently committed {@link IndexCommit}. */
   protected IndexCommit lastCommit;
 
+  /** Sole constructor, taking the incoming {@link
+   *  IndexDeletionPolicy} to wrap. */
   public SnapshotDeletionPolicy(IndexDeletionPolicy primary) {
     this.primary = primary;
   }
@@ -198,6 +208,8 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
     ids.add(id);
   }
 
+  /** Wraps each {@link IndexCommit} as a {@link
+   *  SnapshotCommitPoint}. */
   protected List<IndexCommit> wrapCommits(List<? extends IndexCommit> commits) {
     List<IndexCommit> wrappedCommits = new ArrayList<IndexCommit>(commits.size());
     for (IndexCommit ic : commits) {

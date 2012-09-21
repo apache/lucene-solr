@@ -34,6 +34,11 @@ public abstract class DocsEnum extends DocIdSetIterator {
 
   private AttributeSource atts = null;
 
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected DocsEnum() {
+  }
+
   /** Returns term frequency in the current document.  Do
    *  not call this before {@link #nextDoc} is first called,
    *  nor after {@link #nextDoc} returns NO_MORE_DOCS. 

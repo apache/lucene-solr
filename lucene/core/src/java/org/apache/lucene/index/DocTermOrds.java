@@ -17,17 +17,18 @@
 
 package org.apache.lucene.index;
 
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.PagedBytes;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.StringHelper;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Comparator;
+import java.util.List;
+
+import org.apache.lucene.codecs.PostingsFormat; // javadocs
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * This class enables fast access to multiple term ords for
@@ -107,35 +108,57 @@ public class DocTermOrds {
   // values 0 (end term) and 1 (index is a pointer into byte array)
   private final static int TNUM_OFFSET = 2;
 
-  // Default: every 128th term is indexed
+  /** Every 128th term is indexed, by default. */
   public final static int DEFAULT_INDEX_INTERVAL_BITS = 7; // decrease to a low number like 2 for testing
 
   private int indexIntervalBits;
   private int indexIntervalMask;
   private int indexInterval;
 
+  /** Don't uninvert terms that exceed this count. */
   protected final int maxTermDocFreq;
 
+  /** Field we are uninverting. */
   protected final String field;
 
+  /** Number of terms in the field. */
   protected int numTermsInField;
-  /** total number of references to term numbers */
+
+  /** Total number of references to term numbers. */
   protected long termInstances;
   private long memsz;
-  /** total time to uninvert the field */
+
+  /** Total time to uninvert the field. */
   protected int total_time;
-  /** time for phase1 of the uninvert process */
+
+  /** Time for phase1 of the uninvert process. */
   protected int phase1_time;
 
+  /** Holds the per-document ords or a pointer to the ords. */
   protected int[] index;
+
+  /** Holds term ords for documents. */
   protected byte[][] tnums = new byte[256][];
+
+  /** Total bytes (sum of term lengths) for all indexed terms.*/
   protected long sizeOfIndexedStrings;
+
+  /** Holds the indexed (by default every 128th) terms. */
   protected BytesRef[] indexedTermsArray;
+
+  /** If non-null, only terms matching this prefix were
+   *  indexed. */
   protected BytesRef prefix;
+
+  /** Ordinal of the first term in the field, or 0 if the
+   *  {@link PostingsFormat} does not implement {@link
+   *  TermsEnum#ord}. */
   protected int ordBase;
 
-  protected DocsEnum docsEnum; //used while uninverting
+  /** Used while uninverting. */
+  protected DocsEnum docsEnum;
 
+  /** Returns total bytes used. */
   public long ramUsedInBytes() {
     // can cache the mem size since it shouldn't change
     if (memsz!=0) return memsz;
@@ -217,14 +240,14 @@ public class DocTermOrds {
   }
 
   /**
-   * @return The number of terms in this field
+   * Returns the number of terms in this field
    */
   public int numTerms() {
     return numTermsInField;
   }
 
   /**
-   * @return Whether this <code>DocTermOrds</code> instance is empty.
+   * Returns {@code true} if no terms were indexed.
    */
   public boolean isEmpty() {
     return index == null;
@@ -234,6 +257,9 @@ public class DocTermOrds {
   protected void visitTerm(TermsEnum te, int termNum) throws IOException {
   }
 
+  /** Invoked during {@link #uninvert(AtomicReader,BytesRef)}
+   *  to record the document frequency for each uninverted
+   *  term. */
   protected void setActualDocFreq(int termNum, int df) throws IOException {
   }
 
@@ -570,10 +596,14 @@ public class DocTermOrds {
     return pos;
   }
 
+  /** Iterates over the ords for a single document. */
   public class TermOrdsIterator {
     private int tnum;
     private int upto;
     private byte[] arr;
+
+    TermOrdsIterator() {
+    }
 
     /** Buffer must be at least 5 ints long.  Returns number
      *  of term ords placed into buffer; if this count is
@@ -620,6 +650,7 @@ public class DocTermOrds {
       return bufferUpto;
     }
 
+    /** Reset the iterator on a new document. */
     public TermOrdsIterator reset(int docID) {
       //System.out.println("  reset docID=" + docID);
       tnum = 0;
@@ -810,6 +841,8 @@ public class DocTermOrds {
     }
   }
 
+  /** Returns the term ({@link BytesRef}) corresponding to
+   *  the provided ordinal. */
   public BytesRef lookupTerm(TermsEnum termsEnum, int ord) throws IOException {
     termsEnum.seekExact(ord);
     return termsEnum.term();

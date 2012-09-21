@@ -47,6 +47,10 @@ public final class Norm  {
   private StoredField field;
   private BytesRef spare;
   
+  /** Sole constructor. */
+  public Norm() {
+  }
+
   /**
    * Returns the {@link StorableField} representation for this norm
    */

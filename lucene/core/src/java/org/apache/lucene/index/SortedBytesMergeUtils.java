@@ -43,6 +43,8 @@ public final class SortedBytesMergeUtils {
     // no instance
   }
 
+  /** Creates the {@link MergeContext} necessary for merging
+   *  the ordinals. */
   public static MergeContext init(Type type, DocValues[] docValues,
       Comparator<BytesRef> comp, int mergeDocCount) {
     int size = -1;
@@ -68,11 +70,21 @@ public final class SortedBytesMergeUtils {
   public static final class MergeContext {
     private final Comparator<BytesRef> comp;
     private final BytesRef missingValue = new BytesRef();
+
+    /** How many bytes each value occupies, or -1 if it
+     *  varies. */
     public final int sizePerValues; // -1 if var length
+
     final Type type;
+
+    /** Maps each document to the ordinal for its value. */
     public final int[] docToEntry;
+
+    /** File-offset for each document; will be null if it's
+     *  not needed (eg fixed-size values). */
     public long[] offsets; // if non-null #mergeRecords collects byte offsets here
 
+    /** Sole constructor. */
     public MergeContext(Comparator<BytesRef> comp, int mergeDocCount,
         int size, Type type) {
       assert type == Type.BYTES_FIXED_SORTED || type == Type.BYTES_VAR_SORTED;
@@ -85,12 +97,15 @@ public final class SortedBytesMergeUtils {
       }
       docToEntry = new int[mergeDocCount];
     }
-    
+
+    /** Returns number of documents merged. */
     public int getMergeDocCount() {
       return docToEntry.length;
     }
   }
 
+  /** Creates the {@link SortedSourceSlice}s for
+   *  merging. */
   public static List<SortedSourceSlice> buildSlices(
       int[] docBases, MergeState.DocMap[] docMaps,
       DocValues[] docValues, MergeContext ctx) throws IOException {
@@ -150,6 +165,8 @@ public final class SortedBytesMergeUtils {
     }
   }
 
+  /** Does the "real work" of merging the slices and
+   *  computing the ord mapping. */
   public static int mergeRecords(MergeContext ctx, BytesRefConsumer consumer,
       List<SortedSourceSlice> slices) throws IOException {
     final RecordMerger merger = new RecordMerger(new MergeQueue(slices.size(),
@@ -212,6 +229,7 @@ public final class SortedBytesMergeUtils {
   public static final class IndexOutputBytesRefConsumer implements BytesRefConsumer {
     private final IndexOutput datOut;
     
+    /** Sole constructor. */
     public IndexOutputBytesRefConsumer(IndexOutput datOut) {
       this.datOut = datOut;
     }
@@ -330,7 +348,10 @@ public final class SortedBytesMergeUtils {
       }
       return null;
     }
-    
+
+    /** Fills in the absolute ords for this slice. 
+     * 
+     * @return the provided {@code docToOrd} */
     public int[] toAbsolutOrds(int[] docToOrd) {
       for (int i = docToOrdStart; i < docToOrdEnd; i++) {
         final int mappedOrd = docIDToRelativeOrd[i];
@@ -341,6 +362,7 @@ public final class SortedBytesMergeUtils {
       return docToOrd;
     }
 
+    /** Writes ords for this slice. */
     public void writeOrds(PackedInts.Writer writer) throws IOException {
       for (int i = docToOrdStart; i < docToOrdEnd; i++) {
         final int mappedOrd = docIDToRelativeOrd[i];

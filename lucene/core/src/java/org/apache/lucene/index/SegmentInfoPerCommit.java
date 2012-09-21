@@ -30,6 +30,7 @@ import org.apache.lucene.store.Directory;
 
 public class SegmentInfoPerCommit {
 
+  /** The {@link SegmentInfo} that we wrap. */
   public final SegmentInfo info;
 
   // How many deleted docs in the segment:
@@ -41,6 +42,12 @@ public class SegmentInfoPerCommit {
 
   private volatile long sizeInBytes = -1;
 
+  /** Sole constructor.
+   * @param info {@link SegmentInfo} that we wrap
+   * @param delCount number of deleted documents in this segment
+   * @param delGen deletion generation number (used to name
+             deletion files)
+   **/
   public SegmentInfoPerCommit(SegmentInfo info, int delCount, long delGen) {
     this.info = info;
     this.delCount = delCount;
@@ -56,6 +63,8 @@ public class SegmentInfoPerCommit {
     sizeInBytes = -1;
   }
 
+  /** Returns total size in bytes of all files for this
+   *  segment. */
   public long sizeInBytes() throws IOException {
     if (sizeInBytes == -1) {
       final Collection<String> files = new HashSet<String>();
@@ -70,6 +79,7 @@ public class SegmentInfoPerCommit {
     return sizeInBytes;
   }
 
+  /** Returns all files in use by this segment. */
   public Collection<String> files() throws IOException {
     Collection<String> files = new HashSet<String>(info.files());
 
@@ -144,6 +154,7 @@ public class SegmentInfoPerCommit {
     assert delCount <= info.getDocCount();
   }
 
+  /** Returns a description of this segment. */
   public String toString(Directory dir, int pendingDelCount) {
     return info.toString(dir, delCount + pendingDelCount);
   }

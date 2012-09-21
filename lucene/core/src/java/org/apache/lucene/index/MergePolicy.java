@@ -71,14 +71,23 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
     long mergeGen;                  // used by IndexWriter
     boolean isExternal;             // used by IndexWriter
     int maxNumSegments = -1;        // used by IndexWriter
+
+    /** Estimated size in bytes of the merged segment. */
     public long estimatedMergeBytes;       // used by IndexWriter
     List<SegmentReader> readers;        // used by IndexWriter
+
+    /** Segments to be merged. */
     public final List<SegmentInfoPerCommit> segments;
+
+    /** Number of documents in the merged segment. */
     public final int totalDocCount;
     boolean aborted;
     Throwable error;
     boolean paused;
 
+    /** Sole constructor.
+     * @param segments List of {@link SegmentInfoPerCommit}s
+     *        to be merged. */
     public OneMerge(List<SegmentInfoPerCommit> segments) {
       if (0 == segments.size())
         throw new RuntimeException("segments must include at least one segment");
@@ -116,6 +125,8 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
       return aborted;
     }
 
+    /** Called periodically by {@link IndexWriter} while
+     *  merging to see if the merge is aborted. */
     public synchronized void checkAborted(Directory dir) throws MergeAbortedException {
       if (aborted) {
         throw new MergeAbortedException("merge is aborted: " + segString(dir));
@@ -135,6 +146,9 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
       }
     }
 
+    /** Set or clear whether this merge is paused paused (for example
+     *  {@link ConcurrentMergeScheduler} will pause merges
+     *  if too many are running). */
     synchronized public void setPause(boolean paused) {
       this.paused = paused;
       if (!paused) {
@@ -143,10 +157,15 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
       }
     }
 
+    /** Returns true if this merge is paused.
+     *
+     *  @see #setPause(boolean) */
     synchronized public boolean getPause() {
       return paused;
     }
 
+    /** Returns a readable description of the current merge
+     *  state. */
     public String segString(Directory dir) {
       StringBuilder b = new StringBuilder();
       final int numSegments = segments.size();
@@ -188,7 +207,8 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
       }
       return total;
     }
-    
+
+    /** Return {@link MergeInfo} describing this merge. */
     public MergeInfo getMergeInfo() {
       return new MergeInfo(totalDocCount, estimatedMergeBytes, isExternal, maxNumSegments);
     }    
@@ -208,10 +228,19 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
 
     public final List<OneMerge> merges = new ArrayList<OneMerge>();
 
+    /** Sole constructor.  Use {@link
+     *  #add(MergePolicy.OneMerge)} to add merges. */
+    public MergeSpecification() {
+    }
+
+    /** Adds the provided {@link OneMerge} to this
+     *  specification. */
     public void add(OneMerge merge) {
       merges.add(merge);
     }
 
+    /** Returns a description of the merges in this
+    *  specification. */
     public String segString(Directory dir) {
       StringBuilder b = new StringBuilder();
       b.append("MergeSpec:\n");
@@ -227,15 +256,18 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
   public static class MergeException extends RuntimeException {
     private Directory dir;
 
+    /** Create a {@code MergeException}. */
     public MergeException(String message, Directory dir) {
       super(message);
       this.dir = dir;
     }
 
+    /** Create a {@code MergeException}. */
     public MergeException(Throwable exc, Directory dir) {
       super(exc);
       this.dir = dir;
     }
+
     /** Returns the {@link Directory} of the index that hit
      *  the exception. */
     public Directory getDirectory() {
@@ -248,14 +280,19 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
    *  <code>false</code>.  Normally this exception is
    *  privately caught and suppresed by {@link IndexWriter}.  */
   public static class MergeAbortedException extends IOException {
+    /** Create a {@link MergeAbortedException}. */
     public MergeAbortedException() {
       super("merge is aborted");
     }
+
+    /** Create a {@link MergeAbortedException} with a
+     *  specified message. */
     public MergeAbortedException(String message) {
       super(message);
     }
   }
 
+  /** {@link IndexWriter} that contains this instance. */
   protected SetOnce<IndexWriter> writer;
 
   @Override

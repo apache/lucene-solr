@@ -48,6 +48,8 @@ public abstract class AtomicReader extends IndexReader {
 
   private final AtomicReaderContext readerContext = new AtomicReaderContext(this);
   
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
   protected AtomicReader() {
     super();
   }

@@ -32,9 +32,13 @@ import org.apache.lucene.util.BytesRef;
 * StoredDocument is retrieved from IndexReader containing only stored fields from indexed {@link IndexDocument}.
 */
 // TODO: shouldn't this really be in the .document package?
-public class StoredDocument implements Iterable<StorableField>{
-  
+public class StoredDocument implements Iterable<StorableField> {
+
   private final List<StorableField> fields = new ArrayList<StorableField>();
+
+  /** Sole constructor. */
+  public StoredDocument() {
+  }
   
   /**
    * Adds a field to a document.
