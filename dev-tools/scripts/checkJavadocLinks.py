@@ -136,6 +136,9 @@ def checkAll(dirName):
         # Somehow even w/ java 7 generaged javadocs,
         # deprecated-list.html can fail to escape generics types
         fullPath = os.path.join(root, f).replace(os.path.sep,'/')
+        fullPath = 'file:%s' % urlparse.quote(fullPath)
+        # parse and unparse the URL to "normalize" it
+        fullPath = urlparse.urlunparse(urlparse.urlparse(fullPath))
         #print '  %s' % fullPath
         allFiles[fullPath] = parse(fullPath, open('%s/%s' % (root, f), encoding='UTF-8').read())
 
@@ -209,30 +212,26 @@ def checkAll(dirName):
         # on annotations it seems?
         pass
       elif link.startswith('file:'):
-        filepath = urlparse.unquote(urlparse.urlparse(link).path)
-        if not (os.path.exists(filepath) or os.path.exists(filepath[1:])):
-          if not printed:
-            printed = True
-            print()
-            print(fullPath)
-          print('  BROKEN LINK: %s' % link)
-      elif link not in allFiles:
-        # We only load HTML... so if the link is another resource (eg
-        # SweetSpotSimilarity refs
-        # lucene/build/docs/misc/org/apache/lucene/misc/doc-files/ss.gnuplot) then it's OK:
-        if not os.path.exists(link):
-          if not printed:
-            printed = True
-            print()
-            print(fullPath)
-          print('  BROKEN LINK: %s' % link)
+        if link not in allFiles:
+          filepath = urlparse.unquote(urlparse.urlparse(link).path)
+          if not (os.path.exists(filepath) or os.path.exists(filepath[1:])):
+            if not printed:
+              printed = True
+              print()
+              print(fullPath)
+            print('  BROKEN LINK: %s' % link)
       elif anchor is not None and anchor not in allFiles[link][1]:
         if not printed:
           printed = True
           print()
           print(fullPath)
         print('  BROKEN ANCHOR: %s' % origLink)
-
+      else:
+        if not printed:
+          printed = True
+          print()
+          print(fullPath)
+        print('  BROKEN URL SCHEME: %s' % origLink)
     failures = failures or printed
 
   return failures   
