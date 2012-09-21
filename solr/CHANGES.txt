@@ -43,6 +43,76 @@ for more details.
 If you are using SolrCloud's distributed update request capabilities and a non
 string type id field, you must re-index.
 
+Upgrading from Solr 4.0.0-ALPHA
+----------------------
+
+Solr is now much more strict about requiring that the uniqueKeyField feature 
+(if used) must refer to a field which is not multiValued.  If you upgrade from 
+an earlier version of Solr and see an error that your uniqueKeyField "can not 
+be configured to be multivalued" please add 'multiValued="false"' to the 
+<field /> declaration for your uniqueKeyField.  See SOLR-3682 for more details.
+
+In addition, please review the notes above about upgrading from 4.0.0-BETA
+
+Upgrading from Solr 3.6
+----------------------
+
+* The Lucene index format has changed and as a result, once you upgrade, 
+  previous versions of Solr will no longer be able to read your indices.
+  In a master/slave configuration, all searchers/slaves should be upgraded
+  before the master.  If the master were to be updated first, the older
+  searchers would not be able to read the new index format.
+
+* Setting abortOnConfigurationError=false is no longer supported
+  (since it has never worked properly).  Solr will now warn you if
+  you attempt to set this configuration option at all. (see SOLR-1846)
+
+* The default logic for the 'mm' param of the 'dismax' QParser has
+  been changed.  If no 'mm' param is specified (either in the query,
+  or as a default in solrconfig.xml) then the effective value of the
+  'q.op' param (either in the query or as a default in solrconfig.xml
+  or from the 'defaultOperator' option in schema.xml) is used to
+  influence the behavior.  If q.op is effectively "AND" then mm=100%.
+  If q.op is effectively "OR" then mm=0%.  Users who wish to force the
+  legacy behavior should set a default value for the 'mm' param in
+  their solrconfig.xml file.
+  
+* The VelocityResponseWriter is no longer built into the core.  Its JAR and
+  dependencies now need to be added (via <lib> or solr/home lib inclusion),
+  and it needs to be registered in solrconfig.xml like this:
+    <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
+
+* The update request parameter to choose Update Request Processor Chain is 
+  renamed from "update.processor" to "update.chain". The old parameter was
+  deprecated but still working since Solr3.2, but is now removed
+  entirely.
+
+* The <indexDefaults> and <mainIndex> sections of solrconfig.xml are discontinued
+  and replaced with the <indexConfig> section. There are also better defaults.
+  When migrating, if you don't know what your old settings mean, simply delete
+  both <indexDefaults> and <mainIndex> sections. If you have customizations,
+  put them in <indexConfig> section - with same syntax as before.
+
+* Two of the SolrServer subclasses in SolrJ were renamed/replaced.
+  CommonsHttpSolrServer is now HttpSolrServer, and 
+  StreamingUpdateSolrServer is now ConcurrentUpdateSolrServer.
+
+* The PingRequestHandler no longer looks for a <healthcheck/> option in the 
+  (legacy) <admin> section of solrconfig.xml.  Users who wish to take 
+  advantage of this feature should configure a "healthcheckFile" init param 
+  directly on the  PingRequestHandler.  As part of this change, relative file 
+  paths have been fixed to be resolved against the data dir.  See the example 
+  solrconfig.xml and SOLR-1258 for more details.
+
+* Due to low level changes to support SolrCloud, the uniqueKey field can no 
+  longer be populated via <copyField/> or <field default=...> in the 
+  schema.xml.  Users wishing to have Solr automatically generate a uniqueKey 
+  value when adding documents should instead use an instance of
+  solr.UUIDUpdateProcessorFactory in their update processor chain.  See 
+  SOLR-2796 for more details.
+
+In addition, please review the notes above about upgrading from 4.0.0-BETA, and 4.0.0-ALPHA
+
 Detailed Change List
 ----------------------
 
