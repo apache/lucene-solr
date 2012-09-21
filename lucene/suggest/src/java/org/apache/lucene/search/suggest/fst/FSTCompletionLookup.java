@@ -249,6 +249,10 @@ public class FSTCompletionLookup extends Lookup {
     return results;
   }
 
+  /**
+   * Returns the bucket (weight) as a Long for the provided key if it exists,
+   * otherwise null if it does not.
+   */
   public Object get(CharSequence key) {
     final int bucket = normalCompletion.getBucket(key);
     return bucket == -1 ? null : Long.valueOf(bucket);

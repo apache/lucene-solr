@@ -187,6 +187,10 @@ public class SpellChecker implements java.io.Closeable {
     this.comparator = comparator;
   }
 
+  /**
+   * Gets the comparator in use for ranking suggestions.
+   * @see #setComparator(Comparator)
+   */
   public Comparator<SuggestWord> getComparator() {
     return comparator;
   }

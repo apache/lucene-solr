@@ -88,6 +88,9 @@ public class DirectSpellChecker {
   /** the string distance to use */
   private StringDistance distance = INTERNAL_LEVENSHTEIN;
 
+  /** Creates a DirectSpellChecker with default configuration values */
+  public DirectSpellChecker() {}
+
   /** Get the maximum number of Levenshtein edit-distances to draw
    *  candidate terms from. */  
   public int getMaxEdits() {

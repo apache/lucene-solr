@@ -33,6 +33,10 @@ public final class InMemorySorter implements BytesRefSorter {
   private boolean closed = false;
   private final Comparator<BytesRef> comparator;
 
+  /**
+   * Creates an InMemorySorter, sorting entries by the
+   * provided comparator.
+   */
   public InMemorySorter(Comparator<BytesRef> comparator) {
     this.comparator = comparator;
   }

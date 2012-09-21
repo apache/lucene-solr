@@ -28,6 +28,7 @@ import org.apache.lucene.util.BytesRefIterator;
  */
 public interface TermFreqIterator extends BytesRefIterator {
 
+  /** A term's weight, higher numbers mean better suggestions. */
   public long weight();
   
   /**
