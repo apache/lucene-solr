@@ -20,6 +20,10 @@ Changes in backwards compatibility policy
   (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
   Robert Muir)
 
+======================= Lucene 4.1.0 =======================
+
+(No Changes)
+
 ======================= Lucene 4.0.0 =======================
 
 Changes in backwards compatibility policy
