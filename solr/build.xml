@@ -138,12 +138,12 @@
   <target name="compile-test" description="Compile unit tests."
           depends="compile-solr-test-framework, compile-test-solr-core, compile-test-solrj, compile-test-contrib"/>
   <target name="javadocs" description="Calls javadocs-all, javadocs-solrj, and javadocs-test-framework"
-          depends="javadocs-solr-core,javadocs-solrj,javadocs-test-framework,javadocs-contrib"/>
+          depends="define-lucene-javadoc-url,javadocs-solr-core,javadocs-solrj,javadocs-test-framework,javadocs-contrib"/>
   <target name="documentation" description="Generate all documentation"
     depends="javadocs,changes-to-html,process-webpages"/>
   <target name="compile-core" depends="compile-solr-core" unless="solr.core.compiled"/>
   
-  <target name="process-webpages" depends="define-lucene-javadoc-url"> <!--depends="resolve-pegdown">-->
+  <target name="process-webpages" depends="define-lucene-javadoc-url"><!--depends="resolve-groovy,resolve-pegdown">-->
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="core/build.xml,test-framework/build.xml,solrj/build.xml,contrib/**/build.xml"/>
     </makeurl>
@@ -505,10 +505,6 @@
     <sign-artifacts-macro artifacts.dir="${package.dir}"/>
   </target>
  
-  <target name="javadocs-dep">
-    <!-- NOOP -->
-  </target>
-
   <target name="resolve" depends="resolve-example">
      <sequential>
      <ant dir="core" target="resolve" inheritall="false">
