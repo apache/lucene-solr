@@ -62,6 +62,11 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
 
+    String units = args.remove("units");
+    if (!"degrees".equals(units))
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Must specify units=\"degrees\" on field types with class "+getClass().getSimpleName());
+
     //Solr expects us to remove the parameters we've used.
     MapListener<String, String> argsWrap = new MapListener<String, String>(args);
     ctx = SpatialContextFactory.makeSpatialContext(argsWrap, schema.getResourceLoader().getClassLoader());

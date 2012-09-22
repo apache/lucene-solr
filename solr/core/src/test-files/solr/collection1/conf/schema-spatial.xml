@@ -27,22 +27,22 @@
     <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
 
     <fieldType name="srpt_geohash"   class="solr.SpatialRecursivePrefixTreeFieldType"
-               prefixTree="geohash"
+               prefixTree="geohash" units="degrees"
         />
     <fieldType name="srpt_quad"   class="solr.SpatialRecursivePrefixTreeFieldType"
-              prefixTree="quad"
+              prefixTree="quad" units="degrees"
         />
     <fieldType name="srpt_100km"   class="solr.SpatialRecursivePrefixTreeFieldType"
-              maxDetailDist="0.9"
+              maxDistErr="0.9" units="degrees"
         />
     <fieldType name="stqpt_geohash"   class="solr.SpatialTermQueryPrefixTreeFieldType"
-              prefixTree="geohash" />
+              prefixTree="geohash" units="degrees" />
 
     <fieldType name="stqpt_u"  class="solr.SpatialTermQueryPrefixTreeFieldType"
-        geo="false" distCalculator="cartesian^2" worldBounds="0 0 1000 1000"/>
+        geo="false" distCalculator="cartesian^2" worldBounds="0 0 1000 1000" units="degrees"/>
 
     <fieldType name="twodoubles" class="solr.SpatialTwoDoublesFieldType"
-               numberType="tdouble"/>
+               numberType="tdouble" units="degrees"/>
 
   </types>
 
