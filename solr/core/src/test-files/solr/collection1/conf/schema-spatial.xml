@@ -41,7 +41,7 @@
     <fieldType name="stqpt_u"  class="solr.SpatialTermQueryPrefixTreeFieldType"
         geo="false" distCalculator="cartesian^2" worldBounds="0 0 1000 1000" units="degrees"/>
 
-    <fieldType name="pointVector" class="solr.SpatialPointVectorFieldType"
+    <fieldType name="pointvector" class="solr.SpatialPointVectorFieldType"
                numberType="tdouble" units="degrees"/>
 
   </types>
