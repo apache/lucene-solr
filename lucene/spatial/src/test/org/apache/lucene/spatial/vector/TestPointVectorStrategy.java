@@ -30,14 +30,14 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestTwoDoublesStrategy extends StrategyTestCase {
+public class TestPointVectorStrategy extends StrategyTestCase {
 
   @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
     this.ctx = SpatialContext.GEO;
-    this.strategy = new TwoDoublesStrategy(ctx, getClass().getSimpleName());
+    this.strategy = new PointVectorStrategy(ctx, getClass().getSimpleName());
   }
 
   @Test

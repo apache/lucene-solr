@@ -17,14 +17,14 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.spatial.vector.TwoDoublesStrategy;
+import org.apache.lucene.spatial.vector.PointVectorStrategy;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 
-public class SpatialTwoDoublesFieldType extends AbstractSpatialFieldType<TwoDoublesStrategy> implements SchemaAware {
+public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointVectorStrategy> implements SchemaAware {
 
   protected String numberFieldName = "tdouble";//in example schema defaults to non-zero precision step -- a good choice
   private int precisionStep;
@@ -58,8 +58,8 @@ public class SpatialTwoDoublesFieldType extends AbstractSpatialFieldType<TwoDoub
     for( SchemaField sf : schema.getFields().values() ) {
       if( sf.getType() == this ) {
         String name = sf.getName();
-        newFields.add(new SchemaField(name + TwoDoublesStrategy.SUFFIX_X, fieldType, p, null));
-        newFields.add(new SchemaField(name + TwoDoublesStrategy.SUFFIX_Y, fieldType, p, null));
+        newFields.add(new SchemaField(name + PointVectorStrategy.SUFFIX_X, fieldType, p, null));
+        newFields.add(new SchemaField(name + PointVectorStrategy.SUFFIX_Y, fieldType, p, null));
       }
     }
     for (SchemaField newField : newFields) {
@@ -68,8 +68,8 @@ public class SpatialTwoDoublesFieldType extends AbstractSpatialFieldType<TwoDoub
   }
 
   @Override
-  protected TwoDoublesStrategy newSpatialStrategy(String fieldName) {
-    TwoDoublesStrategy strategy = new TwoDoublesStrategy(ctx, fieldName);
+  protected PointVectorStrategy newSpatialStrategy(String fieldName) {
+    PointVectorStrategy strategy = new PointVectorStrategy(ctx, fieldName);
     strategy.setPrecisionStep(precisionStep);
     return strategy;
   }

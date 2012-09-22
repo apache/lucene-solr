@@ -55,7 +55,7 @@ import org.apache.lucene.spatial.util.ValueSourceFilter;
  *
  * @lucene.experimental
  */
-public class TwoDoublesStrategy extends SpatialStrategy {
+public class PointVectorStrategy extends SpatialStrategy {
 
   public static final String SUFFIX_X = "__x";
   public static final String SUFFIX_Y = "__y";
@@ -65,7 +65,7 @@ public class TwoDoublesStrategy extends SpatialStrategy {
 
   public int precisionStep = 8; // same as solr default
 
-  public TwoDoublesStrategy(SpatialContext ctx, String fieldNamePrefix) {
+  public PointVectorStrategy(SpatialContext ctx, String fieldNamePrefix) {
     super(ctx, fieldNamePrefix);
     this.fieldNameX = fieldNamePrefix+SUFFIX_X;
     this.fieldNameY = fieldNamePrefix+SUFFIX_Y;
