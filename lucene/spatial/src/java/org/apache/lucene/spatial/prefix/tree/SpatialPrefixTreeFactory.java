@@ -31,6 +31,9 @@ import java.util.Map;
 public abstract class SpatialPrefixTreeFactory {
 
   private static final double DEFAULT_GEO_MAX_DETAIL_KM = 0.001;//1m
+  public static final String PREFIX_TREE = "prefixTree";
+  public static final String MAX_LEVELS = "maxLevels";
+  public static final String MAX_DIST_ERR = "maxDistErr";
 
   protected Map<String, String> args;
   protected SpatialContext ctx;
@@ -42,7 +45,7 @@ public abstract class SpatialPrefixTreeFactory {
    */
   public static SpatialPrefixTree makeSPT(Map<String,String> args, ClassLoader classLoader, SpatialContext ctx) {
     SpatialPrefixTreeFactory instance;
-    String cname = args.get("prefixTree");
+    String cname = args.get(PREFIX_TREE);
     if (cname == null)
       cname = ctx.isGeo() ? "geohash" : "quad";
     if ("geohash".equalsIgnoreCase(cname))
@@ -68,14 +71,14 @@ public abstract class SpatialPrefixTreeFactory {
   }
 
   protected void initMaxLevels() {
-    String mlStr = args.get("maxLevels");
+    String mlStr = args.get(MAX_LEVELS);
     if (mlStr != null) {
       maxLevels = Integer.valueOf(mlStr);
       return;
     }
 
     double degrees;
-    String maxDetailDistStr = args.get("maxDetailDist");
+    String maxDetailDistStr = args.get(MAX_DIST_ERR);
     if (maxDetailDistStr == null) {
       if (!ctx.isGeo()) {
         return;//let default to max
@@ -83,9 +86,6 @@ public abstract class SpatialPrefixTreeFactory {
       degrees = DistanceUtils.dist2Degrees(DEFAULT_GEO_MAX_DETAIL_KM, DistanceUtils.EARTH_MEAN_RADIUS_KM);
     } else {
       degrees = Double.parseDouble(maxDetailDistStr);
-      if (ctx.isGeo()) {
-        degrees = DistanceUtils.dist2Degrees(Double.parseDouble(maxDetailDistStr), DistanceUtils.EARTH_MEAN_RADIUS_KM);
-      }
     }
     maxLevels = getLevelForDistance(degrees);
   }
