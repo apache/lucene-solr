@@ -95,7 +95,7 @@ public class BBoxStrategy extends SpatialStrategy {
   public Field[] createIndexableFields(Shape shape) {
     if (shape instanceof Rectangle)
       return createIndexableFields((Rectangle)shape);
-    throw new IllegalArgumentException("Can only index Rectangle, not " + shape);
+    throw new UnsupportedOperationException("Can only index Rectangle, not " + shape);
   }
 
   public Field[] createIndexableFields(Rectangle bbox) {
@@ -150,7 +150,7 @@ public class BBoxStrategy extends SpatialStrategy {
   private Query makeSpatialQuery(SpatialArgs args) {
     Shape shape = args.getShape();
     if (!(shape instanceof Rectangle))
-      throw new IllegalArgumentException("Can only query by Rectangle, not " + shape);
+      throw new UnsupportedOperationException("Can only query by Rectangle, not " + shape);
 
     Rectangle bbox = (Rectangle) shape;
     Query spatial = null;
