@@ -982,7 +982,7 @@ def verifyArtifactPerPOMtemplate(POMtemplates, artifacts, tmpDir, version):
   xpathSkipConfiguration = '{0}configuration/{0}skip'.format(namespace)
   for project in ('lucene', 'solr'):
     for POMtemplate in POMtemplates[project]:
-      if POMtemplate.endswith('.properties'):
+      if not POMtemplate.endswith('.xml.template'):
         continue
       print('      Checking POM template %s' % POMtemplate)
       treeRoot = ET.parse(POMtemplate).getroot()
