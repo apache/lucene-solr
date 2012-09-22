@@ -240,6 +240,7 @@
     <propertyref regex=".*\.uptodate$$"/>
     <propertyref regex=".*\.compiled$$"/>
     <propertyref regex=".*\.loaded$$"/>
+    <propertyref name="lucene.javadoc.url"/><!-- for Solr -->
   </propertyset>
 
   <patternset id="lucene.local.src.package.patterns"
@@ -1750,6 +1751,13 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </macrodef>
   
+  <!-- GROOVY scripting engine for ANT tasks -->
+  <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-fail,ivy-configure">
+    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.0.4"
+      inline="true" conf="default" type="jar" transitive="true" pathid="groovy.classpath"/>
+    <property name="groovy.loaded" value="true"/>
+  </target>
+  
   <!-- PEGDOWN macro: Before using depend on the target "resolve-pegdown" -->
   
   <target name="resolve-pegdown" unless="pegdown.loaded" depends="ivy-availability-check,ivy-fail,ivy-configure">
@@ -1771,24 +1779,25 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
           <tokenfilter>
             <filetokenizer/>
             <replaceregex pattern="\b(LUCENE|SOLR)\-\d+\b" replace="[\0](https://issues.apache.org/jira/browse/\0)" flags="gs"/>
-            <scriptfilter language="javascript" classpathref="pegdown.classpath"><![CDATA[
-              importClass(java.lang.StringBuilder);
-              importClass(org.pegdown.PegDownProcessor);
-              importClass(org.pegdown.Extensions);
-              importClass(org.pegdown.FastEncoder);
-              var markdownSource = self.getToken();
-              var title = undefined;
-              // match the first heading in markdown and use as title:
-              if (markdownSource.search(/^#+\s*(.+)$/m) >= 0) {
-                title = RegExp.$1;
-              }
-              var processor = new PegDownProcessor(
+            <scriptfilter language="groovy">
+              <classpath>
+                <path refid="groovy.classpath"/>
+                <path refid="pegdown.classpath"/>
+              </classpath><![CDATA[
+              import org.pegdown.PegDownProcessor;
+              import org.pegdown.Extensions;
+              import org.pegdown.FastEncoder;
+              
+              String markdownSource = self.getToken();
+              PegDownProcessor processor = new PegDownProcessor(
                 Extensions.ABBREVIATIONS | Extensions.AUTOLINKS |
                 Extensions.FENCED_CODE_BLOCKS | Extensions.SMARTS
               );
-              var html = new StringBuilder('<html>\n<head>\n');
-              if (title) {
-                html.append('<title>').append(FastEncoder.encode(title)).append('</title>\n');
+              StringBuilder html = new StringBuilder('<html>\n<head>\n');
+              // match the first heading in markdown and use as title:
+              def matcher = (markdownSource =~ /(?m)^#+\s*(.+)$/);
+              if (matcher.find()) {
+                html.append('<title>').append(FastEncoder.encode(matcher.group(1))).append('</title>\n');
               }
               html.append('<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">\n')
                 .append('</head>\n<body>\n')
