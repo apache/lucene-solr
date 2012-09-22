@@ -96,6 +96,7 @@ public abstract class SpatialStrategy {
    * since it doesn't use it.
    *
    * @return Not null nor will it have null elements.
+   * @throws UnsupportedOperationException if given a shape incompatible with the strategy
    */
   public abstract Field[] createIndexableFields(Shape shape);
 
@@ -111,6 +112,10 @@ public abstract class SpatialStrategy {
    * and {@link Shape} from the supplied {@code args}.
    * The default implementation is
    * <pre>return new ConstantScoreQuery(makeFilter(args));</pre>
+   *
+   * @throws UnsupportedOperationException If the strategy does not support the shape in {@code args}
+   * @throws org.apache.lucene.spatial.query.UnsupportedSpatialOperation If the strategy does not support the {@link
+   * org.apache.lucene.spatial.query.SpatialOperation} in {@code args}.
    */
   public ConstantScoreQuery makeQuery(SpatialArgs args) {
     return new ConstantScoreQuery(makeFilter(args));
@@ -124,6 +129,10 @@ public abstract class SpatialStrategy {
    * {@link #makeQuery(org.apache.lucene.spatial.query.SpatialArgs)}
    * then this method could be simply:
    * <pre>return new QueryWrapperFilter(makeQuery(args).getQuery());</pre>
+   *
+   * @throws UnsupportedOperationException If the strategy does not support the shape in {@code args}
+   * @throws org.apache.lucene.spatial.query.UnsupportedSpatialOperation If the strategy does not support the {@link
+   * org.apache.lucene.spatial.query.SpatialOperation} in {@code args}.
    */
   public abstract Filter makeFilter(SpatialArgs args);
 
