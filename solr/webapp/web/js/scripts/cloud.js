@@ -372,11 +372,12 @@ var prepare_graph = function( graph_element, callback )
                 for( var s in state[c] )
                 {
                   var nodes = [];
-                  for( var n in state[c][s] )
+                  for( var n in state[c][s].replicas )
                   {
                     leaf_count++;
+                    var replica = state[c][s].replicas[n]
 
-                    var uri = state[c][s][n].base_url;
+                    var uri = replica.base_url;
                     var parts = uri.match( /^(\w+:)\/\/(([\w\d\.-]+)(:(\d+))?)(.+)$/ );
                     var uri_parts = {
                       protocol: parts[1],
@@ -392,9 +393,9 @@ var prepare_graph = function( graph_element, callback )
                     helper_data.port.push( uri_parts.port );
                     helper_data.pathname.push( uri_parts.pathname );
 
-                    var status = state[c][s][n].state;
+                    var status = replica.state;
 
-                    if( !live_nodes[state[c][s][n].node_name] )
+                    if( !live_nodes[replica.node_name] )
                     {
                       status = 'gone';
                     }
@@ -404,7 +405,7 @@ var prepare_graph = function( graph_element, callback )
                       data: {
                         type : 'node',
                         state : status,
-                        leader : 'true' === state[c][s][n].leader,
+                        leader : 'true' === replica.leader,
                         uri : uri_parts
                       }
                     };
