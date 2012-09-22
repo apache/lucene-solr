@@ -41,7 +41,7 @@
     <fieldType name="stqpt_u"  class="solr.SpatialTermQueryPrefixTreeFieldType"
         geo="false" distCalculator="cartesian^2" worldBounds="0 0 1000 1000" units="degrees"/>
 
-    <fieldType name="twodoubles" class="solr.SpatialTwoDoublesFieldType"
+    <fieldType name="pointVector" class="solr.SpatialPointVectorFieldType"
                numberType="tdouble" units="degrees"/>
 
   </types>
@@ -54,7 +54,7 @@
     <field name="srpt_geohash" type="srpt_geohash" multiValued="true" />
     <field name="srpt_quad" type="srpt_quad" multiValued="true" />
     <field name="stqpt_geohash" type="stqpt_geohash" multiValued="true" />
-    <field name="twodoubles" type="twodoubles" />
+    <field name="pointvector" type="pointvector" />
 
   </fields>
 
