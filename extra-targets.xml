@@ -59,60 +59,59 @@
     </mvn>
   </target>
 
-  <target xmlns:ivy="antlib:org.apache.ivy.ant" name="check-svn-working-copy" depends="ivy-availability-check,ivy-fail,ivy-configure">
+  <target xmlns:ivy="antlib:org.apache.ivy.ant" name="check-svn-working-copy" depends="ivy-availability-check,ivy-fail,ivy-configure,resolve-groovy">
     <ivy:cachepath organisation="org.tmatesoft.svnkit" module="svnkit" revision="1.7.5-v1"
       inline="true" conf="default" type="jar" transitive="true" pathid="svnkit.classpath"/>
-    <script language="javascript" classpathref="svnkit.classpath" taskname="svn"><![CDATA[
-      importClass(java.io.File);
-      importClass(java.util.TreeSet);
-      importPackage(org.tmatesoft.svn.core);
-      importPackage(org.tmatesoft.svn.core.wc);
-      var manager = SVNClientManager.newInstance();
-      var statusClient = manager.getStatusClient();
-      var wcClient = manager.getWCClient();
+    <script language="groovy" taskname="svn">
+      <classpath>
+        <path refid="groovy.classpath"/>
+        <path refid="svnkit.classpath"/>
+      </classpath><![CDATA[
+      import org.tmatesoft.svn.core.*;
+      import org.tmatesoft.svn.core.wc.*;
       
-      var basedir = new File(project.getProperty("basedir")).getAbsoluteFile();
-      var baseLen = basedir.toString().length();
-      var convertRelative = function(file) {
-        return file.getAbsolutePath().substring(baseLen + 1).replace(File.separatorChar, '/');
+      SVNClientManager manager = SVNClientManager.newInstance();
+      SVNStatusClient statusClient = manager.getStatusClient();
+      SVNWCClient wcClient = manager.getWCClient();
+      
+      File basedir = new File(project.getProperty('basedir')).getAbsoluteFile();
+      int baseLen = basedir.toString().length();
+      def convertRelative = {
+        file -> file.getAbsolutePath().substring(baseLen + 1).replace(File.separatorChar, (char)'/');
       }
       
-      var missingProps = new TreeSet(), unversioned = new TreeSet();
+      Set missingProps = new TreeSet(), unversioned = new TreeSet();
 
-      self.log("Getting all versioned and unversioned files...");
-      statusClient.doStatus(basedir, SVNRevision.WORKING, SVNDepth.fromRecurse(true), false, true, false, false, new ISVNStatusHandler({
-        handleStatus: function(status) {
-          var nodeStatus = status.getNodeStatus();
-          if (nodeStatus == SVNStatusType.STATUS_UNVERSIONED) {
-            unversioned.add(convertRelative(status.getFile()));
-          } else if (status.getKind() == SVNNodeKind.FILE && nodeStatus != SVNStatusType.STATUS_DELETED) {
-            missingProps.add(convertRelative(status.getFile()));
-          }
+      self.log('Getting all versioned and unversioned files...');
+      statusClient.doStatus(basedir, SVNRevision.WORKING, SVNDepth.fromRecurse(true), false, true, false, false, {
+        status ->
+        SVNStatusType nodeStatus = status.getNodeStatus();
+        if (nodeStatus == SVNStatusType.STATUS_UNVERSIONED) {
+          unversioned.add(convertRelative(status.getFile()));
+        } else if (status.getKind() == SVNNodeKind.FILE && nodeStatus != SVNStatusType.STATUS_DELETED) {
+          missingProps.add(convertRelative(status.getFile()));
         }
-      }), null);
+      } as ISVNStatusHandler, null);
 
-      self.log("Filtering files with existing svn:eol-style...");
-      wcClient.doGetProperty(basedir, "svn:eol-style", SVNRevision.WORKING, SVNRevision.WORKING, true, new ISVNPropertyHandler({
-        handleProperty: function(file, prop) {
+      self.log('Filtering files with existing svn:eol-style...');
+      wcClient.doGetProperty(basedir, 'svn:eol-style', SVNRevision.WORKING, SVNRevision.WORKING, true, {
+        file, prop -> missingProps.remove(convertRelative(file));
+      } as ISVNPropertyHandler);
+      
+      self.log('Filtering files with binary svn:mime-type...');
+      wcClient.doGetProperty(basedir, 'svn:mime-type', SVNRevision.WORKING, SVNRevision.WORKING, true, {
+        file, prop ->
+        prop = SVNPropertyValue.getPropertyAsString(prop.getValue());
+        if (prop.startsWith('application/') || prop.startsWith('image/')) {
           missingProps.remove(convertRelative(file));
         }
-      }));
+      } as ISVNPropertyHandler);
       
-      self.log("Filtering files with binary svn:mime-type...");
-      wcClient.doGetProperty(basedir, "svn:mime-type", SVNRevision.WORKING, SVNRevision.WORKING, true, new ISVNPropertyHandler({
-        handleProperty: function(file, prop) {
-          prop = SVNPropertyValue.getPropertyAsString(prop.getValue());
-          if (prop.startsWith("application/") || prop.startsWith("image/")) {
-            missingProps.remove(convertRelative(file));
-          }
-        }
-      }));
-      
-      var convertSet2String = function(set) {
-        return set.isEmpty() ? null : ("* " + set.toArray().join(project.getProperty("line.separator") + "* "))
+      def convertSet2String = {
+        set -> set.isEmpty() ? null : ('* ' + set.toArray().join(project.getProperty('line.separator') + '* '))
       };
-      project.setProperty("svn.checkprops.failed", convertSet2String(missingProps));
-      project.setProperty("svn.unversioned.failed", convertSet2String(unversioned));
+      project.setProperty('svn.checkprops.failed', convertSet2String(missingProps));
+      project.setProperty('svn.unversioned.failed', convertSet2String(unversioned));
     ]]></script>
     <fail if="svn.checkprops.failed"
       message="The following files are missing svn:eol-style (or binary svn:mime-type):${line.separator}${svn.checkprops.failed}"/>

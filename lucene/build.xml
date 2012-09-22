@@ -269,7 +269,7 @@
     </sequential>
   </target>
   
-  <target name="process-webpages" depends="resolve-pegdown">
+  <target name="process-webpages" depends="resolve-groovy,resolve-pegdown">
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,backwards/**,site/**"/>
     </makeurl>
