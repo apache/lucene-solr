@@ -18,7 +18,6 @@ package org.apache.lucene.spatial.vector;
  */
 
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.exception.InvalidShapeException;
 import com.spatial4j.core.shape.Circle;
 import com.spatial4j.core.shape.Point;
 import org.apache.lucene.search.Query;
@@ -50,7 +49,7 @@ public class TestTwoDoublesStrategy extends StrategyTestCase {
     assertNotNull(query);
   }
 
-  @Test(expected = InvalidShapeException.class)
+  @Test(expected = UnsupportedOperationException.class)
   public void testInvalidQueryShape() {
     Point point = ctx.makePoint(0, 0);
     SpatialArgs args = new SpatialArgs(SpatialOperation.Intersects, point);

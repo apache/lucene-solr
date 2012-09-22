@@ -18,7 +18,6 @@ package org.apache.lucene.spatial.vector;
  */
 
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.exception.InvalidShapeException;
 import com.spatial4j.core.shape.Circle;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
@@ -90,7 +89,7 @@ public class TwoDoublesStrategy extends SpatialStrategy {
   public Field[] createIndexableFields(Shape shape) {
     if (shape instanceof Point)
       return createIndexableFields((Point) shape);
-    throw new IllegalArgumentException("Can only index Point, not " + shape);
+    throw new UnsupportedOperationException("Can only index Point, not " + shape);
   }
 
   /** @see #createIndexableFields(com.spatial4j.core.shape.Shape) */
@@ -139,7 +138,7 @@ public class TwoDoublesStrategy extends SpatialStrategy {
           circle.getRadius() );
       return new ConstantScoreQuery(vsf);
     } else {
-      throw new InvalidShapeException("Only Rectangles and Circles are currently supported, " +
+      throw new UnsupportedOperationException("Only Rectangles and Circles are currently supported, " +
           "found [" + shape.getClass() + "]");//TODO
     }
   }
@@ -149,7 +148,7 @@ public class TwoDoublesStrategy extends SpatialStrategy {
     // For starters, just limit the bbox
     Shape shape = args.getShape();
     if (!(shape instanceof Rectangle || shape instanceof Circle)) {
-      throw new InvalidShapeException("Only Rectangles and Circles are currently supported, " +
+      throw new UnsupportedOperationException("Only Rectangles and Circles are currently supported, " +
           "found [" + shape.getClass() + "]");//TODO
     }
 
