@@ -43,7 +43,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
     return Arrays.asList(new Object[][]{
-        {"srpt_geohash"}, {"srpt_quad"}, {"stqpt_geohash"}, {"twodoubles"}
+        {"srpt_geohash"}, {"srpt_quad"}, {"stqpt_geohash"}, {"pointvector"}
     });
   }
 
@@ -262,7 +262,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
   @Test
   public void testSortMultiVal() throws Exception {
-    RandomizedTest.assumeFalse("Multivalue not supported for this field", fieldName.equals("twodoubles"));
+    RandomizedTest.assumeFalse("Multivalue not supported for this field", fieldName.equals("pointvector"));
 
     assertU(adoc("id", "100", fieldName, "1,2"));//1 point
     assertU(adoc("id", "101", fieldName, "4,-1", fieldName, "3,5"));//2 points, 2nd is pretty close to query point
