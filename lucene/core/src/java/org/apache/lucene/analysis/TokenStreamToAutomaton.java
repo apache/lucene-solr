@@ -62,6 +62,13 @@ public class TokenStreamToAutomaton {
     }
   }
 
+  /** Subclass & implement this if you need to change the
+   *  token (such as escaping certain bytes) before it's
+   *  turned into a graph. */ 
+  protected BytesRef changeToken(BytesRef in) {
+    return in;
+  }
+
   /** We create transition between two adjacent tokens. */
   public static final int POS_SEP = 256;
 
@@ -72,7 +79,7 @@ public class TokenStreamToAutomaton {
    *  PositionLengthAttribute}) from the provided {@link
    *  TokenStream}, and creates the corresponding
    *  automaton where arcs are bytes from each term. */
-  public static Automaton toAutomaton(TokenStream in) throws IOException {
+  public Automaton toAutomaton(TokenStream in) throws IOException {
     final Automaton a = new Automaton();
 
     final TermToBytesRefAttribute termBytesAtt = in.addAttribute(TermToBytesRefAttribute.class);
@@ -131,15 +138,16 @@ public class TokenStreamToAutomaton {
       final int endPos = pos + posLengthAtt.getPositionLength();
 
       termBytesAtt.fillBytesRef();
+      final BytesRef term2 = changeToken(term);
       final Position endPosData = positions.get(endPos);
       if (endPosData.arriving == null) {
         endPosData.arriving = new State();
       }
 
       State state = posData.leaving;
-      for(int byteIDX=0;byteIDX<term.length;byteIDX++) {
-        final State nextState = byteIDX == term.length-1 ? endPosData.arriving : new State();
-        state.addTransition(new Transition(term.bytes[term.offset + byteIDX] & 0xff, nextState));
+      for(int byteIDX=0;byteIDX<term2.length;byteIDX++) {
+        final State nextState = byteIDX == term2.length-1 ? endPosData.arriving : new State();
+        state.addTransition(new Transition(term2.bytes[term2.offset + byteIDX] & 0xff, nextState));
         state = nextState;
       }
     }

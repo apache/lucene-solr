@@ -472,7 +472,10 @@ public final class Util {
           if (path.arc.label == FST.END_LABEL) {
             // Add final output:
             //System.out.println("    done!: " + path);
-            results.add(new MinResult<T>(path.input, fst.outputs.add(path.cost, path.arc.output), comparator));
+            T finalOutput = fst.outputs.add(path.cost, path.arc.output);
+            if (acceptResult(path.input, finalOutput)) {
+              results.add(new MinResult<T>(path.input, finalOutput, comparator));
+            }
             break;
           } else {
             path.input.grow(1+path.input.length);
@@ -486,6 +489,10 @@ public final class Util {
       @SuppressWarnings({"rawtypes","unchecked"}) final MinResult<T>[] arr =
         (MinResult<T>[]) new MinResult[results.size()];
       return results.toArray(arr);
+    }
+
+    protected boolean acceptResult(IntsRef input, T output) {
+      return true;
     }
   }
 
@@ -830,7 +837,8 @@ public final class Util {
     scratch.grow(input.length);
     for(int i=0;i<input.length;i++) {
       int value = input.ints[i+input.offset];
-      assert value >= Byte.MIN_VALUE && value <= Byte.MAX_VALUE: "value " + value + " doesn't fit into byte";
+      // NOTE: we allow -128 to 255
+      assert value >= Byte.MIN_VALUE && value <= 255: "value " + value + " doesn't fit into byte";
       scratch.bytes[i] = (byte) value;
     }
     scratch.length = input.length;

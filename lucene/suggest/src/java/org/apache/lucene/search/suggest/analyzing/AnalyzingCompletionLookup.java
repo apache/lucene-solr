@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -113,41 +114,78 @@ public class AnalyzingCompletionLookup extends Lookup {
   private final boolean preserveSep;
 
   /**
-   * Calls {@link #AnalyzingCompletionLookup(Analyzer,int) AnalyzingCompletionLookup(analyzer, EXACT_FIRST | PRESERVE_SEP)}
+   * Calls {@link #AnalyzingCompletionLookup(Analyzer,int,int,int)
+   * AnalyzingCompletionLookup(analyzer, EXACT_FIRST |
+   * PRESERVE_SEP, 256, -1)}
    */
   public AnalyzingCompletionLookup(Analyzer analyzer) {
-    this(analyzer, EXACT_FIRST | PRESERVE_SEP);
+    this(analyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1);
   }
 
-  /** Include this flag in the options parameter {@link
-   * #AnalyzingCompletionLookup(Analyzer,int)} to always
-   * return exact matches first regardless of score.  This
-   * has no performance impact but could result in
-   * low-quality suggestions. */
+  /** Include this flag in the options parameter to {@link
+   *  #AnalyzingCompletionLookup(Analyzer,int,int,int)} to always
+   *  return the exact match first, regardless of score.  This
+   *  has no performance impact but could result in
+   *  low-quality suggestions. */
   public static final int EXACT_FIRST = 1;
 
-  /** Include this flag in the options parameter {@link
-   * #AnalyzingCompletionLookup(Analyzer,int)} to preserve
-   * token separators when matching. */
+  /** Include this flag in the options parameter to {@link
+   *  #AnalyzingCompletionLookup(Analyzer,int,int,int)} to preserve
+   *  token separators when matching. */
   public static final int PRESERVE_SEP = 2;
 
   /** Represents the separation between tokens, if
    *  PRESERVE_SEP was specified */
-  private static final byte SEP_BYTE = 0;
+  private static final int SEP_LABEL = 0xff;
+
+  /** Marks end of the analyzed input and start of dedup
+   *  byte. */
+  private static final int END_BYTE = 0x0;
+
+  /** Maximum number of dup surface forms (different surface
+   *  forms for the same analyzed form). */
+  private final int maxSurfaceFormsPerAnalyzedForm;
+
+  /** Maximum graph paths to index for a single analyzed
+   *  surface form.  This only matters if your analyzer
+   *  makes lots of alternate paths (e.g. contains
+   *  SynonymFilter). */
+  private final int maxGraphExpansions;
 
   /**
    * Creates a new suggester.
    * 
    * @param analyzer Analyzer that will be used for analyzing suggestions.
    * @param options see {@link #EXACT_FIRST}, {@link #PRESERVE_SEP}
+   * @param maxSurfaceFormsPerAnalyzedForm Maximum number of
+   *   surface forms to keep for a single analyzed form.
+   *   When there are too many surface forms we discard the
+   *   lowest weighted ones.
+   * @param maxGraphExpansions Maximum number of graph paths
+   *   to expand from the analyzed form.  Set this to -1 for
+   *   no limit.
    */
-  public AnalyzingCompletionLookup(Analyzer analyzer, int options) {
+  public AnalyzingCompletionLookup(Analyzer analyzer, int options, int maxSurfaceFormsPerAnalyzedForm, int maxGraphExpansions) {
     this.analyzer = analyzer;
     if ((options & ~(EXACT_FIRST | PRESERVE_SEP)) != 0) {
       throw new IllegalArgumentException("options should only contain EXACT_FIRST and PRESERVE_SEP; got " + options);
     }
     this.exactFirst = (options & EXACT_FIRST) != 0;
     this.preserveSep = (options & PRESERVE_SEP) != 0;
+
+    // NOTE: this is just an implementation limitation; if
+    // somehow this is a problem we could fix it by using
+    // more than one byte to disambiguate ... but 256 seems
+    // like it should be way more then enough.
+    if (maxSurfaceFormsPerAnalyzedForm <= 0 || maxSurfaceFormsPerAnalyzedForm > 256) {
+      throw new IllegalArgumentException("maxSurfaceFormsPerAnalyzedForm must be > 0 and < 256 (got: " + maxSurfaceFormsPerAnalyzedForm + ")");
+    }
+    this.maxSurfaceFormsPerAnalyzedForm = maxSurfaceFormsPerAnalyzedForm;
+
+    if (maxGraphExpansions < 1 && maxGraphExpansions != -1) {
+      throw new IllegalArgumentException("maxGraphExpansions must -1 (no limit) or > 0 (got: " + maxGraphExpansions + ")");
+    }
+    this.maxGraphExpansions = maxGraphExpansions;
   }
 
   // Replaces SEP with epsilon or remaps them if
@@ -165,8 +203,8 @@ public class AnalyzingCompletionLookup extends Lookup {
         assert t.getMin() == t.getMax();
         if (t.getMin() == TokenStreamToAutomaton.POS_SEP) {
           if (preserveSep) {
-            // Remap to SEP_BYTE:
-            t = new Transition(SEP_BYTE, t.getDest());
+            // Remap to SEP_LABEL:
+            t = new Transition(SEP_LABEL, t.getDest());
           } else {
             // NOTE: sort of weird because this will grow
             // the transition array we are iterating over,
@@ -175,6 +213,22 @@ public class AnalyzingCompletionLookup extends Lookup {
             state.addEpsilon(t.getDest());
             t = null;
           }
+        } else if (t.getMin() == TokenStreamToAutomaton.HOLE) {
+
+          // Just remove the hole: there will then be two
+          // SEP tokens next to each other, which will only
+          // match another hole at search time.  Note that
+          // it will also match an empty-string token ... if
+          // that's somehow a problem we can always map HOLE
+          // to a dedicated byte (and escape it in the
+          // input).
+
+          // NOTE: sort of weird because this will grow
+          // the transition array we are iterating over,
+          // but because we are going in reverse topo sort
+          // it will not add any SEP/HOLE transitions:
+          state.addEpsilon(t.getDest());
+          t = null;
         }
         if (t != null) {
           newTransitions.add(t);
@@ -182,6 +236,34 @@ public class AnalyzingCompletionLookup extends Lookup {
       }
       state.resetTransitions();
       state.setTransitions(newTransitions.toArray(new Transition[newTransitions.size()]));
+    }
+  }
+
+  /** Just escapes the bytes we steal (0xff, 0x0). */
+  private static final class  EscapingTokenStreamToAutomaton extends TokenStreamToAutomaton {
+
+    final BytesRef spare = new BytesRef();
+
+    @Override
+    protected BytesRef changeToken(BytesRef in) {
+      int upto = 0;
+      for(int i=0;i<in.length;i++) {
+        byte b = in.bytes[in.offset+i];
+        if (b == (byte) 0xff) {
+          if (spare.bytes.length == upto) {
+            spare.grow(upto+2);
+          }
+          spare.bytes[upto++] = (byte) 0xff;
+          spare.bytes[upto++] = b;
+        } else {
+          if (spare.bytes.length == upto) {
+            spare.grow(upto+1);
+          }
+          spare.bytes[upto++] = b;
+        }
+      }
+      spare.length = upto;
+      return spare;
     }
   }
   
@@ -197,7 +279,9 @@ public class AnalyzingCompletionLookup extends Lookup {
     BytesRef scratch = new BytesRef();
 
     BytesRef separator = new BytesRef(new byte[] { (byte)TokenStreamToAutomaton.POS_SEP });
-    
+
+    TokenStreamToAutomaton ts2a = new EscapingTokenStreamToAutomaton();
+
     // analyzed sequence + 0(byte) + weight(int) + surface + analyzedLength(short) 
     boolean success = false;
     byte buffer[] = new byte[8];
@@ -212,7 +296,7 @@ public class AnalyzingCompletionLookup extends Lookup {
         // Create corresponding automaton: labels are bytes
         // from each analyzed token, with byte 0 used as
         // separator between tokens:
-        Automaton automaton = TokenStreamToAutomaton.toAutomaton(ts);
+        Automaton automaton = ts2a.toAutomaton(ts);
         ts.end();
         ts.close();
 
@@ -224,8 +308,7 @@ public class AnalyzingCompletionLookup extends Lookup {
         // more than one path, eg if the analyzer created a
         // graph using SynFilter or WDF):
 
-        // nocommit: we should probably not wire this param to -1 but have a reasonable limit?!
-        Set<IntsRef> paths = SpecialOperations.getFiniteStrings(automaton, -1);
+        Set<IntsRef> paths = SpecialOperations.getFiniteStrings(automaton, maxGraphExpansions);
         for (IntsRef path : paths) {
 
           Util.toBytesRef(path, scratch);
@@ -242,7 +325,15 @@ public class AnalyzingCompletionLookup extends Lookup {
           output.writeBytes(scratch.bytes, scratch.offset, scratch.length);
           output.writeByte((byte)0); // separator: not used, just for sort order
           output.writeByte((byte)0); // separator: not used, just for sort order
+
+          // NOTE: important that writeInt is big-endian,
+          // because this means we sort secondarily by
+          // cost ascending (= weight descending) so that
+          // when we discard too many surface forms for a
+          // single analyzed form we are discarding the
+          // least weight ones:
           output.writeInt(encodeWeight(iterator.weight()));
+
           output.writeBytes(surfaceForm.bytes, surfaceForm.offset, surfaceForm.length);
           output.writeShort(analyzedLength);
           writer.write(buffer, 0, output.getPosition());
@@ -253,7 +344,7 @@ public class AnalyzingCompletionLookup extends Lookup {
       // Sort all input/output pairs (required by FST.Builder):
       new Sort().sort(tempInput, tempSorted);
       reader = new Sort.ByteSequencesReader(tempSorted);
-      
+     
       PairOutputs<Long,BytesRef> outputs = new PairOutputs<Long,BytesRef>(PositiveIntOutputs.getSingleton(true), ByteSequenceOutputs.getSingleton());
       Builder<Pair<Long,BytesRef>> builder = new Builder<Pair<Long,BytesRef>>(FST.INPUT_TYPE.BYTE1, outputs);
 
@@ -263,6 +354,7 @@ public class AnalyzingCompletionLookup extends Lookup {
       BytesRef surface = new BytesRef();
       IntsRef scratchInts = new IntsRef();
       ByteArrayDataInput input = new ByteArrayDataInput();
+
       int dedup = 0;
       while (reader.read(scratch)) {
         input.reset(scratch.bytes, scratch.offset, scratch.length);
@@ -279,33 +371,32 @@ public class AnalyzingCompletionLookup extends Lookup {
         surface.bytes = scratch.bytes;
         surface.offset = input.getPosition();
         surface.length = input.length() - input.getPosition() - 2;
-        
+
         if (previous == null) {
           previous = new BytesRef();
+          previous.copyBytes(analyzed);
         } else if (analyzed.equals(previous)) {
-          // nocommit: "extend" duplicates with useless
-          // increasing bytes (it wont matter) ... or we
-          // could use multiple outputs for a single input?
-          // this would be more efficient?
-          if (dedup < 256) {
-            analyzed.grow(analyzed.length+1);
-            analyzed.bytes[analyzed.length] = (byte) dedup;
-            dedup++;
-            analyzed.length++;
-          } else {
-            // nocommit add param to limit "dups"???
-
-            // More than 256 dups: skip the rest:
+          dedup++;
+          if (dedup >= maxSurfaceFormsPerAnalyzedForm) {
+            // More than maxSurfaceFormsPerAnalyzedForm
+            // dups: skip the rest:
             continue;
           }
         } else {
           dedup = 0;
+          previous.copyBytes(analyzed);
         }
+        
+        analyzed.grow(analyzed.length+2);
+        // NOTE: must be byte 0 so we sort before whatever
+        // is next
+        analyzed.bytes[analyzed.length] = 0;
+        analyzed.bytes[analyzed.length+1] = (byte) dedup;
+        analyzed.length += 2;
 
         Util.toIntsRef(analyzed, scratchInts);
-        // nocommit (why?)
+        //System.out.println("ADD: " + analyzed);
         builder.add(scratchInts, outputs.newPair(cost, BytesRef.deepCopyOf(surface)));
-        previous.copyBytes(analyzed);
       }
       fst = builder.finish();
 
@@ -345,92 +436,146 @@ public class AnalyzingCompletionLookup extends Lookup {
   }
 
   @Override
-  public List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) {
+  public List<LookupResult> lookup(final CharSequence key, boolean onlyMorePopular, int num) {
     assert num > 0;
     Arc<Pair<Long,BytesRef>> arc = new Arc<Pair<Long,BytesRef>>();
 
-    //System.out.println("lookup");
+    // System.out.println("lookup num=" + num);
 
-    // TODO: is there a Reader from a CharSequence?
-    // Turn tokenstream into automaton:
-    Automaton automaton;
     try {
+
+      // TODO: is there a Reader from a CharSequence?
+      // Turn tokenstream into automaton:
       TokenStream ts = analyzer.tokenStream("", new StringReader(key.toString()));
-      automaton = TokenStreamToAutomaton.toAutomaton(ts);
+      Automaton automaton = (new EscapingTokenStreamToAutomaton()).toAutomaton(ts);
       ts.end();
       ts.close();
-    } catch (IOException bogus) {
-      throw new RuntimeException(bogus);
-    }
 
-    replaceSep(automaton);
+      replaceSep(automaton);
 
-    // TODO: we can optimize this somewhat by determinizing
-    // while we convert
-    automaton = Automaton.minimize(automaton);
+      // TODO: we can optimize this somewhat by determinizing
+      // while we convert
+      automaton = Automaton.minimize(automaton);
 
-    List<LookupResult> results = new ArrayList<LookupResult>(num);
-    CharsRef spare = new CharsRef();
+      final CharsRef spare = new CharsRef();
 
-    //System.out.println("  now intersect exactFirst=" + exactFirst);
+      //System.out.println("  now intersect exactFirst=" + exactFirst);
     
-    // Intersect automaton w/ suggest wFST and get all
-    // prefix starting nodes & their outputs:
-    final List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths;
-    try {
+      // Intersect automaton w/ suggest wFST and get all
+      // prefix starting nodes & their outputs:
+      final List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths;
       prefixPaths = FSTUtil.intersectPrefixPaths(automaton, fst);
-    } catch (IOException bogus) {
-      throw new RuntimeException(bogus);
-    }
 
-    // nocommit maybe nuke exactFirst...? but... it's
-    // useful?
-    // nocommit: exactFirst is not well defined here ... the
-    // "exactness" refers to the analyzed form not the
-    // surface form
-    if (exactFirst) {
-      for (FSTUtil.Path<Pair<Long,BytesRef>> path : prefixPaths) {
-        if (path.fstNode.isFinal()) {
-          BytesRef prefix = BytesRef.deepCopyOf(path.output.output2);
-          prefix.append(path.fstNode.nextFinalOutput.output2);
-          spare.grow(prefix.length);
-          UnicodeUtil.UTF8toUTF16(prefix, spare);
-          results.add(new LookupResult(spare.toString(), decodeWeight(path.output.output1 + path.fstNode.nextFinalOutput.output1)));
-          if (--num == 0) {
-            // nocommit hmm should we order all "exact"
-            // matches by their .output1s, then return those
-            // top n...?
-            return results; // that was quick
+      //System.out.println("  prefixPaths: " +
+      //prefixPaths.size());
+
+      BytesReader bytesReader = fst.getBytesReader(0);
+
+      FST.Arc<Pair<Long,BytesRef>> scratchArc = new FST.Arc<Pair<Long,BytesRef>>();
+
+      List<LookupResult> results = new ArrayList<LookupResult>();
+
+      if (exactFirst) {
+
+        Util.TopNSearcher<Pair<Long,BytesRef>> searcher;
+        searcher = new Util.TopNSearcher<Pair<Long,BytesRef>>(fst, num, weightComparator);
+
+        int count = 0;
+        for (FSTUtil.Path<Pair<Long,BytesRef>> path : prefixPaths) {
+          if (fst.findTargetArc(END_BYTE, path.fstNode, scratchArc, bytesReader) != null) {
+            // This node has END_BYTE arc leaving, meaning it's an
+            // "exact" match:
+            count++;
           }
         }
-      }
-    }
 
-    Util.TopNSearcher<Pair<Long,BytesRef>> searcher = new Util.TopNSearcher<Pair<Long,BytesRef>>(fst, num, weightComparator);
-    for (FSTUtil.Path<Pair<Long,BytesRef>> path : prefixPaths) {
-      try {
-        searcher.addStartPaths(path.fstNode, path.output, !exactFirst, path.input);
-      } catch (IOException bogus) {
-        throw new RuntimeException(bogus);
-      }
-    }
+        searcher = new Util.TopNSearcher<Pair<Long,BytesRef>>(fst, count * maxSurfaceFormsPerAnalyzedForm, weightComparator);
 
-    MinResult<Pair<Long,BytesRef>> completions[] = null;
-    try {
-      completions = searcher.search();
+        // NOTE: we could almost get away with only usine
+        // the first start node.  The only catch is if
+        // maxSurfaceFormsPerAnalyzedForm had kicked in and
+        // pruned our exact match from one of these nodes
+        // ...:
+        for (FSTUtil.Path<Pair<Long,BytesRef>> path : prefixPaths) {
+          if (fst.findTargetArc(END_BYTE, path.fstNode, scratchArc, bytesReader) != null) {
+            // This node has END_BYTE arc leaving, meaning it's an
+            // "exact" match:
+            searcher.addStartPaths(scratchArc, fst.outputs.add(path.output, scratchArc.output), true, path.input);
+          }
+        }
+
+        MinResult<Pair<Long,BytesRef>> completions[] = searcher.search();
+
+        // NOTE: this is rather inefficient: we enumerate
+        // every matching "exactly the same analyzed form"
+        // path, and then do linear scan to see if one of
+        // these exactly matches the input.  It should be
+        // possible (though hairy) to do something similar
+        // to getByOutput, since the surface form is encoded
+        // into the FST output, so we more efficiently hone
+        // in on the exact surface-form match.  Still, I
+        // suspect very little time is spent in this linear
+        // seach: it's bounded by how many prefix start
+        // nodes we have and the
+        // maxSurfaceFormsPerAnalyzedForm:
+        for(MinResult<Pair<Long,BytesRef>> completion : completions) {
+          spare.grow(completion.output.output2.length);
+          UnicodeUtil.UTF8toUTF16(completion.output.output2, spare);
+          if (CHARSEQUENCE_COMPARATOR.compare(spare, key) == 0) {
+            results.add(new LookupResult(spare.toString(), decodeWeight(completion.output.output1)));
+            break;
+          }
+        }
+
+        if (results.size() == num) {
+          // That was quick:
+          return results;
+        }
+      }
+
+      // nocommit hmm w/ a graph ... aren't we going to
+      // produce dup surface form suggestions ...?  do we
+      // need to dedup by surface form?
+
+      Util.TopNSearcher<Pair<Long,BytesRef>> searcher;
+      searcher = new Util.TopNSearcher<Pair<Long,BytesRef>>(fst,
+                                                            num - results.size(),
+                                                            weightComparator) {
+        @Override
+        protected boolean acceptResult(IntsRef input, Pair<Long,BytesRef> output) {
+          if (!exactFirst) {
+            return true;
+          } else {
+            // In exactFirst mode, don't accept any paths
+            // matching the surface form since that will
+            // create duplicate results:
+            spare.grow(output.output2.length);
+            UnicodeUtil.UTF8toUTF16(output.output2, spare);
+            return CHARSEQUENCE_COMPARATOR.compare(spare, key) != 0;
+          }
+        }
+      };
+
+      for (FSTUtil.Path<Pair<Long,BytesRef>> path : prefixPaths) {
+        searcher.addStartPaths(path.fstNode, path.output, true, path.input);
+      }
+
+      MinResult<Pair<Long,BytesRef>> completions[] = searcher.search();
+
+      for(MinResult<Pair<Long,BytesRef>> completion : completions) {
+        spare.grow(completion.output.output2.length);
+        UnicodeUtil.UTF8toUTF16(completion.output.output2, spare);
+        LookupResult result = new LookupResult(spare.toString(), decodeWeight(completion.output.output1));
+        //System.out.println("    result=" + result);
+        results.add(result);
+      }
+
+      return results;
     } catch (IOException bogus) {
       throw new RuntimeException(bogus);
     }
-
-    for (MinResult<Pair<Long,BytesRef>> completion : completions) {
-      spare.grow(completion.output.output2.length);
-      UnicodeUtil.UTF8toUTF16(completion.output.output2, spare);
-      results.add(new LookupResult(spare.toString(), decodeWeight(completion.output.output1)));
-    }
-
-    return results;
   }
-  
+
   /**
    * Returns the weight associated with an input string,
    * or null if it does not exist.
@@ -455,6 +600,6 @@ public class AnalyzingCompletionLookup extends Lookup {
   static final Comparator<Pair<Long,BytesRef>> weightComparator = new Comparator<Pair<Long,BytesRef>> () {
     public int compare(Pair<Long,BytesRef> left, Pair<Long,BytesRef> right) {
       return left.output1.compareTo(right.output1);
-    }  
+    }
   };
 }

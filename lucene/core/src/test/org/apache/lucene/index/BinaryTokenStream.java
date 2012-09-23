@@ -25,6 +25,7 @@ import org.apache.lucene.util.BytesRef;
 /**
  * a binary tokenstream that lets you index a BytesRef
  */
+// nocommit absorb into CannedBinaryTS?
 public final class BinaryTokenStream extends TokenStream {
   private final ByteTermAttribute bytesAtt = addAttribute(ByteTermAttribute.class);
   private boolean available = true;
@@ -63,6 +64,8 @@ public final class BinaryTokenStream extends TokenStream {
     }
     
     public void setBytesRef(BytesRef bytes) {
+      // nocommit isn't this dangerous?  the getBytesRef is
+      // pre-shared?  so you can't set this per token?
       this.bytes = bytes;
     }
     

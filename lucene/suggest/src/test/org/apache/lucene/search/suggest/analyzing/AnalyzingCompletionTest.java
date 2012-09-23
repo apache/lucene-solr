@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -29,6 +30,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CannedBinaryTokenStream.BinaryToken;
+import org.apache.lucene.analysis.CannedBinaryTokenStream;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -42,6 +45,7 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.TermFreq;
 import org.apache.lucene.search.suggest.TermFreqArrayIterator;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -129,7 +133,7 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
 
     int options = 0;
 
-    AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(new MockAnalyzer(random()), options);
+    AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(new MockAnalyzer(random()), options, 256, -1);
     suggester.build(new TermFreqArrayIterator(keys));
     // nocommit if i change this to "ab " ... the test fails
     // now but really it should pass???  problem is
@@ -146,10 +150,6 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
   }
 
   public void testInputPathRequired() throws Exception {
-    TermFreq keys[] = new TermFreq[] {
-        new TermFreq("ab xc", 50),
-        new TermFreq("ba xd", 50),
-    };
 
     //  SynonymMap.Builder b = new SynonymMap.Builder(false);
     //  b.add(new CharsRef("ab"), new CharsRef("ba"), true);
@@ -167,42 +167,42 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
         // TokenStream stream = new SynonymFilter(tokenizer, map, true);
         // return new TokenStreamComponents(tokenizer, new RemoveDuplicatesTokenFilter(stream));
         return new TokenStreamComponents(tokenizer) {
-         int tokenStreamCounter = 0;
-         final TokenStream[] tokenStreams = new TokenStream[]{ new CannedTokenStream(
-             new Token[] {
-               token("ab",1,1),
-               token("ba",0,1),
-               token("xc",1,1)
-             }),
+          int tokenStreamCounter = 0;
+          final TokenStream[] tokenStreams = new TokenStream[] {
+            new CannedTokenStream(new Token[] {
+                token("ab",1,1),
+                token("ba",0,1),
+                token("xc",1,1)
+              }),
+            new CannedTokenStream(new Token[] {
+                token("ba",1,1),          
+                token("xd",1,1)
+              }),
+            new CannedTokenStream(new Token[] {
+                token("ab",1,1),
+                token("ba",0,1),
+                token("x",1,1)
+              })
+          };
 
-         new CannedTokenStream(
-             new Token[] {
-               token("ba",1,1),          
-               token("xd",1,1)
-             }),
-
-         new CannedTokenStream(
-             new Token[] {
-               token("ab",1,1),
-               token("ba",0,1),
-               token("x",1,1)
-             })
-         };
-
-         @Override
-         public TokenStream getTokenStream() {
-           TokenStream result = tokenStreams[tokenStreamCounter];
-           tokenStreamCounter++;
-           return result;
-         }
+          @Override
+          public TokenStream getTokenStream() {
+            TokenStream result = tokenStreams[tokenStreamCounter];
+            tokenStreamCounter++;
+            return result;
+          }
          
-         @Override
-         protected void setReader(final Reader reader) throws IOException {
-         }
+          @Override
+          protected void setReader(final Reader reader) throws IOException {
+          }
         };
       }
     };
 
+    TermFreq keys[] = new TermFreq[] {
+        new TermFreq("ab xc", 50),
+        new TermFreq("ba xd", 50),
+    };
     AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(analyzer);
     suggester.build(new TermFreqArrayIterator(keys));
     List<LookupResult> results = suggester.lookup("ab x", false, 1);
@@ -216,7 +216,10 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
     return t;
   }
 
-  
+  private static BinaryToken token(BytesRef term) {
+    return new BinaryToken(term);
+  }
+
   private void printTokens(final Analyzer analyzer, String input) throws IOException {
     System.out.println("Tokens for " + input);
     TokenStream ts = analyzer.tokenStream("", new StringReader(input));
@@ -233,6 +236,114 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
     ts.close();
   }  
 
+  private final Analyzer getUnusualAnalyzer() {
+    return new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        
+        return new TokenStreamComponents(tokenizer) {
+
+          int count;
+
+          @Override
+          public TokenStream getTokenStream() {
+            // 4th time we are called, return tokens a b,
+            // else just a:
+            if (count++ != 3) {
+              return new CannedTokenStream(new Token[] {
+                  token("a", 1, 1),
+                });
+            } else {
+              // After that "a b":
+              return new CannedTokenStream(new Token[] {
+                  token("a", 1, 1),
+                  token("b", 1, 1),
+                });
+            }
+          }
+         
+          @Override
+          protected void setReader(final Reader reader) throws IOException {
+          }
+        };
+      }
+    };
+  }
+
+  public void testExactFirst() throws Exception {
+
+    AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(getUnusualAnalyzer(), AnalyzingCompletionLookup.EXACT_FIRST | AnalyzingCompletionLookup.PRESERVE_SEP, 256, -1);
+    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
+          new TermFreq("x y", 1),
+          new TermFreq("x y z", 3),
+          new TermFreq("x", 2),
+          new TermFreq("z z z", 20),
+        }));
+
+    //System.out.println("ALL: " + suggester.lookup("x y", false, 6));
+
+    for(int topN=1;topN<6;topN++) {
+      List<LookupResult> results = suggester.lookup("x y", false, topN);
+      //System.out.println("topN=" + topN + " " + results);
+
+      assertEquals(Math.min(topN, 4), results.size());
+
+      assertEquals("x y", results.get(0).key);
+      assertEquals(1, results.get(0).value);
+
+      if (topN > 1) {
+        assertEquals("z z z", results.get(1).key);
+        assertEquals(20, results.get(1).value);
+
+        if (topN > 2) {
+          assertEquals("x y z", results.get(2).key);
+          assertEquals(3, results.get(2).value);
+
+          if (topN > 3) {
+            assertEquals("x", results.get(3).key);
+            assertEquals(2, results.get(3).value);
+          }
+        }
+      }
+    }
+  }
+
+  public void testNonExactFirst() throws Exception {
+
+    AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(getUnusualAnalyzer(), AnalyzingCompletionLookup.PRESERVE_SEP, 256, -1);
+
+    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
+          new TermFreq("x y", 1),
+          new TermFreq("x y z", 3),
+          new TermFreq("x", 2),
+          new TermFreq("z z z", 20),
+        }));
+
+    for(int topN=1;topN<6;topN++) {
+      List<LookupResult> results = suggester.lookup("p", false, topN);
+
+      assertEquals(Math.min(topN, 4), results.size());
+
+      assertEquals("z z z", results.get(0).key);
+      assertEquals(20, results.get(0).value);
+
+      if (topN > 1) {
+        assertEquals("x y z", results.get(1).key);
+        assertEquals(3, results.get(1).value);
+
+        if (topN > 2) {
+          assertEquals("x", results.get(2).key);
+          assertEquals(2, results.get(2).value);
+          
+          if (topN > 3) {
+            assertEquals("x y", results.get(3).key);
+            assertEquals(1, results.get(3).value);
+          }
+        }
+      }
+    }
+  }
   
   public void testRandom() throws Exception {
     int numWords = atLeast(1000);
@@ -265,7 +376,7 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
     // nocommit also test NOT preserving seps/holes
     // nocommit why no failure if we DON'T preserve seps/holes...?
     AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false),
-                                                                        AnalyzingCompletionLookup.PRESERVE_SEP);
+                                                                        AnalyzingCompletionLookup.PRESERVE_SEP, 256, -1);
     suggester.build(new TermFreqArrayIterator(keys));
     
     for (String prefix : allPrefixes) {
@@ -306,5 +417,89 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
         assertEquals(matches.get(hit).value, r.get(hit).value, 0f);
       }
     }
+  }
+
+  // nocommit need random full binary test
+
+  public void testStolenBytes() throws Exception {
+    
+    final Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        
+        // TokenStream stream = new SynonymFilter(tokenizer, map, true);
+        // return new TokenStreamComponents(tokenizer, new RemoveDuplicatesTokenFilter(stream));
+        return new TokenStreamComponents(tokenizer) {
+          int tokenStreamCounter = 0;
+          final TokenStream[] tokenStreams = new TokenStream[] {
+            new CannedBinaryTokenStream(new BinaryToken[] {
+                token(new BytesRef(new byte[] {0x61, (byte) 0xff, 0x61})),
+              }),
+            new CannedTokenStream(new Token[] {
+                token("a",1,1),          
+                token("a",1,1)
+              }),
+            new CannedTokenStream(new Token[] {
+                token("a",1,1),
+                token("a",1,1)
+              }),
+            new CannedBinaryTokenStream(new BinaryToken[] {
+                token(new BytesRef(new byte[] {0x61, (byte) 0xff, 0x61})),
+              })
+          };
+
+          @Override
+          public TokenStream getTokenStream() {
+            TokenStream result = tokenStreams[tokenStreamCounter];
+            tokenStreamCounter++;
+            return result;
+          }
+         
+          @Override
+          protected void setReader(final Reader reader) throws IOException {
+          }
+        };
+      }
+    };
+
+    TermFreq keys[] = new TermFreq[] {
+      new TermFreq("a a", 50),
+      new TermFreq("a b", 50),
+    };
+
+    AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(analyzer);
+    suggester.build(new TermFreqArrayIterator(keys));
+    List<LookupResult> results = suggester.lookup("a a", false, 5);
+    assertEquals(1, results.size());
+    assertEquals("a b", results.get(0).key);
+    assertEquals(50, results.get(0).value);
+
+    results = suggester.lookup("a a", false, 5);
+    assertEquals(1, results.size());
+    assertEquals("a a", results.get(0).key);
+    assertEquals(50, results.get(0).value);
+  }
+
+  // nocommit test that dups are preserved by weight:
+  public void testMaxSurfaceFormsPerAnalyzedForm() throws Exception {
+
+    AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(new MockAnalyzer(random()), 0, 2, -1);
+
+    List<TermFreq> keys = Arrays.asList(new TermFreq[] {
+        new TermFreq("a", 40),
+        new TermFreq("a ", 50),
+        new TermFreq(" a", 60),
+      });
+
+    Collections.shuffle(keys, random());
+    suggester.build(new TermFreqArrayIterator(keys));
+
+    List<LookupResult> results = suggester.lookup("a", false, 5);
+    assertEquals(2, results.size());
+    assertEquals(" a", results.get(0).key);
+    assertEquals(60, results.get(0).value);
+    assertEquals("a ", results.get(1).key);
+    assertEquals(50, results.get(1).value);
   }
 }

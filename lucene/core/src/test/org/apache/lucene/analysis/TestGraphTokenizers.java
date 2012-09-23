@@ -416,7 +416,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
       new Token[] {
         token("abc", 1, 1),
       });
-    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
     final Automaton expected = BasicAutomata.makeString("abc");
     assertTrue(BasicOperations.sameLanguage(expected, actual));
   }
@@ -459,7 +459,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         token("abc", 1, 1),
         token("def", 1, 1),
       });
-    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
     final Automaton expected =  join("abc", "def");
 
     //toDot(actual);
@@ -473,7 +473,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         token("abc", 1, 1),
         token("def", 2, 1),
       });
-    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
 
     final Automaton expected = join(s2a("abc"), SEP_A, HOLE_A, SEP_A, s2a("def"));
 
@@ -489,7 +489,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         token("abc", 1, 1),
         token("xyz", 0, 1)
       });
-    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
     final Automaton a1 = BasicAutomata.makeString("abc");
     final Automaton a2 = BasicAutomata.makeString("xyz");
     final Automaton expected = BasicOperations.union(a1, a2);
@@ -504,7 +504,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         token("xyz", 0, 2),
         token("def", 1, 1),
       });
-    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
     final Automaton a1 = BasicAutomata.makeString("xyz");
     final Automaton a2 = join("abc", "def");
                                                                    
@@ -521,7 +521,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         token("X", 0, 2),
         token("b", 2, 1),
       });
-    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
     final Automaton a1 = BasicOperations.union(
                                                join(s2a("a"), SEP_A, HOLE_A),
                                                BasicAutomata.makeString("X"));
@@ -539,7 +539,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         token("abc", 0, 3),
         token("def", 2, 1),
       });
-    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
     final Automaton expected = BasicOperations.union(
                                                      join(s2a("xyz"), SEP_A, HOLE_A, SEP_A, s2a("def")),
                                                      BasicAutomata.makeString("abc"));
@@ -555,7 +555,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         token("def", 1, 1),
         token("ghi", 1, 1),
       });
-    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
     final Automaton a1 = BasicAutomata.makeString("xyz");
     final Automaton a2 = join("abc", "def", "ghi");
     final Automaton expected = BasicOperations.union(a1, a2);
@@ -575,7 +575,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
       new Token[] {
         token("abc", 2, 1),
       });
-    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
     final Automaton expected = join(HOLE_A, SEP_A, s2a("abc"));
     //toDot(actual);
     assertTrue(BasicOperations.sameLanguage(expected, actual));
@@ -589,7 +589,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
         token("a", 1, 1),
         token("X", 0, 10),
       });
-    final Automaton actual = TokenStreamToAutomaton.toAutomaton(ts);
+    final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
     final Automaton expected = BasicOperations.union(BasicAutomata.makeString("a"),
                                                      BasicAutomata.makeString("X"));
     assertTrue(BasicOperations.sameLanguage(expected, actual));
