@@ -21,8 +21,12 @@ Changes in backwards compatibility policy
   Robert Muir)
 
 ======================= Lucene 4.1.0 =======================
+New Features
 
-(No Changes)
+* LUCENE-4404: New ListOfOutputs (in lucene/misc) for FSTs wraps
+  another Outputs implementation, allowing you to store more than one
+  output for a single input.  UpToTwoPositiveIntsOutputs was moved
+  from lucene/core to lucene/misc.  (Mike McCandless)
 
 ======================= Lucene 4.0.0 =======================
 

@@ -17,6 +17,21 @@ package org.apache.lucene.util.fst;
  * limitations under the License.
  */
 
+/**
+ * An FST {@link Outputs} implementation where each output
+ * is one or two non-negative long values.  If it's a
+ * single output, Long is returned; else, TwoLongs.  Order
+ * is preserved in the TwoLongs case, ie .first is the first
+ * input/output added to Builder, and .second is the
+ * second.  You cannot store 0 output with this (that's
+ * reserved to mean "no output")!
+ *
+ * NOTE: the resulting FST is not guaranteed to be minimal!
+ * See {@link Builder}.
+ *
+ * @lucene.experimental
+ */
+
 import java.io.IOException;
 
 import org.apache.lucene.store.DataInput;
@@ -36,7 +51,6 @@ import org.apache.lucene.store.DataOutput;
  *
  * @lucene.experimental
  */
-
 public final class UpToTwoPositiveIntOutputs extends Outputs<Object> {
 
   /** Holds two long outputs. */
