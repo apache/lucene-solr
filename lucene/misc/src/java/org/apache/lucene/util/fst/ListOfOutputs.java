@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.IntsRef; // javadocs
 
 /**
  * Wraps another Outputs implementation and encodes one or
