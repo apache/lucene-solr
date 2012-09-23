@@ -23,7 +23,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-
+/**
+ * @see PointVectorStrategy
+ * @lucene.experimental
+ */
 public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointVectorStrategy> implements SchemaAware {
 
   protected String numberFieldName = "tdouble";//in example schema defaults to non-zero precision step -- a good choice
