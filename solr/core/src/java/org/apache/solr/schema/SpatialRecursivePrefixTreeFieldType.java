@@ -21,6 +21,10 @@ import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 
 import java.util.Map;
 
+/**
+ * @see RecursivePrefixTreeStrategy
+ * @lucene.experimental
+ */
 public class SpatialRecursivePrefixTreeFieldType extends AbstractSpatialPrefixTreeFieldType<RecursivePrefixTreeStrategy> {
 
   /** @see RecursivePrefixTreeStrategy#setPrefixGridScanLevel(int) */

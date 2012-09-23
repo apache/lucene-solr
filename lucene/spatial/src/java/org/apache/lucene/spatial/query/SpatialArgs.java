@@ -24,6 +24,7 @@ import com.spatial4j.core.shape.Shape;
 
 /**
  * Principally holds the query {@link Shape} and the {@link SpatialOperation}.
+ * It's used as an argument to some methods on {@link org.apache.lucene.spatial.SpatialStrategy}.
  *
  * @lucene.experimental
  */

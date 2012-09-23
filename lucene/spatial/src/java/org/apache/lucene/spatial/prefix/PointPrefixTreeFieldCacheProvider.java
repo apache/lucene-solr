@@ -40,8 +40,7 @@ public class PointPrefixTreeFieldCacheProvider extends ShapeFieldCacheProvider<P
     this.grid = grid;
   }
 
-  //A kluge that this is a field
-  private Node scanCell = null;
+  private Node scanCell = null;//re-used in readShape to save GC
 
   @Override
   protected Point readShape(BytesRef term) {

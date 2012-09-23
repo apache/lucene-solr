@@ -30,7 +30,8 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * An implementation of the Lucene ValueSource model that returns the distance.
+ * An implementation of the Lucene ValueSource model that returns the distance
+ * for a {@link PointVectorStrategy}.
  *
  * @lucene.internal
  */
