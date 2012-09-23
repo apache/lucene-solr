@@ -49,9 +49,26 @@ public abstract class Outputs<T> {
   /** Eg add("foo", "bar") -> "foobar" */
   public abstract T add(T prefix, T output);
 
+  /** Encode an output value into a {@link DataOutput}. */
   public abstract void write(T output, DataOutput out) throws IOException;
 
+  /** Encode an final node output value into a {@link
+   *  DataOutput}.  By default this just calls {@link #write(Object,
+   *  DataOutput)}. */
+  public void writeFinalOutput(T output, DataOutput out) throws IOException {
+    write(output, out);
+  }
+
+  /** Decode an output value previously written with {@link
+   *  #write(Object, DataOutput)}. */
   public abstract T read(DataInput in) throws IOException;
+
+  /** Decode an output value previously written with {@link
+   *  #writeFinalOutput(Object, DataOutput)}.  By default this
+   *  just calls {@link #read(DataInput)}. */
+  public T readFinalOutput(DataInput in) throws IOException {
+    return read(in);
+  }
 
   /** NOTE: this output is compared with == so you must
    *  ensure that all methods return the single object if

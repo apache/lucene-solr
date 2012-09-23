@@ -296,11 +296,13 @@ public final class FST<T> {
       // messy
       bytes = new byte[numBytes];
       in.readBytes(bytes, 0, numBytes);
+      BytesReader reader;
       if (packed) {
-        emptyOutput = outputs.read(getBytesReader(0));
+        reader = getBytesReader(0);
       } else {
-        emptyOutput = outputs.read(getBytesReader(numBytes-1));
+        reader = getBytesReader(numBytes-1);
       }
+      emptyOutput = outputs.readFinalOutput(reader);
     } else {
       emptyOutput = null;
     }
@@ -414,7 +416,7 @@ public final class FST<T> {
     // TODO: this is messy -- replace with sillyBytesWriter; maybe make
     // bytes private
     final int posSave = writer.posWrite;
-    outputs.write(emptyOutput, writer);
+    outputs.writeFinalOutput(emptyOutput, writer);
     emptyOutputBytes = new byte[writer.posWrite-posSave];
 
     if (!packed) {
@@ -638,7 +640,7 @@ public final class FST<T> {
 
       if (arc.nextFinalOutput != NO_OUTPUT) {
         //System.out.println("    write final output");
-        outputs.write(arc.nextFinalOutput, writer);
+        outputs.writeFinalOutput(arc.nextFinalOutput, writer);
       }
 
       if (targetHasArcs && (flags & BIT_TARGET_NEXT) == 0) {
@@ -788,7 +790,7 @@ public final class FST<T> {
             outputs.read(in);
           }
           if (arc.flag(BIT_ARC_HAS_FINAL_OUTPUT)) {
-            outputs.read(in);
+            outputs.readFinalOutput(in);
           }
           if (arc.flag(BIT_STOP_NODE)) {
           } else if (arc.flag(BIT_TARGET_NEXT)) {
@@ -963,7 +965,7 @@ public final class FST<T> {
     }
 
     if (arc.flag(BIT_ARC_HAS_FINAL_OUTPUT)) {
-      arc.nextFinalOutput = outputs.read(in);
+      arc.nextFinalOutput = outputs.readFinalOutput(in);
     } else {
       arc.nextFinalOutput = outputs.getNoOutput();
     }
@@ -1127,7 +1129,7 @@ public final class FST<T> {
       }
 
       if (flag(flags, BIT_ARC_HAS_FINAL_OUTPUT)) {
-        outputs.read(in);
+        outputs.readFinalOutput(in);
       }
 
       if (!flag(flags, BIT_STOP_NODE) && !flag(flags, BIT_TARGET_NEXT)) {
@@ -1221,6 +1223,14 @@ public final class FST<T> {
     }
   }
 
+  /** Returns a {@link BytesReader} for this FST, positioned at
+   *  position 0. */
+  public BytesReader getBytesReader() {
+    return getBytesReader(0);
+  }
+
+  /** Returns a {@link BytesReader} for this FST, positioned at
+   *  the provided position. */
   public BytesReader getBytesReader(int pos) {
     // TODO: maybe re-use via ThreadLocal?
     if (packed) {
@@ -1654,7 +1664,7 @@ public final class FST<T> {
               }
             }
             if (arc.nextFinalOutput != NO_OUTPUT) {
-              outputs.write(arc.nextFinalOutput, writer);
+              outputs.writeFinalOutput(arc.nextFinalOutput, writer);
             }
 
             if (doWriteTarget) {

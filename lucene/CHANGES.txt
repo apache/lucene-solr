@@ -7,8 +7,12 @@ For "contrib" changes prior to 4.0, please see:
 http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib/CHANGES.txt
 
 ======================= Lucene 4.1.0 =======================
+New Features
 
-(No Changes)
+* LUCENE-4404: New ListOfOutputs (in lucene/misc) for FSTs wraps
+  another Outputs implementation, allowing you to store more than one
+  output for a single input.  UpToTwoPositiveIntsOutputs was moved
+  from lucene/core to lucene/misc.  (Mike McCandless)
 
 ======================= Lucene 4.0.0 =======================
 
