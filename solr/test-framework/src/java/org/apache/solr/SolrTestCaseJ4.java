@@ -81,6 +81,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   @BeforeClass 
   @SuppressWarnings("unused")
   private static void beforeClass() {
+    System.setProperty("jetty.testMode", "true");
     setupLogging();
     startTrackingSearchers();
     startTrackingZkClients();
@@ -95,6 +96,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     endTrackingSearchers();
     endTrackingZkClients();
     resetFactory();
+    System.clearProperty("jetty.testMode");
   }
 
   private static boolean changedFactory = false;

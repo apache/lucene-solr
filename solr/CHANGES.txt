@@ -333,6 +333,9 @@ Bug Fixes
 
 * SOLR-3783: Fixed Pivot Faceting to work with facet.missing=true (hossman)
 
+* SOLR-3869: A PeerSync attempt to it's replicas by a candidate leader should
+  not fail on o.a.http.conn.ConnectTimeoutException. (Mark Miller)
+
 Other Changes
 ----------------------
 
