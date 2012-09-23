@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -299,7 +300,7 @@ public class PeerSync  {
       if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrServerException) {
         Throwable solrException = ((SolrServerException) srsp.getException())
             .getRootCause();
-        if (solrException instanceof ConnectException
+        if (solrException instanceof ConnectException || solrException instanceof ConnectTimeoutException
             || solrException instanceof NoHttpResponseException) {
           log.warn(msg() + " couldn't connect to " + srsp.getShardAddress() + ", counting as success");
 
