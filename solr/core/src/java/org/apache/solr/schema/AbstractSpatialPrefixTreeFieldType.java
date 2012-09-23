@@ -25,6 +25,10 @@ import org.apache.solr.util.MapListener;
 
 import java.util.Map;
 
+/**
+ * @see PrefixTreeStrategy
+ * @lucene.experimental
+ */
 public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStrategy> extends AbstractSpatialFieldType<T> {
 
   /** @see org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy#setDefaultFieldValuesArrayLen(int)  */

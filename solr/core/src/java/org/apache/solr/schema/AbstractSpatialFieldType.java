@@ -47,6 +47,11 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Abstract base class for Solr FieldTypes based on a Lucene 4 {@link SpatialStrategy}.
+ *
+ * @lucene.experimental
+ */
 public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extends FieldType {
 
   /** A local-param with one of "none" (default), "distance", or "recipDistance". */

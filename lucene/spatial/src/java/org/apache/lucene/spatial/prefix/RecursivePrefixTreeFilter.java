@@ -34,11 +34,13 @@ import java.io.IOException;
 import java.util.LinkedList;
 
 /**
- * Performs a spatial intersection filter against a field indexed with {@link SpatialPrefixTree}, a Trie.
+ * Performs a spatial intersection filter between a query shape and a field indexed with {@link SpatialPrefixTree}, a Trie.
  * SPT yields terms (grids) at length 1 and at greater lengths corresponding to greater precisions.
  * This filter recursively traverses each grid length and uses methods on {@link Shape} to efficiently know
  * that all points at a prefix fit in the shape or not to either short-circuit unnecessary traversals or to efficiently
- * load all enclosed points.
+ * load all enclosed points.  If no indexed data lies in a portion of the shape
+ * then that portion of the query shape is quickly passed over without
+ * decomposing the shape unnecessarily.
  *
  * @lucene.internal
  */
