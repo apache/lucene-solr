@@ -371,6 +371,8 @@ def getDirEntries(urlString):
     path = urlString[7:]
     if path.endswith('/'):
       path = path[:-1]
+    if cygwin: # Convert Windows path to Cygwin path
+      path = re.sub(r'^/([A-Za-z]):/', r'/cygdrive/\1/', path)
     l = []
     for ent in os.listdir(path):
       entPath = '%s/%s' % (path, ent)
@@ -982,9 +984,6 @@ def verifyArtifactPerPOMtemplate(POMtemplates, artifacts, tmpDir, version):
   xpathSkipConfiguration = '{0}configuration/{0}skip'.format(namespace)
   for project in ('lucene', 'solr'):
     for POMtemplate in POMtemplates[project]:
-      if not POMtemplate.endswith('.xml.template'):
-        continue
-      print('      Checking POM template %s' % POMtemplate)
       treeRoot = ET.parse(POMtemplate).getroot()
       skipDeploy = False
       for plugin in treeRoot.findall(xpathPlugin):
@@ -1016,12 +1015,14 @@ def getPOMtemplates(POMtemplates, tmpDir, releaseBranchSvnURL):
     targetDir = '%s/dev-tools/maven' % tmpDir
     if not os.path.exists(targetDir):
       os.makedirs(targetDir)
-    crawl(allPOMtemplates, sourceLocation, targetDir, set(['Apache Subversion'])) # Ignore "Apache Subversion" links
+    crawl(allPOMtemplates, sourceLocation, targetDir, set(['Apache Subversion', 'maven.testlogging.properties']))
 
-  POMtemplates['lucene'] = [p for p in allPOMtemplates if '/maven/lucene/' in p]
+  reLucenePOMtemplate = re.compile(r'.*/maven/lucene.*/pom\.xml\.template$')
+  POMtemplates['lucene'] = [p for p in allPOMtemplates if reLucenePOMtemplate.search(p)]
   if POMtemplates['lucene'] is None:
     raise RuntimeError('No Lucene POMs found at %s' % sourceLocation)
-  POMtemplates['solr'] = [p for p in allPOMtemplates if '/maven/solr/' in p]
+  reSolrPOMtemplate = re.compile(r'.*/maven/solr.*/pom\.xml\.template$')
+  POMtemplates['solr'] = [p for p in allPOMtemplates if reSolrPOMtemplate.search(p)]
   if POMtemplates['solr'] is None:
     raise RuntimeError('No Solr POMs found at %s' % sourceLocation)
   POMtemplates['grandfather'] = [p for p in allPOMtemplates if '/maven/pom.xml.template' in p]
