@@ -523,7 +523,7 @@ public class Token extends CharTermAttributeImpl
 
   /**
    * Copy the prototype token's fields into this one. Note: Payloads are shared.
-   * @param prototype
+   * @param prototype source Token to copy fields from
    */
   public void reinit(Token prototype) {
     copyBuffer(prototype.buffer(), 0, prototype.length());

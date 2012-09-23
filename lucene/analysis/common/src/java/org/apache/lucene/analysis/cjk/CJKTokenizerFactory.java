@@ -30,7 +30,7 @@ import java.io.Reader;
  *     &lt;tokenizer class="solr.CJKTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
- * @deprecated
+ * @deprecated Use {@link CJKBigramFilterFactory} instead.
  */
 @Deprecated
 public class CJKTokenizerFactory extends TokenizerFactory {

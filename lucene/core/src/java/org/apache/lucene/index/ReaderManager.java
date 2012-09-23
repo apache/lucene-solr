@@ -51,7 +51,7 @@ public final class ReaderManager extends ReferenceManager<DirectoryReader> {
    *          performance by passing <code>false</code>. See
    *          {@link DirectoryReader#openIfChanged(DirectoryReader, IndexWriter, boolean)}.
    * 
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public ReaderManager(IndexWriter writer, boolean applyAllDeletes) throws IOException {
     current = DirectoryReader.open(writer, applyAllDeletes);
@@ -61,7 +61,7 @@ public final class ReaderManager extends ReferenceManager<DirectoryReader> {
    * Creates and returns a new ReaderManager from the given {@link Directory}. 
    * @param dir the directory to open the DirectoryReader on.
    *        
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public ReaderManager(Directory dir) throws IOException {
     current = DirectoryReader.open(dir);

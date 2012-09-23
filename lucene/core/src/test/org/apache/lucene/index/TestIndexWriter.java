@@ -644,8 +644,6 @@ public class TestIndexWriter extends LuceneTestCase {
    * Test that no NullPointerException will be raised,
    * when adding one document with a single, empty field
    * and term vectors enabled.
-   * @throws IOException
-   *
    */
   public void testBadSegment() throws IOException {
     Directory dir = newDirectory();

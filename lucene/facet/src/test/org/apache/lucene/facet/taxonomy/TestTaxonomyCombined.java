@@ -215,8 +215,6 @@ public class TestTaxonomyCombined extends LuceneTestCase {
    * testWriterTwice3 is yet another test which tests creating a taxonomy
    * in two separate writing sessions. This test used to fail because of
    * a bug involving commit(), explained below, and now should succeed.
-   * 
-   * @throws Exception
    */
   @Test
   public void testWriterTwice3() throws Exception {

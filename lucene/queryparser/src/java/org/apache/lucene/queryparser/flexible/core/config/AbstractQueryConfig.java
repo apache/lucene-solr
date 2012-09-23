@@ -81,7 +81,7 @@ public abstract class AbstractQueryConfig {
    * 
    * @param <T> the value's type
    * @param key the key, cannot be <code>null</code>
-   * @param value
+   * @param value value to set
    */
   public <T> void set(ConfigurationKey<T> key, T value) {
     

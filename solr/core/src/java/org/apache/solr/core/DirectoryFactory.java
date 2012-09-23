@@ -36,30 +36,26 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * hits 0, it can be closed. On shutdown all directories will be closed
    * whether this has been called or not. This is simply to allow early cleanup.
    * 
-   * @param directory
-   * @throws IOException 
+   * @throws IOException If there is a low-level I/O error.
    */
   public abstract void doneWithDirectory(Directory directory) throws IOException;
   
   /**
    * Adds a close listener for a Directory.
-   * 
-   * @param dir
-   * @param closeListener
    */
   public abstract void addCloseListener(Directory dir, CloseListener closeListener);
   
   /**
    * Close the this and all of the Directories it contains.
    * 
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public abstract void close() throws IOException;
   
   /**
    * Creates a new Directory for a given path.
    * 
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   protected abstract Directory create(String path) throws IOException;
   
@@ -73,7 +69,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * Returns the Directory for a given path, using the specified rawLockType.
    * Will return the same Directory instance for the same path.
    * 
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public abstract Directory get(String path, String rawLockType)
       throws IOException;
@@ -85,7 +81,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * {@link #doneWithDirectory(Directory)} in this case - the old Directory
    * will be closed when it's ref count hits 0.
    * 
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public abstract Directory get(String path, String rawLockType,
       boolean forceNew) throws IOException;
@@ -101,7 +97,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * Releases the Directory so that it may be closed when it is no longer
    * referenced.
    * 
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public abstract void release(Directory directory) throws IOException;
   

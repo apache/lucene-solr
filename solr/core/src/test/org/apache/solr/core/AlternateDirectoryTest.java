@@ -33,8 +33,6 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
 
   /**
    * Simple test to ensure that alternate IndexReaderFactory is being used.
-   * 
-   * @throws Exception
    */
   @Test
   public void testAltDirectoryUsed() throws Exception {

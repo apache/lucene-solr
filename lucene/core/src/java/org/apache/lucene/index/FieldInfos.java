@@ -146,10 +146,13 @@ public class FieldInfos implements Iterable<FieldInfo> {
 
   /**
    * Return the fieldinfo object referenced by the fieldNumber.
-   * @param fieldNumber
+   * @param fieldNumber field's number. if this is negative, this method
+   *        always returns null.
    * @return the FieldInfo object or null when the given fieldNumber
    * doesn't exist.
    */  
+  // TODO: fix this negative behavior, this was something related to Lucene3x?
+  // if the field name is empty, i think it writes the fieldNumber as -1
   public FieldInfo fieldInfo(int fieldNumber) {
     return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
   }

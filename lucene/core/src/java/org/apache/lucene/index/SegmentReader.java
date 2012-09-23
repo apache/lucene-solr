@@ -168,12 +168,6 @@ public final class SegmentReader extends AtomicReader {
     return core.termVectorsLocal.get();
   }
 
-  /** Return a term frequency vector for the specified document and field. The
-   *  vector returned contains term numbers and frequencies for all terms in
-   *  the specified field of this document, if the field had storeTermVector
-   *  flag set.  If the flag was not set, the method returns null.
-   * @throws IOException
-   */
   @Override
   public Fields getTermVectors(int docID) throws IOException {
     TermVectorsReader termVectorsReader = getTermVectorsReader();

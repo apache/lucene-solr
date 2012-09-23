@@ -40,7 +40,7 @@ public abstract class SegmentInfoReader {
    * @param directory directory to read from
    * @param segmentName name of the segment to read
    * @return infos instance to be populated with data
-   * @throws IOException
+   * @throws IOException If an I/O error occurs
    */
   public abstract SegmentInfo read(Directory directory, String segmentName, IOContext context) throws IOException;
 }

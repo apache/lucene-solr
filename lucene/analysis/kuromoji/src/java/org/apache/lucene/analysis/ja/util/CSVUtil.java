@@ -37,7 +37,7 @@ public final class CSVUtil {
   
   /**
    * Parse CSV line
-   * @param line
+   * @param line line containing csv-encoded data
    * @return Array of values
    */
   public static String[] parse(String line) {
@@ -96,7 +96,6 @@ public final class CSVUtil {
   
   /**
    * Quote and escape input value for CSV
-   * @param original
    */
   public static String quoteEscape(String original) {
     String result = original;

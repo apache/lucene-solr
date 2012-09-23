@@ -152,8 +152,6 @@ public class TestCustomSearcherSort extends LuceneTestCase {
   
   /**
    * Check the hits for duplicates.
-   * 
-   * @param hits
    */
   private void checkHits(ScoreDoc[] hits, String prefix) {
     if (hits != null) {
@@ -186,9 +184,6 @@ public class TestCustomSearcherSort extends LuceneTestCase {
   public class CustomSearcher extends IndexSearcher {
     private int switcher;
     
-    /**
-     * @param r
-     */
     public CustomSearcher(IndexReader r, int switcher) {
       super(r);
       this.switcher = switcher;

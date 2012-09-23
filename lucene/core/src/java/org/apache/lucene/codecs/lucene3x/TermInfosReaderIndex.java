@@ -37,7 +37,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * index segment. Pairs are accessed either by Term or by ordinal position the
  * set. The Terms and TermInfo are actually serialized and stored into a byte
  * array and pointers to the position of each are stored in a int array.
- * @deprecated
+ * @deprecated Only for reading existing 3.x indexes
  */
 @Deprecated
 class TermInfosReaderIndex {
@@ -150,7 +150,7 @@ class TermInfosReaderIndex {
    * 
    * @param term
    *          the term to locate.
-   * @throws IOException 
+   * @throws IOException If there is a low-level I/O error.
    */
   int getIndexOffset(Term term) throws IOException {
     int lo = 0;
@@ -176,7 +176,7 @@ class TermInfosReaderIndex {
    * @param termIndex
    *          the position to read the term from the index.
    * @return the term.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   Term getTerm(int termIndex) throws IOException {
     PagedBytesDataInput input = dataInput.clone();
@@ -206,7 +206,7 @@ class TermInfosReaderIndex {
    * @param termIndex
    *          the index of the of term to compare.
    * @return int.
-   * @throws IOException 
+   * @throws IOException If there is a low-level I/O error.
    */
   int compareTo(Term term, int termIndex) throws IOException {
     return compareTo(term, termIndex, dataInput.clone(), new BytesRef());
@@ -223,7 +223,7 @@ class TermInfosReaderIndex {
    * @param input
    *          the input buffer.
    * @return int.
-   * @throws IOException 
+   * @throws IOException If there is a low-level I/O error.
    */
   private int compareTo(Term term, int termIndex, PagedBytesDataInput input, BytesRef reuse) throws IOException {
     // if term field does not equal mid's field index, then compare fields
@@ -248,7 +248,7 @@ class TermInfosReaderIndex {
    * @param input
    *          the data block.
    * @return int.
-   * @throws IOException 
+   * @throws IOException If there is a low-level I/O error.
    */
   private int compareField(Term term, int termIndex, PagedBytesDataInput input) throws IOException {
     input.setPosition(indexToDataOffset.get(termIndex));

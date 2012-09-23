@@ -71,9 +71,7 @@ public class XML {
 
 /*********
  *
- * @param str
- * @param out
- * @throws IOException
+ * @throws IOException If there is a low-level I/O error.
  */
   public static void escapeCharData(String str, Writer out) throws IOException {
     escape(str, out, chardata_escapes);

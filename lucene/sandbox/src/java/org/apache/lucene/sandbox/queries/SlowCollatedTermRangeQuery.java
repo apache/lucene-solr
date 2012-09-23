@@ -110,7 +110,7 @@ public class SlowCollatedTermRangeQuery extends MultiTermQuery {
         lowerTerm, upperTerm, includeLower, includeUpper, collator);
   }
 
-  /** @deprecated */
+  /** @deprecated Use {@link #getField()} instead. */
   @Deprecated
   public String field() {
     return getField();

@@ -45,7 +45,6 @@ public abstract class SearchClusteringEngine extends ClusteringEngine {
    * Returns the set of field names to load.
    * Concrete classes can override this method if needed.
    * Default implementation returns null, that is, all stored fields are loaded.
-   * @param sreq
    * @return set of field names to load
    */
   protected Set<String> getFieldsToLoad(SolrQueryRequest sreq){

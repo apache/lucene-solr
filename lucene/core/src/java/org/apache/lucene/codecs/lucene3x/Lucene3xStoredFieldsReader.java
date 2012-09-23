@@ -42,7 +42,7 @@ import java.io.Closeable;
  * <p/>
  * It uses &lt;segment&gt;.fdt and &lt;segment&gt;.fdx; files.
  * 
- * @deprecated
+ * @deprecated Only for reading existing 3.x indexes
  */
 @Deprecated
 final class Lucene3xStoredFieldsReader extends StoredFieldsReader implements Cloneable, Closeable {
@@ -206,7 +206,7 @@ final class Lucene3xStoredFieldsReader extends StoredFieldsReader implements Clo
    * Closes the underlying {@link org.apache.lucene.store.IndexInput} streams.
    * This means that the Fields values will not be accessible.
    *
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public final void close() throws IOException {
     if (!closed) {

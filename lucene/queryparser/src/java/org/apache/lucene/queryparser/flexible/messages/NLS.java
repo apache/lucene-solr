@@ -122,9 +122,6 @@ public class NLS {
     return null;
   }
 
-  /**
-   * @param clazz
-   */
   private static void load(Class<? extends NLS> clazz) {
     final Field[] fieldArray = clazz.getDeclaredFields();
 
@@ -139,10 +136,6 @@ public class NLS {
     }
   }
 
-  /**
-   * @param field
-   * @param isFieldAccessible
-   */
   private static void loadfieldValue(Field field, boolean isFieldAccessible,
       Class<? extends NLS> clazz) {
     int MOD_EXPECTED = Modifier.PUBLIC | Modifier.STATIC;

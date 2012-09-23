@@ -52,7 +52,6 @@ public class UIMAToSolrMapper {
    * map features of a certain UIMA type to corresponding Solr fields based on the mapping
    *
    * @param typeName             name of UIMA type to map
-   * @param featureFieldsmapping
    */
   void map(String typeName, Map<String, MapField> featureFieldsmapping) throws FieldMappingException {
     try {

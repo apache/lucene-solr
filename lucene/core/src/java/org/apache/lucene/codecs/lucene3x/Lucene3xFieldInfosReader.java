@@ -35,7 +35,7 @@ import org.apache.lucene.store.IndexInput;
 
 /**
  * @lucene.experimental
- * @deprecated
+ * @deprecated Only for reading existing 3.x indexes
  */
 @Deprecated
 class Lucene3xFieldInfosReader extends FieldInfosReader {

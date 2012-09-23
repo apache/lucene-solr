@@ -133,8 +133,7 @@ class WordDictionary extends AbstractDictionary {
   /**
    * Load coredict.mem internally from the jar file.
    * 
-   * @throws ClassNotFoundException
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public void load() throws IOException, ClassNotFoundException {
     InputStream input = this.getClass().getResourceAsStream("coredict.mem");
@@ -181,9 +180,7 @@ class WordDictionary extends AbstractDictionary {
    * 
    * @param dctFilePath path to word dictionary (coredict.dct)
    * @return number of words read
-   * @throws FileNotFoundException
-   * @throws IOException
-   * @throws UnsupportedEncodingException
+   * @throws IOException If there is a low-level I/O error.
    */
   private int loadMainDataFromFile(String dctFilePath) throws IOException {
     int i, cnt, length, total = 0;

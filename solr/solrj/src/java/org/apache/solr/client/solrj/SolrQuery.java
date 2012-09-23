@@ -742,11 +742,8 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   /**
-   * @see ModifiableSolrParams#set(String,String[])
-   * @param name
-   * @param values
-   *  
    * @return this
+   * @see ModifiableSolrParams#set(String,String[])
    */
   public SolrQuery setParam(String name, String ... values) {
     this.set(name, values);
@@ -754,10 +751,8 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   /**
-   * @see org.apache.solr.common.params.ModifiableSolrParams#set(String, boolean)
-   * @param name
-   * @param value
    * @return this
+   * @see org.apache.solr.common.params.ModifiableSolrParams#set(String, boolean)
    */
   public SolrQuery setParam(String name, boolean value) {
     this.set(name, value);

@@ -129,7 +129,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
    * 
    * @param rollback IndexWriter if true else close
    * 
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public abstract void newIndexWriter(boolean rollback) throws IOException;
 

@@ -44,8 +44,8 @@ public final class KStemFilter extends TokenFilter {
   }
 
   /** Returns the next, stemmed, input Token.
-   *  @return The stemed form of a token.
-   *  @throws IOException
+   *  @return The stemmed form of a token.
+   *  @throws IOException If there is a low-level I/O error.
    */
   @Override
   public boolean incrementToken() throws IOException {

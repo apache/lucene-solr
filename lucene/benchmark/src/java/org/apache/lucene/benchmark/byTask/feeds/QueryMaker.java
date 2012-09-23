@@ -37,8 +37,7 @@ public interface QueryMaker {
   /** Create the next query */ 
   public Query makeQuery () throws Exception;
 
-  /** Set the properties 
-   * @throws Exception */
+  /** Set the properties */
   public void setConfig (Config config) throws Exception;
   
   /** Reset inputs so that the test run would behave, input wise, as if it just started. */

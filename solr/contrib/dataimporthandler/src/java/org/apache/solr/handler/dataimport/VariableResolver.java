@@ -46,7 +46,6 @@ public abstract class VariableResolver {
   /**
    * Given a String with place holders, replace them with the value tokens.
    *
-   * @param template
    * @return the string with the placeholders replaced with their values
    */
   public abstract String replaceTokens(String template);

@@ -46,10 +46,6 @@ public class EncodingSpeed {
 
   private static NumberFormat nf;
 
-  /**
-   * @param args
-   * @throws IOException
-   */
   public static void main(String[] args) throws IOException {
     testFacetIDs(data3630, 3630);
     testFacetIDs(data9910, 9910);

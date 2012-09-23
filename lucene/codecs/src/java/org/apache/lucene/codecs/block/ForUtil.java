@@ -153,7 +153,7 @@ final class ForUtil {
    * @param data     the data to write
    * @param encoded  a buffer to use to encode data
    * @param out      the destination output
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   void writeBlock(int[] data, byte[] encoded, IndexOutput out) throws IOException {
     if (isAllEqual(data)) {
@@ -182,7 +182,7 @@ final class ForUtil {
    * @param in        the input to use to read data
    * @param encoded   a buffer that can be used to store encoded data
    * @param decoded   where to write decoded data
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   void readBlock(IndexInput in, byte[] encoded, int[] decoded) throws IOException {
     final int numBits = in.readVInt();
@@ -208,7 +208,7 @@ final class ForUtil {
    * Skip the next block of data.
    *
    * @param in      the input where to read data
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   void skipBlock(IndexInput in) throws IOException {
     final int numBits = in.readVInt();

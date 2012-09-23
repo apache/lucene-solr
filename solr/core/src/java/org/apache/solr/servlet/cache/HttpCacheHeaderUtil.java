@@ -91,7 +91,6 @@ public final class HttpCacheHeaderUtil {
   /**
    * Calculates a tag for the ETag header.
    *
-   * @param solrReq
    * @return a tag
    */
   public static String calcEtag(final SolrQueryRequest solrReq) {
@@ -139,7 +138,6 @@ public final class HttpCacheHeaderUtil {
   /**
    * Calculate the appropriate last-modified time for Solr relative the current request.
    * 
-   * @param solrReq
    * @return the timestamp to use as a last modified time.
    */
   public static long calcLastModified(final SolrQueryRequest solrReq) {

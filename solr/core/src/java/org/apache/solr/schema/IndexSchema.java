@@ -890,7 +890,6 @@ public final class IndexSchema {
    * not as a result of a copyField declaration with a wildcard?  We
    * consider it explicitly defined if it matches a field or dynamicField
    * declaration.
-   * @param fieldName
    * @return true if explicitly declared in the schema.
    */
   public boolean hasExplicitField(String fieldName) {
@@ -907,7 +906,6 @@ public final class IndexSchema {
 
   /**
    * Is the specified field dynamic or not.
-   * @param fieldName
    * @return true if the specified field is dynamic
    */
   public boolean isDynamicField(String fieldName) {
@@ -1045,7 +1043,6 @@ public final class IndexSchema {
 
   /**
    * Get all copy fields, both the static and the dynamic ones.
-   * @param destField
    * @return Array of fields copied into this field
    */
 
@@ -1068,7 +1065,6 @@ public final class IndexSchema {
   /**
    * Get all copy fields for a specified source field, both static
    * and dynamic ones.
-   * @param sourceField
    * @return List of CopyFields to copy to.
    * @since solr 1.4
    */
@@ -1101,7 +1097,6 @@ public final class IndexSchema {
 
   /**
    * Is the given field name a wildcard?  I.e. does it begin or end with *?
-   * @param name
    * @return true/false
    */
   private static boolean isWildCard(String name) {

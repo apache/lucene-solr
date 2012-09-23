@@ -98,9 +98,6 @@ public class DistributedQueue {
    * Return the head of the queue without modifying the queue.
    * 
    * @return the data at the head of the queue.
-   * @throws NoSuchElementException
-   * @throws KeeperException
-   * @throws InterruptedException
    */
   public byte[] element() throws NoSuchElementException, KeeperException,
       InterruptedException {
@@ -137,9 +134,6 @@ public class DistributedQueue {
    * Attempts to remove the head of the queue and return it.
    * 
    * @return The former head of the queue
-   * @throws NoSuchElementException
-   * @throws KeeperException
-   * @throws InterruptedException
    */
   public byte[] remove() throws NoSuchElementException, KeeperException,
       InterruptedException {
@@ -190,9 +184,6 @@ public class DistributedQueue {
    * Removes the head of the queue and returns it, blocks until it succeeds.
    * 
    * @return The former head of the queue
-   * @throws NoSuchElementException
-   * @throws KeeperException
-   * @throws InterruptedException
    */
   public byte[] take() throws KeeperException, InterruptedException {
     TreeMap<Long,String> orderedChildren;
@@ -226,7 +217,6 @@ public class DistributedQueue {
   /**
    * Inserts data into queue.
    * 
-   * @param data
    * @return true if data was successfully added
    */
   public boolean offer(byte[] data) throws KeeperException,
@@ -254,8 +244,6 @@ public class DistributedQueue {
    * empty.
    * 
    * @return data at the first element of the queue, or null.
-   * @throws KeeperException
-   * @throws InterruptedException
    */
   public byte[] peek() throws KeeperException, InterruptedException {
     try {
@@ -270,8 +258,6 @@ public class DistributedQueue {
    * empty.
    * 
    * @return data at the first element of the queue, or null.
-   * @throws KeeperException
-   * @throws InterruptedException
    */
   public byte[] peek(boolean block) throws KeeperException, InterruptedException {
     if (!block) {
@@ -309,8 +295,6 @@ public class DistributedQueue {
    * queue is empty.
    * 
    * @return Head of the queue or null.
-   * @throws KeeperException
-   * @throws InterruptedException
    */
   public byte[] poll() throws KeeperException, InterruptedException {
     try {

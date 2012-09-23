@@ -32,8 +32,6 @@ public class IndexReaderFactoryTest extends AbstractSolrTestCase {
 
   /**
    * Simple test to ensure that alternate IndexReaderFactory is being used.
-   *
-   * @throws Exception
    */
   public void testAltReaderUsed() throws Exception {
     IndexReaderFactory readerFactory = h.getCore().getIndexReaderFactory();

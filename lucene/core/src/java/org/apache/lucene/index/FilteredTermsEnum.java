@@ -150,7 +150,8 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   }
 
   /** This enum does not support seeking!
-   * @throws UnsupportedOperationException
+   * @throws UnsupportedOperationException In general, subclasses do not
+   *         support seeking.
    */
   @Override
   public boolean seekExact(BytesRef term, boolean useCache) throws IOException {
@@ -158,7 +159,8 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   }
 
   /** This enum does not support seeking!
-   * @throws UnsupportedOperationException
+   * @throws UnsupportedOperationException In general, subclasses do not
+   *         support seeking.
    */
   @Override
   public SeekStatus seekCeil(BytesRef term, boolean useCache) throws IOException {
@@ -166,7 +168,8 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   }
 
   /** This enum does not support seeking!
-   * @throws UnsupportedOperationException
+   * @throws UnsupportedOperationException In general, subclasses do not
+   *         support seeking.
    */
   @Override
   public void seekExact(long ord) throws IOException {
@@ -189,7 +192,8 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   }
   
   /** This enum does not support seeking!
-   * @throws UnsupportedOperationException
+   * @throws UnsupportedOperationException In general, subclasses do not
+   *         support seeking.
    */
   @Override
   public void seekExact(BytesRef term, TermState state) throws IOException {

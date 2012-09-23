@@ -31,7 +31,6 @@ public interface DIHWriter {
    *  If this writer supports transactions or commit points, then commit any changes,
    *  optionally optimizing the data for read/write performance
    * </p>
-   * @param optimize
    */
   public void commit(boolean optimize);
 
@@ -53,7 +52,6 @@ public interface DIHWriter {
    * <p>
    *  Delete from the writer's underlying data store based the passed-in writer-specific query. (Optional Operation)
    * </p>
-   * @param q
    */
   public void deleteByQuery(String q);
 
@@ -68,7 +66,6 @@ public interface DIHWriter {
    * <p>
    *  Delete from the writer's underlying data store based on the passed-in Primary Key
    * </p>
-   * @param key
    */
   public void deleteDoc(Object key);
 
@@ -78,7 +75,6 @@ public interface DIHWriter {
    * <p>
    *  Add a document to this writer's underlying data store.
    * </p>
-   * @param doc
    * @return true on success, false on failure
    */
   public boolean upload(SolrInputDocument doc);
@@ -89,7 +85,6 @@ public interface DIHWriter {
    * <p>
    *  Provide context information for this writer.  init() should be called before using the writer.
    * </p>
-   * @param context
    */
   public void init(Context context) ;
 
@@ -98,7 +93,6 @@ public interface DIHWriter {
    * <p>
    *  Specify the keys to be modified by a delta update (required by writers that can store duplicate keys)
    * </p>
-   * @param deltaKeys
    */
   public void setDeltaKeys(Set<Map<String, Object>> deltaKeys) ;
 

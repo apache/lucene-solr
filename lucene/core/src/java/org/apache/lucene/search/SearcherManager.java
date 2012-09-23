@@ -79,7 +79,7 @@ public final class SearcherManager extends ReferenceManager<IndexSearcher> {
    *          don't require the searcher to be warmed before going live or other
    *          custom behavior.
    * 
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   public SearcherManager(IndexWriter writer, boolean applyAllDeletes, SearcherFactory searcherFactory) throws IOException {
     if (searcherFactory == null) {
@@ -96,7 +96,7 @@ public final class SearcherManager extends ReferenceManager<IndexSearcher> {
    *        <code>null</code> if you don't require the searcher to be warmed
    *        before going live or other custom behavior.
    *        
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   public SearcherManager(Directory dir, SearcherFactory searcherFactory) throws IOException {
     if (searcherFactory == null) {

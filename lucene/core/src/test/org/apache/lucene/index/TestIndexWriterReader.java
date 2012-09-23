@@ -224,8 +224,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
   
   /**
    * Test using IW.addIndexes
-   * 
-   * @throws Exception
    */
   public void testAddIndexes() throws Exception {
     boolean doFullMerge = false;
@@ -311,8 +309,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
   /**
    * Deletes using IW.deleteDocuments
-   * 
-   * @throws Exception
    */
   public void testDeleteFromIndexWriter() throws Exception {
     boolean doFullMerge = true;

@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Simple tests to ensure the CJK tokenizer factory is working.
- * @deprecated
+ * @deprecated remove this test in 5.0
  */
 @Deprecated
 public class TestCJKTokenizerFactory extends BaseTokenStreamTestCase {

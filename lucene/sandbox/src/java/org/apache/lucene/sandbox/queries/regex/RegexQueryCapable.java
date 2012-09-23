@@ -23,6 +23,14 @@ package org.apache.lucene.sandbox.queries.regex;
  */
 public interface RegexQueryCapable {
   
+  /**
+   * Defines which {@link RegexCapabilities} implementation is used by this instance.
+   * @see #getRegexImplementation()
+   */
   void setRegexImplementation(RegexCapabilities impl);
+  /**
+   * Returns the implementation used by this instance.
+   * @see #setRegexImplementation(RegexCapabilities)
+   */
   RegexCapabilities getRegexImplementation();
 }

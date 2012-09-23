@@ -36,7 +36,7 @@ public interface HTMLParser {
    * @param reader reader of html text to parse.
    * @param trecSrc the {@link TrecContentSource} used to parse dates.   
    * @return Parsed doc data.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public DocData parse(DocData docData, String name, Date date, Reader reader, TrecContentSource trecSrc) throws IOException;
 

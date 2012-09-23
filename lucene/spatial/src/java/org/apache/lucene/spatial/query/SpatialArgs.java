@@ -73,7 +73,6 @@ public class SpatialArgs {
    * Gets the error distance that specifies how precise the query shape is. This
    * looks at {@link #getDistErr()}, {@link #getDistErrPct()}, and {@code
    * defaultDistErrPct}.
-   * @param ctx
    * @param defaultDistErrPct 0 to 0.5
    * @return >= 0
    */

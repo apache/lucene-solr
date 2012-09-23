@@ -619,10 +619,7 @@ public class JavaBinCodec {
    * collection/array/map In most of the cases the length can be represented in one byte (length < 127) so it saves 3
    * bytes/object
    *
-   * @param i
-   * @param out
-   *
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public static void writeVInt(int i, FastOutputStream out) throws IOException {
     while ((i & ~0x7F) != 0) {
@@ -633,13 +630,9 @@ public class JavaBinCodec {
   }
 
   /**
-   * The counterpart for the above
+   * The counterpart for {@link #writeVInt(int, FastOutputStream)}
    *
-   * @param in
-   *
-   * @return the int value
-   *
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public static int readVInt(FastInputStream in) throws IOException {
     byte b = in.readByte();

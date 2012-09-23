@@ -96,7 +96,6 @@ public class TimeLimitingCollector extends Collector {
    * </pre>
    * </p>
    * @see #setBaseline() 
-   * @param clockTime
    */
   public void setBaseline(long clockTime) {
     t0 = clockTime;

@@ -42,7 +42,7 @@ import org.apache.lucene.util.StringHelper;
 /**
  * Reads Lucene 3.x norms format and exposes it via DocValues API
  * @lucene.experimental
- * @deprecated
+ * @deprecated Only for reading existing 3.x indexes
  */
 @Deprecated
 class Lucene3xNormsProducer extends PerDocProducer {

@@ -30,7 +30,7 @@ public class FileUtils {
    *
    * @param dir file or directory
    * @return true on success, false if no or part of files have been deleted
-   * @throws java.io.IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public static boolean fullyDelete(File dir) throws IOException {
     if (dir == null || !dir.exists()) return false;

@@ -90,8 +90,6 @@ public class PhraseQuery extends Query {
    * This allows e.g. phrases with more than one term at the same position
    * or phrases with gaps (e.g. in connection with stopwords).
    * 
-   * @param term
-   * @param position
    */
   public void add(Term term, int position) {
     if (terms.size() == 0) {

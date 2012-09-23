@@ -33,9 +33,6 @@ public interface PayloadEncoder {
 
   /**
    * Convert a char array to a {@link BytesRef}
-   * @param buffer
-   * @param offset
-   * @param length
    * @return encoded {@link BytesRef}
    */
   BytesRef encode(char [] buffer, int offset, int length);

@@ -43,7 +43,6 @@ import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 public class EnhancementsDocumentBuilder extends CategoryDocumentBuilder {
 
   /**
-   * @param taxonomyWriter
    * @param params
    *            Indexing params which include {@link CategoryEnhancement}s.
    */

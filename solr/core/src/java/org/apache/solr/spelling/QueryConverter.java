@@ -81,8 +81,7 @@ public abstract class QueryConverter implements NamedListInitializedPlugin {
   }
 
   /**
-   * @param original
-   * @return The Collection of {@link org.apache.lucene.analysis.Token}s for
+   * Returns the Collection of {@link org.apache.lucene.analysis.Token}s for
    *         the query. Offsets on the Token should correspond to the correct
    *         offset in the origQuery
    */
@@ -90,8 +89,6 @@ public abstract class QueryConverter implements NamedListInitializedPlugin {
 
   /**
    * Set the analyzer to use. Must be set before any calls to convert.
-   * 
-   * @param analyzer
    */
   public void setAnalyzer(Analyzer analyzer) {
     this.analyzer = analyzer;

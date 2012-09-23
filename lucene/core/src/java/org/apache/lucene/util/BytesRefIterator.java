@@ -34,7 +34,7 @@ public interface BytesRefIterator {
    * 
    * @return the next {@link BytesRef} in the iterator or <code>null</code> if
    *         the end of the iterator is reached.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public BytesRef next() throws IOException;
   

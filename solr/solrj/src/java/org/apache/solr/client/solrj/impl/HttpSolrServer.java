@@ -166,8 +166,7 @@ public class HttpSolrServer extends SolrServer {
    * @param request
    *          The {@link org.apache.solr.client.solrj.SolrRequest} to process
    * @return The {@link org.apache.solr.common.util.NamedList} result
-   * @throws SolrServerException
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    * 
    * @see #request(org.apache.solr.client.solrj.SolrRequest,
    *      org.apache.solr.client.solrj.ResponseParser)

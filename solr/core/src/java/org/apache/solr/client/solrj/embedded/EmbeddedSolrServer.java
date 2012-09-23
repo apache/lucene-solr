@@ -62,8 +62,7 @@ public class EmbeddedSolrServer extends SolrServer
   
   /**
    * Use the other constructor using a CoreContainer and a name.
-   * @param core
-   * @deprecated
+   * @deprecated use {@link #EmbeddedSolrServer(CoreContainer, String)} instead.
    */
   @Deprecated
   public EmbeddedSolrServer( SolrCore core )
@@ -231,9 +230,7 @@ public class EmbeddedSolrServer extends SolrServer
   }
   
   /**
-   * @param req
-   * @param rsp
-   * @return a response object equivalent to what you get from the XML/JSON/javabin parser. Documents
+   * Returns a response object equivalent to what you get from the XML/JSON/javabin parser. Documents
    * become SolrDocuments, DocList becomes SolrDocumentList etc.
    * 
    * @deprecated use {@link BinaryResponseWriter#getParsedResponse(SolrQueryRequest, SolrQueryResponse)}

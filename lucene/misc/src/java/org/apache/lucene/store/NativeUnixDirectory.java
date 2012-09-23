@@ -97,7 +97,7 @@ public class NativeUnixDirectory extends FSDirectory {
    *   not use direct IO.  See {@link
    *   #DEFAULT_MIN_BYTES_DIRECT}
    * @param delegate fallback Directory for non-merges
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public NativeUnixDirectory(File path, int mergeBufferSize, long minBytesDirect, Directory delegate) throws IOException {
     super(path, delegate.getLockFactory());
@@ -113,7 +113,7 @@ public class NativeUnixDirectory extends FSDirectory {
    * 
    * @param path the path of the directory
    * @param delegate fallback Directory for non-merges
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public NativeUnixDirectory(File path, Directory delegate) throws IOException {
     this(path, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT, delegate);

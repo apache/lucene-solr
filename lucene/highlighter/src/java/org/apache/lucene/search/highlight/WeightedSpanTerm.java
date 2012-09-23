@@ -30,20 +30,11 @@ public class WeightedSpanTerm extends WeightedTerm{
   boolean positionSensitive;
   private List<PositionSpan> positionSpans = new ArrayList<PositionSpan>();
 
-  /**
-   * @param weight
-   * @param term
-   */
   public WeightedSpanTerm(float weight, String term) {
     super(weight, term);
     this.positionSpans = new ArrayList<PositionSpan>();
   }
 
-  /**
-   * @param weight
-   * @param term
-   * @param positionSensitive
-   */
   public WeightedSpanTerm(float weight, String term, boolean positionSensitive) {
     super(weight, term);
     this.positionSensitive = positionSensitive;

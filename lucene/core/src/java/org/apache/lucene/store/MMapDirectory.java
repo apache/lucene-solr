@@ -90,7 +90,7 @@ public class MMapDirectory extends FSDirectory {
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default
    * ({@link NativeFSLockFactory});
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   public MMapDirectory(File path, LockFactory lockFactory) throws IOException {
     this(path, lockFactory, DEFAULT_MAX_BUFF);
@@ -99,7 +99,7 @@ public class MMapDirectory extends FSDirectory {
   /** Create a new MMapDirectory for the named location and {@link NativeFSLockFactory}.
    *
    * @param path the path of the directory
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   public MMapDirectory(File path) throws IOException {
     this(path, null);
@@ -123,7 +123,7 @@ public class MMapDirectory extends FSDirectory {
    * be {@code 1 << 30}, as the address space is big enough.
    * <p>
    * <b>Please note:</b> The chunk size is always rounded down to a power of 2.
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   public MMapDirectory(File path, LockFactory lockFactory, int maxChunkSize) throws IOException {
     super(path, lockFactory);

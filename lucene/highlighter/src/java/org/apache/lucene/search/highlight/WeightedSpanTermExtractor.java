@@ -88,7 +88,7 @@ public class WeightedSpanTermExtractor {
    *          Query to extract Terms from
    * @param terms
    *          Map to place created WeightedSpanTerms in
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   protected void extract(Query query, Map<String,WeightedSpanTerm> terms) throws IOException {
     if (query instanceof BooleanQuery) {
@@ -221,7 +221,7 @@ public class WeightedSpanTermExtractor {
    *          Map to place created WeightedSpanTerms in
    * @param spanQuery
    *          SpanQuery to extract Terms from
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   protected void extractWeightedSpanTerms(Map<String,WeightedSpanTerm> terms, SpanQuery spanQuery) throws IOException {
     Set<String> fieldNames;
@@ -309,7 +309,7 @@ public class WeightedSpanTermExtractor {
    *          Map to place created WeightedSpanTerms in
    * @param query
    *          Query to extract Terms from
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   protected void extractWeightedTerms(Map<String,WeightedSpanTerm> terms, Query query) throws IOException {
     Set<Term> nonWeightedTerms = new HashSet<Term>();
@@ -362,7 +362,7 @@ public class WeightedSpanTermExtractor {
    * @param tokenStream
    *          of text to be highlighted
    * @return Map containing WeightedSpanTerms
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public Map<String,WeightedSpanTerm> getWeightedSpanTerms(Query query, TokenStream tokenStream)
       throws IOException {
@@ -381,7 +381,7 @@ public class WeightedSpanTermExtractor {
    * @param fieldName
    *          restricts Term's used based on field name
    * @return Map containing WeightedSpanTerms
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public Map<String,WeightedSpanTerm> getWeightedSpanTerms(Query query, TokenStream tokenStream,
       String fieldName) throws IOException {
@@ -417,7 +417,7 @@ public class WeightedSpanTermExtractor {
    * @param reader
    *          to use for scoring
    * @return Map of WeightedSpanTerms with quasi tf/idf scores
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public Map<String,WeightedSpanTerm> getWeightedSpanTermsWithScores(Query query, TokenStream tokenStream, String fieldName,
       IndexReader reader) throws IOException {
@@ -551,8 +551,6 @@ public class WeightedSpanTermExtractor {
    * ensure an efficient reset - if you are already using a different caching
    * {@link TokenStream} impl and you don't want it to be wrapped, set this to
    * false.
-   * 
-   * @param wrap
    */
   public void setWrapIfNotCachingTokenFilter(boolean wrap) {
     this.wrapToCaching = wrap;

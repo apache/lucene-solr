@@ -73,14 +73,6 @@ public class ZkCLI {
    * 
    * If you also pass a solrPort, it will be used to start an embedded zk useful
    * for single machine, multi node tests.
-   * 
-   * @param args
-   * @throws IOException
-   * @throws TimeoutException
-   * @throws InterruptedException
-   * @throws SAXException
-   * @throws ParserConfigurationException
-   * @throws KeeperException
    */
   public static void main(String[] args) throws InterruptedException,
       TimeoutException, IOException, ParserConfigurationException,

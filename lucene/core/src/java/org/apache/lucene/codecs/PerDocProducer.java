@@ -45,7 +45,7 @@ public abstract class PerDocProducer implements Closeable {
    *          the field name
    * @return the {@link DocValues} for this field or <code>null</code> if not
    *         applicable.
-   * @throws IOException
+   * @throws IOException If an I/O error occurs
    */
   public abstract DocValues docValues(String field) throws IOException;
 
