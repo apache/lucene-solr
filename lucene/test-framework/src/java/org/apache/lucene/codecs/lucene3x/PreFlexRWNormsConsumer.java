@@ -50,7 +50,7 @@ class PreFlexRWNormsConsumer extends PerDocConsumer {
   private static final String NORMS_EXTENSION = "nrm";
   
   /** Extension of separate norms file
-   * @deprecated */
+   * @deprecated Only for reading existing 3.x indexes */
   @Deprecated
   private static final String SEPARATE_NORMS_EXTENSION = "s";
 

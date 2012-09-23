@@ -96,9 +96,6 @@ public class Grouping {
   public DocList mainResult;  // output if one of the grouping commands should be used as the main result.
 
   /**
-   * @param searcher
-   * @param qr
-   * @param cmd
    * @param cacheSecondPassSearch    Whether to cache the documents and scores from the first pass search for the second
    *                                 pass search.
    * @param maxDocsPercentageToCache The maximum number of documents in a percentage relative from maxdoc

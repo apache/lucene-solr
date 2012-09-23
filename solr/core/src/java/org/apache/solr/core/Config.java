@@ -61,11 +61,6 @@ public class Config {
 
   /**
    * Builds a config from a resource name with no xpath prefix.
-   * @param loader
-   * @param name
-   * @throws javax.xml.parsers.ParserConfigurationException
-   * @throws java.io.IOException
-   * @throws org.xml.sax.SAXException
    */
   public Config(SolrResourceLoader loader, String name) throws ParserConfigurationException, IOException, SAXException 
   {
@@ -92,9 +87,6 @@ public class Config {
    * @param name the resource name used if the input stream 'is' is null
    * @param is the resource as a SAX InputSource
    * @param prefix an optional prefix that will be preprended to all non-absolute xpath expressions
-   * @throws javax.xml.parsers.ParserConfigurationException
-   * @throws java.io.IOException
-   * @throws org.xml.sax.SAXException
    */
   public Config(SolrResourceLoader loader, String name, InputSource is, String prefix, boolean subProps) throws ParserConfigurationException, IOException, SAXException 
   {

@@ -184,7 +184,7 @@ public class WordlistLoader {
    * (i.e. two tab separated words)
    *
    * @return stem dictionary that overrules the stemming algorithm
-   * @throws IOException 
+   * @throws IOException If there is a low-level I/O error.
    */
   public static CharArrayMap<String> getStemDict(Reader reader, CharArrayMap<String> result) throws IOException {
     BufferedReader br = null;
@@ -210,7 +210,7 @@ public class WordlistLoader {
    * </p>
    *
    * @return a list of non-blank non-comment lines with whitespace trimmed
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public static List<String> getLines(InputStream stream, Charset charset) throws IOException{
     BufferedReader input = null;

@@ -89,9 +89,7 @@ public class HashPartitioner {
   }
 
   /**
-   *
-   * @param partitions
-   * @return Range for each partition
+   * Returns the range for each partition
    */
   public List<Range> partitionRange(int partitions, int min, int max) {
     assert max >= min;

@@ -413,9 +413,7 @@ class ExtendedDismaxQParser extends QParser {
   }
 
   /**
-   * Extracts all the alised fields from the requests and adds them to up
-   * @param up
-   * @param tiebreaker
+   * Extracts all the aliased fields from the requests and adds them to up
    */
   private void addAliasesFromRequest(ExtendedSolrQueryParser up, float tiebreaker) {
     Iterator<String> it = solrParams.getParameterNamesIterator();
@@ -953,7 +951,6 @@ class ExtendedDismaxQParser extends QParser {
     /**
      * Returns the aliases found for a field.
      * Returns null if there are no aliases for the field
-     * @param field
      * @return Alias
      */
     public Alias getAlias(String field) {

@@ -37,7 +37,7 @@ public abstract class SegmentInfoWriter {
 
   /**
    * Write {@link SegmentInfo} data. 
-   * @throws IOException
+   * @throws IOException If an I/O error occurs
    */
   public abstract void write(Directory dir, SegmentInfo info, FieldInfos fis, IOContext ioContext) throws IOException;
 }

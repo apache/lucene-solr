@@ -29,9 +29,6 @@ public class SpanNotBuilder extends SpanBuilderBase {
 
   private final SpanQueryBuilder factory;
 
-  /**
-   * @param factory
-   */
   public SpanNotBuilder(SpanQueryBuilder factory) {
     this.factory = factory;
   }

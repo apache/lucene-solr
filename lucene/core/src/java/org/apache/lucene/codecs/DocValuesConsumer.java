@@ -82,7 +82,7 @@ public abstract class DocValuesConsumer {
    *          the total number of documents in this {@link DocValuesConsumer}.
    *          Must be greater than or equal the last given docID to
    *          {@link #add(int, IndexableField)}.
-   * @throws IOException
+   * @throws IOException If an I/O error occurs
    */
   public abstract void finish(int docCount) throws IOException;
   

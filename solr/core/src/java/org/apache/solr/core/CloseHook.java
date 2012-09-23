@@ -50,8 +50,6 @@ public abstract class CloseHook {
    * <b>Important:</b> Keep the method implementation as short as possible. If it were to use any heavy i/o , network connections -
    * it might be a better idea to launch in a separate Thread so as to not to block the process of
    * shutting down a given SolrCore instance.
-   *
-   * @param core
    */
   public abstract void postClose(SolrCore core);
 }

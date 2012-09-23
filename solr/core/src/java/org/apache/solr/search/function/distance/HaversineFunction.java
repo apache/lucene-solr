@@ -66,8 +66,6 @@ public class HaversineFunction extends ValueSource {
 
   /**
    * @param doc  The doc to score
-   * @param p1DV
-   * @param p2DV
    * @return The haversine distance formula
    */
   protected double distance(int doc, FunctionValues p1DV, FunctionValues p2DV) {

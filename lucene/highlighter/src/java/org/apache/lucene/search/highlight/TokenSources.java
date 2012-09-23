@@ -92,12 +92,8 @@ public class TokenSources {
    * minimal (1000 invocations still registers 0 ms). So this "lazy" (flexible?)
    * approach to coding is probably acceptable
    * 
-   * @param reader
-   * @param docId
-   * @param field
-   * @param analyzer
    * @return null if field not stored correctly
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public static TokenStream getAnyTokenStream(IndexReader reader, int docId,
       String field, Analyzer analyzer) throws IOException {
@@ -149,7 +145,6 @@ public class TokenSources {
    * compression (less disk IO) or slower (more CPU burn) depending on the
    * content.
    * 
-   * @param tpv
    * @param tokenPositionsGuaranteedContiguous true if the token position
    *        numbers have no overlaps or gaps. If looking to eek out the last
    *        drops of performance, set to true. If in doubt, set to false.

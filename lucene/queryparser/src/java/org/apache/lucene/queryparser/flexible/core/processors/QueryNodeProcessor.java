@@ -55,15 +55,11 @@ public interface QueryNodeProcessor {
    *          tree root node
    * 
    * @return the processed query tree
-   * 
-   * @throws QueryNodeException
    */
   public QueryNode process(QueryNode queryTree) throws QueryNodeException;
 
   /**
    * Sets the {@link QueryConfigHandler} associated to the query tree.
-   * 
-   * @param queryConfigHandler
    */
   public void setQueryConfigHandler(QueryConfigHandler queryConfigHandler);
 

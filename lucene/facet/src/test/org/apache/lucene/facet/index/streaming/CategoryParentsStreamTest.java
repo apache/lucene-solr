@@ -41,8 +41,6 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
    * Verifies that a {@link CategoryParentsStream} can be constructed from
    * {@link CategoryAttributesStream} and produces the correct number of
    * tokens with default facet indexing params.
-   * 
-   * @throws IOException
    */
   @Test
   public void testStreamDefaultParams() throws IOException {
@@ -68,8 +66,6 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
    * Verifies that a {@link CategoryParentsStream} can be constructed from
    * {@link CategoryAttributesStream} and produces the correct number of
    * tokens with non top level facet indexing params.
-   * 
-   * @throws IOException
    */
   @Test
   public void testStreamNonTopLevelParams() throws IOException {
@@ -108,9 +104,6 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
   /**
    * Verifies the correctness when no attributes in parents are retained in
    * {@link CategoryParentsStream}.
-   * 
-   * @throws IOException
-   * @throws FacetException 
    */
   @Test
   public void testNoRetainableAttributes() throws IOException {
@@ -142,9 +135,6 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
   /**
    * Verifies the correctness when attributes in parents are retained in
    * {@link CategoryParentsStream}.
-   * 
-   * @throws IOException
-   * @throws FacetException 
    */
   @Test
   public void testRetainableAttributes() throws IOException {

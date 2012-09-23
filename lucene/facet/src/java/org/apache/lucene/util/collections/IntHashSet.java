@@ -236,8 +236,6 @@ public class IntHashSet {
   /**
    * Calculating the baseHash index using the internal <code>hashFactor</code>
    * .
-   * 
-   * @param key
    */
   protected int calcBaseHashIndex(int key) {
     return key & hashFactor;
@@ -282,7 +280,6 @@ public class IntHashSet {
   /**
    * Find the actual index of a given key.
    * 
-   * @param key
    * @return index of the key. zero if the key wasn't found.
    */
   protected int find(int key) {
@@ -313,8 +310,6 @@ public class IntHashSet {
    * Some methods use the baseHashIndex. If those call {@link #find} there's
    * no need to re-calculate that hash.
    * 
-   * @param key
-   * @param baseHashIndex
    * @return the index of the given key, or 0 as 'Ground' if the key wasn't
    *         found.
    */

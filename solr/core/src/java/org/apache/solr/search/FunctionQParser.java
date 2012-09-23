@@ -106,7 +106,6 @@ public class FunctionQParser extends QParser {
    * Are there more arguments in the argument list being parsed?
    * 
    * @return whether more args exist
-   * @throws ParseException
    */
   public boolean hasMoreArguments() throws ParseException {
     int ch = sp.peek();
@@ -114,10 +113,8 @@ public class FunctionQParser extends QParser {
     return (! (ch == 0 || ch == ')') );
   }
   
-  /**
+  /*
    * TODO: Doc
-   * 
-   * @throws ParseException
    */
   public String parseId() throws ParseException {
     String value = parseArg();
@@ -129,7 +126,6 @@ public class FunctionQParser extends QParser {
    * Parse a float.
    * 
    * @return Float
-   * @throws ParseException
    */
   public Float parseFloat() throws ParseException {
     String str = parseArg();
@@ -141,7 +137,6 @@ public class FunctionQParser extends QParser {
   /**
    * Parse a Double
    * @return double
-   * @throws ParseException
    */
   public double parseDouble() throws ParseException {
     String str = parseArg();
@@ -153,7 +148,6 @@ public class FunctionQParser extends QParser {
   /**
    * Parse an integer
    * @return An int
-   * @throws ParseException
    */
   public int parseInt() throws ParseException {
     String str = parseArg();
@@ -214,7 +208,6 @@ public class FunctionQParser extends QParser {
    * to a ValueSource.
    * 
    * @return List&lt;ValueSource&gt;
-   * @throws ParseException
    */
   public List<ValueSource> parseValueSourceList() throws ParseException {
     List<ValueSource> sources = new ArrayList<ValueSource>(3);
@@ -226,18 +219,14 @@ public class FunctionQParser extends QParser {
 
   /**
    * Parse an individual ValueSource.
-   * 
-   * @throws ParseException
    */
   public ValueSource parseValueSource() throws ParseException {
     /* consume the delimiter afterward for an external call to parseValueSource */
     return parseValueSource(true);
   }
   
-  /**
+  /*
    * TODO: Doc
-   * 
-   * @throws ParseException
    */
   public Query parseNestedQuery() throws ParseException {
     Query nestedQuery;
@@ -286,7 +275,6 @@ public class FunctionQParser extends QParser {
    * Parse an individual value source.
    * 
    * @param doConsumeDelimiter whether to consume a delimiter following the ValueSource  
-   * @throws ParseException
    */
   protected ValueSource parseValueSource(boolean doConsumeDelimiter) throws ParseException {
     ValueSource valueSource;
@@ -390,7 +378,6 @@ public class FunctionQParser extends QParser {
    * Only consumes if more arguments should exist (no ending parens or end of string).
    * 
    * @return whether a delimiter was consumed
-   * @throws ParseException
    */
   protected boolean consumeArgumentDelimiter() throws ParseException {
     /* if a list of args is ending, don't expect the comma */

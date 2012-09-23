@@ -171,7 +171,8 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
   private TextSegment entitySegment = new TextSegment(2);
 
   /**
-   * @param source
+   * Creates a new HTMLStripCharFilter over the provided Reader.
+   * @param source Reader to strip html tags from.
    */
   public HTMLStripCharFilter(Reader source) {
     super(source);
@@ -179,7 +180,9 @@ InlineElment = ( [aAbBiIqQsSuU]                   |
   }
 
   /**
-   * @param source
+   * Creates a new HTMLStripCharFilter over the provided Reader
+   * with the specified start and end tags.
+   * @param source Reader to strip html tags from.
    * @param escapedTags Tags in this set (both start and end tags)
    *  will not be filtered out.
    */

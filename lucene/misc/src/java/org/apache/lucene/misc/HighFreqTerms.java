@@ -106,12 +106,7 @@ public class HighFreqTerms {
             + "java org.apache.lucene.misc.HighFreqTerms <index dir> [-t] [number_terms] [field]\n\t -t: include totalTermFreq\n\n");
   }
   /**
-   * 
-   * @param reader
-   * @param numTerms
-   * @param field
-   * @return TermStats[] ordered by terms with highest docFreq first.
-   * @throws Exception
+   * Returns TermStats[] ordered by terms with highest docFreq first.
    */
   public static TermStats[] getHighFreqTerms(IndexReader reader, int numTerms, String field) throws Exception {
     TermStatsQueue tiq = null;
@@ -157,11 +152,9 @@ public class HighFreqTerms {
    * containing the term and stores the total in the output array of TermStats.
    * Output array is sorted by highest total tf.
    * 
-   * @param reader
    * @param terms
    *          TermStats[]
    * @return TermStats[]
-   * @throws Exception
    */
   
   public static TermStats[] sortByTotalTermFreq(IndexReader reader, TermStats[] terms) throws Exception {

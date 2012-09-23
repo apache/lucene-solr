@@ -51,18 +51,10 @@ public class RegexQuery extends MultiTermQuery implements RegexQueryCapable {
     return term;
   }
 
-  /**
-   * Defines which {@link RegexCapabilities} implementation is used by this instance.
-   *
-   * @param impl
-   */
   public void setRegexImplementation(RegexCapabilities impl) {
     this.regexImpl = impl;
   }
 
-  /**
-   * @return The implementation used by this instance.
-   */
   public RegexCapabilities getRegexImplementation() {
     return regexImpl;
   }

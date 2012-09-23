@@ -74,8 +74,6 @@ public class ExtractReuters {
 
   /**
    * Override if you wish to change what is extracted
-   * 
-   * @param sgmFile
    */
   protected void extractFile(File sgmFile) {
     try {

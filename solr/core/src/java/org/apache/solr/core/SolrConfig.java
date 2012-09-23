@@ -404,7 +404,6 @@ public class SolrConfig extends Config {
     public final boolean openSearcher;  // is opening a new searcher part of hard autocommit?
 
     /**
-     * @param className
      * @param autoCommmitMaxDocs set -1 as default
      * @param autoCommmitMaxTime set -1 as default
      * @param commitIntervalLowerBound set -1 as default

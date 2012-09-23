@@ -351,7 +351,7 @@ public final class WordDelimiterFilter extends TokenFilter {
    * Flushes the given WordDelimiterConcatenation by either writing its concat and then clearing, or just clearing.
    *
    * @param concatenation WordDelimiterConcatenation that will be flushed
-   * @return {@code true} if the concatenation was written before it was cleared, {@code} false otherwise
+   * @return {@code true} if the concatenation was written before it was cleared, {@code false} otherwise
    */
   private boolean flushConcatenation(WordDelimiterConcatenation concatenation) {
     lastConcatCount = concatenation.subwordCount;
@@ -493,7 +493,7 @@ public final class WordDelimiterFilter extends TokenFilter {
    * Determines whether the given flag is set
    *
    * @param flag Flag to see if set
-   * @return {@code} true if flag is set
+   * @return {@code true} if flag is set
    */
   private boolean has(int flag) {
     return (flags & flag) != 0;

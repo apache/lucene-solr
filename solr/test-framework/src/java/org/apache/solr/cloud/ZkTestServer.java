@@ -83,7 +83,7 @@ public class ZkTestServer {
     /**
      * Run from a ServerConfig.
      * @param config ServerConfig to use.
-     * @throws IOException
+     * @throws IOException If there is a low-level I/O error.
      */
     public void runFromConfig(ServerConfig config) throws IOException {
       try {
@@ -110,7 +110,7 @@ public class ZkTestServer {
 
     /**
      * Shutdown the serving instance
-     * @throws IOException 
+     * @throws IOException If there is a low-level I/O error.
      */
     protected void shutdown() throws IOException {
       zooKeeperServer.shutdown();
@@ -287,7 +287,7 @@ public class ZkTestServer {
    * @param host the destination host
    * @param port the destination port
    * @param cmd the 4letterword
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public static String send4LetterWord(String host, int port, String cmd)
       throws IOException

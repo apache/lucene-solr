@@ -89,8 +89,6 @@ public class DOMUtils {
   /**
    * Returns an attribute value from this node, or first parent node with this attribute defined
    *
-   * @param element
-   * @param attributeName
    * @return A non-zero-length value if defined, otherwise null
    */
   public static String getAttributeWithInheritance(Element element, String attributeName) {

@@ -135,7 +135,7 @@ public abstract class FSDirectory extends Directory {
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default
    * ({@link NativeFSLockFactory});
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   protected FSDirectory(File path, LockFactory lockFactory) throws IOException {
     // new ctors use always NativeFSLockFactory as default:

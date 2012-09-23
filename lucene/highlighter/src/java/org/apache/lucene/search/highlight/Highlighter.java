@@ -174,11 +174,7 @@ public class Highlighter
    * Low level api to get the most relevant (formatted) sections of the document.
    * This method has been made public to allow visibility of score information held in TextFragment objects.
    * Thanks to Jason Calabrese for help in redefining the interface.
-   * @param tokenStream
-   * @param text
-   * @param maxNumFragments
-   * @param mergeContiguousFragments
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    * @throws InvalidTokenOffsetsException thrown if any token's endOffset exceeds the provided text's length
    */
   public final TextFragment[] getBestTextFragments(
@@ -492,9 +488,6 @@ public class Highlighter
     return textFragmenter;
   }
 
-  /**
-   * @param fragmenter
-   */
   public void setTextFragmenter(Fragmenter fragmenter)
   {
     textFragmenter = fragmenter;
@@ -509,9 +502,6 @@ public class Highlighter
   }
 
 
-  /**
-   * @param scorer
-   */
   public void setFragmentScorer(Scorer scorer)
   {
     fragmentScorer = scorer;

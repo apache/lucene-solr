@@ -171,8 +171,6 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
 
   /**
    * Not an explicit test, just useful to print out some info on performance
-   *
-   * @throws Exception
    */
   public void performance() throws Exception {
     int[] tokCount = {100, 500, 1000, 2000, 5000, 10000};

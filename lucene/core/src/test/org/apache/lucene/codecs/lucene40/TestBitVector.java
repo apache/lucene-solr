@@ -33,7 +33,6 @@ public class TestBitVector extends LuceneTestCase
 
     /**
      * Test the default constructor on BitVectors of various sizes.
-     * @throws Exception
      */
     public void testConstructSize() throws Exception {
         doTestConstructOfSize(8);
@@ -49,7 +48,6 @@ public class TestBitVector extends LuceneTestCase
 
     /**
      * Test the get() and set() methods on BitVectors of various sizes.
-     * @throws Exception
      */
     public void testGetSet() throws Exception {
         doTestGetSetVectorOfSize(8);
@@ -70,7 +68,6 @@ public class TestBitVector extends LuceneTestCase
 
     /**
      * Test the clear() method on BitVectors of various sizes.
-     * @throws Exception
      */
     public void testClear() throws Exception {
         doTestClearVectorOfSize(8);
@@ -93,7 +90,6 @@ public class TestBitVector extends LuceneTestCase
 
     /**
      * Test the count() method on BitVectors of various sizes.
-     * @throws Exception
      */
     public void testCount() throws Exception {
         doTestCountVectorOfSize(8);
@@ -129,7 +125,6 @@ public class TestBitVector extends LuceneTestCase
 
     /**
      * Test writing and construction to/from Directory.
-     * @throws Exception
      */
     public void testWriteRead() throws Exception {
         doTestWriteRead(8);

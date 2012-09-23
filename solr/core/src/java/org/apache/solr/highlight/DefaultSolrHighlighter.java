@@ -164,7 +164,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * @param fieldName The name of the field
    * @param request The current SolrQueryRequest
    * @param tokenStream document text CachingTokenStream
-   * @throws IOException 
+   * @throws IOException If there is a low-level I/O error.
    */
   protected Highlighter getPhraseHighlighter(Query query, String fieldName, SolrQueryRequest request, CachingTokenFilter tokenStream) throws IOException {
     SolrParams params = request.getParams();

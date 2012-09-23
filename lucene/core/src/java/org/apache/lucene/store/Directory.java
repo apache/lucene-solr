@@ -260,7 +260,7 @@ public abstract class Directory implements Closeable {
     /**
      * Returns an {@link IndexInput} slice starting at offset <i>0</i> with a
      * length equal to the length of the underlying file
-     * @deprecated
+     * @deprecated Only for reading CFS files from 3.x indexes.
      */
     @Deprecated
     // can we remove this somehow?

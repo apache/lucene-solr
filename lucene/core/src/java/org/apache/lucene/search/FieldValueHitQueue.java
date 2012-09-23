@@ -159,7 +159,7 @@ public abstract class FieldValueHitQueue<T extends FieldValueHitQueue.Entry> ext
    *          priority first); cannot be <code>null</code> or empty
    * @param size
    *          The number of hits to retain. Must be greater than zero.
-   * @throws IOException
+   * @throws IOException if there is a low-level IO error
    */
   public static <T extends FieldValueHitQueue.Entry> FieldValueHitQueue<T> create(SortField[] fields, int size) throws IOException {
 

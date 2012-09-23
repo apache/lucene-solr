@@ -46,9 +46,6 @@ public abstract class DataSource<T> {
    * <p/>
    * This is invoked by the <code>DataImporter</code> after creating an
    * instance of this class.
-   *
-   * @param context
-   * @param initProps
    */
   public abstract void init(Context context, Properties initProps);
 

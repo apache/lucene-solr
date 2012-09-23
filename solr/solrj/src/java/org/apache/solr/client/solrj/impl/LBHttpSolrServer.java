@@ -230,8 +230,7 @@ public class LBHttpSolrServer extends SolrServer {
    *
    * @return the result of the request
    *
-   * @throws SolrServerException
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public Rsp request(Req req) throws SolrServerException, IOException {
     Rsp rsp = new Rsp();
@@ -419,8 +418,7 @@ public class LBHttpSolrServer extends SolrServer {
    *
    * @return response
    *
-   * @throws SolrServerException
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   @Override
   public NamedList<Object> request(final SolrRequest request)

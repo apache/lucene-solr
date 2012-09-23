@@ -257,9 +257,6 @@ class DocHelper {
    * Writes the document to the directory using a segment
    * named "test"; returns the SegmentInfo describing the new
    * segment 
-   * @param dir
-   * @param doc
-   * @throws IOException
    */ 
   public static SegmentInfoPerCommit writeDoc(Random random, Directory dir, Document doc) throws IOException
   {
@@ -270,11 +267,6 @@ class DocHelper {
    * Writes the document to the directory using the analyzer
    * and the similarity score; returns the SegmentInfo
    * describing the new segment
-   * @param dir
-   * @param analyzer
-   * @param similarity
-   * @param doc
-   * @throws IOException
    */ 
   public static SegmentInfoPerCommit writeDoc(Random random, Directory dir, Analyzer analyzer, Similarity similarity, Document doc) throws IOException {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig( /* LuceneTestCase.newIndexWriterConfig(random, */ 

@@ -160,7 +160,7 @@ public abstract class TokenStream extends AttributeSource implements Closeable {
    * differ from the offset of the last token eg in case one or more whitespaces
    * followed after the last token, but a WhitespaceTokenizer was used.
    * 
-   * @throws IOException
+   * @throws IOException If an I/O error occurs
    */
   public void end() throws IOException {
     // do nothing by default

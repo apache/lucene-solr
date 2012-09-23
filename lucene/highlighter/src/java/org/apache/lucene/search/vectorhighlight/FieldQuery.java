@@ -292,8 +292,6 @@ public class FieldQuery {
 
   /**
    * 
-   * @param fieldName
-   * @param term
    * @return QueryPhraseMap
    */
   public QueryPhraseMap getFieldTermMap( String fieldName, String term ){
@@ -303,8 +301,6 @@ public class FieldQuery {
 
   /**
    * 
-   * @param fieldName
-   * @param phraseCandidate
    * @return QueryPhraseMap
    */
   public QueryPhraseMap searchPhrase( String fieldName, final List<TermInfo> phraseCandidate ){

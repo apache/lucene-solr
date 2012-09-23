@@ -50,7 +50,7 @@ public class SlowCollatedTermRangeTermsEnum extends FilteredTermsEnum {
    * (you can't select all but the first or last term without 
    * explicitly specifying the term to exclude.)
    * 
-   * @param tenum
+   * @param tenum source of the terms to enumerate.
    * @param lowerTermText
    *          The term text at the lower end of the range
    * @param upperTermText

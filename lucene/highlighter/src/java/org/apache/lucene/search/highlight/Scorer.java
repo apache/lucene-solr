@@ -35,7 +35,7 @@ public interface Scorer {
    * @return either a {@link TokenStream} that the Highlighter should continue using (eg
    *         if you read the tokenSream in this method) or null to continue
    *         using the same {@link TokenStream} that was passed in.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public TokenStream init(TokenStream tokenStream) throws IOException;
 

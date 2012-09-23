@@ -41,7 +41,7 @@ import org.apache.lucene.util.IOUtils;
 /**
  * Lucene 3x implementation of {@link SegmentInfoReader}.
  * @lucene.experimental
- * @deprecated
+ * @deprecated Only for reading existing 3.x indexes
  */
 @Deprecated
 public class Lucene3xSegmentInfoReader extends SegmentInfoReader {

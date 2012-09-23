@@ -1060,7 +1060,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *          the given {@link Scorer} in {@link #setScorer(Scorer)}.
    * @return a {@link TopFieldCollector} instance which will sort the results by
    *         the sort criteria.
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   public static TopFieldCollector create(Sort sort, int numHits,
       boolean fillFields, boolean trackDocScores, boolean trackMaxScore,
@@ -1105,7 +1105,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    *          the given {@link Scorer} in {@link #setScorer(Scorer)}.
    * @return a {@link TopFieldCollector} instance which will sort the results by
    *         the sort criteria.
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   public static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
       boolean fillFields, boolean trackDocScores, boolean trackMaxScore,

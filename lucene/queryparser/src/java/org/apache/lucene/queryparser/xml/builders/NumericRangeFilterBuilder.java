@@ -107,8 +107,6 @@ public class NumericRangeFilterBuilder implements FilterBuilder {
    * any documents.
    * <p/>
    * Defaults to false.
-   *
-   * @param strictMode
    */
   public void setStrictMode(boolean strictMode) {
     this.strictMode = strictMode;

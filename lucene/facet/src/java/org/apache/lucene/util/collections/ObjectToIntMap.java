@@ -275,8 +275,6 @@ public class ObjectToIntMap<K> {
 
   /**
    * Calculating the baseHash index using the internal <code>hashFactor</code>.
-   * 
-   * @param key
    */
   protected int calcBaseHashIndex(K key) {
     return key.hashCode() & hashFactor;
@@ -341,7 +339,6 @@ public class ObjectToIntMap<K> {
   /**
    * Find the actual index of a given key.
    * 
-   * @param key
    * @return index of the key. zero if the key wasn't found.
    */
   protected int find(K key) {
@@ -372,8 +369,6 @@ public class ObjectToIntMap<K> {
    * Some methods use the baseHashIndex. If those call {@link #find} there's
    * no need to re-calculate that hash.
    * 
-   * @param key
-   * @param baseHashIndex
    * @return the index of the given key, or 0 as 'Ground' if the key wasn't
    *         found.
    */

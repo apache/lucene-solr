@@ -46,7 +46,7 @@ public class TrecJudge implements Judge {
    *     19    0   doc7295      0
    * </pre> 
    * @param reader where judgments are read from.
-   * @throws IOException 
+   * @throws IOException If there is a low-level I/O error.
    */
   public TrecJudge (BufferedReader reader) throws IOException {
     judgements = new HashMap<String,QRelJudgement>();

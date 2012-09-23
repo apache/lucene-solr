@@ -36,8 +36,6 @@ public interface QueryBuilder {
    *          the query tree root node
    * 
    * @return some object generated from the query tree
-   * 
-   * @throws QueryNodeException
    */
   Object build(QueryNode queryNode) throws QueryNodeException;
 

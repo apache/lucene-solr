@@ -40,9 +40,6 @@ public class SpanOrTermsBuilder extends SpanBuilderBase {
 
   private final Analyzer analyzer;
 
-  /**
-   * @param analyzer
-   */
   public SpanOrTermsBuilder(Analyzer analyzer) {
     this.analyzer = analyzer;
   }

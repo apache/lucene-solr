@@ -69,7 +69,7 @@ public abstract class Spans {
    * @lucene.experimental
    *
    * @return a List of byte arrays containing the data of this payload, otherwise null if isPayloadAvailable is false
-   * @throws java.io.IOException
+   * @throws IOException if there is a low-level I/O error
     */
   // TODO: Remove warning after API has been finalized
   public abstract Collection<byte[]> getPayload() throws IOException;

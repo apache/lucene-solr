@@ -32,8 +32,6 @@ public class AssignShard {
   /**
    * Assign a new unique id up to slices count - then add replicas evenly.
    * 
-   * @param collection
-   * @param state
    * @return the assigned shard id
    */
   public static String assignShard(String collection, ClusterState state, Integer numShards) {

@@ -27,7 +27,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
-/** @deprecated */
+/** @deprecated Only for reading existing 3.x indexes */
 @Deprecated
 class Lucene3xStoredFieldsFormat extends StoredFieldsFormat {
 

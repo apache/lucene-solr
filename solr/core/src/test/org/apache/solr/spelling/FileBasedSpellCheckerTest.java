@@ -138,7 +138,6 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
 
   /**
    * No indexDir location set
-   * @throws Exception
    */
   @Test
   public void testRAMDirectory() throws Exception {

@@ -41,8 +41,6 @@ public class CategoryTokenizerTest extends CategoryContainerTestBase {
   /**
    * Verifies that a {@link CategoryTokenizer} adds the correct
    * {@link CharTermAttribute}s to a {@link CategoryAttributesStream}.
-   * 
-   * @throws IOException
    */
   @Test
   public void testTokensDefaultParams() throws IOException {
@@ -80,8 +78,6 @@ public class CategoryTokenizerTest extends CategoryContainerTestBase {
   /**
    * Verifies that {@link CategoryTokenizer} elongates the buffer in
    * {@link CharTermAttribute} for long categories.
-   * 
-   * @throws IOException
    */
   @Test
   public void testLongCategoryPath() throws IOException {

@@ -71,7 +71,7 @@ class TakmiSampleFixer implements SampleFixer {
    *          result node to be fixed
    * @param docIds
    *          docids in effect
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   private void fixResultNode(FacetResultNode facetResNode, ScoredDocIDs docIds)
       throws IOException {
@@ -88,7 +88,7 @@ class TakmiSampleFixer implements SampleFixer {
    *          result node to be recounted
    * @param docIds
    *          full set of matching documents.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   private void recount(FacetResultNode fresNode, ScoredDocIDs docIds)
       throws IOException {

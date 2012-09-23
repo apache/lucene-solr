@@ -149,9 +149,6 @@ public class ModifierQueryNode extends QueryNodeImpl {
     return clone;
   }
 
-  /**
-   * @param child
-   */
   public void setChild(QueryNode child) {
     List<QueryNode> list = new ArrayList<QueryNode>();
     list.add(child);

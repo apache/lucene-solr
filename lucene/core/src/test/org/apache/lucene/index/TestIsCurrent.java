@@ -56,8 +56,6 @@ public class TestIsCurrent extends LuceneTestCase {
 
   /**
    * Failing testcase showing the trouble
-   * 
-   * @throws IOException
    */
   @Test
   public void testDeleteByTermIsCurrent() throws IOException {
@@ -83,8 +81,6 @@ public class TestIsCurrent extends LuceneTestCase {
 
   /**
    * Testcase for example to show that writer.deleteAll() is working as expected
-   * 
-   * @throws IOException
    */
   @Test
   public void testDeleteAllIsCurrent() throws IOException {

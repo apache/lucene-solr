@@ -68,8 +68,6 @@ public interface DIHCache extends Iterable<Map<String,Object>> {
    * documents will exist in the cache, as the cache allows duplicate keys. To
    * update a key's documents, first call delete(Object key).
    * </p>
-   * 
-   * @param rec
    */
   public void add(Map<String,Object> rec);
   
@@ -93,8 +91,6 @@ public interface DIHCache extends Iterable<Map<String,Object>> {
    * <p>
    * Delete all documents associated with the given key
    * </p>
-   * 
-   * @param key
    */
   public void delete(Object key);
   

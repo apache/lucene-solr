@@ -139,7 +139,7 @@ public class PayloadTermQuery extends SpanTermQuery {
       /**
        * 
        * @return {@link #getSpanScore()} * {@link #getPayloadScore()}
-       * @throws IOException
+       * @throws IOException if there is a low-level I/O error
        */
       @Override
       public float score() throws IOException {
@@ -154,7 +154,7 @@ public class PayloadTermQuery extends SpanTermQuery {
        * Should not be overridden without good cause!
        * 
        * @return the score for just the Span part w/o the payload
-       * @throws IOException
+       * @throws IOException if there is a low-level I/O error
        * 
        * @see #score()
        */

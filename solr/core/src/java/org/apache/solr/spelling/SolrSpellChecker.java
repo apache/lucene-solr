@@ -78,11 +78,6 @@ public abstract class SolrSpellChecker {
   }
   /**
    * Integrate spelling suggestions from the various shards in a distributed environment.
-   * 
-   * @param mergeData
-   * @param numSug
-   * @param count
-   * @param extendedResults
    */
   public SpellingResult mergeSuggestions(SpellCheckMergeData mergeData, int numSug, int count, boolean extendedResults) {
     float min = 0.5f;
@@ -160,7 +155,7 @@ public abstract class SolrSpellChecker {
   /**
    * Reloads the index.  Useful if an external process is responsible for building the spell checker.
    *
-   * @throws java.io.IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public abstract void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException;
 
