@@ -59,9 +59,6 @@ public class ClusterState implements JSONWriter.Writable {
    * Use this constr when ClusterState is meant for publication.
    * 
    * hashCode and equals will only depend on liveNodes and not clusterStateVersion.
-   * 
-   * @param liveNodes
-   * @param collectionStates
    */
   public ClusterState(Set<String> liveNodes,
       Map<String, Map<String,Slice>> collectionStates) {
@@ -70,10 +67,6 @@ public class ClusterState implements JSONWriter.Writable {
   
   /**
    * Use this constr when ClusterState is meant for consumption.
-   * 
-   * @param zkClusterStateVersion
-   * @param liveNodes
-   * @param collectionStates
    */
   public ClusterState(Integer zkClusterStateVersion, Set<String> liveNodes,
       Map<String, Map<String,Slice>> collectionStates) {

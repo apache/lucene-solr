@@ -41,8 +41,6 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
     
   /**
    * LUCENE-3627: This test fails.
-   * 
-   * @throws Exception
    */
   public void testCrashCorruptsIndexing() throws Exception {
     path = _TestUtil.getTempDir("testCrashCorruptsIndexing");
@@ -60,8 +58,6 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
    * index 1 document and commit.
    * prepare for crashing.
    * index 1 more document, and upon commit, creation of segments_2 will crash.
-   * 
-   * @throws IOException
    */
   private void indexAndCrashOnCreateOutputSegments2() throws IOException {
     Directory realDirectory = FSDirectory.open(path);
@@ -93,8 +89,6 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
     
   /**
    * Attempts to index another 1 document.
-   * 
-   * @throws IOException
    */
   private void indexAfterRestart() throws IOException {
     Directory realDirectory = newFSDirectory(path);
@@ -115,8 +109,6 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
     
   /**
    * Run an example search.
-   * 
-   * @throws IOException
    */
   private void searchForFleas(final int expectedTotalHits) throws IOException {
     Directory realDirectory = newFSDirectory(path);

@@ -220,7 +220,8 @@ public class IndexSearcher {
    * this method can be used for efficient 'deep-paging' across potentially
    * large result sets.
    *
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopDocs searchAfter(ScoreDoc after, Query query, int n) throws IOException {
     return search(createNormalizedWeight(query), after, n);
@@ -234,7 +235,8 @@ public class IndexSearcher {
    * this method can be used for efficient 'deep-paging' across potentially
    * large result sets.
    *
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopDocs searchAfter(ScoreDoc after, Query query, Filter filter, int n) throws IOException {
     return search(createNormalizedWeight(wrapFilter(query, filter)), after, n);
@@ -243,7 +245,8 @@ public class IndexSearcher {
   /** Finds the top <code>n</code>
    * hits for <code>query</code>.
    *
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopDocs search(Query query, int n)
     throws IOException {
@@ -254,7 +257,8 @@ public class IndexSearcher {
   /** Finds the top <code>n</code>
    * hits for <code>query</code>, applying <code>filter</code> if non-null.
    *
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopDocs search(Query query, Filter filter, int n)
     throws IOException {
@@ -269,7 +273,8 @@ public class IndexSearcher {
    * @param query to match documents
    * @param filter if non-null, used to permit documents to be collected.
    * @param results to receive hits
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public void search(Query query, Filter filter, Collector results)
     throws IOException {
@@ -277,11 +282,12 @@ public class IndexSearcher {
   }
 
   /** Lower-level search API.
-  *
-  * <p>{@link Collector#collect(int)} is called for every matching document.
-  *
-  * @throws BooleanQuery.TooManyClauses
-  */
+   *
+   * <p>{@link Collector#collect(int)} is called for every matching document.
+   *
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
+   */
   public void search(Query query, Collector results)
     throws IOException {
     search(leafContexts, createNormalizedWeight(query), results);
@@ -296,7 +302,8 @@ public class IndexSearcher {
    * {@link IndexSearcher#search(Query,Filter,int,Sort,boolean,boolean)} to
    * control scoring.
    *
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopFieldDocs search(Query query, Filter filter, int n,
                              Sort sort) throws IOException {
@@ -314,7 +321,8 @@ public class IndexSearcher {
    * <code>true</code> then the maximum score over all
    * collected hits will be computed.
    * 
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopFieldDocs search(Query query, Filter filter, int n,
                              Sort sort, boolean doDocScores, boolean doMaxScore) throws IOException {
@@ -329,7 +337,8 @@ public class IndexSearcher {
    * this method can be used for efficient 'deep-paging' across potentially
    * large result sets.
    *
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopDocs searchAfter(ScoreDoc after, Query query, Filter filter, int n, Sort sort) throws IOException {
     if (after != null && !(after instanceof FieldDoc)) {
@@ -346,7 +355,7 @@ public class IndexSearcher {
    * @param n Return only the top n results
    * @param sort The {@link org.apache.lucene.search.Sort} object
    * @return The top docs, sorted according to the supplied {@link org.apache.lucene.search.Sort} instance
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   public TopFieldDocs search(Query query, int n,
                              Sort sort) throws IOException {
@@ -361,7 +370,8 @@ public class IndexSearcher {
    * this method can be used for efficient 'deep-paging' across potentially
    * large result sets.
    *
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopDocs searchAfter(ScoreDoc after, Query query, int n, Sort sort) throws IOException {
     if (after != null && !(after instanceof FieldDoc)) {
@@ -385,7 +395,8 @@ public class IndexSearcher {
    * <code>true</code> then the maximum score over all
    * collected hits will be computed.
    *
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public TopDocs searchAfter(ScoreDoc after, Query query, Filter filter, int n, Sort sort,
                              boolean doDocScores, boolean doMaxScore) throws IOException {
@@ -403,7 +414,8 @@ public class IndexSearcher {
    *
    * <p>Applications should usually call {@link IndexSearcher#search(Query,int)} or
    * {@link IndexSearcher#search(Query,Filter,int)} instead.
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   protected TopDocs search(Weight weight, ScoreDoc after, int nDocs) throws IOException {
     if (executor == null) {
@@ -440,7 +452,8 @@ public class IndexSearcher {
    *
    * <p>Applications should usually call {@link IndexSearcher#search(Query,int)} or
    * {@link IndexSearcher#search(Query,Filter,int)} instead.
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   protected TopDocs search(List<AtomicReaderContext> leaves, Weight weight, ScoreDoc after, int nDocs) throws IOException {
     // single thread
@@ -463,7 +476,8 @@ public class IndexSearcher {
    * <p>Applications should usually call {@link
    * IndexSearcher#search(Query,Filter,int,Sort)} instead.
    * 
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   protected TopFieldDocs search(Weight weight,
                                 final int nDocs, Sort sort,
@@ -559,7 +573,8 @@ public class IndexSearcher {
    *          to match documents
    * @param collector
    *          to receive hits
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   protected void search(List<AtomicReaderContext> leaves, Weight weight, Collector collector)
       throws IOException {
@@ -577,7 +592,8 @@ public class IndexSearcher {
   }
 
   /** Expert: called to re-write queries into primitive queries.
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   public Query rewrite(Query original) throws IOException {
     Query query = original;
@@ -609,7 +625,8 @@ public class IndexSearcher {
    * Computing an explanation is as expensive as executing the query over the
    * entire index.
    * <p>Applications should call {@link IndexSearcher#explain(Query, int)}.
-   * @throws BooleanQuery.TooManyClauses
+   * @throws BooleanQuery.TooManyClauses If a query would exceed 
+   *         {@link BooleanQuery#getMaxClauseCount()} clauses.
    */
   protected Explanation explain(Weight weight, int doc) throws IOException {
     int n = ReaderUtil.subIndex(doc, leafContexts);

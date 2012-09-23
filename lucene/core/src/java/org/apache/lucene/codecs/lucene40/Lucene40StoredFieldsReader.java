@@ -120,7 +120,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
    * Closes the underlying {@link org.apache.lucene.store.IndexInput} streams.
    * This means that the Fields values will not be accessible.
    *
-   * @throws IOException
+   * @throws IOException If an I/O error occurs
    */
   public final void close() throws IOException {
     if (!closed) {

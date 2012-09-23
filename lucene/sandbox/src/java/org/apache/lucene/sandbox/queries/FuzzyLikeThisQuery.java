@@ -110,7 +110,6 @@ public class FuzzyLikeThisQuery extends Query
     /**
      * 
      * @param maxNumTerms The total number of terms clauses that will appear once rewritten as a BooleanQuery
-     * @param analyzer
      */
     public FuzzyLikeThisQuery(int maxNumTerms, Analyzer analyzer)
     {
@@ -180,7 +179,6 @@ public class FuzzyLikeThisQuery extends Query
     /**
      * Adds user input for "fuzzification" 
      * @param queryString The string which will be parsed by the analyzer and for which fuzzy variants will be parsed
-     * @param fieldName
      * @param minSimilarity The minimum similarity of the term variants (see FuzzyTermsEnum)
      * @param prefixLength Length of required common prefix on variant terms (see FuzzyTermsEnum)
      */

@@ -449,7 +449,7 @@ public class SpellChecker implements java.io.Closeable {
 
   /**
    * Removes all terms from the spell check index.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    * @throws AlreadyClosedException if the Spellchecker is already closed
    */
   public void clearIndex() throws IOException {
@@ -467,8 +467,8 @@ public class SpellChecker implements java.io.Closeable {
 
   /**
    * Check whether the word exists in the index.
-   * @param word
-   * @throws IOException
+   * @param word word to check
+   * @throws IOException If there is a low-level I/O error.
    * @throws AlreadyClosedException if the Spellchecker is already closed
    * @return true if the word exists in the index
    */
@@ -490,7 +490,7 @@ public class SpellChecker implements java.io.Closeable {
    * @param config {@link IndexWriterConfig} to use
    * @param fullMerge whether or not the spellcheck index should be fully merged
    * @throws AlreadyClosedException if the Spellchecker is already closed
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public final void indexDictionary(Dictionary dict, IndexWriterConfig config, boolean fullMerge) throws IOException {
     synchronized (modifyCurrentIndexLock) {

@@ -44,7 +44,6 @@ public class PayloadHelper {
   }
 
   /**
-   * @param bytes
    * @see #decodeFloat(byte[], int)
    * @see #encodeFloat(float)
    * @return the decoded float

@@ -219,8 +219,6 @@ public class NearSpansOrdered extends Spans {
   }
   
   /** Check whether two Spans in the same document are ordered.
-   * @param spans1 
-   * @param spans2 
    * @return true iff spans1 starts before spans2
    *              or the spans start at the same position,
    *              and spans1 ends before spans2.

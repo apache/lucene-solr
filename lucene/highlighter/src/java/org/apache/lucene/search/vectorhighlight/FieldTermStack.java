@@ -70,7 +70,7 @@ public class FieldTermStack {
    * @param docId document id to be highlighted
    * @param fieldName field of the document to be highlighted
    * @param fieldQuery FieldQuery object
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public FieldTermStack( IndexReader reader, int docId, String fieldName, final FieldQuery fieldQuery ) throws IOException {
     this.fieldName = fieldName;

@@ -54,8 +54,7 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
    * <p/>
    * {@link #cas} will be filled with  extracted metadata (UIMA annotations, feature structures)
    *
-   * @throws AnalysisEngineProcessException
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   protected void analyzeInput() throws AnalysisEngineProcessException, IOException {
     cas.reset();
@@ -66,7 +65,7 @@ public abstract class BaseUIMATokenizer extends Tokenizer {
   /**
    * initialize the FSIterator which is used to build tokens at each incrementToken() method call
    *
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   protected abstract void initializeIterator() throws IOException;
 

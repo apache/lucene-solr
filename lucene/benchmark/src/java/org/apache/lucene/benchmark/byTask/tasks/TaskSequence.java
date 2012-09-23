@@ -109,7 +109,6 @@ public class TaskSequence extends PerfTask {
 
   /**
    * @param repetitions The repetitions to set.
-   * @throws Exception 
    */
   public void setRepetitions(int repetitions) throws Exception {
     fixedTime = false;

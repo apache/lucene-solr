@@ -27,9 +27,7 @@ import org.apache.uima.resource.ResourceInitializationException;
 public interface AEProvider {
 
   /**
-   *
-   * @return AnalysisEngine
-   * @throws ResourceInitializationException
+   * Returns the AnalysisEngine
    */
   public AnalysisEngine getAE() throws ResourceInitializationException;
 

@@ -215,14 +215,14 @@ public final class CompoundFileDirectory extends Directory {
   }
   
   /** Not implemented
-   * @throws UnsupportedOperationException */
+   * @throws UnsupportedOperationException always: not supported by CFS */
   @Override
   public void deleteFile(String name) {
     throw new UnsupportedOperationException();
   }
   
   /** Not implemented
-   * @throws UnsupportedOperationException */
+   * @throws UnsupportedOperationException always: not supported by CFS */
   public void renameFile(String from, String to) {
     throw new UnsupportedOperationException();
   }
@@ -253,7 +253,7 @@ public final class CompoundFileDirectory extends Directory {
   }
   
   /** Not implemented
-   * @throws UnsupportedOperationException */
+   * @throws UnsupportedOperationException always: not supported by CFS */
   @Override
   public Lock makeLock(String name) {
     throw new UnsupportedOperationException();

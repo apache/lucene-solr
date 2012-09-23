@@ -38,7 +38,7 @@ public interface SampleFixer {
    *          full set of matching documents.
    * @param fres
    *          sample result to be fixed.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public void fixResult(ScoredDocIDs origDocIds, FacetResult fres) throws IOException; 
 }

@@ -456,7 +456,7 @@ public class UnInvertedField extends DocTermOrds {
    * @param baseDocs The {@link org.apache.solr.search.DocSet} to gather the stats on
    * @param facet One or more fields to facet on.
    * @return The {@link org.apache.solr.handler.component.StatsValues} collected
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public StatsValues getStats(SolrIndexSearcher searcher, DocSet baseDocs, String[] facet) throws IOException {
     //this function is ripped off nearly wholesale from the getCounts function to use

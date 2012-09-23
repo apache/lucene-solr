@@ -29,11 +29,6 @@ public final class UnescapedCharSequence implements CharSequence {
 
   /**
    * Create a escaped CharSequence
-   * 
-   * @param chars
-   * @param wasEscaped
-   * @param offset
-   * @param length
    */
   public UnescapedCharSequence(char[] chars, boolean[] wasEscaped, int offset,
       int length) {
@@ -45,8 +40,6 @@ public final class UnescapedCharSequence implements CharSequence {
 
   /**
    * Create a non-escaped CharSequence
-   * 
-   * @param text
    */
   public UnescapedCharSequence(CharSequence text) {
     this.chars = new char[text.length()];
@@ -59,8 +52,6 @@ public final class UnescapedCharSequence implements CharSequence {
 
   /**
    * Create a copy of an existent UnescapedCharSequence
-   * 
-   * @param text
    */
   @SuppressWarnings("unused")
   private UnescapedCharSequence(UnescapedCharSequence text) {

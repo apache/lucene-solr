@@ -225,7 +225,7 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
    *
    * @param c iteration mark character to normalize
    * @return normalized iteration mark
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   private char normalizeIterationMark(char c) throws IOException {
 
@@ -252,7 +252,7 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
    * Finds the number of subsequent next iteration marks
    *
    * @return number of iteration marks starting at the current buffer position
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   private int nextIterationMarkSpanSize() throws IOException {
     int spanSize = 0;
@@ -272,7 +272,7 @@ public class JapaneseIterationMarkCharFilter extends CharFilter {
    * @param position buffer position (should not exceed bufferPosition)
    * @param spanSize iteration mark span size
    * @return source character
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   private char sourceCharacter(int position, int spanSize) throws IOException {
     return (char) buffer.get(position - spanSize);

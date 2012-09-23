@@ -131,12 +131,6 @@ public class PeerSync  {
     this(core, replicas, nUpdates, false);
   }
   
-  /**
-   *
-   * @param core
-   * @param replicas
-   * @param nUpdates
-   */
   public PeerSync(SolrCore core, List<String> replicas, int nUpdates, boolean cantReachIsSuccess) {
     this.replicas = replicas;
     this.nUpdates = nUpdates;

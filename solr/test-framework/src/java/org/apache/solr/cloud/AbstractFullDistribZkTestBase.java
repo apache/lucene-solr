@@ -280,12 +280,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   
 
   /**
-   * @param numJettys
    * @param checkCreatedVsState
    *          if true, make sure the number created (numJettys) matches the
    *          number in the cluster state - if you add more jetties this may not
    *          be the case
-   * @throws Exception
    */
   protected List<JettySolrRunner> createJettys(int numJettys, boolean checkCreatedVsState) throws Exception {
     List<JettySolrRunner> jettys = new ArrayList<JettySolrRunner>();

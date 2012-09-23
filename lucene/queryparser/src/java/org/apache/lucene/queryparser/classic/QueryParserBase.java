@@ -662,10 +662,6 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
     return query;
   }
 
-  /**
-   *
-   * @exception org.apache.lucene.queryparser.classic.ParseException
-   */
   protected Query getRangeQuery(String field,
                                 String part1,
                                 String part2,

@@ -113,7 +113,6 @@ public class PayloadHelper {
    * @param similarity The Similarity class to use in the Searcher
    * @param numDocs The num docs to add
    * @return An IndexSearcher
-   * @throws IOException
    */
   // TODO: randomize
   public IndexSearcher setUp(Random random, Similarity similarity, int numDocs) throws IOException {

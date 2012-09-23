@@ -95,9 +95,6 @@ public class PerDimensionIndexingParams extends DefaultFacetIndexingParams {
   /**
    * Add a CategoryListParams for a given CategoryPath's dimension or
    * "zero-th" category.
-   * 
-   * @param category
-   * @param clParams
    */
   public void addCategoryListParams(CategoryPath category, CategoryListParams clParams) {
     clParamsMap.put(category.getComponent(0), clParams);

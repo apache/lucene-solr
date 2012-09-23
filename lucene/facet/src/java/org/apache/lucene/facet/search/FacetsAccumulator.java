@@ -81,7 +81,7 @@ public abstract class FacetsAccumulator {
   public abstract List<FacetResult> accumulate(ScoredDocIDs docids) throws IOException;
 
   /**
-   * @return the complement threshold
+   * Returns the complement threshold.
    * @see #setComplementThreshold(double)
    */
   public double getComplementThreshold() {
@@ -107,6 +107,7 @@ public abstract class FacetsAccumulator {
    * <p>
    * To disable complements pass {@link #DISABLE_COMPLEMENT}.
    * @param complementThreshold the complement threshold to set
+   * @see #getComplementThreshold()
    */
   public void setComplementThreshold(double complementThreshold) {
     this.complementThreshold = complementThreshold;

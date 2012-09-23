@@ -42,8 +42,6 @@ public class TermsFilter extends Filter {
 
   /**
    * Adds a term to the list of acceptable terms
-   *
-   * @param term
    */
   public void addTerm(Term term) {
     terms.add(term);

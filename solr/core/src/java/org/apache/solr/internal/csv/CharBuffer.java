@@ -207,7 +207,6 @@ public class CharBuffer {
     
     /**
      * Copies the data into a new array of at least <code>capacity</code> size.
-     * @param capacity
      */
     public void provideCapacity(final int capacity) {
         if (c.length >= capacity) {

@@ -138,19 +138,6 @@ public final class ZkController {
   private int clientTimeout;
 
 
-  /**
-   * @param cc
-   * @param zkServerAddress
-   * @param zkClientTimeout
-   * @param zkClientConnectTimeout
-   * @param localHost
-   * @param locaHostPort
-   * @param localHostContext
-   * @param registerOnReconnect
-   * @throws InterruptedException
-   * @throws TimeoutException
-   * @throws IOException
-   */
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
       String localHostContext, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
@@ -158,20 +145,6 @@ public final class ZkController {
   }
   
 
-  /**
-   * @param cc
-   * @param zkServerAddress
-   * @param zkClientTimeout
-   * @param zkClientConnectTimeout
-   * @param localHost
-   * @param locaHostPort
-   * @param localHostContext
-   * @param leaderVoteWait
-   * @param registerOnReconnect
-   * @throws InterruptedException
-   * @throws TimeoutException
-   * @throws IOException
-   */
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
       String localHostContext, String leaderVoteWait, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
@@ -347,11 +320,7 @@ public final class ZkController {
   }
 
   /**
-   * @param collection
-   * @param fileName
-   * @return true if config file exists
-   * @throws KeeperException
-   * @throws InterruptedException
+   * Returns true if config file exists
    */
   public boolean configFileExists(String collection, String fileName)
       throws KeeperException, InterruptedException {
@@ -367,11 +336,7 @@ public final class ZkController {
   }
 
   /**
-   * @param zkConfigName
-   * @param fileName
-   * @return config file data (in bytes)
-   * @throws KeeperException
-   * @throws InterruptedException
+   * Returns config file data (in bytes)
    */
   public byte[] getConfigFileData(String zkConfigName, String fileName)
       throws KeeperException, InterruptedException {
@@ -521,10 +486,7 @@ public final class ZkController {
   }
 
   /**
-   * @param path
-   * @return true if the path exists
-   * @throws KeeperException
-   * @throws InterruptedException
+   * Returns true if the path exists
    */
   public boolean pathExists(String path) throws KeeperException,
       InterruptedException {
@@ -532,10 +494,7 @@ public final class ZkController {
   }
 
   /**
-   * @param collection
-   * @return config value
-   * @throws KeeperException
-   * @throws InterruptedException
+   * Returns config value
    */
   public String readConfigName(String collection) throws KeeperException,
       InterruptedException {
@@ -567,10 +526,7 @@ public final class ZkController {
   /**
    * Register shard with ZooKeeper.
    * 
-   * @param coreName
-   * @param desc
    * @return the shardId for the SolrCore
-   * @throws Exception
    */
   public String register(String coreName, final CoreDescriptor desc) throws Exception {  
     return register(coreName, desc, false, false);
@@ -580,12 +536,7 @@ public final class ZkController {
   /**
    * Register shard with ZooKeeper.
    * 
-   * @param coreName
-   * @param desc
-   * @param recoverReloadedCores
-   * @param afterExpiration
    * @return the shardId for the SolrCore
-   * @throws Exception
    */
   public String register(String coreName, final CoreDescriptor desc, boolean recoverReloadedCores, boolean afterExpiration) throws Exception {  
     final String baseUrl = getBaseUrl();
@@ -725,10 +676,7 @@ public final class ZkController {
   /**
    * Get leader props directly from zk nodes.
    * 
-   * @param collection
-   * @param slice
    * @return leader props
-   * @throws InterruptedException
    */
   public ZkCoreNodeProps getLeaderProps(final String collection,
       final String slice, boolean failImmediatelyOnExpiration) throws InterruptedException {
@@ -787,18 +735,7 @@ public final class ZkController {
 
 
   /**
-   * @param coreName
-   * @param desc
-   * @param recoverReloadedCores
-   * @param isLeader
-   * @param cloudDesc
-   * @param collection
-   * @param shardZkNodeName
-   * @param shardId
-   * @param leaderProps
-   * @param core
-   * @param cc
-   * @return whether or not a recovery was started
+   * Returns whether or not a recovery was started
    */
   private boolean checkRecovery(String coreName, final CoreDescriptor desc,
       boolean recoverReloadedCores, final boolean isLeader,
@@ -839,10 +776,6 @@ public final class ZkController {
   
   /**
    * Publish core state to overseer.
-   * @param cd
-   * @param state
-   * @throws KeeperException
-   * @throws InterruptedException
    */
   public void publish(final CoreDescriptor cd, final String state, boolean updateLastState) throws KeeperException, InterruptedException {
     //System.out.println(Thread.currentThread().getStackTrace()[3]);
@@ -880,12 +813,6 @@ public final class ZkController {
     return true;
   }
 
-  /**
-   * @param coreName
-   * @param cloudDesc
-   * @throws KeeperException
-   * @throws InterruptedException
-   */
   public void unregister(String coreName, CloudDescriptor cloudDesc)
       throws InterruptedException, KeeperException {
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
@@ -909,24 +836,10 @@ public final class ZkController {
     overseerJobQueue.offer(ZkStateReader.toJSON(m));
   }
 
-  /**
-   * @param dir
-   * @param zkPath
-   * @throws IOException
-   * @throws KeeperException
-   * @throws InterruptedException
-   */
   public void uploadToZK(File dir, String zkPath) throws IOException, KeeperException, InterruptedException {
     uploadToZK(zkClient, dir, zkPath);
   }
   
-  /**
-   * @param dir
-   * @param configName
-   * @throws IOException
-   * @throws KeeperException
-   * @throws InterruptedException
-   */
   public void uploadConfigDir(File dir, String configName) throws IOException, KeeperException, InterruptedException {
     uploadToZK(zkClient, dir, ZkController.CONFIGS_ZKNODE + "/" + configName);
   }
@@ -1258,10 +1171,6 @@ public final class ZkController {
   
   /**
    * If in SolrCloud mode, upload config sets for each SolrCore in solr.xml.
-   * 
-   * @throws IOException
-   * @throws KeeperException
-   * @throws InterruptedException
    */
   public static void bootstrapConf(SolrZkClient zkClient, Config cfg, String solrHome) throws IOException,
       KeeperException, InterruptedException {

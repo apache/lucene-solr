@@ -198,12 +198,10 @@ public abstract class Context {
   public abstract String getScriptLanguage();
 
   /**delete a document by id
-   * @param id
    */
   public abstract void deleteDoc(String id);
 
   /**delete documents by query
-   * @param query
    */
   public abstract void deleteDocByQuery(String query);
 
@@ -214,7 +212,6 @@ public abstract class Context {
   public abstract Object resolve(String var);
 
   /** Resolve variables in a template
-   * @param template
    *
    * @return The string w/ variables resolved
    */

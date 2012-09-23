@@ -106,7 +106,7 @@ public class FastVectorHighlighter {
    * @param fieldName field of the document to be highlighted
    * @param fragCharSize the length (number of chars) of a fragment
    * @return the best fragment (snippet) string
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public final String getBestFragment( final FieldQuery fieldQuery, IndexReader reader, int docId,
       String fieldName, int fragCharSize ) throws IOException {
@@ -126,7 +126,7 @@ public class FastVectorHighlighter {
    * @param maxNumFragments maximum number of fragments
    * @return created fragments or null when no fragments created.
    *         size of the array can be less than maxNumFragments
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public final String[] getBestFragments( final FieldQuery fieldQuery, IndexReader reader, int docId,
       String fieldName, int fragCharSize, int maxNumFragments ) throws IOException {
@@ -149,7 +149,7 @@ public class FastVectorHighlighter {
    * @param postTags post-tags to be used to highlight terms
    * @param encoder an encoder that generates encoded text
    * @return the best fragment (snippet) string
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public final String getBestFragment( final FieldQuery fieldQuery, IndexReader reader, int docId,
       String fieldName, int fragCharSize,
@@ -175,7 +175,7 @@ public class FastVectorHighlighter {
    * @param encoder an encoder that generates encoded text
    * @return created fragments or null when no fragments created.
    *         size of the array can be less than maxNumFragments
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public final String[] getBestFragments( final FieldQuery fieldQuery, IndexReader reader, int docId,
       String fieldName, int fragCharSize, int maxNumFragments,

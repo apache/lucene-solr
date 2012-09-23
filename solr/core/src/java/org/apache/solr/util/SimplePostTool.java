@@ -585,7 +585,7 @@ public class SimplePostTool {
    * Reads an input stream into a byte array
    * @param is the input stream
    * @return the byte array
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   protected byte[] inputStreamToByteArray(InputStream is) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -761,7 +761,6 @@ public class SimplePostTool {
    * @param url the URL
    * @param append the path to append
    * @return the final URL version 
-   * @throws MalformedURLException
    */
   protected static URL appendUrlPath(URL url, String append) throws MalformedURLException {
     return new URL(url.getProtocol() + "://" + url.getAuthority() + url.getPath() + append + (url.getQuery() != null ? "?"+url.getQuery() : ""));

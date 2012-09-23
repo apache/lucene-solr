@@ -83,7 +83,7 @@ public final class SlowFuzzyTermsEnum extends FuzzyTermsEnum {
      * After calling the constructor the enumeration is already pointing to the first 
      * valid term if such a term exists.
      *
-     * @throws IOException
+     * @throws IOException If there is a low-level I/O error.
      */
     public LinearFuzzyTermsEnum() throws IOException {
       super(terms.iterator(null));

@@ -86,7 +86,6 @@ public class TestSpansAdvanced extends LuceneTestCase {
    * @param writer the Lucene index writer
    * @param id the unique id of the document
    * @param text the text of the document
-   * @throws IOException
    */
   protected void addDocument(final RandomIndexWriter writer, final String id,
       final String text) throws IOException {
@@ -99,8 +98,6 @@ public class TestSpansAdvanced extends LuceneTestCase {
   
   /**
    * Tests two span queries.
-   * 
-   * @throws IOException
    */
   public void testBooleanQueryWithSpanQueries() throws IOException {
     
@@ -109,8 +106,6 @@ public class TestSpansAdvanced extends LuceneTestCase {
   
   /**
    * Tests two span queries.
-   * 
-   * @throws IOException
    */
   protected void doTestBooleanQueryWithSpanQueries(IndexSearcher s,
       final float expectedScore) throws IOException {
@@ -132,8 +127,6 @@ public class TestSpansAdvanced extends LuceneTestCase {
    * @param description the description of the search
    * @param expectedIds the expected document ids of the hits
    * @param expectedScores the expected scores of the hits
-   * 
-   * @throws IOException
    */
   protected static void assertHits(IndexSearcher s, Query query,
       final String description, final String[] expectedIds,

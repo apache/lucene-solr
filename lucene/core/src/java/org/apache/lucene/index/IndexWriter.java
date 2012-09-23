@@ -320,7 +320,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * @return IndexReader that covers entire index plus all
    * changes made so far by this IndexWriter instance
    *
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   DirectoryReader getReader(boolean applyAllDeletes) throws IOException {
     ensureOpen();
@@ -473,7 +473,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
      * Commit live docs changes for the segment readers for
      * the provided infos.
      *
-     * @throws IOException
+     * @throws IOException If there is a low-level I/O error
      */
     public synchronized void commit(SegmentInfos infos) throws IOException {
       for (SegmentInfoPerCommit info : infos) {

@@ -269,7 +269,6 @@ public class TestWildcard
    * This test looks at both parsing and execution of wildcard queries.
    * Although placed here, it also tests prefix queries, verifying that
    * prefix queries are not parsed into wild card queries, and viceversa.
-   * @throws Exception
    */
   public void testParsingAndSearching() throws Exception {
     String field = "content";

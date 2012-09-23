@@ -84,7 +84,6 @@ public class QueryScorer implements Scorer {
    * @param query to use for highlighting
    * @param reader {@link IndexReader} to use for quasi tf/idf scoring
    * @param field to highlight - pass null to ignore fields
-   * @param defaultField
    */
   public QueryScorer(Query query, IndexReader reader, String field, String defaultField) {
     this.defaultField = defaultField;
@@ -263,8 +262,6 @@ public class QueryScorer implements Scorer {
    * ensure an efficient reset - if you are already using a different caching
    * {@link TokenStream} impl and you don't want it to be wrapped, set this to
    * false.
-   * 
-   * @param wrap
    */
   public void setWrapIfNotCachingTokenFilter(boolean wrap) {
     this.wrapToCaching = wrap;

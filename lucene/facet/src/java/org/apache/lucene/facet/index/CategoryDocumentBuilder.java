@@ -128,7 +128,7 @@ public class CategoryDocumentBuilder {
    * @return This CategoryDocumentBuilder, to enable this one line call:
    *         {@code new} {@link #CategoryDocumentBuilder(TaxonomyWriter)}.
    *         {@link #setCategoryPaths(Iterable)}.{@link #build(Document)}.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public CategoryDocumentBuilder setCategoryPaths(
       Iterable<CategoryPath> categoryPaths) throws IOException {
@@ -150,7 +150,7 @@ public class CategoryDocumentBuilder {
    * @return This CategoryDocumentBuilder, to enable this one line call:
    *         {@code new} {@link #CategoryDocumentBuilder(TaxonomyWriter)}.
    *         {@link #setCategories(Iterable)}.{@link #build(Document)}.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public CategoryDocumentBuilder setCategories(
       Iterable<CategoryAttribute> categories) throws IOException {
@@ -277,7 +277,7 @@ public class CategoryDocumentBuilder {
    *            relevant data.
    * @return The {@link CategoryTokenizer} to be used in creating category
    *         tokens.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   protected CategoryTokenizer getCategoryTokenizer(TokenStream categoryStream)
       throws IOException {

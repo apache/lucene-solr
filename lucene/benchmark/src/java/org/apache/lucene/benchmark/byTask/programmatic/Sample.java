@@ -32,11 +32,6 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
  */
 public class Sample {
 
-  /**
-   * @param args
-   * @throws Exception 
-   * @throws IOException 
-   */
   public static void main(String[] args) throws Exception {
     Properties p = initProps();
     Config conf = new Config(p);

@@ -126,11 +126,6 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     doAdd(handler, templateAdd);
   }
 
-  /**
-   * @param req
-   * @param stream
-   * @throws java.io.IOException
-   */
   @Override
   public void load(SolrQueryRequest req, SolrQueryResponse rsp,
       ContentStream stream, UpdateRequestProcessor processor) throws Exception {

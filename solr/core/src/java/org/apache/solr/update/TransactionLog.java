@@ -585,7 +585,7 @@ public class TransactionLog {
     /** Returns the next object from the log, or null if none available.
      *
      * @return The log record, or null if EOF
-     * @throws IOException
+     * @throws IOException If there is a low-level I/O error.
      */
     public Object next() throws IOException, InterruptedException {
       long pos = fis.position();
@@ -674,7 +674,7 @@ public class TransactionLog {
     /** Returns the next object from the log, or null if none available.
      *
      * @return The log record, or null if EOF
-     * @throws IOException
+     * @throws IOException If there is a low-level I/O error.
      */
     public Object next() throws IOException {
       if (prevPos <= 0) return null;

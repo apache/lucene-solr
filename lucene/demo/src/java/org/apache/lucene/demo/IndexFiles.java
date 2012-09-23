@@ -140,7 +140,7 @@ public class IndexFiles {
    *  
    * @param writer Writer to the index where the given file/dir info will be stored
    * @param file The file to index, or the directory to recurse into to find files to index
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   static void indexDocs(IndexWriter writer, File file)
     throws IOException {

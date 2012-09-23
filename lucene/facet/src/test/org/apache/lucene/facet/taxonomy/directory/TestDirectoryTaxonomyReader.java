@@ -69,7 +69,6 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
   
   /**
    * Test the boolean returned by TR.refresh
-   * @throws Exception
    */
   @Test
   public void testReaderRefreshResult() throws Exception {

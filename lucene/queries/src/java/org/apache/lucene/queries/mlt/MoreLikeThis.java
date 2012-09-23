@@ -292,6 +292,7 @@ public final class MoreLikeThis {
    * Returns the boost factor used when boosting terms
    *
    * @return the boost factor used when boosting terms
+   * @see #setBoostFactor(float)
    */
   public float getBoostFactor() {
     return boostFactor;
@@ -300,7 +301,7 @@ public final class MoreLikeThis {
   /**
    * Sets the boost factor to use when boosting terms
    *
-   * @param boostFactor
+   * @see #getBoostFactor()
    */
   public void setBoostFactor(float boostFactor) {
     this.boostFactor = boostFactor;

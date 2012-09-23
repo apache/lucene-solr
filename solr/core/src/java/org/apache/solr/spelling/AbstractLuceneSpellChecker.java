@@ -224,7 +224,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   /**
    * Initialize the {@link #index} variable based on the {@link #indexDir}.  Does not actually create the spelling index.
    *
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   protected void initIndex() throws IOException {
     if (indexDir != null) {

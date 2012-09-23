@@ -58,7 +58,7 @@ public class Config {
    * Read both algorithm and config properties.
    *
    * @param algReader from where to read algorithm and config properties.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public Config(Reader algReader) throws IOException {
     // read alg file to array of lines
@@ -163,7 +163,6 @@ public class Config {
    *
    * @param name  name of property.
    * @param value either single or multiple property value (multiple values are separated by ":")
-   * @throws Exception
    */
   public void set(String name, String value) throws Exception {
     if (valByRound.get(name) != null) {

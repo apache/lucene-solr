@@ -53,7 +53,7 @@ public abstract class DocTransformer
    *
    * @param doc The document to alter
    * @param docid The Lucene internal doc id
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public abstract void transform(SolrDocument doc, int docid) throws IOException;
 

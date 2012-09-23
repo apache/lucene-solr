@@ -89,7 +89,7 @@ public class CSVStrategy implements Cloneable, Serializable {
         setIgnoreEmptyLines(ignoreEmptyLines);
     }
 
-    /** @deprecated */
+    /** @deprecated Use {@link #CSVStrategy(char, char, char, char, boolean, boolean, boolean, boolean)} */
     public CSVStrategy(
         char delimiter,
         char encapsulator,

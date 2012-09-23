@@ -88,18 +88,11 @@ public class SamplingWrapper extends FacetsAccumulator {
     return fixedRes; 
   }
 
-  /**
-   * @see FacetsAccumulator#getComplementThreshold()
-   */
   @Override
   public double getComplementThreshold() {
     return delegee.getComplementThreshold();
   }
 
-  /**
-   * @param complementThreshold
-   * @see FacetsAccumulator#setComplementThreshold(double)
-   */
   @Override
   public void setComplementThreshold(double complementThreshold) {
     delegee.setComplementThreshold(complementThreshold);

@@ -437,9 +437,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   /**
-   * @param cmd
    * @return whether or not to drop this cmd
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   private boolean versionAdd(AddUpdateCommand cmd) throws IOException {
     BytesRef idBytes = cmd.getIndexedId();

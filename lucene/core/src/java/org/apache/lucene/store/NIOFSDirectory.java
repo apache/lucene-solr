@@ -58,7 +58,7 @@ public class NIOFSDirectory extends FSDirectory {
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default
    * ({@link NativeFSLockFactory});
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   public NIOFSDirectory(File path, LockFactory lockFactory) throws IOException {
     super(path, lockFactory);
@@ -67,7 +67,7 @@ public class NIOFSDirectory extends FSDirectory {
   /** Create a new NIOFSDirectory for the named location and {@link NativeFSLockFactory}.
    *
    * @param path the path of the directory
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   public NIOFSDirectory(File path) throws IOException {
     super(path, null);

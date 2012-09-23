@@ -41,9 +41,8 @@ public abstract class SolrCoreState {
    * Force the creation of a new IndexWriter using the settings from the given
    * SolrCore.
    * 
-   * @param core
    * @param rollback close IndexWriter if false, else rollback
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public abstract void newIndexWriter(SolrCore core, boolean rollback) throws IOException;
   
@@ -51,7 +50,7 @@ public abstract class SolrCoreState {
    * Get the current IndexWriter. If a new IndexWriter must be created, use the
    * settings from the given {@link SolrCore}.
    * 
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public abstract RefCounted<IndexWriter> getIndexWriter(SolrCore core) throws IOException;
   
@@ -60,7 +59,7 @@ public abstract class SolrCoreState {
    * references hits 0, the state will close.  If an optional closer is
    * passed, that will be used to close the writer.
    * 
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public abstract void decref(IndexWriterCloser closer) throws IOException;
   
@@ -73,8 +72,7 @@ public abstract class SolrCoreState {
    * Rollback the current IndexWriter. When creating the new IndexWriter use the
    * settings from the given {@link SolrCore}.
    * 
-   * @param core
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public abstract void rollbackIndexWriter(SolrCore core) throws IOException;
   

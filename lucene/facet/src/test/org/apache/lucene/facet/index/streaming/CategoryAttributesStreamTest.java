@@ -35,8 +35,6 @@ public class CategoryAttributesStreamTest extends CategoryContainerTestBase {
   /**
    * Verifies that a {@link CategoryAttributesStream} accepts
    * {@link CategoryAttribute} and passes them on as tokens.
-   * 
-   * @throws IOException
    */
   @Test
   public void testStream() throws IOException {

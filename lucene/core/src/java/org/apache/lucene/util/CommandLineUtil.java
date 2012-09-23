@@ -62,7 +62,7 @@ public final class CommandLineUtil {
    * Loads a specific Directory implementation 
    * @param clazzName The name of the Directory class to load
    * @return The Directory class loaded
-   * @throws ClassNotFoundException
+   * @throws ClassNotFoundException If the specified class cannot be found.
    */
   public static Class<? extends Directory> loadDirectoryClass(String clazzName) 
       throws ClassNotFoundException {
@@ -73,7 +73,7 @@ public final class CommandLineUtil {
    * Loads a specific FSDirectory implementation
    * @param clazzName The name of the FSDirectory class to load
    * @return The FSDirectory class loaded
-   * @throws ClassNotFoundException
+   * @throws ClassNotFoundException If the specified class cannot be found.
    */
   public static Class<? extends FSDirectory> loadFSDirectoryClass(String clazzName) 
       throws ClassNotFoundException {
@@ -97,10 +97,10 @@ public final class CommandLineUtil {
    * @param clazz The class of the object to be created
    * @param file The file to be used as parameter constructor
    * @return The new FSDirectory instance
-   * @throws NoSuchMethodException
-   * @throws InstantiationException
-   * @throws IllegalAccessException
-   * @throws InvocationTargetException
+   * @throws NoSuchMethodException If the Directory does not have a constructor that takes <code>File</code>.
+   * @throws InstantiationException If the class is abstract or an interface.
+   * @throws IllegalAccessException If the constructor does not have public visibility.
+   * @throws InvocationTargetException If the constructor throws an exception
    */
   public static FSDirectory newFSDirectory(Class<? extends FSDirectory> clazz, File file) 
       throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {

@@ -139,9 +139,7 @@ class BigramDictionary extends AbstractDictionary {
    * Load the datafile into this BigramDictionary
    * 
    * @param dctFilePath path to the Bigramdictionary (bigramdict.dct)
-   * @throws FileNotFoundException
-   * @throws IOException
-   * @throws UnsupportedEncodingException
+   * @throws IOException If there is a low-level I/O error
    */
   public void loadFromFile(String dctFilePath) throws IOException {
 

@@ -36,8 +36,6 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
   /**
    * Creates two empty indexes and wraps a ParallelReader around. Adding this
    * reader to a new index should not throw any exception.
-   * 
-   * @throws IOException
    */
   public void testEmptyIndex() throws IOException {
     Directory rd1 = newDirectory();

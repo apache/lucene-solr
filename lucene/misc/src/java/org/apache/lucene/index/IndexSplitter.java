@@ -55,9 +55,6 @@ public class IndexSplitter {
 
   File dir;
 
-  /**
-   * @param args
-   */
   public static void main(String[] args) throws Exception {
     if (args.length < 2) {
       System.err

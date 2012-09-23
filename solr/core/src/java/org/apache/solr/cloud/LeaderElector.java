@@ -75,13 +75,7 @@ public  class LeaderElector {
    * watching the candidate that is in line before this one - if it goes down, check
    * if this candidate is the leader again.
    *
-   * @param seq
-   * @param context 
    * @param replacement has someone else been the leader already?
-   * @throws KeeperException
-   * @throws InterruptedException
-   * @throws IOException 
-   * @throws UnsupportedEncodingException
    */
   private void checkIfIamLeader(final int seq, final ElectionContext context, boolean replacement) throws KeeperException,
       InterruptedException, IOException {
@@ -161,7 +155,6 @@ public  class LeaderElector {
   /**
    * Returns int given String of form n_0000000001 or n_0000000003, etc.
    * 
-   * @param nStringSequence
    * @return sequence number
    */
   private int getSeq(String nStringSequence) {
@@ -208,12 +201,7 @@ public  class LeaderElector {
    * node that is watched goes down, check if we are the new lowest node, else
    * watch the next lowest numbered node.
    * 
-   * @param context
    * @return sequential node number
-   * @throws KeeperException
-   * @throws InterruptedException
-   * @throws IOException 
-   * @throws UnsupportedEncodingException
    */
   public int joinElection(ElectionContext context) throws KeeperException, InterruptedException, IOException {
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
@@ -278,10 +266,6 @@ public  class LeaderElector {
   
   /**
    * Set up any ZooKeeper nodes needed for leader election.
-   * 
-   * @param context
-   * @throws InterruptedException
-   * @throws KeeperException
    */
   public void setup(final ElectionContext context) throws InterruptedException,
       KeeperException {
@@ -292,8 +276,6 @@ public  class LeaderElector {
   
   /**
    * Sort n string sequence list.
-   * 
-   * @param seqs
    */
   private void sortSeqs(List<String> seqs) {
     Collections.sort(seqs, new Comparator<String>() {

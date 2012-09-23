@@ -296,7 +296,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   /**
    * Helpful for testing without loading config.xml
    *
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   void setTopQueryResults(IndexReader reader, String query, String[] ids, String[] ex) throws IOException {
     if (ids == null) {

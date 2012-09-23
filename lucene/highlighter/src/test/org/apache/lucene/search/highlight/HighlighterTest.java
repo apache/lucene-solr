@@ -153,7 +153,6 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
   /**
    * This method intended for use with <tt>testHighlightingWithDefaultField()</tt>
- * @throws InvalidTokenOffsetsException 
    */
   private String highlightField(Query query, String fieldName, String text)
       throws IOException, InvalidTokenOffsetsException {
@@ -1335,8 +1334,6 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
   /**
    * Demonstrates creation of an XHTML compliant doc using new encoding facilities.
-   * 
-   * @throws Exception
    */
   public void testEncoding() throws Exception {
 

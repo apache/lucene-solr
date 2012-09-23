@@ -162,12 +162,6 @@ public class CoreContainer
 
   /**
    * Initalize CoreContainer directly from the constructor
-   *
-   * @param dir
-   * @param configFile
-   * @throws ParserConfigurationException
-   * @throws IOException
-   * @throws SAXException
    */
   public CoreContainer(String dir, File configFile) throws ParserConfigurationException, IOException, SAXException
   {
@@ -356,9 +350,6 @@ public class CoreContainer
    * Load a config file listing the available solr cores.
    * @param dir the home directory of all resources.
    * @param configFile the configuration file
-   * @throws javax.xml.parsers.ParserConfigurationException
-   * @throws java.io.IOException
-   * @throws org.xml.sax.SAXException
    */
   public void load(String dir, File configFile ) throws ParserConfigurationException, IOException, SAXException {
     this.configFile = configFile;
@@ -370,9 +361,6 @@ public class CoreContainer
    * 
    * @param dir the home directory of all resources.
    * @param cfgis the configuration file InputStream
-   * @throws ParserConfigurationException
-   * @throws IOException
-   * @throws SAXException
    */
   public void load(String dir, InputSource cfgis)
       throws ParserConfigurationException, IOException, SAXException {
@@ -761,9 +749,6 @@ public class CoreContainer
    *
    * @param dcore a core descriptor
    * @return the newly created core
-   * @throws javax.xml.parsers.ParserConfigurationException
-   * @throws java.io.IOException
-   * @throws org.xml.sax.SAXException
    */
   public SolrCore create(CoreDescriptor dcore)  throws ParserConfigurationException, IOException, SAXException {
 
@@ -969,9 +954,6 @@ public class CoreContainer
    * and processed by the old core
    * 
    * @param name the name of the SolrCore to reload
-   * @throws ParserConfigurationException
-   * @throws IOException
-   * @throws SAXException
    */
   public void reload(String name) throws ParserConfigurationException, IOException, SAXException {
 
@@ -1068,8 +1050,6 @@ public class CoreContainer
 
   /**
    * Swaps two SolrCore descriptors.
-   * @param n0
-   * @param n1
    */
   public void swap(String n0, String n1) {
     if( n0 == null || n1 == null ) {
@@ -1197,7 +1177,6 @@ public class CoreContainer
    * declare an alternate way of accessing named cores.
    * This can also be used in a pseudo single-core environment so admins can prepare
    * a new version before swapping.
-   * @param path
    */
   public void setManagementPath(String path) {
     this.managementPath = path;

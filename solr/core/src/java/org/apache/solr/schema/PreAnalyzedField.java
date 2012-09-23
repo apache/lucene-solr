@@ -123,7 +123,7 @@ public class PreAnalyzedField extends FieldType {
    * class.
    * @param f field to convert
    * @return string that is compatible with the serialization format
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public String toFormattedString(Field f) throws IOException {
     return parser.toFormattedString(f);
@@ -155,7 +155,7 @@ public class PreAnalyzedField extends FieldType {
      * Format a field so that the resulting String is valid for parsing with {@link #parse(Reader, AttributeSource)}.
      * @param f field instance
      * @return formatted string
-     * @throws IOException
+     * @throws IOException If there is a low-level I/O error.
      */
     public String toFormattedString(Field f) throws IOException;
   }

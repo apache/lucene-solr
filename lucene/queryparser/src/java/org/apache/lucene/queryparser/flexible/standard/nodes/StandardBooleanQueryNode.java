@@ -36,9 +36,6 @@ public class StandardBooleanQueryNode extends BooleanQueryNode {
 
   private boolean disableCoord;
 
-  /**
-   * @param clauses
-   */
   public StandardBooleanQueryNode(List<QueryNode> clauses, boolean disableCoord) {
     super(clauses);
 

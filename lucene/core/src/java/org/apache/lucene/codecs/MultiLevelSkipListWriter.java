@@ -121,7 +121,7 @@ public abstract class MultiLevelSkipListWriter {
    * the max level is skip data is to be written to. 
    * 
    * @param df the current document frequency 
-   * @throws IOException
+   * @throws IOException If an I/O error occurs
    */
   public void bufferSkip(int df) throws IOException {
 
