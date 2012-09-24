@@ -38,6 +38,9 @@ import checkJavadocLinks
 # must have a working gpg, tar, unzip in your path.  This has been
 # tested on Linux and on Cygwin under Windows 7.
 
+cygwin = platform.system().lower().startswith('cygwin')
+cygwinWindowsRoot = os.popen('cygpath -w /').read().strip().replace('\\','/') if cygwin else ''
+
 def unshortenURL(url):
   parsed = urllib.parse.urlparse(url)
   if parsed[0] in ('http', 'https'):
@@ -55,6 +58,8 @@ def javaExe(version):
     path = JAVA7_HOME
   else:
     raise RuntimeError("unknown Java version '%s'" % version)
+  if cygwin:
+    path = os.popen('cygpath -u "%s"' % path).read().strip()
   return 'export JAVA_HOME="%s" PATH="%s/bin:$PATH"' % (path, path)
 
 def verifyJavaVersion(version):
@@ -76,9 +81,6 @@ except KeyError:
 
 verifyJavaVersion('1.6')
 verifyJavaVersion('1.7')
-
-cygwin = platform.system().lower().startswith('cygwin')
-cygwinWindowsRoot = os.popen('cygpath -w /').read().strip().replace('\\','/') if cygwin else ''
 
 # TODO
 #   + verify KEYS contains key that signed the release
