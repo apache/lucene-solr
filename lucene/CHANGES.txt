@@ -5,10 +5,6 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 5.0.0 =======================
-New Features
-
-* LUCENE-4410: FilteredQuery now exposes a FilterStrategy that exposes
-  how filters are applied during query execution. (Simon Willnauer) 
 
 Changes in backwards compatibility policy
 
@@ -21,7 +17,11 @@ Changes in backwards compatibility policy
   Robert Muir)
 
 ======================= Lucene 4.1.0 =======================
+
 New Features
+
+* LUCENE-4410: FilteredQuery now exposes a FilterStrategy that exposes
+  how filters are applied during query execution. (Simon Willnauer) 
 
 * LUCENE-4404: New ListOfOutputs (in lucene/misc) for FSTs wraps
   another Outputs implementation, allowing you to store more than one
