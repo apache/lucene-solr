@@ -1548,6 +1548,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
           use="true"
           failonerror="true"
           source="${ant.java.version}"
+          locale="en_US"
           windowtitle="${Name} ${version} API"
           doctitle="@{title}"
           maxmemory="${javadoc.maxmemory}">
