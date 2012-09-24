@@ -234,6 +234,7 @@ public class DocumentBuilder {
       String name = field.getName();
       SchemaField sfield = schema.getFieldOrNull(name);
       boolean used = false;
+
       float boost = field.getBoost();
       boolean applyBoost = sfield != null && sfield.indexed() && !sfield.omitNorms();
       
@@ -250,6 +251,12 @@ public class DocumentBuilder {
               sfield.getName() + ": " +field.getValue() );
       }
 
+      // Lucene no longer has a native docBoost, so we have to multiply 
+      // it ourselves (do this after the applyBoost error check so we don't 
+      // give an error on fields that don't support boost just because of a 
+      // docBoost)
+      boost *= docBoost;
+
       // load each field value
       boolean hasField = false;
       try {
@@ -260,7 +267,7 @@ public class DocumentBuilder {
           hasField = true;
           if (sfield != null) {
             used = true;
-            addField(out, sfield, v, applyBoost ? docBoost*boost : 1f);
+            addField(out, sfield, v, applyBoost ? boost : 1f);
           }
   
           // Check if we should copy this field to any other fields.
@@ -282,14 +289,14 @@ public class DocumentBuilder {
             if( val instanceof String && cf.getMaxChars() > 0 ) {
               val = cf.getLimitedValue((String)val);
             }
-            addField(out, destinationField, val, destinationField.indexed() && !destinationField.omitNorms() ? docBoost*boost : 1F);
+            addField(out, destinationField, val, destinationField.indexed() && !destinationField.omitNorms() ? boost : 1F);
           }
           
-          // In lucene, the boost for a given field is the product of the 
-          // document boost and *all* boosts on values of that field. 
+          // The boost for a given field is the product of the 
+          // *all* boosts on values of that field. 
           // For multi-valued fields, we only want to set the boost on the
           // first field.
-          boost = docBoost;
+          boost = 1.0f;
         }
       }
       catch( SolrException ex ) {
