@@ -37,8 +37,41 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Abstract SpatialStrategy which provides common functionality for those 
- * Strategys which use {@link SpatialPrefixTree}s
+ * An abstract SpatialStrategy based on {@link SpatialPrefixTree}. The two
+ * subclasses are {@link RecursivePrefixTreeStrategy} and {@link
+ * TermQueryPrefixTreeStrategy}.  This strategy is most effective as a fast
+ * approximate spatial search filter.
+ *
+ * <h4>Characteristics:</h4>
+ * <ul>
+ * <li>Can index any shape; however only {@link RecursivePrefixTreeStrategy}
+ * can effectively search non-point shapes. <em>Not tested.</em></li>
+ * <li>Can index a variable number of shapes per field value. This strategy
+ * can do it via multiple calls to {@link #createIndexableFields(com.spatial4j.core.shape.Shape)}
+ * for a document or by giving it some sort of Shape aggregate (e.g. JTS
+ * WKT MultiPoint).  The shape's boundary is approximated to a grid precision.
+ * </li>
+ * <li>Can query with any shape.  The shape's boundary is approximated to a grid
+ * precision.</li>
+ * <li>Only {@link org.apache.lucene.spatial.query.SpatialOperation#Intersects}
+ * is supported.  If only points are indexed then this is effectively equivalent
+ * to IsWithin.</li>
+ * <li>The strategy supports {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point)}
+ * even for multi-valued data.  However, <em>it will likely be removed in the
+ * future</em> in lieu of using another strategy with a more scalable
+ * implementation.  Use of this call is the only
+ * circumstance in which a cache is used.  The cache is simple but as such
+ * it doesn't scale to large numbers of points nor is it real-time-search
+ * friendly.</li>
+ * </ul>
+ *
+ * <h4>Implementation:</h4>
+ * The {@link SpatialPrefixTree} does most of the work, for example returning
+ * a list of terms representing grids of various sizes for a supplied shape.
+ * An important
+ * configuration item is {@link #setDistErrPct(double)} which balances
+ * shape precision against scalability.  See those javadocs.
+ *
  * @lucene.internal
  */
 public abstract class PrefixTreeStrategy extends SpatialStrategy {
@@ -52,7 +85,12 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
     this.grid = grid;
   }
 
-  /** Used in the in-memory ValueSource as a default ArrayList length for this field's array of values, per doc. */
+  /**
+   * A memory hint used by {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point)}
+   * for how big the initial size of each Document's array should be. The
+   * default is 2.  Set this to slightly more than the default expected number
+   * of points per document.
+   */
   public void setDefaultFieldValuesArrayLen(int defaultFieldValuesArrayLen) {
     this.defaultFieldValuesArrayLen = defaultFieldValuesArrayLen;
   }
@@ -62,8 +100,14 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   }
 
   /**
-   * The default measure of shape precision affecting indexed and query shapes.
-   * Specific shapes at index and query time can use something different.
+   * The default measure of shape precision affecting shapes at index and query
+   * times. Points don't use this as they are always indexed at the configured
+   * maximum precision ({@link org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree#getMaxLevels()});
+   * this applies to all other shapes. Specific shapes at index and query time
+   * can use something different than this default value.  If you don't set a
+   * default then the default is {@link SpatialArgs#DEFAULT_DISTERRPCT} --
+   * 2.5%.
+   *
    * @see org.apache.lucene.spatial.query.SpatialArgs#getDistErrPct()
    */
   public void setDistErrPct(double distErrPct) {
@@ -81,7 +125,8 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
     List<Node> cells = grid.getNodes(shape, detailLevel, true);//true=intermediates cells
     //If shape isn't a point, add a full-resolution center-point so that
     // PointPrefixTreeFieldCacheProvider has the center-points.
-    // TODO index each center of a multi-point? Yes/no?
+    //TODO index each point of a multi-point or other aggregate.
+    //TODO remove this once support for a distance ValueSource is removed.
     if (!(shape instanceof Point)) {
       Point ctr = shape.getCenter();
       //TODO should be smarter; don't index 2 tokens for this in CellTokenStream. Harmless though.
