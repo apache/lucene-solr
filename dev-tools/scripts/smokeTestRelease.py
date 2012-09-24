@@ -16,6 +16,7 @@
 import os
 import tarfile
 import threading
+import traceback
 import subprocess
 import signal
 import shutil
@@ -43,7 +44,7 @@ def unshortenURL(url):
     h = http.client.HTTPConnection(parsed.netloc)
     h.request('HEAD', parsed.path)
     response = h.getresponse()
-    if response.status/100 == 3 and response.getheader('Location'):
+    if int(response.status/100) == 3 and response.getheader('Location'):
       return response.getheader('Location')
   return url  
 
@@ -112,7 +113,14 @@ def getHREFs(urlString):
       break
 
   links = []
-  for subUrl, text in reHREF.findall(urllib.request.urlopen(urlString).read().decode('UTF-8')):
+  try:
+    html = urllib.request.urlopen(urlString).read().decode('UTF-8')
+  except:
+    print('\nFAILED to open url %s' % urlString)
+    tracekback.print_exc()
+    raise
+  
+  for subUrl, text in reHREF.findall(html):
     fullURL = urllib.parse.urljoin(urlString, subUrl)
     links.append((text, fullURL))
   return links
