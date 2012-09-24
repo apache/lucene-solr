@@ -117,7 +117,7 @@ def getHREFs(urlString):
     html = urllib.request.urlopen(urlString).read().decode('UTF-8')
   except:
     print('\nFAILED to open url %s' % urlString)
-    tracekback.print_exc()
+    traceback.print_exc()
     raise
   
   for subUrl, text in reHREF.findall(html):
@@ -1117,7 +1117,6 @@ if __name__ == '__main__':
   try:
     main()
   except:
-    import traceback
     traceback.print_exc()
     sys.exit(1)
   sys.exit(0)
