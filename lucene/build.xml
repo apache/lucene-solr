@@ -225,9 +225,10 @@
   <target name="javadocs" description="Generate javadoc" depends="javadocs-lucene-core, javadocs-modules, javadocs-test-framework"/>
 
   <!-- we check for broken links across all documentation -->
-  <target name="documentation-lint" depends="compile-test-framework,documentation">
+  <target name="documentation-lint" depends="compile-test-framework,documentation,-ecj-resolve">
     <sequential>
       <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
+        <propertyset refid="uptodate.and.compiled.properties"/>
         <fileset dir="core" includes="build.xml"/>
         <fileset dir="test-framework" includes="build.xml"/>
       </subant>

@@ -522,8 +522,9 @@
 
   <!-- TODO: does solr have any other docs we should check? -->
   <!-- TODO: also integrate checkJavaDocs.py, which does more checks -->
-  <target name="documentation-lint" depends="compile-solr-test-framework,documentation">
+  <target name="documentation-lint" depends="compile-solr-test-framework,documentation,-ecj-resolve">
     <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
       <fileset dir="core" includes="build.xml"/>
       <fileset dir="solrj" includes="build.xml"/>
       <fileset dir="test-framework" includes="build.xml"/>
