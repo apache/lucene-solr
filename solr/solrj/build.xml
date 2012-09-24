@@ -46,6 +46,20 @@
      </sequential>
   </target>
 
+  <!-- Specialized to use lucene's classpath too, because it refs e.g. qp syntax 
+       (even though it doesnt compile with it) 
+       TODO: would be nice to fix this up better, but its hard because of
+       the different ways solr links to lucene javadocs -->
+  <target name="-ecj-javadoc-lint-src">
+    <ecj-macro srcdir="${src.dir}" configuration="${common.dir}/tools/javadoc/ecj.javadocs.prefs">
+      <classpath>
+        <path refid="classpath"/>
+        <path refid="solr.lucene.libs"/>
+      </classpath>
+    </ecj-macro>
+  </target>
+
+
   <target name="dist" depends="common-solr.dist">
     <mkdir  dir="${dist}/solrj-lib" />
     <copy todir="${dist}/solrj-lib">

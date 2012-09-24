@@ -225,9 +225,16 @@
   <target name="javadocs" description="Generate javadoc" depends="javadocs-lucene-core, javadocs-modules, javadocs-test-framework"/>
 
   <!-- we check for broken links across all documentation -->
-  <target name="documentation-lint" depends="documentation">
+  <target name="documentation-lint" depends="compile-test-framework,documentation">
     <sequential>
+      <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
+        <fileset dir="core" includes="build.xml"/>
+        <fileset dir="test-framework" includes="build.xml"/>
+      </subant>
+      <modules-crawl target="-ecj-javadoc-lint"/>
+      <echo message="Checking for broken links..."/>
       <check-broken-links dir="build/docs"/>
+      <echo message="Checking for missing docs..."/>
       <!-- TODO: change this level=method -->
       <check-missing-javadocs dir="build/docs" level="class"/>
       <!-- too many classes to fix overall to just enable

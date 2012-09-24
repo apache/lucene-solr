@@ -169,6 +169,7 @@
 
   <property name="src.dir" location="src/java"/>
   <property name="tests.src.dir" location="src/test"/>
+  <available property="module.has.tests" type="dir" file="${tests.src.dir}"/>
   <property name="build.dir" location="build"/>
   <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
   <property name="common.build.dir" location="${common.dir}/build"/>
@@ -1471,6 +1472,49 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         <compilerarg line="-Xmaxerrs 10000000"/> -->
         <!-- for generics in Java 1.5: -->
         <compilerarg line="${javac.args}"/>
+      </javac>
+    </sequential>
+  </macrodef>
+
+  <target name="-ecj-javadoc-lint" depends="-ecj-javadoc-lint-src,-ecj-javadoc-lint-tests"/>
+
+  <target name="-ecj-javadoc-lint-src">
+    <ecj-macro srcdir="${src.dir}" configuration="${common.dir}/tools/javadoc/ecj.javadocs.prefs">
+      <classpath refid="classpath"/>
+    </ecj-macro>
+  </target>
+
+  <target name="-ecj-javadoc-lint-tests" if="module.has.tests">
+    <ecj-macro srcdir="${tests.src.dir}" configuration="${common.dir}/tools/javadoc/ecj.javadocs.prefs">
+      <classpath refid="test.classpath"/>
+    </ecj-macro>
+  </target>
+
+  <macrodef name="ecj-macro">
+    <attribute name="srcdir"/>
+    <attribute name="javac.source" default="${javac.source}"/>
+    <attribute name="includeantruntime" default="${javac.includeAntRuntime}" />
+    <attribute name="configuration"/>
+
+    <element name="nested" implicit="yes" optional="yes"/>
+
+    <sequential>
+      <ivy:cachepath
+        organisation="org.eclipse.jdt.core.compiler" module="ecj"
+        revision="3.7.2" inline="true" conf="master" type="jar"
+        pathid="ecj.classpath" log="download-only" />
+      <javac
+        compiler="org.eclipse.jdt.core.JDTCompilerAdapter"
+        includeAntRuntime="@{includeantruntime}"
+        encoding="${build.encoding}"
+        srcdir="@{srcdir}"
+        source="@{javac.source}"
+        target="@{javac.source}">
+        <nested/>
+        <compilerclasspath>
+          <path refid="ecj.classpath"/>
+        </compilerclasspath>
+        <compilerarg line="-d none -enableJavadoc -properties @{configuration}"/>
       </javac>
     </sequential>
   </macrodef>

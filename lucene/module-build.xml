@@ -28,8 +28,6 @@
 
   <import file="common-build.xml"/>
 
-  <available property="module.has.tests" type="dir" file="src/test" />
-  
   <!-- if you extend the classpath refid in one contrib's build.xml (add JARs), use this as basis: -->
   <path id="base.classpath">
    <pathelement location="${common.dir}/build/core/classes/java"/>
