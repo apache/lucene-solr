@@ -20,6 +20,9 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -32,6 +35,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
@@ -39,6 +43,7 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.update.PeerSync;
+import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +53,13 @@ public class SyncStrategy {
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
   
   private final ShardHandler shardHandler;
+  
+  private ThreadPoolExecutor recoveryCmdExecutor = new ThreadPoolExecutor(
+      0, Integer.MAX_VALUE, 5, TimeUnit.SECONDS,
+      new SynchronousQueue<Runnable>(), new DefaultSolrThreadFactory(
+          "recoveryCmdExecutor"));
+
+  private volatile boolean isClosed;
   
   private final static HttpClient client;
   static {
@@ -95,6 +107,10 @@ public class SyncStrategy {
     String collection = cloudDesc.getCollectionName();
     String shardId = cloudDesc.getShardId();
 
+    if (isClosed) {
+      log.info("We have been closed, won't sync with replicas");
+      return false;
+    }
     // if no one that is up is active, we are willing to wait...
     // we don't want a recovering node to become leader and then
     // a better candidate pops up a second later.
@@ -118,7 +134,11 @@ public class SyncStrategy {
       SolrException.log(log, "Sync Failed", e);
     }
     try {
-
+      if (isClosed) {
+        log.info("We have been closed, won't attempt to sync replicas back to leader");
+        return false;
+      }
+      
       if (success) {
         log.info("Sync Success - now sync replicas to me");
         
@@ -199,9 +219,11 @@ public class SyncStrategy {
       if (!success) {
          try {
            log.info(ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Sync failed - asking replica (" + srsp.getShardAddress() + ") to recover.");
-           
-           requestRecovery(leaderProps, ((ShardCoreRequest)srsp.getShardRequest()).baseUrl, ((ShardCoreRequest)srsp.getShardRequest()).coreName);
-
+           if (isClosed) {
+             log.info("We have been closed, don't request that a replica recover");
+           } else {
+             requestRecovery(leaderProps, ((ShardCoreRequest)srsp.getShardRequest()).baseUrl, ((ShardCoreRequest)srsp.getShardRequest()).coreName);
+           }
          } catch (Throwable t) {
            SolrException.log(log, ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Could not tell a replica to recover", t);
          }
@@ -247,6 +269,11 @@ public class SyncStrategy {
     shardHandler.submit(sreq, replica, sreq.params);
   }
   
+  public void close() {
+    this.isClosed = true;
+    ExecutorUtil.shutdownNowAndAwaitTermination(recoveryCmdExecutor);
+  }
+  
   private void requestRecovery(final ZkNodeProps leaderProps, final String baseUrl, final String coreName) throws SolrServerException, IOException {
     // TODO: do this in background threads
     Thread thread = new Thread() {
@@ -269,7 +296,7 @@ public class SyncStrategy {
         }
       }
     };
-    thread.run();
+    recoveryCmdExecutor.execute(thread);
   }
   
   public static ModifiableSolrParams params(String... params) {

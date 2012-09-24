@@ -171,6 +171,7 @@ Optimizations
 * SOLR-3709: Cache the url list created from the ClusterState in CloudSolrServer
   on each request. (Mark Miller)
 
+
 Bug Fixes
 ----------------------
 
@@ -391,6 +392,12 @@ Other Changes
 
 * SOLR-3815: SolrCloud - Add properties such as "range" to shards, which changes
   the clusterstate.json and puts the shard replicas under "replicas". (yonik)
+
+* SOLR-3871: SyncStrategy should use an executor for the threads it creates to
+  request recoveries. (Mark Miller)
+  
+* SOLR-3870: SyncStrategy should have a close so it can abort earlier on 
+  shutdown. (Mark Miller)
 
 
 ==================  4.0.0-BETA ===================
