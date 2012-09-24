@@ -1116,6 +1116,8 @@ def smokeTest(baseURL, version, tmpDir, isSigned):
   print('Test Maven artifacts for Lucene and Solr...')
   checkMaven(baseURL, tmpDir, version, isSigned)
 
+  print('\nSUCCESS!\n')
+
 if __name__ == '__main__':
   try:
     main()
