@@ -24,9 +24,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -135,11 +135,10 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
 
     AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(new MockAnalyzer(random()), options, 256, -1);
     suggester.build(new TermFreqArrayIterator(keys));
-    // nocommit if i change this to "ab " ... the test fails
-    // now but really it should pass???  problem is
-    // analyzers typically strip trailing space?  really we
-    // need a SEP token appear instead...?  hmm actually i
-    // think we need to look @ posIncAtt after .end()?
+    // TODO: would be nice if "ab " would allow the test to
+    // pass, and more generally if the analyzer can know
+    // that the user's current query has ended at a word, 
+    // but, analyzers don't produce SEP tokens!
     List<LookupResult> r = suggester.lookup(_TestUtil.stringToCharSequence("ab c", random()), false, 2);
     assertEquals(2, r.size());
 
@@ -147,6 +146,71 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
     // complete to "abcd", which has higher weight so should
     // appear first:
     assertEquals("abcd", r.get(0).key.toString());
+  }
+
+  public void testGraphDups() throws Exception {
+
+    final Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        
+        return new TokenStreamComponents(tokenizer) {
+          int tokenStreamCounter = 0;
+          final TokenStream[] tokenStreams = new TokenStream[] {
+            new CannedTokenStream(new Token[] {
+                token("wifi",1,1),
+                token("hotspot",0,2),
+                token("network",1,1),
+                token("is",1,1),
+                token("slow",1,1)
+              }),
+            new CannedTokenStream(new Token[] {
+                token("wi",1,1),
+                token("hotspot",0,3),
+                token("fi",1,1),
+                token("network",1,1),
+                token("is",1,1),
+                token("fast",1,1)
+
+              }),
+            new CannedTokenStream(new Token[] {
+                token("wifi",1,1),
+                token("hotspot",0,2),
+                token("network",1,1)
+              }),
+          };
+
+          @Override
+          public TokenStream getTokenStream() {
+            TokenStream result = tokenStreams[tokenStreamCounter];
+            tokenStreamCounter++;
+            return result;
+          }
+         
+          @Override
+          protected void setReader(final Reader reader) throws IOException {
+          }
+        };
+      }
+    };
+
+    TermFreq keys[] = new TermFreq[] {
+        new TermFreq("wifi network is slow", 50),
+        new TermFreq("wi fi network is fast", 10),
+    };
+    //AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(analyzer, AnalyzingCompletionLookup.EXACT_FIRST, 256, -1);
+    AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(analyzer);
+    suggester.build(new TermFreqArrayIterator(keys));
+    List<LookupResult> results = suggester.lookup("wifi network", false, 10);
+    if (VERBOSE) {
+      System.out.println("Results: " + results);
+    }
+    assertEquals(2, results.size());
+    assertEquals("wifi network is slow", results.get(0).key);
+    assertEquals(50, results.get(0).value);
+    assertEquals("wi fi network is fast", results.get(1).key);
+    assertEquals(10, results.get(1).value);
   }
 
   public void testInputPathRequired() throws Exception {
@@ -164,8 +228,6 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
       protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
         Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
         
-        // TokenStream stream = new SynonymFilter(tokenizer, map, true);
-        // return new TokenStreamComponents(tokenizer, new RemoveDuplicatesTokenFilter(stream));
         return new TokenStreamComponents(tokenizer) {
           int tokenStreamCounter = 0;
           final TokenStream[] tokenStreams = new TokenStream[] {
@@ -220,6 +282,7 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
     return new BinaryToken(term);
   }
 
+  /*
   private void printTokens(final Analyzer analyzer, String input) throws IOException {
     System.out.println("Tokens for " + input);
     TokenStream ts = analyzer.tokenStream("", new StringReader(input));
@@ -234,7 +297,8 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
     }
     ts.end();
     ts.close();
-  }  
+  } 
+  */ 
 
   private final Analyzer getUnusualAnalyzer() {
     return new Analyzer() {
@@ -345,52 +409,139 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
     }
   }
   
+  // Holds surface form seperately:
+  private static class TermFreq2 implements Comparable<TermFreq2> {
+    public final String surfaceForm;
+    public final String analyzedForm;
+    public final long weight;
+
+    public TermFreq2(String surfaceForm, String analyzedForm, long weight) {
+      this.surfaceForm = surfaceForm;
+      this.analyzedForm = analyzedForm;
+      this.weight = weight;
+    }
+
+    @Override
+    public int compareTo(TermFreq2 other) {
+      int cmp = analyzedForm.compareTo(other.analyzedForm);
+      if (cmp != 0) {
+        return cmp;
+      } else if (weight > other.weight) {
+        return -1;
+      } else if (weight < other.weight) {
+        return 1;
+      } else {
+        assert false;
+        return 0;
+      }
+    }
+  }
+
   public void testRandom() throws Exception {
     int numWords = atLeast(1000);
     
-    final TreeMap<String,Long> slowCompletor = new TreeMap<String,Long>();
+    final List<TermFreq2> slowCompletor = new ArrayList<TermFreq2>();
     final TreeSet<String> allPrefixes = new TreeSet<String>();
+    final Set<String> seen = new HashSet<String>();
     
     TermFreq[] keys = new TermFreq[numWords];
+
+    boolean preserveSep = random().nextBoolean();
+
+    if (VERBOSE) {
+      System.out.println("TEST: " + numWords + " words; preserveSep=" + preserveSep);
+    }
     
     for (int i = 0; i < numWords; i++) {
-      String s;
-      while (true) {
-        // TODO: would be nice to fix this slowCompletor/comparator to
-        // use full range, but we might lose some coverage too...
-        s = _TestUtil.randomSimpleString(random());
-        if (!slowCompletor.containsKey(s)) {
+      int numTokens = _TestUtil.nextInt(random(), 1, 4);
+      String key;
+      String keyNoSep;
+      while(true) {
+        key = "";
+        keyNoSep = "";
+        for(int token=0;token < numTokens;token++) {
+          String s;
+          while (true) {
+            // TODO: would be nice to fix this slowCompletor/comparator to
+            // use full range, but we might lose some coverage too...
+            s = _TestUtil.randomSimpleString(random());
+            if (s.length() > 0) {
+              if (token > 0) {
+                key += " ";
+              }
+              key += s;
+              keyNoSep += s;
+              break;
+            }
+          }
+        }
+
+        // Don't add same surface form more than once:
+        if (!seen.contains(key)) {
+          seen.add(key);
           break;
         }
       }
-      
-      for (int j = 1; j < s.length(); j++) {
-        allPrefixes.add(s.substring(0, j));
+
+      for (int j = 1; j < key.length(); j++) {
+        allPrefixes.add(key.substring(0, j));
       }
       // we can probably do Integer.MAX_VALUE here, but why worry.
       int weight = random().nextInt(1<<24);
-      slowCompletor.put(s, (long)weight);
-      keys[i] = new TermFreq(s, weight);
+      keys[i] = new TermFreq(key, weight);
+      slowCompletor.add(new TermFreq2(key, preserveSep ? key : keyNoSep, weight));
     }
 
-    // nocommit also test NOT preserving seps/holes
-    // nocommit why no failure if we DON'T preserve seps/holes...?
-    AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false),
-                                                                        AnalyzingCompletionLookup.PRESERVE_SEP, 256, -1);
+    if (VERBOSE) {
+      // Don't just sort original list, to avoid VERBOSE
+      // altering the test:
+      List<TermFreq2> sorted = new ArrayList<TermFreq2>(slowCompletor);
+      Collections.sort(sorted);
+      for(TermFreq2 ent : sorted) {
+        System.out.println("  surface='" + ent.surfaceForm + " analyzed='" + ent.analyzedForm + "' weight=" + ent.weight);
+      }
+    }
+
+    // nocommit also test NOT preserving holes
+    AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false),
+                                                                        preserveSep ? AnalyzingCompletionLookup.PRESERVE_SEP : 0, 256, -1);
     suggester.build(new TermFreqArrayIterator(keys));
     
     for (String prefix : allPrefixes) {
-    
+
+      if (VERBOSE) {
+        System.out.println("TEST: prefix=" + prefix);
+      }
+
+      if (preserveSep && prefix.endsWith(" ")) {
+        // TODO: would be great if we didn't have to skip
+        // these cases ... but we can't handle them today
+        // because tokenizers don't/can't output SEP tokens,
+        // or indicate that a token has finished w/o a new
+        // token starting...
+        if (VERBOSE) {
+          System.out.println("  skip...");
+        }
+        continue;
+      }
+
       final int topN = _TestUtil.nextInt(random(), 1, 10);
       List<LookupResult> r = suggester.lookup(_TestUtil.stringToCharSequence(prefix, random()), false, topN);
 
-      // 2. go thru whole treemap (slowCompletor) and check its actually the best suggestion
-      final List<LookupResult> matches = new ArrayList<LookupResult>();
+      // 2. go thru whole set to find suggestions:
+      List<LookupResult> matches = new ArrayList<LookupResult>();
+
+      String key;
+      if (!preserveSep) {
+        key = prefix.replaceAll(" ", "");
+      } else {
+        key = prefix;
+      }
 
       // TODO: could be faster... but its slowCompletor for a reason
-      for (Map.Entry<String,Long> e : slowCompletor.entrySet()) {
-        if (e.getKey().startsWith(prefix)) {
-          matches.add(new LookupResult(e.getKey(), e.getValue().longValue()));
+      for (TermFreq2 e : slowCompletor) {
+        if (e.analyzedForm.startsWith(key)) {
+          matches.add(new LookupResult(e.surfaceForm, e.weight));
         }
       }
 
@@ -406,7 +557,19 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
         }
       });
       if (matches.size() > topN) {
-        matches.subList(topN, matches.size()).clear();
+        matches = matches.subList(0, topN);
+      }
+
+      if (VERBOSE) {
+        System.out.println("  expected:");
+        for(LookupResult lr : matches) {
+          System.out.println("    key=" + lr.key + " weight=" + lr.value);
+        }
+
+        System.out.println("  actual:");
+        for(LookupResult lr : r) {
+          System.out.println("    key=" + lr.key + " weight=" + lr.value);
+        }
       }
 
       assertEquals(matches.size(), r.size());
@@ -418,8 +581,6 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
       }
     }
   }
-
-  // nocommit need random full binary test
 
   public void testStolenBytes() throws Exception {
     
@@ -481,7 +642,6 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
     assertEquals(50, results.get(0).value);
   }
 
-  // nocommit test that dups are preserved by weight:
   public void testMaxSurfaceFormsPerAnalyzedForm() throws Exception {
 
     AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(new MockAnalyzer(random()), 0, 2, -1);

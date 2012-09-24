@@ -23,17 +23,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.fst.Sort;
@@ -278,8 +275,6 @@ public class AnalyzingCompletionLookup extends Lookup {
     Sort.ByteSequencesReader reader = null;
     BytesRef scratch = new BytesRef();
 
-    BytesRef separator = new BytesRef(new byte[] { (byte)TokenStreamToAutomaton.POS_SEP });
-
     TokenStreamToAutomaton ts2a = new EscapingTokenStreamToAutomaton();
 
     // analyzed sequence + 0(byte) + weight(int) + surface + analyzedLength(short) 
@@ -386,7 +381,7 @@ public class AnalyzingCompletionLookup extends Lookup {
           dedup = 0;
           previous.copyBytes(analyzed);
         }
-        
+
         analyzed.grow(analyzed.length+2);
         // NOTE: must be byte 0 so we sort before whatever
         // is next
@@ -395,7 +390,7 @@ public class AnalyzingCompletionLookup extends Lookup {
         analyzed.length += 2;
 
         Util.toIntsRef(analyzed, scratchInts);
-        //System.out.println("ADD: " + analyzed);
+        //System.out.println("ADD: " + analyzed + " -> " + surface.utf8ToString());
         builder.add(scratchInts, outputs.newPair(cost, BytesRef.deepCopyOf(surface)));
       }
       fst = builder.finish();
@@ -438,9 +433,8 @@ public class AnalyzingCompletionLookup extends Lookup {
   @Override
   public List<LookupResult> lookup(final CharSequence key, boolean onlyMorePopular, int num) {
     assert num > 0;
-    Arc<Pair<Long,BytesRef>> arc = new Arc<Pair<Long,BytesRef>>();
 
-    // System.out.println("lookup num=" + num);
+    //System.out.println("lookup key=" + key + " num=" + num);
 
     try {
 
@@ -466,8 +460,7 @@ public class AnalyzingCompletionLookup extends Lookup {
       final List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths;
       prefixPaths = FSTUtil.intersectPrefixPaths(automaton, fst);
 
-      //System.out.println("  prefixPaths: " +
-      //prefixPaths.size());
+      //System.out.println("  prefixPaths: " + prefixPaths.size());
 
       BytesReader bytesReader = fst.getBytesReader(0);
 
@@ -533,16 +526,22 @@ public class AnalyzingCompletionLookup extends Lookup {
         }
       }
 
-      // nocommit hmm w/ a graph ... aren't we going to
-      // produce dup surface form suggestions ...?  do we
-      // need to dedup by surface form?
-
       Util.TopNSearcher<Pair<Long,BytesRef>> searcher;
       searcher = new Util.TopNSearcher<Pair<Long,BytesRef>>(fst,
                                                             num - results.size(),
                                                             weightComparator) {
+        private final Set<BytesRef> seen = new HashSet<BytesRef>();
+
         @Override
         protected boolean acceptResult(IntsRef input, Pair<Long,BytesRef> output) {
+          
+          // Dedup: when the input analyzes to a graph we
+          // can get duplicate surface forms:
+          if (seen.contains(output.output2)) {
+            return false;
+          }
+          seen.add(output.output2);
+          
           if (!exactFirst) {
             return true;
           } else {

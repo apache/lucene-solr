@@ -21,8 +21,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
@@ -167,7 +165,7 @@ public class TokenStreamToAutomaton {
   }
 
   // for debugging!
-  // nocommit comment out again
+  /*
   private static void toDot(Automaton a) throws IOException {
     final String s = a.toDot();
     Writer w = new OutputStreamWriter(new FileOutputStream("/tmp/out.dot"));
@@ -175,6 +173,7 @@ public class TokenStreamToAutomaton {
     w.close();
     System.out.println("TEST: saved to /tmp/out.dot");
   }
+  */
 
   // nocommit test syn over N deleted stop words
 

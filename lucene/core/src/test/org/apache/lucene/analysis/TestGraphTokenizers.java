@@ -422,7 +422,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
   }
 
   // for debugging!
-  // nocommit comment out
+  /*
   private static void toDot(Automaton a) throws IOException {
     final String s = a.toDot();
     Writer w = new OutputStreamWriter(new FileOutputStream("/x/tmp3/out.dot"));
@@ -430,6 +430,7 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
     w.close();
     System.out.println("TEST: saved to /x/tmp3/out.dot");
   }
+  */
 
   private static final Automaton SEP_A = BasicAutomata.makeChar(TokenStreamToAutomaton.POS_SEP);
   private static final Automaton HOLE_A = BasicAutomata.makeChar(TokenStreamToAutomaton.HOLE);
