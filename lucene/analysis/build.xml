@@ -126,5 +126,9 @@
   <target name="rat-sources">
     <forall-analyzers target="rat-sources"/>
   </target>
+
+  <target name="-ecj-javadoc-lint">
+    <forall-analyzers target="-ecj-javadoc-lint"/>
+  </target>
 	
 </project>

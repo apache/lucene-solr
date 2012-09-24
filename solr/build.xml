@@ -522,8 +522,16 @@
 
   <!-- TODO: does solr have any other docs we should check? -->
   <!-- TODO: also integrate checkJavaDocs.py, which does more checks -->
-  <target name="documentation-lint" depends="documentation">
+  <target name="documentation-lint" depends="compile-solr-test-framework,documentation">
+    <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="solrj" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+    </subant>
+    <contrib-crawl target="-ecj-javadoc-lint"/>
+    <echo message="Checking for broken links..."/>
     <check-broken-links dir="${javadoc.dir}"/>
+    <echo message="Checking for malformed docs..."/>
     <!-- TODO: add missing package.htmls and bump this to level=package -->
     <check-missing-javadocs dir="${javadoc.dir}" level="none"/>
   </target>
