@@ -18,9 +18,11 @@
 package org.apache.solr.update;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -206,6 +208,32 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertNull(h.validateUpdate(add(xml, new String[0])));
   }
   
+  public void testMultiValuedFielAndDocBoosts() throws Exception {
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getSchema();
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setDocumentBoost(3.0f);
+    SolrInputField field = new SolrInputField( "foo_t" );
+    field.addValue( "summer time" , 1.0f );
+    field.addValue( "in the city" , 5.0f ); // using boost
+    field.addValue( "living is easy" , 1.0f );
+    doc.put( field.getName(), field );
+
+    Document out = DocumentBuilder.toDocument( doc, core.getSchema() );
+    IndexableField[] outF = out.getFields( field.getName() );
+    assertEquals("wrong number of field values",
+                 3, outF.length);
+
+    // since Lucene no longer has native documnt boosts, we should find
+    // the doc boost multiplied into the boost o nthe first field value
+    // all other field values should be 1.0f
+    // (lucene will multiply all of the field boosts later)
+    assertEquals(15.0f, outF[0].boost(), 0.0f);
+    assertEquals(1.0f, outF[1].boost(), 0.0f);
+    assertEquals(1.0f, outF[2].boost(), 0.0f);
+    
+  }
+
   /**
    * Its not ok to boost a field if it omits norms
    */

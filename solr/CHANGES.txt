@@ -341,6 +341,9 @@ Bug Fixes
 * SOLR-3869: A PeerSync attempt to it's replicas by a candidate leader should
   not fail on o.a.http.conn.ConnectTimeoutException. (Mark Miller)
 
+* SOLR-3875: Fixed index boosts on multi-valued fields when docBoost is used 
+  (hossman)
+
 Other Changes
 ----------------------
 
