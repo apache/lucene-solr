@@ -25,7 +25,11 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 
 /**
- * Based on {@link RecursivePrefixTreeFilter}.
+ * A {@link PrefixTreeStrategy} which uses {@link RecursivePrefixTreeFilter}.
+ * This strategy has support for searching non-point shapes (note: not tested).
+ * Even a query shape with distErrPct=0 (fully precise to the grid) should have
+ * good performance for typical data, unless there is a lot of indexed data
+ * coincident with the shape's edge.
  *
  * @lucene.experimental
  */
@@ -38,6 +42,13 @@ public class RecursivePrefixTreeStrategy extends PrefixTreeStrategy {
     prefixGridScanLevel = grid.getMaxLevels() - 4;//TODO this default constant is dependent on the prefix grid size
   }
 
+  /**
+   * Sets the grid level [1-maxLevels] at which indexed terms are scanned brute-force
+   * instead of by grid decomposition.  By default this is maxLevels - 4.  The
+   * final level, maxLevels, is always scanned.
+   *
+   * @param prefixGridScanLevel 1 to maxLevels
+   */
   public void setPrefixGridScanLevel(int prefixGridScanLevel) {
     //TODO if negative then subtract from maxlevels
     this.prefixGridScanLevel = prefixGridScanLevel;

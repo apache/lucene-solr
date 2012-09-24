@@ -30,14 +30,14 @@ import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 import java.util.List;
 
 /**
- * A basic implementation of {@link PrefixTreeStrategy} using a large
- * {@link TermsFilter} of all the nodes from
- * {@link SpatialPrefixTree#getNodes(com.spatial4j.core.shape.Shape, int, boolean)}.
- * It only supports the search of indexed Point shapes.
- * <p />
- * The precision of query shapes is an important factor in using this Strategy.
- * If the precision is too precise then it will result in many terms which will
- * amount to a slower query.
+ * A basic implementation of {@link PrefixTreeStrategy} using a large {@link
+ * TermsFilter} of all the nodes from {@link SpatialPrefixTree#getNodes(com.spatial4j.core.shape.Shape,
+ * int, boolean)}. It only supports the search of indexed Point shapes.
+ * <p/>
+ * The precision of query shapes (distErrPct) is an important factor in using
+ * this Strategy. If the precision is too precise then it will result in many
+ * terms which will amount to a slower query.
+ *
  * @lucene.experimental
  */
 public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
