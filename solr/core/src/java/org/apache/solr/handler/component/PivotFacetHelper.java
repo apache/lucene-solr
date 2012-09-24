@@ -53,6 +53,7 @@ public class PivotFacetHelper
    * TODO: Currently this is returning a SimpleFacets object, but those capabilities would
    *       be better as an extracted abstract class or interface.
    */
+  @Deprecated
   protected SimpleFacets getFacetImplementation(SolrQueryRequest req, DocSet docs, SolrParams params) {
     return new SimpleFacets(req, docs, params);
   }
