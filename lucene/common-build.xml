@@ -1478,16 +1478,24 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <target name="-ecj-javadoc-lint" depends="-ecj-javadoc-lint-src,-ecj-javadoc-lint-tests"/>
 
-  <target name="-ecj-javadoc-lint-src">
+  <target name="-ecj-javadoc-lint-src" depends="-ecj-resolve">
     <ecj-macro srcdir="${src.dir}" configuration="${common.dir}/tools/javadoc/ecj.javadocs.prefs">
       <classpath refid="classpath"/>
     </ecj-macro>
   </target>
 
-  <target name="-ecj-javadoc-lint-tests" if="module.has.tests">
+  <target name="-ecj-javadoc-lint-tests" depends="-ecj-resolve" if="module.has.tests">
     <ecj-macro srcdir="${tests.src.dir}" configuration="${common.dir}/tools/javadoc/ecj.javadocs.prefs">
       <classpath refid="test.classpath"/>
     </ecj-macro>
+  </target>
+  
+  <target name="-ecj-resolve" unless="ecj.loaded" depends="ivy-availability-check,ivy-fail,ivy-configure">
+    <ivy:cachepath organisation="org.eclipse.jdt.core.compiler" module="ecj" revision="3.7.2"
+     inline="true" conf="master" type="jar" pathid="ecj.classpath" />
+    <componentdef classname="org.eclipse.jdt.core.JDTCompilerAdapter"
+     classpathref="ecj.classpath" name="ecj-component"/>
+    <property name="ecj.loaded" value="true"/>
   </target>
 
   <macrodef name="ecj-macro">
@@ -1499,22 +1507,20 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <element name="nested" implicit="yes" optional="yes"/>
 
     <sequential>
-      <ivy:cachepath
-        organisation="org.eclipse.jdt.core.compiler" module="ecj"
-        revision="3.7.2" inline="true" conf="master" type="jar"
-        pathid="ecj.classpath" log="download-only" />
       <javac
-        compiler="org.eclipse.jdt.core.JDTCompilerAdapter"
         includeAntRuntime="@{includeantruntime}"
         encoding="${build.encoding}"
         srcdir="@{srcdir}"
         source="@{javac.source}"
-        target="@{javac.source}">
+        target="@{javac.source}"
+        taskname="ecj-lint">
+        <ecj-component/>
         <nested/>
-        <compilerclasspath>
-          <path refid="ecj.classpath"/>
-        </compilerclasspath>
-        <compilerarg line="-d none -enableJavadoc -properties @{configuration}"/>
+        <compilerarg value="-d"/>
+        <compilerarg value="none"/>
+        <compilerarg value="-enableJavadoc"/>
+        <compilerarg value="-properties"/>
+        <compilerarg value="@{configuration}"/>
       </javac>
     </sequential>
   </macrodef>
