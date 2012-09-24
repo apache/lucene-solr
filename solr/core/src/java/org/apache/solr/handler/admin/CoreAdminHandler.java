@@ -818,11 +818,12 @@ public class CoreAdminHandler extends RequestHandlerBase {
       throw new IllegalArgumentException(CoreAdminParams.CORE + " is required");
     }
     SolrCore core = null;
+    SyncStrategy syncStrategy = null;
     try {
       core = coreContainer.getCore(cname);
       if (core != null) {
-        SyncStrategy syncStrategy = new SyncStrategy();
-
+        syncStrategy = new SyncStrategy();
+        
         Map<String,Object> props = new HashMap<String,Object>();
         props.put(ZkStateReader.BASE_URL_PROP, zkController.getBaseUrl());
         props.put(ZkStateReader.CORE_NAME_PROP, cname);
@@ -854,6 +855,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
       // no recoveryStrat close for now
       if (core != null) {
         core.close();
+      }
+      if (syncStrategy != null) {
+        syncStrategy.close();
       }
     }
     

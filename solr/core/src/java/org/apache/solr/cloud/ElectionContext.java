@@ -122,6 +122,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   @Override
   public void close() {
     this.isClosed  = true;
+    syncStrategy.close();
   }
   
   @Override
