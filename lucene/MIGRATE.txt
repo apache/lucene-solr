@@ -543,6 +543,14 @@ you can now do this:
 
     new StoredField("field", bytes)
 
+If you previously used Document.setBoost, you must now pre-multiply
+the document boost into each Field.setBoost.  If you have a
+multi-valued field, you should do this only for the first Field
+instance (ie, subsequent Field instance sharing the same field name
+should only include their per-field boost and not the document level
+boost) as the boost for multi-valued field instances are multiplied
+together by Lucene.
+
 ## Other changes
 
 * LUCENE-2674:
