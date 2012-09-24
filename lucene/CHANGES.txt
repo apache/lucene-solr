@@ -7,7 +7,11 @@ For "contrib" changes prior to 4.0, please see:
 http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib/CHANGES.txt
 
 ======================= Lucene 4.1.0 =======================
+
 New Features
+
+* LUCENE-4410: FilteredQuery now exposes a FilterStrategy that exposes
+  how filters are applied during query execution. (Simon Willnauer) 
 
 * LUCENE-4404: New ListOfOutputs (in lucene/misc) for FSTs wraps
   another Outputs implementation, allowing you to store more than one
@@ -47,7 +51,7 @@ New Features
 
 * SOLR-3441: ElisionFilterFactory is now MultiTermAware
   (Jack Krupansky via hossman)
-
+  
 API Changes
 
 * LUCENE-4391: All methods of Lucene40Codec but getPostingsFormatForField are
