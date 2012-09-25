@@ -141,6 +141,9 @@ API Changes
 
 Bug Fixes
 
+* LUCENE-4423: DocumentStoredFieldVisitor.binaryField ignored offset and
+  length. (Adrien Grand)
+
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor
   twice for conjunctions: for most users this is no problem, but
   if you had a customized Similarity that returned something other
