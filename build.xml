@@ -249,7 +249,7 @@
   <property name="python32.exe" value="python3.2" />
   <property name="fakeRelease" value="lucene/build/fakeRelease"/>
   <property name="fakeReleaseTmp" value="lucene/build/fakeReleaseTmp"/>
-  <property name="fakeReleaseVersion" value="4.0"/> <!-- *not* -SNAPSHOT, the real version -->
+  <property name="fakeReleaseVersion" value="4.0.1"/> <!-- *not* -SNAPSHOT, the real version -->
 
   <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it" depends="clean">
    <sequential>

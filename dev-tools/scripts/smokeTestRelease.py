@@ -1107,6 +1107,8 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
         downloadedFiles.append(path)
         sys.stdout.write('.')
 
+reAllowedVersion = re.compile(r'^\d+\.\d+\.\d+(-ALPHA|-BETA)?$')
+
 def main():
 
   if len(sys.argv) < 4:
@@ -1117,6 +1119,10 @@ def main():
 
   baseURL = sys.argv[1]
   version = sys.argv[2]
+
+  if not reAllowedVersion.match(version):
+    raise RuntimeError('version "%s" does not match format X.Y.Z[-ALPHA|-BETA]' % version)
+  
   tmpDir = os.path.abspath(sys.argv[3])
   isSigned = True 
   if len(sys.argv) == 5:
