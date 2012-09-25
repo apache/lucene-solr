@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CannedBinaryTokenStream; // javadocs
+import org.apache.lucene.analysis.CannedBinaryTokenStream; // javadocs
 
 /**
  * A binary tokenstream that lets you index a single
