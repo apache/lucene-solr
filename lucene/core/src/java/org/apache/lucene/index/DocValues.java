@@ -80,12 +80,11 @@ import org.apache.lucene.util.packed.PackedInts;
  * <li> {@link DerefBytesDocValuesField} - for adding deref {@link BytesRef}
  * values to the index</li>
  * </ul>
- * See also {@link Type} for limitations of each type variant.
+ * See {@link Type} for limitations of each type variant.
  * <p> 
  * <p>
  * 
- * @see DocValuesFormat#docsConsumer(org.apache.lucene.index.PerDocWriteState) Codec API for
- *      low level optimization and file format customization.
+ * @see DocValuesFormat#docsConsumer(org.apache.lucene.index.PerDocWriteState)
  *      
  * @lucene.experimental
  */
