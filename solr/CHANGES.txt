@@ -40,6 +40,9 @@ Optimizations
 Bug Fixes
 ----------------------
 
+* SOLR-3560: Handle different types of Exception Messages for Logging UI
+  (steffkes)
+
 Other Changes
 ----------------------
 

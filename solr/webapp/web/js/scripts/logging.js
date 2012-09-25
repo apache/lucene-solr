@@ -317,6 +317,18 @@ var load_logging_viewer = function()
         for( var i = 0; i < docs_count; i++ )
         {
           var doc = docs[i];
+
+          if( !doc.trace )
+          {
+            var lines = doc.message.split( "\n" );
+            if( 1 < lines.length )
+            {
+              doc.message = lines[0];
+              doc.trace = doc.message;
+              delete lines;
+            }
+          }
+
           var has_trace = 'undefined' !== typeof( doc.trace );
 
           doc.logger = '<abbr title="' + doc.logger.esc() + '">' + doc.logger.split( '.' ).pop().esc() + '</abbr>';
