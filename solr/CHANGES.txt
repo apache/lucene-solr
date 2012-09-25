@@ -344,6 +344,8 @@ Bug Fixes
 * SOLR-3875: Fixed index boosts on multi-valued fields when docBoost is used 
   (hossman)
 
+* SOLR-3878: Exception when using open-ended range query with CurrencyField (janhoy)
+
 Other Changes
 ----------------------
 
