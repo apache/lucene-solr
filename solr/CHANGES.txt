@@ -373,6 +373,9 @@ Bug Fixes
 
 * SOLR-3891: CacheValue in CachingDirectoryFactory cannot be used outside of 
   solr.core package. (phunt via Mark Miller)
+  
+* SOLR-3892: Inconsistent locking when accessing cache in CachingDirectoryFactory
+  from RAMDirectoryFactory and MockDirectoryFactory. (phunt via Mark Miller)
 
 Other Changes
 ----------------------
