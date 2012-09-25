@@ -48,7 +48,7 @@
          webxml="web/WEB-INF/web.xml"
          manifest="${manifest.file}">
       <lib dir="${common-solr.dir}/core/lib" excludes="${exclude.from.war},${common.classpath.excludes}">
-        <exclude name="servlet-api*.jar" />
+        <exclude name="*servlet-api*.jar" />
         <exclude name="easymock-*.jar" />
       </lib>
       <lib dir="${common-solr.dir}/solrj/lib" excludes="${exclude.from.war},${common.classpath.excludes}"/>

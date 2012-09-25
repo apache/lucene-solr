@@ -15,6 +15,7 @@
 
 import os
 import tarfile
+import zipfile
 import threading
 import traceback
 import subprocess
@@ -33,6 +34,7 @@ import filecmp
 import platform
 import checkJavaDocs
 import checkJavadocLinks
+import io
 
 # This tool expects to find /lucene and /solr off the base URL.  You
 # must have a working gpg, tar, unzip in your path.  This has been
@@ -155,7 +157,41 @@ def download(name, urlString, tmpDir, quiet=False):
     
 def load(urlString):
   return urllib.request.urlopen(urlString).read().decode('utf-8')
+
+def noJavaPackageClasses(desc, file):
+  with zipfile.ZipFile(file) as z2:
+    for name2 in z2.namelist():
+      if name2.endswith('.class') and (name2.startswith('java/') or name2.startswith('javax/')):
+        raise RuntimeError('%s contains sheisty class "%s"' % \
+                           (desc, name2))
+
+def checkAllLuceneJARs(root):
+  print('    make sure Lucene JARs don\'t have javax.* or java.* classes...')  
+  for root, dirs, files in os.walk(root):
+    if root.endswith('demo/lib'):
+      # Lucene demo intentionally ships servlet-api JAR:
+      continue
+    
+    for file in files:
+      if file.lower().endswith('.jar'):
+        fullPath = '%s/%s' % (root, file)
+        noJavaPackageClasses('JAR file "%s"' % fullPath, fullPath)
   
+def checkSolrWAR(warFileName):
+
+  """
+  Crawls for JARs inside the WAR and ensures there are no classes
+  under java.* or javax.* namespace.
+  """
+
+  print('    make sure WAR file has no javax.* or java.* classes...')
+
+  with zipfile.ZipFile(warFileName, 'r') as z:
+    for name in z.namelist():
+      if name.endswith('.jar'):
+        noJavaPackageClasses('JAR file %s inside WAR file %s' % (name, warFileName),
+                             io.BytesIO(z.read(name)))
+        
 def checkSigs(project, urlString, version, tmpDir, isSigned):
 
   print('  test basics...')
@@ -530,8 +566,12 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
 
   else:
     if project == 'lucene':
+      checkAllLuceneJARs(os.getcwd())
       testDemo(isSrc, version)
+
     else:
+      checkSolrWAR('%s/example/webapps/solr.war' % unpackPath)
+
       print('    copying unpacked distribution for Java 6 ...')
       java6UnpackPath = '%s-java6' %unpackPath
       if os.path.exists(java6UnpackPath):
