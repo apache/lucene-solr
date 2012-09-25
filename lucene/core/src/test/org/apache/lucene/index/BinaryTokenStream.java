@@ -21,11 +21,14 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CannedBinaryTokenStream; // javadocs
 
 /**
- * a binary tokenstream that lets you index a BytesRef
+ * A binary tokenstream that lets you index a single
+ * binary token (BytesRef value).
+ *
+ * @see CannedBinaryTokenStream
  */
-// nocommit absorb into CannedBinaryTS?
 public final class BinaryTokenStream extends TokenStream {
   private final ByteTermAttribute bytesAtt = addAttribute(ByteTermAttribute.class);
   private boolean available = true;
@@ -62,10 +65,8 @@ public final class BinaryTokenStream extends TokenStream {
     public BytesRef getBytesRef() {
       return bytes;
     }
-    
+
     public void setBytesRef(BytesRef bytes) {
-      // nocommit isn't this dangerous?  the getBytesRef is
-      // pre-shared?  so you can't set this per token?
       this.bytes = bytes;
     }
     
