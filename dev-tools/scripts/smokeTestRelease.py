@@ -404,7 +404,7 @@ def unpack(project, tmpDir, artifact, version):
     shutil.rmtree(destDir)
   os.makedirs(destDir)
   os.chdir(destDir)
-  print('    unpack %s...' % artifact)
+  print('  unpack %s...' % artifact)
   unpackLogFile = '%s/%s-unpack-%s.log' % (tmpDir, project, artifact)
   if artifact.endswith('.tar.gz') or artifact.endswith('.tgz'):
     run('tar xzf %s/%s' % (tmpDir, artifact), unpackLogFile)
@@ -533,11 +533,25 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
     if project == 'lucene':
       testDemo(isSrc, version)
     else:
+      print('    copying unpacked distribution for Java 6 ...')
+      java6UnpackPath = '%s-java6' %unpackPath
+      if os.path.exists(java6UnpackPath):
+        shutil.rmtree(java6UnpackPath)
+      shutil.copytree(unpackPath, java6UnpackPath)
+      os.chdir(java6UnpackPath)
       print('    test solr example w/ Java 6...')
-      testSolrExample(unpackPath, JAVA6_HOME, False)
+      testSolrExample(java6UnpackPath, JAVA6_HOME, False)
 
+      print('    copying unpacked distribution for Java 7 ...')
+      java7UnpackPath = '%s-java7' %unpackPath
+      if os.path.exists(java7UnpackPath):
+        shutil.rmtree(java7UnpackPath)
+      shutil.copytree(unpackPath, java7UnpackPath)
+      os.chdir(java7UnpackPath)
       print('    test solr example w/ Java 7...')
-      testSolrExample(unpackPath, JAVA7_HOME, False)
+      testSolrExample(java7UnpackPath, JAVA7_HOME, False)
+
+      os.chdir(unpackPath)
 
   testChangesText('.', version, project)
 
