@@ -168,10 +168,6 @@ def noJavaPackageClasses(desc, file):
 def checkAllLuceneJARs(root):
   print('    make sure Lucene JARs don\'t have javax.* or java.* classes...')  
   for root, dirs, files in os.walk(root):
-    if root.endswith('demo/lib'):
-      # Lucene demo intentionally ships servlet-api JAR:
-      continue
-    
     for file in files:
       if file.lower().endswith('.jar'):
         fullPath = '%s/%s' % (root, file)

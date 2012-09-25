@@ -37,7 +37,7 @@
                         **/lib/*.jar,
                         licenses/**,
                         */docs/,**/README*"
-              excludes="build/**,site/**,tools/**"
+              excludes="build/**,site/**,tools/**,**/lib/*servlet-api*.jar"
   />
 
 
