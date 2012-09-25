@@ -26,7 +26,11 @@ $Id$
 
 ==================  4.1.0 ==================
 
-(No changes)
+* SOLR-2255: Enhanced pivot faceting to use local-params in the same way that
+  regular field value faceting can. This means support for excluding a filter
+  query, using a different output key, and specifying 'threads' to do
+  facet.method=fcs concurrently. PivotFacetHelper now extends SimpleFacet and
+  the getFacetImplementation() extension hook was removed. (dsmiley)
 
 ==================  4.0.0 ==================
 

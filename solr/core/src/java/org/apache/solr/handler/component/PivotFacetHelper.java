@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.component;
 
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -43,55 +44,60 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This is thread safe
  * @since solr 4.0
  */
-public class PivotFacetHelper
+public class PivotFacetHelper extends SimpleFacets
 {
-  /**
-   * Designed to be overridden by subclasses that provide different faceting implementations.
-   * TODO: Currently this is returning a SimpleFacets object, but those capabilities would
-   *       be better as an extracted abstract class or interface.
-   */
-  protected SimpleFacets getFacetImplementation(SolrQueryRequest req, DocSet docs, SolrParams params) {
-    return new SimpleFacets(req, docs, params);
+
+  protected int minMatch;
+
+  public PivotFacetHelper(SolrQueryRequest req, DocSet docs, SolrParams params, ResponseBuilder rb) {
+    super(req, docs, params, rb);
+    minMatch = params.getInt( FacetParams.FACET_PIVOT_MINCOUNT, 1 );
   }
 
-  public SimpleOrderedMap<List<NamedList<Object>>> process(ResponseBuilder rb, SolrParams params, String[] pivots) throws IOException {
+  public SimpleOrderedMap<List<NamedList<Object>>> process(String[] pivots) throws IOException {
     if (!rb.doFacets || pivots == null) 
       return null;
-    
-    int minMatch = params.getInt( FacetParams.FACET_PIVOT_MINCOUNT, 1 );
-    
+
     SimpleOrderedMap<List<NamedList<Object>>> pivotResponse = new SimpleOrderedMap<List<NamedList<Object>>>();
     for (String pivot : pivots) {
-      String[] fields = pivot.split(",");  // only support two levels for now
-      
+      //ex: pivot == "features,cat" or even "{!ex=mytag}features,cat"
+      try {
+        this.parseParams(FacetParams.FACET_PIVOT, pivot);
+      } catch (ParseException e) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, e);
+      }
+      pivot = facetValue;//facetValue potentially modified from parseParams()
+
+      String[] fields = pivot.split(",");
+
       if( fields.length < 2 ) {
-        throw new SolrException( ErrorCode.BAD_REQUEST, 
+        throw new SolrException( ErrorCode.BAD_REQUEST,
             "Pivot Facet needs at least two fields: "+pivot );
       }
-      
-      DocSet docs = rb.getResults().docSet;
+
       String field = fields[0];
       String subField = fields[1];
       Deque<String> fnames = new LinkedList<String>();
       for( int i=fields.length-1; i>1; i-- ) {
         fnames.push( fields[i] );
       }
-      
-      SimpleFacets sf = getFacetImplementation(rb.req, rb.getResults().docSet, rb.req.getParams());
-      NamedList<Integer> superFacets = sf.getTermCounts(field);
-      
-      pivotResponse.add(pivot, doPivots(superFacets, field, subField, fnames, rb, docs, minMatch));
+
+      NamedList<Integer> superFacets = this.getTermCounts(field);
+
+      //super.key usually == pivot unless local-param 'key' used
+      pivotResponse.add(key, doPivots(superFacets, field, subField, fnames, docs));
     }
     return pivotResponse;
   }
-  
+
   /**
    * Recursive function to do all the pivots
    */
-  protected List<NamedList<Object>> doPivots( NamedList<Integer> superFacets, String field, String subField, Deque<String> fnames, ResponseBuilder rb, DocSet docs, int minMatch ) throws IOException
+  protected List<NamedList<Object>> doPivots(NamedList<Integer> superFacets,
+                                             String field, String subField, Deque<String> fnames,
+                                             DocSet docs) throws IOException
   {
     SolrIndexSearcher searcher = rb.req.getSearcher();
     // TODO: optimize to avoid converting to an external string and then having to convert back to internal below
@@ -103,7 +109,7 @@ public class PivotFacetHelper
     List<NamedList<Object>> values = new ArrayList<NamedList<Object>>( superFacets.size() );
     for (Map.Entry<String, Integer> kv : superFacets) {
       // Only sub-facet if parent facet has positive count - still may not be any values for the sub-field though
-      if (kv.getValue() >= minMatch ) {
+      if (kv.getValue() >= minMatch) {
 
         // may be null when using facet.missing
         final String fieldValue = kv.getKey(); 
@@ -136,11 +142,11 @@ public class PivotFacetHelper
             Query query = new TermQuery(new Term(field, termval));
             subset = searcher.getDocSet(query, docs);
           }
-          SimpleFacets sf = getFacetImplementation(rb.req, subset, rb.req.getParams());
-          
-          NamedList<Integer> nl = sf.getTermCounts(subField);
-          if (nl.size() >= minMatch ) {
-            pivot.add( "pivot", doPivots( nl, subField, nextField, fnames, rb, subset, minMatch ) );
+          super.docs = subset;//used by getTermCounts()
+
+          NamedList<Integer> nl = this.getTermCounts(subField);
+          if (nl.size() >= minMatch) {
+            pivot.add( "pivot", doPivots( nl, subField, nextField, fnames, subset) );
             values.add( pivot ); // only add response if there are some counts
           }
         }
