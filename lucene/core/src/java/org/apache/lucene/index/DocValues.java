@@ -25,6 +25,7 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.document.ByteDocValuesField; // javadocs
 import org.apache.lucene.document.DerefBytesDocValuesField; // javadocs
 import org.apache.lucene.document.DoubleDocValuesField; // javadocs
+import org.apache.lucene.document.Field; // javadocs
 import org.apache.lucene.document.FloatDocValuesField; // javadocs
 import org.apache.lucene.document.IntDocValuesField; // javadocs
 import org.apache.lucene.document.LongDocValuesField; // javadocs
