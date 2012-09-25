@@ -34,6 +34,10 @@ Bug Fixes:
   reaching the point where it flushes after every doc.  (Tim Smith via
   Mike McCandless)
 
+* LUCENE-4411: when sampling is enabled for a FacetRequest, its depth
+  parameter is reset to the default (1), even if set otherwise.
+  (Gilad Barkai via Shai Erera)
+  
 Documentation
 
 * LUCENE-4302: Fix facet userguide to have HTML loose doctype like
