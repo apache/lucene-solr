@@ -140,7 +140,32 @@ public class CurrencyFieldTest extends SolrTestCaseJ4 {
     assertQ(req("fl", "*,score", "q",
             "amount:[24.99,EUR TO 25.01,EUR]"),
             "//*[@numFound='1']");
-  }
+    
+    // Open ended ranges without currency
+    assertQ(req("fl", "*,score", "q",
+            "amount:[* TO *]"),
+            "//*[@numFound='10']");
+    
+    // Open ended ranges with currency
+    assertQ(req("fl", "*,score", "q",
+            "amount:[*,EUR TO *,EUR]"),
+            "//*[@numFound='10']");
+
+    // Open ended start range without currency
+    assertQ(req("fl", "*,score", "q",
+            "amount:[* TO 5,USD]"),
+            "//*[@numFound='5']");
+
+    // Open ended start range with currency (currency for the * won't matter)
+    assertQ(req("fl", "*,score", "q",
+            "amount:[*,USD TO 5,USD]"),
+            "//*[@numFound='5']");
+
+    // Open ended end range
+    assertQ(req("fl", "*,score", "q",
+            "amount:[3 TO *]"),
+            "//*[@numFound='8']");
+}
 
   @Test
   public void testCurrencyPointQuery() throws Exception {
