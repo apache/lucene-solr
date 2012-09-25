@@ -60,20 +60,32 @@ import org.apache.lucene.util.packed.PackedInts;
  * into a 3rd type like {@link Type#BYTES_VAR_STRAIGHT} to prevent data loss and merge exceptions.
  * This behavior is considered <i>best-effort</i> might change in future releases.
  * </p>
+* <p>
+ * DocValues are exposed via the {@link Field} API with type safe
+ * specializations for each type variant:
+ * <ul>
+ * <li> {@link ByteDocValuesField} - for adding byte values to the index</li>
+ * <li> {@link ShortDocValuesField} - for adding short values to the index</li>
+ * <li> {@link IntDocValuesField} - for adding int values to the index</li>
+ * <li> {@link LongDocValuesField} - for adding long values to the index</li>
+ * <li> {@link FloatDocValuesField} - for adding float values to the index</li>
+ * <li> {@link DoubleDocValuesField} - for adding double values to the index</li>
+ * <li> {@link PackedLongDocValuesField} - for adding packed long values to the
+ * index</li>
+ * <li> {@link SortedBytesDocValuesField} - for adding sorted {@link BytesRef}
+ * values to the index</li>
+ * <li> {@link StraightBytesDocValuesField} - for adding straight
+ * {@link BytesRef} values to the index</li>
+ * <li> {@link DerefBytesDocValuesField} - for adding deref {@link BytesRef}
+ * values to the index</li>
+ * </ul>
+ * See also {@link Type} for limitations of each type variant.
+ * <p> 
+ * <p>
  * 
- * @see Type for limitations and default implementation documentation
- * @see ByteDocValuesField for adding byte values to the index
- * @see ShortDocValuesField for adding short values to the index
- * @see IntDocValuesField for adding int values to the index
- * @see LongDocValuesField for adding long values to the index
- * @see FloatDocValuesField for adding float values to the index
- * @see DoubleDocValuesField for adding double values to the index
- * @see PackedLongDocValuesField for adding packed long values to the index
- * @see SortedBytesDocValuesField for adding sorted {@link BytesRef} values to the index
- * @see StraightBytesDocValuesField for adding straight {@link BytesRef} values to the index
- * @see DerefBytesDocValuesField for adding deref {@link BytesRef} values to the index
- * @see DocValuesFormat#docsConsumer(org.apache.lucene.index.PerDocWriteState) for
- *      customization
+ * @see DocValuesFormat#docsConsumer(org.apache.lucene.index.PerDocWriteState) Codec API for
+ *      low level optimization and file format customization.
+ *      
  * @lucene.experimental
  */
 public abstract class DocValues implements Closeable {
