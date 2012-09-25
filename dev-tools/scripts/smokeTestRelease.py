@@ -272,10 +272,9 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
   if mavenURL is None:
     raise RuntimeError('%s is missing maven' % project)
 
-  if project == 'lucene':
-    if changesURL is None:
-      raise RuntimeError('%s is missing changes-%s' % (project, version))
-    testChanges(project, version, changesURL)
+  if changesURL is None:
+    raise RuntimeError('%s is missing changes-%s' % (project, version))
+  testChanges(project, version, changesURL)
 
   for artifact, urlString in artifacts:
     print('  download %s...' % artifact)

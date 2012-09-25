@@ -275,6 +275,9 @@
        <fileset dir="solr/package"/>
      </copy>
      <copy file="${fakeRelease}/lucene/KEYS" todir="${fakeRelease}/solr"/>
+     <copy todir="${fakeRelease}/solr/changes">
+       <fileset dir="solr/build/docs/changes"/>
+     </copy>
      <makeurl file="${fakeRelease}" validate="false" property="fakeRelease.uri"/>
      <exec executable="${python32.exe}" failonerror="true">
        <arg value="-u"/>
