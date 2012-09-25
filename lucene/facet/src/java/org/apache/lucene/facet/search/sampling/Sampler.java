@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 
+import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.ScoredDocIDs;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
@@ -203,8 +204,21 @@ public abstract class Sampler {
     public OverSampledFacetRequest(FacetRequest orig, int num) {
       super(orig.getCategoryPath(), num);
       this.orig = orig;
+      setDepth(orig.getDepth());
+      setNumLabel(orig.getNumLabel());
+      setResultMode(orig.getResultMode());
+      setSortBy(orig.getSortBy());
+      setSortOrder(orig.getSortOrder());
+    }
+    
+    @Override
+    public CategoryListIterator createCategoryListIterator(IndexReader reader,
+        TaxonomyReader taxo, FacetSearchParams sParams, int partition)
+        throws IOException {
+      return orig.createCategoryListIterator(reader, taxo, sParams, partition);
     }
 
+    
     @Override
     public Aggregator createAggregator(boolean useComplements,
         FacetArrays arrays, IndexReader indexReader,
@@ -221,6 +235,11 @@ public abstract class Sampler {
     @Override
     public boolean requireDocumentScore() {
       return orig.requireDocumentScore();
+    }
+    
+    @Override
+    public boolean supportsComplements() {
+      return orig.supportsComplements();
     }
   }
 }

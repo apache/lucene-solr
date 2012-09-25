@@ -28,6 +28,12 @@ New Features
   output for a single input.  UpToTwoPositiveIntsOutputs was moved
   from lucene/core to lucene/misc.  (Mike McCandless)
 
+Bug Fixes
+
+* LUCENE-4411: when sampling is enabled for a FacetRequest, its depth
+  parameter is reset to the default (1), even if set otherwise.
+  (Gilad Barkai via Shai Erera)
+  
 ======================= Lucene 4.0.0 =======================
 
 Changes in backwards compatibility policy
