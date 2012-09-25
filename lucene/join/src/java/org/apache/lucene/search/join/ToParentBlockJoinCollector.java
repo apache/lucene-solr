@@ -454,11 +454,13 @@ public class ToParentBlockJoinCollector extends Collector {
                                                          0, totalGroupedHitCount, groups, maxScore),
                                   totalHitCount);
   }
-
-  /** Returns the highest score across all collected parent
-   *  hits, as long as <code>trackMaxScores=true</code> was passed {@link
-   *  #ToParentBlockJoinCollector on construction}.  Else,
-   *  this returns <code>Float.NaN</code> */
+  
+  /**
+   * Returns the highest score across all collected parent hits, as long as
+   * <code>trackMaxScores=true</code> was passed
+   * {@link #ToParentBlockJoinCollector(Sort, int, boolean, boolean) on
+   * construction}. Else, this returns <code>Float.NaN</code>
+   */
   public float getMaxScore() {
     return maxScore;
   }
