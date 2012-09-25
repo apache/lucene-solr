@@ -37,6 +37,9 @@ New Features
 Optimizations
 ----------------------
 
+* SOLR-3788: Admin Cores UI should redirect to newly created core details
+  (steffkes)
+
 Bug Fixes
 ----------------------
 

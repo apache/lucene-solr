@@ -326,6 +326,12 @@ sammy.get
 
                 var form_callback = {
 
+                  create : function( form, response )
+                  {
+                    var url = path_parts[1] + response.core;
+                    context.redirect( url );
+                  },
+
                   rename : function( form, response )
                   {
                     var url = path_parts[1] + $( 'input[name="other"]', form ).val();
