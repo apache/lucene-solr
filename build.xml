@@ -304,7 +304,7 @@
        <arg value="-u"/>
        <arg file="dev-tools/scripts/smokeTestRelease.py"/>
        <arg value="${fakeRelease.uri}"/>
-       <arg file="${fakeReleaseVersion}"/>
+       <arg value="${fakeReleaseVersion}"/>
        <arg file="${fakeReleaseTmp}"/>
        <arg value="false"/>
        <env key="JAVA6_HOME" file="${JAVA6_HOME}"/>
