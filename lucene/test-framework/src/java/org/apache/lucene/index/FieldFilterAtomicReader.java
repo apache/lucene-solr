@@ -72,8 +72,8 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
   public void document(final int docID, final StoredFieldVisitor visitor) throws IOException {
     super.document(docID, new StoredFieldVisitor() {
       @Override
-      public void binaryField(FieldInfo fieldInfo, byte[] value, int offset, int length) throws IOException {
-        visitor.binaryField(fieldInfo, value, offset, length);
+      public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
+        visitor.binaryField(fieldInfo, value);
       }
 
       @Override
