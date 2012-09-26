@@ -53,6 +53,9 @@ public class TestDemo extends LuceneTestCase {
     doc.add(newTextField("fieldname", text, Field.Store.YES));
     iwriter.addDocument(doc);
     iwriter.close();
+
+    // nocommit
+    assertFalse(true);
     
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
