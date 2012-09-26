@@ -1892,22 +1892,22 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
    -->
   <macrodef name="build-changes">
     <attribute name="changes.product"/>
-    <attribute name="changes.src.dir" default="${changes.src.dir}"/>
+    <attribute name="changes.src.file" default="CHANGES.txt"/>
     <attribute name="changes.target.dir" default="${changes.target.dir}"/>
     <sequential>
       <mkdir dir="@{changes.target.dir}"/>
       <get src="https://issues.apache.org/jira/rest/api/2/project/@{changes.product}"
         dest="@{changes.target.dir}/jiraVersionList.json" httpusecaches="false"/>
-      <exec executable="${perl.exe}" input="CHANGES.txt" output="@{changes.target.dir}/Changes.html"
+      <exec executable="${perl.exe}" input="@{changes.src.file}" output="@{changes.target.dir}/Changes.html"
             failonerror="true" logError="true">
         <arg value="-CSD"/>
-        <arg value="@{changes.src.dir}/changes2html.pl"/>
+        <arg value="${changes.src.dir}/changes2html.pl"/>
         <arg value="@{changes.product}"/>
         <arg value="@{changes.target.dir}/jiraVersionList.json"/>
       </exec>
       <delete file="@{changes.target.dir}/jiraVersionList.json"/>
       <copy todir="@{changes.target.dir}">
-        <fileset dir="@{changes.src.dir}" includes="*.css"/>
+        <fileset dir="${changes.src.dir}" includes="*.css"/>
       </copy>
     </sequential>
   </macrodef>
