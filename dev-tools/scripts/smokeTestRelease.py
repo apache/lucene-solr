@@ -35,6 +35,7 @@ import platform
 import checkJavaDocs
 import checkJavadocLinks
 import io
+import codecs
 
 # This tool expects to find /lucene and /solr off the base URL.  You
 # must have a working gpg, tar, unzip in your path.  This has been
@@ -389,6 +390,23 @@ def run(command, logFile):
   if cygwin: command = cygwinifyPaths(command)
   if os.system('%s > %s 2>&1' % (command, logFile)):
     logPath = os.path.abspath(logFile)
+    print('\ncommand "%s" failed:' % command)
+
+    # Assume log file was written in system's default encoding, but
+    # even if we are wrong, we replace errors ... the ASCII chars
+    # (which is what we mostly care about eg for the test seed) should
+    # still survive:
+    txt = codecs.open(logPath, 'r', encoding=sys.getdefaultencoding(), errors='replace').read()
+
+    # Encode to our output encoding (likely also system's default
+    # encoding):
+    bytes = txt.encode(sys.stdout.encoding, errors='replace')
+
+    # Decode back to string and print... we should hit no exception here
+    # since all errors have been replaced:
+    print(codecs.getdecoder(sys.stdout.encoding)(bytes)[0])
+    print()
+
     raise RuntimeError('command "%s" failed; see log file %s' % (command, logPath))
     
 def verifyDigests(artifact, urlString, tmpDir):
@@ -1191,6 +1209,7 @@ def smokeTest(baseURL, version, tmpDir, isSigned):
   print('\nSUCCESS!\n')
 
 if __name__ == '__main__':
+  print('NOTE: output encoding is %s' % sys.stdout.encoding)
   try:
     main()
   except:
