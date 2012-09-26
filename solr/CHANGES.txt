@@ -373,6 +373,9 @@ Bug Fixes
 * SOLR-3892: Inconsistent locking when accessing cache in CachingDirectoryFactory
   from RAMDirectoryFactory and MockDirectoryFactory. (phunt via Mark Miller)
 
+* SOLR-3883: Distributed indexing forwards non-applicable request params.
+  (Dan Sutton, Per Steffensen, yonik, Mark Miller)
+
 Other Changes
 ----------------------
 
