@@ -139,10 +139,9 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
     if (type == TYPE_STRING) {
       visitor.stringField(fieldInfo, new String(scratch.bytes, scratch.offset+VALUE.length, scratch.length-VALUE.length, "UTF-8"));
     } else if (type == TYPE_BINARY) {
-      // TODO: who owns the bytes?
       byte[] copy = new byte[scratch.length-VALUE.length];
       System.arraycopy(scratch.bytes, scratch.offset+VALUE.length, copy, 0, copy.length);
-      visitor.binaryField(fieldInfo, copy, 0, copy.length);
+      visitor.binaryField(fieldInfo, copy);
     } else if (type == TYPE_INT) {
       UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+VALUE.length, scratch.length-VALUE.length, scratchUTF16);
       visitor.intField(fieldInfo, Integer.parseInt(scratchUTF16.toString()));
