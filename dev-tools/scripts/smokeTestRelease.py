@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import os
+import codecs
 import tarfile
 import zipfile
 import threading
@@ -100,8 +101,8 @@ verifyJavaVersion('1.7')
 
 reHREF = re.compile('<a href="(.*?)">(.*?)</a>')
 
-# Set to True to avoid re-downloading the packages...
-DEBUG = False
+# Set to False to avoid re-downloading the packages...
+FORCE_CLEAN = True
 
 def getHREFs(urlString):
 
@@ -132,7 +133,7 @@ def getHREFs(urlString):
 
 def download(name, urlString, tmpDir, quiet=False):
   fileName = '%s/%s' % (tmpDir, name)
-  if DEBUG and os.path.exists(fileName):
+  if not FORCE_CLEAN and os.path.exists(fileName):
     if not quiet and fileName.find('.asc') == -1:
       print('    already done: %.1f MB' % (os.path.getsize(fileName)/1024./1024.))
     return
@@ -165,11 +166,78 @@ def noJavaPackageClasses(desc, file):
       if name2.endswith('.class') and (name2.startswith('java/') or name2.startswith('javax/')):
         raise RuntimeError('%s contains sheisty class "%s"' %  (desc, name2))
 
+def decodeUTF8(bytes):
+  return codecs.getdecoder('UTF-8')(bytes)[0]
+
+MANIFEST_FILE_NAME = 'META-INF/MANIFEST.MF'
+NOTICE_FILE_NAME = 'META-INF/NOTICE.txt'
+LICENSE_FILE_NAME = 'META-INF/LICENSE.txt'
+
+def checkJARMetaData(desc, jarFile, version):
+
+  with zipfile.ZipFile(jarFile, 'r') as z:
+    for name in (MANIFEST_FILE_NAME, NOTICE_FILE_NAME, LICENSE_FILE_NAME):
+      try:
+        # The Python docs state a KeyError is raised ... so this None
+        # check is just defensive:
+        if z.getinfo(name) is None:
+          raise RuntimeError('%s is missing %s' % (desc, name))
+      except KeyError:
+        raise RuntimeError('%s is missing %s' % (desc, name))
+      
+    s = decodeUTF8(z.read(MANIFEST_FILE_NAME))
+    
+    for verify in (
+      'Implementation-Vendor: The Apache Software Foundation',
+      # Make sure 1.6 compiler was used to build release bits:
+      'X-Compile-Source-JDK: 1.6',
+      # Make sure .class files are 1.6 format:
+      'X-Compile-Target-JDK: 1.6',
+      # Make sure this matches the version we think we are releasing:
+      'Specification-Version: %s' % version):
+      if s.find(verify) == -1:
+        raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFES.MF' % \
+                           (desc, verify))
+
+    notice = decodeUTF8(z.read(NOTICE_FILE_NAME))
+    license = decodeUTF8(z.read(LICENSE_FILE_NAME))
+
+    idx = desc.find('inside WAR file')
+    if idx != -1:
+      desc2 = desc[:idx]
+    else:
+      desc2 = desc
+
+    justFileName = os.path.split(desc2)[1]
+    
+    if justFileName.lower().find('solr') != -1:
+      if SOLR_LICENSE is None:
+        raise RuntimeError('BUG in smokeTestRelease!')
+      if SOLR_NOTICE is None:
+        raise RuntimeError('BUG in smokeTestRelease!')
+      if notice != SOLR_NOTICE:
+        raise RuntimeError('%s: %s contents doesn\'t match main NOTICE.txt' % \
+                           (desc, NOTICE_FILE_NAME))
+      if license != SOLR_LICENSE:
+        raise RuntimeError('%s: %s contents doesn\'t match main LICENSE.txt' % \
+                           (desc, LICENSE_FILE_NAME))
+    else:
+      if LUCENE_LICENSE is None:
+        raise RuntimeError('BUG in smokeTestRelease!')
+      if LUCENE_NOTICE is None:
+        raise RuntimeError('BUG in smokeTestRelease!')
+      if notice != LUCENE_NOTICE:
+        raise RuntimeError('%s: %s contents doesn\'t match main NOTICE.txt' % \
+                           (desc, NOTICE_FILE_NAME))
+      if license != LUCENE_LICENSE:
+        raise RuntimeError('%s: %s contents doesn\'t match main LICENSE.txt' % \
+                           (desc, LICENSE_FILE_NAME))
+
 def normSlashes(path):
   return path.replace(os.sep, '/')
     
-def checkAllJARs(topDir, project):
-  print('    make sure JARs don\'t have javax.* or java.* classes...')  
+def checkAllJARs(topDir, project, version):
+  print('    verify JAR/WAR metadata...')  
   for root, dirs, files in os.walk(topDir):
 
     normRoot = normSlashes(root)
@@ -181,15 +249,16 @@ def checkAllJARs(topDir, project):
     for file in files:
       if file.lower().endswith('.jar'):
         if project == 'solr':
-
           if normRoot.endswith('/contrib/dataimporthandler/lib') and (file.startswith('mail-') or file.startswith('activation-')):
             print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
             continue
-
         fullPath = '%s/%s' % (root, file)
         noJavaPackageClasses('JAR file "%s"' % fullPath, fullPath)
+        if file.lower().find('lucene') != -1 or file.lower().find('solr') != -1:
+          checkJARMetaData('JAR file "%s"' % fullPath, fullPath, version)
+  
 
-def checkSolrWAR(warFileName):
+def checkSolrWAR(warFileName, version):
 
   """
   Crawls for JARs inside the WAR and ensures there are no classes
@@ -198,11 +267,17 @@ def checkSolrWAR(warFileName):
 
   print('    make sure WAR file has no javax.* or java.* classes...')
 
+  checkJARMetaData(warFileName, warFileName, version)
+
   with zipfile.ZipFile(warFileName, 'r') as z:
     for name in z.namelist():
       if name.endswith('.jar'):
         noJavaPackageClasses('JAR file %s inside WAR file %s' % (name, warFileName),
                              io.BytesIO(z.read(name)))
+        if name.lower().find('lucene') != -1 or name.lower().find('solr') != -1:
+          checkJARMetaData('JAR file %s inside WAR file %s' % (name, warFileName),
+                           io.BytesIO(z.read(name)),
+                           version)
         
 def checkSigs(project, urlString, version, tmpDir, isSigned):
 
@@ -462,7 +537,7 @@ def getDirEntries(urlString):
       if text == 'Parent Directory' or text == '..':
         return links[(i+1):]
 
-def unpack(project, tmpDir, artifact, version):
+def unpackAndVerify(project, tmpDir, artifact, version):
   destDir = '%s/unpack' % tmpDir
   if os.path.exists(destDir):
     shutil.rmtree(destDir)
@@ -487,7 +562,17 @@ def unpack(project, tmpDir, artifact, version):
   unpackPath = '%s/%s' % (destDir, expected)
   verifyUnpacked(project, artifact, unpackPath, version, tmpDir)
 
+LUCENE_NOTICE = None
+LUCENE_LICENSE = None
+SOLR_NOTICE = None
+SOLR_LICENSE = None
+
 def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
+  global LUCENE_NOTICE
+  global LUCENE_LICENSE
+  global SOLR_NOTICE
+  global SOLR_LICENSE
+
   os.chdir(unpackPath)
   isSrc = artifact.find('-src') != -1
   l = os.listdir(unpackPath)
@@ -501,6 +586,17 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
     if fileName not in l:
       raise RuntimeError('file "%s" is missing from artifact %s' % (fileName, artifact))
     l.remove(fileName)
+
+  if project == 'lucene':
+    if LUCENE_NOTICE is None:
+      LUCENE_NOTICE = open('%s/NOTICE.txt' % unpackPath).read()
+    if LUCENE_LICENSE is None:
+      LUCENE_LICENSE = open('%s/LICENSE.txt' % unpackPath).read()
+  else:
+    if SOLR_NOTICE is None:
+      SOLR_NOTICE = open('%s/NOTICE.txt' % unpackPath).read()
+    if SOLR_LICENSE is None:
+      SOLR_LICENSE = open('%s/LICENSE.txt' % unpackPath).read()
 
   if not isSrc:
     # TODO: we should add verifyModule/verifySubmodule (e.g. analysis) here and recurse through
@@ -595,13 +691,13 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
 
   else:
 
-    checkAllJARs(os.getcwd(), project)
+    checkAllJARs(os.getcwd(), project, version)
     
     if project == 'lucene':
       testDemo(isSrc, version)
 
     else:
-      checkSolrWAR('%s/example/webapps/solr.war' % unpackPath)
+      checkSolrWAR('%s/example/webapps/solr.war' % unpackPath, version)
 
       print('    copying unpacked distribution for Java 6 ...')
       java6UnpackPath = '%s-java6' %unpackPath
@@ -802,6 +898,9 @@ def checkMaven(baseURL, tmpDir, version, isSigned):
   checkIdenticalNonMavenizedDeps(distributionFiles, nonMavenizedDeps)
   print('    verify that Maven artifacts are same as in the binary distribution...')
   checkIdenticalMavenArtifacts(distributionFiles, nonMavenizedDeps, artifacts, version)
+
+  checkAllJARs('%s/maven/org/apache/lucene' % tmpDir, 'lucene', version)
+  checkAllJARs('%s/maven/org/apache/solr' % tmpDir, 'solr', version)
 
 def getDistributionsForMavenChecks(tmpDir, version, baseURL):
   distributionFiles = defaultdict()
@@ -1132,7 +1231,7 @@ def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
           os.makedirs(path)
         crawl(downloadedFiles, subURL, path, exclusions)
       else:
-        if not os.path.exists(path) or not DEBUG:
+        if not os.path.exists(path) or FORCE_CLEAN:
           download(text, subURL, targetDir, quiet=True)
         downloadedFiles.append(path)
         sys.stdout.write('.')
@@ -1162,7 +1261,7 @@ def main():
 
 def smokeTest(baseURL, version, tmpDir, isSigned):
 
-  if not DEBUG:
+  if FORCE_CLEAN:
     if os.path.exists(tmpDir):
       raise RuntimeError('temp dir %s exists; please remove first' % tmpDir)
 
@@ -1193,16 +1292,17 @@ def smokeTest(baseURL, version, tmpDir, isSigned):
   print('Test Lucene...')
   checkSigs('lucene', lucenePath, version, tmpDir, isSigned)
   for artifact in ('lucene-%s.tgz' % version, 'lucene-%s.zip' % version):
-    unpack('lucene', tmpDir, artifact, version)
-  unpack('lucene', tmpDir, 'lucene-%s-src.tgz' % version, version)
+    unpackAndVerify('lucene', tmpDir, artifact, version)
+  unpackAndVerify('lucene', tmpDir, 'lucene-%s-src.tgz' % version, version)
 
   print()
   print('Test Solr...')
   checkSigs('solr', solrPath, version, tmpDir, isSigned)
   for artifact in ('apache-solr-%s.tgz' % version, 'apache-solr-%s.zip' % version):
-    unpack('solr', tmpDir, artifact, version)
-  unpack('solr', tmpDir, 'apache-solr-%s-src.tgz' % version, version)
+    unpackAndVerify('solr', tmpDir, artifact, version)
+  unpackAndVerify('solr', tmpDir, 'apache-solr-%s-src.tgz' % version, version)
 
+  print()
   print('Test Maven artifacts for Lucene and Solr...')
   checkMaven(baseURL, tmpDir, version, isSigned)
 
