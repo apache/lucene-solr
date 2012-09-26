@@ -255,8 +255,8 @@
 
   <!-- define here, as common-build is not included! -->
   <property name="python32.exe" value="python3.2" />
-  <property name="fakeRelease" value="lucene/build/fakeRelease"/>
-  <property name="fakeReleaseTmp" value="lucene/build/fakeReleaseTmp"/>
+  <property name="fakeRelease" location="lucene/build/fakeRelease"/>
+  <property name="fakeReleaseTmp" location="lucene/build/fakeReleaseTmp"/>
   <property name="fakeReleaseVersion" value="4.0.0"/> <!-- *not* -SNAPSHOT, the real version -->
 
   <target name="-load-env">
@@ -302,13 +302,13 @@
      <makeurl file="${fakeRelease}" validate="false" property="fakeRelease.uri"/>
      <exec executable="${python32.exe}" failonerror="true">
        <arg value="-u"/>
-       <arg value="dev-tools/scripts/smokeTestRelease.py"/>
+       <arg file="dev-tools/scripts/smokeTestRelease.py"/>
        <arg value="${fakeRelease.uri}"/>
-       <arg value="${fakeReleaseVersion}"/>
-       <arg value="${fakeReleaseTmp}"/>
+       <arg file="${fakeReleaseVersion}"/>
+       <arg file="${fakeReleaseTmp}"/>
        <arg value="false"/>
-       <env key="JAVA6_HOME" value="${JAVA6_HOME}"/>
-       <env key="JAVA7_HOME" value="${JAVA7_HOME}"/>
+       <env key="JAVA6_HOME" file="${JAVA6_HOME}"/>
+       <env key="JAVA7_HOME" file="${JAVA7_HOME}"/>
      </exec>
      <delete dir="${fakeRelease}"/>
      <delete dir="${fakeReleaseTmp}"/>
