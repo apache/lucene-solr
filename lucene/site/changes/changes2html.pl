@@ -41,17 +41,10 @@ my $first_relid = undef;
 my $second_relid = undef;
 my @releases = ();
 
-my @lines = <>;                        # Get all input at once
+my @lines = <STDIN>;                        # Get all input at once
 
-my $product = '';
-for my $line (@lines) {
-  ($product) = $line =~ /(Solr|Lucene)/i;
-  if ($product) {
-    $product = uc($product);
-    last;
-  }
-}
-my %release_dates = &setup_release_dates;
+my $product = $ARGV[0];
+my %release_dates = &setup_release_dates($ARGV[1]);
 my $in_major_component_versions_section = 0;
 
 
@@ -804,6 +797,7 @@ sub get_release_date {
 #
 sub setup_release_dates {
   my %release_dates;
+  my $file = shift;
   if (uc($product) eq 'LUCENE') {
     %release_dates
        = ( '0.01' => '2000-03-30',      '0.04' => '2000-04-19',
@@ -826,9 +820,7 @@ sub setup_release_dates {
            '3.0.0' => '2009-11-25');
   }
 
-  print STDERR "Retrieving $project_info_url/$product ...\n";
-  my $project_info_json = get_url_contents("$project_info_url/$product");
-
+  my $project_info_json = readFile($file);
   my $project_info = json2perl($project_info_json);
   for my $version (@{$project_info->{versions}}) {
     if ($version->{releaseDate}) {
@@ -844,20 +836,13 @@ sub setup_release_dates {
   return %release_dates;
 }
 
-#
-# returns contents of the passed in url
-#
-sub get_url_contents {
-  my $url = shift;
-  my $tryWget = `wget --no-check-certificate -O - $url`;
-  if ($? eq 0) {
-    return $tryWget;
-  }
-  my $tryCurl = `curl $url`;
-  if ($? eq 0) {
-    return $tryCurl;
-  }
-  die "could not retrieve $url with either wget or curl!";
+sub readFile {
+  my $file = shift;
+  open(F, '<'.$file) || die "could not open $file: $!";
+  local $/ = undef;
+  my $project_info_json = <F>;
+  close(F);
+  return $project_info_json;
 }
 
 #

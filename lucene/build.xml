@@ -416,7 +416,7 @@
     <delete dir="${svn.export.dir}/tools/clover"/>
 
     <build-changes changes.src.dir="${svn.export.dir}/site/changes"
-                   changes.target.dir="${svn.export.dir}/docs/changes"/>
+                   changes.target.dir="${svn.export.dir}/docs/changes" changes.product="LUCENE"/>
     <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset prefix="lucene-${version}" dir="${svn.export.dir}"/>
     </tar>
@@ -507,7 +507,7 @@
   </target>
 
   <target name="changes-to-html">
-    <build-changes changes.src.dir="${changes.src.dir}" changes.target.dir="${changes.target.dir}" />
+    <build-changes changes.src.dir="${changes.src.dir}" changes.target.dir="${changes.target.dir}" changes.product="LUCENE"/>
   </target>
 
   <target name="pitest-modules" depends="compile-test">

@@ -220,7 +220,8 @@
 	    </java>
 	    <echo>Benchmark output is in file: ${collation.output.file}</echo>
 	    <echo>Converting to JIRA table format...</echo>
-	    <exec executable="perl" output="${collation.jira.output.file}" failonerror="true">
+	    <exec executable="${perl.exe}" output="${collation.jira.output.file}" failonerror="true">
+        <arg value="-CSD"/>
 	      <arg value="scripts/collation.bm2jira.pl"/>
 	      <arg value="${collation.output.file}"/>
 	    </exec>
@@ -246,7 +247,8 @@
       </java>
       <echo>Benchmark output is in file: ${shingle.output.file}</echo>
       <echo>Converting to JIRA table format...</echo>
-      <exec executable="perl" output="${shingle.jira.output.file}" failonerror="true">
+      <exec executable="${perl.exe}" output="${shingle.jira.output.file}" failonerror="true">
+        <arg value="-CSD"/>
         <arg value="scripts/shingle.bm2jira.pl"/>
         <arg value="${shingle.output.file}"/>
       </exec>
