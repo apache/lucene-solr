@@ -139,6 +139,10 @@ API Changes
   Bits as liveDocs, then use the flex apis (fields(), terms(), etc) directly.
   (Mike McCandless, Robert Muir)
 
+* LUCENE-4425: clarify documentation of StoredFieldVisitor.binaryValue
+  and simplify the api to binaryField(FieldInfo, byte[]).
+  (Adrien Grand, Robert Muir)
+
 Bug Fixes
 
 * LUCENE-4423: DocumentStoredFieldVisitor.binaryField ignored offset and

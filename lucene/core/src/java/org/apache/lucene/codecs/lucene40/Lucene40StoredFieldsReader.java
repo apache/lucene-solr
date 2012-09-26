@@ -188,7 +188,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
       byte bytes[] = new byte[length];
       fieldsStream.readBytes(bytes, 0, length);
       if ((bits & FIELD_IS_BINARY) != 0) {
-        visitor.binaryField(info, bytes, 0, bytes.length);
+        visitor.binaryField(info, bytes);
       } else {
         visitor.stringField(info, new String(bytes, 0, bytes.length, IOUtils.CHARSET_UTF_8));
       }

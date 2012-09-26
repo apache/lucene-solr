@@ -58,8 +58,8 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
   }
 
   @Override
-  public void binaryField(FieldInfo fieldInfo, byte[] value, int offset, int length) throws IOException {
-    doc.add(new StoredField(fieldInfo.name, value, offset, length));
+  public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
+    doc.add(new StoredField(fieldInfo.name, value));
   }
 
   @Override
