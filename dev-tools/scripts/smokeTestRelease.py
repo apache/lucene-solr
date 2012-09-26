@@ -162,17 +162,32 @@ def noJavaPackageClasses(desc, file):
   with zipfile.ZipFile(file) as z2:
     for name2 in z2.namelist():
       if name2.endswith('.class') and (name2.startswith('java/') or name2.startswith('javax/')):
-        raise RuntimeError('%s contains sheisty class "%s"' % \
-                           (desc, name2))
+        raise RuntimeError('%s contains sheisty class "%s"' %  (desc, name2))
 
-def checkAllLuceneJARs(root):
-  print('    make sure Lucene JARs don\'t have javax.* or java.* classes...')  
-  for root, dirs, files in os.walk(root):
+def normSlashes(path):
+  return path.replace(os.sep, '/')
+    
+def checkAllJARs(topDir, project):
+  print('    make sure JARs don\'t have javax.* or java.* classes...')  
+  for root, dirs, files in os.walk(topDir):
+
+    normRoot = normSlashes(root)
+
+    if project == 'solr' and normRoot.endswith('/example/lib'):
+      # Solr's example intentionally ships servlet JAR:
+      continue
+    
     for file in files:
       if file.lower().endswith('.jar'):
+        if project == 'solr':
+
+          if normRoot.endswith('/contrib/dataimporthandler/lib') and (file.startswith('mail-') or file.startswith('activation-')):
+            print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
+            continue
+
         fullPath = '%s/%s' % (root, file)
         noJavaPackageClasses('JAR file "%s"' % fullPath, fullPath)
-  
+
 def checkSolrWAR(warFileName):
 
   """
@@ -561,8 +576,10 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
       testNotice(unpackPath)
 
   else:
+
+    checkAllJARs(os.getcwd(), project)
+    
     if project == 'lucene':
-      checkAllLuceneJARs(os.getcwd())
       testDemo(isSrc, version)
 
     else:
