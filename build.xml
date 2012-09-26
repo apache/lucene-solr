@@ -259,10 +259,23 @@
   <property name="fakeReleaseTmp" value="lucene/build/fakeReleaseTmp"/>
   <property name="fakeReleaseVersion" value="5.0.0"/> <!-- *not* -SNAPSHOT, the real version -->
 
-  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it" depends="clean">
+  <target name="-load-env">
+     <!-- load the properties only here, so not on every invocation /usr/bin/env is called: -->
+     <property environment="env"/>
+  </target>
+  
+  <target name="-env-JAVA6_HOME" depends="-load-env" if="env.JAVA6_HOME">
+     <property name="JAVA6_HOME" location="env.JAVA6_HOME"/>
+  </target>
+  
+  <target name="-env-JAVA7_HOME" depends="-load-env" if="env.JAVA7_HOME">
+     <property name="JAVA7_HOME" location="env.JAVA7_HOME"/>
+  </target>
+  
+  <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it" depends="clean,-env-JAVA6_HOME,-env-JAVA7_HOME">
    <sequential>
-     <fail unless="JAVA6_HOME">JAVA6_HOME property is not defined.</fail>
-     <fail unless="JAVA7_HOME">JAVA7_HOME property is not defined.</fail>
+     <fail unless="JAVA6_HOME">JAVA6_HOME property or environment variable is not defined.</fail>
+     <fail unless="JAVA7_HOME">JAVA7_HOME property or environment variable is not defined.</fail>
      <subant target="prepare-release-no-sign" inheritall="false" failonerror="true">
        <fileset dir="lucene" includes="build.xml" />
        <fileset dir="solr" includes="build.xml" />
