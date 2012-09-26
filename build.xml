@@ -265,11 +265,11 @@
   </target>
   
   <target name="-env-JAVA6_HOME" depends="-load-env" if="env.JAVA6_HOME">
-     <property name="JAVA6_HOME" location="env.JAVA6_HOME"/>
+     <property name="JAVA6_HOME" value="${env.JAVA6_HOME}"/>
   </target>
   
   <target name="-env-JAVA7_HOME" depends="-load-env" if="env.JAVA7_HOME">
-     <property name="JAVA7_HOME" location="env.JAVA7_HOME"/>
+     <property name="JAVA7_HOME" value="${env.JAVA7_HOME}"/>
   </target>
   
   <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it" depends="clean,-env-JAVA6_HOME,-env-JAVA7_HOME">
