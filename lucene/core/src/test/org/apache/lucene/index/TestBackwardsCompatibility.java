@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.AfterClass;
@@ -743,6 +745,40 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertEquals(35, countDocs(_TestUtil.docs(random(), terms,null, null, 0)));
       assertNull(terms.next());
 
+      r.close();
+    }
+  }
+  
+  /** 
+   * Test that we didn't forget to bump the current Constants.LUCENE_MAIN_VERSION.
+   * This is important so that we can determine which version of lucene wrote the segment.
+   */
+  public void testOldVersions() throws Exception {
+    // first create a little index with the current code and get the version
+    Directory currentDir = newDirectory();
+    RandomIndexWriter riw = new RandomIndexWriter(random(), currentDir);
+    riw.addDocument(new Document());
+    riw.close();
+    DirectoryReader ir = DirectoryReader.open(currentDir);
+    SegmentReader air = (SegmentReader)ir.leaves().get(0).reader();
+    String currentVersion = air.getSegmentInfo().info.getVersion();
+    assertNotNull(currentVersion); // only 3.0 segments can have a null version
+    ir.close();
+    currentDir.close();
+    
+    Comparator<String> comparator = StringHelper.getVersionComparator();
+    
+    // now check all the old indexes, their version should be < the current version
+    for (String name : oldNames) {
+      Directory dir = oldIndexDirs.get(name);
+      DirectoryReader r = DirectoryReader.open(dir);
+      for (AtomicReaderContext context : r.leaves()) {
+        air = (SegmentReader) context.reader();
+        String oldVersion = air.getSegmentInfo().info.getVersion();
+        assertNotNull(oldVersion); // only 3.0 segments can have a null version
+        assertTrue("current Constants.LUCENE_MAIN_VERSION is <= an old index: did you forget to bump it?!",
+            comparator.compare(oldVersion, currentVersion) < 0);
+      }
       r.close();
     }
   }
