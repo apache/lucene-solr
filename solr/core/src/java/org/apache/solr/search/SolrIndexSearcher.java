@@ -452,7 +452,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     @Override
     public void binaryField(FieldInfo fieldInfo, byte[] value, int offset, int length) throws IOException {
-      doc.add(new StoredField(fieldInfo.name, value));
+      doc.add(new StoredField(fieldInfo.name, value, offset, length));
     }
 
     @Override
