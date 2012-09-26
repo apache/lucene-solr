@@ -370,7 +370,8 @@
     <delete dir="${svn.export.dir}/lucene/tools/clover"/>
 
     <build-changes changes.src.dir="${svn.export.dir}/lucene/site/changes"
-                   changes.target.dir="${svn.export.dir}/solr/docs/changes"/>
+                   changes.target.dir="${svn.export.dir}/solr/docs/changes"
+                   changes.product="SOLR"/>
 
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset dir="${svn.export.dir}"
@@ -498,7 +499,7 @@
   </target>
 
   <target name="changes-to-html">
-    <build-changes changes.src.dir="${changes.src.dir}" changes.target.dir="${changes.target.dir}" />
+    <build-changes changes.src.dir="${changes.src.dir}" changes.target.dir="${changes.target.dir}" changes.product="SOLR"/>
   </target>
  
   <target name="sign-artifacts">

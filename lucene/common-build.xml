@@ -209,6 +209,7 @@
   -->
   <property name="svnversion.exe" value="svnversion" />
   <property name="svn.exe" value="svn" />
+  <property name="perl.exe" value="perl" />
   
   <property name="hg.exe" value="hg" />
   <property name="moman.url" value="https://bitbucket.org/jpbarrette/moman" />
@@ -1351,7 +1352,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <sequential>
       <property name="output.build.xml" location="${build.dir}/stage_maven_build.xml"/>
       <property name="dev-tools.scripts.dir" value="../dev-tools/scripts"/>
-      <exec dir="." executable="perl" failonerror="true" outputproperty="stage.maven.script.output">
+      <exec dir="." executable="${perl.exe}" failonerror="true" outputproperty="stage.maven.script.output">
+        <arg value="-CSD"/>
         <arg value="${dev-tools.scripts.dir}/write.stage.maven.build.xml.pl"/>
         <arg value="${maven.dist.dir}"/>              <!-- Maven distribution artifacts directory -->
         <arg value="${output.build.xml}"/>            <!-- Ant build file to be written -->
@@ -1889,14 +1891,21 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
    compile changes.txt into an html file
    -->
   <macrodef name="build-changes">
+    <attribute name="changes.product"/>
     <attribute name="changes.src.dir" default="${changes.src.dir}"/>
     <attribute name="changes.target.dir" default="${changes.target.dir}"/>
     <sequential>
       <mkdir dir="@{changes.target.dir}"/>
-      <exec executable="perl" input="CHANGES.txt" output="@{changes.target.dir}/Changes.html"
+      <get src="https://issues.apache.org/jira/rest/api/2/project/@{changes.product}"
+        dest="@{changes.target.dir}/jiraVersionList.json" httpusecaches="false"/>
+      <exec executable="${perl.exe}" input="CHANGES.txt" output="@{changes.target.dir}/Changes.html"
             failonerror="true" logError="true">
+        <arg value="-CSD"/>
         <arg value="@{changes.src.dir}/changes2html.pl"/>
+        <arg value="@{changes.product}"/>
+        <arg value="@{changes.target.dir}/jiraVersionList.json"/>
       </exec>
+      <delete file="@{changes.target.dir}/jiraVersionList.json"/>
       <copy todir="@{changes.target.dir}">
         <fileset dir="@{changes.src.dir}" includes="*.css"/>
       </copy>
