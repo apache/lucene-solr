@@ -45,6 +45,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
@@ -332,7 +333,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     ModifiableSolrParams params = null;
     if (nodes != null) {
       
-      params = new ModifiableSolrParams(req.getParams());
+      params = new ModifiableSolrParams(filterParams(req.getParams()));
       params.set(DISTRIB_UPDATE_PARAM, 
                  (isLeader ? 
                   DistribPhase.FROMLEADER.toString() : 
@@ -341,7 +342,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
       }
-      params.remove("commit"); // this will be distributed from the local commit
+
       params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
           zkController.getBaseUrl(), req.getCore().getName()));
       cmdDistrib.distribAdd(cmd, nodes, params);
@@ -679,7 +680,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     ModifiableSolrParams params = null;
     if (nodes != null) {
       
-      params = new ModifiableSolrParams(req.getParams());
+      params = new ModifiableSolrParams(filterParams(req.getParams()));
       params.set(DISTRIB_UPDATE_PARAM, 
                  (isLeader ? 
                   DistribPhase.FROMLEADER.toString() : 
@@ -688,7 +689,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         params.set("distrib.from", ZkCoreNodeProps.getCoreUrl(
             zkController.getBaseUrl(), req.getCore().getName()));
       }
-      params.remove("commit"); // we already will have forwarded this from our local commit
       cmdDistrib.distribDelete(cmd, nodes, params);
     }
 
@@ -702,6 +702,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (scratch == null) scratch = new CharsRef();
       idField.getType().indexedToReadable(cmd.getIndexedId(), scratch);
       deleteResponse.add(scratch.toString(), cmd.getVersion());  // we're returning the version of the delete.. not the version of the doc we deleted.
+    }
+  }
+
+  private ModifiableSolrParams filterParams(SolrParams params) {
+    ModifiableSolrParams fparams = new ModifiableSolrParams();
+    passParam(params, fparams, UpdateParams.UPDATE_CHAIN);
+    return fparams;
+  }
+
+  private void passParam(SolrParams params, ModifiableSolrParams fparams, String param) {
+    String value = params.get(param);
+    if (value != null) {
+      fparams.add(param, value);
     }
   }
 
@@ -735,7 +748,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 + zkController.getClusterState().getCollections());
       }
 
-      ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
+      ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
       params.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
 
       List<Node> leaders =  new ArrayList<Node>(slices.size());
@@ -846,7 +859,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     // forward to all replicas
     if (leaderLogic && replicas != null) {
-      ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
+      ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
       params.set(VERSION_FIELD, Long.toString(cmd.getVersion()));
       params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
       params.set("update.from", ZkCoreNodeProps.getCoreUrl(
@@ -1004,8 +1017,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // TODO: we should consider this? commit everyone in the current collection
 
     if (zkEnabled) {
-      ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
-      if (!params.getBool(COMMIT_END_POINT, false)) {
+      ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
+      if (!req.getParams().getBool(COMMIT_END_POINT, false)) {
         params.set(COMMIT_END_POINT, true);
 
         String nodeName = req.getCore().getCoreDescriptor().getCoreContainer()
