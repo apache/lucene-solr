@@ -44,6 +44,13 @@ Optimizations
 * SOLR-3788: Admin Cores UI should redirect to newly created core details
   (steffkes)
 
+* SOLR-3895: XML and XSLT UpdateRequestHandler should not try to resolve
+  external entities. This improves speed of loading e.g. XSL-transformed
+  XHTML documents.  (Martin Herfurt, uschindler, hossman)
+
+* SOLR-3614: Fix XML parsing in XPathEntityProcessor to correctly expand
+  named entities, but ignore external entities.  (uschindler, hossman)
+
 Bug Fixes
 ----------------------
 

@@ -111,6 +111,46 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   }
   
   @Test
+  public void testExternalEntities() throws Exception
+  {
+    String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
+    String xml = 
+      "<?xml version=\"1.0\"?>" +
+      // check that external entities are not resolved!
+      "<!DOCTYPE foo [<!ENTITY bar SYSTEM \""+file+"\">]>" +
+      "<add>" +
+      "  &bar;" +
+      "  <doc>" +
+      "    <field name=\"id\">12345</field>" +
+      "    <field name=\"name\">kitten</field>" +
+      "  </doc>" +
+      "</add>";
+    SolrQueryRequest req = req();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    XMLLoader loader = new XMLLoader().init(null);
+    loader.load(req, rsp, new ContentStreamBase.StringStream(xml), p);
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    assertEquals("12345", add.solrDoc.getField("id").getFirstValue());
+    req.close();
+  }
+
+  public void testNamedEntity() throws Exception {
+    assertU("<?xml version=\"1.0\" ?>\n"+
+            "<!DOCTYPE add [\n<!ENTITY wacky \"zzz\" >\n]>"+
+            "<add><doc>"+
+            "<field name=\"id\">1</field>"+
+            "<field name=\"foo_s\">&wacky;</field>" + 
+            "</doc></add>");
+    
+    assertU("<commit/>");
+    assertQ(req("foo_s:zzz"),
+            "//*[@numFound='1']"
+            );
+  }
+  
+  @Test
   public void testReadDelete() throws Exception {
       String xml =
         "<update>" +
