@@ -17,7 +17,6 @@ package org.apache.lucene.codecs.asserting;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
@@ -32,12 +31,7 @@ public final class AssertingCodec extends FilterCodec {
   private final TermVectorsFormat vectors = new AssertingTermVectorsFormat();
 
   public AssertingCodec() {
-    super("Asserting");
-  }
-
-  @Override
-  protected Codec delegate() {
-    return Codec.forName("Lucene40");
+    super("Asserting", new Lucene40Codec());
   }
 
   @Override
