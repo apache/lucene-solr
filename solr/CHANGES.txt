@@ -60,6 +60,9 @@ Bug Fixes
 Other Changes
 ----------------------
 
+* SOLR-3899: SolrCore should not log at warning level when the index directory
+  changes - it's an info event. (Tobias Bergman, Mark Miller)
+
 ==================  4.0.0 ==================
 
 Versions of Major Components
