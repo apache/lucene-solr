@@ -248,7 +248,7 @@ public final class SolrCore implements SolrInfoMBean {
       }
     }
     if (!result.equals(lastNewIndexDir)) {
-      log.warn("New index directory detected: old="+lastNewIndexDir + " new=" + result);
+      log.info("New index directory detected: old="+lastNewIndexDir + " new=" + result);
     }
     lastNewIndexDir = result;
     return result;
