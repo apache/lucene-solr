@@ -27,11 +27,7 @@ package org.apache.lucene.codecs;
  *   public final class CustomCodec extends FilterCodec {
  *
  *     public CustomCodec() {
- *       super("CustomCodec");
- *     }
- *
- *     public Codec delegate() {
- *       return Codec.forName("Lucene40");
+ *       super("CustomCodec", new Lucene40Codec());
  *     }
  *
  *     public LiveDocsFormat liveDocsFormat() {
@@ -40,58 +36,63 @@ package org.apache.lucene.codecs;
  *
  *   }
  * </pre>
+ * 
+ * <p><em>Please note:</em> Don't call {@link Codec#forName} from
+ * the no-arg constructor of your own codec. When the SPI framework
+ * loads your own Codec as SPI component, SPI has not yet fully initialized!
+ * If you want to extend another Codec, instantiate it directly by calling
+ * its constructor.
+ * 
+ * @lucene.experimental
  */
 public abstract class FilterCodec extends Codec {
 
+  protected final Codec delegate;
+  
   /** Sole constructor. */
-  public FilterCodec(String name) {
+  protected FilterCodec(String name, Codec delegate) {
     super(name);
+    this.delegate = delegate;
   }
-
-  /**
-   * Return the codec that is responsible for providing default format
-   * implementations.
-   */
-  protected abstract Codec delegate();
 
   @Override
   public DocValuesFormat docValuesFormat() {
-    return delegate().docValuesFormat();
+    return delegate.docValuesFormat();
   }
 
   @Override
   public FieldInfosFormat fieldInfosFormat() {
-    return delegate().fieldInfosFormat();
+    return delegate.fieldInfosFormat();
   }
 
   @Override
   public LiveDocsFormat liveDocsFormat() {
-    return delegate().liveDocsFormat();
+    return delegate.liveDocsFormat();
   }
 
   @Override
   public NormsFormat normsFormat() {
-    return delegate().normsFormat();
+    return delegate.normsFormat();
   }
 
   @Override
   public PostingsFormat postingsFormat() {
-    return delegate().postingsFormat();
+    return delegate.postingsFormat();
   }
 
   @Override
   public SegmentInfoFormat segmentInfoFormat() {
-    return delegate().segmentInfoFormat();
+    return delegate.segmentInfoFormat();
   }
 
   @Override
   public StoredFieldsFormat storedFieldsFormat() {
-    return delegate().storedFieldsFormat();
+    return delegate.storedFieldsFormat();
   }
 
   @Override
   public TermVectorsFormat termVectorsFormat() {
-    return delegate().termVectorsFormat();
+    return delegate.termVectorsFormat();
   }
 
 }
