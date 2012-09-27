@@ -47,9 +47,13 @@ package org.apache.lucene.codecs;
  */
 public abstract class FilterCodec extends Codec {
 
+  /** The codec to filter. */
   protected final Codec delegate;
   
-  /** Sole constructor. */
+  /** Sole constructor. When subclassing this codec,
+   * create a no-arg ctor and pass the delegate codec
+   * and a unique name to this ctor.
+   */
   protected FilterCodec(String name, Codec delegate) {
     super(name);
     this.delegate = delegate;
