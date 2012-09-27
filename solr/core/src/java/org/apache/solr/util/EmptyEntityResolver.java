@@ -67,7 +67,7 @@ public final class EmptyEntityResolver {
   }
   
   /** Configures the given {@link SAXParserFactory} to do secure XML processing of untrusted sources.
-   * It is required to also set {@link #SAX_INSTANCE} on the created {@link XMLReader}.
+   * It is required to also set {@link #SAX_INSTANCE} on the created {@link org.xml.sax.XMLReader}.
    * @see #SAX_INSTANCE
    */
   public static void configureSAXParserFactory(SAXParserFactory saxFactory) {
