@@ -1109,12 +1109,7 @@ public class TestAddIndexes extends LuceneTestCase {
   
   private static final class UnRegisteredCodec extends FilterCodec {
     public UnRegisteredCodec() {
-      super("NotRegistered");
-    }
-
-    @Override
-    protected Codec delegate() {
-      return Codec.forName("Lucene40");
+      super("NotRegistered", new Lucene40Codec());
     }
   }
   

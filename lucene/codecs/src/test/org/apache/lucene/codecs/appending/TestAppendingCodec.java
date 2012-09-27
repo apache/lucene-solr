@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.appending.AppendingCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
@@ -34,8 +33,8 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -45,7 +44,6 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestAppendingCodec extends LuceneTestCase {
   
@@ -111,7 +109,7 @@ public class TestAppendingCodec extends LuceneTestCase {
 
   public void testCodec() throws Exception {
     Directory dir = new AppendingRAMDirectory(random(), new RAMDirectory());
-    IndexWriterConfig cfg = new IndexWriterConfig(Version.LUCENE_40, new MockAnalyzer(random()));
+    IndexWriterConfig cfg = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     
     cfg.setCodec(new AppendingCodec());
     ((TieredMergePolicy)cfg.getMergePolicy()).setUseCompoundFile(false);
@@ -153,7 +151,7 @@ public class TestAppendingCodec extends LuceneTestCase {
   
   public void testCompoundFile() throws Exception {
     Directory dir = new AppendingRAMDirectory(random(), new RAMDirectory());
-    IndexWriterConfig cfg = new IndexWriterConfig(Version.LUCENE_40, new MockAnalyzer(random()));
+    IndexWriterConfig cfg = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     TieredMergePolicy mp = new TieredMergePolicy();
     mp.setUseCompoundFile(true);
     mp.setNoCFSRatio(1.0);

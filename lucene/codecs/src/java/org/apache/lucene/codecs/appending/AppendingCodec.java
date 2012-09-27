@@ -17,7 +17,6 @@ package org.apache.lucene.codecs.appending;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
@@ -32,15 +31,10 @@ import org.apache.lucene.codecs.lucene40.Lucene40Codec;
 public final class AppendingCodec extends FilterCodec {
 
   public AppendingCodec() {
-    super("Appending");
+    super("Appending", new Lucene40Codec());
   }
 
   private final PostingsFormat postings = new AppendingPostingsFormat();
-
-  @Override
-  protected Codec delegate() {
-    return Codec.forName("Lucene40");
-  }
 
   @Override
   public PostingsFormat postingsFormat() {
