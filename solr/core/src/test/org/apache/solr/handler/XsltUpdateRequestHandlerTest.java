@@ -28,9 +28,13 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -89,4 +93,36 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
             , "//int[@name='id'][.='12345']"
         );
   }
+  
+  @Test
+  public void testEntities() throws Exception
+  {
+    // use a binary file, so when it's loaded fail with XML eror:
+    String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
+    String xml = 
+      "<?xml version=\"1.0\"?>" +
+      "<!DOCTYPE foo [" + 
+      // check that external entities are not resolved!
+      "<!ENTITY bar SYSTEM \""+file+"\">"+
+      // but named entities should be
+      "<!ENTITY wacky \"zzz\">"+
+      "]>" +
+      "<random>" +
+      " &bar;" +
+      " <document>" +
+      "  <node name=\"id\" value=\"12345\"/>" +
+      "  <node name=\"foo_s\" value=\"&wacky;\"/>" +
+      " </document>" +
+      "</random>";
+    SolrQueryRequest req = req(CommonParams.TR, "xsl-update-handler-test.xsl");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    XMLLoader loader = new XMLLoader().init(null);
+    loader.load(req, rsp, new ContentStreamBase.StringStream(xml), p);
+
+    AddUpdateCommand add = p.addCommands.get(0);
+    assertEquals("12345", add.solrDoc.getField("id").getFirstValue());
+    assertEquals("zzz", add.solrDoc.getField("foo_s").getFirstValue());
+    req.close();
+  }  
 }
