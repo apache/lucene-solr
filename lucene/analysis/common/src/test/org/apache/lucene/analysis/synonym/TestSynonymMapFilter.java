@@ -40,7 +40,6 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 
 public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
 
@@ -53,6 +52,9 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
   private OffsetAttribute offsetAtt;
 
   private void add(String input, String output, boolean keepOrig) {
+    if (VERBOSE) {
+      System.out.println("  add input=" + input + " output=" + output + " keepOrig=" + keepOrig);
+    }
     b.add(new CharsRef(input.replaceAll(" +", "\u0000")),
           new CharsRef(output.replaceAll(" +", "\u0000")),
           keepOrig);
@@ -135,6 +137,56 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
       System.out.println("  incr: END");
     }
     assertEquals(expectedUpto, expected.length);
+  }
+
+  public void testDontKeepOrig() throws Exception {
+    b = new SynonymMap.Builder(true);
+    add("a b", "foo", false);
+
+    final SynonymMap map = b.build();
+
+    final Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, false));
+      }
+    };
+
+    assertAnalyzesTo(analyzer, "a b c",
+                     new String[] {"foo", "c"},
+                     new int[] {0, 4},
+                     new int[] {3, 5},
+                     null,
+                     new int[] {1, 1},
+                     new int[] {1, 1},
+                     true);
+    checkAnalysisConsistency(random(), analyzer, false, "a b c");
+  }
+
+  public void testDoKeepOrig() throws Exception {
+    b = new SynonymMap.Builder(true);
+    add("a b", "foo", true);
+
+    final SynonymMap map = b.build();
+
+    final Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        return new TokenStreamComponents(tokenizer, new SynonymFilter(tokenizer, map, false));
+      }
+    };
+
+    assertAnalyzesTo(analyzer, "a b c",
+                     new String[] {"a", "foo", "b", "c"},
+                     new int[] {0, 0, 2, 4},
+                     new int[] {1, 3, 3, 5},
+                     null,
+                     new int[] {1, 0, 1, 1},
+                     new int[] {1, 2, 1, 1},
+                     true);
+    checkAnalysisConsistency(random(), analyzer, false, "a b c");
   }
 
   public void testBasic() throws Exception {
@@ -284,7 +336,7 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
             if (synOutputs.length == 1) {
               // Add full endOffset
               endOffset = (inputIDX*2) + syn.in.length();
-              posLen = (1+syn.in.length())/2;
+              posLen = syn.keepOrig ? (1+syn.in.length())/2 : 1;
             } else {
               // Add endOffset matching input token's
               endOffset = (matchIDX*2) + 1;
@@ -540,6 +592,9 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
     for (int i = 0; i < numIters; i++) {
       b = new SynonymMap.Builder(random.nextBoolean());
       final int numEntries = atLeast(10);
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + i + " numEntries=" + numEntries);
+      }
       for (int j = 0; j < numEntries; j++) {
         add(randomNonEmptyString(), randomNonEmptyString(), random.nextBoolean());
       }
