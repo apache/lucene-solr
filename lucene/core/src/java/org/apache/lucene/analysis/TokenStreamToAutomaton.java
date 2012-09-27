@@ -175,8 +175,6 @@ public class TokenStreamToAutomaton {
   }
   */
 
-  // nocommit test syn over N deleted stop words
-
   private static void addHoles(State startState, RollingBuffer<Position> positions, int pos) {
     Position posData = positions.get(pos);
     Position prevPosData = positions.get(pos-1);

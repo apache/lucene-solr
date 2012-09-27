@@ -50,7 +50,6 @@ import org.apache.lucene.util.automaton.State;
 import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
-import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs.Pair;
@@ -77,6 +76,25 @@ import org.apache.lucene.util.fst.Util;
  * removal, etc., would allow suggestions to ignore such
  * variations.
  *
+ * <p>
+ * There are some limitations:
+ * <ul>
+ *
+ *   <li> A lookup from a query like "net" in English won't
+ *        be any different than "net " (ie, user added a
+ *        trailing space) because analyzers don't reflect
+ *        when they've seen a token separator and when they
+ *        haven't.
+ *
+ *   <li> If you're using {@code StopFilter}, and the user will
+ *        type "fast apple", but so far all they've typed is
+ *        "fast a", again because the analyzer doesn't convey whether
+ *        it's seen a token separator after the "a",
+ *        {@code StopFilter} will remove that "a" causing
+ *        far more matches than you'd expect.
+ *
+ *   <li> Lookups with the empty string return no results
+ *        instead of all results.
  * <p>
  * <b>NOTE</b>: Although the {@link TermFreqIterator} API specifies
  * floating point weights, input weights should be whole numbers.

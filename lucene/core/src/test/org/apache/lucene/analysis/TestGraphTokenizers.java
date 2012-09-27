@@ -421,14 +421,39 @@ public class TestGraphTokenizers extends BaseTokenStreamTestCase {
     assertTrue(BasicOperations.sameLanguage(expected, actual));
   }
 
+  public void testMultipleHoles() throws Exception {
+    final TokenStream ts = new CannedTokenStream(
+      new Token[] {
+        token("a", 1, 1),
+        token("b", 3, 1),
+      });
+    final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
+    final Automaton expected = join(s2a("a"), SEP_A, HOLE_A, SEP_A, HOLE_A, SEP_A, s2a("b")); 
+    assertTrue(BasicOperations.sameLanguage(expected, actual));
+  }
+
+  public void testSynOverMultipleHoles() throws Exception {
+    final TokenStream ts = new CannedTokenStream(
+      new Token[] {
+        token("a", 1, 1),
+        token("x", 0, 3),
+        token("b", 3, 1),
+      });
+    final Automaton actual = (new TokenStreamToAutomaton()).toAutomaton(ts);
+    final Automaton a1 = join(s2a("a"), SEP_A, HOLE_A, SEP_A, HOLE_A, SEP_A, s2a("b")); 
+    final Automaton a2 = join(s2a("x"), SEP_A, s2a("b")); 
+    final Automaton expected = BasicOperations.union(a1, a2);
+    assertTrue(BasicOperations.sameLanguage(expected, actual));
+  }
+
   // for debugging!
   /*
   private static void toDot(Automaton a) throws IOException {
     final String s = a.toDot();
-    Writer w = new OutputStreamWriter(new FileOutputStream("/x/tmp3/out.dot"));
+    Writer w = new OutputStreamWriter(new FileOutputStream("/x/tmp/out.dot"));
     w.write(s);
     w.close();
-    System.out.println("TEST: saved to /x/tmp3/out.dot");
+    System.out.println("TEST: saved to /x/tmp/out.dot");
   }
   */
 

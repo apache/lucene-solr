@@ -37,8 +37,10 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -437,28 +439,106 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
     }
   }
 
+  static boolean isStopChar(char ch, int numStopChars) {
+    //System.out.println("IS? " + ch + ": " + (ch - 'a') + ": " + ((ch - 'a') < numStopChars));
+    return (ch - 'a') < numStopChars;
+  }
+
+  // Like StopFilter:
+  private static class TokenEater extends TokenFilter {
+    private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final int numStopChars;
+    private final boolean preserveHoles;
+    private boolean first;
+
+    public TokenEater(boolean preserveHoles, TokenStream in, int numStopChars) {
+      super(in);
+      this.preserveHoles = preserveHoles;
+      this.numStopChars = numStopChars;
+    }
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      first = true;
+    }
+
+    @Override
+    public final boolean incrementToken() throws IOException {
+      int skippedPositions = 0;
+      while (input.incrementToken()) {
+        if (termAtt.length() != 1 || !isStopChar(termAtt.charAt(0), numStopChars)) {
+          int posInc = posIncrAtt.getPositionIncrement() + skippedPositions;
+          if (first) {
+            if (posInc == 0) {
+              // first token having posinc=0 is illegal.
+              posInc = 1;
+            }
+            first = false;
+          }
+          posIncrAtt.setPositionIncrement(posInc);
+          //System.out.println("RETURN term=" + termAtt + " numStopChars=" + numStopChars);
+          return true;
+        }
+        if (preserveHoles) {
+          skippedPositions += posIncrAtt.getPositionIncrement();
+        }
+      }
+
+      return false;
+    }
+  }
+
+  private static class MockTokenEatingAnalyzer extends Analyzer {
+    private int numStopChars;
+    private boolean preserveHoles;
+
+    public MockTokenEatingAnalyzer(int numStopChars, boolean preserveHoles) {
+      this.preserveHoles = preserveHoles;
+      this.numStopChars = numStopChars;
+    }
+
+    @Override
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false, MockTokenizer.DEFAULT_MAX_TOKEN_LENGTH);
+      tokenizer.setEnableChecks(true);
+      TokenStream next;
+      if (numStopChars != 0) {
+        next = new TokenEater(preserveHoles, tokenizer, numStopChars);
+      } else {
+        next = tokenizer;
+      }
+      return new TokenStreamComponents(tokenizer, next);
+    }
+  }
+
   public void testRandom() throws Exception {
-    int numWords = atLeast(1000);
+
+    int numQueries = atLeast(1000);
     
     final List<TermFreq2> slowCompletor = new ArrayList<TermFreq2>();
     final TreeSet<String> allPrefixes = new TreeSet<String>();
     final Set<String> seen = new HashSet<String>();
     
-    TermFreq[] keys = new TermFreq[numWords];
+    TermFreq[] keys = new TermFreq[numQueries];
 
     boolean preserveSep = random().nextBoolean();
 
+    final int numStopChars = random().nextInt(10);
+    final boolean preserveHoles = random().nextBoolean();
+
     if (VERBOSE) {
-      System.out.println("TEST: " + numWords + " words; preserveSep=" + preserveSep);
+      System.out.println("TEST: " + numQueries + " words; preserveSep=" + preserveSep + " numStopChars=" + numStopChars + " preserveHoles=" + preserveHoles);
     }
     
-    for (int i = 0; i < numWords; i++) {
+    for (int i = 0; i < numQueries; i++) {
       int numTokens = _TestUtil.nextInt(random(), 1, 4);
       String key;
-      String keyNoSep;
+      String analyzedKey;
       while(true) {
         key = "";
-        keyNoSep = "";
+        analyzedKey = "";
         for(int token=0;token < numTokens;token++) {
           String s;
           while (true) {
@@ -469,12 +549,23 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
               if (token > 0) {
                 key += " ";
               }
+              if (preserveSep && analyzedKey.length() > 0 && analyzedKey.charAt(analyzedKey.length()-1) != ' ') {
+                analyzedKey += " ";
+              }
               key += s;
-              keyNoSep += s;
+              if (s.length() == 1 && isStopChar(s.charAt(0), numStopChars)) {
+                if (preserveSep && preserveHoles) {
+                  analyzedKey += '\u0000';
+                }
+              } else {
+                analyzedKey += s;
+              }
               break;
             }
           }
         }
+
+        analyzedKey = analyzedKey.replaceAll("(^| )\u0000$", "");
 
         // Don't add same surface form more than once:
         if (!seen.contains(key)) {
@@ -489,7 +580,8 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
       // we can probably do Integer.MAX_VALUE here, but why worry.
       int weight = random().nextInt(1<<24);
       keys[i] = new TermFreq(key, weight);
-      slowCompletor.add(new TermFreq2(key, preserveSep ? key : keyNoSep, weight));
+
+      slowCompletor.add(new TermFreq2(key, analyzedKey, weight));
     }
 
     if (VERBOSE) {
@@ -502,27 +594,14 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
       }
     }
 
-    // nocommit also test NOT preserving holes
-    AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false),
+    AnalyzingCompletionLookup suggester = new AnalyzingCompletionLookup(new MockTokenEatingAnalyzer(numStopChars, preserveHoles),
                                                                         preserveSep ? AnalyzingCompletionLookup.PRESERVE_SEP : 0, 256, -1);
     suggester.build(new TermFreqArrayIterator(keys));
-    
+
     for (String prefix : allPrefixes) {
 
       if (VERBOSE) {
-        System.out.println("TEST: prefix=" + prefix);
-      }
-
-      if (preserveSep && prefix.endsWith(" ")) {
-        // TODO: would be great if we didn't have to skip
-        // these cases ... but we can't handle them today
-        // because tokenizers don't/can't output SEP tokens,
-        // or indicate that a token has finished w/o a new
-        // token starting...
-        if (VERBOSE) {
-          System.out.println("  skip...");
-        }
-        continue;
+        System.out.println("\nTEST: prefix=" + prefix);
       }
 
       final int topN = _TestUtil.nextInt(random(), 1, 10);
@@ -531,31 +610,70 @@ public class AnalyzingCompletionTest extends LuceneTestCase {
       // 2. go thru whole set to find suggestions:
       List<LookupResult> matches = new ArrayList<LookupResult>();
 
-      String key;
-      if (!preserveSep) {
-        key = prefix.replaceAll(" ", "");
-      } else {
-        key = prefix;
+      // "Analyze" the key:
+      String[] tokens = prefix.split(" ");
+      StringBuilder builder = new StringBuilder();
+      for(int i=0;i<tokens.length;i++) {
+        String token = tokens[i];
+        if (preserveSep && builder.length() > 0 && !builder.toString().endsWith(" ")) {
+          builder.append(' ');
+        }
+
+        if (token.length() == 1 && isStopChar(token.charAt(0), numStopChars)) {
+          if (preserveSep && preserveHoles) {
+            builder.append("\u0000");
+          }
+        } else {
+          builder.append(token);
+        }
+      }
+
+      String analyzedKey = builder.toString();
+
+      // Remove trailing sep/holes (TokenStream.end() does
+      // not tell us any trailing holes, yet ... there is an
+      // issue open for this):
+      while (true) {
+        String s = analyzedKey.replaceAll("(^| )\u0000$", "");
+        s = s.replaceAll("\\s+$", "");
+        if (s.equals(analyzedKey)) {
+          break;
+        }
+        analyzedKey = s;
+      }
+
+      if (analyzedKey.length() == 0) {
+        // Currently suggester can't suggest from the empty
+        // string!  You get no results, not all results...
+        continue;
+      }
+
+      if (VERBOSE) {
+        System.out.println("  analyzed: " + analyzedKey);
       }
 
       // TODO: could be faster... but its slowCompletor for a reason
       for (TermFreq2 e : slowCompletor) {
-        if (e.analyzedForm.startsWith(key)) {
+        if (e.analyzedForm.startsWith(analyzedKey)) {
           matches.add(new LookupResult(e.surfaceForm, e.weight));
         }
       }
 
-      assertTrue(matches.size() > 0);
-      Collections.sort(matches, new Comparator<LookupResult>() {
-        public int compare(LookupResult left, LookupResult right) {
-          int cmp = Float.compare(right.value, left.value);
-          if (cmp == 0) {
-            return left.compareTo(right);
-          } else {
-            return cmp;
-          }
-        }
-      });
+      assertTrue(numStopChars > 0 || matches.size() > 0);
+
+      if (matches.size() > 1) {
+        Collections.sort(matches, new Comparator<LookupResult>() {
+            public int compare(LookupResult left, LookupResult right) {
+              int cmp = Float.compare(right.value, left.value);
+              if (cmp == 0) {
+                return left.compareTo(right);
+              } else {
+                return cmp;
+              }
+            }
+          });
+      }
+
       if (matches.size() > topN) {
         matches = matches.subList(0, topN);
       }
