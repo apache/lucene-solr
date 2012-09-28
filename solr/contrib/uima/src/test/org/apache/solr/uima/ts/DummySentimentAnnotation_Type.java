@@ -15,27 +15,27 @@ import org.apache.uima.jcas.tcas.Annotation_Type;
 /** 
  * Updated by JCasGen Fri Mar 04 13:08:40 CET 2011
  * @generated */
-public class SentimentAnnotation_Type extends Annotation_Type {
+public class DummySentimentAnnotation_Type extends Annotation_Type {
   /** @generated */
   protected FSGenerator getFSGenerator() {return fsGenerator;}
   /** @generated */
   private final FSGenerator fsGenerator = 
     new FSGenerator() {
       public FeatureStructure createFS(int addr, CASImpl cas) {
-        if (SentimentAnnotation_Type.this.useExistingInstance) {
+        if (DummySentimentAnnotation_Type.this.useExistingInstance) {
           // Return eq fs instance if already created
-          FeatureStructure fs = SentimentAnnotation_Type.this.jcas.getJfsFromCaddr(addr);
+          FeatureStructure fs = DummySentimentAnnotation_Type.this.jcas.getJfsFromCaddr(addr);
           if (null == fs) {
-            fs = new SentimentAnnotation(addr, SentimentAnnotation_Type.this);
-            SentimentAnnotation_Type.this.jcas.putJfsFromCaddr(addr, fs);
+            fs = new DummySentimentAnnotation(addr, DummySentimentAnnotation_Type.this);
+            DummySentimentAnnotation_Type.this.jcas.putJfsFromCaddr(addr, fs);
             return fs;
           }
           return fs;
-        } else return new SentimentAnnotation(addr, SentimentAnnotation_Type.this);
+        } else return new DummySentimentAnnotation(addr, DummySentimentAnnotation_Type.this);
       }
     };
   /** @generated */
-  public final static int typeIndexID = SentimentAnnotation.typeIndexID;
+  public final static int typeIndexID = DummySentimentAnnotation.typeIndexID;
   /** @generated 
      @modifiable */
   public final static boolean featOkTst = JCasRegistry.getFeatOkTst("org.apache.solr.uima.ts.SentimentAnnotation");
@@ -62,7 +62,7 @@ public class SentimentAnnotation_Type extends Annotation_Type {
 
   /** initialize variables to correspond with Cas Type and Features
   * @generated */
-  public SentimentAnnotation_Type(JCas jcas, Type casType) {
+  public DummySentimentAnnotation_Type(JCas jcas, Type casType) {
     super(jcas, casType);
     casImpl.getFSClassRegistry().addGeneratorForType((TypeImpl)this.casType, getFSGenerator());
 

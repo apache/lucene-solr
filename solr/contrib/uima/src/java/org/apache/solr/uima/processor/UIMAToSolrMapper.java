@@ -21,7 +21,6 @@ import java.util.Map;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
-import org.apache.solr.uima.processor.exception.FieldMappingException;
 import org.apache.uima.cas.FSIterator;
 import org.apache.uima.cas.FeatureStructure;
 import org.apache.uima.cas.Type;

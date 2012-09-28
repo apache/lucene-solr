@@ -14,11 +14,11 @@ import org.apache.uima.jcas.tcas.Annotation;
  * Updated by JCasGen Fri Mar 04 13:08:40 CET 2011
  * XML source: /Users/tommasoteofili/Documents/workspaces/lucene_workspace/lucene_dev/solr/contrib/uima/src/test/resources/DummySentimentAnalysisAEDescriptor.xml
  * @generated */
-public class SentimentAnnotation extends Annotation {
+public class DummySentimentAnnotation extends Annotation {
   /** @generated
    * @ordered 
    */
-  public final static int typeIndexID = JCasRegistry.register(SentimentAnnotation.class);
+  public final static int typeIndexID = JCasRegistry.register(DummySentimentAnnotation.class);
   /** @generated
    * @ordered 
    */
@@ -28,23 +28,23 @@ public class SentimentAnnotation extends Annotation {
  
   /** Never called.  Disable default constructor
    * @generated */
-  protected SentimentAnnotation() {}
+  protected DummySentimentAnnotation() {}
     
   /** Internal - constructor used by generator 
    * @generated */
-  public SentimentAnnotation(int addr, TOP_Type type) {
+  public DummySentimentAnnotation(int addr, TOP_Type type) {
     super(addr, type);
     readObject();
   }
   
   /** @generated */
-  public SentimentAnnotation(JCas jcas) {
+  public DummySentimentAnnotation(JCas jcas) {
     super(jcas);
     readObject();   
   } 
 
   /** @generated */  
-  public SentimentAnnotation(JCas jcas, int begin, int end) {
+  public DummySentimentAnnotation(JCas jcas, int begin, int end) {
     super(jcas);
     setBegin(begin);
     setEnd(end);
@@ -65,16 +65,16 @@ public class SentimentAnnotation extends Annotation {
   /** getter for mood - gets 
    * @generated */
   public String getMood() {
-    if (SentimentAnnotation_Type.featOkTst && ((SentimentAnnotation_Type)jcasType).casFeat_mood == null)
+    if (DummySentimentAnnotation_Type.featOkTst && ((DummySentimentAnnotation_Type)jcasType).casFeat_mood == null)
       jcasType.jcas.throwFeatMissing("mood", "org.apache.solr.uima.ts.SentimentAnnotation");
-    return jcasType.ll_cas.ll_getStringValue(addr, ((SentimentAnnotation_Type)jcasType).casFeatCode_mood);}
+    return jcasType.ll_cas.ll_getStringValue(addr, ((DummySentimentAnnotation_Type)jcasType).casFeatCode_mood);}
     
   /** setter for mood - sets  
    * @generated */
   public void setMood(String v) {
-    if (SentimentAnnotation_Type.featOkTst && ((SentimentAnnotation_Type)jcasType).casFeat_mood == null)
+    if (DummySentimentAnnotation_Type.featOkTst && ((DummySentimentAnnotation_Type)jcasType).casFeat_mood == null)
       jcasType.jcas.throwFeatMissing("mood", "org.apache.solr.uima.ts.SentimentAnnotation");
-    jcasType.ll_cas.ll_setStringValue(addr, ((SentimentAnnotation_Type)jcasType).casFeatCode_mood, v);}    
+    jcasType.ll_cas.ll_setStringValue(addr, ((DummySentimentAnnotation_Type)jcasType).casFeatCode_mood, v);}
   }
 
     
