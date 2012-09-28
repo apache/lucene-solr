@@ -157,7 +157,7 @@
   </target>
   
   <target name="run-maven-build" depends="get-maven-poms" description="Runs the Maven build using automatically generated POMs">
-    <subant buildpath="." genericantfile="extra-targets.xml" target="-run-maven-build" inheritall="false" failonerror="true">
+    <subant buildpath="." antfile="extra-targets.xml" target="-run-maven-build" inheritall="false" failonerror="true">
       <propertyset>
         <propertyref prefix="maven-"/>
       </propertyset>
@@ -311,7 +311,7 @@
   </target>
   
   <target name="check-svn-working-copy" description="Checks the status of the SVN working copy">
-    <subant buildpath="." genericantfile="extra-targets.xml" target="-check-svn-working-copy" inheritall="false" failonerror="true"/>
+    <subant buildpath="." antfile="extra-targets.xml" target="-check-svn-working-copy" inheritall="false" failonerror="true"/>
   </target>
 
   <target name="run-clover" description="Runs all tests to measure coverage and generates report (pass &quot;ANT_ARGS=-Xmx1536M&quot; as environment)" depends="clean">
@@ -333,7 +333,7 @@
   </target>
 
   <target name="-generate-clover-reports">
-    <subant buildpath="." genericantfile="extra-targets.xml" target="-generate-clover-reports" inheritall="false" failonerror="true"/>
+    <subant buildpath="." antfile="extra-targets.xml" target="-generate-clover-reports" inheritall="false" failonerror="true"/>
   </target>
 
   <!-- Jenkins tasks -->
