@@ -19,7 +19,6 @@ package org.apache.lucene.spatial;
 
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.io.ShapeReadWriter;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.Document;
@@ -111,7 +110,7 @@ public class SpatialExample extends LuceneTestCase {
     //When parsing a string to a shape, the presence of a comma means it's y-x
     // order (lon, lat)
     indexWriter.addDocument(newSampleDocument(
-        4, new ShapeReadWriter(ctx).readShape("-50.7693246, 60.9289094")));
+        4, ctx.readShape("-50.7693246, 60.9289094")));
 
     indexWriter.addDocument(newSampleDocument(
         20, ctx.makePoint(0.1,0.1), ctx.makePoint(0, 0)));

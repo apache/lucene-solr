@@ -86,7 +86,7 @@ public class SpatialArgsParser {
       throw new IllegalArgumentException("missing body : " + v, null);
     }
 
-    Shape shape = new ShapeReadWriter(ctx).readShape(body);
+    Shape shape = ctx.readShape(body);
     SpatialArgs args = new SpatialArgs(op, shape);
 
     if (v.length() > (edx + 1)) {
