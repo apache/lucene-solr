@@ -28,6 +28,15 @@ New Features
   output for a single input.  UpToTwoPositiveIntsOutputs was moved
   from lucene/core to lucene/misc.  (Mike McCandless)
 
+* LUCENE-3842: New AnalyzingCompletionLookup, for doing auto-suggest
+  using an analyzer.  This can create powerful suggesters: if the analyzer
+  remove stop words then "ghost chr..." could suggest "The Ghost of
+  Christmas Past"; if SynonymFilter is used to map wifi and wireless
+  network to hotspot, then "wirele..." could suggest "wifi router";
+  token normalization likes stemmers, accent removel, etc. would allow
+  the suggester to ignore such variations. (Robert Muir, Sudarshan
+  Gaikaiwari, Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-4411: when sampling is enabled for a FacetRequest, its depth

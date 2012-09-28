@@ -118,7 +118,7 @@ public final class PositiveIntOutputs extends Outputs<Long> {
 
   private boolean valid(Long o) {
     assert o != null;
-    assert o == NO_OUTPUT || o > 0;
+    assert o == NO_OUTPUT || o > 0: "o=" + o;
     return true;
   }
 

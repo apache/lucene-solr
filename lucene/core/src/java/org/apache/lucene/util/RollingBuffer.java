@@ -112,6 +112,12 @@ public abstract class RollingBuffer<T extends RollingBuffer.Resettable> {
     return buffer[index];
   }
 
+  /** Returns the maximum position looked up, or -1 if no
+  *  position has been looked up sinc reset/init.  */
+  public int getMaxPos() {
+    return nextPos-1;
+  }
+
   public void freeBefore(int pos) {
     final int toFree = count - (nextPos - pos);
     assert toFree >= 0;

@@ -21,9 +21,13 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.analysis.CannedBinaryTokenStream; // javadocs
 
 /**
- * a binary tokenstream that lets you index a BytesRef
+ * A binary tokenstream that lets you index a single
+ * binary token (BytesRef value).
+ *
+ * @see CannedBinaryTokenStream
  */
 public final class BinaryTokenStream extends TokenStream {
   private final ByteTermAttribute bytesAtt = addAttribute(ByteTermAttribute.class);
@@ -61,7 +65,7 @@ public final class BinaryTokenStream extends TokenStream {
     public BytesRef getBytesRef() {
       return bytes;
     }
-    
+
     public void setBytesRef(BytesRef bytes) {
       this.bytes = bytes;
     }
