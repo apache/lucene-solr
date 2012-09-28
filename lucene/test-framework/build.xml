@@ -32,19 +32,13 @@
   </path>
 
   <!-- 
-      Specialize compile-core to depend on lucene-core compilation,
-      and *not* to depend on clover; clover already includes the
-      test-framework sources in each module's test instrumentation.
+      Specialize compile-core to depend on lucene-core and lucene-codecs compilation.
    -->
-  <target name="compile-core" depends="init,compile-lucene-core,compile-codecs"
-          description="Compiles test-framework classes">
-    <compile srcdir="${src.dir}" destdir="${build.dir}/classes/java">
-      <classpath refid="classpath"/>
-    </compile>
-    <copy todir="${build.dir}/classes/java">
-      <fileset dir="${src.dir}/../resources" erroronmissingdir="no"/>
-    </copy>
-  </target>
+  <target name="compile-core" depends="init,compile-lucene-core,compile-codecs,common.compile-core"
+          description="Compiles test-framework classes"/>
+
+  <!-- redefine the clover setup, because we dont want to run clover for the test-framework -->
+  <target name="-clover.setup" if="run.clover"/>
 
   <target name="javadocs-core" depends="javadocs"/>
   <target name="javadocs" depends="init,javadocs-lucene-core,javadocs-lucene-codecs">

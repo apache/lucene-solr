@@ -1138,7 +1138,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <!-- note: order here is important, the taskdef depends on test-framework
        jars so we just order it after compile-test to ensure that -->
-  <target name="test" depends="compile-test,install-junit4-taskdef,clover,validate" description="Runs unit tests">
+  <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate" description="Runs unit tests">
     <mkdir dir="${junit.output.dir}"/>
     <test-macro threadNum="${tests.jvms}" />
   </target>
@@ -1146,9 +1146,9 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <!--
    See http://issues.apache.org/jira/browse/LUCENE-721
    -->
-  <target name="clover" depends="-clover.disable,-clover.setup" description="Instrument the Unit tests using Clover. To use, specify -Drun.clover=true on the command line."/>
+  <target name="clover" depends="-clover.disable,-clover.load,-clover.classpath,-clover.setup" description="Instrument the Unit tests using Clover. To use, specify -Drun.clover=true on the command line."/>
   
-  <target name="-clover.setup" if="run.clover" unless="clover.loaded">
+  <target name="-clover.load" if="run.clover" unless="clover.loaded">
     <available file="${clover.license.path}" property="clover.license.available" />
     <fail unless="clover.license.available"><![CDATA[.
 
@@ -1173,6 +1173,18 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       inline="true" conf="master" type="jar" pathid="clover.classpath"/>
     <taskdef resource="cloverlib.xml" classpathref="clover.classpath" />
     <mkdir dir="${clover.db.dir}"/>
+    <!-- This is a hack, instead of setting "clover.loaded" to "true", we set it
+     to the stringified classpath. So it can be passed down to subants,
+     and reloaded by "-clover.classpath" task (see below): -->
+    <pathconvert property="clover.loaded" refid="clover.classpath"/>
+  </target>
+  
+  <target name="-clover.classpath" if="run.clover">
+    <!-- redefine the clover classpath refid for tests by using the hack above: -->
+    <path id="clover.classpath" path="${clover.loaded}"/>
+  </target>
+
+  <target name="-clover.setup" if="run.clover">
     <clover-setup initString="${clover.db.dir}/coverage.db" encoding="${build.encoding}">
       <fileset dir="${src.dir}" erroronmissingdir="no">
         <include name="org/apache/**/*.java" />
@@ -1181,7 +1193,6 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         <include name="org/apache/**/*.java" />
       </testsources>
     </clover-setup>
-    <property name="clover.loaded" value="true"/>
   </target>
 
   <target name="-clover.disable" unless="run.clover">
