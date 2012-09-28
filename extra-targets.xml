@@ -31,7 +31,7 @@
    This target is in a separate file, as it needs to include common-build.xml,
    but must run from top-level!
    -->
-  <target name="generate-clover-reports" depends="clover">
+  <target name="-generate-clover-reports" depends="clover">
     <fail unless="run.clover">Clover not enabled!</fail>
     <mkdir dir="${clover.report.dir}"/>
     <fileset dir="." id="clover.test.result.files">
@@ -51,7 +51,7 @@
     <echo>You can find the merged Lucene/Solr Clover report in '${clover.report.dir}'.</echo>
   </target>
 
-  <target name="run-maven-build" depends="install-maven-tasks">
+  <target name="-run-maven-build" depends="install-maven-tasks">
     <mvn xmlns="antlib:org.apache.maven.artifact.ant" pom="${maven-build-dir}/pom.xml"
       mavenVersion="${maven-version}" failonerror="true" fork="true">
       <arg value="-fae"/>
@@ -59,7 +59,7 @@
     </mvn>
   </target>
 
-  <target xmlns:ivy="antlib:org.apache.ivy.ant" name="check-svn-working-copy" depends="ivy-availability-check,ivy-fail,ivy-configure,resolve-groovy">
+  <target xmlns:ivy="antlib:org.apache.ivy.ant" name="-check-svn-working-copy" depends="ivy-availability-check,ivy-fail,ivy-configure,resolve-groovy">
     <ivy:cachepath organisation="org.tmatesoft.svnkit" module="svnkit" revision="1.7.5-v1"
       inline="true" conf="default" type="jar" transitive="true" pathid="svnkit.classpath"/>
     <script language="groovy" taskname="svn">
