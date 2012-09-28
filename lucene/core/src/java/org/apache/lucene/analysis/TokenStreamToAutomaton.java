@@ -83,6 +83,7 @@ public class TokenStreamToAutomaton {
    *  automaton where arcs are bytes from each term. */
   public Automaton toAutomaton(TokenStream in) throws IOException {
     final Automaton a = new Automaton();
+    boolean deterministic = true;
 
     final TermToBytesRefAttribute termBytesAtt = in.addAttribute(TermToBytesRefAttribute.class);
     final PositionIncrementAttribute posIncAtt = in.addAttribute(PositionIncrementAttribute.class);
@@ -132,6 +133,11 @@ public class TokenStreamToAutomaton {
           }
         }
         positions.freeBefore(pos);
+      } else {
+        // note: this isn't necessarily true. its just that we aren't surely det.
+        // we could optimize this further (e.g. buffer and sort synonyms at a position)
+        // but thats probably overkill. this is cheap and dirty
+        deterministic = false;
       }
 
       final int endPos = pos + posLengthAtt.getPositionLength();
@@ -161,7 +167,7 @@ public class TokenStreamToAutomaton {
     }
 
     //toDot(a);
-
+    a.setDeterministic(deterministic);
     return a;
   }
 

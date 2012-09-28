@@ -45,6 +45,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.SpecialOperations;
 import org.apache.lucene.util.automaton.State;
 import org.apache.lucene.util.automaton.Transition;
@@ -246,6 +247,7 @@ public class AnalyzingSuggester extends Lookup {
             // but because we are going in reverse topo sort
             // it will not add any SEP/HOLE transitions:
             state.addEpsilon(t.getDest());
+            a.setDeterministic(false);
             t = null;
           }
         } else if (t.getMin() == TokenStreamToAutomaton.HOLE) {
@@ -263,6 +265,7 @@ public class AnalyzingSuggester extends Lookup {
           // but because we are going in reverse topo sort
           // it will not add any SEP/HOLE transitions:
           state.addEpsilon(t.getDest());
+          a.setDeterministic(false);
           t = null;
         }
         if (t != null) {
@@ -504,7 +507,7 @@ public class AnalyzingSuggester extends Lookup {
 
       // TODO: we can optimize this somewhat by determinizing
       // while we convert
-      automaton = Automaton.minimize(automaton);
+      BasicOperations.determinize(automaton);
 
       final CharsRef spare = new CharsRef();
 
