@@ -60,13 +60,13 @@ import org.apache.lucene.util.fst.Util;
 
 /**
  * Suggester that first analyzes the surface form, adds the
- * analyzed from to a weighted FST, and then does the same
+ * analyzed form to a weighted FST, and then does the same
  * thing at lookup time.  This means lookup is based on the
  * analyzed form while suggestions are still the surface
  * form(s).
-
+ *
  * <p>
- * This can result in powerful suggestor functionality.  For
+ * This can result in powerful suggester functionality.  For
  * example, if you use an analyzer removing stop words, 
  * then the partial text "ghost chr..." could see the
  * suggestion "The Ghost of Christmas Past".  If

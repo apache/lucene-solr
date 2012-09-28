@@ -39,6 +39,10 @@ import org.apache.lucene.util.automaton.Transition;
  *  POS_SEP and for holes we insert HOLE.  */
 public class TokenStreamToAutomaton {
 
+  /** Sole constructor. */
+  public TokenStreamToAutomaton() {
+  }
+
   private static class Position implements RollingBuffer.Resettable {
     // Any tokens that ended at our position arrive to this state:
     State arriving;

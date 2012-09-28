@@ -59,10 +59,16 @@ public final class CannedBinaryTokenStream extends TokenStream {
   private final PositionLengthAttribute posLengthAtt = addAttribute(PositionLengthAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
+  /** An attribute extending {@link
+   *  TermToBytesRefAttribute} but exposing {@link
+   *  #setBytesRef} method. */
   public interface BinaryTermAttribute extends TermToBytesRefAttribute {
+
+    /** Set the current binary value. */
     public void setBytesRef(BytesRef bytes);
   }
 
+  /** Implementation for {@link BinaryTermAttribute}. */
   public final static class BinaryTermAttributeImpl extends AttributeImpl implements BinaryTermAttribute, TermToBytesRefAttribute {
     private final BytesRef bytes = new BytesRef();
 

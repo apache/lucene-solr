@@ -29,6 +29,10 @@ import org.apache.lucene.util.fst.FST;
 
 // TODO: move to core?  nobody else uses it yet though...
 
+/**
+ * Exposes a utility method to enumerate all paths
+ * intersecting an {@link Automaton} with an {@link FST}.
+ */
 public class FSTUtil {
 
   /** Holds a pair (automaton, fst) of states and accumulated output in the intersected machine. */
