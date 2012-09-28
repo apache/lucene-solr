@@ -62,7 +62,7 @@ public class State implements Comparable<State> {
   /**
    * Resets transition set.
    */
-  final void resetTransitions() {
+  public final void resetTransitions() {
     transitionsArray = new Transition[0];
     numTransitions = 0;
   }
@@ -165,7 +165,11 @@ public class State implements Comparable<State> {
     }
   }
   
-  void addEpsilon(State to) {
+  /** Virtually adds an epsilon transition to the target
+   *  {@code to} state.  This is implemented by copying all
+   *  transitions from {@code to} to this state, and if {@code
+   *  to} is an accept state then set accept for this state. */
+  public void addEpsilon(State to) {
     if (to.accept) accept = true;
     for (Transition t : to.getTransitions())
       addTransition(t);
