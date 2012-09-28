@@ -131,8 +131,9 @@
           depends="compile-core, compile-contrib"/>
   <target name="test" description="Validate, then run core, solrj, and contrib unit tests."
           depends="test-core, test-contrib"/>
+  <!-- "-clover.load" is *not* a useless dependency. do not remove -->
   <target name="test-core" description="Runs the core and solrj unit tests."
-          depends="test-solr-core, test-solrj"/>
+          depends="-clover.load, test-solr-core, test-solrj"/>
   <target name="pitest" description="Validate, then run core, solrj, and contrib unit tests."
           depends="pitest-core, pitest-contrib"/>
   <target name="compile-test" description="Compile unit tests."

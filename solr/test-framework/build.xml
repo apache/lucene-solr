@@ -43,6 +43,9 @@
     </compile>
   </target>
 
+  <!-- redefine the clover setup, because we dont want to run clover for the test-framework -->
+  <target name="-clover.setup" if="run.clover"/>
+
   <!-- Override common-solr.javadocs to include JUnit links -->
   <!-- and to copy the built javadocs to ${dest}/docs/api/test-framework -->
   <target name="javadocs"

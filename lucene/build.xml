@@ -51,7 +51,8 @@
     </ant>
   </target>
 
-  <target name="test" depends="test-core, test-modules, test-backwards"
+  <!-- "-clover.load" is *not* a useless dependency. do not remove -->
+  <target name="test" depends="-clover.load, test-core, test-modules, test-backwards"
           description="Runs all unit tests (core, modules and back-compat)"
   />
 
