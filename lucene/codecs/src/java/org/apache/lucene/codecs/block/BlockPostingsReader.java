@@ -72,8 +72,8 @@ final class BlockPostingsReader extends PostingsReaderBase {
                             ioContext);
       CodecUtil.checkHeader(docIn,
                             BlockPostingsWriter.DOC_CODEC,
-                            BlockPostingsWriter.VERSION_START,
-                            BlockPostingsWriter.VERSION_START);
+                            BlockPostingsWriter.VERSION_CURRENT,
+                            BlockPostingsWriter.VERSION_CURRENT);
       forUtil = new ForUtil(docIn);
 
       if (fieldInfos.hasProx()) {
@@ -81,16 +81,16 @@ final class BlockPostingsReader extends PostingsReaderBase {
                               ioContext);
         CodecUtil.checkHeader(posIn,
                               BlockPostingsWriter.POS_CODEC,
-                              BlockPostingsWriter.VERSION_START,
-                              BlockPostingsWriter.VERSION_START);
+                              BlockPostingsWriter.VERSION_CURRENT,
+                              BlockPostingsWriter.VERSION_CURRENT);
 
         if (fieldInfos.hasPayloads() || fieldInfos.hasOffsets()) {
           payIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, BlockPostingsFormat.PAY_EXTENSION),
                                 ioContext);
           CodecUtil.checkHeader(payIn,
                                 BlockPostingsWriter.PAY_CODEC,
-                                BlockPostingsWriter.VERSION_START,
-                                BlockPostingsWriter.VERSION_START);
+                                BlockPostingsWriter.VERSION_CURRENT,
+                                BlockPostingsWriter.VERSION_CURRENT);
         }
       }
 
@@ -110,8 +110,8 @@ final class BlockPostingsReader extends PostingsReaderBase {
     // Make sure we are talking to the matching postings writer
     CodecUtil.checkHeader(termsIn,
                           BlockPostingsWriter.TERMS_CODEC,
-                          BlockPostingsWriter.VERSION_START,
-                          BlockPostingsWriter.VERSION_START);
+                          BlockPostingsWriter.VERSION_CURRENT,
+                          BlockPostingsWriter.VERSION_CURRENT);
     final int indexBlockSize = termsIn.readVInt();
     if (indexBlockSize != BLOCK_SIZE) {
       throw new IllegalStateException("index-time BLOCK_SIZE (" + indexBlockSize + ") != read-time BLOCK_SIZE (" + BLOCK_SIZE + ")");
@@ -1314,7 +1314,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
           posPendingFP = skipper.getPosPointer();
           payPendingFP = skipper.getPayPointer();
           posPendingCount = skipper.getPosBufferUpto();
-          lastStartOffset = skipper.getStartOffset();
+          lastStartOffset = 0; // new document
           payloadByteUpto = skipper.getPayloadByteUpto();
         }
         nextSkipDoc = skipper.getNextSkipDoc();

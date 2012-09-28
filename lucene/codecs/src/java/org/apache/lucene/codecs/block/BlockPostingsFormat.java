@@ -202,7 +202,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *       <sup>NumSkipLevels-1</sup>, SkipLevel&gt;, SkipDatum?</li>
  *   <li>SkipLevel --&gt; &lt;SkipDatum&gt; <sup>TrimmedDocFreq/(PackedBlockSize^(Level + 1))</sup></li>
  *   <li>SkipDatum --&gt; DocSkip, DocFPSkip, &lt;PosFPSkip, PosBlockOffset, PayLength?, 
- *                        OffsetStart?, PayFPSkip?&gt;?, SkipChildLevelPointer?</li>
+ *                        PayFPSkip?&gt;?, SkipChildLevelPointer?</li>
  *   <li>PackedDocDeltaBlock, PackedFreqBlock --&gt; {@link PackedInts PackedInts}</li>
  *   <li>DocDelta, Freq, DocSkip, DocFPSkip, PosFPSkip, PosBlockOffset, PayLength, OffsetStart, PayFPSkip 
  *       --&gt; 
@@ -250,7 +250,6 @@ import org.apache.lucene.util.packed.PackedInts;
  *       equal to PosBlockOffset). Same as DocFPSkip, the file offsets are relative to the start of 
  *       current term's TermFreqs, and stored as a difference sequence.</li>
  *   <li>PayLength indicates the length of last payload.</li>
- *   <li>OffsetStart indicates the first value of last offset pair.</li>
  * </ul>
  * </dd>
  * </dl>

@@ -50,7 +50,6 @@ final class BlockSkipWriter extends MultiLevelSkipListWriter {
   private long[] lastSkipDocPointer;
   private long[] lastSkipPosPointer;
   private long[] lastSkipPayPointer;
-  private int[] lastStartOffset;
   private int[] lastPayloadByteUpto;
 
   private final IndexOutput docOut;
@@ -62,7 +61,6 @@ final class BlockSkipWriter extends MultiLevelSkipListWriter {
   private long curPosPointer;
   private long curPayPointer;
   private int curPosBufferUpto;
-  private int curStartOffset;
   private int curPayloadByteUpto;
   private boolean fieldHasPositions;
   private boolean fieldHasOffsets;
@@ -81,7 +79,6 @@ final class BlockSkipWriter extends MultiLevelSkipListWriter {
       if (payOut != null) {
         lastSkipPayPointer = new long[maxSkipLevels];
       }
-      lastStartOffset = new int[maxSkipLevels];
       lastPayloadByteUpto = new int[maxSkipLevels];
     }
   }
@@ -99,9 +96,6 @@ final class BlockSkipWriter extends MultiLevelSkipListWriter {
     Arrays.fill(lastSkipDocPointer, docOut.getFilePointer());
     if (fieldHasPositions) {
       Arrays.fill(lastSkipPosPointer, posOut.getFilePointer());
-      if (fieldHasOffsets) {
-        Arrays.fill(lastStartOffset, 0);
-      }
       if (fieldHasPayloads) {
         Arrays.fill(lastPayloadByteUpto, 0);
       }
@@ -114,14 +108,13 @@ final class BlockSkipWriter extends MultiLevelSkipListWriter {
   /**
    * Sets the values for the current skip data. 
    */
-  public void bufferSkip(int doc, int numDocs, long posFP, long payFP, int posBufferUpto, int startOffset, int payloadByteUpto) throws IOException {
+  public void bufferSkip(int doc, int numDocs, long posFP, long payFP, int posBufferUpto, int payloadByteUpto) throws IOException {
     this.curDoc = doc;
     this.curDocPointer = docOut.getFilePointer();
     this.curPosPointer = posFP;
     this.curPayPointer = payFP;
     this.curPosBufferUpto = posBufferUpto;
     this.curPayloadByteUpto = payloadByteUpto;
-    this.curStartOffset = startOffset;
     bufferSkip(numDocs);
   }
   
@@ -147,11 +140,6 @@ final class BlockSkipWriter extends MultiLevelSkipListWriter {
 
       if (fieldHasPayloads) {
         skipBuffer.writeVInt(curPayloadByteUpto);
-      }
-
-      if (fieldHasOffsets) {
-        skipBuffer.writeVInt(curStartOffset - lastStartOffset[level]);
-        lastStartOffset[level] = curStartOffset;
       }
 
       if (fieldHasOffsets || fieldHasPayloads) {

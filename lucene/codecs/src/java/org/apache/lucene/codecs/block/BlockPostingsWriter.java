@@ -65,7 +65,8 @@ final class BlockPostingsWriter extends PostingsWriterBase {
 
   // Increment version to change it:
   final static int VERSION_START = 0;
-  final static int VERSION_CURRENT = VERSION_START;
+  final static int VERSION_NO_OFFSETS_IN_SKIPDATA = 1; // LUCENE-4443
+  final static int VERSION_CURRENT = VERSION_NO_OFFSETS_IN_SKIPDATA;
 
   final IndexOutput docOut;
   final IndexOutput posOut;
@@ -101,7 +102,6 @@ final class BlockPostingsWriter extends PostingsWriterBase {
   private long lastBlockPosFP;
   private long lastBlockPayFP;
   private int lastBlockPosBufferUpto;
-  private int lastBlockStartOffset;
   private int lastBlockPayloadByteUpto;
 
   private int lastDocID;
@@ -232,7 +232,7 @@ final class BlockPostingsWriter extends PostingsWriterBase {
       // if (DEBUG) {
       //   System.out.println("  bufferSkip at writeBlock: lastDocID=" + lastBlockDocID + " docCount=" + (docCount-1));
       // }
-      skipWriter.bufferSkip(lastBlockDocID, docCount, lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockStartOffset, lastBlockPayloadByteUpto);
+      skipWriter.bufferSkip(lastBlockDocID, docCount, lastBlockPosFP, lastBlockPayFP, lastBlockPosBufferUpto, lastBlockPayloadByteUpto);
     }
 
     final int docDelta = docID - lastDocID;
@@ -337,7 +337,6 @@ final class BlockPostingsWriter extends PostingsWriterBase {
         }
         lastBlockPosFP = posOut.getFilePointer();
         lastBlockPosBufferUpto = posBufferUpto;
-        lastBlockStartOffset = lastStartOffset;
         lastBlockPayloadByteUpto = payloadByteUpto;
       }
       // if (DEBUG) {

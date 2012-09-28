@@ -58,12 +58,10 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
   private long posPointer[];
   private long payPointer[];
   private int posBufferUpto[];
-  private int startOffset[];
   private int payloadByteUpto[];
 
   private long lastPosPointer;
   private long lastPayPointer;
-  private int lastStartOffset;
   private int lastPayloadByteUpto;
   private long lastDocPointer;
   private int lastPosBufferUpto;
@@ -79,11 +77,6 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
         payloadByteUpto = new int[maxSkipLevels];
       } else {
         payloadByteUpto = null;
-      }
-      if (hasOffsets) {
-        startOffset = new int[maxSkipLevels];
-      } else {
-        startOffset = null;
       }
       if (hasOffsets || hasPayloads) {
         payPointer = new long[maxSkipLevels];
@@ -143,10 +136,6 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
     return lastPayPointer;
   }
 
-  public int getStartOffset() {
-    return lastStartOffset;
-  }
-
   public int getPayloadByteUpto() {
     return lastPayloadByteUpto;
   }
@@ -165,9 +154,6 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
     if (posPointer != null) {
       posPointer[level] = lastPosPointer;
       posBufferUpto[level] = lastPosBufferUpto;
-      if (startOffset != null) {
-        startOffset[level] = lastStartOffset;
-      }
       if (payloadByteUpto != null) {
         payloadByteUpto[level] = lastPayloadByteUpto;
       }
@@ -193,9 +179,6 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
       // }
       if (payPointer != null) {
         lastPayPointer = payPointer[level];
-      }
-      if (startOffset != null) {
-        lastStartOffset = startOffset[level];
       }
       if (payloadByteUpto != null) {
         lastPayloadByteUpto = payloadByteUpto[level];
@@ -229,10 +212,6 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
 
       if (payloadByteUpto != null) {
         payloadByteUpto[level] = skipStream.readVInt();
-      }
-
-      if (startOffset != null) {
-        startOffset[level] += skipStream.readVInt();
       }
 
       if (payPointer != null) {

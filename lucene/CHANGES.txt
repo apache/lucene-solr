@@ -33,6 +33,12 @@ Bug Fixes
 * LUCENE-4411: when sampling is enabled for a FacetRequest, its depth
   parameter is reset to the default (1), even if set otherwise.
   (Gilad Barkai via Shai Erera)
+
+Optimizations
+
+* LUCENE-4443: BlockPostingsFormat no longer writes unnecessary offsets 
+  into the skipdata. You need to reindex any indexes created with
+  this experimental codec.  (Robert Muir)
   
 ======================= Lucene 4.0.0 =======================
 
