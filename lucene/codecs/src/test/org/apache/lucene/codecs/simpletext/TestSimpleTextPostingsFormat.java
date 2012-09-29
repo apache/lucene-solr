@@ -19,10 +19,12 @@ package org.apache.lucene.codecs.simpletext;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
+import org.apache.lucene.util.LuceneTestCase.Nightly;
 
 /**
  * Tests SimpleText's postings
  */
+@Nightly // please figure out why I am so horrendously slow!
 public class TestSimpleTextPostingsFormat extends BasePostingsFormatTestCase {
   private final Codec codec = new SimpleTextCodec();
 
