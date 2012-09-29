@@ -662,7 +662,11 @@ public class _TestUtil {
   // TODO: generalize all 'test-checks-for-crazy-codecs' to
   // annotations (LUCENE-3489)
   public static String getPostingsFormat(String field) {
-    PostingsFormat p = Codec.getDefault().postingsFormat();
+    return getPostingsFormat(Codec.getDefault(), field);
+  }
+  
+  public static String getPostingsFormat(Codec codec, String field) {
+    PostingsFormat p = codec.postingsFormat();
     if (p instanceof PerFieldPostingsFormat) {
       return ((PerFieldPostingsFormat)p).getPostingsFormatForField(field).getName();
     } else {
