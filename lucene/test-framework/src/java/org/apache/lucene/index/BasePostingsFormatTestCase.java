@@ -154,6 +154,9 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
   @BeforeClass
   public static void createPostings() throws IOException {
+    maxDocID = 0;
+    totalPostings = 0;
+    totalPayloadBytes = 0;
     fields = new TreeMap<String,Map<BytesRef,List<Posting>>>();
     fieldsLive = new TreeMap<String,Map<BytesRef,List<Posting>>>();
 
