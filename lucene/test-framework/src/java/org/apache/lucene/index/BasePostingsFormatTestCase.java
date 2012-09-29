@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -174,9 +175,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
         continue;
       }
 
-      boolean fieldHasPayloads = random().nextBoolean();
-
-      fieldInfoArray[fieldUpto] = new FieldInfo(field, true, fieldUpto, false, false, fieldHasPayloads,
+      fieldInfoArray[fieldUpto] = new FieldInfo(field, true, fieldUpto, false, false, true,
                                                 IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
                                                 null, DocValues.Type.FIXED_INTS_8, null);
       fieldUpto++;
@@ -185,9 +184,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       fields.put(field, postings);
       Set<String> seenTerms = new HashSet<String>();
 
-      // TODO
-      //final int numTerms = atLeast(10);
-      final int numTerms = 4;
+      final int numTerms = atLeast(10);
       for(int termUpto=0;termUpto<numTerms;termUpto++) {
         String term = _TestUtil.randomSimpleString(random());
         if (seenTerms.contains(term)) {
@@ -196,14 +193,15 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
         seenTerms.add(term);
 
         int numDocs;
-        if (random().nextInt(10) == 3 && numBigTerms < 2) {
-          // 10% of the time make a highish freq term:
+        if (numBigTerms == 0 || (random().nextInt(10) == 3 && numBigTerms < 2)) {
+          // Make at least 1 big term, then maybe (~10%
+          // chance) make another:
           numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 50000, 70000);
           numBigTerms++;
           term = "big_" + term;
-        } else if (random().nextInt(10) == 3 && numMediumTerms < 5) {
-          // 10% of the time make a medium freq term:
-          // TODO not high enough to test level 1 skipping:
+        } else if (numMediumTerms == 0 || (random().nextInt(10) == 3 && numMediumTerms < 5)) {
+          // Make at least 1 medium term, then maybe (~10%
+          // chance) make up to 4 more:
           numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 3000, 6000);
           numMediumTerms++;
           term = "medium_" + term;
@@ -225,11 +223,9 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
         // TODO: more realistic to inversely tie this to numDocs:
         int maxDocSpacing = _TestUtil.nextInt(random(), 1, 100);
 
-        // 10% of the time create big payloads:
         int payloadSize;
-        if (!fieldHasPayloads) {
-          payloadSize = 0;
-        } else if (random().nextInt(10) == 7) {
+        if (random().nextInt(10) == 7) {
+          // 10% of the time create big payloads:
           payloadSize = random().nextInt(50);
         } else {
           payloadSize = random().nextInt(10);
@@ -353,7 +349,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
   // maxAllowed = the "highest" we can index, but we will still
   // randomly index at lower IndexOption
-  private FieldsProducer buildIndex(Directory dir, IndexOptions maxAllowed, boolean allowPayloads) throws IOException {
+  private FieldsProducer buildIndex(Directory dir, IndexOptions maxAllowed, boolean allowPayloads, boolean alwaysTestMax) throws IOException {
     Codec codec = getCodec();
     SegmentInfo segmentInfo = new SegmentInfo(dir, Constants.LUCENE_MAIN_VERSION, "_0", 1+maxDocID, false, codec, null, null);
 
@@ -380,7 +376,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     
       // Randomly picked the IndexOptions to index this
       // field with:
-      IndexOptions indexOptions = IndexOptions.values()[random().nextInt(1+fieldMaxIndexOption)];
+      IndexOptions indexOptions = IndexOptions.values()[alwaysTestMax ? fieldMaxIndexOption : random().nextInt(1+fieldMaxIndexOption)];
       boolean doPayloads = indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 && allowPayloads;
 
       newFieldInfoArray[fieldUpto] = new FieldInfo(oldFieldInfo.name,
@@ -501,7 +497,8 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
                           // Maximum options (docs/freqs/positions/offsets) to test:
                           IndexOptions maxIndexOptions,
 
-                          EnumSet<Option> options) throws IOException {
+                          EnumSet<Option> options,
+                          boolean alwaysTestMax) throws IOException {
         
     if (VERBOSE) {
       System.out.println("  verifyEnum: options=" + options + " maxIndexOptions=" + maxIndexOptions);
@@ -533,17 +530,17 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     
     boolean allowFreqs = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0 &&
       maxIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
-    boolean doCheckFreqs = allowFreqs && random().nextInt(3) <= 2;
+    boolean doCheckFreqs = allowFreqs && (alwaysTestMax || random().nextInt(3) <= 2);
 
     boolean allowPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 &&
       maxIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
-    boolean doCheckPositions = allowPositions && random().nextInt(3) <= 2;
+    boolean doCheckPositions = allowPositions && (alwaysTestMax || random().nextInt(3) <= 2);
 
     boolean allowOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0 &&
       maxIndexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
-    boolean doCheckOffsets = allowOffsets && random().nextInt(3) <= 2;
+    boolean doCheckOffsets = allowOffsets && (alwaysTestMax || random().nextInt(3) <= 2);
 
-    boolean doCheckPayloads = options.contains(Option.PAYLOADS) && allowPositions && fieldInfo.hasPayloads() && random().nextInt(3) <= 2;
+    boolean doCheckPayloads = options.contains(Option.PAYLOADS) && allowPositions && fieldInfo.hasPayloads() && (alwaysTestMax || random().nextInt(3) <= 2);
 
     DocsEnum prevDocsEnum = null;
 
@@ -559,10 +556,10 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
         }
 
         int flags = 0;
-        if (random().nextBoolean()) {
+        if (alwaysTestMax || random().nextBoolean()) {
           flags |= DocsAndPositionsEnum.FLAG_OFFSETS;
         }
-        if (random().nextBoolean()) {
+        if (alwaysTestMax || random().nextBoolean()) {
           flags |= DocsAndPositionsEnum.FLAG_PAYLOADS;
         }
 
@@ -590,10 +587,10 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       }
 
       int flags = 0;
-      if (doCheckOffsets || random().nextInt(3) == 1) {
+      if (alwaysTestMax || doCheckOffsets || random().nextInt(3) == 1) {
         flags |= DocsAndPositionsEnum.FLAG_OFFSETS;
       }
-      if (doCheckPayloads|| random().nextInt(3) == 1) {
+      if (alwaysTestMax || doCheckPayloads|| random().nextInt(3) == 1) {
         flags |= DocsAndPositionsEnum.FLAG_PAYLOADS;
       }
 
@@ -622,7 +619,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
     // 10% of the time don't consume all docs:
     int stopAt;
-    if (options.contains(Option.PARTIAL_DOC_CONSUME) && expected.size() > 1 && random().nextInt(10) == 7) {
+    if (!alwaysTestMax && options.contains(Option.PARTIAL_DOC_CONSUME) && expected.size() > 1 && random().nextInt(10) == 7) {
       stopAt = random().nextInt(expected.size()-1);
       if (VERBOSE) {
         System.out.println("  will not consume all docs (" + stopAt + " vs " + expected.size() + ")");
@@ -634,7 +631,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       }
     }
 
-    double skipChance = random().nextDouble();
+    double skipChance = alwaysTestMax ? 0.5 : random().nextDouble();
     int numSkips = expected.size() < 3 ? 1 : _TestUtil.nextInt(random(), 1, Math.min(20, expected.size()/3));
     int skipInc = expected.size()/numSkips;
     int skipDocInc = (1+maxDocID)/numSkips;
@@ -642,9 +639,9 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     // Sometimes do 100% skipping:
     boolean doAllSkipping = options.contains(Option.SKIPPING) && random().nextInt(7) == 1;
 
-    double freqAskChance = random().nextDouble();
-    double payloadCheckChance = random().nextDouble();
-    double offsetCheckChance = random().nextDouble();
+    double freqAskChance = alwaysTestMax ? 1.0 : random().nextDouble();
+    double payloadCheckChance = alwaysTestMax ? 1.0 : random().nextDouble();
+    double offsetCheckChance = alwaysTestMax ? 1.0 : random().nextDouble();
 
     if (VERBOSE) {
       if (options.contains(Option.SKIPPING)) {
@@ -732,7 +729,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       if (doCheckPositions) {
         int freq = docsEnum.freq();
         int numPosToConsume;
-        if (options.contains(Option.PARTIAL_POS_CONSUME) && random().nextInt(5) == 1) {
+        if (!alwaysTestMax && options.contains(Option.PARTIAL_POS_CONSUME) && random().nextInt(5) == 1) {
           numPosToConsume = random().nextInt(freq);
         } else {
           numPosToConsume = freq;
@@ -789,7 +786,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
                 System.out.println("      skip check offsets");
               }
             }
-          } else {
+          } else if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) < 0) {
             if (VERBOSE) {
               System.out.println("      now check offsets are -1");
             }
@@ -801,7 +798,9 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     }
   }
 
-  private void testTerms(final Fields fieldsSource, final EnumSet<Option> options, final IndexOptions maxIndexOptions) throws Exception {
+  private void testTerms(final Fields fieldsSource, final EnumSet<Option> options,
+                         final IndexOptions maxIndexOptions,
+                         final boolean alwaysTestMax) throws Exception {
 
     if (options.contains(Option.THREADS)) {
       int numThreads = _TestUtil.nextInt(random(), 2, 5);
@@ -811,7 +810,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
             @Override
             public void run() {
               try {
-                testTermsOneThread(fieldsSource, options, maxIndexOptions);
+                testTermsOneThread(fieldsSource, options, maxIndexOptions, alwaysTestMax);
               } catch (Throwable t) {
                 throw new RuntimeException(t);
               }
@@ -823,11 +822,11 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
         threads[threadUpto].join();
       }
     } else {
-      testTermsOneThread(fieldsSource, options, maxIndexOptions);
+      testTermsOneThread(fieldsSource, options, maxIndexOptions, alwaysTestMax);
     }
   }
 
-  private void testTermsOneThread(Fields fieldsSource, EnumSet<Option> options, IndexOptions maxIndexOptions) throws IOException {
+  private void testTermsOneThread(Fields fieldsSource, EnumSet<Option> options, IndexOptions maxIndexOptions, boolean alwaysTestMax) throws IOException {
 
     ThreadState threadState = new ThreadState();
 
@@ -885,7 +884,8 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
                  fieldAndTerm.term,
                  termsEnum,
                  maxIndexOptions,
-                 options);
+                 options,
+                 alwaysTestMax);
 
       // Sometimes save term state after pulling the enum:
       if (options.contains(Option.TERM_STATE) && !useTermState && !savedTermState && random().nextInt(5) == 1) {
@@ -897,7 +897,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
       // 10% of the time make sure you can pull another enum
       // from the same term:
-      if (random().nextInt(10) == 7) {
+      if (alwaysTestMax || random().nextInt(10) == 7) {
         // Try same term again
         if (VERBOSE) {
           System.out.println("TEST: try enum again on same term");
@@ -908,7 +908,8 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
                    fieldAndTerm.term,
                    termsEnum,
                    maxIndexOptions,
-                   options);
+                   options,
+                   alwaysTestMax);
       }
     }
   }
@@ -933,33 +934,78 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     }
   }
 
-  public void test() throws Exception {
-    Directory dir = newFSDirectory(_TestUtil.getTempDir("testPostingsFormat"));
+  /** Indexes all fields/terms at the specified
+   *  IndexOptions, and fully tests at that IndexOptions. */
+  private void testFull(IndexOptions options, boolean withPayloads) throws Exception {
+    File path = _TestUtil.getTempDir("testPostingsFormat.testExact");
+    Directory dir = newFSDirectory(path);
 
-    boolean indexPayloads = random().nextBoolean();
     // TODO test thread safety of buildIndex too
-
-    FieldsProducer fieldsProducer = buildIndex(dir, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, indexPayloads);
+    FieldsProducer fieldsProducer = buildIndex(dir, options, withPayloads, true);
 
     testFields(fieldsProducer);
-    //testTerms(fieldsProducer, EnumSet.noneOf(Option.class), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-    //testTerms(fieldsProducer, EnumSet.of(Option.LIVE_DOCS), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-    //testTerms(fieldsProducer, EnumSet.of(Option.TERM_STATE, Option.LIVE_DOCS, Option.PARTIAL_DOC_CONSUME, Option.PARTIAL_POS_CONSUME), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
 
-    //testTerms(fieldsProducer, EnumSet.of(Option.SKIPPING), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-    //testTerms(fieldsProducer, EnumSet.of(Option.THREADS, Option.TERM_STATE, Option.SKIPPING, Option.PARTIAL_DOC_CONSUME, Option.PARTIAL_POS_CONSUME), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-    //testTerms(fieldsProducer, EnumSet.of(Option.TERM_STATE, Option.SKIPPING, Option.PARTIAL_DOC_CONSUME, Option.PARTIAL_POS_CONSUME), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    //testTerms(fieldsProducer, EnumSet.of(Option.TERM_STATE, Option.PAYLOADS, Option.PARTIAL_DOC_CONSUME, Option.PARTIAL_POS_CONSUME, Option.SKIPPING), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    IndexOptions[] allOptions = IndexOptions.values();
+    int maxIndexOption = Arrays.asList(allOptions).indexOf(options);
 
-    // NOTE: you can also test "weaker" index options than
-    // you indexed with:
-    testTerms(fieldsProducer, EnumSet.allOf(Option.class), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    //testTerms(fieldsProducer, EnumSet.complementOf(EnumSet.of(Option.THREADS)), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    for(int i=0;i<=maxIndexOption;i++) {
+      testTerms(fieldsProducer, EnumSet.allOf(Option.class), allOptions[i], true);
+      if (withPayloads) {
+        // If we indexed w/ payloads, also test enums w/o accessing payloads:
+        testTerms(fieldsProducer, EnumSet.complementOf(EnumSet.of(Option.PAYLOADS)), allOptions[i], true);
+      }
+    }
 
     fieldsProducer.close();
     dir.close();
+    _TestUtil.rmDir(path);
+  }
+
+  public void testDocsOnly() throws Exception {
+    testFull(IndexOptions.DOCS_ONLY, false);
+  }
+
+  public void testDocsAndFreqs() throws Exception {
+    testFull(IndexOptions.DOCS_AND_FREQS, false);
+  }
+
+  public void testDocsAndFreqsAndPositions() throws Exception {
+    testFull(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, false);
+  }
+
+  public void testDocsAndFreqsAndPositionsAndPayloads() throws Exception {
+    testFull(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS, true);
+  }
+
+  public void testDocsAndFreqsAndPositionsAndOffsets() throws Exception {
+    testFull(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, false);
+  }
+
+  public void testDocsAndFreqsAndPositionsAndOffsetsAndPayloads() throws Exception {
+    testFull(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, true);
+  }
+
+  public void testRandom() throws Exception {
+
+    int iters = atLeast(10);
+
+    for(int iter=0;iter<iters;iter++) {
+      File path = _TestUtil.getTempDir("testPostingsFormat");
+      Directory dir = newFSDirectory(path);
+
+      boolean indexPayloads = random().nextBoolean();
+      // TODO test thread safety of buildIndex too
+      FieldsProducer fieldsProducer = buildIndex(dir, IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, indexPayloads, false);
+
+      testFields(fieldsProducer);
+
+      // NOTE: you can also test "weaker" index options than
+      // you indexed with:
+      testTerms(fieldsProducer, EnumSet.allOf(Option.class), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, false);
+
+      fieldsProducer.close();
+      dir.close();
+      _TestUtil.rmDir(path);
+    }
   }
 }
-
-// TODO test that start/endOffset return -1 if field has
-// no offsets
