@@ -202,13 +202,17 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
         if (numBigTerms == 0 || (random().nextInt(10) == 3 && numBigTerms < 2)) {
           // Make at least 1 big term, then maybe (~10%
           // chance) make another:
-          numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 50000, 70000);
+          // TODO: put multplier back, if we can fix OOMEs:
+          //numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 50000, 70000);
+          numDocs = _TestUtil.nextInt(random(), 50000, 70000);
           numBigTerms++;
           term = "big_" + term;
         } else if (numMediumTerms == 0 || (random().nextInt(10) == 3 && numMediumTerms < 5)) {
           // Make at least 1 medium term, then maybe (~10%
           // chance) make up to 4 more:
-          numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 3000, 6000);
+          // TODO: put multplier back, if we can fix OOMEs:
+          //numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 3000, 6000);
+          numDocs = _TestUtil.nextInt(random(), 3000, 6000);
           numMediumTerms++;
           term = "medium_" + term;
         } else if (random().nextBoolean()) {
