@@ -170,8 +170,6 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     int numMediumTerms = 0;
     int numBigTerms = 0;
     int numManyPositions = 0;
-    totalPostings = 0;
-    totalPayloadBytes = 0;
     while (fieldUpto < numFields) {
       String field = _TestUtil.randomSimpleString(random());
       if (fields.containsKey(field)) {
@@ -202,17 +200,13 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
         if (numBigTerms == 0 || (random().nextInt(10) == 3 && numBigTerms < 2)) {
           // Make at least 1 big term, then maybe (~10%
           // chance) make another:
-          // TODO: put multplier back, if we can fix OOMEs:
-          //numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 50000, 70000);
-          numDocs = _TestUtil.nextInt(random(), 50000, 70000);
+          numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 50000, 70000);
           numBigTerms++;
           term = "big_" + term;
         } else if (numMediumTerms == 0 || (random().nextInt(10) == 3 && numMediumTerms < 5)) {
           // Make at least 1 medium term, then maybe (~10%
           // chance) make up to 4 more:
-          // TODO: put multplier back, if we can fix OOMEs:
-          //numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 3000, 6000);
-          numDocs = _TestUtil.nextInt(random(), 3000, 6000);
+          numDocs = RANDOM_MULTIPLIER * _TestUtil.nextInt(random(), 3000, 6000);
           numMediumTerms++;
           term = "medium_" + term;
         } else if (random().nextBoolean()) {
@@ -260,7 +254,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
           termPostings.add(posting);
 
           int freq;
-          if (random().nextInt(30) == 17 && numManyPositions < 10) {
+          if (random().nextInt(30) == 17 && numManyPositions < 5) {
             freq = _TestUtil.nextInt(random(), 1, 1000);
             numManyPositions++;
           } else {
@@ -409,7 +403,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
     SegmentWriteState writeState = new SegmentWriteState(null, dir,
                                                          segmentInfo, newFieldInfos,
-                                                         32, null, new IOContext(new FlushInfo(maxDocID, bytes)));
+                                                         32, null, new IOContext(new FlushInfo(1+maxDocID, bytes)));
     FieldsConsumer fieldsConsumer = codec.postingsFormat().fieldsConsumer(writeState);
 
     for(Map.Entry<String,Map<BytesRef,List<Posting>>> fieldEnt : fields.entrySet()) {
@@ -812,7 +806,8 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
                          final IndexOptions maxIndexOptions,
                          final boolean alwaysTestMax) throws Exception {
 
-    if (options.contains(Option.THREADS)) {
+    // TODO: turn threads back on!
+    if (false && options.contains(Option.THREADS)) {
       int numThreads = _TestUtil.nextInt(random(), 2, 5);
       Thread[] threads = new Thread[numThreads];
       for(int threadUpto=0;threadUpto<numThreads;threadUpto++) {
