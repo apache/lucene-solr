@@ -224,6 +224,15 @@ public class AnalyzingSuggester extends Lookup {
     return fst == null ? 0 : fst.sizeInBytes();
   }
 
+  private void copyDestTransitions(State from, State to, List<Transition> transitions) {
+    if (to.isAccept()) {
+      from.setAccept(true);
+    }
+    for(Transition t : to.getTransitions()) {
+      transitions.add(t);
+    }
+  }
+
   // Replaces SEP with epsilon or remaps them if
   // we were asked to preserve them:
   private void replaceSep(Automaton a) {
@@ -240,15 +249,10 @@ public class AnalyzingSuggester extends Lookup {
         if (t.getMin() == TokenStreamToAutomaton.POS_SEP) {
           if (preserveSep) {
             // Remap to SEP_LABEL:
-            t = new Transition(SEP_LABEL, t.getDest());
+            newTransitions.add(new Transition(SEP_LABEL, t.getDest()));
           } else {
-            // NOTE: sort of weird because this will grow
-            // the transition array we are iterating over,
-            // but because we are going in reverse topo sort
-            // it will not add any SEP/HOLE transitions:
-            state.addEpsilon(t.getDest());
+            copyDestTransitions(state, t.getDest(), newTransitions);
             a.setDeterministic(false);
-            t = null;
           }
         } else if (t.getMin() == TokenStreamToAutomaton.HOLE) {
 
@@ -259,20 +263,12 @@ public class AnalyzingSuggester extends Lookup {
           // that's somehow a problem we can always map HOLE
           // to a dedicated byte (and escape it in the
           // input).
-
-          // NOTE: sort of weird because this will grow
-          // the transition array we are iterating over,
-          // but because we are going in reverse topo sort
-          // it will not add any SEP/HOLE transitions:
-          state.addEpsilon(t.getDest());
+          copyDestTransitions(state, t.getDest(), newTransitions);
           a.setDeterministic(false);
-          t = null;
-        }
-        if (t != null) {
+        } else {
           newTransitions.add(t);
         }
       }
-      state.resetTransitions();
       state.setTransitions(newTransitions.toArray(new Transition[newTransitions.size()]));
     }
   }
