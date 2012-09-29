@@ -589,14 +589,14 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
 
   if project == 'lucene':
     if LUCENE_NOTICE is None:
-      LUCENE_NOTICE = open('%s/NOTICE.txt' % unpackPath).read()
+      LUCENE_NOTICE = open('%s/NOTICE.txt' % unpackPath, encoding='UTF-8').read()
     if LUCENE_LICENSE is None:
-      LUCENE_LICENSE = open('%s/LICENSE.txt' % unpackPath).read()
+      LUCENE_LICENSE = open('%s/LICENSE.txt' % unpackPath, encoding='UTF-8').read()
   else:
     if SOLR_NOTICE is None:
-      SOLR_NOTICE = open('%s/NOTICE.txt' % unpackPath).read()
+      SOLR_NOTICE = open('%s/NOTICE.txt' % unpackPath, encoding='UTF-8').read()
     if SOLR_LICENSE is None:
-      SOLR_LICENSE = open('%s/LICENSE.txt' % unpackPath).read()
+      SOLR_LICENSE = open('%s/LICENSE.txt' % unpackPath, encoding='UTF-8').read()
 
   if not isSrc:
     # TODO: we should add verifyModule/verifySubmodule (e.g. analysis) here and recurse through
