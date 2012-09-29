@@ -226,9 +226,9 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
         int payloadSize;
         if (random().nextInt(10) == 7) {
           // 10% of the time create big payloads:
-          payloadSize = random().nextInt(50);
+          payloadSize = 1 + random().nextInt(3);
         } else {
-          payloadSize = random().nextInt(10);
+          payloadSize = 1 + random().nextInt(1);
         }
 
         boolean fixedPayloads = random().nextBoolean();
