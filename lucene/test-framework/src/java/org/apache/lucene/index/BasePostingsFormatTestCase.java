@@ -135,10 +135,10 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
   }
 
   // Holds all postings:
-  private static Map<String,Map<BytesRef,List<Posting>>> fields = new TreeMap<String,Map<BytesRef,List<Posting>>>();
+  private static Map<String,Map<BytesRef,List<Posting>>> fields;
 
   // Holds only live doc postings:
-  private static Map<String,Map<BytesRef,List<Posting>>> fieldsLive = new TreeMap<String,Map<BytesRef,List<Posting>>>();
+  private static Map<String,Map<BytesRef,List<Posting>>> fieldsLive;
 
   private static FieldInfos fieldInfos;
 
@@ -153,6 +153,8 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
 
   @BeforeClass
   public static void createPostings() throws IOException {
+    fields = new TreeMap<String,Map<BytesRef,List<Posting>>>();
+    fieldsLive = new TreeMap<String,Map<BytesRef,List<Posting>>>();
 
     final int numFields = _TestUtil.nextInt(random(), 1, 5);
     if (VERBOSE) {
@@ -368,7 +370,7 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     for(int fieldUpto=0;fieldUpto<fields.size();fieldUpto++) {
       FieldInfo oldFieldInfo = fieldInfos.fieldInfo(fieldUpto);
 
-      String pf = _TestUtil.getPostingsFormat(oldFieldInfo.name);
+      String pf = _TestUtil.getPostingsFormat(codec, oldFieldInfo.name);
       int fieldMaxIndexOption;
       if (doesntSupportOffsets.contains(pf)) {
         fieldMaxIndexOption = Math.min(maxIndexOptionNoOffsets, maxIndexOption);
