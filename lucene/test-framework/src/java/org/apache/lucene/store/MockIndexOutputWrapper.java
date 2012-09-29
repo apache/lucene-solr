@@ -78,7 +78,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
     long freeSpace = dir.maxSize == 0 ? 0 : dir.maxSize - dir.sizeInBytes();
     long realUsage = 0;
 
-    if (dir.rateLimiter != null && len >= 10) {
+    if (dir.rateLimiter != null && len >= 1000) {
       dir.rateLimiter.pause(len);
     }
 
