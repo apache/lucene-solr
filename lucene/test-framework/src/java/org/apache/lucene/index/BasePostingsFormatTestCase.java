@@ -184,7 +184,10 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       fields.put(field, postings);
       Set<String> seenTerms = new HashSet<String>();
 
-      final int numTerms = atLeast(10);
+      // TODO:
+      //final int numTerms = atLeast(10);
+      final int numTerms = 4;
+
       for(int termUpto=0;termUpto<numTerms;termUpto++) {
         String term = _TestUtil.randomSimpleString(random());
         if (seenTerms.contains(term)) {
