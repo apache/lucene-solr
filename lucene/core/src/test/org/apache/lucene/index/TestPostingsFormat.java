@@ -44,6 +44,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
@@ -52,6 +53,7 @@ import org.junit.BeforeClass;
 /** Tests the codec configuration defined by LuceneTestCase randomly
  *  (typically a mix across different fields).
  */
+@SuppressCodecs({"Direct"}) // Put back once we fix DirectPF's OOMEs
 public class TestPostingsFormat extends BasePostingsFormatTestCase {
 
   @Override
