@@ -126,8 +126,23 @@ public class RandomIndexWriter implements Closeable {
     // any forced merges:
     doRandomForceMerge = r.nextBoolean();
   } 
+  
+  private boolean addDocValuesFields = true;
+  
+  /**
+   * set to false if you don't want RandomIndexWriter
+   * adding docvalues fields.
+   */
+  public void setAddDocValuesFields(boolean v) {
+    addDocValuesFields = v;
+    switchDoDocValues();
+  }
 
   private void switchDoDocValues() {
+    if (addDocValuesFields == false) {
+      doDocValues = false;
+      return;
+    }
     // randomly enable / disable docValues 
     doDocValues = LuceneTestCase.rarely(r);
     if (LuceneTestCase.VERBOSE) {
