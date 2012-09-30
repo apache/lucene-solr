@@ -802,25 +802,45 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     }
   }
 
+  private static class TestThread extends Thread {
+    private Fields fieldsSource;
+    private EnumSet<Option> options;
+    private IndexOptions maxIndexOptions;
+    private boolean alwaysTestMax;
+    private BasePostingsFormatTestCase testCase;
+
+    public TestThread(BasePostingsFormatTestCase testCase, Fields fieldsSource, EnumSet<Option> options, IndexOptions maxIndexOptions, boolean alwaysTestMax) {
+      this.fieldsSource = fieldsSource;
+      this.options = options;
+      this.maxIndexOptions = maxIndexOptions;
+      this.alwaysTestMax = alwaysTestMax;
+      this.testCase = testCase;
+    }
+
+    @Override
+    public void run() {
+      try {
+        try {
+          testCase.testTermsOneThread(fieldsSource, options, maxIndexOptions, alwaysTestMax);
+        } catch (Throwable t) {
+          throw new RuntimeException(t);
+        }
+      } finally {
+        fieldsSource = null;
+        testCase = null;
+      }
+    }
+  }
+
   private void testTerms(final Fields fieldsSource, final EnumSet<Option> options,
                          final IndexOptions maxIndexOptions,
                          final boolean alwaysTestMax) throws Exception {
 
-    // TODO: turn threads back on!
-    if (false && options.contains(Option.THREADS)) {
+    if (options.contains(Option.THREADS)) {
       int numThreads = _TestUtil.nextInt(random(), 2, 5);
       Thread[] threads = new Thread[numThreads];
       for(int threadUpto=0;threadUpto<numThreads;threadUpto++) {
-        threads[threadUpto] = new Thread() {
-            @Override
-            public void run() {
-              try {
-                testTermsOneThread(fieldsSource, options, maxIndexOptions, alwaysTestMax);
-              } catch (Throwable t) {
-                throw new RuntimeException(t);
-              }
-            }
-          };
+        threads[threadUpto] = new TestThread(this, fieldsSource, options, maxIndexOptions, alwaysTestMax);
         threads[threadUpto].start();
       }
       for(int threadUpto=0;threadUpto<numThreads;threadUpto++) {
@@ -1009,6 +1029,8 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
       testTerms(fieldsProducer, EnumSet.allOf(Option.class), IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, false);
 
       fieldsProducer.close();
+      fieldsProducer = null;
+
       dir.close();
       _TestUtil.rmDir(path);
     }
