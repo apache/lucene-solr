@@ -96,7 +96,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   public DirectUpdateHandler2(SolrCore core) {
     super(core);
    
-    solrCoreState = new DefaultSolrCoreState(core.getDirectoryFactory());
+    solrCoreState = core.getSolrCoreState();
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
         .getUpdateHandlerInfo();
@@ -111,13 +111,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   
   public DirectUpdateHandler2(SolrCore core, UpdateHandler updateHandler) {
     super(core);
-    if (updateHandler instanceof DirectUpdateHandler2) {
-      this.solrCoreState = ((DirectUpdateHandler2) updateHandler).solrCoreState;
-    } else {
-      // the impl has changed, so we cannot use the old state - decref it
-      updateHandler.decref();
-      solrCoreState = new DefaultSolrCoreState(core.getDirectoryFactory());
-    }
+    solrCoreState = core.getSolrCoreState();
     
     UpdateHandlerInfo updateHandlerInfo = core.getSolrConfig()
         .getUpdateHandlerInfo();
@@ -658,8 +652,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     softCommitTracker.close();
 
     numDocsPending.set(0);
-
-    solrCoreState.decref(this);
   }
 
 
@@ -815,20 +807,6 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   @Override
   public SolrCoreState getSolrCoreState() {
     return solrCoreState;
-  }
-
-  @Override
-  public void decref() {
-    try {
-      solrCoreState.decref(this);
-    } catch (IOException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "", e);
-    }
-  }
-
-  @Override
-  public void incref() {
-    solrCoreState.incref();
   }
 
   // allow access for tests

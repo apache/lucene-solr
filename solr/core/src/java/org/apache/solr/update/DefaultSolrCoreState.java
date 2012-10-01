@@ -39,7 +39,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   // protects pauseWriter and writerFree
   private final Object writerPauseLock = new Object();
   
-  private int refCnt = 1;
   private SolrIndexWriter indexWriter = null;
   private DirectoryFactory directoryFactory;
 
@@ -54,6 +53,21 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   
   public DefaultSolrCoreState(DirectoryFactory directoryFactory) {
     this.directoryFactory = directoryFactory;
+  }
+  
+  private synchronized void closeIndexWriter(IndexWriterCloser closer) {
+    try {
+      log.info("SolrCoreState ref count has reached 0 - closing IndexWriter");
+      if (closer != null) {
+        log.info("closing IndexWriter with IndexWriterCloser");
+        closer.closeWriter(indexWriter);
+      } else if (indexWriter != null) {
+        log.info("closing IndexWriter...");
+        indexWriter.close();
+      }
+    } catch (Throwable t) {
+      log.error("Error during shutdown of writer.", t);
+    } 
   }
   
   @Override
@@ -76,21 +90,25 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       if (indexWriter == null) {
         indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", false);
       }
-      if (refCntWriter == null) {
-        refCntWriter = new RefCounted<IndexWriter>(indexWriter) {
-          @Override
-          public void close() {
-            synchronized (writerPauseLock) {
-              writerFree = true;
-              writerPauseLock.notifyAll();
-            }
-          }
-        };
-      }
+      initRefCntWriter();
       writerFree = false;
       writerPauseLock.notifyAll();
       refCntWriter.incref();
       return refCntWriter;
+    }
+  }
+
+  private void initRefCntWriter() {
+    if (refCntWriter == null) {
+      refCntWriter = new RefCounted<IndexWriter>(indexWriter) {
+        @Override
+        public void close() {
+          synchronized (writerPauseLock) {
+            writerFree = true;
+            writerPauseLock.notifyAll();
+          }
+        }
+      };
     }
   }
 
@@ -140,46 +158,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         writerPauseLock.notifyAll();
       }
     }
-  }
-
-  @Override
-  public void decref(IndexWriterCloser closer) {
-    synchronized (this) {
-      refCnt--;
-      if (refCnt == 0) {
-        try {
-          log.info("SolrCoreState ref count has reached 0 - closing IndexWriter");
-          if (closer != null) {
-            closer.closeWriter(indexWriter);
-          } else if (indexWriter != null) {
-            indexWriter.close();
-          }
-        } catch (Throwable t) {          
-          log.error("Error during shutdown of writer.", t);
-        }
-        try {
-          directoryFactory.close();
-        } catch (Throwable t) {
-          log.error("Error during shutdown of directory factory.", t);
-        }
-        try {
-          log.info("Closing SolrCoreState - canceling any ongoing recovery");
-          cancelRecovery();
-        } catch (Throwable t) {
-          log.error("Error cancelling recovery", t);
-        }
-
-        closed = true;
-      }
-    }
-  }
-
-  @Override
-  public synchronized void incref() {
-    if (refCnt == 0) {
-      throw new IllegalStateException("IndexWriter has been closed");
-    }
-    refCnt++;
   }
 
   @Override
@@ -268,6 +246,13 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   @Override
   public void failed() {
     recoveryRunning = false;
+  }
+
+  @Override
+  public synchronized void close(IndexWriterCloser closer) {
+    closed = true;
+    cancelRecovery();
+    closeIndexWriter(closer);
   }
   
 }

@@ -62,10 +62,13 @@ import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheMBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.update.DefaultSolrCoreState;
 import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.VersionInfo;
+import org.apache.solr.update.SolrCoreState.IndexWriterCloser;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.LogUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
@@ -140,6 +143,9 @@ public final class SolrCore implements SolrInfoMBean {
   private final IndexSchema schema;
   private final String dataDir;
   private final UpdateHandler updateHandler;
+  private final SolrCoreState solrCoreState;
+  private int solrCoreStateRefCnt = 1;
+  
   private final long startTime;
   private final RequestHandlers reqHandlers;
   private final Map<String,SearchComponent> searchComponents;
@@ -369,7 +375,8 @@ public final class SolrCore implements SolrInfoMBean {
     IndexSchema schema = new IndexSchema(config,
         getSchema().getResourceName(), null);
     
-    updateHandler.incref();
+    increfSolrCoreState();
+    
     SolrCore core = new SolrCore(getName(), getDataDir(), config,
         schema, coreDescriptor, updateHandler, prev);
     return core;
@@ -637,8 +644,10 @@ public final class SolrCore implements SolrInfoMBean {
     
     if (updateHandler == null) {
       initDirectoryFactory();
+      solrCoreState = new DefaultSolrCoreState(getDirectoryFactory());
     } else {
-      directoryFactory = updateHandler.getSolrCoreState().getDirectoryFactory();
+      solrCoreState = updateHandler.getSolrCoreState();
+      directoryFactory = solrCoreState.getDirectoryFactory();
       this.isReloaded = true;
     }
     
@@ -790,6 +799,36 @@ public final class SolrCore implements SolrInfoMBean {
     map.put("", def);
     return map;
   }
+   
+  public SolrCoreState getSolrCoreState() {
+    return solrCoreState;
+  }  
+  
+  private void increfSolrCoreState() {
+    synchronized (solrCoreState) {
+      if (solrCoreStateRefCnt == 0) {
+        throw new IllegalStateException("IndexWriter has been closed");
+      }
+      solrCoreStateRefCnt++;
+    }
+  }
+  
+  private void decrefSolrCoreState(IndexWriterCloser closer) {
+    synchronized (solrCoreState) {
+      
+      solrCoreStateRefCnt--;
+      if (solrCoreStateRefCnt == 0) {
+
+        try {
+          log.info("Closing SolrCoreState");
+          solrCoreState.close(closer);
+        } catch (Throwable t) {
+          log.error("Error closing SolrCoreState", t);
+        }
+        
+      }
+    }
+  }
 
   /**
    * @return an update processor registered to the given name.  Throw an exception if this chain is undefined
@@ -865,6 +904,21 @@ public final class SolrCore implements SolrInfoMBean {
     }
 
     try {
+      if (null != updateHandler) {
+        updateHandler.close();
+      }
+    } catch (Throwable e) {
+      SolrException.log(log,e);
+    }
+    
+    
+    if (updateHandler instanceof IndexWriterCloser) {
+      decrefSolrCoreState((IndexWriterCloser)updateHandler);
+    } else {
+      decrefSolrCoreState(null);
+    }
+    
+    try {
       searcherExecutor.shutdown();
       if (!searcherExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
         log.error("Timeout waiting for searchExecutor to terminate");
@@ -893,20 +947,17 @@ public final class SolrCore implements SolrInfoMBean {
     } catch (Throwable e) {
       SolrException.log(log,e);
     }
-
-    try {
-      if (null != updateHandler) {
-        updateHandler.close();
-      } else {
-        if (null != directoryFactory) {
-          // :HACK: normally we rely on updateHandler to do this, 
-          // but what if updateHandler failed to init?
+    
+    synchronized (solrCoreState) {
+      if (solrCoreStateRefCnt == 0) {
+        try {
           directoryFactory.close();
+        } catch (Throwable t) {
+          SolrException.log(log, t);
         }
       }
-    } catch (Throwable e) {
-      SolrException.log(log,e);
     }
+
     
     if( closeHooks != null ) {
        for( CloseHook hook : closeHooks ) {

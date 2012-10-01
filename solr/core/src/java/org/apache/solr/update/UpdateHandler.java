@@ -19,7 +19,6 @@ package org.apache.solr.update;
 
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Vector;
 
 import org.apache.solr.core.PluginInfo;
@@ -29,7 +28,6 @@ import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,16 +54,6 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   protected Vector<SolrEventListener> optimizeCallbacks = new Vector<SolrEventListener>();
 
   protected UpdateLog ulog;
-
-  /**
-   * Called when a SolrCore using this UpdateHandler is closed.
-   */
-  public abstract void decref();
-  
-  /**
-   * Called when this UpdateHandler is shared with another SolrCore.
-   */
-  public abstract void incref();
 
   private void parseEventListeners() {
     final Class<SolrEventListener> clazz = SolrEventListener.class;
