@@ -47,6 +47,9 @@ Optimizations
 * SOLR-3614: Fix XML parsing in XPathEntityProcessor to correctly expand
   named entities, but ignore external entities.  (uschindler, hossman)
 
+* SOLR-3734: Improve Schema-Browser Handling for CopyField using
+  dynamicField's (steffkes)
+
 Bug Fixes
 ----------------------
 
