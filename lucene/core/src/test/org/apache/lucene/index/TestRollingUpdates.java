@@ -133,6 +133,21 @@ public class TestRollingUpdates extends LuceneTestCase {
     docs.close();
     
     _TestUtil.checkIndex(dir);
+
+    // LUCENE-4455:
+    SegmentInfos infos = new SegmentInfos();
+    infos.read(dir);
+    long totalBytes = 0;
+    for(SegmentInfoPerCommit sipc : infos) {
+      totalBytes += sipc.sizeInBytes();
+    }
+    long totalBytes2 = 0;
+    for(String fileName : dir.listAll()) {
+      if (!fileName.startsWith(IndexFileNames.SEGMENTS)) {
+        totalBytes2 += dir.fileLength(fileName);
+      }
+    }
+    assertEquals(totalBytes2, totalBytes);
     dir.close();
   }
   

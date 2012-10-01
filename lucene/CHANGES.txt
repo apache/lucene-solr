@@ -214,6 +214,11 @@ Bug Fixes
   parameter is reset to the default (1), even if set otherwise.
   (Gilad Barkai via Shai Erera)
 
+* LUCENE-4455: Fix bug in SegmentInfoPerCommit.sizeInBytes() that was
+  returning 2X the true size, inefficiently.  Also fixed bug in
+  CheckIndex that would report no deletions when a segment has
+  deletions, and vice/versa.  (Uwe Schindler, Robert Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-4322: Decrease lucene-core JAR size. The core JAR size had increased a

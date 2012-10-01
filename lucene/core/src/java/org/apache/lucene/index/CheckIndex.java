@@ -520,7 +520,7 @@ public class CheckIndex {
 
         // TODO: we could append the info attributes() to the msg?
 
-        if (info.hasDeletions()) {
+        if (!info.hasDeletions()) {
           msg("    no deletions");
           segInfoStat.hasDeletions = false;
         }
