@@ -1859,9 +1859,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
               );
               StringBuilder html = new StringBuilder('<html>\n<head>\n');
               // match the first heading in markdown and use as title:
-              def matcher = (markdownSource =~ /(?m)^#+\s*(.+)$/);
-              if (matcher.find()) {
-                html.append('<title>').append(FastEncoder.encode(matcher.group(1))).append('</title>\n');
+              markdownSource.find(~/(?m)^#+\s*(.+)$/) {
+                match, title -> html.append('<title>').append(FastEncoder.encode(title)).append('</title>\n');
               }
               html.append('<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">\n')
                 .append('</head>\n<body>\n')

@@ -108,7 +108,7 @@
       } as ISVNPropertyHandler);
       
       def convertSet2String = {
-        set -> set.isEmpty() ? null : ('* ' + set.toArray().join(project.getProperty('line.separator') + '* '))
+        set -> set ? ('* ' + set.join(project.getProperty('line.separator') + '* ')) : null
       };
       project.setProperty('svn.checkprops.failed', convertSet2String(missingProps));
       project.setProperty('svn.unversioned.failed', convertSet2String(unversioned));
