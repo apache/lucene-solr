@@ -42,6 +42,13 @@ Optimizations
 * LUCENE-4443: BlockPostingsFormat no longer writes unnecessary offsets 
   into the skipdata. You need to reindex any indexes created with
   this experimental codec.  (Robert Muir)
+
+Build
+
+* LUCENE-4451: Memory leak per unique thread caused by 
+  RandomizedContext.contexts static map. Upgrade randomized testing
+  to version 2.0.2 (Mike McCandless, Dawid Weiss)
+
   
 ======================= Lucene 4.0.0 =======================
 
