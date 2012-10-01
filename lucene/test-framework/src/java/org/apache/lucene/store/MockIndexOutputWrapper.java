@@ -32,15 +32,17 @@ public class MockIndexOutputWrapper extends IndexOutput {
   private MockDirectoryWrapper dir;
   private final IndexOutput delegate;
   private boolean first=true;
+  private final RateLimiter rateLimiter;
   final String name;
   
   byte[] singleByte = new byte[1];
 
   /** Construct an empty output buffer. */
-  public MockIndexOutputWrapper(MockDirectoryWrapper dir, IndexOutput delegate, String name) {
+  public MockIndexOutputWrapper(MockDirectoryWrapper dir, IndexOutput delegate, String name, RateLimiter rateLimiter) {
     this.dir = dir;
     this.name = name;
     this.delegate = delegate;
+    this.rateLimiter = rateLimiter;
   }
 
   @Override
@@ -78,8 +80,8 @@ public class MockIndexOutputWrapper extends IndexOutput {
     long freeSpace = dir.maxSize == 0 ? 0 : dir.maxSize - dir.sizeInBytes();
     long realUsage = 0;
 
-    if (dir.rateLimiter != null && len >= 1000) {
-      dir.rateLimiter.pause(len);
+    if (rateLimiter != null && len >= 1000) {
+      rateLimiter.pause(len);
     }
 
     // If MockRAMDir crashed since we were opened, then
