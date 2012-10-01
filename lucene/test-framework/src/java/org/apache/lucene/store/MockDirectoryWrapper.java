@@ -37,7 +37,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.ThrottledIndexOutput;
 import org.apache.lucene.util._TestUtil;
 
 /**
@@ -73,7 +72,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   private Set<String> openFilesForWrite = new HashSet<String>();
   Set<String> openLocks = Collections.synchronizedSet(new HashSet<String>());
   volatile boolean crashed;
-  private ThrottledIndexOutput throttledOutput;
   private Throttling throttling = Throttling.SOMETIMES;
 
   final AtomicInteger inputCloneCount = new AtomicInteger();
@@ -112,22 +110,16 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     // called from different threads; else test failures may
     // not be reproducible from the original seed
     this.randomState = new Random(random.nextInt());
-    this.throttledOutput = new ThrottledIndexOutput(ThrottledIndexOutput
-        .mBitsToBytes(40 + randomState.nextInt(10)), 5 + randomState.nextInt(5), null);
     // force wrapping of lockfactory
     this.lockFactory = new MockLockFactoryWrapper(this, delegate.getLockFactory());
 
-    // 2% of the time use rate limiter
-    if (randomState.nextInt(50) == 17) {
-      // Use RateLimiter
-      double maxMBPerSec = 10 + 5*(randomState.nextDouble()-0.5);
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockDirectoryWrapper: will rate limit output IO to " + maxMBPerSec + " MB/sec");
-      }
-      rateLimiter = new RateLimiter(maxMBPerSec);
-    } else {
-      rateLimiter = null;
+    // NOTE: we init rateLimiter always but we only
+    // sometimes use it (by default) in createOutput:
+    double maxMBPerSec = 10 + 5*(randomState.nextDouble()-0.5);
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("MockDirectoryWrapper: will rate limit output IO to " + maxMBPerSec + " MB/sec");
     }
+    rateLimiter = new RateLimiter(maxMBPerSec);
 
     init();
   }
@@ -441,22 +433,25 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         ramdir.fileMap.put(name, file);
       }
     }
-    
-    //System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
-    IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name, LuceneTestCase.newIOContext(randomState, context)), name);
-    addFileHandle(io, name, Handle.Output);
-    openFilesForWrite.add(name);
-    
+
+    RateLimiter thisRateLimiter;
+
     // throttling REALLY slows down tests, so don't do it very often for SOMETIMES.
     if (throttling == Throttling.ALWAYS || 
         (throttling == Throttling.SOMETIMES && rateLimiter == null && randomState.nextInt(50) == 0)) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockDirectoryWrapper: throttling indexOutput");
       }
-      return throttledOutput.newFromDelegate(io);
+      thisRateLimiter = rateLimiter;
     } else {
-      return io;
+      thisRateLimiter = null;
     }
+
+    //System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
+    IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name, LuceneTestCase.newIOContext(randomState, context)), name, thisRateLimiter);
+    addFileHandle(io, name, Handle.Output);
+    openFilesForWrite.add(name);
+    return io;
   }
   
   private static enum Handle {
