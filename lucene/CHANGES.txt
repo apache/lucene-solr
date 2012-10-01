@@ -37,12 +37,6 @@ New Features
   the suggester to ignore such variations. (Robert Muir, Sudarshan
   Gaikaiwari, Mike McCandless)
 
-Bug Fixes
-
-* LUCENE-4411: when sampling is enabled for a FacetRequest, its depth
-  parameter is reset to the default (1), even if set otherwise.
-  (Gilad Barkai via Shai Erera)
-
 Optimizations
 
 * LUCENE-4443: BlockPostingsFormat no longer writes unnecessary offsets 
@@ -215,6 +209,10 @@ Bug Fixes
 
 * LUCENE-4401: Fix bug where DisjunctionSumScorer would sometimes call score()
   on a subscorer that had already returned NO_MORE_DOCS.  (Liu Chao, Robert Muir)
+
+* LUCENE-4411: when sampling is enabled for a FacetRequest, its depth
+  parameter is reset to the default (1), even if set otherwise.
+  (Gilad Barkai via Shai Erera)
 
 Optimizations
 
