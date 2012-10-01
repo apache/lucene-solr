@@ -847,9 +847,6 @@ final class BlockPostingsReader extends PostingsReaderBase {
         // if (DEBUG) {
         //   System.out.println("  scan doc=" + accum + " docBufferUpto=" + docBufferUpto);
         // }
-        if (docUpto == docFreq) {
-          return doc = NO_MORE_DOCS;
-        }
         accum += docDeltaBuffer[docBufferUpto];
         freq = freqBuffer[docBufferUpto];
         posPendingCount += freq;
