@@ -68,6 +68,9 @@ Other Changes
 * SOLR-3899: SolrCore should not log at warning level when the index directory
   changes - it's an info event. (Tobias Bergman, Mark Miller)
 
+* SOLR-3861: Refactor SolrCoreState so that it's managed by SolrCore.
+  (Mark Miller, hossman)
+
 ==================  4.0.0 ==================
 
 Versions of Major Components

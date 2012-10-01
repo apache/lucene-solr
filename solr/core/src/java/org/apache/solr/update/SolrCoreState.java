@@ -55,20 +55,6 @@ public abstract class SolrCoreState {
   public abstract RefCounted<IndexWriter> getIndexWriter(SolrCore core) throws IOException;
   
   /**
-   * Decrement the number of references to this state. When then number of
-   * references hits 0, the state will close.  If an optional closer is
-   * passed, that will be used to close the writer.
-   * 
-   * @throws IOException If there is a low-level I/O error.
-   */
-  public abstract void decref(IndexWriterCloser closer) throws IOException;
-  
-  /**
-   * Increment the number of references to this state.
-   */
-  public abstract void incref();
-  
-  /**
    * Rollback the current IndexWriter. When creating the new IndexWriter use the
    * settings from the given {@link SolrCore}.
    * 
@@ -89,5 +75,7 @@ public abstract class SolrCoreState {
   public abstract void doRecovery(CoreContainer cc, String name);
   
   public abstract void cancelRecovery();
+
+  public abstract void close(IndexWriterCloser closer);
 
 }
