@@ -163,6 +163,8 @@ Optimizations
 * SOLR-3709: Cache the url list created from the ClusterState in CloudSolrServer
   on each request. (Mark Miller)
 
+* SOLR-3560: Handle different types of Exception Messages for Logging UI
+  (steffkes)
 
 Bug Fixes
 ----------------------
