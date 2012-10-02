@@ -111,7 +111,10 @@ public class TestBagOfPostings extends LuceneTestCase {
     AtomicReader air = ir.leaves().get(0).reader();
     Terms terms = air.terms("field");
     // numTerms-1 because there cannot be a term 0 with 0 postings:
-    assertEquals(numTerms-1, terms.size());
+    assertEquals(numTerms-1, air.fields().getUniqueTermCount());
+    if (!PREFLEX_IMPERSONATION_IS_ACTIVE) {
+      assertEquals(numTerms-1, terms.size());
+    }
     TermsEnum termsEnum = terms.iterator(null);
     BytesRef term;
     while ((term = termsEnum.next()) != null) {
