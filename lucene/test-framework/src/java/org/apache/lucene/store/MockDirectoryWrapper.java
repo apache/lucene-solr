@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.DirectoryReader;
@@ -589,11 +590,17 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           new IndexWriter(delegate, new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null)).rollback();
           String[] endFiles = delegate.listAll();
 
-          Arrays.sort(startFiles);
-          Arrays.sort(endFiles);
+          Set<String> startSet = new TreeSet<String>(Arrays.asList(startFiles));
+          Set<String> endSet = new TreeSet<String>(Arrays.asList(endFiles));
+          
+          if (pendingDeletions.contains("segments.gen") && endSet.contains("segments.gen")) {
+            // this is possible if we hit an exception while writing segments.gen, we try to delete it
+            // and it ends out in pendingDeletions (but IFD wont remove this).
+            endSet.remove("segments.gen");
+          }
 
-          Set<String> startSet = new HashSet<String>(Arrays.asList(startFiles));
-          Set<String> endSet = new HashSet<String>(Arrays.asList(endFiles));
+          startFiles = startSet.toArray(new String[0]);
+          endFiles = endSet.toArray(new String[0]);
 
           if (!Arrays.equals(startFiles, endFiles)) {
             StringBuilder sb = new StringBuilder();
