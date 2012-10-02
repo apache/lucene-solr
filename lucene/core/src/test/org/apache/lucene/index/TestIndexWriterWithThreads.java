@@ -284,6 +284,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         failure.clearDoFail();
         writer.close(false);
       }
+      if (VERBOSE) {
+        System.out.println("TEST: success=" + success);
+      }
 
       if (success) {
         IndexReader reader = DirectoryReader.open(dir);
@@ -411,8 +414,8 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
           if ("flush".equals(trace[i].getMethodName()) && "org.apache.lucene.index.DocFieldProcessor".equals(trace[i].getClassName())) {
             if (onlyOnce)
               doFail = false;
-            System.out.println("NOW FAIL");
-            new Throwable().printStackTrace(System.out);
+            //System.out.println(Thread.currentThread().getName() + ": NOW FAIL: onlyOnce=" + onlyOnce);
+            //new Throwable().printStackTrace(System.out);
             throw new IOException("now failing on purpose");
           }
         }

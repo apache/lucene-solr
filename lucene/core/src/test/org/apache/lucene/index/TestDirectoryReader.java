@@ -899,6 +899,7 @@ public void testFilesOpenClose() throws IOException {
   public void testListCommits() throws Exception {
     Directory dir = newDirectory();
     if (dir instanceof MockDirectoryWrapper) {
+      // We create multiple commit points
       ((MockDirectoryWrapper)dir).setAssertNoUnrefencedFilesOnClose(false);
     }
     SnapshotDeletionPolicy sdp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
