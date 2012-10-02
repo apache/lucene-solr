@@ -948,8 +948,8 @@ public abstract class LuceneTestCase extends Assert {
     if (rarely(random)) {
       directory = new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
     }
-    // nocommit
-    if (false && bare) {
+
+    if (bare) {
       BaseDirectoryWrapper base = new BaseDirectoryWrapper(directory);
       closeAfterSuite(new CloseableDirectory(base, suiteFailureMarker));
       return base;

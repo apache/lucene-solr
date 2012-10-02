@@ -216,8 +216,8 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       String name = it.next();
       int damage = randomState.nextInt(5);
       String action = null;
-      // nocommit
-      if (false && damage == 0) {
+
+      if (damage == 0) {
         action = "deleted";
         deleteFile(name, true);
       } else if (damage == 1) {
