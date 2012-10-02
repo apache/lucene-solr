@@ -17,6 +17,8 @@ package org.apache.lucene.util.junitcompat;
  * limitations under the License.
  */
 
+import java.util.Collections;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -40,9 +42,10 @@ public class TestFailIfUnreferencedFiles extends WithNestedTests {
       IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
       iw.addDocument(new Document());
       iw.close();
-      IndexOutput output = dir.createOutput("TEST_THE_TESTER_FILE_NEVER_DELETED_ON_CRASH", IOContext.DEFAULT);
+      IndexOutput output = dir.createOutput("_hello.world", IOContext.DEFAULT);
       output.writeString("i am unreferenced!");
       output.close();
+      dir.sync(Collections.singleton("_hello.world"));
       dir.close();
     }
   }
