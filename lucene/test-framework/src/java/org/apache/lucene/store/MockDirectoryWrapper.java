@@ -546,6 +546,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
   @Override
   public synchronized void close() throws IOException {
+    // files that we tried to delete, but couldn't because readers were open.
+    // all that matters is that we tried! (they will eventually go away)
+    Set<String> pendingDeletions = new HashSet<String>(openFilesDeleted);
     maybeYield();
     if (openFiles == null) {
       openFiles = new HashMap<String,Integer>();
@@ -577,8 +580,10 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         _TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose());
 
         if (assertNoUnreferencedFilesOnClose) {
-          // now look for unreferenced files:
-          String[] startFiles = listAll();
+          // now look for unreferenced files: discount ones that we tried to delete but could not
+          Set<String> allFiles = new HashSet<String>(Arrays.asList(listAll()));
+          allFiles.removeAll(pendingDeletions);
+          String[] startFiles = allFiles.toArray(new String[0]);
           new IndexWriter(delegate, new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null)).rollback();
           String[] endFiles = delegate.listAll();
 
@@ -609,7 +614,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     if (v != null) {
       if (v.intValue() == 1) {
         openFiles.remove(name);
-        openFilesDeleted.remove(name);
       } else {
         v = Integer.valueOf(v.intValue()-1);
         openFiles.put(name, v);
