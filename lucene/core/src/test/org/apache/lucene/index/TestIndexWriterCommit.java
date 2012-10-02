@@ -420,9 +420,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
   
   public void testFutureCommit() throws Exception {
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setAssertNoUnrefencedFilesOnClose(false);
-    }
 
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
     Document doc = new Document();

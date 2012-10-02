@@ -78,11 +78,6 @@ public class TestTransactionRollback extends LuceneTestCase {
 
   public void testRepeatedRollBacks() throws Exception {
 
-    if (dir instanceof MockDirectoryWrapper) {
-      // We create multiple commit points:
-      ((MockDirectoryWrapper) dir).setAssertNoUnrefencedFilesOnClose(false);
-    }
-
     int expectedLastRecordId = 100;
     while (expectedLastRecordId>10) {
       expectedLastRecordId -= 10;
@@ -209,10 +204,6 @@ public class TestTransactionRollback extends LuceneTestCase {
   }
 
   public void testRollbackDeletionPolicy() throws Exception {
-    if (dir instanceof MockDirectoryWrapper) {
-      // We create multiple commit points:
-      ((MockDirectoryWrapper) dir).setAssertNoUnrefencedFilesOnClose(false);
-    }
 
     for(int i=0;i<2;i++) {
       // Unless you specify a prior commit point, rollback

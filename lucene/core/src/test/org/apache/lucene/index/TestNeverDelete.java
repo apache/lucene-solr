@@ -43,7 +43,6 @@ public class TestNeverDelete extends LuceneTestCase {
     // some files the IR opens and closes.
     if (d instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)d).setNoDeleteOpenFile(false);
-      ((MockDirectoryWrapper)d).setAssertNoUnrefencedFilesOnClose(false);
     }
     final RandomIndexWriter w = new RandomIndexWriter(random(),
                                                       d,

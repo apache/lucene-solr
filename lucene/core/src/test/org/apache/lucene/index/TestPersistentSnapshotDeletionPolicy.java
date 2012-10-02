@@ -79,9 +79,6 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   public void testExistingSnapshots() throws Exception {
     int numSnapshots = 3;
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setAssertNoUnrefencedFilesOnClose(false);
-    }
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) getDeletionPolicy();
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), psdp));
     prepareIndexAndSnapshots(psdp, writer, numSnapshots, "snapshot");

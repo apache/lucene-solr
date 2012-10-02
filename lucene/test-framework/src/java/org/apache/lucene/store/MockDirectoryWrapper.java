@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -587,7 +588,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           Set<String> allFiles = new HashSet<String>(Arrays.asList(listAll()));
           allFiles.removeAll(pendingDeletions);
           String[] startFiles = allFiles.toArray(new String[0]);
-          new IndexWriter(delegate, new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null)).rollback();
+          IndexWriterConfig iwc = new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null);
+          iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
+          new IndexWriter(delegate, iwc).rollback();
           String[] endFiles = delegate.listAll();
 
           Set<String> startSet = new TreeSet<String>(Arrays.asList(startFiles));

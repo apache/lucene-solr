@@ -315,11 +315,6 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     int numSnapshots = 2;
     Directory dir = newDirectory();
 
-    if (dir instanceof MockDirectoryWrapper) {
-      // We create leftover files:
-      ((MockDirectoryWrapper) dir).setAssertNoUnrefencedFilesOnClose(false);
-    }
-
     SnapshotDeletionPolicy sdp = getDeletionPolicy();
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), sdp));
     prepareIndexAndSnapshots(sdp, writer, numSnapshots, "snapshot");
@@ -375,10 +370,6 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     // asserts that those snapshots/commit points are protected.
     int numSnapshots = 3;
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // We create leftover files:
-      ((MockDirectoryWrapper) dir).setAssertNoUnrefencedFilesOnClose(false);
-    }
     SnapshotDeletionPolicy sdp = getDeletionPolicy();
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), sdp));
     prepareIndexAndSnapshots(sdp, writer, numSnapshots, "snapshot");
@@ -397,10 +388,6 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   @Test
   public void testSnapshotLastCommitTwice() throws Exception {
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // We create leftover files:
-      ((MockDirectoryWrapper) dir).setAssertNoUnrefencedFilesOnClose(false);
-    }
 
     SnapshotDeletionPolicy sdp = getDeletionPolicy();
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), sdp));

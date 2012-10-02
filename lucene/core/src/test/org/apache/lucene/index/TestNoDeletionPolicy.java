@@ -70,10 +70,6 @@ public class TestNoDeletionPolicy extends LuceneTestCase {
   @Test
   public void testAllCommitsRemain() throws Exception {
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // We create multiple commit points:
-      ((MockDirectoryWrapper) dir).setAssertNoUnrefencedFilesOnClose(false);
-    }
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
