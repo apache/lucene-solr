@@ -33,9 +33,7 @@ public class TestPerFieldPostingsFormat extends BasePostingsFormatTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    // TODO: re-enable once we fix OOMEs in DirectPF
-    //codec = new RandomCodec(new Random(random().nextLong()), Collections.EMPTY_SET);
-    codec = new RandomCodec(new Random(random().nextLong()), Collections.singleton("Direct"));
+    codec = new RandomCodec(new Random(random().nextLong()), Collections.EMPTY_SET);
   }
   
   @Override
