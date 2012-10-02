@@ -299,6 +299,31 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     );
   }
 
+ @Test
+  public void testPreserveMulti() {
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "true");
+    args.put("hl.fl", "cat");
+    args.put("hl.snippets", "2");
+    args.put("f.cat.hl.preserveMulti", "true");
+    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
+        "standard", 0, 200, args);
+
+    assertU(adoc("cat", "electronics",
+        "cat", "monitor",
+        "id", "1"));
+    assertU(commit());
+    assertU(optimize());
+    assertQ("Preserve multi",
+        sumLRF.makeRequest("cat:monitor"),
+        "//lst[@name='highlighting']/lst[@name='1']",
+        "//lst[@name='1']/arr[@name='cat']/str[.=\'electronics\']",
+        "//lst[@name='1']/arr[@name='cat']/str[.=\'<em>monitor</em>\']"
+    );
+  }
+
+
+
   @Test
   public void testDefaultFieldHighlight() {
 

@@ -32,6 +32,7 @@ public interface HighlightParams {
   public static final String FORMATTER   = HIGHLIGHT+".formatter";
   public static final String ENCODER     = HIGHLIGHT+".encoder";
   public static final String FRAGMENTER  = HIGHLIGHT+".fragmenter";
+  public static final String PRESERVE_MULTI = HIGHLIGHT+".preserveMulti";
   public static final String FRAG_LIST_BUILDER = HIGHLIGHT+".fragListBuilder";
   public static final String FRAGMENTS_BUILDER = HIGHLIGHT+".fragmentsBuilder";
   public static final String BOUNDARY_SCANNER = HIGHLIGHT+".boundaryScanner";

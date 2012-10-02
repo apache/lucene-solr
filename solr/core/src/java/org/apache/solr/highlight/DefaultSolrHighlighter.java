@@ -446,6 +446,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       listFields.add(field.stringValue());
     }
 
+    boolean preserveMulti = params.getFieldBool(fieldName, HighlightParams.PRESERVE_MULTI, false);
+
     String[] docTexts = (String[]) listFields.toArray(new String[listFields.size()]);
    
     // according to Document javadoc, doc.getValues() never returns null. check empty instead of null
@@ -511,8 +513,14 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       try {
         TextFragment[] bestTextFragments = highlighter.getBestTextFragments(tstream, docTexts[j], mergeContiguousFragments, numFragments);
         for (int k = 0; k < bestTextFragments.length; k++) {
-          if ((bestTextFragments[k] != null) && (bestTextFragments[k].getScore() > 0)) {
-            frags.add(bestTextFragments[k]);
+          if (preserveMulti) {
+            if (bestTextFragments[k] != null) {
+              frags.add(bestTextFragments[k]);
+            }
+          } else {
+            if ((bestTextFragments[k] != null) && (bestTextFragments[k].getScore() > 0)) {
+              frags.add(bestTextFragments[k]);
+            }
           }
         }
       } catch (InvalidTokenOffsetsException e) {
@@ -520,20 +528,29 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       }
     }
     // sort such that the fragments with the highest score come first
-    Collections.sort(frags, new Comparator<TextFragment>() {
-      public int compare(TextFragment arg0, TextFragment arg1) {
-        return Math.round(arg1.getScore() - arg0.getScore());
-      }
-    });
-    
+     if(!preserveMulti){
+        Collections.sort(frags, new Comparator<TextFragment>() {
+                public int compare(TextFragment arg0, TextFragment arg1) {
+                 return Math.round(arg1.getScore() - arg0.getScore());
+        }
+        });
+     }
+
      // convert fragments back into text
      // TODO: we can include score and position information in output as snippet attributes
     if (frags.size() > 0) {
       ArrayList<String> fragTexts = new ArrayList<String>();
       for (TextFragment fragment: frags) {
-        if ((fragment != null) && (fragment.getScore() > 0)) {
-          fragTexts.add(fragment.toString());
+        if (preserveMulti) {
+          if (fragment != null) {
+            fragTexts.add(fragment.toString());
+          }
+        } else {
+          if ((fragment != null) && (fragment.getScore() > 0)) {
+            fragTexts.add(fragment.toString());
+          }
         }
+
         if (fragTexts.size() >= numFragments) break;
       }
       summaries = fragTexts.toArray(new String[0]);

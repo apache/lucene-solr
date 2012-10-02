@@ -38,6 +38,11 @@ New Features
   facet.method=fcs concurrently. PivotFacetHelper now extends SimpleFacet and
   the getFacetImplementation() extension hook was removed. (dsmiley)
 
+* SOLR-3897: A highlighter parameter "hl.preserveMulti" to return all of the
+  values of a multiValued field in their original order when highlighting.
+  (Joel Bernstein via yonik)
+
+
 Optimizations
 ----------------------
 
