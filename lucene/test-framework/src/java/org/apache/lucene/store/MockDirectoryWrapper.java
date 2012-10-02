@@ -626,11 +626,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
             }
 
             if (added.size() != 0) {
-              if (extras.length() != 0) {
-                extras += "\n\n";
-              }
-              extras += "These files were added (waaaaaaaaaat!): " + added;
-              extras += " These files we had previously tried to delete, but couldn't: " + pendingDeletions;
+              extras += "\n\nThese files were added (waaaaaaaaaat!): " + added;
+            }
+
+            if (pendingDeletions.size() != 0) {
+              extras += "\n\nThese files we had previously tried to delete, but couldn't: " + pendingDeletions;
             }
              
             assert false : "unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles) + extras;

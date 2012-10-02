@@ -2484,12 +2484,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // Now create the compound file if needed
       if (useCompoundFile) {
         Collection<String> filesToDelete = infoPerCommit.files();
-        createCompoundFile(infoStream, directory, MergeState.CheckAbort.NONE, info, context);
-
-        // delete new non cfs files directly: they were never
-        // registered with IFD
-        synchronized(this) {
-          deleter.deleteNewFiles(filesToDelete);
+        try{
+          createCompoundFile(infoStream, directory, MergeState.CheckAbort.NONE, info, context);
+        } finally {
+          // delete new non cfs files directly: they were never
+          // registered with IFD
+          synchronized(this) {
+            deleter.deleteNewFiles(filesToDelete);
+          }
         }
         info.setUseCompoundFile(true);
       }
@@ -2498,7 +2500,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // creating CFS so that 1) .si isn't slurped into CFS,
       // and 2) .si reflects useCompoundFile=true change
       // above:
-      codec.segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, info, mergeState.fieldInfos, context);
+      success = false;
+      try {
+        codec.segmentInfoFormat().getSegmentInfoWriter().write(trackingDir, info, mergeState.fieldInfos, context);
+        success = true;
+      } finally {
+        if (!success) {
+          synchronized(this) {
+            deleter.refresh(info.name);
+          }
+        }
+      }
+
       info.addFiles(trackingDir.getCreatedFiles());
 
       // Register the new segment
