@@ -2145,7 +2145,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // Now build compound file
         Collection<String> oldFiles = createCompoundFile(infoStream, directory, MergeState.CheckAbort.NONE, newSegment.info, context);
         newSegment.info.setUseCompoundFile(true);
-        
+
         synchronized(this) {
           deleter.deleteNewFiles(oldFiles);
         }
