@@ -558,7 +558,13 @@ final class IndexFileDeleter {
   void deleteNewFiles(Collection<String> files) throws IOException {
     assert locked();
     for (final String fileName: files) {
-      if (!refCounts.containsKey(fileName)) {
+      // NOTE: it's very unusual yet possible for the
+      // refCount to be present and 0: it can happen if you
+      // open IW on a crashed index, and it removes a bunch
+      // of unref'd files, and then you add new docs / do
+      // merging, and it reuses that segment name.
+      // TestCrash.testCrashAfterReopen can hit this:
+      if (!refCounts.containsKey(fileName) || refCounts.get(fileName).count == 0) {
         if (infoStream.isEnabled("IFD")) {
           infoStream.message("IFD", "delete new file \"" + fileName + "\"");
         }
