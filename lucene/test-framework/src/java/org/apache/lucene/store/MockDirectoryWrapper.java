@@ -623,6 +623,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
                 extras += "\n\n";
               }
               extras += "These files were added (waaaaaaaaaat!): " + added;
+              extras += " These files we had previously tried to delete, but couldn't: " + pendingDeletions;
             }
              
             assert false : "unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles) + extras;
