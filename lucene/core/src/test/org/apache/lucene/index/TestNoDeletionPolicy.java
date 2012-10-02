@@ -21,10 +21,12 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -68,6 +70,10 @@ public class TestNoDeletionPolicy extends LuceneTestCase {
   @Test
   public void testAllCommitsRemain() throws Exception {
     Directory dir = newDirectory();
+    if (dir instanceof MockDirectoryWrapper) {
+      // We create multiple commit points:
+      ((MockDirectoryWrapper) dir).setAssertNoUnrefencedFilesOnClose(false);
+    }
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random()))
         .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));

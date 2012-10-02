@@ -333,12 +333,16 @@ final class IndexFileDeleter {
       segmentPrefix2 = null;
     }
 
+    Matcher m = IndexFileNames.CODEC_FILE_PATTERN.matcher("");
+
     for(int i=0;i<files.length;i++) {
       String fileName = files[i];
+      m.reset(fileName);
       if ((segmentName == null || fileName.startsWith(segmentPrefix1) || fileName.startsWith(segmentPrefix2)) &&
           !fileName.endsWith("write.lock") &&
           !refCounts.containsKey(fileName) &&
-          !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
+          !fileName.equals(IndexFileNames.SEGMENTS_GEN) &&
+          (m.matches() || fileName.startsWith(IndexFileNames.SEGMENTS))) {
         // Unreferenced file, so remove it
         if (infoStream.isEnabled("IFD")) {
           infoStream.message("IFD", "refresh [prefix=" + segmentName + "]: removing newly created unreferenced file \"" + fileName + "\"");
