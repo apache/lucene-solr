@@ -347,6 +347,8 @@ Bug Fixes
 * SOLR-3883: Distributed indexing forwards non-applicable request params.
   (Dan Sutton, Per Steffensen, yonik, Mark Miller)
 
+* SOLR-3637: Commit Status at Core-Admin UI is always false (steffkes)
+
 Other Changes
 ----------------------
 
