@@ -31,6 +31,7 @@ import java.util.Map;
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
+import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType; // for javadocs
 import org.apache.lucene.index.DocValues.SortedSource;
@@ -511,7 +512,10 @@ public class CheckIndex {
         msg("    numFiles=" + info.files().size());
         segInfoStat.numFiles = info.files().size();
         segInfoStat.sizeMB = info.sizeInBytes()/(1024.*1024.);
-        msg("    size (MB)=" + nf.format(segInfoStat.sizeMB));
+        if (info.info.getAttribute(Lucene3xSegmentInfoFormat.DS_OFFSET_KEY) == null) {
+          // don't print size in bytes if its a 3.0 segment with shared docstores
+          msg("    size (MB)=" + nf.format(segInfoStat.sizeMB));
+        }
         Map<String,String> diagnostics = info.info.getDiagnostics();
         segInfoStat.diagnostics = diagnostics;
         if (diagnostics.size() > 0) {

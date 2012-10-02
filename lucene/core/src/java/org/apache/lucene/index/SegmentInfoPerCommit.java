@@ -64,7 +64,9 @@ public class SegmentInfoPerCommit {
   }
 
   /** Returns total size in bytes of all files for this
-   *  segment. */
+   *  segment. 
+   * <p><b>NOTE:</b> This value is not correct for 3.0 segments
+   * that have shared docstores. To get the correct value, upgrade! */
   public long sizeInBytes() throws IOException {
     if (sizeInBytes == -1) {
       long sum = 0;
