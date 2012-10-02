@@ -168,12 +168,6 @@ public class TestIndexWriter extends LuceneTestCase {
     public void testCreateWithReader() throws IOException {
       Directory dir = newDirectory();
 
-      if (dir instanceof MockDirectoryWrapper) {
-        // We create leftover files, because the 2nd writer
-        // can't remove the files held open by thef irst reader:
-        ((MockDirectoryWrapper) dir).setAssertNoUnrefencedFilesOnClose(false);
-      }
-
       // add one document & close writer
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())));
       addDoc(writer);

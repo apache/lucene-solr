@@ -357,8 +357,8 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         if (sawAbortOrFlushDoc && !sawClose) {
           if (onlyOnce)
             doFail = false;
-          //System.out.println(Thread.currentThread().getName() + ": now fail");
-          //new Throwable().printStackTrace(System.out);
+          System.out.println(Thread.currentThread().getName() + ": now fail");
+          new Throwable().printStackTrace(System.out);
           throw new IOException("now failing on purpose");
         }
       }
