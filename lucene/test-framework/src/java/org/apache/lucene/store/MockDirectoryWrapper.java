@@ -590,8 +590,37 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           Arrays.sort(startFiles);
           Arrays.sort(endFiles);
 
+          Set<String> startSet = new HashSet<String>(Arrays.asList(startFiles));
+          Set<String> endSet = new HashSet<String>(Arrays.asList(endFiles));
+
           if (!Arrays.equals(startFiles, endFiles)) {
-            assert false : "unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles);
+            StringBuilder sb = new StringBuilder();
+            boolean printed = false;
+            for(String fileName : startFiles) {
+              if (!endSet.contains(fileName)) {
+                if (!printed) {
+                  sb.append("These files were deleted:\n");
+                  printed = true;
+                }
+                sb.append("  ");
+                sb.append(fileName);
+                sb.append('\n');
+              }
+            }
+
+            printed = false;
+            for(String fileName : endFiles) {
+              if (!startSet.contains(fileName)) {
+                if (!printed) {
+                  sb.append("These files were added (waaaat!):\n");
+                  printed = true;
+                }
+                sb.append("  ");
+                sb.append(fileName);
+                sb.append('\n');
+              }
+            }
+            assert false : "unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles) + "\n\n" + sb.toString();
           }
 
           DirectoryReader ir1 = DirectoryReader.open(this);
