@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -595,32 +596,35 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
           if (!Arrays.equals(startFiles, endFiles)) {
             StringBuilder sb = new StringBuilder();
-            boolean printed = false;
+            List<String> removed = new ArrayList<String>();
             for(String fileName : startFiles) {
               if (!endSet.contains(fileName)) {
-                if (!printed) {
-                  sb.append("These files were deleted:\n");
-                  printed = true;
-                }
-                sb.append("  ");
-                sb.append(fileName);
-                sb.append('\n');
+                removed.add(fileName);
               }
             }
 
-            printed = false;
+            List<String> added = new ArrayList<String>();
             for(String fileName : endFiles) {
               if (!startSet.contains(fileName)) {
-                if (!printed) {
-                  sb.append("These files were added (waaaat!):\n");
-                  printed = true;
-                }
-                sb.append("  ");
-                sb.append(fileName);
-                sb.append('\n');
+                added.add(fileName);
               }
             }
-            assert false : "unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles) + "\n\n" + sb.toString();
+
+            String extras;
+            if (removed.size() != 0) {
+              extras = "\n\nThese files were removed: " + removed;
+            } else {
+              extras = "";
+            }
+
+            if (added.size() != 0) {
+              if (extras.length() != 0) {
+                extras += "\n\n";
+              }
+              extras += "These files were added (waaaaaaaaaat!): " + added;
+            }
+             
+            assert false : "unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles) + extras;
           }
 
           DirectoryReader ir1 = DirectoryReader.open(this);
