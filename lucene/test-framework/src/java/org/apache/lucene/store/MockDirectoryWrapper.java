@@ -580,6 +580,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         } 
         _TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose());
 
+        // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
         if (assertNoUnreferencedFilesOnClose) {
           // now look for unreferenced files: discount ones that we tried to delete but could not
           Set<String> allFiles = new HashSet<String>(Arrays.asList(listAll()));
