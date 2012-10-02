@@ -2451,7 +2451,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         merger.add(reader);
       }
 
-      MergeState mergeState = merger.merge();                // merge 'em
+      MergeState mergeState;
+      boolean success = false;
+      try {
+        mergeState = merger.merge();                // merge 'em
+        success = true;
+      } finally {
+        if (!success) { 
+          synchronized(this) {
+            deleter.refresh(info.name);
+          }
+        }
+      }
 
       SegmentInfoPerCommit infoPerCommit = new SegmentInfoPerCommit(info, 0, -1L);
 
