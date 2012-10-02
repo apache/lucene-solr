@@ -39,6 +39,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NoDeletionPolicy;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -599,7 +600,37 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           if (pendingDeletions.contains("segments.gen") && endSet.contains("segments.gen")) {
             // this is possible if we hit an exception while writing segments.gen, we try to delete it
             // and it ends out in pendingDeletions (but IFD wont remove this).
-            endSet.remove("segments.gen");
+            startSet.add("segments.gen");
+            if (LuceneTestCase.VERBOSE) {
+              System.out.println("MDW: Unreferenced check: Ignoring segments.gen that we could not delete.");
+            }
+          }
+          
+          // its possible we cannot delete the segments_N on windows if someone has it open and
+          // maybe other files too, depending on timing. normally someone on windows wouldnt have
+          // an issue (IFD would nuke this stuff eventually), but we pass NoDeletionPolicy...
+          for (String file : pendingDeletions) {
+            if (file.startsWith("segments") && !file.equals("segments.gen") && endSet.contains(file)) {
+              startSet.add(file);
+              if (LuceneTestCase.VERBOSE) {
+                System.out.println("MDW: Unreferenced check: Ignoring segments file: " + file + " that we could not delete.");
+              }
+              try {
+                SegmentInfos sis = new SegmentInfos();
+                sis.read(delegate, file);
+                Set<String> ghosts = new HashSet<String>(sis.files(delegate, false));
+                for (String s : ghosts) {
+                  if (endSet.contains(s) && !startSet.contains(s)) {
+                    assert pendingDeletions.contains(s);
+                    if (LuceneTestCase.VERBOSE) {
+                      System.out.println("MDW: Unreferenced check: Ignoring referenced file: " + s + " " +
+                      		"from " + file + " that we could not delete.");
+                    }
+                    startSet.add(s);
+                  }
+                }
+              } catch (Throwable ignore) {}
+            }
           }
 
           startFiles = startSet.toArray(new String[0]);
