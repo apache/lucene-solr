@@ -214,7 +214,8 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       String name = it.next();
       int damage = randomState.nextInt(5);
       String action = null;
-      if (damage == 0 && !name.equals("TEST_THE_TESTER_FILE_NEVER_DELETED_ON_CRASH")) {
+      // nocommit
+      if (false && damage == 0 && !name.equals("TEST_THE_TESTER_FILE_NEVER_DELETED_ON_CRASH")) {
         action = "deleted";
         deleteFile(name, true);
       } else if (damage == 1) {
