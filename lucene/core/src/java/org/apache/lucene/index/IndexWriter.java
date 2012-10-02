@@ -3091,6 +3091,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "commitMerge: skip: it was aborted");
       }
+      deleter.deleteNewFiles(merge.info.files());
       return false;
     }
 
@@ -3412,7 +3413,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     setDiagnostics(si, "merge", details);
 
     if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "merge seg=" + merge.info.info.name);
+      infoStream.message("IW", "merge seg=" + merge.info.info.name + " " + segString(merge.segments));
     }
 
     assert merge.estimatedMergeBytes == 0;
@@ -4121,7 +4122,16 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     } catch(IOException ex) {
       prior = ex;
     } finally {
-      IOUtils.closeWhileHandlingException(prior, cfsDir);
+      boolean success = false;
+      try {
+        IOUtils.closeWhileHandlingException(prior, cfsDir);
+        success = true;
+      } finally {
+        if (!success) {
+          directory.deleteFile(fileName);
+          directory.deleteFile(IndexFileNames.segmentFileName(info.name, "", IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+        }
+      }
     }
 
     // Replace all previous files with the CFS/CFE files:
