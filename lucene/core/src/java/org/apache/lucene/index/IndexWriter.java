@@ -3136,6 +3136,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     }
 
+    if (dropSegment) {
+      assert !segmentInfos.contains(merge.info);
+      deleter.deleteNewFiles(merge.info.files());
+    }
+
     // Must close before checkpoint, otherwise IFD won't be
     // able to delete the held-open files from the merge
     // readers:

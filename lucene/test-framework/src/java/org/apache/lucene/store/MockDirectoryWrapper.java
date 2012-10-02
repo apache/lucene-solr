@@ -204,10 +204,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     // first force-close all files, so we can corrupt on windows etc.
     // clone the file map, as these guys want to remove themselves on close.
     Map<Closeable,Exception> m = new IdentityHashMap<Closeable,Exception>(openFileHandles);
-    for (Closeable f : m.keySet())
+    for (Closeable f : m.keySet()) {
       try {
         f.close();
       } catch (Exception ignored) {}
+    }
     
     while(it.hasNext()) {
       String name = it.next();
@@ -577,8 +578,8 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         if (assertNoUnreferencedFilesOnClose) {
           // now look for unreferenced files:
           String[] startFiles = listAll();
-          new IndexWriter(this, new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null)).rollback();
-          String[] endFiles = listAll();
+          new IndexWriter(delegate, new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null)).rollback();
+          String[] endFiles = delegate.listAll();
 
           Arrays.sort(startFiles);
           Arrays.sort(endFiles);
