@@ -1025,7 +1025,6 @@ public class TestIndexWriter extends LuceneTestCase {
             }
             w.close();
             w = null;
-            _TestUtil.checkIndex(dir);
             DirectoryReader.open(dir).close();
 
             // Strangely, if we interrupt a thread before
