@@ -284,6 +284,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
         failure.clearDoFail();
         writer.close(false);
       }
+      if (VERBOSE) {
+        System.out.println("TEST: success=" + success);
+      }
 
       if (success) {
         IndexReader reader = DirectoryReader.open(dir);
@@ -341,6 +344,12 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     }
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
+
+      // Since we throw exc during abort, eg when IW is
+      // attempting to delete files, we will leave
+      // leftovers: 
+      dir.setAssertNoUnrefencedFilesOnClose(false);
+
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
         boolean sawAbortOrFlushDoc = false;
@@ -405,6 +414,8 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
           if ("flush".equals(trace[i].getMethodName()) && "org.apache.lucene.index.DocFieldProcessor".equals(trace[i].getClassName())) {
             if (onlyOnce)
               doFail = false;
+            //System.out.println(Thread.currentThread().getName() + ": NOW FAIL: onlyOnce=" + onlyOnce);
+            //new Throwable().printStackTrace(System.out);
             throw new IOException("now failing on purpose");
           }
         }

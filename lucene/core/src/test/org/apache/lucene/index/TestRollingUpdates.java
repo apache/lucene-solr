@@ -39,7 +39,6 @@ public class TestRollingUpdates extends LuceneTestCase {
   public void testRollingUpdates() throws Exception {
     Random random = new Random(random().nextLong());
     final BaseDirectoryWrapper dir = newDirectory();
-    dir.setCheckIndexOnClose(false); // we use a custom codec provider
     final LineFileDocs docs = new LineFileDocs(random, true);
 
     //provider.register(new MemoryCodec());
@@ -130,10 +129,11 @@ public class TestRollingUpdates extends LuceneTestCase {
     assertEquals(SIZE, w.numDocs());
 
     w.close();
+
+    TestIndexWriter.assertNoUnreferencedFiles(dir, "leftover files after rolling updates");
+
     docs.close();
     
-    _TestUtil.checkIndex(dir);
-
     // LUCENE-4455:
     SegmentInfos infos = new SegmentInfos();
     infos.read(dir);

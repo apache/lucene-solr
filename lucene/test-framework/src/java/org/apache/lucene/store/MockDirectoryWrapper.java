@@ -28,14 +28,18 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.NoDeletionPolicy;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -204,15 +208,17 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     // first force-close all files, so we can corrupt on windows etc.
     // clone the file map, as these guys want to remove themselves on close.
     Map<Closeable,Exception> m = new IdentityHashMap<Closeable,Exception>(openFileHandles);
-    for (Closeable f : m.keySet())
+    for (Closeable f : m.keySet()) {
       try {
         f.close();
       } catch (Exception ignored) {}
+    }
     
     while(it.hasNext()) {
       String name = it.next();
       int damage = randomState.nextInt(5);
       String action = null;
+
       if (damage == 0) {
         action = "deleted";
         deleteFile(name, true);
@@ -544,6 +550,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
   @Override
   public synchronized void close() throws IOException {
+    // files that we tried to delete, but couldn't because readers were open.
+    // all that matters is that we tried! (they will eventually go away)
+    Set<String> pendingDeletions = new HashSet<String>(openFilesDeleted);
     maybeYield();
     if (openFiles == null) {
       openFiles = new HashMap<String,Integer>();
@@ -574,17 +583,91 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         } 
         _TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose());
 
+        // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
         if (assertNoUnreferencedFilesOnClose) {
-          // now look for unreferenced files:
-          String[] startFiles = listAll();
-          new IndexWriter(this, new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null)).rollback();
-          String[] endFiles = listAll();
+          // now look for unreferenced files: discount ones that we tried to delete but could not
+          Set<String> allFiles = new HashSet<String>(Arrays.asList(listAll()));
+          allFiles.removeAll(pendingDeletions);
+          String[] startFiles = allFiles.toArray(new String[0]);
+          IndexWriterConfig iwc = new IndexWriterConfig(LuceneTestCase.TEST_VERSION_CURRENT, null);
+          iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
+          new IndexWriter(delegate, iwc).rollback();
+          String[] endFiles = delegate.listAll();
 
-          Arrays.sort(startFiles);
-          Arrays.sort(endFiles);
+          Set<String> startSet = new TreeSet<String>(Arrays.asList(startFiles));
+          Set<String> endSet = new TreeSet<String>(Arrays.asList(endFiles));
+          
+          if (pendingDeletions.contains("segments.gen") && endSet.contains("segments.gen")) {
+            // this is possible if we hit an exception while writing segments.gen, we try to delete it
+            // and it ends out in pendingDeletions (but IFD wont remove this).
+            startSet.add("segments.gen");
+            if (LuceneTestCase.VERBOSE) {
+              System.out.println("MDW: Unreferenced check: Ignoring segments.gen that we could not delete.");
+            }
+          }
+          
+          // its possible we cannot delete the segments_N on windows if someone has it open and
+          // maybe other files too, depending on timing. normally someone on windows wouldnt have
+          // an issue (IFD would nuke this stuff eventually), but we pass NoDeletionPolicy...
+          for (String file : pendingDeletions) {
+            if (file.startsWith("segments") && !file.equals("segments.gen") && endSet.contains(file)) {
+              startSet.add(file);
+              if (LuceneTestCase.VERBOSE) {
+                System.out.println("MDW: Unreferenced check: Ignoring segments file: " + file + " that we could not delete.");
+              }
+              try {
+                SegmentInfos sis = new SegmentInfos();
+                sis.read(delegate, file);
+                Set<String> ghosts = new HashSet<String>(sis.files(delegate, false));
+                for (String s : ghosts) {
+                  if (endSet.contains(s) && !startSet.contains(s)) {
+                    assert pendingDeletions.contains(s);
+                    if (LuceneTestCase.VERBOSE) {
+                      System.out.println("MDW: Unreferenced check: Ignoring referenced file: " + s + " " +
+                                         "from " + file + " that we could not delete.");
+                    }
+                    startSet.add(s);
+                  }
+                }
+              } catch (Throwable ignore) {}
+            }
+          }
+
+          startFiles = startSet.toArray(new String[0]);
+          endFiles = endSet.toArray(new String[0]);
 
           if (!Arrays.equals(startFiles, endFiles)) {
-            assert false : "unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles);
+            StringBuilder sb = new StringBuilder();
+            List<String> removed = new ArrayList<String>();
+            for(String fileName : startFiles) {
+              if (!endSet.contains(fileName)) {
+                removed.add(fileName);
+              }
+            }
+
+            List<String> added = new ArrayList<String>();
+            for(String fileName : endFiles) {
+              if (!startSet.contains(fileName)) {
+                added.add(fileName);
+              }
+            }
+
+            String extras;
+            if (removed.size() != 0) {
+              extras = "\n\nThese files were removed: " + removed;
+            } else {
+              extras = "";
+            }
+
+            if (added.size() != 0) {
+              extras += "\n\nThese files were added (waaaaaaaaaat!): " + added;
+            }
+
+            if (pendingDeletions.size() != 0) {
+              extras += "\n\nThese files we had previously tried to delete, but couldn't: " + pendingDeletions;
+            }
+             
+            assert false : "unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles) + extras;
           }
 
           DirectoryReader ir1 = DirectoryReader.open(this);
@@ -607,7 +690,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     if (v != null) {
       if (v.intValue() == 1) {
         openFiles.remove(name);
-        openFilesDeleted.remove(name);
       } else {
         v = Integer.valueOf(v.intValue()-1);
         openFiles.put(name, v);

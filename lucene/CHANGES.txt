@@ -226,6 +226,14 @@ Bug Fixes
   CheckIndex that would report no deletions when a segment has
   deletions, and vice/versa.  (Uwe Schindler, Robert Muir, Mike McCandless)
 
+* LUCENE-4456: Fixed double-counting sizeInBytes for a segment
+  (affects how merge policies pick merges); fixed CheckIndex's
+  incorrect reporting of whether a segment has deletions; fixed case
+  where on abort Lucene could remove files it didn't create; fixed
+  many cases where IndexWriter could leave leftover files (on
+  exception in various places, on reuse of a segment name after crash
+  and recovery.  (Uwe Schindler, Robert Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-4322: Decrease lucene-core JAR size. The core JAR size had increased a

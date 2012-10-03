@@ -79,6 +79,7 @@ public class SegmentInfoPerCommit {
 
   /** Returns all files in use by this segment. */
   public Collection<String> files() throws IOException {
+    // Start from the wrapped info's files:
     Collection<String> files = new HashSet<String>(info.files());
 
     // Must separately add any live docs files:

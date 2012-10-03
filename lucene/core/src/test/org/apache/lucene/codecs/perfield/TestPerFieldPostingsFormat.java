@@ -33,7 +33,7 @@ public class TestPerFieldPostingsFormat extends BasePostingsFormatTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    codec = new RandomCodec(new Random(random().nextLong()), Collections.EMPTY_SET);
+    codec = new RandomCodec(new Random(random().nextLong()), Collections.<String>emptySet());
   }
   
   @Override

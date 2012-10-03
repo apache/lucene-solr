@@ -1070,6 +1070,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       fail("segmentInfos failed to retry fallback to correct segments_N file");
     }
     reader.close();
+    
+    // should remove the corrumpted segments_N
+    new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null)).close();
     dir.close();
   }
 
