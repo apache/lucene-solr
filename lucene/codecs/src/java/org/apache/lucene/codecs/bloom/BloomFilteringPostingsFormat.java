@@ -159,6 +159,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       String bloomFileName = IndexFileNames.segmentFileName(
           state.segmentInfo.name, state.segmentSuffix, BLOOM_EXTENSION);
       IndexInput bloomIn = null;
+      boolean success = false;
       try {
         bloomIn = state.dir.openInput(bloomFileName, state.context);
         CodecUtil.checkHeader(bloomIn, BLOOM_CODEC_NAME, BLOOM_CODEC_VERSION,
@@ -178,8 +179,13 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
           FieldInfo fieldInfo = state.fieldInfos.fieldInfo(fieldNum);
           bloomsByFieldName.put(fieldInfo.name, bloom);
         }
+        success = true;
       } finally {
-        IOUtils.close(bloomIn);
+        if (!success) {
+          IOUtils.close(bloomIn, delegateFieldsProducer);
+        } else {
+          IOUtils.close(bloomIn);
+        }
       }
       
     }
