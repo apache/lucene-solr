@@ -179,7 +179,8 @@ public class BlockTreeTermsReader extends FieldsProducer {
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(in, indexIn, this);
+        // this.close() will close in:
+        IOUtils.closeWhileHandlingException(indexIn, this);
       }
     }
   }

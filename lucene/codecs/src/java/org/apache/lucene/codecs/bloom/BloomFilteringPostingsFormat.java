@@ -179,15 +179,13 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
           FieldInfo fieldInfo = state.fieldInfos.fieldInfo(fieldNum);
           bloomsByFieldName.put(fieldInfo.name, bloom);
         }
+        IOUtils.close(bloomIn);
         success = true;
       } finally {
         if (!success) {
           IOUtils.close(bloomIn, delegateFieldsProducer);
-        } else {
-          IOUtils.close(bloomIn);
         }
       }
-      
     }
     
     public Iterator<String> iterator() {
