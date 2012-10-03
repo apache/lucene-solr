@@ -156,9 +156,9 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
                       if (params != null) {
                         String fmt = null;
                         if (params.getBool(UpdateParams.OPTIMIZE, false)) {
-                          fmt = "<optimize waitSearcher=\"%s\" waitFlush=\"%s\" />";
+                          fmt = "<optimize waitSearcher=\"%s\" />";
                         } else if (params.getBool(UpdateParams.COMMIT, false)) {
-                          fmt = "<commit waitSearcher=\"%s\" waitFlush=\"%s\" />";
+                          fmt = "<commit waitSearcher=\"%s\" />";
                         }
                         if (fmt != null) {
                           byte[] content = String.format(Locale.ROOT,
