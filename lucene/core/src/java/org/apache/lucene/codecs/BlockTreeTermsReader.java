@@ -172,12 +172,14 @@ public class BlockTreeTermsReader extends FieldsProducer {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name + " (resource=" + in + ")");
         }
       }
+      if (indexDivisor != -1) {
+        indexIn.close();
+      }
+
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(indexIn, this);
-      } else if (indexDivisor != -1) {
-        indexIn.close();
+        IOUtils.closeWhileHandlingException(in, indexIn, this);
       }
     }
   }
