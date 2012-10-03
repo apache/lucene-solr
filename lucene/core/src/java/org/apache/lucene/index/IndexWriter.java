@@ -2335,10 +2335,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             assert !infos.contains(info): "dup info dir=" + info.info.dir + " name=" + info.info.name;
 
             String newSegName = newSegmentName();
-            String dsName = info.info.name;
 
             if (infoStream.isEnabled("IW")) {
-              infoStream.message("IW", "addIndexes: process segment origName=" + info.info.name + " newName=" + newSegName + " dsName=" + dsName + " info=" + info);
+              infoStream.message("IW", "addIndexes: process segment origName=" + info.info.name + " newName=" + newSegName + " info=" + info);
             }
 
             IOContext context = new IOContext(new MergeInfo(info.info.getDocCount(), info.info.sizeInBytes(), true, -1));
@@ -2484,7 +2483,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // Now create the compound file if needed
       if (useCompoundFile) {
         Collection<String> filesToDelete = infoPerCommit.files();
-        try{
+        try {
           createCompoundFile(infoStream, directory, MergeState.CheckAbort.NONE, info, context);
         } finally {
           // delete new non cfs files directly: they were never
@@ -3955,7 +3954,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
 
       synchronized(this) {
 
-        assert lastCommitChangeCount <= changeCount;
+        assert lastCommitChangeCount <= changeCount: "lastCommitChangeCount=" + lastCommitChangeCount + " changeCount=" + changeCount;
 
         if (pendingCommitChangeCount == lastCommitChangeCount) {
           if (infoStream.isEnabled("IW")) {
