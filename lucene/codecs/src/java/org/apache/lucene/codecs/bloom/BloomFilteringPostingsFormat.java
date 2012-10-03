@@ -183,7 +183,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
         success = true;
       } finally {
         if (!success) {
-          IOUtils.close(bloomIn, delegateFieldsProducer);
+          IOUtils.closeWhileHandlingException(bloomIn, delegateFieldsProducer);
         }
       }
     }
