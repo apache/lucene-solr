@@ -351,6 +351,9 @@ Bug Fixes
 
 * SOLR-3637: Commit Status at Core-Admin UI is always false (steffkes)
 
+* SOLR-3903: Fixed MissingFormatArgumentException in ConcurrentUpdateSolrServer
+  (hossman)
+
 Other Changes
 ----------------------
 
