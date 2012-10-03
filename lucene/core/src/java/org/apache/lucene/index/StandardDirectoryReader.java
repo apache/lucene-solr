@@ -334,13 +334,13 @@ final class StandardDirectoryReader extends DirectoryReader {
 
   @Override
   protected void doClose() throws IOException {
-    IOException ioe = null;
+    Throwable firstExc = null;
     for (final AtomicReader r : getSequentialSubReaders()) {
       // try to close each reader, even if an exception is thrown
       try {
         r.decRef();
-      } catch (IOException e) {
-        if (ioe == null) ioe = e;
+      } catch (Throwable t) {
+        if (t == null) firstExc = t;
       }
     }
 
@@ -351,7 +351,12 @@ final class StandardDirectoryReader extends DirectoryReader {
     }
 
     // throw the first exception
-    if (ioe != null) throw ioe;
+    if (firstExc != null) {
+      if (firstExc instanceof IOException) throw (IOException) firstExc;
+      if (firstExc instanceof RuntimeException) throw (RuntimeException) firstExc;
+      if (firstExc instanceof Error) throw (Error) firstExc;
+      throw new RuntimeException(firstExc);
+    }
   }
 
   @Override
