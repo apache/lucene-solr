@@ -498,7 +498,14 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       throw fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
     }
 
-    IndexInput ii = new MockIndexInputWrapper(this, name, delegate.openInput(name, LuceneTestCase.newIOContext(randomState, context)));
+    IndexInput delegateInput = delegate.openInput(name, LuceneTestCase.newIOContext(randomState, context));
+
+    final IndexInput ii;
+    if (randomState.nextInt(500) == 0) {
+      ii = new SlowClosingMockIndexInputWrapper(this, name, delegateInput);
+    } else {
+      ii = new MockIndexInputWrapper(this, name, delegateInput);
+    }
     addFileHandle(ii, name, Handle.Input);
     return ii;
   }

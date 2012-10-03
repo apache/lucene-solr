@@ -151,7 +151,7 @@ final class StandardDirectoryReader extends DirectoryReader {
       }
 
       boolean success = false;
-      IOException prior = null;
+      Throwable prior = null;
       try {
         SegmentReader newReader;
         if (newReaders[i] == null || infos.info(i).info.getUseCompoundFile() != newReaders[i].getSegmentInfo().info.getUseCompoundFile()) {
@@ -176,7 +176,7 @@ final class StandardDirectoryReader extends DirectoryReader {
           }
         }
         success = true;
-      } catch (IOException ex) {
+      } catch (Throwable ex) {
         prior = ex;
       } finally {
         if (!success) {
@@ -192,14 +192,19 @@ final class StandardDirectoryReader extends DirectoryReader {
                   // closing we must decRef it
                   newReaders[i].decRef();
                 }
-              } catch (IOException ex) {
-                if (prior == null) prior = ex;
+              } catch (Throwable t) {
+                if (prior == null) prior = t;
               }
             }
           }
         }
         // throw the first exception
-        if (prior != null) throw prior;
+        if (prior != null) {
+          if (prior instanceof IOException) throw (IOException) prior;
+          if (prior instanceof RuntimeException) throw (RuntimeException) prior;
+          if (prior instanceof Error) throw (Error) prior;
+          throw new RuntimeException(prior);
+        }
       }
     }    
     return new StandardDirectoryReader(directory, newReaders, writer, infos, termInfosIndexDivisor, false);
