@@ -615,9 +615,14 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
               if (LuceneTestCase.VERBOSE) {
                 System.out.println("MDW: Unreferenced check: Ignoring segments file: " + file + " that we could not delete.");
               }
+              SegmentInfos sis = new SegmentInfos();
               try {
-                SegmentInfos sis = new SegmentInfos();
                 sis.read(delegate, file);
+              } catch (IOException ioe) {
+                // OK: likely some of the .si files were deleted
+              }
+
+              try {
                 Set<String> ghosts = new HashSet<String>(sis.files(delegate, false));
                 for (String s : ghosts) {
                   if (endSet.contains(s) && !startSet.contains(s)) {
@@ -629,7 +634,10 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
                     startSet.add(s);
                   }
                 }
-              } catch (Throwable ignore) {}
+              } catch (Throwable t) {
+                System.err.println("ERROR processing leftover segments file " + file + ":");
+                t.printStackTrace();
+              }
             }
           }
 
