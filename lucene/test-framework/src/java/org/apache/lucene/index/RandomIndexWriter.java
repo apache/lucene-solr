@@ -402,10 +402,16 @@ public class RandomIndexWriter implements Closeable {
       final int segCount = w.getSegmentCount();
       if (r.nextBoolean() || segCount == 0) {
         // full forceMerge
+        if (LuceneTestCase.VERBOSE) {
+          System.out.println("RIW: doRandomForceMerge(1)");
+        }
         w.forceMerge(1);
       } else {
         // partial forceMerge
         final int limit = _TestUtil.nextInt(r, 1, segCount);
+        if (LuceneTestCase.VERBOSE) {
+          System.out.println("RIW: doRandomForceMerge(" + limit + ")");
+        }
         w.forceMerge(limit);
         assert !doRandomForceMergeAssert || w.getSegmentCount() <= limit: "limit=" + limit + " actual=" + w.getSegmentCount();
       }
