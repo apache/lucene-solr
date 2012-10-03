@@ -1959,9 +1959,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // them:
         deleter.checkpoint(segmentInfos, false);
         deleter.refresh();
-      }
 
-      lastCommitChangeCount = changeCount;
+        lastCommitChangeCount = changeCount;
+      }
 
       success = true;
     } catch (OutOfMemoryError oom) {
