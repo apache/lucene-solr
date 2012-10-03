@@ -41,6 +41,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.UnicodeUtil;
 
 /** Exposes flex API on a pre-flex index, as a codec. 
@@ -163,21 +164,7 @@ class Lucene3xFields extends FieldsProducer {
 
   @Override
   public void close() throws IOException {
-    if (tis != null) {
-      tis.close();
-    }
-    if (tisNoIndex != null) {
-      tisNoIndex.close();
-    }
-    if (cfsReader != null) {
-      cfsReader.close();
-    }
-    if (freqStream != null) {
-      freqStream.close();
-    }
-    if (proxStream != null) {
-      proxStream.close();
-    }
+    IOUtils.close(tis, tisNoIndex, cfsReader, freqStream, proxStream);
   }
   
   private class PreTerms extends Terms {
