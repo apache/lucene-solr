@@ -403,6 +403,9 @@ Bug Fixes
 * SOLR-3883: Distributed indexing forwards non-applicable request params.
   (Dan Sutton, Per Steffensen, yonik, Mark Miller)
 
+* SOLR-3903: Fixed MissingFormatArgumentException in ConcurrentUpdateSolrServer
+  (hossman)
+
 Other Changes
 ----------------------
 
