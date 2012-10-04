@@ -43,6 +43,11 @@ Optimizations
   into the skipdata. You need to reindex any indexes created with
   this experimental codec.  (Robert Muir)
 
+* LUCENE-4459: Improve WeakIdentityMap.keyIterator() to remove GCed keys
+  from backing map early instead of waiting for reap(). This makes test
+  failures in TestWeakIdentityMap disappear, too.
+  (Uwe Schindler, Mike McCandless, Robert Muir)
+
 Build
 
 * LUCENE-4451: Memory leak per unique thread caused by 

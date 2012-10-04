@@ -133,22 +133,22 @@ public final class WeakIdentityMap<K,V> {
     
       @Override
       public boolean hasNext() {
-        return nextIsSet ? true : setNext();
+        return nextIsSet || setNext();
       }
       
       @Override @SuppressWarnings("unchecked")
       public K next() {
-        if (nextIsSet || setNext()) {
-          try {
-            assert nextIsSet;
-            return (K) next;
-          } finally {
-             // release strong reference and invalidate current value:
-            nextIsSet = false;
-            next = null;
-          }
+        if (!hasNext()) {
+          throw new NoSuchElementException();
         }
-        throw new NoSuchElementException();
+        assert nextIsSet;
+        try {
+          return (K) next;
+        } finally {
+           // release strong reference and invalidate current value:
+          nextIsSet = false;
+          next = null;
+        }
       }
       
       @Override
@@ -161,14 +161,15 @@ public final class WeakIdentityMap<K,V> {
         while (iterator.hasNext()) {
           next = iterator.next().get();
           if (next == null) {
-            // already garbage collected!
-            continue;
+            // the key was already GCed, we can remove it from backing map:
+            iterator.remove();
+          } else {
+            // unfold "null" special value:
+            if (next == NULL) {
+              next = null;
+            }
+            return nextIsSet = true;
           }
-          // unfold "null" special value
-          if (next == NULL) {
-            next = null;
-          }
-          return nextIsSet = true;
         }
         return false;
       }

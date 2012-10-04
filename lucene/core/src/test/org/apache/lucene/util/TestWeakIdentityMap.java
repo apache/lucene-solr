@@ -122,13 +122,16 @@ public class TestWeakIdentityMap extends LuceneTestCase {
     for (int i = 0; size > 0 && i < 10; i++) try {
       System.runFinalization();
       System.gc();
+      int newSize = map.size();
+      assertTrue("previousSize("+size+")>=newSize("+newSize+")", size >= newSize);
+      size = newSize;
       Thread.sleep(100L);
       c = 0;
       for (Iterator<String> it = map.keyIterator(); it.hasNext();) {
         assertNotNull(it.next());
         c++;
       }
-      final int newSize = map.size();
+      newSize = map.size();
       assertTrue("previousSize("+size+")>=iteratorSize("+c+")", size >= c);
       assertTrue("iteratorSize("+c+")>=newSize("+newSize+")", c >= newSize);
       size = newSize;
@@ -223,13 +226,16 @@ public class TestWeakIdentityMap extends LuceneTestCase {
     for (int i = 0; size > 0 && i < 10; i++) try {
       System.runFinalization();
       System.gc();
+      int newSize = map.size();
+      assertTrue("previousSize("+size+")>=newSize("+newSize+")", size >= newSize);
+      size = newSize;
       Thread.sleep(100L);
       int c = 0;
       for (Iterator<Object> it = map.keyIterator(); it.hasNext();) {
         assertNotNull(it.next());
         c++;
       }
-      final int newSize = map.size();
+      newSize = map.size();
       assertTrue("previousSize("+size+")>=iteratorSize("+c+")", size >= c);
       assertTrue("iteratorSize("+c+")>=newSize("+newSize+")", c >= newSize);
       size = newSize;
