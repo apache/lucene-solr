@@ -40,18 +40,18 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     start(waitThreads);
     assertFalse(ctrl.hasBlocked());
     assertFalse(ctrl.anyStalledThreads());
-    join(waitThreads, 10);
+    join(waitThreads);
     
     // now stall threads and wake them up again
     ctrl.updateStalled(true);
     waitThreads = waitThreads(atLeast(1), ctrl);
     start(waitThreads);
-    awaitState(100, Thread.State.WAITING, waitThreads);
+    awaitState(Thread.State.WAITING, waitThreads);
     assertTrue(ctrl.hasBlocked());
     assertTrue(ctrl.anyStalledThreads());
     ctrl.updateStalled(false);
     assertFalse(ctrl.anyStalledThreads());
-    join(waitThreads, 500);
+    join(waitThreads);
   }
   
   public void testRandom() throws InterruptedException {
@@ -90,7 +90,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
       }
       
     }
-    join(stallThreads, 100);
+    join(stallThreads);
     
   }
   
@@ -306,10 +306,10 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     Thread.sleep(1); // let them start
   }
   
-  public static void join(Thread[] toJoin, long timeout)
+  public static void join(Thread[] toJoin)
       throws InterruptedException {
     for (Thread thread : toJoin) {
-      thread.join(timeout);
+      thread.join();
     }
   }
   
@@ -325,11 +325,12 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     }
     return array;
   }
-  
-  public static void awaitState(long timeout, Thread.State state,
+
+  /** Waits for all incoming threads to be in wait()
+   *  methods. */
+  public static void awaitState(Thread.State state,
       Thread... threads) throws InterruptedException {
-    long t = System.currentTimeMillis();
-    while (System.currentTimeMillis() - t <= timeout) {
+    while (true) {
       boolean done = true;
       for (Thread thread : threads) {
         if (thread.getState() != state) {
@@ -345,8 +346,6 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
         Thread.sleep(1);
       }
     }
-    fail("timed out waiting for state: " + state + " timeout: " + timeout
-        + " ms");
   }
   
   private static final class Synchronizer {
