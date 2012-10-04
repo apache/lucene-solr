@@ -547,7 +547,7 @@ public class LiveIndexWriterConfig {
     sb.append("ramBufferSizeMB=").append(getRAMBufferSizeMB()).append("\n");
     sb.append("maxBufferedDocs=").append(getMaxBufferedDocs()).append("\n");
     sb.append("maxBufferedDeleteTerms=").append(getMaxBufferedDeleteTerms()).append("\n");
-    sb.append("mergedSegmentWarmer=").append(getMergeScheduler()).append("\n");
+    sb.append("mergedSegmentWarmer=").append(getMergedSegmentWarmer()).append("\n");
     sb.append("readerTermsIndexDivisor=").append(getReaderTermsIndexDivisor()).append("\n");
     sb.append("termIndexInterval=").append(getTermIndexInterval()).append("\n"); // TODO: this should be private to the codec, not settable here
     sb.append("delPolicy=").append(getIndexDeletionPolicy().getClass().getName()).append("\n");

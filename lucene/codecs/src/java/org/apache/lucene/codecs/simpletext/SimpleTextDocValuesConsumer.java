@@ -198,6 +198,7 @@ public class SimpleTextDocValuesConsumer extends DocValuesConsumer {
         IOUtils.close(output);
       } else {
         IOUtils.closeWhileHandlingException(output);
+        dir.deleteFile(fileName);
       }
     }
   }

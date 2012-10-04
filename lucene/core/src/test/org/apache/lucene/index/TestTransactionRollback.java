@@ -21,17 +21,18 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Test class to illustrate using IndexDeletionPolicy to provide multi-level rollback capability.
@@ -55,13 +56,16 @@ public class TestTransactionRollback extends LuceneTestCase {
     for (Iterator<IndexCommit> iterator = commits.iterator(); iterator.hasNext();) {
       IndexCommit commit =  iterator.next();
       Map<String,String> ud=commit.getUserData();
-      if (ud.size() > 0)
-        if (ud.get("index").endsWith(ids))
-          last=commit;
+      if (ud.size() > 0) {
+        if (ud.get("index").endsWith(ids)) {
+          last = commit;
+        }
+      }
     }
 
-    if (last==null)
+    if (last==null) {
       throw new RuntimeException("Couldn't find commit point "+id);
+    }
 
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())).setIndexDeletionPolicy(
@@ -74,13 +78,13 @@ public class TestTransactionRollback extends LuceneTestCase {
 
   public void testRepeatedRollBacks() throws Exception {
 
-    int expectedLastRecordId=100;
+    int expectedLastRecordId = 100;
     while (expectedLastRecordId>10) {
-      expectedLastRecordId -=10;
+      expectedLastRecordId -= 10;
       rollBackLast(expectedLastRecordId);
       
       BitSet expecteds = new BitSet(100);
-      expecteds.set(1,(expectedLastRecordId+1),true);
+      expecteds.set(1, (expectedLastRecordId+1), true);
       checkExpecteds(expecteds);
     }
   }
@@ -125,6 +129,7 @@ public class TestTransactionRollback extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
+
     //Build index, of records 1 to 100, committing after each batch of 10
     IndexDeletionPolicy sdp=new KeepAllDeletionPolicy();
     IndexWriter w=new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random())).setIndexDeletionPolicy(sdp));
@@ -199,6 +204,7 @@ public class TestTransactionRollback extends LuceneTestCase {
   }
 
   public void testRollbackDeletionPolicy() throws Exception {
+
     for(int i=0;i<2;i++) {
       // Unless you specify a prior commit point, rollback
       // should not work:

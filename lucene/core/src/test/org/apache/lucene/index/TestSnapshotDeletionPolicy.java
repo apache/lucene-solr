@@ -17,17 +17,18 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
-import java.io.IOException;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.junit.Test;
@@ -313,6 +314,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   public void testRollbackToOldSnapshot() throws Exception {
     int numSnapshots = 2;
     Directory dir = newDirectory();
+
     SnapshotDeletionPolicy sdp = getDeletionPolicy();
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), sdp));
     prepareIndexAndSnapshots(sdp, writer, numSnapshots, "snapshot");
@@ -325,10 +327,11 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     writer.deleteUnusedFiles();
     assertSnapshotExists(dir, sdp, numSnapshots - 1);
     writer.close();
-    
+
     // but 'snapshot1' files will still exist (need to release snapshot before they can be deleted).
     String segFileName = sdp.getSnapshot("snapshot1").getSegmentsFileName();
     assertTrue("snapshot files should exist in the directory: " + segFileName, dir.fileExists(segFileName));
+
     dir.close();
   }
 
@@ -385,6 +388,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   @Test
   public void testSnapshotLastCommitTwice() throws Exception {
     Directory dir = newDirectory();
+
     SnapshotDeletionPolicy sdp = getDeletionPolicy();
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), sdp));
     writer.addDocument(new Document());

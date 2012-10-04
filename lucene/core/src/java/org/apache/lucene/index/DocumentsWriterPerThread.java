@@ -137,6 +137,7 @@ class DocumentsWriterPerThread {
    *  currently buffered docs.  This resets our state,
    *  discarding any docs added since last flush. */
   void abort() {
+    //System.out.println(Thread.currentThread().getName() + ": now abort seg=" + segmentInfo.name);
     hasAborted = aborting = true;
     try {
       if (infoStream.isEnabled("DWPT")) {
