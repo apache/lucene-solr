@@ -135,6 +135,8 @@ final class CompoundFileWriter implements Closeable{
     }
     IOException priorException = null;
     IndexOutput entryTableOut = null;
+    // nocommit this code should clean up after itself
+    // (remove partial .cfs/.cfe)
     try {
       if (!pendingEntries.isEmpty() || outputTaken.get()) {
         throw new IllegalStateException("CFS has pending open files");
@@ -162,6 +164,7 @@ final class CompoundFileWriter implements Closeable{
 
   private static boolean assertFileLength(long expected, IndexOutput out)
       throws IOException {
+    // nocommit move this out!
     out.flush();
     assert expected == out.length() : "expected: " + expected + " was "
         + out.length();
