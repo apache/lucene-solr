@@ -135,7 +135,7 @@ final class CompoundFileWriter implements Closeable{
     }
     IOException priorException = null;
     IndexOutput entryTableOut = null;
-    // nocommit this code should clean up after itself
+    // TODO this code should clean up after itself
     // (remove partial .cfs/.cfe)
     try {
       if (!pendingEntries.isEmpty() || outputTaken.get()) {
@@ -145,8 +145,6 @@ final class CompoundFileWriter implements Closeable{
       // open the compound stream
       getOutput();
       assert dataOut != null;
-      long finalLength = dataOut.getFilePointer();
-      assert assertFileLength(finalLength, dataOut);
     } catch (IOException e) {
       priorException = e;
     } finally {
@@ -160,15 +158,6 @@ final class CompoundFileWriter implements Closeable{
     } finally {
       IOUtils.closeWhileHandlingException(priorException, entryTableOut);
     }
-  }
-
-  private static boolean assertFileLength(long expected, IndexOutput out)
-      throws IOException {
-    // nocommit move this out!
-    out.flush();
-    assert expected == out.length() : "expected: " + expected + " was "
-        + out.length();
-    return true;
   }
 
   private final void ensureOpen() {
