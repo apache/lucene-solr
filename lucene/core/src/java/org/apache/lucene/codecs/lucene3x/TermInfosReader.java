@@ -17,6 +17,7 @@ package org.apache.lucene.codecs.lucene3x;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Comparator;
 
@@ -29,6 +30,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.DoubleBarrelLRUCache;
+import org.apache.lucene.util.IOUtils;
 
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
  * Directory.  Pairs are accessed either by Term or by ordinal position the
@@ -38,7 +40,7 @@ import org.apache.lucene.util.DoubleBarrelLRUCache;
  * @lucene.experimental
  */
 @Deprecated
-final class TermInfosReader {
+final class TermInfosReader implements Closeable {
   private final Directory directory;
   private final String segment;
   private final FieldInfos fieldInfos;
@@ -155,10 +157,8 @@ final class TermInfosReader {
     return origEnum.maxSkipLevels;
   }
 
-  void close() throws IOException {
-    if (origEnum != null)
-      origEnum.close();
-    threadResources.close();
+  public void close() throws IOException {
+    IOUtils.close(origEnum, threadResources);
   }
 
   /** Returns the number of term/value pairs in the set. */
