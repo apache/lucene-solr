@@ -340,7 +340,7 @@ final class StandardDirectoryReader extends DirectoryReader {
       try {
         r.decRef();
       } catch (Throwable t) {
-        if (t == null) firstExc = t;
+        if (firstExc == null) firstExc = t;
       }
     }
 
