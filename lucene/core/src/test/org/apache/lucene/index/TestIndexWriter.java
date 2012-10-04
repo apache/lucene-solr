@@ -1039,7 +1039,7 @@ public class TestIndexWriter extends LuceneTestCase {
             allowInterrupt = true;
           }
         } catch (ThreadInterruptedException re) {
-          if (VERBOSE) {
+          if (true || VERBOSE) {
             System.out.println("TEST: got interrupt");
             re.printStackTrace(System.out);
           }

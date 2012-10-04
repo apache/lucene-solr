@@ -3211,14 +3211,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       deleter.deleteNewFiles(merge.info.files());
     }
 
+    // Must note the change to segmentInfos so any commits
+    // in-flight don't lose it (IFD will incRef/protect the
+    // new files we created):
+    checkpoint();
+
     // Must close before checkpoint, otherwise IFD won't be
     // able to delete the held-open files from the merge
     // readers:
     closeMergeReaders(merge, false);
 
-    // Must note the change to segmentInfos so any commits
-    // in-flight don't lose it:
-    checkpoint();
+    deleter.deletePendingFiles();
 
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "after commitMerge: " + segString());
@@ -3282,6 +3285,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       try {
         try {
           mergeInit(merge);
+          //if (merge.info != null) {
+          //System.out.println("MERGE: " + merge.info.info.name);
+          //}
 
           if (infoStream.isEnabled("IW")) {
             infoStream.message("IW", "now merge\n  merge=" + segString(merge.segments) + "\n  index=" + segString());
@@ -3672,7 +3678,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       merge.checkAborted(directory);
 
       // This is where all the work happens:
-      MergeState mergeState = merger.merge();
+      MergeState mergeState;
+      boolean success3 = false;
+      try {
+        mergeState = merger.merge();
+        success3 = true;
+      } finally {
+        if (!success3) {
+          synchronized(this) {  
+            deleter.refresh(merge.info.info.name);
+          }
+        }
+      }
       assert mergeState.segmentInfo == merge.info.info;
       merge.info.info.setFiles(new HashSet<String>(dirWrapper.getCreatedFiles()));
 
