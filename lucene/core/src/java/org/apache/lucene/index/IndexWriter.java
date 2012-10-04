@@ -3724,7 +3724,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       merge.checkAborted(directory);
 
       // This is where all the work happens:
-      MergeState mergeState = merger.merge();
+      MergeState mergeState;
+      boolean success3 = false;
+      try {
+        mergeState = merger.merge();
+        success3 = true;
+      } finally {
+        if (!success3) {
+          synchronized(this) {  
+            deleter.refresh(merge.info.info.name);
+          }
+        }
+      }
       assert mergeState.segmentInfo == merge.info.info;
       merge.info.info.setFiles(new HashSet<String>(dirWrapper.getCreatedFiles()));
 
