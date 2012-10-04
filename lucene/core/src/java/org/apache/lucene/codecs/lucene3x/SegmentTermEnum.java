@@ -17,6 +17,7 @@ package org.apache.lucene.codecs.lucene3x;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.FieldInfos;
@@ -31,7 +32,7 @@ import org.apache.lucene.index.IndexFormatTooNewException;
  * @lucene.experimental */
 
 @Deprecated
-final class SegmentTermEnum implements Cloneable {
+final class SegmentTermEnum implements Cloneable,Closeable {
   private IndexInput input;
   FieldInfos fieldInfos;
   long size;
