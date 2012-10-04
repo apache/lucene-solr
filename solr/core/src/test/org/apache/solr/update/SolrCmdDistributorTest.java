@@ -44,7 +44,7 @@ import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 
 public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
-  private static ThreadPoolExecutor executor;
+  private ThreadPoolExecutor executor;
   
   public SolrCmdDistributorTest() {
     fixShardCount = true;
@@ -240,6 +240,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   @Override
   public void tearDown() throws Exception {
     ExecutorUtil.shutdownNowAndAwaitTermination(executor);
+    executor = null;
     super.tearDown();
   }
 }
