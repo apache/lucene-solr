@@ -3211,15 +3211,27 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       deleter.deleteNewFiles(merge.info.files());
     }
 
-    // Must note the change to segmentInfos so any commits
-    // in-flight don't lose it (IFD will incRef/protect the
-    // new files we created):
-    checkpoint();
-
-    // Must close before checkpoint, otherwise IFD won't be
-    // able to delete the held-open files from the merge
-    // readers:
-    closeMergeReaders(merge, false);
+    boolean success = false;
+    try {
+      // Must close before checkpoint, otherwise IFD won't be
+      // able to delete the held-open files from the merge
+      // readers:
+      closeMergeReaders(merge, false);
+      success = true;
+    } finally {
+      // Must note the change to segmentInfos so any commits
+      // in-flight don't lose it (IFD will incRef/protect the
+      // new files we created):
+      if (success) {
+        checkpoint();
+      } else {
+        try {
+          checkpoint();
+        } catch (Throwable t) {
+          // Ignore so we keep throwing original exception.
+        }
+      }
+    }
 
     deleter.deletePendingFiles();
 
