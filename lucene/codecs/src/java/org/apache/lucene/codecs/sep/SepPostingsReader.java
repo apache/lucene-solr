@@ -37,6 +37,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 /** Concrete class that reads the current doc/freq/skip
  *  postings format.    
@@ -101,30 +102,7 @@ public class SepPostingsReader extends PostingsReaderBase {
 
   @Override
   public void close() throws IOException {
-    try {
-      if (freqIn != null)
-        freqIn.close();
-    } finally {
-      try {
-        if (docIn != null)
-          docIn.close();
-      } finally {
-        try {
-          if (skipIn != null)
-            skipIn.close();
-        } finally {
-          try {
-            if (posIn != null) {
-              posIn.close();
-            }
-          } finally {
-            if (payloadIn != null) {
-              payloadIn.close();
-            }
-          }
-        }
-      }
-    }
+    IOUtils.close(freqIn, docIn, skipIn, posIn, payloadIn);
   }
 
   private static final class SepTermState extends BlockTermState {

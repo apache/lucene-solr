@@ -66,7 +66,9 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
       success = true;
     } finally {
       if (!success) {
-        close();
+        try {
+          close();
+        } catch (Throwable t) {} // ensure we throw our original exception
       }
     }
     readIndex();

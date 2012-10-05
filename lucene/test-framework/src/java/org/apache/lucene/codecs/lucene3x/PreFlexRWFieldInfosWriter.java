@@ -26,6 +26,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * @lucene.internal
@@ -58,6 +59,7 @@ class PreFlexRWFieldInfosWriter extends FieldInfosWriter {
   public void write(Directory directory, String segmentName, FieldInfos infos, IOContext context) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", FIELD_INFOS_EXTENSION);
     IndexOutput output = directory.createOutput(fileName, context);
+    boolean success = false;
     try {
       output.writeVInt(FORMAT_PREFLEX_RW);
       output.writeVInt(infos.size());
@@ -90,8 +92,13 @@ class PreFlexRWFieldInfosWriter extends FieldInfosWriter {
         }
         assert fi.attributes() == null; // not used or supported
       }
+      success = true;
     } finally {
-      output.close();
+      if (success) {
+        output.close();
+      } else {
+        IOUtils.closeWhileHandlingException(output);
+      }
     }
   }
   

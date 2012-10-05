@@ -163,7 +163,9 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
       // of things that were opened so that we don't have to
       // wait for a GC to do so.
       if (!success) {
-        close();
+        try {
+          close();
+        } catch (Throwable t) {} // keep our original exception
       }
     }
   }

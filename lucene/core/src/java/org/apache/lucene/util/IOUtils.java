@@ -335,7 +335,7 @@ public final class IOUtils {
     for (String name : files) {
       try {
         dir.deleteFile(name);
-      } catch (IOException ignored) {
+      } catch (Throwable ignored) {
         // ignore
       }
     }
