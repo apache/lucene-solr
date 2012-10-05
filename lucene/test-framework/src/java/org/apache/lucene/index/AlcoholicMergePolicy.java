@@ -47,6 +47,7 @@ public class AlcoholicMergePolicy extends LogMergePolicy {
   
   public AlcoholicMergePolicy(TimeZone tz, Random random) {
     this.calendar = new GregorianCalendar(tz, Locale.ROOT);
+    calendar.setTimeInMillis(_TestUtil.nextLong(random, 0, Long.MAX_VALUE));
     this.random = random;
     maxMergeSize = _TestUtil.nextInt(random, 1024*1024, Integer.MAX_VALUE);
   }
