@@ -41,8 +41,7 @@ class DocumentsWriterFlushQueue {
                    // a window for #anyChanges to fail
       boolean success = false;
       try {
-        queue
-            .add(new GlobalDeletesTicket(deleteQueue.freezeGlobalBuffer(null)));
+        queue.add(new GlobalDeletesTicket(deleteQueue.freezeGlobalBuffer(null)));
         success = true;
       } finally {
         if (!success) {
@@ -111,7 +110,7 @@ class DocumentsWriterFlushQueue {
       if (canPublish) {
         try {
           /*
-           * if we bock on publish -> lock IW -> lock BufferedDeletes we don't block
+           * if we block on publish -> lock IW -> lock BufferedDeletes we don't block
            * concurrent segment flushes just because they want to append to the queue.
            * the downside is that we need to force a purge on fullFlush since ther could
            * be a ticket still in the queue. 
@@ -119,7 +118,7 @@ class DocumentsWriterFlushQueue {
           head.publish(writer);
         } finally {
           synchronized (this) {
-            // finally remove the publised ticket from the queue
+            // finally remove the published ticket from the queue
             final FlushTicket poll = queue.poll();
             ticketCount.decrementAndGet();
             assert poll == head;
@@ -150,6 +149,10 @@ class DocumentsWriterFlushQueue {
         purgeLock.unlock();
       }
     }
+  }
+
+  public int getTicketCount() {
+    return ticketCount.get();
   }
 
   synchronized void clear() {
@@ -186,7 +189,7 @@ class DocumentsWriterFlushQueue {
       return true;
     }
   }
-  
+
   static final class SegmentFlushTicket extends FlushTicket {
     private FlushedSegment segment;
     private boolean failed = false;

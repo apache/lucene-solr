@@ -43,8 +43,10 @@ public class TestBagOfPostings extends LuceneTestCase {
     List<String> postingsList = new ArrayList<String>();
     int numTerms = atLeast(300);
     final int maxTermsPerDoc = _TestUtil.nextInt(random(), 10, 20);
-    //System.out.println("maxTermsPerDoc=" + maxTermsPerDoc);
-    //System.out.println("numTerms=" + numTerms);
+    if (VERBOSE) {
+      System.out.println("maxTermsPerDoc=" + maxTermsPerDoc);
+      System.out.println("numTerms=" + numTerms);
+    }
     for (int i = 0; i < numTerms; i++) {
       String term = Integer.toString(i);
       for (int j = 0; j < i; j++) {
@@ -59,11 +61,14 @@ public class TestBagOfPostings extends LuceneTestCase {
     final RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
 
     int threadCount = _TestUtil.nextInt(random(), 1, 5);
-    //System.out.println("threadCount=" + threadCount);
+    if (VERBOSE) {
+      System.out.println("config: " + iw.w.getConfig());
+      System.out.println("threadCount=" + threadCount);
+    }
 
     Thread[] threads = new Thread[threadCount];
     final CountDownLatch startingGun = new CountDownLatch(1);
-    
+
     for(int threadID=0;threadID<threadCount;threadID++) {
       threads[threadID] = new Thread() {
           @Override
