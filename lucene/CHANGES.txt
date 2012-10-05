@@ -10,6 +10,9 @@ http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib
 
 New Features
 
+* LUCENE-4426: New ValueSource implementations (in lucene/queries) for
+  DocValues fields. (Adrien Grand)
+
 * LUCENE-4410: FilteredQuery now exposes a FilterStrategy that exposes
   how filters are applied during query execution. (Simon Willnauer) 
 

@@ -30,8 +30,7 @@ import org.apache.lucene.queries.function.ValueSource;
  * This {@link ValueSource} is compatible with all numerical
  * {@link FunctionValues}
  * 
- * @lucene.experimental
- * 
+ * @deprecated Use {@link NumericDocValuesFieldSource} instead.
  */
 public class NumericIndexDocValueSource extends ValueSource {
 
@@ -63,6 +62,10 @@ public class NumericIndexDocValueSource extends ValueSource {
         }
       };
 
+    case FIXED_INTS_8:
+    case FIXED_INTS_16:
+    case FIXED_INTS_32:
+    case FIXED_INTS_64:
     case VAR_INTS:
       return new FunctionValues() {
         @Override
