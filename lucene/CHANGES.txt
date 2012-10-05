@@ -20,6 +20,10 @@ Changes in backwards compatibility policy
 
 New Features
 
+* LUCENE-4226: New experimental StoredFieldsFormat (in lucene/codecs) that
+  compresses chunks of documents together in order to improve the compression
+  ratio. (Adrien Grand)
+
 * LUCENE-4426: New ValueSource implementations (in lucene/queries) for
   DocValues fields. (Adrien Grand)
 
