@@ -102,7 +102,9 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
       // of things that were opened so that we don't have to
       // wait for a GC to do so.
       if (!success) {
-        close();
+        try {
+          close();
+        } catch (Throwable t) {} // ensure we throw our original exception
       }
     }
   }

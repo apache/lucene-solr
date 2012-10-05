@@ -85,7 +85,9 @@ public abstract class PerDocProducerBase extends PerDocProducer {
     } finally {
       if (!success) {
         // if we fail we must close all opened resources if there are any
-        closeInternal(values.values());
+        try {
+          closeInternal(values.values());
+        } catch (Throwable t) {} // keep our original exception
       }
     }
     return values;

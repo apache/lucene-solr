@@ -32,6 +32,7 @@ import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * @lucene.experimental
@@ -60,6 +61,7 @@ class Lucene3xFieldInfosReader extends FieldInfosReader {
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", FIELD_INFOS_EXTENSION);
     IndexInput input = directory.openInput(fileName, iocontext);
     
+    boolean success = false;
     try {
       final int format = input.readVInt();
 
@@ -109,9 +111,15 @@ class Lucene3xFieldInfosReader extends FieldInfosReader {
       if (input.getFilePointer() != input.length()) {
         throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
       }
-      return new FieldInfos(infos);
+      FieldInfos fieldInfos = new FieldInfos(infos);
+      success = true;
+      return fieldInfos;
     } finally {
-      input.close();
+      if (success) {
+        input.close();
+      } else {
+        IOUtils.closeWhileHandlingException(input);
+      }
     }
   }
 }

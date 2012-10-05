@@ -175,7 +175,7 @@ final class PreFlexRWTermVectorsWriter extends TermVectorsWriter {
   public void abort() {
     try {
       close();
-    } catch (IOException ignored) {}
+    } catch (Throwable ignored) {}
     IOUtils.deleteFilesIgnoringExceptions(directory, IndexFileNames.segmentFileName(segment, "", Lucene3xTermVectorsReader.VECTORS_INDEX_EXTENSION),
         IndexFileNames.segmentFileName(segment, "", Lucene3xTermVectorsReader.VECTORS_DOCUMENTS_EXTENSION),
         IndexFileNames.segmentFileName(segment, "", Lucene3xTermVectorsReader.VECTORS_FIELDS_EXTENSION));

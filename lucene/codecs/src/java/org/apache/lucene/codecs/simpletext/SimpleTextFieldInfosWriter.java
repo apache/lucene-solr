@@ -29,6 +29,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * writes plaintext field infos files
@@ -62,6 +63,7 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", FIELD_INFOS_EXTENSION);
     IndexOutput out = directory.createOutput(fileName, context);
     BytesRef scratch = new BytesRef();
+    boolean success = false;
     try {
       SimpleTextUtil.write(out, NUMFIELDS);
       SimpleTextUtil.write(out, Integer.toString(infos.size()), scratch);
@@ -125,8 +127,13 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
           }
         }
       }
+      success = true;
     } finally {
-      out.close();
+      if (success) {
+        out.close();
+      } else {
+        IOUtils.closeWhileHandlingException(out);
+      }
     }
   }
   

@@ -291,7 +291,7 @@ class PreFlexRWNormsConsumer extends PerDocConsumer {
         directory.deleteFile(IndexFileNames.segmentFileName(segment, "",
             NORMS_EXTENSION));
       }
-    } catch (IOException e) {
+    } catch (Throwable e) {
       // ignore
     }
   }
