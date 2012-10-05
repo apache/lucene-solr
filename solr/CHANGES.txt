@@ -406,6 +406,8 @@ Bug Fixes
 * SOLR-3903: Fixed MissingFormatArgumentException in ConcurrentUpdateSolrServer
   (hossman)
 
+* SOLR-3916: Fixed whitespace bug in parsing the fl param (hossman)
+
 Other Changes
 ----------------------
 

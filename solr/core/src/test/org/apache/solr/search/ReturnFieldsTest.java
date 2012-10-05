@@ -21,9 +21,13 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.*;
+
+import org.apache.lucene.util._TestUtil;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Random;
 
 public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
@@ -302,4 +306,38 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
   }
+
+  public void testWhitespace() {
+    Random r = random();
+    final int iters = atLeast(30);
+
+    for (int i = 0; i < iters; i++) {
+      final boolean aliasId = r.nextBoolean();
+      final boolean aliasFoo = r.nextBoolean();
+
+      final String id = _TestUtil.randomWhitespace(r, 0, 3) + 
+        (aliasId ? "aliasId:" : "") +
+        "id" + 
+        _TestUtil.randomWhitespace(r, 1, 3);
+      final String foo_i = _TestUtil.randomWhitespace(r, 0, 3) + 
+        (aliasFoo ? "aliasFoo:" : "") +
+        "foo_i" + 
+        _TestUtil.randomWhitespace(r, 0, 3);
+
+      final String fl = id + (r.nextBoolean() ? "" : ",") + foo_i;
+      ReturnFields rf = new ReturnFields(req("fl", fl));
+
+      assertFalse("score ("+fl+")", rf.wantsScore());
+
+      assertTrue("id ("+fl+")", rf.wantsField("id"));
+      assertTrue("foo_i ("+fl+")", rf.wantsField("foo_i"));
+
+      assertEquals("aliasId ("+fl+")", aliasId, rf.wantsField("aliasId"));
+      assertEquals("aliasFoo ("+fl+")", aliasFoo, rf.wantsField("aliasFoo"));
+
+      assertFalse(rf.wantsField("xxx"));
+      assertFalse(rf.wantsAllFields());
+    }
+  }
+
 }
