@@ -508,8 +508,14 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     final IndexInput ii;
     int randomInt = randomState.nextInt(500);
     if (randomInt == 0) {
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("MockDirectoryWrapper: using SlowClosingMockIndexInputWrapper for file " + name);
+      }
       ii = new SlowClosingMockIndexInputWrapper(this, name, delegateInput);
     } else if (randomInt  == 1) { 
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("MockDirectoryWrapper: using SlowOpeningMockIndexInputWrapper for file " + name);
+      }
       ii = new SlowOpeningMockIndexInputWrapper(this, name, delegateInput);
     } else {
       ii = new MockIndexInputWrapper(this, name, delegateInput);
@@ -660,7 +666,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           endFiles = endSet.toArray(new String[0]);
 
           if (!Arrays.equals(startFiles, endFiles)) {
-            StringBuilder sb = new StringBuilder();
             List<String> removed = new ArrayList<String>();
             for(String fileName : startFiles) {
               if (!endSet.contains(fileName)) {
