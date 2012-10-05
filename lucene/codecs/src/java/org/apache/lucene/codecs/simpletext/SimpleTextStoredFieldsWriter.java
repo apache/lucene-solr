@@ -159,7 +159,7 @@ public class SimpleTextStoredFieldsWriter extends StoredFieldsWriter {
   public void abort() {
     try {
       close();
-    } catch (IOException ignored) {}
+    } catch (Throwable ignored) {}
     IOUtils.deleteFilesIgnoringExceptions(directory, IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION));
   }
 

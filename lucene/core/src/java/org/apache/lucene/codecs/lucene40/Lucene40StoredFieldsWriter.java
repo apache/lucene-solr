@@ -129,7 +129,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
   public void abort() {
     try {
       close();
-    } catch (IOException ignored) {}
+    } catch (Throwable ignored) {}
     IOUtils.deleteFilesIgnoringExceptions(directory,
         IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION),
         IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION));
