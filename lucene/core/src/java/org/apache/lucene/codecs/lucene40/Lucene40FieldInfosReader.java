@@ -32,6 +32,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Lucene 4.0 FieldInfos reader.
@@ -50,6 +51,7 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
     final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene40FieldInfosWriter.FIELD_INFOS_EXTENSION);
     IndexInput input = directory.openInput(fileName, iocontext);
     
+    boolean success = false;
     try {
       CodecUtil.checkHeader(input, Lucene40FieldInfosWriter.CODEC_NAME, 
                                    Lucene40FieldInfosWriter.FORMAT_START, 
@@ -97,10 +99,15 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
       if (input.getFilePointer() != input.length()) {
         throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
       }
-      
-      return new FieldInfos(infos);
+      FieldInfos fieldInfos = new FieldInfos(infos);
+      success = true;
+      return fieldInfos;
     } finally {
-      input.close();
+      if (success) {
+        input.close();
+      } else {
+        IOUtils.closeWhileHandlingException(input);
+      }
     }
   }
 

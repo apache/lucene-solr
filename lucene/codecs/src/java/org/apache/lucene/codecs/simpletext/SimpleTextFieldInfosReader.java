@@ -52,6 +52,7 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
     IndexInput input = directory.openInput(fileName, iocontext);
     BytesRef scratch = new BytesRef();
     
+    boolean success = false;
     try {
       
       SimpleTextUtil.readLine(input, scratch);
@@ -127,9 +128,15 @@ public class SimpleTextFieldInfosReader extends FieldInfosReader {
         throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
       }
       
-      return new FieldInfos(infos);
+      FieldInfos fieldInfos = new FieldInfos(infos);
+      success = true;
+      return fieldInfos;
     } finally {
-      input.close();
+      if (success) {
+        input.close();
+      } else {
+        IOUtils.closeWhileHandlingException(input);
+      }
     }
   }
 

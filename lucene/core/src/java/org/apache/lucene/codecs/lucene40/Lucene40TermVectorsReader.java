@@ -139,7 +139,9 @@ public class Lucene40TermVectorsReader extends TermVectorsReader implements Clos
       // of things that were opened so that we don't have to
       // wait for a GC to do so.
       if (!success) {
-        close();
+        try {
+          close();
+        } catch (Throwable t) {} // ensure we throw our original exception
       }
     }
   }
