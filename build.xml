@@ -238,7 +238,7 @@
   </target>
 
   <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir">
-    <subant buildpath="lucene" target="ivy-boostrap" inheritall="false" failonerror="true"/>
+    <subant buildpath="lucene" target="ivy-bootstrap" inheritall="false" failonerror="true"/>
   </target>
 
   <target name="jar-checksums" description="Recompute SHA1 checksums for all JAR files.">
