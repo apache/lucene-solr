@@ -359,6 +359,9 @@ Bug Fixes
 
 * SOLR-3916: Fixed whitespace bug in parsing the fl param (hossman)
 
+* SOLR-3917: Partial State on Schema-Browser UI is not defined for Dynamic
+  Fields & Types (steffkes)
+
 Other Changes
 ----------------------
 
