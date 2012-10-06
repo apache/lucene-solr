@@ -114,6 +114,18 @@
   padding-left: 5px;
 }
 
+#content #schema-browser #data #field .partial
+{
+  display: none;
+}
+
+#content #schema-browser #data #field .partial p
+{
+  background-image: url( ../../img/ico/exclamation-button.png );
+  background-position: 0 50%;
+  padding-left: 21px;
+}
+
 #content #schema-browser #data #field .field-options .options dt,
 #content #schema-browser #data #field .field-options .options dd
 {

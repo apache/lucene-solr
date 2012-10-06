@@ -166,6 +166,9 @@ Optimizations
 * SOLR-3560: Handle different types of Exception Messages for Logging UI
   (steffkes)
 
+* SOLR-3734: Improve Schema-Browser Handling for CopyField using
+  dynamicField's (steffkes)
+
 Bug Fixes
 ----------------------
 
