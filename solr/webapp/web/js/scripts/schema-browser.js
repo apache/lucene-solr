@@ -776,8 +776,15 @@ sammy.get
         }
         $( '.name', head_element ).html( field.esc() );
 
+
+        var partial_state = false;
+        if( is_f )
+        {
+          partial_state = !!schema_browser_data.fields[field].partial;
+        }
+
         $( '.partial', data_element )
-          .toggle( !!schema_browser_data.fields[field].partial );
+          .toggle( partial_state );
 
         // -- properties
         var properties_element = $( 'dt.properties', options_element );

@@ -63,6 +63,9 @@ Bug Fixes
 
 * SOLR-3637: Commit Status at Core-Admin UI is always false (steffkes)
 
+* SOLR-3917: Partial State on Schema-Browser UI is not defined for Dynamic
+  Fields & Types (steffkes)
+
 Other Changes
 ----------------------
 
