@@ -21,26 +21,10 @@ import com.carrotsearch.randomizedtesting.ThreadFilter;
 
 /**
  * Last minute patches.
- * TODO: remove when integrated in system filters in rr.
  */
 public class QuickPatchThreadsFilter implements ThreadFilter {
   @Override
   public boolean reject(Thread t) {
-    // MacOS system thread.
-    if (t.getName().equals("AWT-AppKit")) {
-      return true;
-    }
-
-    // J9 memory pool thread.
-    if (t.getName().equals("MemoryPoolMXBean notification dispatcher")) {
-      return true;
-    }
-    
-    // forked process reaper on Unixish systems
-    if (t.getName().equals("process reaper")) {
-      return true;
-    }
-
     return false;
   }
 }
