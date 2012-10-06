@@ -2,6 +2,7 @@
 *.jar
 
 # .
+/eclipse-build
 /classes
 /build
 /dist
