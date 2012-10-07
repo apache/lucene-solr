@@ -4030,10 +4030,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
 
         // This call can take a long time -- 10s of seconds
-        // or more.  We do it without sync:
+        // or more.  We do it without syncing on this:
         boolean success = false;
-        final Collection<String> filesToSync = toSync.files(directory, false);
+        final Collection<String> filesToSync;
         try {
+          filesToSync = toSync.files(directory, false);
           directory.sync(filesToSync);
           success = true;
         } finally {
