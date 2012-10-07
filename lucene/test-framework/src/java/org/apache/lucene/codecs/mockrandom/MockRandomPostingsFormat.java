@@ -133,9 +133,17 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+    int minSkipInterval;
+    if (state.segmentInfo.getDocCount() > 1000000) {
+      // Test2BPostings can OOME otherwise:
+      minSkipInterval = 3;
+    } else {
+      minSkipInterval = 2;
+    }
+
     // we pull this before the seed intentionally: because its not consumed at runtime
     // (the skipInterval is written into postings header)
-    int skipInterval = _TestUtil.nextInt(seedRandom, 2, 10);
+    int skipInterval = _TestUtil.nextInt(seedRandom, minSkipInterval, 10);
     
     if (LuceneTestCase.VERBOSE) {
       System.out.println("MockRandomCodec: skipInterval=" + skipInterval);
