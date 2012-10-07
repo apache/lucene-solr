@@ -919,7 +919,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
       success = true;
     } finally {
       if (!success) {
-        IOUtils.closeWhileHandlingException(pendingSegnOutput);
+        // Closes pendingSegnOutput & deletes partial segments_N:
         rollbackCommit(dir);
       } else {
         success = false;
@@ -928,12 +928,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
           success = true;
         } finally {
           if (!success) {
-            final String segmentFileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
-                                                                                 "",
-                                                                                 generation);
-            IOUtils.deleteFilesIgnoringExceptions(dir, segmentFileName);
+            // Closes pendingSegnOutput & deletes partial segments_N:
+            rollbackCommit(dir);
+          } else {
+            pendingSegnOutput = null;
           }
-          pendingSegnOutput = null;
         }
       }
     }
