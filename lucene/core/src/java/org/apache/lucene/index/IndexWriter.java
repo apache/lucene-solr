@@ -3367,9 +3367,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     boolean isExternal = false;
     for(SegmentInfoPerCommit info : merge.segments) {
       if (mergingSegments.contains(info)) {
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "reject merge " + segString(merge.segments) + ": segment " + segString(info) + " is already marked for merge");
+        }
         return false;
       }
       if (!segmentInfos.contains(info)) {
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "reject merge " + segString(merge.segments) + ": segment " + segString(info) + " does not exist in live infos");
+        }
         return false;
       }
       if (info.info.dir != directory) {
