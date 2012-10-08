@@ -675,7 +675,7 @@
                          tofile="${analysis.conf.dest}/stopwords_tr.txt"/>
   </target>
 
-  <target name="jar-checksums" depends="clean-jars,resolve">
+  <target name="jar-checksums" depends="resolve">
     <jar-checksum-macro srcdir="${common-solr.dir}" dstdir="${common-solr.dir}/licenses"/>
   </target>
 
