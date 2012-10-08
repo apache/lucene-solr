@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -54,7 +53,7 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextTermVectorsWriter.*;
  * @lucene.experimental
  */
 public class SimpleTextTermVectorsReader extends TermVectorsReader {
-  private ArrayList<Long> offsets; /* docid -> offset in .vec file */
+  private long offsets[]; /* docid -> offset in .vec file */
   private IndexInput in;
   private BytesRef scratch = new BytesRef();
   private CharsRef scratchUTF16 = new CharsRef();
@@ -71,11 +70,11 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
         } catch (Throwable t) {} // ensure we throw our original exception
       }
     }
-    readIndex();
+    readIndex(si.getDocCount());
   }
   
   // used by clone
-  SimpleTextTermVectorsReader(ArrayList<Long> offsets, IndexInput in) {
+  SimpleTextTermVectorsReader(long offsets[], IndexInput in) {
     this.offsets = offsets;
     this.in = in;
   }
@@ -83,26 +82,29 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
   // we don't actually write a .tvx-like index, instead we read the 
   // vectors file in entirety up-front and save the offsets 
   // so we can seek to the data later.
-  private void readIndex() throws IOException {
-    offsets = new ArrayList<Long>();
+  private void readIndex(int maxDoc) throws IOException {
+    offsets = new long[maxDoc];
+    int upto = 0;
     while (!scratch.equals(END)) {
       readLine();
       if (StringHelper.startsWith(scratch, DOC)) {
-        offsets.add(in.getFilePointer());
+        offsets[upto] = in.getFilePointer();
+        upto++;
       }
     }
+    assert upto == offsets.length;
   }
   
   @Override
   public Fields get(int doc) throws IOException {
     // TestTV tests for this in testBadParams... but is this
     // really guaranteed by the API?
-    if (doc < 0 || doc >= offsets.size()) {
+    if (doc < 0 || doc >= offsets.length) {
       throw new IllegalArgumentException("doc id out of range");
     }
 
     SortedMap<String,SimpleTVTerms> fields = new TreeMap<String,SimpleTVTerms>();
-    in.seek(offsets.get(doc));
+    in.seek(offsets[doc]);
     readLine();
     assert StringHelper.startsWith(scratch, NUMFIELDS);
     int numFields = parseIntAt(NUMFIELDS.length);
