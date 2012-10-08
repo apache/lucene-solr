@@ -544,12 +544,9 @@
     <property name="lucene-core.uptodate" value="true"/>
   </target>
 
-  <!-- TODO: in the future, we don't need to actually put
-       jars in the lib/ folders, but can just put in classpath.
-       only packaging tasks really need that (and could do it
-       under build/ directories) -->
+  <!-- NOTE: not really useful anymore ... -->
   <target name="clean-jars" description="Clean local jars">
-     <delete>
+     <delete failonerror="false">
        <fileset dir="." includes="**/*.jar"/>
      </delete>
   </target>
