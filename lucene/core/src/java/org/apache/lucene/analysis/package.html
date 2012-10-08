@@ -183,7 +183,7 @@ and proximity searches (though sentence identification is not provided by Lucene
     Version matchVersion = Version.LUCENE_XY; // Substitute desired Lucene version for XY
     Analyzer analyzer = new StandardAnalyzer(matchVersion); // or any other analyzer
     TokenStream ts = analyzer.tokenStream("myfield", new StringReader("some text goes here"));
-    OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+    OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
     
     try {
       ts.reset(); // Resets this stream to the beginning. (Required)
@@ -734,7 +734,7 @@ public final class PartOfSpeechAttributeImpl extends AttributeImpl
   {@literal @Override}
   protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
     final Tokenizer source = new WhitespaceTokenizer(matchVersion, reader);
-    TokenStream result = new LengthFilter(source, 3, Integer.MAX_VALUE);
+    TokenStream result = new LengthFilter(true, source, 3, Integer.MAX_VALUE);
     result = new PartOfSpeechTaggingFilter(result);
     return new TokenStreamComponents(source, result);
   }
