@@ -544,13 +544,6 @@
     <property name="lucene-core.uptodate" value="true"/>
   </target>
 
-  <!-- NOTE: not really useful anymore ... -->
-  <target name="clean-jars" description="Clean local jars">
-     <delete failonerror="false">
-       <fileset dir="." includes="**/*.jar"/>
-     </delete>
-  </target>
-
   <target name="get-jenkins-line-docs" unless="enwiki.exists">
     <sequential>
       <!-- TODO: can get .lzma instead (it's ~17% smaller) but there's no builtin ant support...? -->
