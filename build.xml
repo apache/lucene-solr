@@ -101,7 +101,7 @@
     </subant>
   </target>
 
-  <target name="resolve" depends="clean-jars" description="Resolves all dependencies">
+  <target name="resolve" description="Resolves all dependencies">
     <subant target="resolve" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
@@ -174,7 +174,7 @@
     </delete>
   </target>
 
-  <target name="eclipse" depends="clean-jars, resolve" description="Setup Eclipse configuration">
+  <target name="eclipse" depends="resolve" description="Setup Eclipse configuration">
     <copy file="dev-tools/eclipse/dot.project" tofile=".project" overwrite="false"/>
     <copy file="dev-tools/eclipse/dot.classpath" tofile=".classpath" overwrite="true"/>
     <mkdir dir=".settings"/>
@@ -195,7 +195,7 @@
     <delete dir="eclipse-build" failonerror="true"/>
   </target>
 
-  <target name="idea" depends="clean-jars, resolve" description="Setup IntelliJ IDEA configuration">
+  <target name="idea" depends="resolve" description="Setup IntelliJ IDEA configuration">
     <copy todir=".">
       <fileset dir="dev-tools/idea"/>
     </copy>
@@ -225,16 +225,6 @@
       </subant>
       <delete dir="dist" failonerror="false" />
     </sequential>
-  </target>
-
-  <!-- TODO: in the future, we don't need to actually put
-       jars in the lib/ folders, but can just put in classpath.
-       only packaging tasks really need that (and could do it
-       under build/ directories) -->
-  <target name="clean-jars" description="Clean local jars">
-     <delete>
-       <fileset dir="." includes="**/*.jar"/>
-     </delete>
   </target>
 
   <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir">

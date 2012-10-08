@@ -675,13 +675,6 @@
                          tofile="${analysis.conf.dest}/stopwords_tr.txt"/>
   </target>
 
-  <!-- NOTE: not really useful anymore -->
-  <target name="clean-jars" description="Clean local jars">
-     <delete failonerror="false">
-       <fileset dir="." includes="**/*.jar"/>
-     </delete>
-  </target>
-
   <target name="jar-checksums" depends="clean-jars,resolve">
     <jar-checksum-macro srcdir="${common-solr.dir}" dstdir="${common-solr.dir}/licenses"/>
   </target>
