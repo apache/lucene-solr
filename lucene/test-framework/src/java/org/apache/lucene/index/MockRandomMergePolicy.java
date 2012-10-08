@@ -19,10 +19,11 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.lucene.util._TestUtil;
 
@@ -43,14 +44,26 @@ public class MockRandomMergePolicy extends MergePolicy {
     MergeSpecification mergeSpec = null;
     //System.out.println("MRMP: findMerges sis=" + segmentInfos);
 
-    if (segmentInfos.size() > 1 && random.nextInt(5) == 3) {
-      
-      List<SegmentInfoPerCommit> segments = new ArrayList<SegmentInfoPerCommit>(segmentInfos.asList());
+    int numSegments = segmentInfos.size();
+
+    List<SegmentInfoPerCommit> segments = new ArrayList<SegmentInfoPerCommit>();
+    final Collection<SegmentInfoPerCommit> merging = writer.get().getMergingSegments();
+
+    for(SegmentInfoPerCommit sipc : segmentInfos) {
+      if (!merging.contains(sipc)) {
+        segments.add(sipc);
+      }
+    }
+
+    numSegments = segments.size();
+
+    if (numSegments > 1 && (numSegments > 30 || random.nextInt(5) == 3)) {
+
       Collections.shuffle(segments, random);
 
       // TODO: sometimes make more than 1 merge?
       mergeSpec = new MergeSpecification();
-      final int segsToMerge = _TestUtil.nextInt(random, 1, segmentInfos.size());
+      final int segsToMerge = _TestUtil.nextInt(random, 1, numSegments);
       mergeSpec.add(new OneMerge(segments.subList(0, segsToMerge)));
     }
 
