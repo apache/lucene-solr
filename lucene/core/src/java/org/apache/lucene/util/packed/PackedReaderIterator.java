@@ -37,7 +37,7 @@ final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
     this.format = format;
     bulkOperation = BulkOperation.of(format, bitsPerValue);
     iterations = bulkOperation.computeIterations(valueCount, mem);
-    assert iterations > 0;
+    assert valueCount == 0 || iterations > 0;
     nextBlocks = new long[iterations * bulkOperation.blockCount()];
     nextValues = new LongsRef(new long[iterations * bulkOperation.valueCount()], 0, 0);
     assert iterations * bulkOperation.valueCount() == nextValues.longs.length;
