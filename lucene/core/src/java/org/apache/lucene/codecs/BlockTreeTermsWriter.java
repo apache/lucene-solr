@@ -100,8 +100,8 @@ import org.apache.lucene.util.fst.Util;
  * sub-block.</p>
  *
  * <p>NOTE: The term dictionary can plug into different postings implementations:
- * for example the postings writer/reader are actually responsible for encoding 
- * and decoding the MetadataBlock.</p>
+ * the postings writer/reader are actually responsible for encoding 
+ * and decoding the Postings Metadata and Term Metadata sections.</p>
  *
  * <ul>
  * <!-- TODO: expand on this, its not really correct and doesnt explain sub-blocks etc -->
