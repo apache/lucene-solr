@@ -446,6 +446,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       listFields.add(field.stringValue());
     }
 
+    // preserve order of values in a multiValued list
     boolean preserveMulti = params.getFieldBool(fieldName, HighlightParams.PRESERVE_MULTI, false);
 
     String[] docTexts = (String[]) listFields.toArray(new String[listFields.size()]);
@@ -551,7 +552,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
           }
         }
 
-        if (fragTexts.size() >= numFragments) break;
+        if (fragTexts.size() >= numFragments && !preserveMulti) break;
       }
       summaries = fragTexts.toArray(new String[0]);
       if (summaries.length > 0) 
