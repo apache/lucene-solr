@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.block;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.appending.AppendingCodec;
 import org.apache.lucene.codecs.block.BlockPostingsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.index.BasePostingsFormatTestCase;

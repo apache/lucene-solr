@@ -49,7 +49,8 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
 
   final static String CODEC_NAME = "SIMPLE_STANDARD_TERMS_INDEX";
   final static int VERSION_START = 0;
-  final static int VERSION_CURRENT = VERSION_START;
+  final static int VERSION_APPEND_ONLY = 1;
+  final static int VERSION_CURRENT = VERSION_APPEND_ONLY;
 
   final private int termIndexInterval;
 
@@ -74,10 +75,8 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     }
   }
   
-  protected void writeHeader(IndexOutput out) throws IOException {
+  private void writeHeader(IndexOutput out) throws IOException {
     CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
-    // Placeholder for dir offset
-    out.writeLong(0);
   }
 
   @Override
@@ -250,8 +249,7 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     }
   }
 
-  protected void writeTrailer(long dirStart) throws IOException {
-    out.seek(CodecUtil.headerLength(CODEC_NAME));
+  private void writeTrailer(long dirStart) throws IOException {
     out.writeLong(dirStart);
   }
 }

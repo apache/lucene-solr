@@ -100,12 +100,14 @@ public class BlockTreeTermsReader extends FieldsProducer {
   private final TreeMap<String,FieldReader> fields = new TreeMap<String,FieldReader>();
 
   /** File offset where the directory starts in the terms file. */
-  protected long dirOffset;
+  private long dirOffset;
 
   /** File offset where the directory starts in the index file. */
-  protected long indexDirOffset;
+  private long indexDirOffset;
 
   private String segment;
+  
+  private final int version;
 
   /** Sole constructor. */
   public BlockTreeTermsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo info,
@@ -123,11 +125,14 @@ public class BlockTreeTermsReader extends FieldsProducer {
     IndexInput indexIn = null;
 
     try {
-      readHeader(in);
+      version = readHeader(in);
       if (indexDivisor != -1) {
         indexIn = dir.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, BlockTreeTermsWriter.TERMS_INDEX_EXTENSION),
                                 ioContext);
-        readIndexHeader(indexIn);
+        int indexVersion = readIndexHeader(indexIn);
+        if (indexVersion != version) {
+          throw new CorruptIndexException("mixmatched version files: " + in + "=" + version + "," + indexIn + "=" + indexVersion);
+        }
       }
 
       // Have PostingsReader init itself
@@ -186,24 +191,34 @@ public class BlockTreeTermsReader extends FieldsProducer {
   }
 
   /** Reads terms file header. */
-  protected void readHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, BlockTreeTermsWriter.TERMS_CODEC_NAME,
+  private int readHeader(IndexInput input) throws IOException {
+    int version = CodecUtil.checkHeader(input, BlockTreeTermsWriter.TERMS_CODEC_NAME,
                           BlockTreeTermsWriter.TERMS_VERSION_START,
                           BlockTreeTermsWriter.TERMS_VERSION_CURRENT);
-    dirOffset = input.readLong();    
+    if (version < BlockTreeTermsWriter.TERMS_VERSION_APPEND_ONLY) {
+      dirOffset = input.readLong();
+    }
+    return version;
   }
 
   /** Reads index file header. */
-  protected void readIndexHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, BlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
+  private int readIndexHeader(IndexInput input) throws IOException {
+    int version = CodecUtil.checkHeader(input, BlockTreeTermsWriter.TERMS_INDEX_CODEC_NAME,
                           BlockTreeTermsWriter.TERMS_INDEX_VERSION_START,
                           BlockTreeTermsWriter.TERMS_INDEX_VERSION_CURRENT);
-    indexDirOffset = input.readLong();    
+    if (version < BlockTreeTermsWriter.TERMS_INDEX_VERSION_APPEND_ONLY) {
+      indexDirOffset = input.readLong(); 
+    }
+    return version;
   }
 
   /** Seek {@code input} to the directory offset. */
-  protected void seekDir(IndexInput input, long dirOffset)
+  private void seekDir(IndexInput input, long dirOffset)
       throws IOException {
+    if (version >= BlockTreeTermsWriter.TERMS_INDEX_VERSION_APPEND_ONLY) {
+      input.seek(input.length() - 8);
+      dirOffset = input.readLong();
+    }
     input.seek(dirOffset);
   }
 

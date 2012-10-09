@@ -76,7 +76,9 @@ public class BlockTermsReader extends FieldsProducer {
   private TermsIndexReaderBase indexReader;
 
   // keeps the dirStart offset
-  protected long dirOffset;
+  private long dirOffset;
+  
+  private final int version; 
 
   // Used as key for the terms cache
   private static class FieldAndTerm extends DoubleBarrelLRUCache.CloneableKey {
@@ -123,7 +125,7 @@ public class BlockTermsReader extends FieldsProducer {
 
     boolean success = false;
     try {
-      readHeader(in);
+      version = readHeader(in);
 
       // Have PostingsReader init itself
       postingsReader.init(in);
@@ -168,15 +170,21 @@ public class BlockTermsReader extends FieldsProducer {
     this.indexReader = indexReader;
   }
 
-  protected void readHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, BlockTermsWriter.CODEC_NAME,
+  private int readHeader(IndexInput input) throws IOException {
+    int version = CodecUtil.checkHeader(input, BlockTermsWriter.CODEC_NAME,
                           BlockTermsWriter.VERSION_START,
                           BlockTermsWriter.VERSION_CURRENT);
-    dirOffset = input.readLong();
+    if (version < BlockTermsWriter.VERSION_APPEND_ONLY) {
+      dirOffset = input.readLong();
+    }
+    return version;
   }
   
-  protected void seekDir(IndexInput input, long dirOffset)
-      throws IOException {
+  private void seekDir(IndexInput input, long dirOffset) throws IOException {
+    if (version >= BlockTermsWriter.VERSION_APPEND_ONLY) {
+      input.seek(input.length() - 8);
+      dirOffset = input.readLong();
+    }
     input.seek(dirOffset);
   }
   

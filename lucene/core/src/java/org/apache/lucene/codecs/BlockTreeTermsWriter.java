@@ -107,9 +107,12 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
   /** Initial terms format. */
   public static final int TERMS_VERSION_START = 0;
+  
+  /** Append-only */
+  public static final int TERMS_VERSION_APPEND_ONLY = 1;
 
   /** Current terms format. */
-  public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_START;
+  public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_APPEND_ONLY;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
@@ -117,9 +120,12 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
 
   /** Initial index format. */
   public static final int TERMS_INDEX_VERSION_START = 0;
+  
+  /** Append-only */
+  public static final int TERMS_INDEX_VERSION_APPEND_ONLY = 1;
 
   /** Current index format. */
-  public static final int TERMS_INDEX_VERSION_CURRENT = TERMS_INDEX_VERSION_START;
+  public static final int TERMS_INDEX_VERSION_CURRENT = TERMS_INDEX_VERSION_APPEND_ONLY;
 
   private final IndexOutput out;
   private final IndexOutput indexOut;
@@ -189,26 +195,22 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   }
 
   /** Writes the terms file header. */
-  protected void writeHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT); 
-    out.writeLong(0);                             // leave space for end index pointer    
+  private void writeHeader(IndexOutput out) throws IOException {
+    CodecUtil.writeHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT);   
   }
 
   /** Writes the index file header. */
-  protected void writeIndexHeader(IndexOutput out) throws IOException {
+  private void writeIndexHeader(IndexOutput out) throws IOException {
     CodecUtil.writeHeader(out, TERMS_INDEX_CODEC_NAME, TERMS_INDEX_VERSION_CURRENT); 
-    out.writeLong(0);                             // leave space for end index pointer    
   }
 
   /** Writes the terms file trailer. */
-  protected void writeTrailer(IndexOutput out, long dirStart) throws IOException {
-    out.seek(CodecUtil.headerLength(TERMS_CODEC_NAME));
+  private void writeTrailer(IndexOutput out, long dirStart) throws IOException {
     out.writeLong(dirStart);    
   }
 
   /** Writes the index file trailer. */
-  protected void writeIndexTrailer(IndexOutput indexOut, long dirStart) throws IOException {
-    indexOut.seek(CodecUtil.headerLength(TERMS_INDEX_CODEC_NAME));
+  private void writeIndexTrailer(IndexOutput indexOut, long dirStart) throws IOException {
     indexOut.writeLong(dirStart);    
   }
   

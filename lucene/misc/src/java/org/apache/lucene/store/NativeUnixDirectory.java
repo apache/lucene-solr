@@ -236,26 +236,6 @@ public class NativeUnixDirectory extends FSDirectory {
       return filePos + bufferPos;
     }
 
-    // TODO: seek is fragile at best; it can only properly
-    // handle seek & then change bytes that fit entirely
-    // within one buffer
-    @Override
-    public void seek(long pos) throws IOException {
-      if (pos != getFilePointer()) {
-        dump();
-        final long alignedPos = pos & ALIGN_NOT_MASK;
-        filePos = alignedPos;
-        int n = (int) NativePosixUtil.pread(fos.getFD(), filePos, buffer);
-        if (n < bufferSize) {
-          buffer.limit(n);
-        }
-        //System.out.println("seek refill=" + n);
-        final int delta = (int) (pos - alignedPos);
-        buffer.position(delta);
-        bufferPos = delta;
-      }
-    }
-
     @Override
     public long length() {
       return fileLength + bufferPos;

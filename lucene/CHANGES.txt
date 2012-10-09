@@ -44,6 +44,11 @@ New Features
   the suggester to ignore such variations. (Robert Muir, Sudarshan
   Gaikaiwari, Mike McCandless)
 
+API Changes
+
+* LUCENE-4399: Deprecated AppendingCodec. Lucene's term dictionaries
+  no longer seek when writing.  (Adrien Grand, Robert Muir)
+
 Bug Fixes
 
 * LUCENE-1822: BaseFragListBuilder hard-coded 6 char margin is too naive.

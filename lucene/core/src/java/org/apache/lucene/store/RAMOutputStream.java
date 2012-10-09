@@ -103,19 +103,6 @@ public class RAMOutputStream extends IndexOutput {
   }
 
   @Override
-  public void seek(long pos) throws IOException {
-    // set the file length in case we seek back
-    // and flush() has not been called yet
-    setFileLength();
-    if (pos < bufferStart || pos >= bufferStart + bufferLength) {
-      currentBufferIndex = (int) (pos / BUFFER_SIZE);
-      switchCurrentBuffer();
-    }
-
-    bufferPosition = (int) (pos % BUFFER_SIZE);
-  }
-
-  @Override
   public long length() {
     return file.length;
   }
