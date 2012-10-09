@@ -85,7 +85,6 @@ public class TestPulsingReuse extends LuceneTestCase {
     // we always run this test with pulsing codec.
     Codec cp = _TestUtil.alwaysPostingsFormat(new NestedPulsingPostingsFormat());
     BaseDirectoryWrapper dir = newDirectory();
-    dir.setCheckIndexOnClose(false); // will do this ourselves, custom codec
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, 
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setCodec(cp));
     Document doc = new Document();
@@ -119,8 +118,6 @@ public class TestPulsingReuse extends LuceneTestCase {
     assertEquals(4, allEnums.size());
     
     ir.close();
-    CheckIndex ci = new CheckIndex(dir);
-    ci.checkIndex(null);
     dir.close();
   }
 }

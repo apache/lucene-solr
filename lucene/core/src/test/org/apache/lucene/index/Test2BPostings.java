@@ -48,7 +48,6 @@ public class Test2BPostings extends LuceneTestCase {
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
-    dir.setCheckIndexOnClose(false); // don't double-checkindex
     
     IndexWriter w = new IndexWriter(dir,
         new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
@@ -80,11 +79,6 @@ public class Test2BPostings extends LuceneTestCase {
     }
     w.forceMerge(1);
     w.close();
-    CheckIndex ci = new CheckIndex(dir);
-    if (VERBOSE) {
-      ci.setInfoStream(System.out);
-    }
-    ci.checkIndex();
     dir.close();
   }
   
