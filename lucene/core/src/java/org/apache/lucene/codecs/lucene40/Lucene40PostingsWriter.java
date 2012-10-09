@@ -53,7 +53,8 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
   
   // Increment version to change it:
   final static int VERSION_START = 0;
-  final static int VERSION_CURRENT = VERSION_START;
+  final static int VERSION_LONG_SKIP = 1;
+  final static int VERSION_CURRENT = VERSION_LONG_SKIP;
 
   final IndexOutput freqOut;
   final IndexOutput proxOut;
@@ -277,9 +278,9 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
   private static class PendingTerm {
     public final long freqStart;
     public final long proxStart;
-    public final int skipOffset;
+    public final long skipOffset;
 
-    public PendingTerm(long freqStart, long proxStart, int skipOffset) {
+    public PendingTerm(long freqStart, long proxStart, long skipOffset) {
       this.freqStart = freqStart;
       this.proxStart = proxStart;
       this.skipOffset = skipOffset;
@@ -299,9 +300,9 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     // for this term) in two places?
     assert stats.docFreq == df;
 
-    final int skipOffset;
+    final long skipOffset;
     if (df >= skipMinimum) {
-      skipOffset = (int) (skipListWriter.writeSkip(freqOut)-freqStart);
+      skipOffset = skipListWriter.writeSkip(freqOut)-freqStart;
     } else {
       skipOffset = -1;
     }
@@ -333,7 +334,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
 
     if (firstTerm.skipOffset != -1) {
       assert firstTerm.skipOffset > 0;
-      bytesWriter.writeVInt(firstTerm.skipOffset);
+      bytesWriter.writeVLong(firstTerm.skipOffset);
     }
     if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
       bytesWriter.writeVLong(firstTerm.proxStart);
@@ -348,7 +349,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
       lastFreqStart = term.freqStart;
       if (term.skipOffset != -1) {
         assert term.skipOffset > 0;
-        bytesWriter.writeVInt(term.skipOffset);
+        bytesWriter.writeVLong(term.skipOffset);
       }
       if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0) {
         bytesWriter.writeVLong(term.proxStart - lastProxStart);
