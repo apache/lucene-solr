@@ -145,8 +145,8 @@ final class BlockPostingsReader extends PostingsReaderBase {
     long docStartFP;
     long posStartFP;
     long payStartFP;
-    int skipOffset;
-    int lastPosBlockOffset;
+    long skipOffset;
+    long lastPosBlockOffset;
 
     // Only used by the "primary" TermState -- clones don't
     // copy this (basically they are "transient"):
@@ -226,7 +226,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
       if (fieldHasPositions) {
         termState.posStartFP = in.readVLong();
         if (termState.totalTermFreq > BLOCK_SIZE) {
-          termState.lastPosBlockOffset = in.readVInt();
+          termState.lastPosBlockOffset = in.readVLong();
         } else {
           termState.lastPosBlockOffset = -1;
         }
@@ -241,7 +241,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
       if (fieldHasPositions) {
         termState.posStartFP += in.readVLong();
         if (termState.totalTermFreq > BLOCK_SIZE) {
-          termState.lastPosBlockOffset = in.readVInt();
+          termState.lastPosBlockOffset = in.readVLong();
         } else {
           termState.lastPosBlockOffset = -1;
         }
@@ -257,7 +257,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
     }
 
     if (termState.docFreq > BLOCK_SIZE) {
-      termState.skipOffset = in.readVInt();
+      termState.skipOffset = in.readVLong();
     } else {
       termState.skipOffset = -1;
     }
@@ -344,7 +344,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
     // Where this term's skip data starts (after
     // docTermStartFP) in the .doc file (or -1 if there is
     // no skip data for this term):
-    private int skipOffset;
+    private long skipOffset;
 
     // docID for next skip point, we won't use skipper if 
     // target docID is not larger than this
@@ -621,7 +621,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
     // Where this term's skip data starts (after
     // docTermStartFP) in the .doc file (or -1 if there is
     // no skip data for this term):
-    private int skipOffset;
+    private long skipOffset;
 
     private int nextSkipDoc;
 
@@ -1035,7 +1035,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
     // Where this term's skip data starts (after
     // docTermStartFP) in the .doc file (or -1 if there is
     // no skip data for this term):
-    private int skipOffset;
+    private long skipOffset;
 
     private int nextSkipDoc;
 

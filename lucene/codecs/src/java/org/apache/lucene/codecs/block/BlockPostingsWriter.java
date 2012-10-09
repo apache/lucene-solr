@@ -350,10 +350,10 @@ final class BlockPostingsWriter extends PostingsWriterBase {
     public final long docStartFP;
     public final long posStartFP;
     public final long payStartFP;
-    public final int skipOffset;
-    public final int lastPosBlockOffset;
+    public final long skipOffset;
+    public final long lastPosBlockOffset;
 
-    public PendingTerm(long docStartFP, long posStartFP, long payStartFP, int skipOffset, int lastPosBlockOffset) {
+    public PendingTerm(long docStartFP, long posStartFP, long payStartFP, long skipOffset, long lastPosBlockOffset) {
       this.docStartFP = docStartFP;
       this.posStartFP = posStartFP;
       this.payStartFP = payStartFP;
@@ -397,7 +397,7 @@ final class BlockPostingsWriter extends PostingsWriterBase {
       }
     }
 
-    final int lastPosBlockOffset;
+    final long lastPosBlockOffset;
 
     if (fieldHasPositions) {
       // if (DEBUG) {
@@ -411,7 +411,7 @@ final class BlockPostingsWriter extends PostingsWriterBase {
       assert stats.totalTermFreq != -1;
       if (stats.totalTermFreq > BLOCK_SIZE) {
         // record file offset for last pos in last block
-        lastPosBlockOffset = (int) (posOut.getFilePointer() - posTermStartFP);
+        lastPosBlockOffset = posOut.getFilePointer() - posTermStartFP;
       } else {
         lastPosBlockOffset = -1;
       }
@@ -474,9 +474,9 @@ final class BlockPostingsWriter extends PostingsWriterBase {
       lastPosBlockOffset = -1;
     }
 
-    int skipOffset;
+    long skipOffset;
     if (docCount > BLOCK_SIZE) {
-      skipOffset = (int) (skipWriter.writeSkip(docOut) - docTermStartFP);
+      skipOffset = skipWriter.writeSkip(docOut) - docTermStartFP;
       
       // if (DEBUG) {
       //   System.out.println("skip packet " + (docOut.getFilePointer() - (docTermStartFP + skipOffset)) + " bytes");
@@ -534,7 +534,7 @@ final class BlockPostingsWriter extends PostingsWriterBase {
         bytesWriter.writeVLong(term.posStartFP - lastPosStartFP);
         lastPosStartFP = term.posStartFP;
         if (term.lastPosBlockOffset != -1) {
-          bytesWriter.writeVInt(term.lastPosBlockOffset);
+          bytesWriter.writeVLong(term.lastPosBlockOffset);
         }
         if ((fieldHasPayloads || fieldHasOffsets) && term.payStartFP != -1) {
           bytesWriter.writeVLong(term.payStartFP - lastPayStartFP);
@@ -543,7 +543,7 @@ final class BlockPostingsWriter extends PostingsWriterBase {
       }
 
       if (term.skipOffset != -1) {
-        bytesWriter.writeVInt(term.skipOffset);
+        bytesWriter.writeVLong(term.skipOffset);
       }
     }
 

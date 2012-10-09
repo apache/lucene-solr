@@ -67,7 +67,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     try {
       freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene40PostingsFormat.FREQ_EXTENSION),
                            ioContext);
-      CodecUtil.checkHeader(freqIn, Lucene40PostingsWriter.FRQ_CODEC, Lucene40PostingsWriter.VERSION_START,Lucene40PostingsWriter.VERSION_START);
+      CodecUtil.checkHeader(freqIn, Lucene40PostingsWriter.FRQ_CODEC, Lucene40PostingsWriter.VERSION_START,Lucene40PostingsWriter.VERSION_CURRENT);
       // TODO: hasProx should (somehow!) become codec private,
       // but it's tricky because 1) FIS.hasProx is global (it
       // could be all fields that have prox are written by a
@@ -79,7 +79,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       if (fieldInfos.hasProx()) {
         proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene40PostingsFormat.PROX_EXTENSION),
                              ioContext);
-        CodecUtil.checkHeader(proxIn, Lucene40PostingsWriter.PRX_CODEC, Lucene40PostingsWriter.VERSION_START,Lucene40PostingsWriter.VERSION_START);
+        CodecUtil.checkHeader(proxIn, Lucene40PostingsWriter.PRX_CODEC, Lucene40PostingsWriter.VERSION_START,Lucene40PostingsWriter.VERSION_CURRENT);
       } else {
         proxIn = null;
       }
@@ -98,7 +98,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
     // Make sure we are talking to the matching past writer
     CodecUtil.checkHeader(termsIn, Lucene40PostingsWriter.TERMS_CODEC,
-      Lucene40PostingsWriter.VERSION_START, Lucene40PostingsWriter.VERSION_START);
+      Lucene40PostingsWriter.VERSION_START, Lucene40PostingsWriter.VERSION_CURRENT);
 
     skipInterval = termsIn.readInt();
     maxSkipLevels = termsIn.readInt();
@@ -109,7 +109,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   private final static class StandardTermState extends BlockTermState {
     long freqOffset;
     long proxOffset;
-    int skipOffset;
+    long skipOffset;
 
     // Only used by the "primary" TermState -- clones don't
     // copy this (basically they are "transient"):
@@ -202,7 +202,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     assert termState.freqOffset < freqIn.length();
 
     if (termState.docFreq >= skipMinimum) {
-      termState.skipOffset = termState.bytesReader.readVInt();
+      termState.skipOffset = termState.bytesReader.readVLong();
       // if (DEBUG) System.out.println("  skipOffset=" + termState.skipOffset + " vs freqIn.length=" + freqIn.length());
       assert termState.freqOffset + termState.skipOffset < freqIn.length();
     } else {
@@ -319,7 +319,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
 
 
     protected long freqOffset;
-    protected int skipOffset;
+    protected long skipOffset;
 
     protected boolean skipped;
     protected final Bits liveDocs;
@@ -695,7 +695,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     Bits liveDocs;
 
     long freqOffset;
-    int skipOffset;
+    long skipOffset;
     long proxOffset;
 
     int posPendingCount;
@@ -894,7 +894,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     Bits liveDocs;
 
     long freqOffset;
-    int skipOffset;
+    long skipOffset;
     long proxOffset;
 
     int posPendingCount;

@@ -54,6 +54,9 @@ Bug Fixes
 * LUCENE-1822: BaseFragListBuilder hard-coded 6 char margin is too naive.
   (Alex Vigdor, Arcadius Ahouansou, Koji Sekiguchi)
 
+* LUCENE-4468: Fix rareish integer overflows in Block and Lucene40 postings 
+  formats (Robert Muir)
+
 Optimizations
 
 * LUCENE-4443: BlockPostingsFormat no longer writes unnecessary offsets 

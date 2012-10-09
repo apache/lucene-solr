@@ -130,8 +130,8 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <li>Term Metadata --&gt; DocFPDelta, PosFPDelta?, PosVIntBlockFPDelta?, PayFPDelta?, 
  *                            SkipFPDelta?</li>
  *   <li>Header, --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
- *   <li>PackedBlockSize, PosVIntBlockFPDelta, SkipFPDelta --&gt; {@link DataOutput#writeVInt VInt}</li>
- *   <li>DocFPDelta, PosFPDelta, PayFPDelta --&gt; {@link DataOutput#writeVLong VLong}</li>
+ *   <li>PackedBlockSize --&gt; {@link DataOutput#writeVInt VInt}</li>
+ *   <li>DocFPDelta, PosFPDelta, PayFPDelta, PosVIntBlockFPDelta, SkipFPDelta --&gt; {@link DataOutput#writeVLong VLong}</li>
  * </ul>
  * <p>Notes:</p>
  * <ul>

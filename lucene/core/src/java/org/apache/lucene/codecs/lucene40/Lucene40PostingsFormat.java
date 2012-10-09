@@ -65,8 +65,7 @@ import org.apache.lucene.util.fst.FST; // javadocs
  *    <li>Term Metadata --&gt; FreqDelta, SkipDelta?, ProxDelta?
  *    <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *    <li>SkipInterval,MaxSkipLevels,SkipMinimum --&gt; {@link DataOutput#writeInt Uint32}</li>
- *    <li>SkipDelta --&gt; {@link DataOutput#writeVInt VInt}</li>
- *    <li>FreqDelta,ProxDelta --&gt; {@link DataOutput#writeVLong VLong}</li>
+ *    <li>SkipDelta,FreqDelta,ProxDelta --&gt; {@link DataOutput#writeVLong VLong}</li>
  * </ul>
  * <p>Notes:</p>
  * <ul>
