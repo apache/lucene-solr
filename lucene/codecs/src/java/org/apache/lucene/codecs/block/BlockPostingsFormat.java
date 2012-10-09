@@ -38,8 +38,8 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * Block postings format, which encodes postings in packed int blocks 
- * for faster decode.
+ * Block postings format, which encodes postings in packed integer blocks 
+ * for fast decode.
  *
  * <p><b>NOTE</b>: this format is still experimental and
  * subject to change without backwards compatibility.
@@ -48,21 +48,22 @@ import org.apache.lucene.util.packed.PackedInts;
  * Basic idea:
  * <ul>
  *   <li>
- *   <b>Packed Block and VInt Block</b>: 
- *   <p>In packed block, integers are encoded with the same bit width ({@link PackedInts packed format}), 
- *      the block size (i.e. number of integers inside block) is fixed. </p>
- *   <p>In VInt block, integers are encoded as {@link DataOutput#writeVInt VInt}, 
+ *   <b>Packed Blocks and VInt Blocks</b>: 
+ *   <p>In packed blocks, integers are encoded with the same bit width ({@link PackedInts packed format}):
+ *      the block size (i.e. number of integers inside block) is fixed (currently 128). Additionally blocks
+ *      that are all the same value are encoded in an optimized way.</p>
+ *   <p>In VInt blocks, integers are encoded as {@link DataOutput#writeVInt VInt}:
  *      the block size is variable.</p>
  *   </li>
  *
  *   <li> 
  *   <b>Block structure</b>: 
- *   <p>When the postings is long enough, BlockPostingsFormat will try to encode most integer data 
- *      as packed block.</p> 
- *   <p>Take a term with 259 documents as example, the first 256 document ids are encoded as two packed 
- *      blocks, while the remaining 3 as one VInt block. </p>
+ *   <p>When the postings are long enough, BlockPostingsFormat will try to encode most integer data 
+ *      as a packed block.</p> 
+ *   <p>Take a term with 259 documents as an example, the first 256 document ids are encoded as two packed 
+ *      blocks, while the remaining 3 are encoded as one VInt block. </p>
  *   <p>Different kinds of data are always encoded separately into different packed blocks, but may 
- *      possible be encoded into a same VInt block. </p>
+ *      possibly be interleaved into the same VInt block. </p>
  *   <p>This strategy is applied to pairs: 
  *      &lt;document number, frequency&gt;,
  *      &lt;position, payload length&gt;, 
@@ -71,25 +72,25 @@ import org.apache.lucene.util.packed.PackedInts;
  *   </li>
  *
  *   <li>
- *   <b>Skipper setting</b>: 
- *   <p>The structure of skip table is quite similar to Lucene40PostingsFormat. Skip interval is the 
+ *   <b>Skipdata settings</b>: 
+ *   <p>The structure of skip table is quite similar to previous version of Lucene. Skip interval is the 
  *      same as block size, and each skip entry points to the beginning of each block. However, for 
  *      the first block, skip data is omitted.</p>
  *   </li>
  *
  *   <li>
  *   <b>Positions, Payloads, and Offsets</b>: 
- *   <p>A position is an integer indicating where the term occurs at within one document. 
+ *   <p>A position is an integer indicating where the term occurs within one document. 
  *      A payload is a blob of metadata associated with current position. 
  *      An offset is a pair of integers indicating the tokenized start/end offsets for given term 
- *      in current position. </p>
+ *      in current position: it is essentially a specialized payload. </p>
  *   <p>When payloads and offsets are not omitted, numPositions==numPayloads==numOffsets (assuming a 
  *      null payload contributes one count). As mentioned in block structure, it is possible to encode 
  *      these three either combined or separately. 
- *   <p>For all the cases, payloads and offsets are stored together. When encoded as packed block, 
+ *   <p>In all cases, payloads and offsets are stored together. When encoded as a packed block, 
  *      position data is separated out as .pos, while payloads and offsets are encoded in .pay (payload 
- *      metadata will also be stored directly in .pay). When encoded as VInt block, all these three are 
- *      stored in .pos (so as payload metadata).</p>
+ *      metadata will also be stored directly in .pay). When encoded as VInt blocks, all these three are 
+ *      stored interleaved into the .pos (so is payload metadata).</p>
  *   <p>With this strategy, the majority of payload and offset data will be outside .pos file. 
  *      So for queries that require only position data, running on a full index with payloads and offsets, 
  *      this reduces disk pre-fetches.</p>
@@ -113,35 +114,29 @@ import org.apache.lucene.util.packed.PackedInts;
  * <dd>
  * <b>Term Dictionary</b>
  *
- * <p>The .tim file format is quite similar to Lucene40PostingsFormat, 
- *  with minor difference in MetadataBlock</p>
+ * <p>The .tim file contains the list of terms in each
+ * field along with per-term statistics (such as docfreq)
+ * and pointers to the frequencies, positions, payload and
+ * skip data in the .doc, .pos, and .pay files.
+ * See {@link BlockTreeTermsWriter} for more details on the format.
+ * </p>
+ *
+ * <p>NOTE: The term dictionary can plug into different postings implementations:
+ * the postings writer/reader are actually responsible for encoding 
+ * and decoding the Postings Metadata and Term Metadata sections described here:</p>
  *
  * <ul>
- * <!-- TODO: expand on this, its not really correct and doesnt explain sub-blocks etc -->
- *   <li>TermDictionary(.tim) --&gt; Header, PostingsHeader, PackedBlockSize, 
- *                                   &lt;Block&gt;<sup>NumBlocks</sup>, FieldSummary, DirOffset</li>
- *   <li>Block --&gt; SuffixBlock, StatsBlock, MetadataBlock</li>
- *   <li>SuffixBlock --&gt; EntryCount, SuffixLength, {@link DataOutput#writeByte byte}<sup>SuffixLength</sup></li>
- *   <li>StatsBlock --&gt; StatsLength, &lt;DocFreq, TotalTermFreq&gt;<sup>EntryCount</sup></li>
- *   <li>MetadataBlock --&gt; MetaLength, &lt;DocFPDelta, 
- *                            &lt;PosFPDelta, PosVIntBlockFPDelta?, PayFPDelta?&gt;?, 
- *                            SkipFPDelta?&gt;<sup>EntryCount</sup></li>
- *   <li>FieldSummary --&gt; NumFields, &lt;FieldNumber, NumTerms, RootCodeLength, 
- *                           {@link DataOutput#writeByte byte}<sup>RootCodeLength</sup>, SumDocFreq, DocCount&gt;
- *                           <sup>NumFields</sup></li>
- *   <li>Header, PostingsHeader --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
- *   <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
- *   <li>PackedBlockSize, EntryCount, SuffixLength, StatsLength, DocFreq, MetaLength, 
- *       PosVIntBlockFPDelta, SkipFPDelta, NumFields, FieldNumber, RootCodeLength, DocCount --&gt; 
- *       {@link DataOutput#writeVInt VInt}</li>
- *   <li>TotalTermFreq, DocFPDelta, PosFPDelta, PayFPDelta, NumTerms, SumTotalTermFreq, SumDocFreq --&gt; 
- *       {@link DataOutput#writeVLong VLong}</li>
+ *   <li>Postings Metadata --&gt; Header, PackedBlockSize</li>
+ *   <li>Term Metadata --&gt; DocFPDelta, PosFPDelta?, PosVIntBlockFPDelta?, PayFPDelta?, 
+ *                            SkipFPDelta?</li>
+ *   <li>Header, --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *   <li>PackedBlockSize, PosVIntBlockFPDelta, SkipFPDelta --&gt; {@link DataOutput#writeVInt VInt}</li>
+ *   <li>DocFPDelta, PosFPDelta, PayFPDelta --&gt; {@link DataOutput#writeVLong VLong}</li>
  * </ul>
  * <p>Notes:</p>
  * <ul>
- *    <li>Here explains MetadataBlock only, other fields are mentioned in 
- *   <a href="{@docRoot}/../core/org/apache/lucene/codecs/lucene40/Lucene40PostingsFormat.html#Termdictionary">Lucene40PostingsFormat:TermDictionary</a>
- *    </li>
+ *    <li>Header is a {@link CodecUtil#writeHeader CodecHeader} storing the version information
+ *        for the postings.</li>
  *    <li>PackedBlockSize is the fixed block size for packed blocks. In packed block, bit width is 
  *        determined by the largest integer. Smaller block size result in smaller variance among width 
  *        of integers hence smaller indexes. Larger block size result in more efficient bulk i/o hence
@@ -175,8 +170,8 @@ import org.apache.lucene.util.packed.PackedInts;
  * <dl>
  * <dd>
  * <b>Term Index</b>
- * <p>The .tim file format is mentioned in
- *   <a href="{@docRoot}/../core/org/apache/lucene/codecs/lucene40/Lucene40PostingsFormat.html#Termindex">Lucene40PostingsFormat:TermIndex</a>
+ * <p>The .tip file contains an index into the term dictionary, so that it can be 
+ * accessed randomly.  See {@link BlockTreeTermsWriter} for more details on the format.</p>
  * </dd>
  * </dl>
  *
@@ -298,7 +293,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <dd>
  * <b>Payloads and Offsets</b>
  * <p>The .pay file will store payloads and offsets associated with certain term-document positions. 
- *    Some payloads and offsets will be separated out into .pos file, for speedup reason.</p>
+ *    Some payloads and offsets will be separated out into .pos file, for performance reasons.</p>
  * <ul>
  *   <li>PayFile(.pay): --&gt; Header, &lt;TermPayloads, TermOffsets?&gt; <sup>TermCount</sup></li>
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
@@ -319,7 +314,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *       for PackedOffsetBlockNum.</li>
  *   <li>SumPayLength is the total length of payloads written within one block, should be the sum
  *       of PayLengths in one packed block.</li>
- *   <li>PayLength in PackedPayLengthBlock is the length of each payload, associated with current 
+ *   <li>PayLength in PackedPayLengthBlock is the length of each payload associated with the current 
  *       position.</li>
  * </ul>
  * </dd>

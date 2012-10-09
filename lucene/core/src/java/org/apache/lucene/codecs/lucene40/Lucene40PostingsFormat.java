@@ -54,43 +54,24 @@ import org.apache.lucene.util.fst.FST; // javadocs
  * field along with per-term statistics (such as docfreq)
  * and pointers to the frequencies, positions and
  * skip data in the .frq and .prx files.
+ * See {@link BlockTreeTermsWriter} for more details on the format.
  * </p>
  *
- * <p>The .tim is arranged in blocks: with blocks containing
- * a variable number of entries (by default 25-48), where
- * each entry is either a term or a reference to a
- * sub-block.  It's written by {@link BlockTreeTermsWriter}
- * and read by {@link BlockTreeTermsReader}.</p>
- *
  * <p>NOTE: The term dictionary can plug into different postings implementations:
- * for example the postings writer/reader are actually responsible for encoding 
- * and decoding the MetadataBlock.</p>
- *
+ * the postings writer/reader are actually responsible for encoding 
+ * and decoding the Postings Metadata and Term Metadata sections described here:</p>
  * <ul>
- * <!-- TODO: expand on this, its not really correct and doesnt explain sub-blocks etc -->
- *    <li>TermsDict (.tim) --&gt; Header, PostingsHeader, SkipInterval,
- *                               MaxSkipLevels, SkipMinimum, Block<sup>NumBlocks</sup>,
- *                               FieldSummary, DirOffset</li>
- *    <li>Block --&gt; SuffixBlock, StatsBlock, MetadataBlock</li>
- *    <li>SuffixBlock --&gt; EntryCount, SuffixLength, Byte<sup>SuffixLength</sup></li>
- *    <li>StatsBlock --&gt; StatsLength, &lt;DocFreq, TotalTermFreq&gt;<sup>EntryCount</sup></li>
- *    <li>MetadataBlock --&gt; MetaLength, &lt;FreqDelta, SkipDelta?, ProxDelta?&gt;<sup>EntryCount</sup></li>
- *    <li>FieldSummary --&gt; NumFields, &lt;FieldNumber, NumTerms, RootCodeLength, Byte<sup>RootCodeLength</sup>,
- *                            SumDocFreq, DocCount&gt;<sup>NumFields</sup></li>
- *    <li>Header,PostingsHeader --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
- *    <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
+ *    <li>Postings Metadata --&gt; Header, SkipInterval, MaxSkipLevels, SkipMinimum</li>
+ *    <li>Term Metadata --&gt; FreqDelta, SkipDelta?, ProxDelta?
+ *    <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *    <li>SkipInterval,MaxSkipLevels,SkipMinimum --&gt; {@link DataOutput#writeInt Uint32}</li>
- *    <li>EntryCount,SuffixLength,StatsLength,DocFreq,MetaLength,SkipDelta,NumFields,
- *        FieldNumber,RootCodeLength,DocCount --&gt; {@link DataOutput#writeVInt VInt}</li>
- *    <li>TotalTermFreq,FreqDelta,ProxDelta,NumTerms,SumTotalTermFreq,SumDocFreq --&gt; 
- *        {@link DataOutput#writeVLong VLong}</li>
+ *    <li>SkipDelta --&gt; {@link DataOutput#writeVInt VInt}</li>
+ *    <li>FreqDelta,ProxDelta --&gt; {@link DataOutput#writeVLong VLong}</li>
  * </ul>
  * <p>Notes:</p>
  * <ul>
  *    <li>Header is a {@link CodecUtil#writeHeader CodecHeader} storing the version information
- *        for the BlockTree implementation. On the other hand, PostingsHeader stores the version
- *        information for the postings reader/writer.</li>
- *    <li>DirOffset is a pointer to the FieldSummary section.</li>
+ *        for the postings.</li>
  *    <li>SkipInterval is the fraction of TermDocs stored in skip tables. It is used to accelerate 
  *        {@link DocsEnum#advance(int)}. Larger values result in smaller indexes, greater 
  *        acceleration, but fewer accelerable cases, while smaller values result in bigger indexes, 
@@ -102,9 +83,6 @@ import org.apache.lucene.util.fst.FST; // javadocs
  *        information about skip levels.</li>
  *    <li>SkipMinimum is the minimum document frequency a term must have in order to write any 
  *        skip data at all.</li>
- *    <li>DocFreq is the count of documents which contain the term.</li>
- *    <li>TotalTermFreq is the total number of occurrences of the term. This is encoded
- *        as the difference between the total number of occurrences and the DocFreq.</li>
  *    <li>FreqDelta determines the position of this term's TermFreqs within the .frq
  *        file. In particular, it is the difference between the position of this term's
  *        data in that file and the position of the previous term's data (or zero, for
@@ -118,44 +96,11 @@ import org.apache.lucene.util.fst.FST; // javadocs
  *        file. In particular, it is the number of bytes after TermFreqs that the
  *        SkipData starts. In other words, it is the length of the TermFreq data.
  *        SkipDelta is only stored if DocFreq is not smaller than SkipMinimum.</li>
- *    <li>FieldNumber is the fields number from {@link FieldInfos}. (.fnm)</li>
- *    <li>NumTerms is the number of unique terms for the field.</li>
- *    <li>RootCode points to the root block for the field.</li>
- *    <li>SumDocFreq is the total number of postings, the number of term-document pairs across
- *        the entire field.</li>
- *    <li>DocCount is the number of documents that have at least one posting for this field.</li>
  * </ul>
  * <a name="Termindex" id="Termindex"></a>
  * <h3>Term Index</h3>
  * <p>The .tip file contains an index into the term dictionary, so that it can be 
- * accessed randomly.  The index is also used to determine
- * when a given term cannot exist on disk (in the .tim file), saving a disk seek.</p>
- * <ul>
- *   <li>TermsIndex (.tip) --&gt; Header, FSTIndex<sup>NumFields</sup>, 
- *                                &lt;IndexStartFP&gt;<sup>NumFields</sup>, DirOffset</li>
- *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
- *   <li>IndexStartFP --&gt; {@link DataOutput#writeVLong VLong}</li>
- *   <!-- TODO: better describe FST output here -->
- *   <li>FSTIndex --&gt; {@link FST FST&lt;byte[]&gt;}</li>
- *   <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
- * </ul>
- * <p>Notes:</p>
- * <ul>
- *   <li>The .tip file contains a separate FST for each
- *       field.  The FST maps a term prefix to the on-disk
- *       block that holds all terms starting with that
- *       prefix.  Each field's IndexStartFP points to its
- *       FST.</li>
- *   <li>DirOffset is a pointer to the start of the IndexStartFPs
- *       for all fields</li>
- *   <li>It's possible that an on-disk block would contain
- *       too many terms (more than the allowed maximum
- *       (default: 48)).  When this happens, the block is
- *       sub-divided into new blocks (called "floor
- *       blocks"), and then the output in the FST for the
- *       block's prefix encodes the leading byte of each
- *       sub-block, and its file pointer.
- * </ul>
+ * accessed randomly.  See {@link BlockTreeTermsWriter} for more details on the format.</p>
  * <a name="Frequencies" id="Frequencies"></a>
  * <h3>Frequencies</h3>
  * <p>The .frq file contains the lists of documents which contain each term, along
