@@ -363,7 +363,7 @@ public enum CompressingStoredFieldsIndex {
         throw new CorruptIndexException("Expected " + numChunks + " chunks, but got " + startPointerDeltas.size());
       }
       final PackedInts.Mutable startPointers = PackedInts.getMutable(numChunks, bitsPerStartPointer, PackedInts.COMPACT);
-      int startPointer = 0;
+      long startPointer = 0;
       for (int i = 0; i < numChunks; ++i) {
         startPointer += startPointerDeltas.next();
         startPointers.set(i, startPointer);
