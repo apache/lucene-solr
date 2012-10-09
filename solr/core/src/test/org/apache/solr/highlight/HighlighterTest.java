@@ -299,30 +299,21 @@ public class HighlighterTest extends SolrTestCaseJ4 {
     );
   }
 
- @Test
-  public void testPreserveMulti() {
-    HashMap<String,String> args = new HashMap<String,String>();
-    args.put("hl", "true");
-    args.put("hl.fl", "cat");
-    args.put("hl.snippets", "2");
-    args.put("f.cat.hl.preserveMulti", "true");
-    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
-        "standard", 0, 200, args);
 
-    assertU(adoc("cat", "electronics",
-        "cat", "monitor",
-        "id", "1"));
+  @Test
+  public void testPreserveMulti() throws Exception {
+    assertU(adoc("id","1", "cat", "electronics", "cat", "monitor"));
     assertU(commit());
-    assertU(optimize());
-    assertQ("Preserve multi",
-        sumLRF.makeRequest("cat:monitor"),
-        "//lst[@name='highlighting']/lst[@name='1']",
-        "//lst[@name='1']/arr[@name='cat']/str[.=\'electronics\']",
-        "//lst[@name='1']/arr[@name='cat']/str[.=\'<em>monitor</em>\']"
+
+    assertJQ(req("q", "cat:monitor", "hl", "true", "hl.fl", "cat", "hl.snippets", "2", "f.cat.hl.preserveMulti", "true"),
+        "/highlighting/1/cat==['electronics','<em>monitor</em>']"
+    );
+
+    // No match still lists all snippets?
+    assertJQ(req("q", "id:1 OR cat:duuuude", "hl", "true", "hl.fl", "cat", "hl.snippets", "2", "f.cat.hl.preserveMulti", "true"),
+        "/highlighting/1/cat==['electronics','monitor']"
     );
   }
-
-
 
   @Test
   public void testDefaultFieldHighlight() {
