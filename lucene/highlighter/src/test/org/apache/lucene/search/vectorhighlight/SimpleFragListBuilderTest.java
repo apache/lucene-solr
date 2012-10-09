@@ -42,7 +42,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "abcdefghijklmnopqrs")), "abcdefghijklmnopqrs" ), sflb.minFragCharSize );
     assertEquals( 1, ffl.getFragInfos().size() );
-    assertEquals( "subInfos=(abcdefghijklmnopqrs((0,19)))/1.0(0,19)", ffl.getFragInfos().get( 0 ).toString() );
+    assertEquals( "subInfos=(abcdefghijklmnopqrs((0,19)))/1.0(0,18)", ffl.getFragInfos().get( 0 ).toString() );
   }
   
   public void testSmallerFragSizeThanPhraseQuery() throws Exception {
@@ -55,7 +55,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
     FieldFragList ffl = sflb.createFieldFragList( fpl(phraseQuery, "abcdefgh   jklmnopqrs" ), sflb.minFragCharSize );
     assertEquals( 1, ffl.getFragInfos().size() );
     if (VERBOSE) System.out.println( ffl.getFragInfos().get( 0 ).toString() );
-    assertEquals( "subInfos=(abcdefghjklmnopqrs((0,21)))/1.0(0,21)", ffl.getFragInfos().get( 0 ).toString() );
+    assertEquals( "subInfos=(abcdefghjklmnopqrs((0,21)))/1.0(1,19)", ffl.getFragInfos().get( 0 ).toString() );
   }
   
   public void test1TermIndex() throws Exception {
@@ -77,7 +77,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
 
     ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "b b b b a b b b b a" ), 20 );
     assertEquals( 1, ffl.getFragInfos().size() );
-    assertEquals( "subInfos=(a((8,9))a((18,19)))/2.0(2,22)", ffl.getFragInfos().get( 0 ).toString() );
+    assertEquals( "subInfos=(a((8,9))a((18,19)))/2.0(4,24)", ffl.getFragInfos().get( 0 ).toString() );
   }
   
   public void test2TermsIndex2Frags() throws Exception {
@@ -85,7 +85,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
     FieldFragList ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "a b b b b b b b b b b b b b a" ), 20 );
     assertEquals( 2, ffl.getFragInfos().size() );
     assertEquals( "subInfos=(a((0,1)))/1.0(0,20)", ffl.getFragInfos().get( 0 ).toString() );
-    assertEquals( "subInfos=(a((28,29)))/1.0(22,42)", ffl.getFragInfos().get( 1 ).toString() );
+    assertEquals( "subInfos=(a((28,29)))/1.0(20,40)", ffl.getFragInfos().get( 1 ).toString() );
 
     ffl = sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "a b b b b b b b b b b b b a" ), 20 );
     assertEquals( 2, ffl.getFragInfos().size() );
@@ -164,7 +164,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     assertEquals( 1, ffl.getFragInfos().size() );
-    assertEquals( "subInfos=(d((9,10)))/1.0(3,103)", ffl.getFragInfos().get( 0 ).toString() );
+    assertEquals( "subInfos=(d((9,10)))/1.0(0,100)", ffl.getFragInfos().get( 0 ).toString() );
   }
   
   public void test1PhraseLongMV() throws Exception {
@@ -176,7 +176,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     assertEquals( 1, ffl.getFragInfos().size() );
-    assertEquals( "subInfos=(searchengines((102,116))searchengines((157,171)))/2.0(96,196)", ffl.getFragInfos().get( 0 ).toString() );
+    assertEquals( "subInfos=(searchengines((102,116))searchengines((157,171)))/2.0(87,187)", ffl.getFragInfos().get( 0 ).toString() );
   }
 
   public void test1PhraseLongMVB() throws Exception {
@@ -188,6 +188,6 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     assertEquals( 1, ffl.getFragInfos().size() );
-    assertEquals( "subInfos=(sppeeeed((88,93)))/1.0(82,182)", ffl.getFragInfos().get( 0 ).toString() );
+    assertEquals( "subInfos=(sppeeeed((88,93)))/1.0(41,141)", ffl.getFragInfos().get( 0 ).toString() );
   }
 }

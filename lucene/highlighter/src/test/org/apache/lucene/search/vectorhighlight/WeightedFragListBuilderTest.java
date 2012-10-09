@@ -29,7 +29,7 @@ public class WeightedFragListBuilderTest extends AbstractTestCase {
     WeightedFragListBuilder wflb = new WeightedFragListBuilder();
     FieldFragList ffl = wflb.createFieldFragList( fpl, 100 );
     assertEquals( 1, ffl.getFragInfos().size() );
-    assertEquals( "subInfos=(theboth((195,203)))/0.86791086(189,289)", ffl.getFragInfos().get( 0 ).toString() );
+    assertEquals( "subInfos=(theboth((195,203)))/0.86791086(149,249)", ffl.getFragInfos().get( 0 ).toString() );
   }
 
 }

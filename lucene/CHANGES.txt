@@ -44,6 +44,11 @@ New Features
   the suggester to ignore such variations. (Robert Muir, Sudarshan
   Gaikaiwari, Mike McCandless)
 
+Bug Fixes
+
+* LUCENE-1822: BaseFragListBuilder hard-coded 6 char margin is too naive.
+  (Alex Vigdor, Arcadius Ahouansou, Koji Sekiguchi)
+
 Optimizations
 
 * LUCENE-4443: BlockPostingsFormat no longer writes unnecessary offsets 
