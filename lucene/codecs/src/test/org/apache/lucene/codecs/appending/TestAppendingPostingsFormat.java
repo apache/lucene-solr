@@ -25,7 +25,7 @@ import org.apache.lucene.index.BasePostingsFormatTestCase;
  * Tests AppendingPostingsFormat
  */
 public class TestAppendingPostingsFormat extends BasePostingsFormatTestCase {
-  private final Codec codec = new AppendingCodec();
+  private final Codec codec = new AppendingRWCodec();
 
   @Override
   protected Codec getCodec() {

@@ -118,8 +118,8 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  * <ul>
  * <!-- TODO: expand on this, its not really correct and doesnt explain sub-blocks etc -->
- *   <li>TermDictionary(.tim) --&gt; Header, DirOffset, PostingsHeader, PackedBlockSize, 
- *                                   &lt;Block&gt;<sup>NumBlocks</sup>, FieldSummary</li>
+ *   <li>TermDictionary(.tim) --&gt; Header, PostingsHeader, PackedBlockSize, 
+ *                                   &lt;Block&gt;<sup>NumBlocks</sup>, FieldSummary, DirOffset</li>
  *   <li>Block --&gt; SuffixBlock, StatsBlock, MetadataBlock</li>
  *   <li>SuffixBlock --&gt; EntryCount, SuffixLength, {@link DataOutput#writeByte byte}<sup>SuffixLength</sup></li>
  *   <li>StatsBlock --&gt; StatsLength, &lt;DocFreq, TotalTermFreq&gt;<sup>EntryCount</sup></li>

@@ -29,28 +29,38 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 
 /**
- * Reads append-only terms from {@link AppendingTermsWriter}
+ * Reads append-only terms from AppendingTermsWriter.
  * @lucene.experimental
+ * @deprecated Only for reading old Appending segments
  */
+@Deprecated
 public class AppendingTermsReader extends BlockTreeTermsReader {
 
+  final static String APPENDING_TERMS_CODEC_NAME = "APPENDING_TERMS_DICT";
+  final static int APPENDING_TERMS_VERSION_START = 0;
+  final static int APPENDING_TERMS_VERSION_CURRENT = APPENDING_TERMS_VERSION_START;
+  
+  final static String APPENDING_TERMS_INDEX_CODEC_NAME = "APPENDING_TERMS_INDEX";
+  final static int APPENDING_TERMS_INDEX_VERSION_START = 0;
+  final static int APPENDING_TERMS_INDEX_VERSION_CURRENT = APPENDING_TERMS_INDEX_VERSION_START;
+  
   public AppendingTermsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo info, PostingsReaderBase postingsReader, 
       IOContext ioContext, String segmentSuffix, int indexDivisor) throws IOException {
     super(dir, fieldInfos, info, postingsReader, ioContext, segmentSuffix, indexDivisor);
   }
 
   @Override
-  protected void readHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, AppendingTermsWriter.TERMS_CODEC_NAME,
-        AppendingTermsWriter.TERMS_VERSION_START,
-        AppendingTermsWriter.TERMS_VERSION_CURRENT);  
+  protected int readHeader(IndexInput input) throws IOException {
+    return CodecUtil.checkHeader(input, APPENDING_TERMS_CODEC_NAME,
+        APPENDING_TERMS_VERSION_START,
+        APPENDING_TERMS_VERSION_CURRENT);  
   }
 
   @Override
-  protected void readIndexHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, AppendingTermsWriter.TERMS_INDEX_CODEC_NAME,
-        AppendingTermsWriter.TERMS_INDEX_VERSION_START,
-        AppendingTermsWriter.TERMS_INDEX_VERSION_CURRENT);
+  protected int readIndexHeader(IndexInput input) throws IOException {
+    return CodecUtil.checkHeader(input, APPENDING_TERMS_INDEX_CODEC_NAME,
+        APPENDING_TERMS_INDEX_VERSION_START,
+        APPENDING_TERMS_INDEX_VERSION_CURRENT);
   }
   
   @Override

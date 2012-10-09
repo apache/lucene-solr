@@ -70,7 +70,9 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
   final HashMap<FieldInfo,FieldIndexData> fields = new HashMap<FieldInfo,FieldIndexData>();
   
   // start of the field info data
-  protected long dirOffset;
+  private long dirOffset;
+  
+  private final int version;
 
   public FixedGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, Comparator<BytesRef> termComp, String segmentSuffix, IOContext context)
     throws IOException {
@@ -85,7 +87,7 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
     try {
       
-      readHeader(in);
+      version = readHeader(in);
       indexInterval = in.readInt();
       if (indexInterval < 1) {
         throw new CorruptIndexException("invalid indexInterval: " + indexInterval + " (resource=" + in + ")");
@@ -148,10 +150,13 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     return indexDivisor;
   }
 
-  protected void readHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, FixedGapTermsIndexWriter.CODEC_NAME,
-      FixedGapTermsIndexWriter.VERSION_START, FixedGapTermsIndexWriter.VERSION_START);
-    dirOffset = input.readLong();
+  private int readHeader(IndexInput input) throws IOException {
+    int version = CodecUtil.checkHeader(input, FixedGapTermsIndexWriter.CODEC_NAME,
+      FixedGapTermsIndexWriter.VERSION_START, FixedGapTermsIndexWriter.VERSION_CURRENT);
+    if (version < FixedGapTermsIndexWriter.VERSION_APPEND_ONLY) {
+      dirOffset = input.readLong();
+    }
+    return version;
   }
 
   private class IndexEnum extends FieldIndexEnum {
@@ -409,7 +414,11 @@ public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
     }
   }
 
-  protected void seekDir(IndexInput input, long dirOffset) throws IOException {
+  private void seekDir(IndexInput input, long dirOffset) throws IOException {
+    if (version >= FixedGapTermsIndexWriter.VERSION_APPEND_ONLY) {
+      input.seek(input.length() - 8);
+      dirOffset = input.readLong();
+    }
     input.seek(dirOffset);
   }
 }

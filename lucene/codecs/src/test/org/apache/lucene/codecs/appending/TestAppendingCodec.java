@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
@@ -110,7 +111,7 @@ public class TestAppendingCodec extends LuceneTestCase {
     Directory dir = new AppendingRAMDirectory(random(), new RAMDirectory());
     IndexWriterConfig cfg = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     
-    cfg.setCodec(new AppendingCodec());
+    cfg.setCodec(new AppendingRWCodec());
     ((TieredMergePolicy)cfg.getMergePolicy()).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(dir, cfg);
     Document doc = new Document();
@@ -155,7 +156,7 @@ public class TestAppendingCodec extends LuceneTestCase {
     mp.setUseCompoundFile(true);
     mp.setNoCFSRatio(1.0);
     cfg.setMergePolicy(mp);
-    cfg.setCodec(new AppendingCodec());
+    cfg.setCodec(new AppendingRWCodec());
     IndexWriter writer = new IndexWriter(dir, cfg);
     Document doc = new Document();
     writer.addDocument(doc);

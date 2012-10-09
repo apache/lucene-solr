@@ -19,21 +19,18 @@ package org.apache.lucene.codecs.appending;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsReader;
-import org.apache.lucene.codecs.lucene40.Lucene40PostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
 /**
  * Appending postings impl.
  */
-final class AppendingPostingsFormat extends PostingsFormat {
+class AppendingPostingsFormat extends PostingsFormat {
   public static String CODEC_NAME = "Appending";
   
   public AppendingPostingsFormat() {
@@ -42,17 +39,7 @@ final class AppendingPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase docsWriter = new Lucene40PostingsWriter(state);
-    boolean success = false;
-    try {
-      FieldsConsumer ret = new AppendingTermsWriter(state, docsWriter, BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
-      success = true;
-      return ret;
-    } finally {
-      if (!success) {
-        docsWriter.close();
-      }
-    }
+    throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
   @Override

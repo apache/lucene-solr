@@ -68,9 +68,9 @@ import org.apache.lucene.util.fst.FST; // javadocs
  *
  * <ul>
  * <!-- TODO: expand on this, its not really correct and doesnt explain sub-blocks etc -->
- *    <li>TermsDict (.tim) --&gt; Header, DirOffset, PostingsHeader, SkipInterval,
+ *    <li>TermsDict (.tim) --&gt; Header, PostingsHeader, SkipInterval,
  *                               MaxSkipLevels, SkipMinimum, Block<sup>NumBlocks</sup>,
- *                               FieldSummary</li>
+ *                               FieldSummary, DirOffset</li>
  *    <li>Block --&gt; SuffixBlock, StatsBlock, MetadataBlock</li>
  *    <li>SuffixBlock --&gt; EntryCount, SuffixLength, Byte<sup>SuffixLength</sup></li>
  *    <li>StatsBlock --&gt; StatsLength, &lt;DocFreq, TotalTermFreq&gt;<sup>EntryCount</sup></li>
@@ -131,12 +131,13 @@ import org.apache.lucene.util.fst.FST; // javadocs
  * accessed randomly.  The index is also used to determine
  * when a given term cannot exist on disk (in the .tim file), saving a disk seek.</p>
  * <ul>
- *   <li>TermsIndex (.tip) --&gt; Header, &lt;IndexStartFP&gt;<sup>NumFields</sup>, 
- *                                FSTIndex<sup>NumFields</sup></li>
+ *   <li>TermsIndex (.tip) --&gt; Header, FSTIndex<sup>NumFields</sup>, 
+ *                                &lt;IndexStartFP&gt;<sup>NumFields</sup>, DirOffset</li>
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>IndexStartFP --&gt; {@link DataOutput#writeVLong VLong}</li>
  *   <!-- TODO: better describe FST output here -->
  *   <li>FSTIndex --&gt; {@link FST FST&lt;byte[]&gt;}</li>
+ *   <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
  * </ul>
  * <p>Notes:</p>
  * <ul>
@@ -145,6 +146,8 @@ import org.apache.lucene.util.fst.FST; // javadocs
  *       block that holds all terms starting with that
  *       prefix.  Each field's IndexStartFP points to its
  *       FST.</li>
+ *   <li>DirOffset is a pointer to the start of the IndexStartFPs
+ *       for all fields</li>
  *   <li>It's possible that an on-disk block would contain
  *       too many terms (more than the allowed maximum
  *       (default: 48)).  When this happens, the block is

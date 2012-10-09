@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.block;
+package org.apache.lucene.codecs.appending;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,26 +17,17 @@ package org.apache.lucene.codecs.block;
  * limitations under the License.
  */
 
-import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.block.BlockPostingsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
-import org.apache.lucene.index.BasePostingsFormatTestCase;
 
 /**
- * Tests BlockPostingsFormat
+ * Read-write version of AppendingCodec for testing
  */
-public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
-  private final PostingsFormat postings = new BlockPostingsFormat();
-  private final Codec codec = new Lucene40Codec() {
-    @Override
-    public PostingsFormat getPostingsFormatForField(String field) {
-      return postings;
-    }
-  };
+public class AppendingRWCodec extends AppendingCodec {
+
+  private final PostingsFormat rw = new AppendingRWPostingsFormat();
 
   @Override
-  protected Codec getCodec() {
-    return codec;
+  public PostingsFormat postingsFormat() {
+    return rw;
   }
 }

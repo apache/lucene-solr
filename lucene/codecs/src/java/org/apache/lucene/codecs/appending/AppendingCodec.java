@@ -27,8 +27,11 @@ import org.apache.lucene.codecs.lucene40.Lucene40Codec;
  * streams and append-only filesystems.
  *
  * @lucene.experimental
+ * @deprecated This codec is read-only: as the functionality has been folded
+ * into the default codec. Its only for convenience to read old segments.
  */
-public final class AppendingCodec extends FilterCodec {
+@Deprecated
+public class AppendingCodec extends FilterCodec {
 
   public AppendingCodec() {
     super("Appending", new Lucene40Codec());

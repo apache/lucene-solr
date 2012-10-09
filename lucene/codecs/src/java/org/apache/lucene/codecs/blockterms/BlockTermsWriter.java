@@ -58,8 +58,8 @@ public class BlockTermsWriter extends FieldsConsumer {
 
   // Initial format
   public static final int VERSION_START = 0;
-
-  public static final int VERSION_CURRENT = VERSION_START;
+  public static final int VERSION_APPEND_ONLY = 1;
+  public static final int VERSION_CURRENT = VERSION_APPEND_ONLY;
 
   /** Extension of terms file */
   static final String TERMS_EXTENSION = "tib";
@@ -98,10 +98,8 @@ public class BlockTermsWriter extends FieldsConsumer {
     }
   }
   
-  protected void writeHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT); 
-
-    out.writeLong(0);                             // leave space for end index pointer    
+  private void writeHeader(IndexOutput out) throws IOException {
+    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);     
   }
 
   @Override
@@ -148,8 +146,7 @@ public class BlockTermsWriter extends FieldsConsumer {
     }
   }
 
-  protected void writeTrailer(long dirStart) throws IOException {
-    out.seek(CodecUtil.headerLength(CODEC_NAME));
+  private void writeTrailer(long dirStart) throws IOException {
     out.writeLong(dirStart);    
   }
   

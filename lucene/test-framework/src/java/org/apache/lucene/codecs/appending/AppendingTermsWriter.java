@@ -26,17 +26,9 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 
 /**
- * Append-only version of {@link BlockTreeTermsWriter}
- * @lucene.experimental
+ * Writes old Appending-formatted terms dictionaries for testing.
  */
 public class AppendingTermsWriter extends BlockTreeTermsWriter {
-  final static String TERMS_CODEC_NAME = "APPENDING_TERMS_DICT";
-  final static int TERMS_VERSION_START = 0;
-  final static int TERMS_VERSION_CURRENT = TERMS_VERSION_START;
-  
-  final static String TERMS_INDEX_CODEC_NAME = "APPENDING_TERMS_INDEX";
-  final static int TERMS_INDEX_VERSION_START = 0;
-  final static int TERMS_INDEX_VERSION_CURRENT = TERMS_INDEX_VERSION_START;
   
   public AppendingTermsWriter(SegmentWriteState state, PostingsWriterBase postingsWriter, int minItemsInBlock, int maxItemsInBlock) throws IOException {
     super(state, postingsWriter, minItemsInBlock, maxItemsInBlock);
@@ -44,12 +36,12 @@ public class AppendingTermsWriter extends BlockTreeTermsWriter {
 
   @Override
   protected void writeHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT);
+    CodecUtil.writeHeader(out, AppendingTermsReader.APPENDING_TERMS_CODEC_NAME, AppendingTermsReader.APPENDING_TERMS_VERSION_CURRENT);
   }
 
   @Override
   protected void writeIndexHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, TERMS_INDEX_CODEC_NAME, TERMS_INDEX_VERSION_CURRENT);
+    CodecUtil.writeHeader(out, AppendingTermsReader.APPENDING_TERMS_INDEX_CODEC_NAME, AppendingTermsReader.APPENDING_TERMS_INDEX_VERSION_CURRENT);
   }
 
   @Override
