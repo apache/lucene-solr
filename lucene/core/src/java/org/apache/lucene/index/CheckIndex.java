@@ -1347,7 +1347,7 @@ public class CheckIndex {
     final Status.DocValuesStatus status = new Status.DocValuesStatus();
     try {
       if (infoStream != null) {
-        infoStream.print("    test: DocValues........");
+        infoStream.print("    test: docvalues...........");
       }
       for (FieldInfo fieldInfo : fieldInfos) {
         if (fieldInfo.hasDocValues()) {
@@ -1361,8 +1361,7 @@ public class CheckIndex {
         }
       }
 
-      msg("OK [" + status.docCount + " total doc Count; Num DocValues Fields "
-          + status.totalValueFields);
+      msg("OK [" + status.docCount + " total doc count; " + status.totalValueFields + " docvalues fields]");
     } catch (Throwable e) {
       msg("ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
