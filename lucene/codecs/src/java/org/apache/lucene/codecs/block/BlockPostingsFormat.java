@@ -274,12 +274,12 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>TermPositions --&gt; &lt;PackedPosDeltaBlock&gt; <sup>PackedPosBlockNum</sup>,  
  *                            VIntBlock? </li>
- *   <li>VIntBlock --&gt; PosVIntCount, &lt;PosDelta[, PayLength?], PayData?, 
- *                        OffsetStartDelta?, OffsetLength?&gt;<sup>PosVIntCount</sup>
+ *   <li>VIntBlock --&gt; PosVIntCount, &lt;PositionDelta[, PayloadLength?], PayloadData?, 
+ *                        OffsetDelta?, OffsetLength?&gt;<sup>PosVIntCount</sup>
  *   <li>PackedPosDeltaBlock --&gt; {@link PackedInts PackedInts}</li>
- *   <li>PosVIntCount, PosDelta, OffsetStartDelta, OffsetLength --&gt; 
+ *   <li>PosVIntCount, PositionDelta, OffsetDelta, OffsetLength --&gt; 
  *       {@link DataOutput#writeVInt VInt}</li>
- *   <li>PayData --&gt; {@link DataOutput#writeByte byte}<sup>PayLength</sup></li>
+ *   <li>PayloadData --&gt; {@link DataOutput#writeByte byte}<sup>PayLength</sup></li>
  * </ul>
  * <p>Notes:</p>
  * <ul>
@@ -291,13 +291,26 @@ import org.apache.lucene.util.packed.PackedInts;
  *       PosVIntCount = totalTermFreq - PackedPosBlockNum*PackedBlockSize</li>
  *   <li>The procedure how PackedPosDeltaBlock is generated is the same as PackedDocDeltaBlock 
  *       in chapter <a href="#Frequencies">Frequencies and Skip Data</a>.</li>
- *   <li>PosDelta is the same as the format mentioned in 
- *   <a href="{@docRoot}/../core/org/apache/lucene/codecs/lucene40/Lucene40PostingsFormat.html#Positions">Lucene40PostingsFormat:Positions</a>
- *   </li>
- *   <li>OffsetStartDelta is the difference between this position's startOffset from the previous 
- *       occurrence (or zero, if this is the first occurrence in this document).</li>
- *   <li>OffsetLength indicates the length of the current offset (endOffset-startOffset).</li>
- *   <li>PayloadData is the blob of metadata associated with current position.</li>
+ *   <li>PositionDelta is, if payloads are disabled for the term's field, the
+ *       difference between the position of the current occurrence in the document and
+ *       the previous occurrence (or zero, if this is the first occurrence in this
+ *       document). If payloads are enabled for the term's field, then PositionDelta/2
+ *       is the difference between the current and the previous position. If payloads
+ *       are enabled and PositionDelta is odd, then PayloadLength is stored, indicating
+ *       the length of the payload at the current term position.</li>
+ *   <li>For example, the TermPositions for a term which occurs as the fourth term in
+ *       one document, and as the fifth and ninth term in a subsequent document, would
+ *       be the following sequence of VInts (payloads disabled):
+ *       <p>4, 5, 4</p></li>
+ *   <li>PayloadData is metadata associated with the current term position. If
+ *       PayloadLength is stored at the current position, then it indicates the length
+ *       of this payload. If PayloadLength is not stored, then this payload has the same
+ *       length as the payload at the previous position.</li>
+ *   <li>OffsetDelta is the difference between this position's startOffset from the
+ *       previous occurrence (or zero, if this is the first occurrence in this document).
+ *       OffsetLength follows, encoding the difference between endOffset and startOffset. 
+ *       Offset data is only written for
+ *       {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}.</li>
  * </ul>
  * </dd>
  * </dl>
