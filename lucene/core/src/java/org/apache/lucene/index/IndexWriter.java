@@ -2120,85 +2120,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     deleter.checkpoint(segmentInfos, false);
   }
 
-  /**
-   * Prepares the {@link SegmentInfo} for the new flushed segment and persists
-   * the deleted documents {@link MutableBits}. Use
-   * {@link #publishFlushedSegment(SegmentInfoPerCommit, FrozenBufferedDeletes, FrozenBufferedDeletes)} to
-   * publish the returned {@link SegmentInfo} together with its segment private
-   * delete packet.
-   * 
-   * @see #publishFlushedSegment(SegmentInfoPerCommit, FrozenBufferedDeletes, FrozenBufferedDeletes)
-   */
-  SegmentInfoPerCommit prepareFlushedSegment(FlushedSegment flushedSegment) throws IOException {
-    assert flushedSegment != null;
-
-    SegmentInfoPerCommit newSegment = flushedSegment.segmentInfo;
-
-    setDiagnostics(newSegment.info, "flush");
-    
-    IOContext context = new IOContext(new FlushInfo(newSegment.info.getDocCount(), newSegment.info.sizeInBytes()));
-
-    boolean success = false;
-    try {
-      if (useCompoundFile(newSegment)) {
-
-        // Now build compound file
-        Collection<String> oldFiles = createCompoundFile(infoStream, directory, MergeState.CheckAbort.NONE, newSegment.info, context);
-        newSegment.info.setUseCompoundFile(true);
-
-        synchronized(this) {
-          deleter.deleteNewFiles(oldFiles);
-        }
-      }
-
-      // Have codec write SegmentInfo.  Must do this after
-      // creating CFS so that 1) .si isn't slurped into CFS,
-      // and 2) .si reflects useCompoundFile=true change
-      // above:
-      codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, newSegment.info, flushedSegment.fieldInfos, context);
-
-      // TODO: ideally we would freeze newSegment here!!
-      // because any changes after writing the .si will be
-      // lost... 
-
-      // Must write deleted docs after the CFS so we don't
-      // slurp the del file into CFS:
-      if (flushedSegment.liveDocs != null) {
-        final int delCount = flushedSegment.delCount;
-        assert delCount > 0;
-        if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "flush: write " + delCount + " deletes gen=" + flushedSegment.segmentInfo.getDelGen());
-        }
-
-        // TODO: in the NRT case it'd be better to hand
-        // this del vector over to the
-        // shortly-to-be-opened SegmentReader and let it
-        // carry the changes; there's no reason to use
-        // filesystem as intermediary here.
-          
-        SegmentInfoPerCommit info = flushedSegment.segmentInfo;
-        Codec codec = info.info.getCodec();
-        codec.liveDocsFormat().writeLiveDocs(flushedSegment.liveDocs, directory, info, delCount, context);
-        newSegment.setDelCount(delCount);
-        newSegment.advanceDelGen();
-      }
-
-      success = true;
-    } finally {
-      if (!success) {
-        if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "hit exception " +
-              "reating compound file for newly flushed segment " + newSegment.info.name);
-        }
-
-        synchronized(this) {
-          deleter.refresh(newSegment.info.name);
-        }
-      }
-    }
-    return newSegment;
-  }
-  
   synchronized void publishFrozenDeletes(FrozenBufferedDeletes packet) {
     assert packet != null && packet.any();
     synchronized (bufferedDeletesStream) {
@@ -2208,11 +2129,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   
   /**
    * Atomically adds the segment private delete packet and publishes the flushed
-   * segments SegmentInfo to the index writer. NOTE: use
-   * {@link #prepareFlushedSegment(FlushedSegment)} to obtain the
-   * {@link SegmentInfo} for the flushed segment.
-   * 
-   * @see #prepareFlushedSegment(DocumentsWriterPerThread.FlushedSegment)
+   * segments SegmentInfo to the index writer.
    */
   synchronized void publishFlushedSegment(SegmentInfoPerCommit newSegment,
       FrozenBufferedDeletes packet, FrozenBufferedDeletes globalPacket) throws IOException {
@@ -4252,5 +4169,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     info.setFiles(siFiles);
 
     return files;
+  }
+  
+  /**
+   * Tries to delete the given files if unreferenced
+   * @param files the files to delete
+   * @throws IOException if an {@link IOException} occurs
+   * @see IndexFileDeleter#deleteNewFiles(Collection)
+   */
+  synchronized final void deleteNewFiles(Collection<String> files) throws IOException {
+    deleter.deleteNewFiles(files);
+  }
+  
+  /**
+   * Cleans up residuals from a segment that could not be entirely flushed due to an error
+   * @see IndexFileDeleter#refresh(String) 
+   */
+  synchronized final void flushFailed(SegmentInfo info) throws IOException {
+    deleter.refresh(info.name);
   }
 }
