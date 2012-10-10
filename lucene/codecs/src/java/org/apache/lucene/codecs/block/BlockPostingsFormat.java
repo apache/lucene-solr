@@ -199,7 +199,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <li>SkipDatum --&gt; DocSkip, DocFPSkip, &lt;PosFPSkip, PosBlockOffset, PayLength?, 
  *                        PayFPSkip?&gt;?, SkipChildLevelPointer?</li>
  *   <li>PackedDocDeltaBlock, PackedFreqBlock --&gt; {@link PackedInts PackedInts}</li>
- *   <li>DocDelta, Freq, DocSkip, DocFPSkip, PosFPSkip, PosBlockOffset, PayLength, OffsetStart, PayFPSkip 
+ *   <li>DocDelta, Freq, DocSkip, DocFPSkip, PosFPSkip, PosBlockOffset, PayByteUpto, PayFPSkip 
  *       --&gt; 
  *   {@link DataOutput#writeVInt VInt}</li>
  *   <li>SkipChildLevelPointer --&gt; {@link DataOutput#writeVLong VLong}</li>
@@ -216,8 +216,21 @@ import org.apache.lucene.util.packed.PackedInts;
  *     If frequencies are not omitted, PackedFreqBlock will be generated without d-gap step.
  *   </li>
  *   <li>VIntBlock stores remaining d-gaps (along with frequencies when possible) with a format 
- *       mentioned in
- *   <a href="{@docRoot}/../core/org/apache/lucene/codecs/lucene40/Lucene40PostingsFormat.html#Frequencies">Lucene40PostingsFormat:Frequencies</a>
+ *       that encodes DocDelta and Freq:
+ *       <p>DocDelta: if frequencies are indexed, this determines both the document
+ *       number and the frequency. In particular, DocDelta/2 is the difference between
+ *       this document number and the previous document number (or zero when this is the
+ *       first document in a TermFreqs). When DocDelta is odd, the frequency is one.
+ *       When DocDelta is even, the frequency is read as another VInt. If frequencies
+ *       are omitted, DocDelta contains the gap (not multiplied by 2) between document
+ *       numbers and no frequency information is stored.</p>
+ *       <p>For example, the TermFreqs for a term which occurs once in document seven
+ *          and three times in document eleven, with frequencies indexed, would be the
+ *          following sequence of VInts:</p>
+ *       <p>15, 8, 3</p>
+ *       <p>If frequencies were omitted ({@link IndexOptions#DOCS_ONLY}) it would be this
+ *          sequence of VInts instead:</p>
+ *       <p>7,4</p>
  *   </li>
  *   <li>PackedDocBlockNum is the number of packed blocks for current term's docids or frequencies. 
  *       In particular, PackedDocBlockNum = floor(DocFreq/PackedBlockSize) </li>
@@ -244,7 +257,8 @@ import org.apache.lucene.util.packed.PackedInts;
  *       which value to fetch inside the related block (PayBlockOffset is unnecessary since it is always
  *       equal to PosBlockOffset). Same as DocFPSkip, the file offsets are relative to the start of 
  *       current term's TermFreqs, and stored as a difference sequence.</li>
- *   <li>PayLength indicates the length of last payload.</li>
+ *   <li>PayByteUpto indicates the start offset of the current payload. It is equivalent to
+ *       the sum of the payload lengths in the current block up to PosBlockOffset</li>
  * </ul>
  * </dd>
  * </dl>
