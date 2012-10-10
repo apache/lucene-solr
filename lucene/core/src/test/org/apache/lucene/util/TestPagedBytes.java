@@ -31,7 +31,7 @@ public class TestPagedBytes extends LuceneTestCase {
       final int blockSize = 1 << blockBits;
       final PagedBytes p = new PagedBytes(blockBits);
       final DataOutput out = p.getDataOutput();
-      final int numBytes = random().nextInt(10000000);
+      final int numBytes = _TestUtil.nextInt(random(), 2, 10000000);
 
       final byte[] answer = new byte[numBytes];
       random().nextBytes(answer);
