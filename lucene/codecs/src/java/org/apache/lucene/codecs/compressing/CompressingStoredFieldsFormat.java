@@ -40,7 +40,7 @@ import org.apache.lucene.store.IOContext;
  */
 public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
 
-  private final CompressingStoredFieldsIndex storedFieldsIndexFormat;
+  private final CompressingStoredFieldsIndex storedFieldsIndex;
   private final CompressionMode compressionMode;
   private final int chunkSize;
 
@@ -63,24 +63,24 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
    * loading a little slower (depending on the size of your OS cache compared
    * to the size of your index).
    * <p>
-   * The <code>storedFieldsIndexFormat</code> parameter allows you to choose
-   * bettwen several fields index formats that offer various trade-offs between
+   * The <code>storedFieldsIndex</code> parameter allows you to choose between
+   * several fields index implementations that offer various trade-offs between
    * memory usage and speed.
    *
    * @param compressionMode the {@link CompressionMode} to use
    * @param chunkSize the minimum number of bytes of a single chunk of stored documents
-   * @param storedFieldsIndexFormat the format to use to load the fields index
+   * @param storedFieldsIndex the fields index impl to use
    * @see CompressionMode
    * @see CompressingStoredFieldsIndex
    */
   public CompressingStoredFieldsFormat(CompressionMode compressionMode, int chunkSize,
-      CompressingStoredFieldsIndex storedFieldsIndexFormat) {
+      CompressingStoredFieldsIndex storedFieldsIndex) {
     this.compressionMode = compressionMode;
     if (chunkSize < 1) {
       throw new IllegalArgumentException("chunkSize must be >= 1");
     }
     this.chunkSize = chunkSize;
-    this.storedFieldsIndexFormat = storedFieldsIndexFormat;
+    this.storedFieldsIndex = storedFieldsIndex;
   }
 
   /**
@@ -115,7 +115,13 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si,
       IOContext context) throws IOException {
     return new CompressingStoredFieldsWriter(directory, si, context,
-        compressionMode, chunkSize, storedFieldsIndexFormat);
+        compressionMode, chunkSize, storedFieldsIndex);
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(compressionMode=" + compressionMode
+        + ", chunkSize=" + chunkSize + ", storedFieldsIndex=" + storedFieldsIndex + ")";
   }
 
 }

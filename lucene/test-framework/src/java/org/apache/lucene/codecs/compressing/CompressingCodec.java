@@ -61,4 +61,9 @@ public class CompressingCodec extends FilterCodec {
   public StoredFieldsFormat storedFieldsFormat() {
     return storedFieldsFormat;
   }
+
+  @Override
+  public String toString() {
+    return getName() + "(storedFieldsFormat=" + storedFieldsFormat + ")";
+  }
 }
