@@ -24,14 +24,21 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
@@ -283,4 +290,40 @@ public class TestBooleanQuery extends LuceneTestCase {
     r.close();
     d.close();
   }
+
+  // LUCENE-4477 / LUCENE-4401:
+  public void testBooleanSpanQuery() throws Exception {
+    boolean failed = false;
+    int hits = 0;
+    Directory directory = newDirectory();
+    Analyzer indexerAnalyzer = new MockAnalyzer(random());
+
+    IndexWriterConfig config = new IndexWriterConfig(TEST_VERSION_CURRENT, indexerAnalyzer);
+    IndexWriter writer = new IndexWriter(directory, config);
+    String FIELD = "content";
+    Document d = new Document();
+    d.add(new TextField(FIELD, "clockwork orange", Field.Store.YES));
+    writer.addDocument(d);
+    writer.close();
+
+    IndexReader indexReader = DirectoryReader.open(directory);
+    IndexSearcher searcher = new IndexSearcher(indexReader);
+
+    BooleanQuery query = new BooleanQuery();
+    SpanQuery sq1 = new SpanTermQuery(new Term(FIELD, "clockwork"));
+    SpanQuery sq2 = new SpanTermQuery(new Term(FIELD, "clckwork"));
+    query.add(sq1, BooleanClause.Occur.SHOULD);
+    query.add(sq2, BooleanClause.Occur.SHOULD);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(1000, true);
+    searcher.search(query, collector);
+    hits = collector.topDocs().scoreDocs.length;
+    for (ScoreDoc scoreDoc : collector.topDocs().scoreDocs){
+      System.out.println(scoreDoc.doc);
+    }
+    indexReader.close();
+    assertEquals("Bug in boolean query composed of span queries", failed, false);
+    assertEquals("Bug in boolean query composed of span queries", hits, 1);
+    directory.close();
+  }
+
 }
