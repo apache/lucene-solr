@@ -706,63 +706,67 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
   }
 
   public void testStolenBytes() throws Exception {
-    
-    final Analyzer analyzer = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
-        
-        // TokenStream stream = new SynonymFilter(tokenizer, map, true);
-        // return new TokenStreamComponents(tokenizer, new RemoveDuplicatesTokenFilter(stream));
-        return new TokenStreamComponents(tokenizer) {
-          int tokenStreamCounter = 0;
-          final TokenStream[] tokenStreams = new TokenStream[] {
-            new CannedBinaryTokenStream(new BinaryToken[] {
-                token(new BytesRef(new byte[] {0x61, (byte) 0xff, 0x61})),
-              }),
-            new CannedTokenStream(new Token[] {
-                token("a",1,1),          
-                token("a",1,1)
-              }),
-            new CannedTokenStream(new Token[] {
-                token("a",1,1),
-                token("a",1,1)
-              }),
-            new CannedBinaryTokenStream(new BinaryToken[] {
-                token(new BytesRef(new byte[] {0x61, (byte) 0xff, 0x61})),
-              })
-          };
 
+    // First time w/ preserveSep, second time without:
+    for(int i=0;i<2;i++) {
+      
+      final Analyzer analyzer = new Analyzer() {
           @Override
-          public TokenStream getTokenStream() {
-            TokenStream result = tokenStreams[tokenStreamCounter];
-            tokenStreamCounter++;
-            return result;
-          }
+          protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+            Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        
+            // TokenStream stream = new SynonymFilter(tokenizer, map, true);
+            // return new TokenStreamComponents(tokenizer, new RemoveDuplicatesTokenFilter(stream));
+            return new TokenStreamComponents(tokenizer) {
+              int tokenStreamCounter = 0;
+              final TokenStream[] tokenStreams = new TokenStream[] {
+                new CannedBinaryTokenStream(new BinaryToken[] {
+                    token(new BytesRef(new byte[] {0x61, (byte) 0xff, 0x61})),
+                  }),
+                new CannedTokenStream(new Token[] {
+                    token("a",1,1),          
+                    token("a",1,1)
+                  }),
+                new CannedTokenStream(new Token[] {
+                    token("a",1,1),
+                    token("a",1,1)
+                  }),
+                new CannedBinaryTokenStream(new BinaryToken[] {
+                    token(new BytesRef(new byte[] {0x61, (byte) 0xff, 0x61})),
+                  })
+              };
+
+              @Override
+              public TokenStream getTokenStream() {
+                TokenStream result = tokenStreams[tokenStreamCounter];
+                tokenStreamCounter++;
+                return result;
+              }
          
-          @Override
-          protected void setReader(final Reader reader) throws IOException {
+              @Override
+              protected void setReader(final Reader reader) throws IOException {
+              }
+            };
           }
         };
-      }
-    };
 
-    TermFreq keys[] = new TermFreq[] {
-      new TermFreq("a a", 50),
-      new TermFreq("a b", 50),
-    };
+      TermFreq keys[] = new TermFreq[] {
+        new TermFreq("a a", 50),
+        new TermFreq("a b", 50),
+      };
 
-    AnalyzingSuggester suggester = new AnalyzingSuggester(analyzer);
-    suggester.build(new TermFreqArrayIterator(keys));
-    List<LookupResult> results = suggester.lookup("a a", false, 5);
-    assertEquals(1, results.size());
-    assertEquals("a b", results.get(0).key);
-    assertEquals(50, results.get(0).value);
+      AnalyzingSuggester suggester = new AnalyzingSuggester(analyzer, analyzer, AnalyzingSuggester.EXACT_FIRST | (i==0 ? AnalyzingSuggester.PRESERVE_SEP : 0), 256, -1);
+      suggester.build(new TermFreqArrayIterator(keys));
+      List<LookupResult> results = suggester.lookup("a a", false, 5);
+      assertEquals(1, results.size());
+      assertEquals("a b", results.get(0).key);
+      assertEquals(50, results.get(0).value);
 
-    results = suggester.lookup("a a", false, 5);
-    assertEquals(1, results.size());
-    assertEquals("a a", results.get(0).key);
-    assertEquals(50, results.get(0).value);
+      results = suggester.lookup("a a", false, 5);
+      assertEquals(1, results.size());
+      assertEquals("a a", results.get(0).key);
+      assertEquals(50, results.get(0).value);
+    }
   }
 
   public void testMaxSurfaceFormsPerAnalyzedForm() throws Exception {

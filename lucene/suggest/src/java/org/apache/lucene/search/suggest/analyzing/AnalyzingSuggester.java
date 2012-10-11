@@ -273,7 +273,7 @@ public class AnalyzingSuggester extends Lookup {
     }
   }
 
-  /** Just escapes the bytes we steal (0xff, 0x0). */
+  /** Just escapes the 0xff byte (which we still for SEP). */
   private static final class  EscapingTokenStreamToAutomaton extends TokenStreamToAutomaton {
 
     final BytesRef spare = new BytesRef();
@@ -301,6 +301,16 @@ public class AnalyzingSuggester extends Lookup {
       return spare;
     }
   }
+
+  private TokenStreamToAutomaton getTokenStreamToAutomaton() {
+    if (preserveSep) {
+      return new EscapingTokenStreamToAutomaton();
+    } else {
+      // When we're not preserving sep, we don't steal 0xff
+      // byte, so we don't need to do any escaping:
+      return new TokenStreamToAutomaton();
+    }
+  }
   
   @Override
   public void build(TermFreqIterator iterator) throws IOException {
@@ -313,8 +323,7 @@ public class AnalyzingSuggester extends Lookup {
     Sort.ByteSequencesReader reader = null;
     BytesRef scratch = new BytesRef();
 
-    TokenStreamToAutomaton ts2a = new EscapingTokenStreamToAutomaton();
-
+    TokenStreamToAutomaton ts2a = getTokenStreamToAutomaton();
     // analyzed sequence + 0(byte) + weight(int) + surface + analyzedLength(short) 
     boolean success = false;
     byte buffer[] = new byte[8];
@@ -489,7 +498,7 @@ public class AnalyzingSuggester extends Lookup {
       // TODO: is there a Reader from a CharSequence?
       // Turn tokenstream into automaton:
       TokenStream ts = queryAnalyzer.tokenStream("", new StringReader(key.toString()));
-      Automaton automaton = (new EscapingTokenStreamToAutomaton()).toAutomaton(ts);
+      Automaton automaton = getTokenStreamToAutomaton().toAutomaton(ts);
       ts.end();
       ts.close();
 
