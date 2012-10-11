@@ -306,10 +306,10 @@ import org.apache.lucene.util.packed.PackedInts;
  *       PayloadLength is stored at the current position, then it indicates the length
  *       of this payload. If PayloadLength is not stored, then this payload has the same
  *       length as the payload at the previous position.</li>
- *   <li>OffsetDelta is the difference between this position's startOffset from the
+ *   <li>OffsetDelta/2 is the difference between this position's startOffset from the
  *       previous occurrence (or zero, if this is the first occurrence in this document).
- *       OffsetLength follows, encoding the difference between endOffset and startOffset. 
- *       Offset data is only written for
+ *       If OffsetDelta is odd, then the length (endOffset-startOffset) differs from the
+ *       previous occurrence and an OffsetLength follows. Offset data is only written for
  *       {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}.</li>
  * </ul>
  * </dd>
