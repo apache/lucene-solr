@@ -33,7 +33,10 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FlushInfo;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.MutableBits;
 
 /**
  * This class accepts multiple added documents and directly
@@ -436,16 +439,12 @@ final class DocumentsWriter {
           // This means there is a backlog: the one
           // thread in innerPurge can't keep up with all
           // other threads flushing segments.  In this case
-          // we forcefully stall the producers.  But really
-          // this means we have a concurrency issue
-          // (TestBagOfPostings can provoke this):
-          // publishing a flush segment is too heavy today
-          // (it builds CFS, writes .si, etc.) ... we need
-          // to make those ops concurrent too:
+          // we forcefully stall the producers.
           ticketQueue.forcePurge(this);
         } else {
           ticketQueue.tryPurge(this);
         }
+
       } finally {
         flushControl.doAfterFlush(flushingDWPT);
         flushingDWPT.checkAndResetHasAborted();
@@ -471,6 +470,7 @@ final class DocumentsWriter {
 
     return maybeMerge;
   }
+  
 
   void finishFlush(FlushedSegment newSegment, FrozenBufferedDeletes bufferedDeletes)
       throws IOException {
@@ -505,23 +505,17 @@ final class DocumentsWriter {
       throws IOException {
     assert newSegment != null;
     assert newSegment.segmentInfo != null;
+    final FrozenBufferedDeletes segmentDeletes = newSegment.segmentDeletes;
     //System.out.println("FLUSH: " + newSegment.segmentInfo.info.name);
-    final SegmentInfoPerCommit segInfo = indexWriter.prepareFlushedSegment(newSegment);
-    final BufferedDeletes deletes = newSegment.segmentDeletes;
     if (infoStream.isEnabled("DW")) {
-      infoStream.message("DW", "publishFlushedSegment seg-private deletes=" + deletes);  
+      infoStream.message("DW", "publishFlushedSegment seg-private deletes=" + segmentDeletes);  
     }
-    FrozenBufferedDeletes packet = null;
-    if (deletes != null && deletes.any()) {
-      // Segment private delete
-      packet = new FrozenBufferedDeletes(deletes, true);
-      if (infoStream.isEnabled("DW")) {
-        infoStream.message("DW", "flush: push buffered seg private deletes: " + packet);
-      }
+    
+    if (segmentDeletes != null && infoStream.isEnabled("DW")) {
+      infoStream.message("DW", "flush: push buffered seg private deletes: " + segmentDeletes);
     }
-
     // now publish!
-    indexWriter.publishFlushedSegment(segInfo, packet, globalPacket);
+    indexWriter.publishFlushedSegment(newSegment.segmentInfo, segmentDeletes, globalPacket);
   }
   
   // for asserts
