@@ -729,8 +729,10 @@ final class BlockPostingsReader extends PostingsReaderBase {
             posDeltaBuffer[i] = code;
           }
           if (indexHasOffsets) {
-            posIn.readVInt();
-            posIn.readVInt();
+            if ((posIn.readVInt() & 1) != 0) {
+              // offset length changed
+              posIn.readVInt();
+            }
           }
         }
       } else {
@@ -1149,6 +1151,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
         // }
         final int count = posIn.readVInt();
         int payloadLength = 0;
+        int offsetLength = 0;
         payloadByteUpto = 0;
         for(int i=0;i<count;i++) {
           int code = posIn.readVInt();
@@ -1177,8 +1180,12 @@ final class BlockPostingsReader extends PostingsReaderBase {
             // if (DEBUG) {
             //   System.out.println("        i=" + i + " read offsets from posIn.fp=" + posIn.getFilePointer());
             // }
-            offsetStartDeltaBuffer[i] = posIn.readVInt();
-            offsetLengthBuffer[i] = posIn.readVInt();
+            int deltaCode = posIn.readVInt();
+            if ((deltaCode & 1) != 0) {
+              offsetLength = posIn.readVInt();
+            }
+            offsetStartDeltaBuffer[i] = deltaCode >>> 1;
+            offsetLengthBuffer[i] = offsetLength;
             // if (DEBUG) {
             //   System.out.println("          startOffDelta=" + offsetStartDeltaBuffer[i] + " offsetLen=" + offsetLengthBuffer[i]);
             // }

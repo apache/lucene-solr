@@ -424,7 +424,8 @@ final class BlockPostingsWriter extends PostingsWriterBase {
         // majority)
 
         // vInt encode the remaining positions/payloads/offsets:
-        int lastPayloadLength = -1;
+        int lastPayloadLength = -1;  // force first payload length to be written
+        int lastOffsetLength = -1;   // force first offset length to be written
         int payloadBytesReadUpto = 0;
         for(int i=0;i<posBufferUpto;i++) {
           final int posDelta = posDeltaBuffer[i];
@@ -457,8 +458,15 @@ final class BlockPostingsWriter extends PostingsWriterBase {
             // if (DEBUG) {
             //   System.out.println("          write offset @ pos.fp=" + posOut.getFilePointer());
             // }
-            posOut.writeVInt(offsetStartDeltaBuffer[i]);
-            posOut.writeVInt(offsetLengthBuffer[i]);
+            int delta = offsetStartDeltaBuffer[i];
+            int length = offsetLengthBuffer[i];
+            if (length == lastOffsetLength) {
+              posOut.writeVInt(delta << 1);
+            } else {
+              posOut.writeVInt(delta << 1 | 1);
+              posOut.writeVInt(length);
+              lastOffsetLength = length;
+            }
           }
         }
 

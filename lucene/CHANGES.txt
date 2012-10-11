@@ -75,6 +75,9 @@ Optimizations
   failures in TestWeakIdentityMap disappear, too.
   (Uwe Schindler, Mike McCandless, Robert Muir)
 
+* LUCENE-4473: BlockPostingsFormat encodes offsets more efficiently
+  for low frequency terms (< 128 occurrences).  (Robert Muir)
+
 Build
 
 * LUCENE-4451: Memory leak per unique thread caused by 
