@@ -22,10 +22,12 @@ import java.util.List;
 import java.io.IOException;
 
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.State;
 import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.Util;
 
 // TODO: move to core?  nobody else uses it yet though...
 
@@ -65,7 +67,7 @@ public class FSTUtil {
   /** Enumerates all paths in the automaton that also
    *  intersect the FST, accumulating the FST end node and
    *  output for each path. */
-  public static<T> List<Path<T>> intersectPrefixPaths(Automaton a, FST<T> fst) throws IOException {
+  public static<T> List<Path<T>> intersectPrefixPathsExact(Automaton a, FST<T> fst) throws IOException {
     final List<Path<T>> queue = new ArrayList<Path<T>>();
     final List<Path<T>> endNodes = new ArrayList<Path<T>>();
 
@@ -88,7 +90,6 @@ public class FSTUtil {
 
       IntsRef currentInput = path.input;
       for(Transition t : path.state.getTransitions()) {
-        
         // TODO: we can fix this if necessary:
         if (t.getMin() != t.getMax()) {
           throw new IllegalStateException("can only handle Transitions that match one character");
@@ -115,4 +116,85 @@ public class FSTUtil {
 
     return endNodes;
   }
+  
+  /**
+   * nocommit javadoc
+   */
+  public static <T> List<Path<T>> intersectPrefixPaths(Automaton a, FST<T> fst) throws IOException {
+    assert a.isDeterministic();
+    final List<Path<T>> queue = new ArrayList<Path<T>>();
+    final List<Path<T>> endNodes = new ArrayList<Path<T>>();
+    queue.add(new Path<T>(a.getInitialState(), fst
+        .getFirstArc(new FST.Arc<T>()), fst.outputs.getNoOutput(),
+        new IntsRef()));
+    
+    final FST.Arc<T> scratchArc = new FST.Arc<T>();
+    final FST.BytesReader fstReader = fst.getBytesReader(0);
+    
+    while (queue.size() != 0) {
+      final Path<T> path = queue.remove(queue.size() - 1);
+      if (path.state.isAccept()) {
+        endNodes.add(path);
+        continue;
+      }
+//      System.out.println(UnicodeUtil.newString(path.input.ints, path.input.offset, path.input.length));
+
+      IntsRef currentInput = path.input;
+      for (Transition t : path.state.getTransitions()) {
+        
+        if (t.getMin() == t.getMax()) {
+          final FST.Arc<T> nextArc = fst.findTargetArc(t.getMin(),
+              path.fstNode, scratchArc, fstReader);
+          if (nextArc != null) {
+            final IntsRef newInput = new IntsRef(currentInput.length + 1);
+            newInput.copyInts(currentInput);
+            newInput.ints[currentInput.length] = t.getMin();
+            newInput.length = currentInput.length + 1;
+//            if (t.getDest().isAccept()) {
+//              System.out.println(UnicodeUtil.newString(newInput.ints, newInput.offset, newInput.length));              
+//            }
+            queue.add(new Path<T>(t.getDest(), new FST.Arc<T>()
+                .copyFrom(nextArc), fst.outputs
+                .add(path.output, nextArc.output), newInput));
+          }
+        } else {
+          // TODO: 
+          // if we accept the entire range possible in the FST (ie. 0 to 256)
+          // we can simply use the prefix as the accepted state instead of
+          // looking up all the
+          // ranges and terminate early here?
+          FST.Arc<T> nextArc = Util.readCeilArc(t.getMin(), fst, path.fstNode,
+              scratchArc, fstReader);
+          while (nextArc != null && nextArc.label <= t.getMax()) {
+            assert nextArc.label <= t.getMax();
+            assert nextArc.label >= t.getMin() : nextArc.label + " "
+                + t.getMin();
+            final IntsRef newInput = new IntsRef(currentInput.length + 1);
+            newInput.copyInts(currentInput);
+            newInput.ints[currentInput.length] = nextArc.label;
+            newInput.length = currentInput.length + 1;
+//            if (t.getDest().isAccept()) {
+//              System.out.println(UnicodeUtil.newString(newInput.ints, newInput.offset, newInput.length));              
+//            }
+            queue.add(new Path<T>(t.getDest(), new FST.Arc<T>()
+                .copyFrom(nextArc), fst.outputs
+                .add(path.output, nextArc.output), newInput));
+            final int label = nextArc.label; // used in assert
+            nextArc = nextArc.isLast() ? null : fst.readNextRealArc(nextArc,
+                fstReader);
+            assert nextArc == null || label < nextArc.label : "last: " + label
+                + " next: " + nextArc.label;
+          }
+        }
+      }
+    }
+    //System.out.println();
+    
+    for (Path<T> path2 : endNodes) {
+      if ("poales".equals(UnicodeUtil.newString(path2.input.ints, path2.input.offset, path2.input.length)))
+        System.out.println(UnicodeUtil.newString(path2.input.ints, path2.input.offset, path2.input.length));
+    }
+      return endNodes;
+    }
+  
 }

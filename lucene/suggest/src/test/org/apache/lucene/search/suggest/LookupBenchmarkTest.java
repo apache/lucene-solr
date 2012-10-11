@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.search.suggest.Lookup; // javadocs
 import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
+import org.apache.lucene.search.suggest.analyzing.FuzzySuggester;
 import org.apache.lucene.search.suggest.fst.FSTCompletionLookup;
 import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup;
 import org.apache.lucene.search.suggest.jaspell.JaspellLookup;
@@ -47,15 +48,18 @@ import org.junit.Ignore;
 /**
  * Benchmarks tests for implementations of {@link Lookup} interface.
  */
-@Ignore("COMMENT ME TO RUN BENCHMARKS!")
+//@Ignore("COMMENT ME TO RUN BENCHMARKS!")
 public class LookupBenchmarkTest extends LuceneTestCase {
   @SuppressWarnings("unchecked")
   private final List<Class<? extends Lookup>> benchmarkClasses = Arrays.asList(
+      FuzzySuggester.class,
+      AnalyzingSuggester.class,
       JaspellLookup.class, 
       TSTLookup.class,
       FSTCompletionLookup.class,
-      WFSTCompletionLookup.class,
-      AnalyzingSuggester.class);
+      WFSTCompletionLookup.class
+      
+      );
 
   private final static int rounds = 15;
   private final static int warmup = 5;
@@ -212,8 +216,9 @@ public class LookupBenchmarkTest extends LuceneTestCase {
       final List<String> input = new ArrayList<String>(benchmarkInput.size());
       for (TermFreq tf : benchmarkInput) {
         String s = tf.term.utf8ToString();
-        input.add(s.substring(0, Math.min(s.length(), 
-              minPrefixLen + random.nextInt(maxPrefixLen - minPrefixLen + 1))));
+        String sub = s.substring(0, Math.min(s.length(), 
+            minPrefixLen + random.nextInt(maxPrefixLen - minPrefixLen + 1)));
+        input.add(sub);
       }
 
       BenchmarkResult result = measure(new Callable<Integer>() {
@@ -250,7 +255,9 @@ public class LookupBenchmarkTest extends LuceneTestCase {
       }
       return new BenchmarkResult(times, warmup, rounds);
     } catch (Exception e) {
+      e.printStackTrace();
       throw new RuntimeException(e);
+      
     }
   }
 

@@ -22,6 +22,8 @@ import java.util.*;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.fst.FST.Arc;
+import org.apache.lucene.util.fst.FST.BytesReader;
 
 /** Static helper methods.
  *
@@ -304,7 +306,10 @@ public final class Util {
           path.input.ints[path.input.length++] = path.arc.label;
           final int cmp = bottom.input.compareTo(path.input);
           path.input.length--;
+
+          // We should never see dups:
           assert cmp != 0;
+
           if (cmp < 0) {
             // Doesn't compete
             return;
@@ -329,12 +334,20 @@ public final class Util {
       //newPath.input.ints[path.input.length] = path.arc.label;
       //newPath.input.length = path.input.length+1;
 
-      //System.out.println("    add path=" + newPath);
+      //System.out.println("    add path=" + newPath + (bottom == null ? "" : (" newPath.compareTo(bottom)=" + newPath.compareTo(bottom))) + " bottom=" + bottom + " topN=" + topN);
+
+      // We should never see dups:
+      assert bottom == null || newPath.compareTo(bottom) != 0;
       queue.add(newPath);
+
       if (bottom != null) {
         final FSTPath<T> removed = queue.pollLast();
         assert removed == bottom;
-        bottom = queue.last();
+        if (queue.size() == 0) {
+          bottom = null;
+        } else {
+          bottom = queue.last();
+        }
         //System.out.println("    now re-set bottom: " + bottom + " queue=" + queue);
       } else if (queue.size() == topN) {
         // Queue just filled up:
@@ -854,4 +867,92 @@ public final class Util {
     w.close();
   }
   */
+
+  /**
+   * Reads the first arc greater or equal that the given label into the provided
+   * arc in place and returns it iff found, otherwise return <code>null</code>.
+   * 
+   * @param label the label to ceil on
+   * @param fst the fst to operate on
+   * @param follow the arc to follow reading the label from
+   * @param arc the arc to read into in place
+   * @param in the fst's {@link BytesReader}
+   */
+  public static <T> Arc<T> readCeilArc(int label, FST<T> fst, Arc<T> follow,
+      Arc<T> arc, BytesReader in) throws IOException {
+    if (label == FST.END_LABEL) {
+      if (follow.isFinal()) {
+        if (follow.target <= 0) {
+          arc.flags = FST.BIT_LAST_ARC;
+        } else {
+          arc.flags = 0;
+          // NOTE: nextArc is a node (not an address!) in this case:
+          arc.nextArc = follow.target;
+          arc.node = follow.target;
+        }
+        arc.output = follow.nextFinalOutput;
+        arc.label = FST.END_LABEL;
+        return arc;
+      } else {
+        return null;
+      }
+    }
+
+    if (!FST.targetHasArcs(follow)) {
+      return null;
+    }
+    fst.readFirstTargetArc(follow, arc, in);
+    if (arc.bytesPerArc != 0 && arc.label != FST.END_LABEL) {
+      // Arcs are fixed array -- use binary search to find
+      // the target.
+
+      int low = arc.arcIdx;
+      int high = arc.numArcs - 1;
+      int mid = 0;
+      // System.out.println("do arc array low=" + low + " high=" + high +
+      // " targetLabel=" + targetLabel);
+      while (low <= high) {
+        mid = (low + high) >>> 1;
+        in.pos = arc.posArcsStart;
+        in.skip(arc.bytesPerArc * mid + 1);
+        final int midLabel = fst.readLabel(in);
+        final int cmp = midLabel - label;
+        // System.out.println("  cycle low=" + low + " high=" + high + " mid=" +
+        // mid + " midLabel=" + midLabel + " cmp=" + cmp);
+        if (cmp < 0) {
+          low = mid + 1;
+        } else if (cmp > 0) {
+          high = mid - 1;
+        } else {
+          arc.arcIdx = mid-1;
+          return fst.readNextRealArc(arc, in);
+        }
+      }
+      if (low == arc.numArcs) {
+        // DEAD END!
+        return null;
+      }
+      
+      arc.arcIdx = (low > high ? high : low);
+      return fst.readNextRealArc(arc, in);
+    }
+
+    // Linear scan
+    fst.readFirstRealTargetArc(follow.target, arc, in);
+
+    while (true) {
+      // System.out.println("  non-bs cycle");
+      // TODO: we should fix this code to not have to create
+      // object for the output of every arc we scan... only
+      // for the matching arc, if found
+      if (arc.label >= label) {
+        // System.out.println("    found!");
+        return arc;
+      } else if (arc.isLast()) {
+        return null;
+      } else {
+        fst.readNextRealArc(arc, in);
+      }
+    }
+  }
 }

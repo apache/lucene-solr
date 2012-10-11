@@ -240,6 +240,20 @@ final public class BasicAutomata {
     a.deterministic = true;
     return a;
   }
+  
+  public static Automaton makeString(int[] word, int offset, int length) {
+    Automaton a = new Automaton();
+    a.setDeterministic(true);
+    State s = new State();
+    a.initial = s;
+    for (int i = offset; i < offset+length; i++) {
+      State s2 = new State();
+      s.addTransition(new Transition(word[i], s2));
+      s = s2;
+    }
+    s.accept = true;
+    return a;
+  }
 
   /**
    * Returns a new (deterministic and minimal) automaton that accepts the union
