@@ -16,13 +16,6 @@ Changes in backwards compatibility policy
   (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
   Robert Muir)
 
-Optimizations
-
-* LUCENE-4462: DocumentsWriter now flushes deletes, segment infos and builds
-  CFS files if necessary during segment flush and not during publishing. The latter
-  was a single threaded process while now all IO and CPU heavy computation is done
-  concurrently in DocumentsWriterPerThread. (Simon Willnauer)
-
 ======================= Lucene 4.1.0 =======================
 
 New Features
@@ -77,6 +70,11 @@ Optimizations
 
 * LUCENE-4473: BlockPostingsFormat encodes offsets more efficiently
   for low frequency terms (< 128 occurrences).  (Robert Muir)
+
+* LUCENE-4462: DocumentsWriter now flushes deletes, segment infos and builds
+  CFS files if necessary during segment flush and not during publishing. The latter
+  was a single threaded process while now all IO and CPU heavy computation is done
+  concurrently in DocumentsWriterPerThread. (Simon Willnauer)
 
 Build
 
