@@ -17,14 +17,12 @@ package org.apache.lucene.analysis.standard;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
@@ -34,23 +32,6 @@ import org.apache.lucene.analysis.core.LetterTokenizerFactory;
 import org.apache.lucene.analysis.core.LowerCaseTokenizerFactory;
 import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilterFactory;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.store.Directory;
 
 /**
  * Simple tests to ensure the standard lucene factories are working.
@@ -206,49 +187,5 @@ public class TestStandardFactories extends BaseTokenStreamTestCase {
     factory.init(args);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "Ceska" });
-  }
-
-  public void testBooleanSpanQuery() throws Exception {
-    boolean failed = false;
-    int hits = 0;
-    Directory directory = newDirectory();
-    try{
-      CharArraySet stops = CharArraySet.EMPTY_SET;
-      Analyzer indexerAnalyzer = new StandardAnalyzer(TEST_VERSION_CURRENT, stops);
-      //Analyzer indexerAnalyzer = new MockAnalyzer(LuceneProjectVersion.LUCENE_VERSION);
-      //Directory directory = new RAMDirectory();
-
-      IndexWriterConfig config = new IndexWriterConfig(TEST_VERSION_CURRENT, indexerAnalyzer);
-      IndexWriter writer = new IndexWriter(directory, config);
-      String FIELD = "content";
-      Document d = new Document();
-      d.add(new TextField(FIELD, "clockwork orange", Field.Store.YES));
-      writer.addDocument(d);
-      writer.close();
-
-      IndexReader indexReader = DirectoryReader.open(directory);
-      IndexSearcher searcher = new IndexSearcher(indexReader);
-
-      BooleanQuery query = new BooleanQuery();
-      SpanQuery sq1 = new SpanTermQuery(new Term(FIELD, "clockwork"));
-      SpanQuery sq2 = new SpanTermQuery(new Term(FIELD, "clckwork"));
-      query.add(sq1, BooleanClause.Occur.SHOULD);
-      query.add(sq2, BooleanClause.Occur.SHOULD);
-      TopScoreDocCollector collector = TopScoreDocCollector.create(1000, true);
-      searcher.search(query, collector);
-      hits = collector.topDocs().scoreDocs.length;
-      for (ScoreDoc scoreDoc : collector.topDocs().scoreDocs){
-        System.out.println(scoreDoc.doc);
-      }
-      indexReader.close();
-    } catch (java.lang.ArrayIndexOutOfBoundsException e){
-      failed = true;
-    } catch (IOException e){
-
-      e.printStackTrace();
-    }
-    assertEquals("Bug in boolean query composed of span queries", failed, false);
-    assertEquals("Bug in boolean query composed of span queries", hits, 1);
-    directory.close();
   }
 }
