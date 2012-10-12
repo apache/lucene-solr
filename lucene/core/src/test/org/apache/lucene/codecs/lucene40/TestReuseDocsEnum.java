@@ -38,6 +38,7 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
+// nocommit: really this should be in BaseTestPF or somewhere else? useful test!
 public class TestReuseDocsEnum extends LuceneTestCase {
 
   public void testReuseDocsEnumNoReuse() throws IOException {

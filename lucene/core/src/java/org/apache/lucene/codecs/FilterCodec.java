@@ -27,7 +27,7 @@ package org.apache.lucene.codecs;
  *   public final class CustomCodec extends FilterCodec {
  *
  *     public CustomCodec() {
- *       super("CustomCodec", new Lucene40Codec());
+ *       super("CustomCodec", new Lucene41Codec());
  *     }
  *
  *     public LiveDocsFormat liveDocsFormat() {

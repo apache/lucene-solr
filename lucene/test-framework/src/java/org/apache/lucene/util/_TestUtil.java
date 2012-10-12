@@ -44,7 +44,7 @@ import java.util.zip.ZipFile;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.ByteDocValuesField;
 import org.apache.lucene.document.DerefBytesDocValuesField;
@@ -651,7 +651,7 @@ public class _TestUtil {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("forcing postings format to:" + format);
     }
-    return new Lucene40Codec() {
+    return new Lucene41Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         return format;

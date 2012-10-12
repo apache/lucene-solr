@@ -19,7 +19,7 @@ package org.apache.lucene.codecs.blockterms;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 
@@ -30,7 +30,7 @@ import org.apache.lucene.index.BasePostingsFormatTestCase;
 // TODO: ensure both of these are also in rotation in RandomCodec
 public class TestFixedGapPostingsFormat extends BasePostingsFormatTestCase {
   private final PostingsFormat postings = new Lucene41WithOrds();
-  private final Codec codec = new Lucene40Codec() {
+  private final Codec codec = new Lucene41Codec() {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       return postings;

@@ -40,6 +40,7 @@ import org.apache.lucene.codecs.blockterms.VariableGapTermsIndexReader;
 import org.apache.lucene.codecs.blockterms.VariableGapTermsIndexWriter;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsReader;
 import org.apache.lucene.codecs.lucene40.Lucene40PostingsWriter;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter;
 import org.apache.lucene.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
 import org.apache.lucene.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
 import org.apache.lucene.codecs.mocksep.MockSingleIntFactory;
@@ -174,6 +175,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: writing Standard postings");
       }
+      // nocommit: way to randomize skipInterval and acceptibleOverHead?!
       postingsWriter = new Lucene40PostingsWriter(state, skipInterval);
     }
 
@@ -313,6 +315,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading Standard postings");
       }
+      // nocommit
       postingsReader = new Lucene40PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
     }
 

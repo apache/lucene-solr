@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
@@ -90,10 +90,10 @@ public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
       if (random().nextBoolean() && (i % (data.length / 10) == 0)) {
         iw.w.close();
         // switch codecs
-        if (iwConf.getCodec() instanceof Lucene40Codec) {
+        if (iwConf.getCodec() instanceof Lucene41Codec) {
           iwConf.setCodec(CompressingCodec.randomInstance(random()));
         } else {
-          iwConf.setCodec(new Lucene40Codec());
+          iwConf.setCodec(new Lucene41Codec());
         }
         iw = new RandomIndexWriter(random(), dir, iwConf);
       }

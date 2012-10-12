@@ -41,7 +41,8 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 // NOTE: if we make largish changes in a minor release, easier to just make Lucene42Codec or whatever
 // if they are backwards compatible or smallish we can probably do the backwards in the postingsreader
 // (it writes a minor version, etc).
-public class Lucene40Codec extends Codec {
+// nocommit: make readonly and add impersonator
+public final class Lucene40Codec extends Codec {
   private final StoredFieldsFormat fieldsFormat = new Lucene40StoredFieldsFormat();
   private final TermVectorsFormat vectorsFormat = new Lucene40TermVectorsFormat();
   private final FieldInfosFormat fieldInfosFormat = new Lucene40FieldInfosFormat();

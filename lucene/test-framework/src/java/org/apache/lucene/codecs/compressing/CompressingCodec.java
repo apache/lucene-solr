@@ -21,14 +21,14 @@ import java.util.Random;
 
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 /**
  * A codec that uses {@link CompressingStoredFieldsFormat} for its stored
- * fields and delegates to {@link Lucene40Codec} for everything else.
+ * fields and delegates to {@link Lucene41Codec} for everything else.
  */
 public class CompressingCodec extends FilterCodec {
 
@@ -49,7 +49,7 @@ public class CompressingCodec extends FilterCodec {
    */
   public CompressingCodec(CompressionMode compressionMode, int chunkSize,
       CompressingStoredFieldsIndex storedFieldsIndexFormat) {
-    super("Compressing", new Lucene40Codec());
+    super("Compressing", new Lucene41Codec());
     this.storedFieldsFormat = new CompressingStoredFieldsFormat(compressionMode, chunkSize, storedFieldsIndexFormat);
   }
 

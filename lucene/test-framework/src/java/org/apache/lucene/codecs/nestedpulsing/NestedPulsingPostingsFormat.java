@@ -26,8 +26,8 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.lucene40.Lucene40PostingsReader;
-import org.apache.lucene.codecs.lucene40.Lucene40PostingsWriter;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsReader;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter;
 import org.apache.lucene.codecs.pulsing.PulsingPostingsReader;
 import org.apache.lucene.codecs.pulsing.PulsingPostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
@@ -35,7 +35,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Pulsing(1, Pulsing(2, Lucene40))
+ * Pulsing(1, Pulsing(2, Lucene41))
  * @lucene.experimental
  */
 // TODO: if we create PulsingPostingsBaseFormat then we
@@ -55,7 +55,7 @@ public final class NestedPulsingPostingsFormat extends PostingsFormat {
     // Terms dict
     boolean success = false;
     try {
-      docsWriter = new Lucene40PostingsWriter(state);
+      docsWriter = new Lucene41PostingsWriter(state);
 
       pulsingWriterInner = new PulsingPostingsWriter(2, docsWriter);
       pulsingWriter = new PulsingPostingsWriter(1, pulsingWriterInner);
@@ -77,7 +77,7 @@ public final class NestedPulsingPostingsFormat extends PostingsFormat {
     PostingsReaderBase pulsingReader = null;
     boolean success = false;
     try {
-      docsReader = new Lucene40PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
+      docsReader = new Lucene41PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
       pulsingReaderInner = new PulsingPostingsReader(docsReader);
       pulsingReader = new PulsingPostingsReader(pulsingReaderInner);
       FieldsProducer ret = new BlockTreeTermsReader(
