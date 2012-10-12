@@ -312,6 +312,11 @@ public class PeerSync  {
         log.warn(msg() + " got a 503 from " + srsp.getShardAddress() + ", counting as success");
         return true;
       }
+      
+      if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 404) {
+        log.warn(msg() + " got a 404 from " + srsp.getShardAddress() + ", counting as success");
+        return true;
+      }
       // TODO: at least log???
       // srsp.getException().printStackTrace(System.out);
      

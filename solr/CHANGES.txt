@@ -38,9 +38,7 @@ New Features
   values of a multiValued field in their original order when highlighting.
   (Joel Bernstein via yonik)
 
-* SOLR-3929
-support configuring IndexWriter max thread count in solrconfig
-
+* SOLR-3929: Support configuring IndexWriter max thread count in solrconfig.
   (phunt via Mark Miller)
 
 Optimizations
@@ -69,6 +67,12 @@ Bug Fixes
 
 * SOLR-3917: Partial State on Schema-Browser UI is not defined for Dynamic
   Fields & Types (steffkes)
+  
+* SOLR-3939: Consider a sync attempt from leader to replica that fails due 
+  to 404 a success. (Mark Miller, Joel Bernstein)
+  
+* SOLR-3940: Rejoining the leader election incorrectly triggers the code path
+  for a fresh cluster start rather than fail over. (Mark Miller)
 
 Other Changes
 ----------------------
