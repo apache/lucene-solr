@@ -789,4 +789,18 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals("a ", results.get(1).key);
     assertEquals(50, results.get(1).value);
   }
+
+  public void testQueueExhaustion() throws Exception {
+    Analyzer a = new MockAnalyzer(random());
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.EXACT_FIRST, 256, -1);
+
+    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
+          new TermFreq("a", 2),
+          new TermFreq("a b c", 3),
+          new TermFreq("a c a", 1),
+          new TermFreq("a c b", 1),
+        }));
+
+    List<LookupResult> results = suggester.lookup("a", false, 4);
+  }
 }
