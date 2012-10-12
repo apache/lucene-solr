@@ -44,6 +44,7 @@ public class SolrIndexConfig {
   public final boolean useCompoundFile;
   public final int maxBufferedDocs;
   public final int maxMergeDocs;
+  public final int maxIndexingThreads;
   public final int mergeFactor;
 
   public final double ramBufferSizeMB;
@@ -71,6 +72,7 @@ public class SolrIndexConfig {
     useCompoundFile = luceneVersion.onOrAfter(Version.LUCENE_36) ? false : true;
     maxBufferedDocs = -1;
     maxMergeDocs = -1;
+    maxIndexingThreads = IndexWriterConfig.DEFAULT_MAX_THREAD_STATES;
     mergeFactor = -1;
     ramBufferSizeMB = luceneVersion.onOrAfter(Version.LUCENE_36) ? 32 : 16;
     writeLockTimeout = -1;
@@ -118,6 +120,7 @@ public class SolrIndexConfig {
     useCompoundFile=solrConfig.getBool(prefix+"/useCompoundFile", def.useCompoundFile);
     maxBufferedDocs=solrConfig.getInt(prefix+"/maxBufferedDocs",def.maxBufferedDocs);
     maxMergeDocs=solrConfig.getInt(prefix+"/maxMergeDocs",def.maxMergeDocs);
+    maxIndexingThreads=solrConfig.getInt(prefix+"/maxIndexingThreads",def.maxIndexingThreads);
     mergeFactor=solrConfig.getInt(prefix+"/mergeFactor",def.mergeFactor);
     ramBufferSizeMB = solrConfig.getDouble(prefix+"/ramBufferSizeMB", def.ramBufferSizeMB);
 
@@ -177,6 +180,10 @@ public class SolrIndexConfig {
     iwc.setSimilarity(schema.getSimilarity());
     iwc.setMergePolicy(buildMergePolicy(schema));
     iwc.setMergeScheduler(buildMergeScheduler(schema));
+
+    if (maxIndexingThreads != -1) {
+      iwc.setMaxThreadStates(maxIndexingThreads);
+    }
 
     return iwc;
   }
