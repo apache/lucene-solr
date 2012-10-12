@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -43,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * Leader Election process. This class contains the logic by which a
  * leader is chosen. First call * {@link #setup(ElectionContext)} to ensure
  * the election process is init'd. Next call
- * {@link #joinElection(ElectionContext)} to start the leader election.
+ * {@link #joinElection(ElectionContext, boolean)} to start the leader election.
  * 
  * The implementation follows the classic ZooKeeper recipe of creating an
  * ephemeral, sequential node for each candidate and then looking at the set
@@ -203,7 +202,7 @@ public  class LeaderElector {
    * 
    * @return sequential node number
    */
-  public int joinElection(ElectionContext context) throws KeeperException, InterruptedException, IOException {
+  public int joinElection(ElectionContext context, boolean replacement) throws KeeperException, InterruptedException, IOException {
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
     long sessionId = zkClient.getSolrZooKeeper().getSessionId();
@@ -259,7 +258,7 @@ public  class LeaderElector {
       }
     }
     int seq = getSeq(leaderSeqPath);
-    checkIfIamLeader(seq, context, false);
+    checkIfIamLeader(seq, context, replacement);
     
     return seq;
   }

@@ -324,7 +324,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       SolrException.log(log, "Error trying to start recovery", t);
     }
     
-    leaderElector.joinElection(this);
+    leaderElector.joinElection(this, true);
   }
 
   private boolean shouldIBeLeader(ZkNodeProps leaderProps, SolrCore core) {

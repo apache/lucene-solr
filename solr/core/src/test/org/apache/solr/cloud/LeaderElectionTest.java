@@ -40,7 +40,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
@@ -114,7 +113,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
           elector, "shard1", "collection1", Integer.toString(nodeNumber),
           props, zkStateReader);
       elector.setup(context);
-      seq = elector.joinElection(context);
+      seq = elector.joinElection(context, false);
       electionDone = true;
       seqToThread.put(seq, this);
     }
@@ -175,7 +174,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     ElectionContext context = new ShardLeaderElectionContextBase(elector,
         "shard2", "collection1", "dummynode1", props, zkStateReader);
     elector.setup(context);
-    elector.joinElection(context);
+    elector.joinElection(context, false);
     assertEquals("http://127.0.0.1/solr/",
         getLeaderUrl("collection1", "shard2"));
   }
@@ -188,7 +187,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     ElectionContext firstContext = new ShardLeaderElectionContextBase(first,
         "slice1", "collection2", "dummynode1", props, zkStateReader);
     first.setup(firstContext);
-    first.joinElection(firstContext);
+    first.joinElection(firstContext, false);
 
     Thread.sleep(1000);
     assertEquals("original leader was not registered", "http://127.0.0.1/solr/1/", getLeaderUrl("collection2", "slice1"));
@@ -199,7 +198,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     ElectionContext context = new ShardLeaderElectionContextBase(second,
         "slice1", "collection2", "dummynode1", props, zkStateReader);
     second.setup(context);
-    second.joinElection(context);
+    second.joinElection(context, false);
     Thread.sleep(1000);
     assertEquals("original leader should have stayed leader", "http://127.0.0.1/solr/1/", getLeaderUrl("collection2", "slice1"));
     firstContext.cancelElection();
