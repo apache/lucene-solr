@@ -26,7 +26,7 @@ import org.apache.lucene.index.BasePostingsFormatTestCase;
  * Basic tests for BloomPostingsFormat
  */
 public class TestBloomPostingsFormat extends BasePostingsFormatTestCase {
-  private final PostingsFormat postings = new TestBloomFilteredLucene40Postings();
+  private final PostingsFormat postings = new TestBloomFilteredLucene41Postings();
   private final Codec codec = new Lucene40Codec() {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {

@@ -29,11 +29,10 @@ import java.util.Set;
 
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
-import org.apache.lucene.codecs.block.BlockPostingsFormat;
-import org.apache.lucene.codecs.bloom.TestBloomFilteredLucene40Postings;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
-import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
-import org.apache.lucene.codecs.lucene40ords.Lucene40WithOrds;
+import org.apache.lucene.codecs.lucene41.Lucene41Codec;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
+import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
+import org.apache.lucene.codecs.bloom.TestBloomFilteredLucene41Postings;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.codecs.mockintblock.MockFixedIntBlockPostingsFormat;
@@ -41,7 +40,7 @@ import org.apache.lucene.codecs.mockintblock.MockVariableIntBlockPostingsFormat;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
-import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
+import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -55,7 +54,7 @@ import org.apache.lucene.util._TestUtil;
  * documents in different orders and the test will still be deterministic
  * and reproducable.
  */
-public class RandomCodec extends Lucene40Codec {
+public class RandomCodec extends Lucene41Codec {
   /** Shuffled list of postings formats to use for new mappings */
   private List<PostingsFormat> formats = new ArrayList<PostingsFormat>();
   
@@ -94,23 +93,22 @@ public class RandomCodec extends Lucene40Codec {
     int lowFreqCutoff = _TestUtil.nextInt(random, 2, 100);
 
     add(avoidCodecs,
-        new Lucene40PostingsFormat(minItemsPerBlock, maxItemsPerBlock),
-        new BlockPostingsFormat(minItemsPerBlock, maxItemsPerBlock),
+        new Lucene41PostingsFormat(minItemsPerBlock, maxItemsPerBlock),
         new DirectPostingsFormat(LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : maxItemsPerBlock),
                                  LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : lowFreqCutoff)),
-        new Pulsing40PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock),
+        new Pulsing41PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock),
         // add pulsing again with (usually) different parameters
-        new Pulsing40PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock),
+        new Pulsing41PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock),
         //TODO as a PostingsFormat which wraps others, we should allow TestBloomFilteredLucene40Postings to be constructed 
         //with a choice of concrete PostingsFormats. Maybe useful to have a generic means of marking and dealing 
         //with such "wrapper" classes?
-        new TestBloomFilteredLucene40Postings(),                
+        new TestBloomFilteredLucene41Postings(),                
         new MockSepPostingsFormat(),
         new MockFixedIntBlockPostingsFormat(_TestUtil.nextInt(random, 1, 2000)),
         new MockVariableIntBlockPostingsFormat( _TestUtil.nextInt(random, 1, 127)),
         new MockRandomPostingsFormat(random),
         new NestedPulsingPostingsFormat(),
-        new Lucene40WithOrds(),
+        new Lucene41WithOrds(),
         new SimpleTextPostingsFormat(),
         new AssertingPostingsFormat(),
         new MemoryPostingsFormat(true, random.nextFloat()),

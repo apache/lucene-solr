@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.block;
+package org.apache.lucene.codecs.lucene41;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,9 +17,9 @@ package org.apache.lucene.codecs.block;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.block.BlockPostingsFormat.BLOCK_SIZE;
-import static org.apache.lucene.codecs.block.ForUtil.MAX_DATA_SIZE;
-import static org.apache.lucene.codecs.block.ForUtil.MAX_ENCODED_SIZE;
+import static org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat.BLOCK_SIZE;
+import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_DATA_SIZE;
+import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_ENCODED_SIZE;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -49,10 +49,10 @@ import org.apache.lucene.util.IOUtils;
  * Concrete class that reads docId(maybe frq,pos,offset,payloads) list
  * with postings format.
  *
- * @see BlockSkipReader for details
- *
+ * @see Lucene41SkipReader for details
+ * @lucene.experimental
  */
-final class BlockPostingsReader extends PostingsReaderBase {
+public final class Lucene41PostingsReader extends PostingsReaderBase {
 
   private final IndexInput docIn;
   private final IndexInput posIn;
@@ -62,35 +62,35 @@ final class BlockPostingsReader extends PostingsReaderBase {
 
   // public static boolean DEBUG = false;
 
-  public BlockPostingsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo segmentInfo, IOContext ioContext, String segmentSuffix) throws IOException {
+  public Lucene41PostingsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo segmentInfo, IOContext ioContext, String segmentSuffix) throws IOException {
     boolean success = false;
     IndexInput docIn = null;
     IndexInput posIn = null;
     IndexInput payIn = null;
     try {
-      docIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, BlockPostingsFormat.DOC_EXTENSION),
+      docIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene41PostingsFormat.DOC_EXTENSION),
                             ioContext);
       CodecUtil.checkHeader(docIn,
-                            BlockPostingsWriter.DOC_CODEC,
-                            BlockPostingsWriter.VERSION_CURRENT,
-                            BlockPostingsWriter.VERSION_CURRENT);
+                            Lucene41PostingsWriter.DOC_CODEC,
+                            Lucene41PostingsWriter.VERSION_CURRENT,
+                            Lucene41PostingsWriter.VERSION_CURRENT);
       forUtil = new ForUtil(docIn);
 
       if (fieldInfos.hasProx()) {
-        posIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, BlockPostingsFormat.POS_EXTENSION),
+        posIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene41PostingsFormat.POS_EXTENSION),
                               ioContext);
         CodecUtil.checkHeader(posIn,
-                              BlockPostingsWriter.POS_CODEC,
-                              BlockPostingsWriter.VERSION_CURRENT,
-                              BlockPostingsWriter.VERSION_CURRENT);
+                              Lucene41PostingsWriter.POS_CODEC,
+                              Lucene41PostingsWriter.VERSION_CURRENT,
+                              Lucene41PostingsWriter.VERSION_CURRENT);
 
         if (fieldInfos.hasPayloads() || fieldInfos.hasOffsets()) {
-          payIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, BlockPostingsFormat.PAY_EXTENSION),
+          payIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene41PostingsFormat.PAY_EXTENSION),
                                 ioContext);
           CodecUtil.checkHeader(payIn,
-                                BlockPostingsWriter.PAY_CODEC,
-                                BlockPostingsWriter.VERSION_CURRENT,
-                                BlockPostingsWriter.VERSION_CURRENT);
+                                Lucene41PostingsWriter.PAY_CODEC,
+                                Lucene41PostingsWriter.VERSION_CURRENT,
+                                Lucene41PostingsWriter.VERSION_CURRENT);
         }
       }
 
@@ -109,9 +109,9 @@ final class BlockPostingsReader extends PostingsReaderBase {
   public void init(IndexInput termsIn) throws IOException {
     // Make sure we are talking to the matching postings writer
     CodecUtil.checkHeader(termsIn,
-                          BlockPostingsWriter.TERMS_CODEC,
-                          BlockPostingsWriter.VERSION_CURRENT,
-                          BlockPostingsWriter.VERSION_CURRENT);
+                          Lucene41PostingsWriter.TERMS_CODEC,
+                          Lucene41PostingsWriter.VERSION_CURRENT,
+                          Lucene41PostingsWriter.VERSION_CURRENT);
     final int indexBlockSize = termsIn.readVInt();
     if (indexBlockSize != BLOCK_SIZE) {
       throw new IllegalStateException("index-time BLOCK_SIZE (" + indexBlockSize + ") != read-time BLOCK_SIZE (" + BLOCK_SIZE + ")");
@@ -321,7 +321,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
 
     private int docBufferUpto;
 
-    private BlockSkipReader skipper;
+    private Lucene41SkipReader skipper;
     private boolean skipped;
 
     final IndexInput startDocIn;
@@ -353,7 +353,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
     private Bits liveDocs;
 
     public BlockDocsEnum(FieldInfo fieldInfo) throws IOException {
-      this.startDocIn = BlockPostingsReader.this.docIn;
+      this.startDocIn = Lucene41PostingsReader.this.docIn;
       this.docIn = startDocIn.clone();
       indexHasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
       indexHasPos = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
@@ -486,8 +486,8 @@ final class BlockPostingsReader extends PostingsReaderBase {
 
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
-          skipper = new BlockSkipReader(docIn.clone(),
-                                        BlockPostingsWriter.maxSkipLevels,
+          skipper = new Lucene41SkipReader(docIn.clone(),
+                                        Lucene41PostingsWriter.maxSkipLevels,
                                         BLOCK_SIZE,
                                         indexHasPos,
                                         indexHasOffsets,
@@ -502,7 +502,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
           skipped = true;
         }
 
-        // always plus one to fix the result, since skip position in BlockSkipReader 
+        // always plus one to fix the result, since skip position in Lucene41SkipReader 
         // is a little different from MultiLevelSkipListReader
         final int newDocUpto = skipper.skipTo(target) + 1; 
 
@@ -577,7 +577,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
     private int docBufferUpto;
     private int posBufferUpto;
 
-    private BlockSkipReader skipper;
+    private Lucene41SkipReader skipper;
     private boolean skipped;
 
     final IndexInput startDocIn;
@@ -628,9 +628,9 @@ final class BlockPostingsReader extends PostingsReaderBase {
     private Bits liveDocs;
     
     public BlockDocsAndPositionsEnum(FieldInfo fieldInfo) throws IOException {
-      this.startDocIn = BlockPostingsReader.this.docIn;
+      this.startDocIn = Lucene41PostingsReader.this.docIn;
       this.docIn = startDocIn.clone();
-      this.posIn = BlockPostingsReader.this.posIn.clone();
+      this.posIn = Lucene41PostingsReader.this.posIn.clone();
       encoded = new byte[MAX_ENCODED_SIZE];
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       indexHasPayloads = fieldInfo.hasPayloads();
@@ -797,8 +797,8 @@ final class BlockPostingsReader extends PostingsReaderBase {
           // if (DEBUG) {
           //   System.out.println("    create skipper");
           // }
-          skipper = new BlockSkipReader(docIn.clone(),
-                                        BlockPostingsWriter.maxSkipLevels,
+          skipper = new Lucene41SkipReader(docIn.clone(),
+                                        Lucene41PostingsWriter.maxSkipLevels,
                                         BLOCK_SIZE,
                                         true,
                                         indexHasOffsets,
@@ -987,7 +987,7 @@ final class BlockPostingsReader extends PostingsReaderBase {
     private int docBufferUpto;
     private int posBufferUpto;
 
-    private BlockSkipReader skipper;
+    private Lucene41SkipReader skipper;
     private boolean skipped;
 
     final IndexInput startDocIn;
@@ -1044,10 +1044,10 @@ final class BlockPostingsReader extends PostingsReaderBase {
     private Bits liveDocs;
     
     public EverythingEnum(FieldInfo fieldInfo) throws IOException {
-      this.startDocIn = BlockPostingsReader.this.docIn;
+      this.startDocIn = Lucene41PostingsReader.this.docIn;
       this.docIn = startDocIn.clone();
-      this.posIn = BlockPostingsReader.this.posIn.clone();
-      this.payIn = BlockPostingsReader.this.payIn.clone();
+      this.posIn = Lucene41PostingsReader.this.posIn.clone();
+      this.payIn = Lucene41PostingsReader.this.payIn.clone();
       encoded = new byte[MAX_ENCODED_SIZE];
       indexHasOffsets = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) >= 0;
       if (indexHasOffsets) {
@@ -1282,8 +1282,8 @@ final class BlockPostingsReader extends PostingsReaderBase {
           // if (DEBUG) {
           //   System.out.println("    create skipper");
           // }
-          skipper = new BlockSkipReader(docIn.clone(),
-                                        BlockPostingsWriter.maxSkipLevels,
+          skipper = new Lucene41SkipReader(docIn.clone(),
+                                        Lucene41PostingsWriter.maxSkipLevels,
                                         BLOCK_SIZE,
                                         true,
                                         indexHasOffsets,

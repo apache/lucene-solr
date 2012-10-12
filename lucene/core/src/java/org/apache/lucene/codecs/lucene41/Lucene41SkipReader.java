@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.block;
+package org.apache.lucene.codecs.lucene41;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -35,12 +35,12 @@ import org.apache.lucene.store.IndexInput;
  * 0 1 2 3 4 5
  * d d d d d d    (posting list)
  *     ^     ^    (skip point in MultiLeveSkipWriter)
- *       ^        (skip point in BlockSkipWriter)
+ *       ^        (skip point in Lucene41SkipWriter)
  *
  * In this case, MultiLevelSkipListReader will use the last document as a skip point, 
- * while BlockSkipReader should assume no skip point will comes. 
+ * while Lucene41SkipReader should assume no skip point will comes. 
  *
- * If we use the interface directly in BlockSkipReader, it may silly try to read 
+ * If we use the interface directly in Lucene41SkipReader, it may silly try to read 
  * another skip data after the only skip point is loaded. 
  *
  * To illustrate this, we can call skipTo(d[5]), since skip point d[3] has smaller docId,
@@ -50,8 +50,8 @@ import org.apache.lucene.store.IndexInput;
  * Therefore, we'll trim df before passing it to the interface. see trim(int)
  *
  */
-final class BlockSkipReader extends MultiLevelSkipListReader {
-  // private boolean DEBUG = BlockPostingsReader.DEBUG;
+final class Lucene41SkipReader extends MultiLevelSkipListReader {
+  // private boolean DEBUG = Lucene41PostingsReader.DEBUG;
   private final int blockSize;
 
   private long docPointer[];
@@ -66,7 +66,7 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
   private long lastDocPointer;
   private int lastPosBufferUpto;
 
-  public BlockSkipReader(IndexInput skipStream, int maxSkipLevels, int blockSize, boolean hasPos, boolean hasOffsets, boolean hasPayloads) {
+  public Lucene41SkipReader(IndexInput skipStream, int maxSkipLevels, int blockSize, boolean hasPos, boolean hasOffsets, boolean hasPayloads) {
     super(skipStream, maxSkipLevels, blockSize, 8);
     this.blockSize = blockSize;
     docPointer = new long[maxSkipLevels];
@@ -91,7 +91,7 @@ final class BlockSkipReader extends MultiLevelSkipListReader {
   /**
    * Trim original docFreq to tell skipReader read proper number of skip points.
    *
-   * Since our definition in BlockSkip* is a little different from MultiLevelSkip*
+   * Since our definition in Lucene41Skip* is a little different from MultiLevelSkip*
    * This trimmed docFreq will prevent skipReader from:
    * 1. silly reading a non-existed skip point after the last block boundary
    * 2. moving into the vInt block
