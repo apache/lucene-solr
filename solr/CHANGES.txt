@@ -60,6 +60,9 @@ Optimizations
 
 * SOLR-3734: Improve Schema-Browser Handling for CopyField using
   dynamicField's (steffkes)
+  
+* SOLR-3941: The "commitOnLeader" part of distributed recovery can use
+  openSearcher=false. (Tomas Fernandez Lobbe via Mark Miller)
 
 Bug Fixes
 ----------------------
