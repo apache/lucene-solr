@@ -271,9 +271,6 @@ public final class Util {
     
     final Comparator<T> comparator;
 
-    // Set once the queue has filled:
-    FSTPath<T> bottom = null;
-
     TreeSet<FSTPath<T>> queue = null;
 
     public TopNSearcher(FST<T> fst, int topN, Comparator<T> comparator) {
@@ -291,9 +288,10 @@ public final class Util {
       assert queue != null;
 
       T cost = fst.outputs.add(path.cost, path.arc.output);
-      //System.out.println("  addIfCompetitive bottom=" + bottom + " queue.size()=" + queue.size());
+      //System.out.println("  addIfCompetitive queue.size()=" + queue.size() + " path=" + path + " + label=" + path.arc.label);
 
-      if (bottom != null) {
+      if (queue.size() == topN) {
+        FSTPath<T> bottom = queue.last();
         int comp = comparator.compare(cost, bottom.cost);
         if (comp > 0) {
           // Doesn't compete
@@ -323,24 +321,11 @@ public final class Util {
       newInput.length = path.input.length+1;
       final FSTPath<T> newPath = new FSTPath<T>(cost, path.arc, comparator, newInput);
 
-      // this is pointless right?  we do it above already:
-      //newPath.input.grow(path.input.length+1);
-      //System.arraycopy(path.input.ints, 0, newPath.input.ints, 0, path.input.length);
-      //newPath.input.ints[path.input.length] = path.arc.label;
-      //newPath.input.length = path.input.length+1;
-
-      //System.out.println("    add path=" + newPath);
       queue.add(newPath);
-      if (bottom != null) {
-        final FSTPath<T> removed = queue.pollLast();
-        assert removed == bottom;
-        bottom = queue.last();
-        //System.out.println("    now re-set bottom: " + bottom + " queue=" + queue);
-      } else if (queue.size() == topN) {
-        // Queue just filled up:
-        bottom = queue.last();
-        //System.out.println("    now set bottom: " + bottom);
-      }
+
+      if (queue.size() == topN+1) {
+        queue.pollLast();
+      } 
     }
 
     /** Adds all leaving arcs, including 'finished' arc, if
@@ -387,7 +372,7 @@ public final class Util {
 
       // For each top N path:
       while (results.size() < topN) {
-        //System.out.println("\nfind next path");
+        //System.out.println("\nfind next path: queue.size=" + queue.size());
 
         FSTPath<T> path;
 
