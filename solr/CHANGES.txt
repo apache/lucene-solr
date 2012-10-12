@@ -42,6 +42,10 @@ New Features
   values of a multiValued field in their original order when highlighting.
   (Joel Bernstein via yonik)
 
+* SOLR-3929
+support configuring IndexWriter max thread count in solrconfig
+
+  (phunt via Mark Miller)
 
 Optimizations
 ----------------------
