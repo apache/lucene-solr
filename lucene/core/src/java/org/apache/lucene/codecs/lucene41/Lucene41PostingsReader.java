@@ -62,6 +62,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
 
   // public static boolean DEBUG = false;
 
+  /** Sole constructor. */
   public Lucene41PostingsReader(Directory dir, FieldInfos fieldInfos, SegmentInfo segmentInfo, IOContext ioContext, String segmentSuffix) throws IOException {
     boolean success = false;
     IndexInput docIn = null;

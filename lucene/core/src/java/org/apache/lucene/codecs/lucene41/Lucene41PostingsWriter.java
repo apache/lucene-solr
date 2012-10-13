@@ -113,6 +113,8 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
   private final ForUtil forUtil;
   private final Lucene41SkipWriter skipWriter;
   
+  /** Creates a postings writer with the specified PackedInts overhead ratio */
+  // TODO: does this ctor even make sense?
   public Lucene41PostingsWriter(SegmentWriteState state, float acceptableOverheadRatio) throws IOException {
     super();
 
@@ -181,6 +183,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     encoded = new byte[MAX_ENCODED_SIZE];
   }
 
+  /** Creates a postings writer with <code>PackedInts.COMPACT</code> */
   public Lucene41PostingsWriter(SegmentWriteState state) throws IOException {
     this(state, PackedInts.COMPACT);
   }
