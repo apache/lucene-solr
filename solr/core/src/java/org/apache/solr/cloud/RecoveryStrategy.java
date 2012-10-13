@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.RequestHandlers.LazyRequestHandlerWrapper;
@@ -177,6 +178,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     UpdateRequest ureq = new UpdateRequest();
     ureq.setParams(new ModifiableSolrParams());
     ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
+    ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
     ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(
         server);
     server.shutdown();

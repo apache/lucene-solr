@@ -23,8 +23,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
+ * Integration test which uses {@link org.apache.lucene.analysis.uima.UIMAAnnotationsTokenizerFactory} in Solr schema
  */
-public class UIMATypeAwareAnnotationsTokenizerFactoryTest extends SolrTestCaseJ4 {
+public class UIMATokenizersSolrIntegrationTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -33,12 +34,24 @@ public class UIMATypeAwareAnnotationsTokenizerFactoryTest extends SolrTestCaseJ4
 
   @Test
   public void testInitialization() throws Exception {
+    assertNotNull(h.getCore().getSchema().getField("sentences"));
+    assertNotNull(h.getCore().getSchema().getFieldType("sentences"));
     assertNotNull(h.getCore().getSchema().getField("nouns"));
     assertNotNull(h.getCore().getSchema().getFieldType("nouns"));
   }
 
   @Test
-  public void testIndexAndQuery() throws Exception {
+  public void testUIMATokenizerIndexAndQuery() throws Exception {
+    assertU("<add><doc><field name=\"id\">123</field><field name=\"text\">One and 1 is two. Instead One or 1 is 0.</field></doc></add>");
+    assertU(commit());
+    SolrQueryRequest req = req("qt", "/terms", "terms.fl", "sentences");
+    assertQ(req, "//lst[@name='sentences']/int[@name='One and 1 is two.']");
+    assertQ(req, "//lst[@name='sentences']/int[@name=' Instead One or 1 is 0.']");
+    req.close();
+  }
+
+  @Test
+  public void testUIMATypeAwareTokenizerIndexAndQuery() throws Exception {
     assertU("<add><doc><field name=\"id\">123</field><field name=\"text\">The counter counts the beans: 1 and 2 and three.</field></doc></add>");
     assertU(commit());
     SolrQueryRequest req = req("qt", "/terms", "terms.fl", "nouns");

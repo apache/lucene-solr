@@ -73,16 +73,16 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
 
       /* get the fields to analyze */
       String[] texts = getTextsToAnalyze(solrInputDocument);
-      for (int i = 0; i < texts.length; i++) {
-        text = texts[i];
-        if (text != null && text.length()>0) {
+      for (String currentText : texts) {
+        text = currentText;
+        if (text != null && text.length() > 0) {
           /* process the text value */
           JCas jcas = processText(text);
 
           UIMAToSolrMapper uimaToSolrMapper = new UIMAToSolrMapper(solrInputDocument, jcas);
           /* get field mapping from config */
           Map<String, Map<String, MapField>> typesAndFeaturesFieldsMap = solrUIMAConfiguration
-                  .getTypesFeaturesFieldsMapping();
+              .getTypesFeaturesFieldsMapping();
           /* map type features on fields */
           for (String typeFQN : typesAndFeaturesFieldsMap.keySet()) {
             uimaToSolrMapper.map(typeFQN, typesAndFeaturesFieldsMap.get(typeFQN));
@@ -133,8 +133,8 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
     String[] textVals;
     if (merge) {
       StringBuilder unifiedText = new StringBuilder("");
-      for (int i = 0; i < fieldsToAnalyze.length; i++) {
-        unifiedText.append(String.valueOf(solrInputDocument.getFieldValue(fieldsToAnalyze[i])));
+      for (String aFieldsToAnalyze : fieldsToAnalyze) {
+        unifiedText.append(String.valueOf(solrInputDocument.getFieldValue(aFieldsToAnalyze)));
       }
       textVals = new String[1];
       textVals[0] = unifiedText.toString();
@@ -150,7 +150,7 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
   /* process a field value executing UIMA the CAS containing it as document text */
   private JCas processText(String textFieldValue) throws ResourceInitializationException,
           AnalysisEngineProcessException {
-    log.info(new StringBuffer("Analyzing text").toString());
+    log.info(new StringBuilder("Analyzing text").toString());
     /* get the UIMA analysis engine */
     AnalysisEngine ae = aeProvider.getAE();
 
@@ -160,7 +160,7 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
 
     /* perform analysis on text field */
     ae.process(jcas);
-    log.info(new StringBuilder("Text processing completed").toString());
+    log.info("Text processing completed");
     return jcas;
   }
 

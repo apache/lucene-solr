@@ -42,6 +42,8 @@ New Features
   values of a multiValued field in their original order when highlighting.
   (Joel Bernstein via yonik)
 
+* SOLR-3929: Support configuring IndexWriter max thread count in solrconfig.
+  (phunt via Mark Miller)
 
 Optimizations
 ----------------------
@@ -58,6 +60,9 @@ Optimizations
 
 * SOLR-3734: Improve Schema-Browser Handling for CopyField using
   dynamicField's (steffkes)
+  
+* SOLR-3941: The "commitOnLeader" part of distributed recovery can use
+  openSearcher=false. (Tomas Fernandez Lobbe via Mark Miller)
 
 Bug Fixes
 ----------------------
@@ -69,6 +74,12 @@ Bug Fixes
 
 * SOLR-3917: Partial State on Schema-Browser UI is not defined for Dynamic
   Fields & Types (steffkes)
+  
+* SOLR-3939: Consider a sync attempt from leader to replica that fails due 
+  to 404 a success. (Mark Miller, Joel Bernstein)
+  
+* SOLR-3940: Rejoining the leader election incorrectly triggers the code path
+  for a fresh cluster start rather than fail over. (Mark Miller)
 
 Other Changes
 ----------------------

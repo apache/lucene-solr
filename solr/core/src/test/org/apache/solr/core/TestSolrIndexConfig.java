@@ -1,4 +1,4 @@
-package org.apache.solr.uima.processor;
+package org.apache.solr.core;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,11 +17,20 @@ package org.apache.solr.uima.processor;
  * limitations under the License.
  */
 
-/**
- * Exception thrown when an error happening while mapping UIMA CAS model to Solr fields
- */
-public class FieldMappingException extends Exception {
-  public FieldMappingException(Exception e) {
-    super(e);
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.BeforeClass;
+
+public class TestSolrIndexConfig extends SolrTestCaseJ4 {
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-indexconfig.xml","schema.xml");
+  }
+  
+  public void testIndexConfig() throws Exception {
+    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore().getSchema());
+
+    assertEquals(123, iwc.getMaxThreadStates());
   }
 }

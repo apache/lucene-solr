@@ -533,9 +533,6 @@ public class AnalyzingSuggester extends Lookup {
 
       if (exactFirst) {
 
-        Util.TopNSearcher<Pair<Long,BytesRef>> searcher;
-        searcher = new Util.TopNSearcher<Pair<Long,BytesRef>>(fst, num, weightComparator);
-
         int count = 0;
         for (FSTUtil.Path<Pair<Long,BytesRef>> path : prefixPaths) {
           if (fst.findTargetArc(END_BYTE, path.fstNode, scratchArc, bytesReader) != null) {
@@ -545,6 +542,9 @@ public class AnalyzingSuggester extends Lookup {
           }
         }
 
+        // Searcher just to find the single exact only
+        // match, if present:
+        Util.TopNSearcher<Pair<Long,BytesRef>> searcher;
         searcher = new Util.TopNSearcher<Pair<Long,BytesRef>>(fst, count * maxSurfaceFormsPerAnalyzedForm, weightComparator);
 
         // NOTE: we could almost get away with only using

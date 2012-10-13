@@ -139,7 +139,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           ShardLeaderElectionContextBase ctx = new ShardLeaderElectionContextBase(
               elector, shardId, collection, nodeName + "_" + coreName, props,
               zkStateReader);
-          elector.joinElection(ctx);
+          elector.joinElection(ctx, false);
           return shardId;
         }
         Thread.sleep(500);
@@ -876,7 +876,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         new HttpShardHandlerFactory().getShardHandler(), "/admin/cores", reader);
     ElectionContext ec = new OverseerElectionContext(zkClient, overseer, address.replaceAll("/", "_"));
     overseerElector.setup(ec);
-    overseerElector.joinElection(ec);
+    overseerElector.joinElection(ec, false);
     return zkClient;
   }
   
