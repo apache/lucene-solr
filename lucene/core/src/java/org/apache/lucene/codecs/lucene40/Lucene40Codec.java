@@ -36,12 +36,12 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
  * {@link FilterCodec}.
  *
  * @see org.apache.lucene.codecs.lucene40 package documentation for file format details.
- * @lucene.experimental
+ * @deprecated Only for reading old 4.0 segments
  */
 // NOTE: if we make largish changes in a minor release, easier to just make Lucene42Codec or whatever
 // if they are backwards compatible or smallish we can probably do the backwards in the postingsreader
 // (it writes a minor version, etc).
-// nocommit: make readonly and add impersonator
+@Deprecated
 public final class Lucene40Codec extends Codec {
   private final StoredFieldsFormat fieldsFormat = new Lucene40StoredFieldsFormat();
   private final TermVectorsFormat vectorsFormat = new Lucene40TermVectorsFormat();

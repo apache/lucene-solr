@@ -29,9 +29,10 @@ import org.apache.lucene.index.SegmentWriteState;
  * Provides a {@link PostingsReaderBase} and {@link
  * PostingsWriterBase}.
  *
- * @lucene.experimental */
+ * @deprecated Only for reading old 4.0 segments */
 
 // TODO: should these also be named / looked up via SPI?
+@Deprecated
 public final class Lucene40PostingsBaseFormat extends PostingsBaseFormat {
 
   /** Sole constructor. */
@@ -46,6 +47,6 @@ public final class Lucene40PostingsBaseFormat extends PostingsBaseFormat {
 
   @Override
   public PostingsWriterBase postingsWriterBase(SegmentWriteState state) throws IOException {
-    return new Lucene40PostingsWriter(state);
+    throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 }

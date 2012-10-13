@@ -191,7 +191,7 @@ public class LiveIndexWriterConfig {
    * for a block), you would instead use  {@link Lucene41PostingsFormat#Lucene41PostingsFormat(int, int)}.
    * which can also be configured on a per-field basis:
    * <pre class="prettyprint">
-   * //customize Lucene40PostingsFormat, passing minBlockSize=50, maxBlockSize=100
+   * //customize Lucene41PostingsFormat, passing minBlockSize=50, maxBlockSize=100
    * final PostingsFormat tweakedPostings = new Lucene41PostingsFormat(50, 100);
    * iwc.setCodec(new Lucene41Codec() {
    *   &#64;Override

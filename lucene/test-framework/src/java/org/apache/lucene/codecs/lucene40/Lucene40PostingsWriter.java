@@ -45,16 +45,6 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.experimental 
  */
 public final class Lucene40PostingsWriter extends PostingsWriterBase {
-  final static String TERMS_CODEC = "Lucene40PostingsWriterTerms";
-  final static String FRQ_CODEC = "Lucene40PostingsWriterFrq";
-  final static String PRX_CODEC = "Lucene40PostingsWriterPrx";
-
-  //private static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
-  
-  // Increment version to change it:
-  final static int VERSION_START = 0;
-  final static int VERSION_LONG_SKIP = 1;
-  final static int VERSION_CURRENT = VERSION_LONG_SKIP;
 
   final IndexOutput freqOut;
   final IndexOutput proxOut;
@@ -111,7 +101,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
     boolean success = false;
     IndexOutput proxOut = null;
     try {
-      CodecUtil.writeHeader(freqOut, FRQ_CODEC, VERSION_CURRENT);
+      CodecUtil.writeHeader(freqOut, Lucene40PostingsReader.FRQ_CODEC, Lucene40PostingsReader.VERSION_CURRENT);
       // TODO: this is a best effort, if one of these fields has no postings
       // then we make an empty prx file, same as if we are wrapped in 
       // per-field postingsformat. maybe... we shouldn't
@@ -121,7 +111,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
         // prox file
         fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene40PostingsFormat.PROX_EXTENSION);
         proxOut = state.directory.createOutput(fileName, state.context);
-        CodecUtil.writeHeader(proxOut, PRX_CODEC, VERSION_CURRENT);
+        CodecUtil.writeHeader(proxOut, Lucene40PostingsReader.PRX_CODEC, Lucene40PostingsReader.VERSION_CURRENT);
       } else {
         // Every field omits TF so we will write no prox file
         proxOut = null;
@@ -146,7 +136,7 @@ public final class Lucene40PostingsWriter extends PostingsWriterBase {
   @Override
   public void start(IndexOutput termsOut) throws IOException {
     this.termsOut = termsOut;
-    CodecUtil.writeHeader(termsOut, TERMS_CODEC, VERSION_CURRENT);
+    CodecUtil.writeHeader(termsOut, Lucene40PostingsReader.TERMS_CODEC, Lucene40PostingsReader.VERSION_CURRENT);
     termsOut.writeInt(skipInterval);                // write skipInterval
     termsOut.writeInt(maxSkipLevels);               // write maxSkipLevels
     termsOut.writeInt(skipMinimum);                 // write skipMinimum

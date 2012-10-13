@@ -380,10 +380,16 @@ public final class Lucene41PostingsFormat extends PostingsFormat {
   // NOTE: must be multiple of 64 because of PackedInts long-aligned encoding/decoding
   public final static int BLOCK_SIZE = 128;
 
+  /** Creates {@code Lucene41PostingsFormat} with default
+   *  settings. */
   public Lucene41PostingsFormat() {
     this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
   }
 
+  /** Creates {@code Lucene41PostingsFormat} with custom
+   *  values for {@code minBlockSize} and {@code
+   *  maxBlockSize} passed to block terms dictionary.
+   *  @see BlockTreeTermsWriter#BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int) */
   public Lucene41PostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
     super("Lucene41");
     this.minTermBlockSize = minTermBlockSize;

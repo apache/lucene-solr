@@ -32,6 +32,7 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.compressing.CompressingCodec;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.lucene40.Lucene40RWPostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
@@ -133,13 +134,12 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     savedCodec = Codec.getDefault();
     int randomVal = random.nextInt(10);
 
-
     if ("Lucene40".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
                                           "random".equals(TEST_POSTINGSFORMAT) &&
                                           randomVal < 2 &&
                                           !shouldAvoidCodec("Lucene40"))) {
       codec = Codec.forName("Lucene40");
-      // nocommit: assert (codec instanceof PreFlexRWCodec) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
+      assert (PostingsFormat.forName("Lucene40") instanceof Lucene40RWPostingsFormat) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
     } else if (!"random".equals(TEST_POSTINGSFORMAT)) {
       final PostingsFormat format;
       if ("MockRandom".equals(TEST_POSTINGSFORMAT)) {

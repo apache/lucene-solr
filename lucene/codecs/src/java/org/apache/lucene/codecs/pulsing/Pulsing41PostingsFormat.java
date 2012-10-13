@@ -28,17 +28,17 @@ import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat; // javadocs
  */
 public class Pulsing41PostingsFormat extends PulsingPostingsFormat {
 
-  /** Inlines docFreq=1 terms, otherwise uses the normal "Lucene40" format. */
+  /** Inlines docFreq=1 terms, otherwise uses the normal "Lucene41" format. */
   public Pulsing41PostingsFormat() {
     this(1);
   }
 
-  /** Inlines docFreq=<code>freqCutoff</code> terms, otherwise uses the normal "Lucene40" format. */
+  /** Inlines docFreq=<code>freqCutoff</code> terms, otherwise uses the normal "Lucene41" format. */
   public Pulsing41PostingsFormat(int freqCutoff) {
     this(freqCutoff, BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
   }
 
-  /** Inlines docFreq=<code>freqCutoff</code> terms, otherwise uses the normal "Lucene40" format. */
+  /** Inlines docFreq=<code>freqCutoff</code> terms, otherwise uses the normal "Lucene41" format. */
   public Pulsing41PostingsFormat(int freqCutoff, int minBlockSize, int maxBlockSize) {
     super("Pulsing41", new Lucene41PostingsBaseFormat(), freqCutoff, minBlockSize, maxBlockSize);
   }

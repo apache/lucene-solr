@@ -63,10 +63,9 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
   final static String POS_CODEC = "Lucene41PostingsWriterPos";
   final static String PAY_CODEC = "Lucene41PostingsWriterPay";
 
-  // Increment version to change it: nocommit: we can start at 0
+  // Increment version to change it
   final static int VERSION_START = 0;
-  final static int VERSION_NO_OFFSETS_IN_SKIPDATA = 1; // LUCENE-4443
-  final static int VERSION_CURRENT = VERSION_NO_OFFSETS_IN_SKIPDATA;
+  final static int VERSION_CURRENT = VERSION_START;
 
   final IndexOutput docOut;
   final IndexOutput posOut;

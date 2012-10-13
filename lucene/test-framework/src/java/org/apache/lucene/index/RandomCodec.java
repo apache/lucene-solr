@@ -99,7 +99,7 @@ public class RandomCodec extends Lucene41Codec {
         new Pulsing41PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock),
         // add pulsing again with (usually) different parameters
         new Pulsing41PostingsFormat(1 + random.nextInt(20), minItemsPerBlock, maxItemsPerBlock),
-        //TODO as a PostingsFormat which wraps others, we should allow TestBloomFilteredLucene40Postings to be constructed 
+        //TODO as a PostingsFormat which wraps others, we should allow TestBloomFilteredLucene41Postings to be constructed 
         //with a choice of concrete PostingsFormats. Maybe useful to have a generic means of marking and dealing 
         //with such "wrapper" classes?
         new TestBloomFilteredLucene41Postings(),                

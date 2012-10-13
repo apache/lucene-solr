@@ -211,15 +211,18 @@ import org.apache.lucene.util.fst.FST; // javadocs
  * previous occurrence and an OffsetLength follows. Offset data is only written for
  * {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}.</p>
  * 
- *  @lucene.experimental */
+ *  @deprecated Only for reading old 4.0 segments */
 
 // TODO: this class could be created by wrapping
 // BlockTreeTermsDict around Lucene40PostingsBaseFormat; ie
 // we should not duplicate the code from that class here:
-public final class Lucene40PostingsFormat extends PostingsFormat {
+@Deprecated
+public class Lucene40PostingsFormat extends PostingsFormat {
 
-  private final int minBlockSize;
-  private final int maxBlockSize;
+  /** minimum items (terms or sub-blocks) per block for BlockTree */
+  protected final int minBlockSize;
+  /** maximum items (terms or sub-blocks) per block for BlockTree */
+  protected final int maxBlockSize;
 
   /** Creates {@code Lucene40PostingsFormat} with default
    *  settings. */
@@ -231,7 +234,7 @@ public final class Lucene40PostingsFormat extends PostingsFormat {
    *  values for {@code minBlockSize} and {@code
    *  maxBlockSize} passed to block terms dictionary.
    *  @see BlockTreeTermsWriter#BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int) */
-  public Lucene40PostingsFormat(int minBlockSize, int maxBlockSize) {
+  private Lucene40PostingsFormat(int minBlockSize, int maxBlockSize) {
     super("Lucene40");
     this.minBlockSize = minBlockSize;
     assert minBlockSize > 1;
@@ -240,22 +243,7 @@ public final class Lucene40PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase docs = new Lucene40PostingsWriter(state);
-
-    // TODO: should we make the terms index more easily
-    // pluggable?  Ie so that this codec would record which
-    // index impl was used, and switch on loading?
-    // Or... you must make a new Codec for this?
-    boolean success = false;
-    try {
-      FieldsConsumer ret = new BlockTreeTermsWriter(state, docs, minBlockSize, maxBlockSize);
-      success = true;
-      return ret;
-    } finally {
-      if (!success) {
-        docs.close();
-      }
-    }
+    throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
   @Override
