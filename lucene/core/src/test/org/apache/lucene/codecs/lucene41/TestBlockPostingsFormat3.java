@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.block;
+package org.apache.lucene.codecs.lucene41;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.MockVariableLengthPayloadFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -64,7 +64,7 @@ import org.apache.lucene.util.automaton.RegExp;
  * Tests partial enumeration (only pulling a subset of the prox data) 
  */
 public class TestBlockPostingsFormat3 extends LuceneTestCase {
-  static final int MAXDOC = BlockPostingsFormat.BLOCK_SIZE * 20;
+  static final int MAXDOC = Lucene41PostingsFormat.BLOCK_SIZE * 20;
   
   // creates 6 fields with different options and does "duels" of fields against each other
   public void test() throws Exception {
@@ -85,10 +85,10 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       }
     };
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setCodec(new Lucene40Codec() {
+    iwc.setCodec(new Lucene41Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
-        return PostingsFormat.forName("Block");
+        return PostingsFormat.forName("Lucene41");
         // TODO: we could actually add more fields implemented with different PFs
       }
     });

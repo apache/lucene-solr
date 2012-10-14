@@ -45,9 +45,20 @@ import org.apache.lucene.util.IOUtils;
  * postings format. 
  *  
  *  @see Lucene40PostingsFormat
- *  @lucene.experimental */
-
+ *  @deprecated Only for reading old 4.0 segments */
+@Deprecated
 public class Lucene40PostingsReader extends PostingsReaderBase {
+
+  final static String TERMS_CODEC = "Lucene40PostingsWriterTerms";
+  final static String FRQ_CODEC = "Lucene40PostingsWriterFrq";
+  final static String PRX_CODEC = "Lucene40PostingsWriterPrx";
+
+  //private static boolean DEBUG = BlockTreeTermsWriter.DEBUG;
+  
+  // Increment version to change it:
+  final static int VERSION_START = 0;
+  final static int VERSION_LONG_SKIP = 1;
+  final static int VERSION_CURRENT = VERSION_LONG_SKIP;
 
   private final IndexInput freqIn;
   private final IndexInput proxIn;
@@ -67,7 +78,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
     try {
       freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene40PostingsFormat.FREQ_EXTENSION),
                            ioContext);
-      CodecUtil.checkHeader(freqIn, Lucene40PostingsWriter.FRQ_CODEC, Lucene40PostingsWriter.VERSION_START,Lucene40PostingsWriter.VERSION_CURRENT);
+      CodecUtil.checkHeader(freqIn, FRQ_CODEC, VERSION_START, VERSION_CURRENT);
       // TODO: hasProx should (somehow!) become codec private,
       // but it's tricky because 1) FIS.hasProx is global (it
       // could be all fields that have prox are written by a
@@ -79,7 +90,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
       if (fieldInfos.hasProx()) {
         proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, segmentSuffix, Lucene40PostingsFormat.PROX_EXTENSION),
                              ioContext);
-        CodecUtil.checkHeader(proxIn, Lucene40PostingsWriter.PRX_CODEC, Lucene40PostingsWriter.VERSION_START,Lucene40PostingsWriter.VERSION_CURRENT);
+        CodecUtil.checkHeader(proxIn, PRX_CODEC, VERSION_START, VERSION_CURRENT);
       } else {
         proxIn = null;
       }
@@ -97,8 +108,7 @@ public class Lucene40PostingsReader extends PostingsReaderBase {
   public void init(IndexInput termsIn) throws IOException {
 
     // Make sure we are talking to the matching past writer
-    CodecUtil.checkHeader(termsIn, Lucene40PostingsWriter.TERMS_CODEC,
-      Lucene40PostingsWriter.VERSION_START, Lucene40PostingsWriter.VERSION_CURRENT);
+    CodecUtil.checkHeader(termsIn, TERMS_CODEC, VERSION_START, VERSION_CURRENT);
 
     skipInterval = termsIn.readInt();
     maxSkipLevels = termsIn.readInt();

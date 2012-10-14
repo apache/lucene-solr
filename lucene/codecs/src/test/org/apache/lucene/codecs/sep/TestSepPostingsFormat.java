@@ -19,7 +19,7 @@ package org.apache.lucene.codecs.sep;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 
@@ -29,7 +29,7 @@ import org.apache.lucene.index.BasePostingsFormatTestCase;
 public class TestSepPostingsFormat extends BasePostingsFormatTestCase {
   // TODO: randomize cutoff
   private final PostingsFormat postings = new MockSepPostingsFormat();
-  private final Codec codec = new Lucene40Codec() {
+  private final Codec codec = new Lucene41Codec() {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       return postings;

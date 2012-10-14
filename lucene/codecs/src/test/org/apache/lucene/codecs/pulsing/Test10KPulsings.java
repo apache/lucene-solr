@@ -25,7 +25,6 @@ import java.util.Locale;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -52,7 +51,7 @@ import org.apache.lucene.util._TestUtil;
 public class Test10KPulsings extends LuceneTestCase {
   public void test10kPulsed() throws Exception {
     // we always run this test with pulsing codec.
-    Codec cp = _TestUtil.alwaysPostingsFormat(new Pulsing40PostingsFormat(1));
+    Codec cp = _TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(1));
     
     File f = _TestUtil.getTempDir("10kpulsed");
     BaseDirectoryWrapper dir = newFSDirectory(f);
@@ -103,7 +102,7 @@ public class Test10KPulsings extends LuceneTestCase {
   public void test10kNotPulsed() throws Exception {
     // we always run this test with pulsing codec.
     int freqCutoff = _TestUtil.nextInt(random(), 1, 10);
-    Codec cp = _TestUtil.alwaysPostingsFormat(new Pulsing40PostingsFormat(freqCutoff));
+    Codec cp = _TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(freqCutoff));
     
     File f = _TestUtil.getTempDir("10knotpulsed");
     BaseDirectoryWrapper dir = newFSDirectory(f);

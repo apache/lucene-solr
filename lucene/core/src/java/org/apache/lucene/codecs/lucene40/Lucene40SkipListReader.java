@@ -28,8 +28,9 @@ import org.apache.lucene.store.IndexInput;
  * that stores positions and payloads.
  * 
  * @see Lucene40PostingsFormat
- * @lucene.experimental
+ * @deprecated Only for reading old 4.0 segments
  */
+@Deprecated
 public class Lucene40SkipListReader extends MultiLevelSkipListReader {
   private boolean currentFieldStoresPayloads;
   private boolean currentFieldStoresOffsets;

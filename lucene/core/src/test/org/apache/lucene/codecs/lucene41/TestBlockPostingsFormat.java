@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.block;
+package org.apache.lucene.codecs.lucene41;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,22 +18,13 @@ package org.apache.lucene.codecs.block;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.block.BlockPostingsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
 
 /**
  * Tests BlockPostingsFormat
  */
 public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
-  private final PostingsFormat postings = new BlockPostingsFormat();
-  private final Codec codec = new Lucene40Codec() {
-    @Override
-    public PostingsFormat getPostingsFormatForField(String field) {
-      return postings;
-    }
-  };
+  private final Codec codec = new Lucene41Codec();
 
   @Override
   protected Codec getCodec() {
