@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.block;
+package org.apache.lucene.codecs.lucene41;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.block;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -48,10 +47,10 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
     super.setUp();
     dir = newFSDirectory(_TestUtil.getTempDir("testDFBlockSize"));
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    iwc.setCodec(new Lucene40Codec() {
+    iwc.setCodec(new Lucene41Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
-        return PostingsFormat.forName("Block");
+        return PostingsFormat.forName("Lucene41");
       }
     });
     iw = new RandomIndexWriter(random(), dir, iwc);
@@ -89,7 +88,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
   /** tests terms with df = blocksize */
   public void testDFBlockSize() throws Exception {
     Document doc = newDocument();
-    for (int i = 0; i < BlockPostingsFormat.BLOCK_SIZE; i++) {
+    for (int i = 0; i < Lucene41PostingsFormat.BLOCK_SIZE; i++) {
       for (IndexableField f : doc.getFields()) {
         ((Field)f).setStringValue(f.name() + " " + f.name() + "_2");
       }
@@ -100,7 +99,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
   /** tests terms with df % blocksize = 0 */
   public void testDFBlockSizeMultiple() throws Exception {
     Document doc = newDocument();
-    for (int i = 0; i < BlockPostingsFormat.BLOCK_SIZE * 16; i++) {
+    for (int i = 0; i < Lucene41PostingsFormat.BLOCK_SIZE * 16; i++) {
       for (IndexableField f : doc.getFields()) {
         ((Field)f).setStringValue(f.name() + " " + f.name() + "_2");
       }
@@ -111,7 +110,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
   /** tests terms with ttf = blocksize */
   public void testTTFBlockSize() throws Exception {
     Document doc = newDocument();
-    for (int i = 0; i < BlockPostingsFormat.BLOCK_SIZE/2; i++) {
+    for (int i = 0; i < Lucene41PostingsFormat.BLOCK_SIZE/2; i++) {
       for (IndexableField f : doc.getFields()) {
         ((Field)f).setStringValue(f.name() + " " + f.name() + " " + f.name() + "_2 " + f.name() + "_2");
       }
@@ -122,7 +121,7 @@ public class TestBlockPostingsFormat2 extends LuceneTestCase {
   /** tests terms with ttf % blocksize = 0 */
   public void testTTFBlockSizeMultiple() throws Exception {
     Document doc = newDocument();
-    for (int i = 0; i < BlockPostingsFormat.BLOCK_SIZE/2; i++) {
+    for (int i = 0; i < Lucene41PostingsFormat.BLOCK_SIZE/2; i++) {
       for (IndexableField f : doc.getFields()) {
         String proto = (f.name() + " " + f.name() + " " + f.name() + " " + f.name() + " " 
                        + f.name() + "_2 " + f.name() + "_2 " + f.name() + "_2 " + f.name() + "_2");

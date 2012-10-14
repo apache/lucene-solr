@@ -61,7 +61,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-    // for now its SimpleText vs Lucene40(random postings format)
+    // for now its SimpleText vs Lucene41(random postings format)
     // as this gives the best overall coverage. when we have more
     // codecs we should probably pick 2 from Codec.availableCodecs()
     

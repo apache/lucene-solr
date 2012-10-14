@@ -27,8 +27,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
-import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
+import org.apache.lucene.codecs.lucene41.Lucene41Codec;
+import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -1058,9 +1058,9 @@ public class TestAddIndexes extends LuceneTestCase {
     aux2.close();
   }
 
-  private static final class CustomPerFieldCodec extends Lucene40Codec {
+  private static final class CustomPerFieldCodec extends Lucene41Codec {
     private final PostingsFormat simpleTextFormat = PostingsFormat.forName("SimpleText");
-    private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene40");
+    private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
     private final PostingsFormat mockSepFormat = PostingsFormat.forName("MockSep");
 
     @Override
@@ -1109,7 +1109,7 @@ public class TestAddIndexes extends LuceneTestCase {
   
   private static final class UnRegisteredCodec extends FilterCodec {
     public UnRegisteredCodec() {
-      super("NotRegistered", new Lucene40Codec());
+      super("NotRegistered", new Lucene41Codec());
     }
   }
   
@@ -1138,7 +1138,7 @@ public class TestAddIndexes extends LuceneTestCase {
       Directory dir = newDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random()));
-      conf.setCodec(_TestUtil.alwaysPostingsFormat(new Pulsing40PostingsFormat(1 + random().nextInt(20))));
+      conf.setCodec(_TestUtil.alwaysPostingsFormat(new Pulsing41PostingsFormat(1 + random().nextInt(20))));
       IndexWriter w = new IndexWriter(dir, conf);
       try {
         w.addIndexes(toAdd);

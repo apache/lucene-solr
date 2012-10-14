@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene40;
+package org.apache.lucene.index;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -35,13 +35,13 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 /**
- * Test that a plain Lucene40Codec puts codec headers in all files.
+ * Test that a plain default puts codec headers in all files.
  */
 public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
   public void test() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    conf.setCodec(Codec.forName("Lucene40"));
+    conf.setCodec(Codec.forName("Lucene41"));
     // riw should sometimes create docvalues fields, etc
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, conf);
     Document doc = new Document();

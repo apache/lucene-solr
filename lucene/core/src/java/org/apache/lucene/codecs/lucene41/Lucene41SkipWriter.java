@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.block;
+package org.apache.lucene.codecs.lucene41;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -43,8 +43,8 @@ import org.apache.lucene.codecs.MultiLevelSkipListWriter;
  * 4. start offset.
  *
  */
-final class BlockSkipWriter extends MultiLevelSkipListWriter {
-  // private boolean DEBUG = BlockPostingsReader.DEBUG;
+final class Lucene41SkipWriter extends MultiLevelSkipListWriter {
+  // private boolean DEBUG = Lucene41PostingsReader.DEBUG;
   
   private int[] lastSkipDoc;
   private long[] lastSkipDocPointer;
@@ -66,7 +66,7 @@ final class BlockSkipWriter extends MultiLevelSkipListWriter {
   private boolean fieldHasOffsets;
   private boolean fieldHasPayloads;
 
-  public BlockSkipWriter(int maxSkipLevels, int blockSize, int docCount, IndexOutput docOut, IndexOutput posOut, IndexOutput payOut) {
+  public Lucene41SkipWriter(int maxSkipLevels, int blockSize, int docCount, IndexOutput docOut, IndexOutput posOut, IndexOutput payOut) {
     super(blockSize, 8, maxSkipLevels, docCount);
     this.docOut = docOut;
     this.posOut = posOut;

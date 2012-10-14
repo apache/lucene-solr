@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene40ords;
+package org.apache.lucene.codecs.lucene41ords;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -30,9 +30,9 @@ import org.apache.lucene.codecs.blockterms.FixedGapTermsIndexReader;
 import org.apache.lucene.codecs.blockterms.FixedGapTermsIndexWriter;
 import org.apache.lucene.codecs.blockterms.TermsIndexReaderBase;
 import org.apache.lucene.codecs.blockterms.TermsIndexWriterBase;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec; // javadocs
-import org.apache.lucene.codecs.lucene40.Lucene40PostingsReader;
-import org.apache.lucene.codecs.lucene40.Lucene40PostingsWriter;
+import org.apache.lucene.codecs.lucene41.Lucene41Codec; // javadocs
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsReader;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.BytesRef;
@@ -41,18 +41,18 @@ import org.apache.lucene.util.BytesRef;
 // any PostingsBaseFormat and make it ord-able...
 
 /**
- * Customized version of {@link Lucene40Codec} that uses
+ * Customized version of {@link Lucene41Codec} that uses
  * {@link FixedGapTermsIndexWriter}.
  */
-public final class Lucene40WithOrds extends PostingsFormat {
+public final class Lucene41WithOrds extends PostingsFormat {
     
-  public Lucene40WithOrds() {
-    super("Lucene40WithOrds");
+  public Lucene41WithOrds() {
+    super("Lucene41WithOrds");
   }
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase docs = new Lucene40PostingsWriter(state);
+    PostingsWriterBase docs = new Lucene41PostingsWriter(state);
 
     // TODO: should we make the terms index more easily
     // pluggable?  Ie so that this codec would record which
@@ -91,7 +91,7 @@ public final class Lucene40WithOrds extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postings = new Lucene40PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
+    PostingsReaderBase postings = new Lucene41PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
     TermsIndexReaderBase indexReader;
 
     boolean success = false;

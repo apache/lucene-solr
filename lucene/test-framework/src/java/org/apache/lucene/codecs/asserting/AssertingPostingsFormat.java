@@ -27,7 +27,7 @@ import org.apache.lucene.codecs.PostingsConsumer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
-import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.index.AssertingAtomicReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -38,10 +38,10 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
 
 /**
- * Just like {@link Lucene40PostingsFormat} but with additional asserts.
+ * Just like {@link Lucene41PostingsFormat} but with additional asserts.
  */
 public final class AssertingPostingsFormat extends PostingsFormat {
-  private final PostingsFormat in = new Lucene40PostingsFormat();
+  private final PostingsFormat in = new Lucene41PostingsFormat();
   
   public AssertingPostingsFormat() {
     super("Asserting");
