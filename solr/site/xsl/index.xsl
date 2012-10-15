@@ -56,6 +56,7 @@
         <h2>Reference Documents</h2>
           <ul>
             <li><a href="changes/Changes.html">Changes</a>: List of changes in this release.</li>
+            <li><a href="SYSTEM_REQUIREMENTS.html">System Requirements</a>: Minimum and supported Java versions.</li>
             <li><a href="tutorial.html">Solr Tutorial</a>: This document covers the basics of running Solr using an example schema, and some sample data.</li>
             <li><a href="{$luceneJavadocUrl}index.html">Lucene Documentation</a></li>
           </ul>
