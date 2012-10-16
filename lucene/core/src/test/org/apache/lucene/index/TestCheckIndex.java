@@ -75,8 +75,8 @@ public class TestCheckIndex extends LuceneTestCase {
 
     assertNotNull(seg.termIndexStatus);
     assertNull(seg.termIndexStatus.error);
-    assertEquals(19, seg.termIndexStatus.termCount);
-    assertEquals(19, seg.termIndexStatus.totFreq);
+    assertEquals(18, seg.termIndexStatus.termCount);
+    assertEquals(18, seg.termIndexStatus.totFreq);
     assertEquals(18, seg.termIndexStatus.totPos);
 
     assertNotNull(seg.storedFieldStatus);
