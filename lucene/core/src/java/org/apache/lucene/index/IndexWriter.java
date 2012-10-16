@@ -44,7 +44,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -54,7 +53,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.MutableBits;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -3164,13 +3162,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         mergedDeletes.dropChanges();
       }
       readerPool.release(mergedDeletes);
-      if (dropSegment) {
-        readerPool.drop(mergedDeletes.info);
-      }
     }
 
     if (dropSegment) {
       assert !segmentInfos.contains(merge.info);
+      readerPool.drop(merge.info);
       deleter.deleteNewFiles(merge.info.files());
     }
 
@@ -3782,8 +3778,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
 
       final IndexReaderWarmer mergedSegmentWarmer = config.getMergedSegmentWarmer();
-
-      if (poolReaders && mergedSegmentWarmer != null) {
+      if (poolReaders && mergedSegmentWarmer != null && merge.info.info.getDocCount() != 0) {
         final ReadersAndLiveDocs rld = readerPool.get(merge.info, true);
         final SegmentReader sr = rld.getReader(IOContext.READ);
         try {
