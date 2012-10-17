@@ -56,6 +56,9 @@ Bug Fixes
 
 * LUCENE-4468: Fix rareish integer overflows in Block and Lucene40 postings 
   formats (Robert Muir)
+  
+* LUCENE-4486: Add support for ConstantScoreQuery in Highlighter.
+ (Simon Willnauer)
 
 * LUCENE-4485: When CheckIndex terms, terms/docs pairs and tokens,
   these counts now all exclude deleted documents.  (Mike McCandless)

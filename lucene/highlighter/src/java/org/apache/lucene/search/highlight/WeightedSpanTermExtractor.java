@@ -141,6 +141,11 @@ public class WeightedSpanTermExtractor {
       extractWeightedSpanTerms(terms, (SpanQuery) query);
     } else if (query instanceof FilteredQuery) {
       extract(((FilteredQuery) query).getQuery(), terms);
+    } else if (query instanceof ConstantScoreQuery) {
+      final Query q = ((ConstantScoreQuery) query).getQuery();
+      if (q != null) {
+        extract(q, terms);
+      }
     } else if (query instanceof DisjunctionMaxQuery) {
       for (Iterator<Query> iterator = ((DisjunctionMaxQuery) query).iterator(); iterator.hasNext();) {
         extract(iterator.next(), terms);

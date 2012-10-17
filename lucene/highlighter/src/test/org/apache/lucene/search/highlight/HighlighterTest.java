@@ -603,7 +603,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     // Not sure we can assert anything here - just running to check we dont
     // throw any exceptions
   }
-
+  
   public void testSpanHighlighting() throws Exception {
     Query query1 = new SpanNearQuery(new SpanQuery[] {
         new SpanTermQuery(new Term(FIELD_NAME, "wordx")),
@@ -655,6 +655,31 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public void run() throws Exception {
         numHighlights = 0;
         doSearching(new TermQuery(new Term(FIELD_NAME, "kennedy")));
+        doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this);
+        assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
+            numHighlights == 4);
+      }
+    };
+
+    helper.start();
+  }
+  
+  public void testGetBestFragmentsConstantScore() throws Exception {
+    TestHighlightRunner helper = new TestHighlightRunner() {
+
+      @Override
+      public void run() throws Exception {
+        numHighlights = 0;
+        if (random().nextBoolean()) {
+          BooleanQuery bq = new BooleanQuery();
+          bq.add(new ConstantScoreQuery(new QueryWrapperFilter(new TermQuery(
+              new Term(FIELD_NAME, "kennedy")))), Occur.MUST);
+          bq.add(new ConstantScoreQuery(new TermQuery(new Term(FIELD_NAME, "kennedy"))), Occur.MUST);
+          doSearching(bq);
+        } else {
+          doSearching(new ConstantScoreQuery(new TermQuery(new Term(FIELD_NAME,
+              "kennedy"))));
+        }
         doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this);
         assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
             numHighlights == 4);
