@@ -36,16 +36,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class LimitTokenCountFilterFactory extends TokenFilterFactory {
 
+  public static final String MAX_TOKEN_COUNT_KEY = "maxTokenCount";
   int maxTokenCount;
 
   @Override
   public void init(Map<String, String> args) {
     super.init( args );
-    String maxTokenCountArg = args.get("maxTokenCount");
-    if (maxTokenCountArg == null) {
-      throw new IllegalArgumentException("maxTokenCount is mandatory.");
-    }
-    maxTokenCount = Integer.parseInt(args.get(maxTokenCountArg));
+    maxTokenCount = getInt(MAX_TOKEN_COUNT_KEY);
   }
 
   @Override
