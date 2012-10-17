@@ -77,6 +77,9 @@ Bug Fixes
 * SOLR-3940: Rejoining the leader election incorrectly triggers the code path
   for a fresh cluster start rather than fail over. (Mark Miller)
 
+* SOLR-3961: Fixed error using LimitTokenCountFilterFactory 
+  (Jack Krupansky, hossman)
+
 Other Changes
 ----------------------
 
