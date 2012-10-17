@@ -576,7 +576,7 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
   os.chdir(unpackPath)
   isSrc = artifact.find('-src') != -1
   l = os.listdir(unpackPath)
-  textFiles = ['LICENSE', 'NOTICE', 'README']
+  textFiles = ['LICENSE', 'NOTICE', 'README', 'SYSTEM_REQUIREMENTS']
   if project == 'lucene':
     textFiles.extend(('JRE_VERSION_MIGRATION', 'CHANGES', 'MIGRATE'))
     if isSrc:
