@@ -400,6 +400,7 @@ public final class Util {
           continue;
         }
 
+        // nocommit this isn't safe?  last path could be rejected?
         if (results.size() == topN-1) {
           // Last path -- don't bother w/ queue anymore:
           queue = null;
