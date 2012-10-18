@@ -99,8 +99,14 @@ final class DocumentsWriterFlushControl  {
       maxConfiguredRamBuffer = Math.max(maxRamMB, maxConfiguredRamBuffer);
       final long ram = flushBytes + activeBytes;
       final long ramBufferBytes = (long) (maxConfiguredRamBuffer * 1024 * 1024);
-      // take peakDelta into account - worst case is that all flushing, pending and blocked DWPT had maxMem and the last doc had the peakDelta 
-      final long expected = (2 * (ramBufferBytes)) + ((numPending + numFlushingDWPT() + numBlockedFlushes()) * peakDelta);
+      // take peakDelta into account - worst case is that all flushing, pending and blocked DWPT had maxMem and the last doc had the peakDelta
+      
+      // 2 * ramBufferBytes -> before we stall we need to cross the 2xRAM Buffer border this is still a valid limit
+      // (numPending + numFlushingDWPT() + numBlockedFlushes()) * peakDelta) -> those are the total number of DWPT that are not active but not yet fully fluhsed
+      // all of them could theoretically be taken out of the loop once they crossed the RAM buffer and the last document was the peak delta
+      // (perThreadPool.getActiveThreadState() * peakDelta) -> at any given time there could be n threads in flight that crossed the stall control before we reached the limit and each of them could hold a peak document
+      final long expected = (2 * (ramBufferBytes)) + ((numPending + numFlushingDWPT() + numBlockedFlushes()) * peakDelta) + (perThreadPool.getActiveThreadState() * peakDelta);
+      // the expected ram consumption is an upper bound at this point and not really the expected consumption
       if (peakDelta < (ramBufferBytes >> 1)) {
         /*
          * if we are indexing with very low maxRamBuffer like 0.1MB memory can
@@ -111,11 +117,11 @@ final class DocumentsWriterFlushControl  {
          * fail. To prevent this we only assert if the the largest document seen
          * is smaller than the 1/2 of the maxRamBufferMB
          */
-        assert ram <= expected : "ram was " + ram + " expected: " + expected
-            + " flush mem: " + flushBytes + " activeMem: " + activeBytes
-            + " pendingMem: " + numPending + " flushingMem: "
-            + numFlushingDWPT() + " blockedMem: " + numBlockedFlushes()
-            + " peakDeltaMem: " + peakDelta;
+        assert ram <= expected : "actual mem: " + ram + " byte, expected mem: " + expected
+            + " byte, flush mem: " + flushBytes + ", active mem: " + activeBytes
+            + ", pending DWPT: " + numPending + ", flushing DWPT: "
+            + numFlushingDWPT() + ", blocked DWPT: " + numBlockedFlushes()
+            + ", peakDelta mem: " + peakDelta + " byte";
       }
     }
     return true;
