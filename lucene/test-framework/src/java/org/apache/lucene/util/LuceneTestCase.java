@@ -763,7 +763,6 @@ public abstract class LuceneTestCase extends Assert {
     } else {
       c.setMergePolicy(newLogMergePolicy());
     }
-
     c.setReaderPooling(r.nextBoolean());
     c.setReaderTermsIndexDivisor(_TestUtil.nextInt(r, 1, 4));
     return c;

@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.lucene.index.MergePolicy.MergeTrigger;
+
 
 /**
  * <p>This class implements a {@link MergePolicy} that tries
@@ -560,7 +562,7 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  will return multiple merges, allowing the {@link
    *  MergeScheduler} to use concurrency. */
   @Override
-  public MergeSpecification findMerges(SegmentInfos infos) throws IOException {
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos infos) throws IOException {
 
     final int numSegments = infos.size();
     if (verbose()) {

@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.FieldInfos.FieldNumbers;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.MergePolicy.MergeTrigger;
 import org.apache.lucene.index.MergeState.CheckAbort;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -181,6 +182,10 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * keeps track of the last non commit checkpoint.
  */
 public class IndexWriter implements Closeable, TwoPhaseCommit {
+  
+  private static final int UNBOUNDED_MAX_MERGE_SEGMENTS = -1;
+
+  
   /**
    * Name of the write lock in the index.
    */
@@ -377,7 +382,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     }
     if (anySegmentFlushed) {
-      maybeMerge();
+      maybeMerge(MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
     }
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "getReader took " + (System.currentTimeMillis() - tStart) + " msec");
@@ -1226,7 +1231,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
       }
       if (anySegmentFlushed) {
-        maybeMerge();
+        maybeMerge(MergeTrigger.SEGMENT_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
       }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "updateDocuments");
@@ -1448,7 +1453,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
 
       if (anySegmentFlushed) {
-        maybeMerge();
+        maybeMerge(MergeTrigger.SEGMENT_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
       }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "updateDocument");
@@ -1621,7 +1626,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
     }
 
-    maybeMerge(maxNumSegments);
+    maybeMerge(MergeTrigger.EXPLICIT, maxNumSegments);
 
     if (doWait) {
       synchronized(this) {
@@ -1796,25 +1801,28 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * Explicit calls to maybeMerge() are usually not
    * necessary. The most common case is when merge policy
    * parameters have changed.
+   * 
+   * This method will call the {@link MergePolicy} with
+   * {@link MergeTrigger#EXPLICIT}.
    *
    * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
    * you should immediately close the writer.  See <a
    * href="#OOME">above</a> for details.</p>
    */
   public final void maybeMerge() throws IOException {
-    maybeMerge(-1);
+    maybeMerge(MergeTrigger.EXPLICIT, UNBOUNDED_MAX_MERGE_SEGMENTS);
   }
 
-  private final void maybeMerge(int maxNumSegments) throws IOException {
+  private final void maybeMerge(MergeTrigger trigger, int maxNumSegments) throws IOException {
     ensureOpen(false);
-    updatePendingMerges(maxNumSegments);
+    updatePendingMerges(trigger, maxNumSegments);
     mergeScheduler.merge(this);
   }
 
-  private synchronized void updatePendingMerges(int maxNumSegments)
+  private synchronized void updatePendingMerges(MergeTrigger trigger, int maxNumSegments)
     throws IOException {
     assert maxNumSegments == -1 || maxNumSegments > 0;
-
+    assert trigger != null;
     if (stopMerges) {
       return;
     }
@@ -1825,7 +1833,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     }
 
     final MergePolicy.MergeSpecification spec;
-    if (maxNumSegments != -1) {
+    if (maxNumSegments != UNBOUNDED_MAX_MERGE_SEGMENTS) {
+      assert trigger == MergeTrigger.EXPLICIT || trigger == MergeTrigger.MERGE_FINISHED :
+        "Expected EXPLICT or MERGE_FINISHED as trigger even with maxNumSegments set but was: " + trigger.name();
       spec = mergePolicy.findForcedMerges(segmentInfos, maxNumSegments, Collections.unmodifiableMap(segmentsToMerge));
       if (spec != null) {
         final int numMerges = spec.merges.size();
@@ -1836,7 +1846,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
 
     } else {
-      spec = mergePolicy.findMerges(segmentInfos);
+      spec = mergePolicy.findMerges(trigger, segmentInfos);
     }
 
     if (spec != null) {
@@ -2653,7 +2663,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       boolean success = false;
       try {
         if (anySegmentsFlushed) {
-          maybeMerge();
+          maybeMerge(MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
         }
         success = true;
       } finally {
@@ -2809,7 +2819,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // We can be called during close, when closing==true, so we must pass false to ensureOpen:
     ensureOpen(false);
     if (doFlush(applyAllDeletes) && triggerMerge) {
-      maybeMerge();
+      maybeMerge(MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
     }
   }
 
@@ -3240,7 +3250,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
           // segments) may now enable new merges, so we call
           // merge policy & update pending merges.
           if (success && !merge.isAborted() && (merge.maxNumSegments != -1 || (!closed && !closing))) {
-            updatePendingMerges(merge.maxNumSegments);
+            updatePendingMerges(MergeTrigger.MERGE_FINISHED, merge.maxNumSegments);
           }
         }
       }

@@ -49,6 +49,10 @@ API Changes
 * LUCENE-4399: Deprecated AppendingCodec. Lucene's term dictionaries
   no longer seek when writing.  (Adrien Grand, Robert Muir)
 
+* LUCENE-4472: MergePolicy now accepts a MergeTrigger that provides 
+  information about the trigger of the merge ie. merge triggered due
+  to a segment merge or a full flush etc. (Simon Willnauer)
+
 Bug Fixes
 
 * LUCENE-1822: BaseFragListBuilder hard-coded 6 char margin is too naive.
