@@ -25,6 +25,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -43,10 +46,29 @@ public class TestBagOfPostings extends LuceneTestCase {
     List<String> postingsList = new ArrayList<String>();
     int numTerms = atLeast(300);
     final int maxTermsPerDoc = _TestUtil.nextInt(random(), 10, 20);
+
+    boolean isSimpleText = false;
+    Codec defaultCodec = Codec.getDefault();
+
+    if (defaultCodec.getName().equals("SimpleText")) {
+      isSimpleText = true;
+    } else {
+      PostingsFormat defaultPostingsFormat = defaultCodec.postingsFormat();
+      if (defaultPostingsFormat instanceof PerFieldPostingsFormat) {
+        isSimpleText = ((PerFieldPostingsFormat) defaultPostingsFormat).getPostingsFormatForField("field").getName().equals("SimpleText");
+      }
+    }
+
+    if (isSimpleText && TEST_NIGHTLY) {
+      // Otherwise test can take way too long (> 2 hours)
+      numTerms /= 2;
+    }
+
     if (VERBOSE) {
       System.out.println("maxTermsPerDoc=" + maxTermsPerDoc);
       System.out.println("numTerms=" + numTerms);
     }
+
     for (int i = 0; i < numTerms; i++) {
       String term = Integer.toString(i);
       for (int j = 0; j < i; j++) {
