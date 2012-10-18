@@ -857,6 +857,7 @@ public final class Util {
    */
   public static <T> Arc<T> readCeilArc(int label, FST<T> fst, Arc<T> follow,
       Arc<T> arc, BytesReader in) throws IOException {
+    // TODO maybe this is a useful in the FST class - we could simplify some other code like FSTEnum?
     if (label == FST.END_LABEL) {
       if (follow.isFinal()) {
         if (follow.target <= 0) {

@@ -57,6 +57,27 @@ import org.apache.lucene.util.fst.Util;
 
 public class FuzzySuggesterTest extends LuceneTestCase {
   
+  public void testRandomEdits() throws IOException {
+    List<TermFreq> keys = new ArrayList<TermFreq>();
+    int numTerms = atLeast(100);
+    for (int i = 0; i < numTerms; i++) {
+      keys.add(new TermFreq("boo" + _TestUtil.randomSimpleString(random()), 1 + random().nextInt(100)));
+    }
+    keys.add(new TermFreq("foo bar boo far", 12));
+    FuzzySuggester suggester = new FuzzySuggester(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
+    suggester.build(new TermFreqArrayIterator(keys));
+    int numIters = atLeast(10);
+    for (int i = 0; i < numIters; i++) {
+      String addRandomEdit = addRandomEdit("foo bar boo", 2);
+      List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence(addRandomEdit, random()), false, 2);
+      assertEquals(addRandomEdit, 1, results.size());
+      assertEquals("foo bar boo far", results.get(0).key.toString());
+      assertEquals(12, results.get(0).value, 0.01F);  
+    }
+    
+    
+  }
+  
   /** this is basically the WFST test ported to KeywordAnalyzer. so it acts the same */
   public void testKeyword() throws Exception {
     TermFreq keys[] = new TermFreq[] {
@@ -96,12 +117,6 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals("barbara", results.get(1).key.toString());
     assertEquals(6, results.get(1).value, 0.01F);
     
-    String addRandomEdit = addRandomEdit("barbara", 1);
-    results = suggester.lookup(_TestUtil.stringToCharSequence(addRandomEdit, random()), false, 2);
-    assertEquals(addRandomEdit, 1, results.size());
-    assertEquals("barbara", results.get(0).key.toString());
-    assertEquals(6, results.get(0).value, 0.01F);
-    
     // top N of 2, but only foo is available
     results = suggester.lookup(_TestUtil.stringToCharSequence("f", random()), false, 2);
     assertEquals(1, results.size());
@@ -134,7 +149,6 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals(6, results.get(2).value, 0.01F);
   }
   
-  // TODO: more tests
   /**
    * basic "standardanalyzer" test with stopword removal
    */
@@ -786,7 +800,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals(50, results.get(1).value);
   }
   
-  public String addRandomEdit(String string, int prefixLenght) {
+  private static String addRandomEdit(String string, int prefixLenght) {
     char[] charArray = string.toCharArray();
     StringBuilder builder = new StringBuilder();
     for (int i = 0; i < charArray.length; i++) {
@@ -821,23 +835,5 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       
     }
     return builder.toString();
-  }
-  
-  public Automaton getAutomaton(String string) {
-    IntsRef path = new IntsRef();
-    Util.toUTF32(string, path);
-    if (path.length <= 1) {
-      return BasicAutomata.makeString(path.ints, path.offset, path.length);
-    } else {
-      Automaton prefix = BasicAutomata.makeString(path.ints, path.offset, 1);
-      int ints[] = new int[path.length-1-1];
-      System.arraycopy(path.ints, path.offset+1, ints, 0, ints.length);
-      LevenshteinAutomata lev = new LevenshteinAutomata(ints, 256, true);
-      Automaton levAutomaton = lev.toAutomaton(1);
-      Automaton suffix = BasicAutomata.makeString(path.ints, path.length-1, 1);
-      Automaton combined = BasicOperations.concatenate(Arrays.asList(prefix, levAutomaton, suffix, BasicAutomata.makeAnyString()));
-      combined.setDeterministic(true); // its like the special case in concatenate itself, except we cloneExpanded already
-      return combined;
-    }
   }
 }

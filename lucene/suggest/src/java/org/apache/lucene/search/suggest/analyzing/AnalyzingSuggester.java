@@ -679,24 +679,40 @@ public class AnalyzingSuggester extends Lookup {
     }
   };
   
+  /**
+   * Returns a new {@link PathIntersector}  
+   */
   protected PathIntersector getPathIntersector(Automaton automaton, FST<Pair<Long,BytesRef>> fst) {
     return new PathIntersector(automaton, fst);
   }
   
+  /**
+   * This class is used to obtain the prefix paths in the automaton that also intersect the FST.
+   */
   protected static class PathIntersector {
     protected List<FSTUtil.Path<Pair<Long,BytesRef>>> intersect; 
     protected final Automaton automaton;
     protected final FST<Pair<Long,BytesRef>> fst;
+    
+    /**
+     * Creates a new {@link PathIntersector}
+     */
     public PathIntersector(Automaton automaton, FST<Pair<Long,BytesRef>> fst) {
       this.automaton = automaton;
       this.fst = fst;
     }
+    /**
+     * Returns the prefix paths for exact first top N search. 
+     */
     public List<FSTUtil.Path<Pair<Long,BytesRef>>> intersectExact() throws IOException {
-      return intersect = FSTUtil.intersectPrefixPathsExact(automaton, fst);
+      return intersect = FSTUtil.intersectPrefixPaths(automaton, fst);
     }
     
+    /**
+     * Returns the prefix paths for top N search. 
+     */
     public List<FSTUtil.Path<Pair<Long,BytesRef>>> intersectAll() throws IOException {
-      return intersect == null ?  intersect = FSTUtil.intersectPrefixPathsExact(automaton, fst) : intersect;
+      return intersect == null ?  intersect = FSTUtil.intersectPrefixPaths(automaton, fst) : intersect;
     }
   }
 }

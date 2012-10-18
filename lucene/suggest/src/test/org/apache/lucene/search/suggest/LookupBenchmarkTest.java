@@ -48,7 +48,7 @@ import org.junit.Ignore;
 /**
  * Benchmarks tests for implementations of {@link Lookup} interface.
  */
-//@Ignore("COMMENT ME TO RUN BENCHMARKS!")
+@Ignore("COMMENT ME TO RUN BENCHMARKS!")
 public class LookupBenchmarkTest extends LuceneTestCase {
   @SuppressWarnings("unchecked")
   private final List<Class<? extends Lookup>> benchmarkClasses = Arrays.asList(
