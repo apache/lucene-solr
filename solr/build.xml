@@ -144,7 +144,7 @@
     depends="javadocs,changes-to-html,process-webpages"/>
   <target name="compile-core" depends="compile-solr-core" unless="solr.core.compiled"/>
   
-  <target name="process-webpages" depends="define-lucene-javadoc-url"><!--depends="resolve-groovy,resolve-pegdown">-->
+  <target name="process-webpages" depends="define-lucene-javadoc-url,resolve-groovy,resolve-pegdown">
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="core/build.xml,test-framework/build.xml,solrj/build.xml,contrib/**/build.xml"/>
     </makeurl>
@@ -163,12 +163,10 @@
       <param name="luceneJavadocUrl" expression="${lucene.javadoc.url}"/>
     </xslt>
     
-    <!--nothing at the moment:
     <pegdown todir="${javadoc.dir}">
-      <fileset dir="." includes="MIGRATE.txt,JRE_VERSION_MIGRATION.txt"/>
+      <fileset dir="." includes="SYSTEM_REQUIREMENTS.txt"/>
       <globmapper from="*.txt" to="*.html"/>
     </pegdown>
-    -->
 
     <copy todir="${javadoc.dir}">
       <fileset dir="site/html" includes="**/*"/>
@@ -439,8 +437,8 @@
     <tar destfile="${package.dir}/${fullnamever}.tgz" compression="gzip" longfile="gnu">
       <tarfileset dir="."
                   prefix="${fullnamever}"
-                  includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt example/**
-                            client/README.txt client/ruby/solr-ruby/** 
+                  includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt SYSTEM_REQUIREMENTS.txt
+                            example/** client/README.txt client/ruby/solr-ruby/** 
                             contrib/**/lib/** contrib/**/README.txt 
                             licenses/**"
                   excludes="lib/README.committers.txt **/data/ **/logs/* 

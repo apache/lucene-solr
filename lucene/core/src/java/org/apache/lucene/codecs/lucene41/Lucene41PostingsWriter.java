@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.block;
+package org.apache.lucene.codecs.lucene41;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,9 +17,9 @@ package org.apache.lucene.codecs.block;
  * limitations under the License.
  */
 
-import static org.apache.lucene.codecs.block.BlockPostingsFormat.BLOCK_SIZE;
-import static org.apache.lucene.codecs.block.ForUtil.MAX_DATA_SIZE;
-import static org.apache.lucene.codecs.block.ForUtil.MAX_ENCODED_SIZE;
+import static org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat.BLOCK_SIZE;
+import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_DATA_SIZE;
+import static org.apache.lucene.codecs.lucene41.ForUtil.MAX_ENCODED_SIZE;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -47,10 +47,10 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  * Postings list for each term will be stored separately. 
  *
- * @see BlockSkipWriter for details about skipping setting and postings layout.
- *
+ * @see Lucene41SkipWriter for details about skipping setting and postings layout.
+ * @lucene.experimental
  */
-final class BlockPostingsWriter extends PostingsWriterBase {
+public final class Lucene41PostingsWriter extends PostingsWriterBase {
 
   /** 
    * Expert: The maximum number of skip levels. Smaller values result in 
@@ -58,15 +58,14 @@ final class BlockPostingsWriter extends PostingsWriterBase {
    */
   static final int maxSkipLevels = 10;
 
-  final static String TERMS_CODEC = "BlockPostingsWriterTerms";
-  final static String DOC_CODEC = "BlockPostingsWriterDoc";
-  final static String POS_CODEC = "BlockPostingsWriterPos";
-  final static String PAY_CODEC = "BlockPostingsWriterPay";
+  final static String TERMS_CODEC = "Lucene41PostingsWriterTerms";
+  final static String DOC_CODEC = "Lucene41PostingsWriterDoc";
+  final static String POS_CODEC = "Lucene41PostingsWriterPos";
+  final static String PAY_CODEC = "Lucene41PostingsWriterPay";
 
-  // Increment version to change it:
+  // Increment version to change it
   final static int VERSION_START = 0;
-  final static int VERSION_NO_OFFSETS_IN_SKIPDATA = 1; // LUCENE-4443
-  final static int VERSION_CURRENT = VERSION_NO_OFFSETS_IN_SKIPDATA;
+  final static int VERSION_CURRENT = VERSION_START;
 
   final IndexOutput docOut;
   final IndexOutput posOut;
@@ -112,12 +111,14 @@ final class BlockPostingsWriter extends PostingsWriterBase {
   final byte[] encoded;
 
   private final ForUtil forUtil;
-  private final BlockSkipWriter skipWriter;
+  private final Lucene41SkipWriter skipWriter;
   
-  public BlockPostingsWriter(SegmentWriteState state, float acceptableOverheadRatio) throws IOException {
+  /** Creates a postings writer with the specified PackedInts overhead ratio */
+  // TODO: does this ctor even make sense?
+  public Lucene41PostingsWriter(SegmentWriteState state, float acceptableOverheadRatio) throws IOException {
     super();
 
-    docOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPostingsFormat.DOC_EXTENSION),
+    docOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene41PostingsFormat.DOC_EXTENSION),
                                           state.context);
     IndexOutput posOut = null;
     IndexOutput payOut = null;
@@ -127,7 +128,7 @@ final class BlockPostingsWriter extends PostingsWriterBase {
       forUtil = new ForUtil(acceptableOverheadRatio, docOut);
       if (state.fieldInfos.hasProx()) {
         posDeltaBuffer = new int[MAX_DATA_SIZE];
-        posOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPostingsFormat.POS_EXTENSION),
+        posOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene41PostingsFormat.POS_EXTENSION),
                                               state.context);
         CodecUtil.writeHeader(posOut, POS_CODEC, VERSION_CURRENT);
 
@@ -148,7 +149,7 @@ final class BlockPostingsWriter extends PostingsWriterBase {
         }
 
         if (state.fieldInfos.hasPayloads() || state.fieldInfos.hasOffsets()) {
-          payOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, BlockPostingsFormat.PAY_EXTENSION),
+          payOut = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene41PostingsFormat.PAY_EXTENSION),
                                                 state.context);
           CodecUtil.writeHeader(payOut, PAY_CODEC, VERSION_CURRENT);
         }
@@ -172,7 +173,7 @@ final class BlockPostingsWriter extends PostingsWriterBase {
     freqBuffer = new int[MAX_DATA_SIZE];
 
     // TODO: should we try skipping every 2/4 blocks...?
-    skipWriter = new BlockSkipWriter(maxSkipLevels,
+    skipWriter = new Lucene41SkipWriter(maxSkipLevels,
                                      BLOCK_SIZE, 
                                      state.segmentInfo.getDocCount(),
                                      docOut,
@@ -182,7 +183,8 @@ final class BlockPostingsWriter extends PostingsWriterBase {
     encoded = new byte[MAX_ENCODED_SIZE];
   }
 
-  public BlockPostingsWriter(SegmentWriteState state) throws IOException {
+  /** Creates a postings writer with <code>PackedInts.COMPACT</code> */
+  public Lucene41PostingsWriter(SegmentWriteState state) throws IOException {
     this(state, PackedInts.COMPACT);
   }
 

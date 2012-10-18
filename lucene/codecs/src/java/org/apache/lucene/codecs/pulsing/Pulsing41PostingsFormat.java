@@ -18,28 +18,28 @@ package org.apache.lucene.codecs.pulsing;
  */
 
 import org.apache.lucene.codecs.BlockTreeTermsWriter;
-import org.apache.lucene.codecs.lucene40.Lucene40PostingsBaseFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat; // javadocs
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsBaseFormat;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat; // javadocs
 
 /**
- * Concrete pulsing implementation over {@link Lucene40PostingsFormat}.
+ * Concrete pulsing implementation over {@link Lucene41PostingsFormat}.
  * 
  * @lucene.experimental
  */
-public class Pulsing40PostingsFormat extends PulsingPostingsFormat {
+public class Pulsing41PostingsFormat extends PulsingPostingsFormat {
 
-  /** Inlines docFreq=1 terms, otherwise uses the normal "Lucene40" format. */
-  public Pulsing40PostingsFormat() {
+  /** Inlines docFreq=1 terms, otherwise uses the normal "Lucene41" format. */
+  public Pulsing41PostingsFormat() {
     this(1);
   }
 
-  /** Inlines docFreq=<code>freqCutoff</code> terms, otherwise uses the normal "Lucene40" format. */
-  public Pulsing40PostingsFormat(int freqCutoff) {
+  /** Inlines docFreq=<code>freqCutoff</code> terms, otherwise uses the normal "Lucene41" format. */
+  public Pulsing41PostingsFormat(int freqCutoff) {
     this(freqCutoff, BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
   }
 
-  /** Inlines docFreq=<code>freqCutoff</code> terms, otherwise uses the normal "Lucene40" format. */
-  public Pulsing40PostingsFormat(int freqCutoff, int minBlockSize, int maxBlockSize) {
-    super("Pulsing40", new Lucene40PostingsBaseFormat(), freqCutoff, minBlockSize, maxBlockSize);
+  /** Inlines docFreq=<code>freqCutoff</code> terms, otherwise uses the normal "Lucene41" format. */
+  public Pulsing41PostingsFormat(int freqCutoff, int minBlockSize, int maxBlockSize) {
+    super("Pulsing41", new Lucene41PostingsBaseFormat(), freqCutoff, minBlockSize, maxBlockSize);
   }
 }

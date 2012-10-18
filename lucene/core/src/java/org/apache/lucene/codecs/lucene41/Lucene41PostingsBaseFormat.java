@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene40;
+package org.apache.lucene.codecs.lucene41;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -29,24 +29,23 @@ import org.apache.lucene.index.SegmentWriteState;
  * Provides a {@link PostingsReaderBase} and {@link
  * PostingsWriterBase}.
  *
- * @deprecated Only for reading old 4.0 segments */
+ * @lucene.experimental */
 
 // TODO: should these also be named / looked up via SPI?
-@Deprecated
-public final class Lucene40PostingsBaseFormat extends PostingsBaseFormat {
+public final class Lucene41PostingsBaseFormat extends PostingsBaseFormat {
 
   /** Sole constructor. */
-  public Lucene40PostingsBaseFormat() {
-    super("Lucene40");
+  public Lucene41PostingsBaseFormat() {
+    super("Lucene41");
   }
 
   @Override
   public PostingsReaderBase postingsReaderBase(SegmentReadState state) throws IOException {
-    return new Lucene40PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
+    return new Lucene41PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
   }
 
   @Override
   public PostingsWriterBase postingsWriterBase(SegmentWriteState state) throws IOException {
-    throw new UnsupportedOperationException("this codec can only be used for reading");
+    return new Lucene41PostingsWriter(state);
   }
 }

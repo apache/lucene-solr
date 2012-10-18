@@ -191,7 +191,7 @@ public final class ZkController {
 
               ZkController.this.overseer = new Overseer(shardHandler, adminPath, zkStateReader);
               ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
-              overseerElector.joinElection(context);
+              overseerElector.joinElection(context, true);
               zkStateReader.createClusterStateWatchersAndUpdate();
 
             //  cc.newCmdDistribExecutor();
@@ -422,7 +422,7 @@ public final class ZkController {
       this.overseer = new Overseer(shardHandler, adminPath, zkStateReader);
       ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
       overseerElector.setup(context);
-      overseerElector.joinElection(context);
+      overseerElector.joinElection(context, false);
       zkStateReader.createClusterStateWatchersAndUpdate();
       
     } catch (IOException e) {
@@ -730,7 +730,7 @@ public final class ZkController {
 
     leaderElector.setup(context);
     electionContexts.put(coreZkNodeName, context);
-    leaderElector.joinElection(context);
+    leaderElector.joinElection(context, false);
   }
 
 

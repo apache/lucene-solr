@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
+import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -742,10 +743,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         0,
         ((HttpSolrServer) client).getBaseURL().length()
             - DEFAULT_COLLECTION.length() - 1);
-    createCollection(oneInstanceCollection2, collectionClients, baseUrl, 1, "slice1");
-    createCollection(oneInstanceCollection2, collectionClients, baseUrl, 2, "slice2");
-    createCollection(oneInstanceCollection2, collectionClients, baseUrl, 3, "slice2");
-    createCollection(oneInstanceCollection2, collectionClients, baseUrl, 4, "slice1");
+    createSolrCore(oneInstanceCollection2, collectionClients, baseUrl, 1, "slice1");
+    createSolrCore(oneInstanceCollection2, collectionClients, baseUrl, 2, "slice2");
+    createSolrCore(oneInstanceCollection2, collectionClients, baseUrl, 3, "slice2");
+    createSolrCore(oneInstanceCollection2, collectionClients, baseUrl, 4, "slice1");
     
    while (pending != null && pending.size() > 0) {
       
@@ -764,7 +765,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     assertAllActive(oneInstanceCollection2, solrj.getZkStateReader());
     
-    printLayout();
+    //printLayout();
     
    // TODO: enable when we don't falsely get slice1...
    // solrj.getZkStateReader().getLeaderUrl(oneInstanceCollection2, "slice1", 30000);
@@ -803,6 +804,27 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     assertNotNull(slices);
     String roles = slices.get("slice1").getReplicasMap().values().iterator().next().getStr(ZkStateReader.ROLES_PROP);
     assertEquals("none", roles);
+    
+    
+    ZkCoreNodeProps props = new ZkCoreNodeProps(solrj.getZkStateReader().getClusterState().getLeader(oneInstanceCollection2, "slice1"));
+    
+    // now test that unloading a core gets us a new leader
+    HttpSolrServer server = new HttpSolrServer(baseUrl);
+    Unload unloadCmd = new Unload(true);
+    unloadCmd.setCoreName(props.getCoreName());
+    
+    String leader = props.getCoreUrl();
+    
+    server.request(unloadCmd);
+    
+    int tries = 50;
+    while (leader.equals(zkStateReader.getLeaderUrl(oneInstanceCollection2, "slice1", 10000))) {
+      Thread.sleep(100);
+      if (tries-- == 0) {
+        fail("Leader never changed");
+      }
+    }
+
   }
 
   private void testSearchByCollectionName() throws SolrServerException {
@@ -875,10 +897,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void createCollection(String collection,
       List<SolrServer> collectionClients, String baseUrl, int num) {
-    createCollection(collection, collectionClients, baseUrl, num, null);
+    createSolrCore(collection, collectionClients, baseUrl, num, null);
   }
   
-  private void createCollection(final String collection,
+  private void createSolrCore(final String collection,
       List<SolrServer> collectionClients, final String baseUrl, final int num,
       final String shardId) {
     Callable call = new Callable() {

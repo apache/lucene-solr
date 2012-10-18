@@ -33,6 +33,7 @@
   <patternset id="binary.root.dist.patterns"
               includes="LICENSE.txt,NOTICE.txt,README.txt,
                         MIGRATE.txt,JRE_VERSION_MIGRATION.txt,
+                        SYSTEM_REQUIREMENTS.txt,
                         CHANGES.txt,
                         **/lib/*.jar,
                         licenses/**,
@@ -297,7 +298,7 @@
     </xslt>
     
     <pegdown todir="${javadoc.dir}">
-      <fileset dir="." includes="MIGRATE.txt,JRE_VERSION_MIGRATION.txt"/>
+      <fileset dir="." includes="MIGRATE.txt,JRE_VERSION_MIGRATION.txt,SYSTEM_REQUIREMENTS.txt"/>
       <globmapper from="*.txt" to="*.html"/>
     </pegdown>
 

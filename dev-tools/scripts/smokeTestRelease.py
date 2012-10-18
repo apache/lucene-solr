@@ -578,7 +578,7 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
   l = os.listdir(unpackPath)
   textFiles = ['LICENSE', 'NOTICE', 'README']
   if project == 'lucene':
-    textFiles.extend(('JRE_VERSION_MIGRATION', 'CHANGES', 'MIGRATE'))
+    textFiles.extend(('JRE_VERSION_MIGRATION', 'CHANGES', 'MIGRATE', 'SYSTEM_REQUIREMENTS'))
     if isSrc:
       textFiles.append('BUILD')
   for fileName in textFiles:
@@ -629,6 +629,10 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
   if project == 'lucene':
     if len(l) > 0:
       raise RuntimeError('%s: unexpected files/dirs in artifact %s: %s' % (project, artifact, l))
+  else:
+    # TODO: re-enable this check
+    if False and not os.path.exists('%s/solr/SYSTEM_REQUIREMENTS.txt' % unpackPath):
+      raise RuntimeError('%s: solr/SYSTEM_REQUIREMENTS.txt does not exist in artifact %s' % (project, artifact))
 
   if isSrc:
     print('    make sure no JARs/WARs in src dist...')

@@ -771,6 +771,7 @@
         <property name="tests.method" value="" />
         <property name="tests.dynamicAssignmentRatio" value="0.50" /> <!-- 50% of suites -->
         <property name="tests.haltonfailure" value="true" />
+        <property name="tests.leaveTemporary" value="false" />
         <property name="tests.iters" value="" />
         <property name="tests.dups"  value="1" />
 
@@ -808,7 +809,7 @@
 
             dynamicAssignmentRatio="${tests.dynamicAssignmentRatio}"
             shuffleOnSlave="true"
-            leaveTemporary="false"
+            leaveTemporary="${tests.leaveTemporary}"
             seed="${tests.seed}"
 
             heartbeat="${tests.heartbeat}"
@@ -1115,6 +1116,10 @@ ant -Dtests.timestamps=on ...
 
 # Override forked JVM file.encoding
 ant -Dtests.file.encoding=XXX ...
+
+# Don't remove temporary files under slave directories, even if
+# the test passes.
+ant -Dtests.leaveTemporary=true
 
 # Output test files and reports.
 ${tests-output}/tests-report.txt    - full ASCII tests report

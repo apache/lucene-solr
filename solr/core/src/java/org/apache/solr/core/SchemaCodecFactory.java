@@ -2,7 +2,7 @@ package org.apache.solr.core;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaAware;
 import org.apache.solr.schema.SchemaField;
@@ -42,7 +42,7 @@ public class SchemaCodecFactory extends CodecFactory implements SchemaAware {
 
   @Override
   public void inform(final IndexSchema schema) {
-    codec = new Lucene40Codec() {
+    codec = new Lucene41Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         final SchemaField fieldOrNull = schema.getFieldOrNull(field);
