@@ -69,7 +69,27 @@ public class BlockTermsWriter extends FieldsConsumer {
   final FieldInfos fieldInfos;
   FieldInfo currentField;
   private final TermsIndexWriterBase termsIndexWriter;
-  private final List<TermsWriter> fields = new ArrayList<TermsWriter>();
+
+  private static class FieldMetaData {
+    public final FieldInfo fieldInfo;
+    public final long numTerms;
+    public final long termsStartPointer;
+    public final long sumTotalTermFreq;
+    public final long sumDocFreq;
+    public final int docCount;
+
+    public FieldMetaData(FieldInfo fieldInfo, long numTerms, long termsStartPointer, long sumTotalTermFreq, long sumDocFreq, int docCount) {
+      assert numTerms > 0;
+      this.fieldInfo = fieldInfo;
+      this.termsStartPointer = termsStartPointer;
+      this.numTerms = numTerms;
+      this.sumTotalTermFreq = sumTotalTermFreq;
+      this.sumDocFreq = sumDocFreq;
+      this.docCount = docCount;
+    }
+  }
+
+  private final List<FieldMetaData> fields = new ArrayList<FieldMetaData>();
 
   // private final String segment;
 
@@ -108,9 +128,7 @@ public class BlockTermsWriter extends FieldsConsumer {
     assert currentField == null || currentField.name.compareTo(field.name) < 0;
     currentField = field;
     TermsIndexWriterBase.FieldWriter fieldIndexWriter = termsIndexWriter.addField(field, out.getFilePointer());
-    final TermsWriter terms = new TermsWriter(fieldIndexWriter, field, postingsWriter);
-    fields.add(terms);
-    return terms;
+    return new TermsWriter(fieldIndexWriter, field, postingsWriter);
   }
 
   @Override
@@ -118,27 +136,18 @@ public class BlockTermsWriter extends FieldsConsumer {
 
     try {
       
-      int nonZeroCount = 0;
-      for(TermsWriter field : fields) {
-        if (field.numTerms > 0) {
-          nonZeroCount++;
-        }
-      }
-
       final long dirStart = out.getFilePointer();
 
-      out.writeVInt(nonZeroCount);
-      for(TermsWriter field : fields) {
-        if (field.numTerms > 0) {
-          out.writeVInt(field.fieldInfo.number);
-          out.writeVLong(field.numTerms);
-          out.writeVLong(field.termsStartPointer);
-          if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-            out.writeVLong(field.sumTotalTermFreq);
-          }
-          out.writeVLong(field.sumDocFreq);
-          out.writeVInt(field.docCount);
+      out.writeVInt(fields.size());
+      for(FieldMetaData field : fields) {
+        out.writeVInt(field.fieldInfo.number);
+        out.writeVLong(field.numTerms);
+        out.writeVLong(field.termsStartPointer);
+        if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+          out.writeVLong(field.sumTotalTermFreq);
         }
+        out.writeVLong(field.sumDocFreq);
+        out.writeVInt(field.docCount);
       }
       writeTrailer(dirStart);
     } finally {
@@ -249,6 +258,14 @@ public class BlockTermsWriter extends FieldsConsumer {
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
       fieldIndexWriter.finish(out.getFilePointer());
+      if (numTerms > 0) {
+        fields.add(new FieldMetaData(fieldInfo,
+                                     numTerms,
+                                     termsStartPointer,
+                                     sumTotalTermFreq,
+                                     sumDocFreq,
+                                     docCount));
+      }
     }
 
     private int sharedPrefix(BytesRef term1, BytesRef term2) {
