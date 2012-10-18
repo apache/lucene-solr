@@ -228,7 +228,30 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
   FieldInfo currentField;
-  private final List<TermsWriter> fields = new ArrayList<TermsWriter>();
+
+  private static class FieldMetaData {
+    public final FieldInfo fieldInfo;
+    public final BytesRef rootCode;
+    public final long numTerms;
+    public final long indexStartFP;
+    public final long sumTotalTermFreq;
+    public final long sumDocFreq;
+    public final int docCount;
+
+    public FieldMetaData(FieldInfo fieldInfo, BytesRef rootCode, long numTerms, long indexStartFP, long sumTotalTermFreq, long sumDocFreq, int docCount) {
+      assert numTerms > 0;
+      this.fieldInfo = fieldInfo;
+      assert rootCode != null: "field=" + fieldInfo.name + " numTerms=" + numTerms;
+      this.rootCode = rootCode;
+      this.indexStartFP = indexStartFP;
+      this.numTerms = numTerms;
+      this.sumTotalTermFreq = sumTotalTermFreq;
+      this.sumDocFreq = sumDocFreq;
+      this.docCount = docCount;
+    }
+  }
+
+  private final List<FieldMetaData> fields = new ArrayList<FieldMetaData>();
   // private final String segment;
 
   /** Create a new writer.  The number of items (terms or
@@ -313,9 +336,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
     //if (DEBUG) System.out.println("\nBTTW.addField seg=" + segment + " field=" + field.name);
     assert currentField == null || currentField.name.compareTo(field.name) < 0;
     currentField = field;
-    final TermsWriter terms = new TermsWriter(field);
-    fields.add(terms);
-    return terms;
+    return new TermsWriter(field);
   }
 
   static long encodeOutput(long fp, boolean hasTerms, boolean isFloor) {
@@ -1007,6 +1028,14 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
         //   System.out.println("SAVED to " + dotFileName);
         //   w.close();
         // }
+
+        fields.add(new FieldMetaData(fieldInfo,
+                                     ((PendingBlock) pending.get(0)).index.getEmptyOutput(),
+                                     numTerms,
+                                     indexStartFP,
+                                     sumTotalTermFreq,
+                                     sumDocFreq,
+                                     docCount));
       } else {
         assert sumTotalTermFreq == 0 || fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY && sumTotalTermFreq == -1;
         assert sumDocFreq == 0;
@@ -1024,34 +1053,23 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
     IOException ioe = null;
     try {
       
-      int nonZeroCount = 0;
-      for(TermsWriter field : fields) {
-        if (field.numTerms > 0) {
-          nonZeroCount++;
-        }
-      }
-
       final long dirStart = out.getFilePointer();
       final long indexDirStart = indexOut.getFilePointer();
 
-      out.writeVInt(nonZeroCount);
+      out.writeVInt(fields.size());
       
-      for(TermsWriter field : fields) {
-        if (field.numTerms > 0) {
-          //System.out.println("  field " + field.fieldInfo.name + " " + field.numTerms + " terms");
-          out.writeVInt(field.fieldInfo.number);
-          out.writeVLong(field.numTerms);
-          final BytesRef rootCode = ((PendingBlock) field.pending.get(0)).index.getEmptyOutput();
-          assert rootCode != null: "field=" + field.fieldInfo.name + " numTerms=" + field.numTerms;
-          out.writeVInt(rootCode.length);
-          out.writeBytes(rootCode.bytes, rootCode.offset, rootCode.length);
-          if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-            out.writeVLong(field.sumTotalTermFreq);
-          }
-          out.writeVLong(field.sumDocFreq);
-          out.writeVInt(field.docCount);
-          indexOut.writeVLong(field.indexStartFP);
+      for(FieldMetaData field : fields) {
+        //System.out.println("  field " + field.fieldInfo.name + " " + field.numTerms + " terms");
+        out.writeVInt(field.fieldInfo.number);
+        out.writeVLong(field.numTerms);
+        out.writeVInt(field.rootCode.length);
+        out.writeBytes(field.rootCode.bytes, field.rootCode.offset, field.rootCode.length);
+        if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+          out.writeVLong(field.sumTotalTermFreq);
         }
+        out.writeVLong(field.sumDocFreq);
+        out.writeVInt(field.docCount);
+        indexOut.writeVLong(field.indexStartFP);
       }
       writeTrailer(out, dirStart);
       writeIndexTrailer(indexOut, indexDirStart);
