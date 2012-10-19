@@ -36,59 +36,31 @@
           depends="check-svn-working-copy,validate,documentation-lint"/>
 
   <target name="test" description="Test both Lucene and Solr">
-    <sequential>
-      <subant target="test" inheritall="false" failonerror="true">
-        <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="solr" includes="build.xml" />
-      </subant>
-    </sequential>
-  </target>
-
-  <target name="pitest" description="Run PITest on both Lucene and Solr">
-    <sequential>
-      <subant target="pitest" inheritall="false" failonerror="false">
-        <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="solr" includes="build.xml" />
-      </subant>
-    </sequential>
-  </target>
-
-  <target name="documentation" description="Generate Lucene and Solr Documentation">
-    <sequential>
-      <subant target="documentation" inheritall="false" failonerror="true">
-        <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="solr" includes="build.xml" />
-      </subant>
-    </sequential>
-  </target>
-
-  <target name="documentation-lint" depends="-documentation-lint,-documentation-lint-unsupported"
-          description="Validates the generated documentation (HTML errors, broken links,...)"/>
-  
-  <condition property="documentation-lint.supported">
-    <and>
-      <or>
-        <contains string="${java.vm.name}" substring="hotspot" casesensitive="false"/>
-        <contains string="${java.vm.name}" substring="openjdk" casesensitive="false"/>
-        <contains string="${java.vm.name}" substring="jrockit" casesensitive="false"/>
-      </or>
-      <or>
-        <equals arg1="${ant.java.version}" arg2="1.6"/>
-        <equals arg1="${ant.java.version}" arg2="1.7"/>
-        <equals arg1="${ant.java.version}" arg2="1.8"/>
-      </or>
-    </and>
-  </condition>
-
-  <target name="-documentation-lint" if="documentation-lint.supported">
-    <subant target="documentation-lint" inheritall="false" failonerror="true">
+    <subant target="test" inheritall="false" failonerror="true">
       <fileset dir="lucene" includes="build.xml" />
       <fileset dir="solr" includes="build.xml" />
     </subant>
   </target>
 
-  <target name="-documentation-lint-unsupported" unless="documentation-lint.supported">
-    <echo level="warning" message="WARN: Linting documentation is not supported on this Java version (${ant.java.version}) / JVM (${java.vm.name}). Nothing done!"/>
+  <target name="pitest" description="Run PITest on both Lucene and Solr">
+    <subant target="pitest" inheritall="false" failonerror="false">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+    </subant>
+  </target>
+
+  <target name="documentation" description="Generate Lucene and Solr Documentation">
+    <subant target="documentation" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+    </subant>
+  </target>
+
+  <target name="documentation-lint" description="Validates the generated documentation (HTML errors, broken links,...)">
+    <subant target="documentation-lint" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+    </subant>
   </target>
 
   <target name="validate" description="Validate dependencies, licenses, etc." depends="-validate-source-patterns">
@@ -278,46 +250,44 @@
   </target>
   
   <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it" depends="clean,-env-JAVA6_HOME,-env-JAVA7_HOME">
-   <sequential>
-     <fail unless="JAVA6_HOME">JAVA6_HOME property or environment variable is not defined.</fail>
-     <fail unless="JAVA7_HOME">JAVA7_HOME property or environment variable is not defined.</fail>
-     <subant target="prepare-release-no-sign" inheritall="false" failonerror="true">
-       <fileset dir="lucene" includes="build.xml" />
-       <fileset dir="solr" includes="build.xml" />
-       <property name="version" value="${fakeReleaseVersion}" />
-     </subant>
-     <delete dir="${fakeRelease}"/>
-     <delete dir="${fakeReleaseTmp}"/>
-     <mkdir dir="${fakeRelease}"/>
-     <copy todir="${fakeRelease}/lucene">
-       <fileset dir="lucene/dist"/>
-     </copy>
-     <copy todir="${fakeRelease}/lucene/changes">
-       <fileset dir="lucene/build/docs/changes"/>
-     </copy>
-     <get src="http://people.apache.org/keys/group/lucene.asc" 
-          dest="${fakeRelease}/lucene/KEYS"/>
-     <copy todir="${fakeRelease}/solr">
-       <fileset dir="solr/package"/>
-     </copy>
-     <copy file="${fakeRelease}/lucene/KEYS" todir="${fakeRelease}/solr"/>
-     <copy todir="${fakeRelease}/solr/changes">
-       <fileset dir="solr/build/docs/changes"/>
-     </copy>
-     <makeurl file="${fakeRelease}" validate="false" property="fakeRelease.uri"/>
-     <exec executable="${python32.exe}" failonerror="true">
-       <arg value="-u"/>
-       <arg file="dev-tools/scripts/smokeTestRelease.py"/>
-       <arg value="${fakeRelease.uri}"/>
-       <arg value="${fakeReleaseVersion}"/>
-       <arg file="${fakeReleaseTmp}"/>
-       <arg value="false"/>
-       <env key="JAVA6_HOME" file="${JAVA6_HOME}"/>
-       <env key="JAVA7_HOME" file="${JAVA7_HOME}"/>
-     </exec>
-     <delete dir="${fakeRelease}"/>
-     <delete dir="${fakeReleaseTmp}"/>
-   </sequential>
+   <fail unless="JAVA6_HOME">JAVA6_HOME property or environment variable is not defined.</fail>
+   <fail unless="JAVA7_HOME">JAVA7_HOME property or environment variable is not defined.</fail>
+   <subant target="prepare-release-no-sign" inheritall="false" failonerror="true">
+     <fileset dir="lucene" includes="build.xml" />
+     <fileset dir="solr" includes="build.xml" />
+     <property name="version" value="${fakeReleaseVersion}" />
+   </subant>
+   <delete dir="${fakeRelease}"/>
+   <delete dir="${fakeReleaseTmp}"/>
+   <mkdir dir="${fakeRelease}"/>
+   <copy todir="${fakeRelease}/lucene">
+     <fileset dir="lucene/dist"/>
+   </copy>
+   <copy todir="${fakeRelease}/lucene/changes">
+     <fileset dir="lucene/build/docs/changes"/>
+   </copy>
+   <get src="http://people.apache.org/keys/group/lucene.asc" 
+        dest="${fakeRelease}/lucene/KEYS"/>
+   <copy todir="${fakeRelease}/solr">
+     <fileset dir="solr/package"/>
+   </copy>
+   <copy file="${fakeRelease}/lucene/KEYS" todir="${fakeRelease}/solr"/>
+   <copy todir="${fakeRelease}/solr/changes">
+     <fileset dir="solr/build/docs/changes"/>
+   </copy>
+   <makeurl file="${fakeRelease}" validate="false" property="fakeRelease.uri"/>
+   <exec executable="${python32.exe}" failonerror="true">
+     <arg value="-u"/>
+     <arg file="dev-tools/scripts/smokeTestRelease.py"/>
+     <arg value="${fakeRelease.uri}"/>
+     <arg value="${fakeReleaseVersion}"/>
+     <arg file="${fakeReleaseTmp}"/>
+     <arg value="false"/>
+     <env key="JAVA6_HOME" file="${JAVA6_HOME}"/>
+     <env key="JAVA7_HOME" file="${JAVA7_HOME}"/>
+   </exec>
+   <delete dir="${fakeRelease}"/>
+   <delete dir="${fakeReleaseTmp}"/>
   </target>
   
   <target name="check-svn-working-copy" description="Checks the status of the SVN working copy">
