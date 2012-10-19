@@ -109,6 +109,8 @@
   </condition>
   <property name="tests.clover.args" value=""/>
 
+  <property name="tests.heapdump.args" value=""/>
+
   <property name="tests.tempDir" location="${build.dir}/test"/>
 
   <property name="tests.cachefile" location="${common.dir}/tools/junit4/cached-timehints.txt" />
@@ -827,6 +829,7 @@
 
             <!-- JVM arguments and system properties. -->
             <jvmarg line="${args}"/>
+            <jvmarg line="${tests.heapdump.args}"/>
             <jvmarg line="${tests.clover.args}"/>
 
             <!-- set the number of times tests should run -->
