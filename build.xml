@@ -62,13 +62,33 @@
     </sequential>
   </target>
 
-  <target name="documentation-lint" description="Validates the generated documentation (HTML errors, broken links,...)">
-    <sequential>
-      <subant target="documentation-lint" inheritall="false" failonerror="true">
-        <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="solr" includes="build.xml" />
-      </subant>
-    </sequential>
+  <target name="documentation-lint" depends="-documentation-lint,-documentation-lint-unsupported"
+          description="Validates the generated documentation (HTML errors, broken links,...)"/>
+  
+  <condition property="documentation-lint.supported">
+    <and>
+      <or>
+        <contains string="${java.vm.name}" substring="hotspot" casesensitive="false"/>
+        <contains string="${java.vm.name}" substring="openjdk" casesensitive="false"/>
+        <contains string="${java.vm.name}" substring="jrockit" casesensitive="false"/>
+      </or>
+      <or>
+        <equals arg1="${ant.java.version}" arg2="1.6"/>
+        <equals arg1="${ant.java.version}" arg2="1.7"/>
+        <equals arg1="${ant.java.version}" arg2="1.8"/>
+      </or>
+    </and>
+  </condition>
+
+  <target name="-documentation-lint" if="documentation-lint.supported">
+    <subant target="documentation-lint" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+    </subant>
+  </target>
+
+  <target name="-documentation-lint-unsupported" unless="documentation-lint.supported">
+    <echo level="warning" message="WARN: Linting documentation is not supported on this Java version (${ant.java.version}) / JVM (${java.vm.name}). Nothing done!"/>
   </target>
 
   <target name="validate" description="Validate dependencies, licenses, etc." depends="-validate-source-patterns">
@@ -359,18 +379,9 @@
   </target>
 
   <!-- Jenkins tasks -->
-  <target name="jenkins-hourly" depends="clean,test-with-heapdumps,validate,-jenkins-documentation-lint,jar-checksums,check-svn-working-copy"/>
+  <target name="jenkins-hourly" depends="clean,test-with-heapdumps,validate,documentation-lint,jar-checksums,check-svn-working-copy"/>
   
   <target name="jenkins-maven-nightly" depends="clean,remove-maven-artifacts,run-maven-build,generate-maven-artifacts,validate-maven-dependencies"/>
   
   <target name="jenkins-clover" depends="run-clover"/>
-  
-  <!-- we need this extra condition, as we want to match only on "true", not solely if property is set: -->
-  <property name="disable.documentation-lint" value="false" />
-  <condition property="-disable.documentation-lint">
-    <istrue value="${disable.documentation-lint}"/>
-  </condition>
-  <target name="-jenkins-documentation-lint" unless="-disable.documentation-lint">
-    <antcall target="documentation-lint"/> 
-  </target>
 </project>
