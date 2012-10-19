@@ -472,7 +472,7 @@ public class AnalyzingSuggester extends Lookup {
     assert num > 0;
 
     //System.out.println("lookup key=" + key + " num=" + num);
-
+    final BytesRef utf8Key = new BytesRef(key);
     try {
 
       Automaton lookupAutomaton = toLookupAutomaton(key);
@@ -538,9 +538,9 @@ public class AnalyzingSuggester extends Lookup {
         // nodes we have and the
         // maxSurfaceFormsPerAnalyzedForm:
         for(MinResult<Pair<Long,BytesRef>> completion : completions) {
-          spare.grow(completion.output.output2.length);
-          UnicodeUtil.UTF8toUTF16(completion.output.output2, spare);
-          if (CHARSEQUENCE_COMPARATOR.compare(spare, key) == 0) {
+          if (utf8Key.bytesEquals(completion.output.output2)) {
+            spare.grow(completion.output.output2.length);
+            UnicodeUtil.UTF8toUTF16(completion.output.output2, spare);
             results.add(new LookupResult(spare.toString(), decodeWeight(completion.output.output1)));
             break;
           }
@@ -574,16 +574,12 @@ public class AnalyzingSuggester extends Lookup {
             // In exactFirst mode, don't accept any paths
             // matching the surface form since that will
             // create duplicate results:
-            spare.grow(output.output2.length);
-            UnicodeUtil.UTF8toUTF16(output.output2, spare);
-            return CHARSEQUENCE_COMPARATOR.compare(spare, key) != 0;
+            return !utf8Key.bytesEquals(output.output2);
           }
         }
       };
       final List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths = intersector.intersectAll();
-//      System.out.println(key);
       for (FSTUtil.Path<Pair<Long,BytesRef>> path : prefixPaths) {
-//        System.out.println(UnicodeUtil.newString(path.input.ints, path.input.offset, path.input.length));
         searcher.addStartPaths(path.fstNode, path.output, true, path.input);
       }
 
