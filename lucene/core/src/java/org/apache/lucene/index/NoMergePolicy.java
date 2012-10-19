@@ -17,7 +17,11 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Map;
+
+import org.apache.lucene.index.MergePolicy.MergeTrigger;
+import org.apache.lucene.index.MergePolicy.MergeSpecification;
 
 /**
  * A {@link MergePolicy} which never returns merges to execute (hence it's
@@ -53,7 +57,7 @@ public final class NoMergePolicy extends MergePolicy {
   public void close() {}
 
   @Override
-  public MergeSpecification findMerges(SegmentInfos segmentInfos) { return null; }
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos) { return null; }
 
   @Override
   public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,

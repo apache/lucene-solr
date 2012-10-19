@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.lucene.index.MergePolicy.MergeTrigger;
 import org.apache.lucene.util._TestUtil;
 
 /**
@@ -40,7 +41,7 @@ public class MockRandomMergePolicy extends MergePolicy {
   }
 
   @Override
-  public MergeSpecification findMerges(SegmentInfos segmentInfos) {
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos) {
     MergeSpecification mergeSpec = null;
     //System.out.println("MRMP: findMerges sis=" + segmentInfos);
 
@@ -110,7 +111,7 @@ public class MockRandomMergePolicy extends MergePolicy {
 
   @Override
   public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos) throws IOException {
-    return findMerges(segmentInfos);
+    return findMerges(null, segmentInfos);
   }
 
   @Override

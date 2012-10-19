@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -57,7 +58,7 @@ import org.apache.lucene.util.SetOnce;
  */
 
 public abstract class MergePolicy implements java.io.Closeable, Cloneable {
-
+  
   /** OneMerge provides the information necessary to perform
    *  an individual primitive merge operation, resulting in
    *  a single new segment.  The merge spec includes the
@@ -333,11 +334,11 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
    * {@link IndexWriter} calls this whenever there is a change to the segments.
    * This call is always synchronized on the {@link IndexWriter} instance so
    * only one thread at a time will call this method.
-   * 
+   * @param mergeTrigger the event that triggered the merge
    * @param segmentInfos
    *          the total set of segments in the index
    */
-  public abstract MergeSpecification findMerges(SegmentInfos segmentInfos)
+  public abstract MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos)
       throws IOException;
 
   /**
@@ -379,9 +380,36 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
    * Release all resources for the policy.
    */
   public abstract void close();
-
+  
+  
   /**
    * Returns true if a new segment (regardless of its origin) should use the compound file format.
    */
   public abstract boolean useCompoundFile(SegmentInfos segments, SegmentInfoPerCommit newSegment) throws IOException;
+  
+  /**
+   * MergeTrigger is passed to
+   * {@link MergePolicy#findMerges(MergeTrigger, SegmentInfos)} to indicate the
+   * event that triggered the merge.
+   */
+  public static enum MergeTrigger {
+    /**
+     * Merge was triggered by a segment flush.
+     */
+    SEGMENT_FLUSH, 
+    /**
+     * Merge was triggered by a full flush. Full flushes
+     * can be caused by a commit, NRT reader reopen or a close call on the index writer.
+     */
+    FULL_FLUSH,
+    /**
+     * Merge has been triggered explicitly by the user.
+     */
+    EXPLICIT,
+    
+    /**
+     * Merge was triggered by a successfully finished merge.
+     */
+    MERGE_FINISHED,
+  }
 }
