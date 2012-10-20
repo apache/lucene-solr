@@ -17,8 +17,6 @@ package org.apache.lucene.search.highlight;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -41,6 +39,8 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.io.IOException;
 
 // LUCENE-2874
 public class TokenSourcesTest extends LuceneTestCase {
@@ -259,5 +259,41 @@ public class TokenSourcesTest extends LuceneTestCase {
       directory.close();
     }
   }
+
+  public void testTermVectorWithoutOffsetsThrowsException()
+      throws IOException, InvalidTokenOffsetsException {
+    final String TEXT = "the fox did not jump";
+    final Directory directory = newDirectory();
+    final IndexWriter indexWriter = new IndexWriter(directory,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    try {
+      final Document document = new Document();
+      FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
+      customType.setStoreTermVectors(true);
+      customType.setStoreTermVectorOffsets(false);
+      customType.setStoreTermVectorPositions(true);
+      document.add(new Field(FIELD, new OverlappingTokenStream(), customType));
+      indexWriter.addDocument(document);
+    } finally {
+      indexWriter.close();
+    }
+    final IndexReader indexReader = DirectoryReader.open(directory);
+    try {
+      assertEquals(1, indexReader.numDocs());
+      final TokenStream tokenStream = TokenSources
+          .getTokenStream(
+              indexReader.getTermVector(0, FIELD),
+              false);
+      fail("TokenSources.getTokenStream should throw IllegalArgumentException if term vector has no offsets");
+    }
+    catch (IllegalArgumentException e) {
+      // expected
+    }
+    finally {
+      indexReader.close();
+      directory.close();
+    }
+  }
+
 
 }
