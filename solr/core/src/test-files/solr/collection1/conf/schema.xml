@@ -649,6 +649,8 @@
       termVectors="true" termPositions="true" termOffsets="true"/>
    <dynamicField name="tv_mv_*"  type="text" indexed="true"  stored="true" multiValued="true"
       termVectors="true" termPositions="true" termOffsets="true"/>
+   <dynamicField name="tv_no_off_*" type="text" indexed="true" stored="true"
+      termVectors="true" termPositions="true"/>
 
    <dynamicField name="*_p"  type="xyd" indexed="true"  stored="true" multiValued="false"/>
 

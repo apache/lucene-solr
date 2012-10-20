@@ -16,18 +16,6 @@
  */
 package org.apache.solr.highlight;
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Set;
-
-
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -38,19 +26,16 @@ import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.*;
-import org.apache.lucene.search.vectorhighlight.BoundaryScanner;
-import org.apache.lucene.search.vectorhighlight.FastVectorHighlighter;
-import org.apache.lucene.search.vectorhighlight.FieldQuery;
-import org.apache.lucene.search.vectorhighlight.FragListBuilder;
-import org.apache.lucene.search.vectorhighlight.FragmentsBuilder;
+import org.apache.lucene.search.highlight.Formatter;
+import org.apache.lucene.search.vectorhighlight.*;
 import org.apache.lucene.util.AttributeSource.State;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -61,6 +46,10 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.*;
 
 /**
  * 
@@ -462,14 +451,9 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     List<TextFragment> frags = new ArrayList<TextFragment>();
 
     TermOffsetsTokenStream tots = null; // to be non-null iff we're using TermOffsets optimization
-    try {
-        TokenStream tvStream = TokenSources.getTokenStream(searcher.getIndexReader(), docId, fieldName);
-        if (tvStream != null) {
-          tots = new TermOffsetsTokenStream(tvStream);
-        }
-    }
-    catch (IllegalArgumentException e) {
-      // No problem. But we can't use TermOffsets optimization.
+    TokenStream tvStream = TokenSources.getTokenStreamWithOffsets(searcher.getIndexReader(), docId, fieldName);
+    if (tvStream != null) {
+      tots = new TermOffsetsTokenStream(tvStream);
     }
 
     for (int j = 0; j < docTexts.length; j++) {

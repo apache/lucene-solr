@@ -20,27 +20,25 @@ package org.apache.lucene.search.highlight;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Comparator;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Comparator;
 
 /**
  * Hides implementation issues associated with obtaining a TokenStream for use
@@ -121,14 +119,10 @@ public class TokenSources {
     return getTokenStream(vector, false);
   }
 
-  private static boolean hasPositions(Terms vector) throws IOException {
-    return vector.hasPositions();
-  }
-
   /**
-   * Low level api. Returns a token stream or null if no offset info available
-   * in index. This can be used to feed the highlighter with a pre-parsed token
-   * stream
+   * Low level api. Returns a token stream generated from a {@link Terms}. This
+   * can be used to feed the highlighter with a pre-parsed token
+   * stream.  The {@link Terms} must have offsets available.
    * 
    * In my tests the speeds to recreate 1000 token streams using this method
    * are: - with TermVector offset only data stored - 420 milliseconds - with
@@ -149,11 +143,18 @@ public class TokenSources {
    * @param tokenPositionsGuaranteedContiguous true if the token position
    *        numbers have no overlaps or gaps. If looking to eek out the last
    *        drops of performance, set to true. If in doubt, set to false.
+   *
+   * @throws IllegalArgumentException if no offsets are available
    */
   public static TokenStream getTokenStream(Terms tpv,
       boolean tokenPositionsGuaranteedContiguous) 
   throws IOException {
-    if (!tokenPositionsGuaranteedContiguous && hasPositions(tpv)) {
+
+    if (!tpv.hasOffsets()) {
+      throw new IllegalArgumentException("Cannot create TokenStream from Terms without offsets");
+    }
+
+    if (!tokenPositionsGuaranteedContiguous && tpv.hasPositions()) {
       return new TokenStreamFromTermPositionVector(tpv);
     }
 
@@ -261,24 +262,31 @@ public class TokenSources {
     return new StoredTokenStream(tokensInOriginalOrder);
   }
 
-  public static TokenStream getTokenStream(IndexReader reader, int docId,
-      String field) throws IOException {
+  /**
+   * Returns a {@link TokenStream} with positions and offsets constructed from
+   * field termvectors.  If the field has no termvectors, or positions or offsets
+   * are not included in the termvector, return null.
+   * @param reader the {@link IndexReader} to retrieve term vectors from
+   * @param docId the document to retrieve termvectors for
+   * @param field the field to retrieve termvectors for
+   * @return a {@link TokenStream}, or null if positions and offsets are not available
+   * @throws IOException If there is a low-level I/O error
+   */
+  public static TokenStream getTokenStreamWithOffsets(IndexReader reader, int docId,
+                                                      String field) throws IOException {
 
     Fields vectors = reader.getTermVectors(docId);
     if (vectors == null) {
-      throw new IllegalArgumentException(field + " in doc #" + docId
-          + "does not have any term position data stored");
+      return null;
     }
 
     Terms vector = vectors.terms(field);
     if (vector == null) {
-      throw new IllegalArgumentException(field + " in doc #" + docId
-          + "does not have any term position data stored");
+      return null;
     }
 
-    if (!hasPositions(vector)) {
-      throw new IllegalArgumentException(field + " in doc #" + docId
-          + "does not have any term position data stored");
+    if (!vector.hasPositions() || !vector.hasOffsets()) {
+      return null;
     }
     
     return getTokenStream(vector);
