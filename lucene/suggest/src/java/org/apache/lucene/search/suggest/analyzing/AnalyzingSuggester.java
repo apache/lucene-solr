@@ -591,16 +591,18 @@ public class AnalyzingSuggester extends Lookup {
 
       Util.TopNSearcher<Pair<Long,BytesRef>> searcher;
       searcher = new Util.TopNSearcher<Pair<Long,BytesRef>>(fst,
-                                                            num - results.size(),
+                                                            num,
                                                             weightComparator) {
         private final Set<BytesRef> seen = new HashSet<BytesRef>();
 
         @Override
         protected boolean acceptResult(IntsRef input, Pair<Long,BytesRef> output) {
-          
+
+          //System.out.println("ACCEPT? path=" + input);
           // Dedup: when the input analyzes to a graph we
           // can get duplicate surface forms:
           if (seen.contains(output.output2)) {
+            //System.out.println("SKIP: dup");
             return false;
           }
           seen.add(output.output2);
@@ -630,6 +632,12 @@ public class AnalyzingSuggester extends Lookup {
         LookupResult result = new LookupResult(spare.toString(), decodeWeight(completion.output.output1));
         //System.out.println("    result=" + result);
         results.add(result);
+
+        if (results.size() == num) {
+          // In the exactFirst=true case the search may
+          // produce one extra path
+          break;
+        }
       }
 
       return results;
