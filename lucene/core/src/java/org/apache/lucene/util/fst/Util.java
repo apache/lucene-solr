@@ -290,6 +290,8 @@ public final class Util {
       T cost = fst.outputs.add(path.cost, path.arc.output);
       //System.out.println("  addIfCompetitive queue.size()=" + queue.size() + " path=" + path + " + label=" + path.arc.label);
 
+      // LUCENE-4481: TODO: re-enable this pruning if we can make this admissible:
+      /*
       if (queue.size() == topN) {
         FSTPath<T> bottom = queue.last();
         int comp = comparator.compare(cost, bottom.cost);
@@ -312,6 +314,7 @@ public final class Util {
       } else {
         // Queue isn't full yet, so any path we hit competes:
       }
+      */
 
       // copy over the current input to the new input
       // and add the arc.label to the end
@@ -323,9 +326,12 @@ public final class Util {
 
       queue.add(newPath);
 
+      // LUCENE-4481: TODO: re-enable this pruning if we can make this admissible:
+      /*
       if (queue.size() == topN+1) {
         queue.pollLast();
-      } 
+      }
+      */
     }
 
     /** Adds all leaving arcs, including 'finished' arc, if
@@ -390,8 +396,6 @@ public final class Util {
           break;
         }
 
-        //System.out.println("  remove init path=" + path);
-
         if (path.arc.label == FST.END_LABEL) {
           //System.out.println("    empty string!  cost=" + path.cost);
           // Empty string!
@@ -400,10 +404,13 @@ public final class Util {
           continue;
         }
 
+        // LUCENE-4481: TODO: re-enable this pruning if we can make this admissible:
+        /*
         if (results.size() == topN-1) {
           // Last path -- don't bother w/ queue anymore:
           queue = null;
         }
+        */
 
         //System.out.println("  path: " + path);
         
