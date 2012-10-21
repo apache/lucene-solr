@@ -79,6 +79,10 @@ Bug Fixes
 * LUCENE-4479: Highlighter works correctly for fields with term vector
   positions, but no offsets.  (Alan Woodward)
 
+* SOLR-3906: JapaneseReadingFormFilter in romaji mode will return
+  romaji even for out-of-vocabulary kana cases (e.g. half-width forms).
+  (Robert Muir)
+
 Optimizations
 
 * LUCENE-4443: BlockPostingsFormat no longer writes unnecessary offsets 

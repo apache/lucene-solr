@@ -40,6 +40,14 @@
 	    <filter class="solr.TrimFilterFactory"/>
 	  </analyzer>
 	</fieldtype>
+	
+	<fieldtype name="ja_suggest" class="solr.TextField">
+	  <analyzer>
+	    <tokenizer class="solr.JapaneseTokenizerFactory" mode="normal"/>
+	    <filter class="solr.CJKWidthFilterFactory"/>
+	    <filter class="solr.JapaneseReadingFormFilterFactory" useRomaji="true"/>
+	  </analyzer>
+	</fieldtype>
   </types>
 
   <fields>
