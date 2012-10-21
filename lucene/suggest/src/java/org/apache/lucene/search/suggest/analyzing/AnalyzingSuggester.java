@@ -36,6 +36,8 @@ import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.fst.Sort;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.ArrayUtil;
@@ -160,6 +162,11 @@ public class AnalyzingSuggester extends Lookup {
    *  makes lots of alternate paths (e.g. contains
    *  SynonymFilter). */
   private final int maxGraphExpansions;
+
+  /** Highest number of analyzed paths we saw for any single
+   *  input surface form.  For analyzers that never create
+   *  graphs this will always be 1. */
+  private int maxAnalyzedPathsForOneInput;
 
   /**
    * Calls {@link #AnalyzingSuggester(Analyzer,Analyzer,int,int,int)
@@ -354,6 +361,8 @@ public class AnalyzingSuggester extends Lookup {
         // don't have to alloc [possibly biggish]
         // intermediate HashSet in RAM:
         Set<IntsRef> paths = SpecialOperations.getFiniteStrings(automaton, maxGraphExpansions);
+        maxAnalyzedPathsForOneInput = Math.max(maxAnalyzedPathsForOneInput, paths.size());
+
         for (IntsRef path : paths) {
 
           Util.toBytesRef(path, scratch);
@@ -469,8 +478,10 @@ public class AnalyzingSuggester extends Lookup {
 
   @Override
   public boolean store(OutputStream output) throws IOException {
+    DataOutput dataOut = new OutputStreamDataOutput(output);
     try {
-      fst.save(new OutputStreamDataOutput(output));
+      fst.save(dataOut);
+      dataOut.writeVInt(maxAnalyzedPathsForOneInput);
     } finally {
       IOUtils.close(output);
     }
@@ -479,8 +490,10 @@ public class AnalyzingSuggester extends Lookup {
 
   @Override
   public boolean load(InputStream input) throws IOException {
+    DataInput dataIn = new InputStreamDataInput(input);
     try {
-      this.fst = new FST<Pair<Long,BytesRef>>(new InputStreamDataInput(input), new PairOutputs<Long,BytesRef>(PositiveIntOutputs.getSingleton(true), ByteSequenceOutputs.getSingleton()));
+      this.fst = new FST<Pair<Long,BytesRef>>(dataIn, new PairOutputs<Long,BytesRef>(PositiveIntOutputs.getSingleton(true), ByteSequenceOutputs.getSingleton()));
+      maxAnalyzedPathsForOneInput = dataIn.readVInt();
     } finally {
       IOUtils.close(input);
     }
@@ -529,7 +542,7 @@ public class AnalyzingSuggester extends Lookup {
 
       FST.Arc<Pair<Long,BytesRef>> scratchArc = new FST.Arc<Pair<Long,BytesRef>>();
 
-      List<LookupResult> results = new ArrayList<LookupResult>();
+      final List<LookupResult> results = new ArrayList<LookupResult>();
 
       if (exactFirst) {
 
@@ -545,7 +558,7 @@ public class AnalyzingSuggester extends Lookup {
         // Searcher just to find the single exact only
         // match, if present:
         Util.TopNSearcher<Pair<Long,BytesRef>> searcher;
-        searcher = new Util.TopNSearcher<Pair<Long,BytesRef>>(fst, count * maxSurfaceFormsPerAnalyzedForm, weightComparator);
+        searcher = new Util.TopNSearcher<Pair<Long,BytesRef>>(fst, count * maxSurfaceFormsPerAnalyzedForm, count * maxSurfaceFormsPerAnalyzedForm, weightComparator);
 
         // NOTE: we could almost get away with only using
         // the first start node.  The only catch is if
@@ -591,18 +604,17 @@ public class AnalyzingSuggester extends Lookup {
 
       Util.TopNSearcher<Pair<Long,BytesRef>> searcher;
       searcher = new Util.TopNSearcher<Pair<Long,BytesRef>>(fst,
-                                                            num,
+                                                            num - results.size(),
+                                                            num * maxAnalyzedPathsForOneInput,
                                                             weightComparator) {
         private final Set<BytesRef> seen = new HashSet<BytesRef>();
 
         @Override
         protected boolean acceptResult(IntsRef input, Pair<Long,BytesRef> output) {
 
-          //System.out.println("ACCEPT? path=" + input);
           // Dedup: when the input analyzes to a graph we
           // can get duplicate surface forms:
           if (seen.contains(output.output2)) {
-            //System.out.println("SKIP: dup");
             return false;
           }
           seen.add(output.output2);
@@ -615,7 +627,14 @@ public class AnalyzingSuggester extends Lookup {
             // create duplicate results:
             spare.grow(output.output2.length);
             UnicodeUtil.UTF8toUTF16(output.output2, spare);
-            return CHARSEQUENCE_COMPARATOR.compare(spare, key) != 0;
+            if (CHARSEQUENCE_COMPARATOR.compare(spare, key) == 0) {
+              // We found exact match, which means we should
+              // have already found it in the first search:
+              assert results.size() == 1;
+              return false;
+            } else {
+              return true;
+            }
           }
         }
       };

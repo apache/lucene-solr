@@ -266,6 +266,7 @@ public final class Util {
     private final FST<T> fst;
     private final FST.BytesReader bytesReader;
     private final int topN;
+    private final int maxQueueDepth;
 
     private final FST.Arc<T> scratchArc = new FST.Arc<T>();
     
@@ -273,10 +274,11 @@ public final class Util {
 
     TreeSet<FSTPath<T>> queue = null;
 
-    public TopNSearcher(FST<T> fst, int topN, Comparator<T> comparator) {
+    public TopNSearcher(FST<T> fst, int topN, int maxQueueDepth, Comparator<T> comparator) {
       this.fst = fst;
       this.bytesReader = fst.getBytesReader(0);
       this.topN = topN;
+      this.maxQueueDepth = maxQueueDepth;
       this.comparator = comparator;
 
       queue = new TreeSet<FSTPath<T>>();
@@ -290,9 +292,7 @@ public final class Util {
       T cost = fst.outputs.add(path.cost, path.arc.output);
       //System.out.println("  addIfCompetitive queue.size()=" + queue.size() + " path=" + path + " + label=" + path.arc.label);
 
-      // LUCENE-4481: TODO: re-enable this pruning if we can make this admissible:
-      /*
-      if (queue.size() == topN) {
+      if (queue.size() == maxQueueDepth) {
         FSTPath<T> bottom = queue.last();
         int comp = comparator.compare(cost, bottom.cost);
         if (comp > 0) {
@@ -314,7 +314,6 @@ public final class Util {
       } else {
         // Queue isn't full yet, so any path we hit competes:
       }
-      */
 
       // copy over the current input to the new input
       // and add the arc.label to the end
@@ -326,12 +325,9 @@ public final class Util {
 
       queue.add(newPath);
 
-      // LUCENE-4481: TODO: re-enable this pruning if we can make this admissible:
-      /*
-      if (queue.size() == topN+1) {
+      if (queue.size() == maxQueueDepth+1) {
         queue.pollLast();
       }
-      */
     }
 
     /** Adds all leaving arcs, including 'finished' arc, if
@@ -375,6 +371,7 @@ public final class Util {
 
       // TODO: maybe we should make an FST.INPUT_TYPE.BYTE0.5!?
       // (nibbles)
+      int rejectCount = 0;
 
       // For each top N path:
       while (results.size() < topN) {
@@ -404,13 +401,10 @@ public final class Util {
           continue;
         }
 
-        // LUCENE-4481: TODO: re-enable this pruning if we can make this admissible:
-        /*
-        if (results.size() == topN-1) {
+        if (results.size() == topN-1 && maxQueueDepth == topN) {
           // Last path -- don't bother w/ queue anymore:
           queue = null;
         }
-        */
 
         //System.out.println("  path: " + path);
         
@@ -467,6 +461,9 @@ public final class Util {
             T finalOutput = fst.outputs.add(path.cost, path.arc.output);
             if (acceptResult(path.input, finalOutput)) {
               results.add(new MinResult<T>(path.input, finalOutput, comparator));
+            } else {
+              rejectCount++;
+              assert rejectCount + topN <= maxQueueDepth: "maxQueueDepth (" + maxQueueDepth + ") is too small for topN (" + topN + "): rejected " + rejectCount + " paths";
             }
             break;
           } else {
@@ -519,7 +516,10 @@ public final class Util {
    *  PositiveIntOutputs#getSingleton}). */
   public static <T> MinResult<T>[] shortestPaths(FST<T> fst, FST.Arc<T> fromNode, T startOutput, Comparator<T> comparator, int topN,
                                                  boolean allowEmptyString) throws IOException {
-    TopNSearcher<T> searcher = new TopNSearcher<T>(fst, topN, comparator);
+
+    // All paths are kept, so we can pass topN for
+    // maxQueueDepth and the pruning is admissible:
+    TopNSearcher<T> searcher = new TopNSearcher<T>(fst, topN, topN, comparator);
 
     // since this search is initialized with a single start node 
     // it is okay to start with an empty input path here
