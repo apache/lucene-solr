@@ -41,6 +41,10 @@ New Features
 * SOLR-3929: Support configuring IndexWriter max thread count in solrconfig.
   (phunt via Mark Miller)
 
+* SOLR-3906: Add support for AnalyzingSuggester (LUCENE-3842), where the
+  underlying analyzed form used for suggestions is separate from the returned
+  text.  (Robert Muir)
+
 Optimizations
 ----------------------
 

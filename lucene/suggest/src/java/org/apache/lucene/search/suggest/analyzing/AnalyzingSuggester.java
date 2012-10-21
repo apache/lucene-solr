@@ -127,7 +127,7 @@ public class AnalyzingSuggester extends Lookup {
   private final boolean exactFirst;
   
   /** 
-   * True if separator between tokens should be preservered.
+   * True if separator between tokens should be preserved.
    */
   private final boolean preserveSep;
 

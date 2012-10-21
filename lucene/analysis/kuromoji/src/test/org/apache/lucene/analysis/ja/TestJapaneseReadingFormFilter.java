@@ -19,7 +19,9 @@ package org.apache.lucene.analysis.ja;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.cjk.CJKWidthFilter;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 import java.io.IOException;
@@ -52,9 +54,37 @@ public class TestJapaneseReadingFormFilter extends BaseTokenStreamTestCase {
         new String[] { "コンヤ", "ハ", "ロバート", "センセイ", "ト", "ハナシ", "タ" }
     );
   }
+  
+  public void testKatakanaReadingsHalfWidth() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new JapaneseTokenizer(reader, null, true, JapaneseTokenizer.Mode.SEARCH);
+        TokenStream stream = new CJKWidthFilter(tokenizer);
+        return new TokenStreamComponents(tokenizer, new JapaneseReadingFormFilter(stream, false));
+      }
+    };
+    assertAnalyzesTo(a, "今夜はﾛﾊﾞｰﾄ先生と話した",
+        new String[] { "コンヤ", "ハ", "ロバート", "センセイ", "ト", "ハナシ", "タ" }
+    );
+  }
 
   public void testRomajiReadings() throws IOException {
     assertAnalyzesTo(romajiAnalyzer, "今夜はロバート先生と話した",
+        new String[] { "kon'ya", "ha", "robato", "sensei", "to", "hanashi", "ta" }
+    );
+  }
+  
+  public void testRomajiReadingsHalfWidth() throws IOException {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new JapaneseTokenizer(reader, null, true, JapaneseTokenizer.Mode.SEARCH);
+        TokenStream stream = new CJKWidthFilter(tokenizer);
+        return new TokenStreamComponents(tokenizer, new JapaneseReadingFormFilter(stream, true));
+      }
+    };
+    assertAnalyzesTo(a, "今夜はﾛﾊﾞｰﾄ先生と話した",
         new String[] { "kon'ya", "ha", "robato", "sensei", "to", "hanashi", "ta" }
     );
   }
