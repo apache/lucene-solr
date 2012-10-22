@@ -67,8 +67,8 @@ Bug Fixes
 * LUCENE-1822: BaseFragListBuilder hard-coded 6 char margin is too naive.
   (Alex Vigdor, Arcadius Ahouansou, Koji Sekiguchi)
 
-* LUCENE-4468: Fix rareish integer overflows in Block and Lucene40 postings 
-  formats (Robert Muir)
+* LUCENE-4468: Fix rareish integer overflows in Lucene41 postings 
+  format. (Robert Muir)
   
 * LUCENE-4486: Add support for ConstantScoreQuery in Highlighter.
  (Simon Willnauer)
@@ -85,22 +85,25 @@ Bug Fixes
 
 Optimizations
 
-* LUCENE-4443: BlockPostingsFormat no longer writes unnecessary offsets 
-  into the skipdata. You need to reindex any indexes created with
-  this experimental codec.  (Robert Muir)
+* LUCENE-4443: Lucene41PostingsFormat no longer writes unnecessary offsets 
+  into the skipdata. (Robert Muir)
 
 * LUCENE-4459: Improve WeakIdentityMap.keyIterator() to remove GCed keys
   from backing map early instead of waiting for reap(). This makes test
   failures in TestWeakIdentityMap disappear, too.
   (Uwe Schindler, Mike McCandless, Robert Muir)
 
-* LUCENE-4473: BlockPostingsFormat encodes offsets more efficiently
+* LUCENE-4473: Lucene41PostingsFormat encodes offsets more efficiently
   for low frequency terms (< 128 occurrences).  (Robert Muir)
 
 * LUCENE-4462: DocumentsWriter now flushes deletes, segment infos and builds
   CFS files if necessary during segment flush and not during publishing. The latter
   was a single threaded process while now all IO and CPU heavy computation is done
   concurrently in DocumentsWriterPerThread. (Simon Willnauer)
+
+* LUCENE-4496: Optimize Lucene41PostingsFormat when requesting a subset of
+  the postings data (via flags to TermsEnum.docs/docsAndPositions) to use
+  ForUtil.skipBlock.  (Robert Muir)
 
 Build
 
