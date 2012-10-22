@@ -32,11 +32,12 @@ import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.HighFrequencyDictionary;
 import org.apache.lucene.search.spell.SuggestMode;
 import org.apache.lucene.search.suggest.FileDictionary;
-import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
+import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.analyzing.AnalyzingSuggester;
+import org.apache.lucene.search.suggest.fst.WFSTCompletionLookup;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
-
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -187,8 +188,10 @@ public class Suggester extends SolrSpellChecker {
       scratch.chars = t.buffer();
       scratch.offset = 0;
       scratch.length = t.length();
-      List<LookupResult> suggestions = lookup.lookup(scratch,
-          (options.suggestMode == SuggestMode.SUGGEST_MORE_POPULAR), options.count);
+      boolean onlyMorePopular = (options.suggestMode == SuggestMode.SUGGEST_MORE_POPULAR) &&
+        !(lookup instanceof WFSTCompletionLookup) &&
+        !(lookup instanceof AnalyzingSuggester);
+      List<LookupResult> suggestions = lookup.lookup(scratch, onlyMorePopular, options.count);
       if (suggestions == null) {
         continue;
       }
