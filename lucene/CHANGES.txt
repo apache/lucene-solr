@@ -105,6 +105,9 @@ Optimizations
   the postings data (via flags to TermsEnum.docs/docsAndPositions) to use
   ForUtil.skipBlock.  (Robert Muir)
 
+* LUCENE-4497: Don't write PosVIntCount to the positions file in 
+  Lucene41PostingsFormat, as its always totalTermFreq % BLOCK_SIZE. (Robert Muir)
+
 Build
 
 * LUCENE-4451: Memory leak per unique thread caused by 

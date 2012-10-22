@@ -597,6 +597,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     final boolean indexHasPayloads;
 
     private int docFreq;                              // number of docs in this posting list
+    private long totalTermFreq;                       // number of positions in this posting list
     private int docUpto;                              // how many docs we've read
     private int doc;                                  // doc we last read
     private int accum;                                // accumulator for doc deltas
@@ -661,6 +662,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       payTermStartFP = termState.payStartFP;
       docIn.seek(docTermStartFP);
       skipOffset = termState.skipOffset;
+      totalTermFreq = termState.totalTermFreq;
       posPendingFP = posTermStartFP;
       posPendingCount = 0;
       if (termState.totalTermFreq < BLOCK_SIZE) {
@@ -721,7 +723,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         // if (DEBUG) {
         //   System.out.println("        vInt pos block @ fp=" + posIn.getFilePointer() + " hasPayloads=" + indexHasPayloads + " hasOffsets=" + indexHasOffsets);
         // }
-        final int count = posIn.readVInt();
+        final int count = (int) (totalTermFreq % BLOCK_SIZE);
         int payloadLength = 0;
         for(int i=0;i<count;i++) {
           int code = posIn.readVInt();
@@ -1009,6 +1011,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     final boolean indexHasPayloads;
 
     private int docFreq;                              // number of docs in this posting list
+    private long totalTermFreq;                       // number of positions in this posting list
     private int docUpto;                              // how many docs we've read
     private int doc;                                  // doc we last read
     private int accum;                                // accumulator for doc deltas
@@ -1100,6 +1103,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       payTermStartFP = termState.payStartFP;
       docIn.seek(docTermStartFP);
       skipOffset = termState.skipOffset;
+      totalTermFreq = termState.totalTermFreq;
       posPendingFP = posTermStartFP;
       payPendingFP = payTermStartFP;
       posPendingCount = 0;
@@ -1163,7 +1167,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         // if (DEBUG) {
         //   System.out.println("        vInt pos block @ fp=" + posIn.getFilePointer() + " hasPayloads=" + indexHasPayloads + " hasOffsets=" + indexHasOffsets);
         // }
-        final int count = posIn.readVInt();
+        final int count = (int) (totalTermFreq % BLOCK_SIZE);
         int payloadLength = 0;
         int offsetLength = 0;
         payloadByteUpto = 0;
