@@ -504,6 +504,10 @@ public class AnalyzingSuggester extends Lookup {
   public List<LookupResult> lookup(final CharSequence key, boolean onlyMorePopular, int num) {
     assert num > 0;
 
+    if (onlyMorePopular) {
+      throw new IllegalArgumentException("this suggester only works with onlyMorePopular=false");
+    }
+
     //System.out.println("lookup key=" + key + " num=" + num);
 
     try {
