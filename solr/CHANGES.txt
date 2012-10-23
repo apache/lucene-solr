@@ -97,6 +97,9 @@ Other Changes
 * SOLR-3861: Refactor SolrCoreState so that it's managed by SolrCore.
   (Mark Miller, hossman)
 
+* SOLR-3966: Eliminate superfluous warning from LanguageIdentifierUpdateProcessor
+  (Markus Jelsma via hossman)
+
 ==================  4.0.0 ==================
 
 Versions of Major Components
