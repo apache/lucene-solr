@@ -501,7 +501,7 @@ public class AnalyzingSuggester extends Lookup {
     
       // Intersect automaton w/ suggest wFST and get all
       // prefix starting nodes & their outputs:
-      final PathIntersector intersector = getPathIntersector(lookupAutomaton, fst);
+      //final PathIntersector intersector = getPathIntersector(lookupAutomaton, fst);
 
       //System.out.println("  prefixPaths: " + prefixPaths.size());
 
@@ -511,8 +511,9 @@ public class AnalyzingSuggester extends Lookup {
 
       final List<LookupResult> results = new ArrayList<LookupResult>();
 
+      List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths = FSTUtil.intersectPrefixPaths(lookupAutomaton, fst);
+
       if (exactFirst) {
-        final List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths = intersector.intersectExact();   
 
         int count = 0;
         for (FSTUtil.Path<Pair<Long,BytesRef>> path : prefixPaths) {
@@ -604,7 +605,9 @@ public class AnalyzingSuggester extends Lookup {
           }
         }
       };
-      final List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths = intersector.intersectAll();
+
+      prefixPaths = getFullPrefixPaths(prefixPaths, lookupAutomaton, fst);
+      
       for (FSTUtil.Path<Pair<Long,BytesRef>> path : prefixPaths) {
         searcher.addStartPaths(path.fstNode, path.output, true, path.input);
       }
@@ -615,6 +618,10 @@ public class AnalyzingSuggester extends Lookup {
         spare.grow(completion.output.output2.length);
         UnicodeUtil.UTF8toUTF16(completion.output.output2, spare);
         LookupResult result = new LookupResult(spare.toString(), decodeWeight(completion.output.output1));
+
+        // nocommit for fuzzy case would be nice to return
+        // how many edits were required...:
+
         //System.out.println("    result=" + result);
         results.add(result);
 
@@ -629,6 +636,13 @@ public class AnalyzingSuggester extends Lookup {
     } catch (IOException bogus) {
       throw new RuntimeException(bogus);
     }
+  }
+  
+  protected List<FSTUtil.Path<Pair<Long,BytesRef>>> getFullPrefixPaths(List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths,
+                                                                       Automaton lookupAutomaton,
+                                                                       FST<Pair<Long,BytesRef>> fst)
+    throws IOException {
+    return prefixPaths;
   }
   
   final Set<IntsRef> toFiniteStrings(final BytesRef surfaceForm, final TokenStreamToAutomaton ts2a) throws IOException {
@@ -706,46 +720,4 @@ public class AnalyzingSuggester extends Lookup {
       return left.output1.compareTo(right.output1);
     }
   };
-  
-  /**
-   * Returns a new {@link PathIntersector}.
-   *
-   * <p>NOTE: The labels on the transitions incoming
-   * automaton are bytes returned by the {@link
-   * TokenStream}'s {@link TermToBytesRefAttribute}, which
-   * are typically UTF8 encoded.
-   */
-  protected PathIntersector getPathIntersector(Automaton automaton, FST<Pair<Long,BytesRef>> fst) {
-    return new PathIntersector(automaton, fst);
-  }
-  
-  /**
-   * This class is used to obtain the prefix paths in the automaton that also intersect the FST.
-   */
-  protected static class PathIntersector {
-    protected List<FSTUtil.Path<Pair<Long,BytesRef>>> intersect; 
-    protected final Automaton automaton;
-    protected final FST<Pair<Long,BytesRef>> fst;
-    
-    /**
-     * Creates a new {@link PathIntersector}
-     */
-    public PathIntersector(Automaton automaton, FST<Pair<Long,BytesRef>> fst) {
-      this.automaton = automaton;
-      this.fst = fst;
-    }
-    /**
-     * Returns the prefix paths for exact first top N search. 
-     */
-    public List<FSTUtil.Path<Pair<Long,BytesRef>>> intersectExact() throws IOException {
-      return intersect = FSTUtil.intersectPrefixPaths(automaton, fst);
-    }
-    
-    /**
-     * Returns the prefix paths for top N search. 
-     */
-    public List<FSTUtil.Path<Pair<Long,BytesRef>>> intersectAll() throws IOException {
-      return intersect == null ?  intersect = FSTUtil.intersectPrefixPaths(automaton, fst) : intersect;
-    }
-  }
 }

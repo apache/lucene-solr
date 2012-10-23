@@ -26,7 +26,6 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute; // javadocs
-import org.apache.lucene.search.suggest.analyzing.FSTUtil.Path;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.automaton.Automaton;
@@ -146,9 +145,24 @@ public final class FuzzySuggester extends AnalyzingSuggester {
   }
   
   @Override
-  protected PathIntersector getPathIntersector(Automaton automaton,
-      FST<Pair<Long,BytesRef>> fst) {
-    return new FuzzyPathIntersector(automaton, fst);
+  protected List<FSTUtil.Path<Pair<Long,BytesRef>>> getFullPrefixPaths(List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths,
+                                                                       Automaton lookupAutomaton,
+                                                                       FST<Pair<Long,BytesRef>> fst)
+    throws IOException {
+    // nocommit we don't "penalize" for edits
+    // ... shouldn't we?  ie, ed=0 completions should have
+    // higher rank than ed=1, at the same "weight"?  maybe
+    // we can punt on this for starters ... or maybe we
+    // can re-run each prefix path through lev0, lev1,
+    // lev2 to figure out the number of edits?
+    Automaton levA = toLevenshteinAutomata(lookupAutomaton);
+    /*
+      Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+      w.write(levA.toDot());
+      w.close();
+      System.out.println("Wrote LevA to out.dot");
+    */
+    return FSTUtil.intersectPrefixPaths(levA, fst);
   }
 
   Automaton toLevenshteinAutomata(Automaton automaton) {
@@ -193,32 +207,6 @@ public final class FuzzySuggester extends AnalyzingSuggester {
       // this only happens if you have multiple paths anyway (e.g. synonyms)
       BasicOperations.determinize(a);
       return a;
-    }
-  }
-  
-  private final class FuzzyPathIntersector extends PathIntersector {
-
-    public FuzzyPathIntersector(Automaton automaton,
-        FST<Pair<Long,BytesRef>> fst) {
-      super(automaton, fst);
-    }
-
-    @Override
-    public List<Path<Pair<Long,BytesRef>>> intersectAll() throws IOException {
-      // nocommit we don't "penalize" for edits
-      // ... shouldn't we?  ie, ed=0 completions should have
-      // higher rank than ed=1, at the same "weight"?  maybe
-      // we can punt on this for starters ... or maybe we
-      // can re-run each prefix path through lev0, lev1,
-      // lev2 to figure out the number of edits?
-      Automaton levA = toLevenshteinAutomata(automaton);
-      /*
-      Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
-      w.write(levA.toDot());
-      w.close();
-      System.out.println("Wrote LevA to out.dot");
-      */
-      return FSTUtil.intersectPrefixPaths(levA, fst);
     }
   }
 }
