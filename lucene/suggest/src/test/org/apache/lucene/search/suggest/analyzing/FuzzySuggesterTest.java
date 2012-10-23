@@ -700,6 +700,9 @@ public class FuzzySuggesterTest extends LuceneTestCase {
         System.out.println("  analyzed: " + analyzedKey);
       }
       TokenStreamToAutomaton tokenStreamToAutomaton = suggester.getTokenStreamToAutomaton();
+
+      // nocommit this is putting fox in charge of hen
+      // house!  ie maybe we have a bug in suggester.toLevA ...
       Automaton automaton = suggester.toLevenshteinAutomata(suggester.toLookupAutomaton(analyzedKey));
       assertTrue(automaton.isDeterministic());
       // TODO: could be faster... but its slowCompletor for a reason
@@ -833,5 +836,262 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     }
 
     return builder.toString();
+  }
+
+  private String randomSimpleString(int maxLen) {
+    final int len = _TestUtil.nextInt(random(), 1, maxLen);
+    final char[] chars = new char[len];
+    for(int j=0;j<len;j++) {
+      chars[j] = (char) ('a' + random().nextInt(4));
+    }
+    return new String(chars);
+  }
+
+  public void testRandom2() throws Throwable {
+    final int NUM = atLeast(200);
+    final List<TermFreq> answers = new ArrayList<TermFreq>();
+    final Set<String> seen = new HashSet<String>();
+    for(int i=0;i<NUM;i++) {
+      // nocommit mixin some unicode here?
+      final String s = randomSimpleString(8);
+      if (!seen.contains(s)) {
+        answers.add(new TermFreq(s, random().nextInt(1000)));
+        seen.add(s);
+      }
+    }
+
+    Collections.sort(answers, new Comparator<TermFreq>() {
+        @Override
+        public int compare(TermFreq a, TermFreq b) {
+          return a.term.compareTo(b.term);
+        }
+      });
+    if (VERBOSE) {
+      System.out.println("\nTEST: targets");
+      for(TermFreq tf : answers) {
+        System.out.println("  " + tf.term.utf8ToString() + " freq=" + tf.v);
+      }
+    }
+
+    Analyzer a = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
+    int maxEdits = random().nextBoolean() ? 1 : 2;
+    int prefixLen = random().nextInt(4);
+    boolean transpositions = random().nextBoolean();
+    // TODO: test graph analyzers
+    // TODO: test exactFirst / preserveSep permutations
+    FuzzySuggester suggest = new FuzzySuggester(a, a, 0, 256, -1, maxEdits, transpositions, prefixLen);
+
+    if (VERBOSE) {
+      System.out.println("TEST: maxEdits=" + maxEdits + " prefixLen=" + prefixLen + " transpositions=" + transpositions + " num=" + NUM);
+    }
+
+    Collections.shuffle(answers, random());
+    suggest.build(new TermFreqArrayIterator(answers.toArray(new TermFreq[answers.size()])));
+
+    final int ITERS = atLeast(100);
+    for(int iter=0;iter<ITERS;iter++) {
+      final String frag = randomSimpleString(6);
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter frag=" + frag);
+      }
+      final List<LookupResult> expected = slowFuzzyMatch(prefixLen, maxEdits, transpositions, answers, frag);
+      if (VERBOSE) {
+        System.out.println("  expected: " + expected.size());
+        for(LookupResult c : expected) {
+          System.out.println("    " + c);
+        }
+      }
+      final List<LookupResult> actual = suggest.lookup(frag, false, NUM);
+      if (VERBOSE) {
+        System.out.println("  actual: " + actual.size());
+        for(LookupResult c : actual) {
+          System.out.println("    " + c);
+        }
+      }
+
+      // nocommit must fix lookup to tie break properly!!:
+      Collections.sort(actual, new CompareByCostThenAlpha());
+
+      final int limit = Math.min(expected.size(), actual.size());
+      for(int ans=0;ans<limit;ans++) {
+        final LookupResult c0 = expected.get(ans);
+        final LookupResult c1 = actual.get(ans);
+        assertEquals("expected " + c0.key +
+                     " but got " + c1.key,
+                     0,
+                     CHARSEQUENCE_COMPARATOR.compare(c0.key, c1.key));
+        assertEquals(c0.value, c1.value);
+      }
+      assertEquals(expected.size(), actual.size());
+    }
+  }
+
+  private List<LookupResult> slowFuzzyMatch(int prefixLen, int maxEdits, boolean allowTransposition, List<TermFreq> answers, String frag) {
+    final List<LookupResult> results = new ArrayList<LookupResult>();
+    final int fragLen = frag.length();
+    for(TermFreq tf : answers) {
+      //System.out.println("  check s=" + tf.term.utf8ToString());
+      boolean prefixMatches = true;
+      for(int i=0;i<prefixLen;i++) {
+        if (i == fragLen) {
+          // Prefix still matches:
+          break;
+        }
+        if (i == tf.term.length || tf.term.bytes[i] != (byte) frag.charAt(i)) {
+          prefixMatches = false;
+          break;
+        }
+      }
+      //System.out.println("    prefixMatches=" + prefixMatches);
+
+      if (prefixMatches) {
+        final int len = tf.term.length;
+        if (len >= fragLen-maxEdits) {
+          // OK it's possible:
+          //System.out.println("    possible");
+          int d;
+          final String s = tf.term.utf8ToString();
+          if (fragLen == prefixLen) {
+            d = 0;
+          } else if (false && len < fragLen) {
+            d = getDistance(frag, s, allowTransposition);
+          } else {
+            //System.out.println("    try loop");
+            d = maxEdits + 1;
+            for(int ed=-maxEdits;ed<=maxEdits;ed++) {
+              if (s.length() < fragLen - ed) {
+                continue;
+              }
+              String check = s.substring(0, fragLen-ed);
+              d = getDistance(frag, check, allowTransposition);
+              //System.out.println("    sub check s=" + check + " d=" + d);
+              if (d <= maxEdits) {
+                break;
+              }
+            }
+          }
+          if (d <= maxEdits) {
+            results.add(new LookupResult(tf.term.utf8ToString(), tf.v));
+          }
+        }
+      }
+
+      Collections.sort(results, new CompareByCostThenAlpha());
+    }
+
+    return results;
+  }
+
+  private static class CharSequenceComparator implements Comparator<CharSequence> {
+
+    @Override
+    public int compare(CharSequence o1, CharSequence o2) {
+      final int l1 = o1.length();
+      final int l2 = o2.length();
+      
+      final int aStop = Math.min(l1, l2);
+      for (int i = 0; i < aStop; i++) {
+        int diff = o1.charAt(i) - o2.charAt(i);
+        if (diff != 0) {
+          return diff;
+        }
+      }
+      // One is a prefix of the other, or, they are equal:
+      return l1 - l2;
+    }
+  }
+
+  private static final Comparator<CharSequence> CHARSEQUENCE_COMPARATOR = new CharSequenceComparator();
+
+  public class CompareByCostThenAlpha implements Comparator<LookupResult> {
+    @Override
+    public int compare(LookupResult a, LookupResult b) {
+      if (a.value > b.value) {
+        return -1;
+      } else if (a.value < b.value) {
+        return 1;
+      } else {
+        final int c = CHARSEQUENCE_COMPARATOR.compare(a.key, b.key);
+        assert c != 0: "term=" + a.key;
+        return c;
+      }
+    }
+  }
+
+  // NOTE: copied from
+  // modules/suggest/src/java/org/apache/lucene/search/spell/LuceneLevenshteinDistance.java
+  // and tweaked to return the edit distance not the float
+  // lucene measure
+
+  /* Finds unicode (code point) Levenstein (edit) distance
+   * between two strings, including transpositions. */
+  public int getDistance(String target, String other, boolean allowTransposition) {
+    IntsRef targetPoints;
+    IntsRef otherPoints;
+    int n;
+    int d[][]; // cost array
+    
+    // NOTE: if we cared, we could 3*m space instead of m*n space, similar to 
+    // what LevenshteinDistance does, except cycling thru a ring of three 
+    // horizontal cost arrays... but this comparator is never actually used by 
+    // DirectSpellChecker, its only used for merging results from multiple shards 
+    // in "distributed spellcheck", and its inefficient in other ways too...
+
+    // cheaper to do this up front once
+    targetPoints = toIntsRef(target);
+    otherPoints = toIntsRef(other);
+    n = targetPoints.length;
+    final int m = otherPoints.length;
+    d = new int[n+1][m+1];
+    
+    if (n == 0 || m == 0) {
+      if (n == m) {
+        return 0;
+      }
+      else {
+        return Math.max(n, m);
+      }
+    } 
+
+    // indexes into strings s and t
+    int i; // iterates through s
+    int j; // iterates through t
+
+    int t_j; // jth character of t
+
+    int cost; // cost
+
+    for (i = 0; i<=n; i++) {
+      d[i][0] = i;
+    }
+    
+    for (j = 0; j<=m; j++) {
+      d[0][j] = j;
+    }
+
+    for (j = 1; j<=m; j++) {
+      t_j = otherPoints.ints[j-1];
+
+      for (i=1; i<=n; i++) {
+        cost = targetPoints.ints[i-1]==t_j ? 0 : 1;
+        // minimum of cell to the left+1, to the top+1, diagonally left and up +cost
+        d[i][j] = Math.min(Math.min(d[i-1][j]+1, d[i][j-1]+1), d[i-1][j-1]+cost);
+        // transposition
+        if (allowTransposition && i > 1 && j > 1 && targetPoints.ints[i-1] == otherPoints.ints[j-2] && targetPoints.ints[i-2] == otherPoints.ints[j-1]) {
+          d[i][j] = Math.min(d[i][j], d[i-2][j-2] + cost);
+        }
+      }
+    }
+    
+    return d[n][m];
+  }
+  
+  private static IntsRef toIntsRef(String s) {
+    IntsRef ref = new IntsRef(s.length()); // worst case
+    int utf16Len = s.length();
+    for (int i = 0, cp = 0; i < utf16Len; i += Character.charCount(cp)) {
+      cp = ref.ints[ref.length++] = Character.codePointAt(s, i);
+    }
+    return ref;
   }
 }

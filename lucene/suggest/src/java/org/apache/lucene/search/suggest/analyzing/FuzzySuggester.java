@@ -15,7 +15,10 @@ package org.apache.lucene.search.suggest.analyzing;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -60,10 +63,14 @@ public final class FuzzySuggester extends AnalyzingSuggester {
   private final int maxEdits;
   private final boolean transpositions;
   private final int minPrefix;
+
+  // nocommit separate param for "min length before we
+  // enable fuzzy"?  eg type "nusglasses" into google...
   
   /**
    * The default minimum shared (non-fuzzy) prefix. Set to <tt>2</tt>
    */
+  // nocommit should we do 1...?
   public static final int DEFAULT_MIN_PREFIX = 2;
   
   /**
@@ -156,7 +163,14 @@ public final class FuzzySuggester extends AnalyzingSuggester {
         Automaton prefix = BasicAutomata.makeString(path.ints, path.offset, minPrefix);
         int ints[] = new int[path.length-minPrefix];
         System.arraycopy(path.ints, path.offset+minPrefix, ints, 0, ints.length);
-        LevenshteinAutomata lev = new LevenshteinAutomata(ints, 256, transpositions);
+        // nocommit i think we should pass 254 max?  ie
+        // exclude 0xff ... this way we can't 'edit away'
+        // the sep?  or ... maybe we want to allow that to
+        // be edited away?
+        // nocommit also the 0 byte ... we use that as
+        // trailer ... we probably shouldn't allow that byte
+        // to be edited (we could add alphaMin?)
+        LevenshteinAutomata lev = new LevenshteinAutomata(ints, 255, transpositions);
         Automaton levAutomaton = lev.toAutomaton(maxEdits);
         Automaton combined = BasicOperations.concatenate(Arrays.asList(prefix, levAutomaton));
         combined.setDeterministic(true); // its like the special case in concatenate itself, except we cloneExpanded already
@@ -164,6 +178,11 @@ public final class FuzzySuggester extends AnalyzingSuggester {
         upto++;
       }
     }
+
+    // nocommit maybe we should reduce the LevN?  the added
+    // arcs add cost during intersect (extra FST arc
+    // lookups...).  could be net win...
+
     if (subs.length == 0) {
       return BasicAutomata.makeEmpty(); // matches nothing
     } else if (subs.length == 1) {
@@ -186,8 +205,20 @@ public final class FuzzySuggester extends AnalyzingSuggester {
 
     @Override
     public List<Path<Pair<Long,BytesRef>>> intersectAll() throws IOException {
-      return  FSTUtil.intersectPrefixPaths(toLevenshteinAutomata(automaton),fst);
+      // nocommit we don't "penalize" for edits
+      // ... shouldn't we?  ie, ed=0 completions should have
+      // higher rank than ed=1, at the same "weight"?  maybe
+      // we can punt on this for starters ... or maybe we
+      // can re-run each prefix path through lev0, lev1,
+      // lev2 to figure out the number of edits?
+      Automaton levA = toLevenshteinAutomata(automaton);
+      /*
+      Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+      w.write(levA.toDot());
+      w.close();
+      System.out.println("Wrote LevA to out.dot");
+      */
+      return FSTUtil.intersectPrefixPaths(levA, fst);
     }
-    
   }
 }
