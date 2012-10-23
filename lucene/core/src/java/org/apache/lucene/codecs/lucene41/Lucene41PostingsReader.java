@@ -275,10 +275,10 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     } else {
       docsEnum = new BlockDocsEnum(fieldInfo);
     }
-    return docsEnum.reset(liveDocs, (IntBlockTermState) termState);
+    return docsEnum.reset(liveDocs, (IntBlockTermState) termState, flags);
   }
 
-  // TODO: specialize to liveDocs vs not, and freqs vs not
+  // TODO: specialize to liveDocs vs not
   
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState termState, Bits liveDocs,
@@ -310,7 +310,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       } else {
         everythingEnum = new EverythingEnum(fieldInfo);
       }
-      return everythingEnum.reset(liveDocs, (IntBlockTermState) termState);
+      return everythingEnum.reset(liveDocs, (IntBlockTermState) termState, flags);
     }
   }
 
@@ -352,6 +352,8 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
     private int nextSkipDoc;
 
     private Bits liveDocs;
+    
+    private boolean needsFreq; // true if the caller actually needs frequencies
 
     public BlockDocsEnum(FieldInfo fieldInfo) throws IOException {
       this.startDocIn = Lucene41PostingsReader.this.docIn;
@@ -370,7 +372,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         indexHasPayloads == fieldInfo.hasPayloads();
     }
     
-    public DocsEnum reset(Bits liveDocs, IntBlockTermState termState) throws IOException {
+    public DocsEnum reset(Bits liveDocs, IntBlockTermState termState, int flags) throws IOException {
       this.liveDocs = liveDocs;
       // if (DEBUG) {
       //   System.out.println("  FPR.reset: termState=" + termState);
@@ -381,6 +383,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       skipOffset = termState.skipOffset;
 
       doc = -1;
+      this.needsFreq = (flags & DocsEnum.FLAG_FREQS) != 0;
       if (!indexHasFreq) {
         Arrays.fill(freqBuffer, 1);
       }
@@ -416,7 +419,11 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
           // if (DEBUG) {
           //   System.out.println("    fill freq block from fp=" + docIn.getFilePointer());
           // }
-          forUtil.readBlock(docIn, encoded, freqBuffer);
+          if (needsFreq) {
+            forUtil.readBlock(docIn, encoded, freqBuffer);
+          } else {
+            forUtil.skipBlock(docIn); // skip over freqs
+          }
         }
       } else {
         // Read vInts:
@@ -1044,6 +1051,9 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
 
     private Bits liveDocs;
     
+    private boolean needsOffsets; // true if we actually need offsets
+    private boolean needsPayloads; // true if we actually need payloads
+    
     public EverythingEnum(FieldInfo fieldInfo) throws IOException {
       this.startDocIn = Lucene41PostingsReader.this.docIn;
       this.docIn = startDocIn.clone();
@@ -1079,7 +1089,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
         indexHasPayloads == fieldInfo.hasPayloads();
     }
     
-    public EverythingEnum reset(Bits liveDocs, IntBlockTermState termState) throws IOException {
+    public EverythingEnum reset(Bits liveDocs, IntBlockTermState termState, int flags) throws IOException {
       this.liveDocs = liveDocs;
       // if (DEBUG) {
       //   System.out.println("  FPR.reset: termState=" + termState);
@@ -1100,6 +1110,9 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
       } else {
         lastPosBlockFP = posTermStartFP + termState.lastPosBlockOffset;
       }
+
+      this.needsOffsets = (flags & DocsAndPositionsEnum.FLAG_OFFSETS) != 0;
+      this.needsPayloads = (flags & DocsAndPositionsEnum.FLAG_PAYLOADS) != 0;
 
       doc = -1;
       accum = 0;
@@ -1203,15 +1216,22 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
           // if (DEBUG) {
           //   System.out.println("        bulk payload block @ pay.fp=" + payIn.getFilePointer());
           // }
-          forUtil.readBlock(payIn, encoded, payloadLengthBuffer);
-          int numBytes = payIn.readVInt();
-          // if (DEBUG) {
-          //   System.out.println("        " + numBytes + " payload bytes @ pay.fp=" + payIn.getFilePointer());
-          // }
-          if (numBytes > payloadBytes.length) {
-            payloadBytes = ArrayUtil.grow(payloadBytes, numBytes);
+          if (needsPayloads) {
+            forUtil.readBlock(payIn, encoded, payloadLengthBuffer);
+            int numBytes = payIn.readVInt();
+            // if (DEBUG) {
+            //   System.out.println("        " + numBytes + " payload bytes @ pay.fp=" + payIn.getFilePointer());
+            // }
+            if (numBytes > payloadBytes.length) {
+              payloadBytes = ArrayUtil.grow(payloadBytes, numBytes);
+            }
+            payIn.readBytes(payloadBytes, 0, numBytes);
+          } else {
+            // this works, because when writing a vint block we always force the first length to be written
+            forUtil.skipBlock(payIn); // skip over lengths
+            int numBytes = payIn.readVInt(); // read length of payloadBytes
+            payIn.seek(payIn.getFilePointer() + numBytes); // skip over payloadBytes
           }
-          payIn.readBytes(payloadBytes, 0, numBytes);
           payloadByteUpto = 0;
         }
 
@@ -1219,8 +1239,14 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
           // if (DEBUG) {
           //   System.out.println("        bulk offset block @ pay.fp=" + payIn.getFilePointer());
           // }
-          forUtil.readBlock(payIn, encoded, offsetStartDeltaBuffer);
-          forUtil.readBlock(payIn, encoded, offsetLengthBuffer);
+          if (needsOffsets) {
+            forUtil.readBlock(payIn, encoded, offsetStartDeltaBuffer);
+            forUtil.readBlock(payIn, encoded, offsetLengthBuffer);
+          } else {
+            // this works, because when writing a vint block we always force the first length to be written
+            forUtil.skipBlock(payIn); // skip over starts
+            forUtil.skipBlock(payIn); // skip over lengths
+          }
         }
       }
     }

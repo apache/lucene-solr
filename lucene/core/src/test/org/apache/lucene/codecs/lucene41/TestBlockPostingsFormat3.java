@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.MockVariableLengthPayloadFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -61,12 +60,12 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
 /** 
- * Tests partial enumeration (only pulling a subset of the prox data) 
+ * Tests partial enumeration (only pulling a subset of the indexed data) 
  */
 public class TestBlockPostingsFormat3 extends LuceneTestCase {
   static final int MAXDOC = Lucene41PostingsFormat.BLOCK_SIZE * 20;
   
-  // creates 6 fields with different options and does "duels" of fields against each other
+  // creates 8 fields with different options and does "duels" of fields against each other
   public void test() throws Exception {
     Directory dir = newDirectory();
     Analyzer analyzer = new Analyzer(new Analyzer.PerFieldReuseStrategy()) {
@@ -85,35 +84,45 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       }
     };
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setCodec(new Lucene41Codec() {
-      @Override
-      public PostingsFormat getPostingsFormatForField(String field) {
-        return PostingsFormat.forName("Lucene41");
-        // TODO: we could actually add more fields implemented with different PFs
-      }
-    });
+    iwc.setCodec(new Lucene41Codec()); 
+    // TODO we could actually add more fields implemented with different PFs
+    // or, just put this test into the usual rotation?
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     Document doc = new Document();
-    FieldType bareType = new FieldType(TextField.TYPE_NOT_STORED);
+    FieldType docsOnlyType = new FieldType(TextField.TYPE_NOT_STORED);
+    // turn this on for a cross-check
+    docsOnlyType.setStoreTermVectors(true);
+    docsOnlyType.setIndexOptions(IndexOptions.DOCS_ONLY);
+    
+    FieldType docsAndFreqsType = new FieldType(TextField.TYPE_NOT_STORED);
+    // turn this on for a cross-check
+    docsAndFreqsType.setStoreTermVectors(true);
+    docsAndFreqsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS);
+    
+    FieldType positionsType = new FieldType(TextField.TYPE_NOT_STORED);
     // turn these on for a cross-check
-    bareType.setStoreTermVectors(true);
-    bareType.setStoreTermVectorPositions(true);
-    bareType.setStoreTermVectorOffsets(true);
-    bareType.setStoreTermVectorPayloads(true);
-    FieldType offsetsType = new FieldType(bareType);
+    positionsType.setStoreTermVectors(true);
+    positionsType.setStoreTermVectorPositions(true);
+    positionsType.setStoreTermVectorOffsets(true);
+    positionsType.setStoreTermVectorPayloads(true);
+    FieldType offsetsType = new FieldType(positionsType);
     offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    Field field1 = new Field("field1bare", "", bareType);
-    Field field2 = new Field("field2offsets", "", offsetsType);
-    Field field3 = new Field("field3payloadsFixed", "", bareType);
-    Field field4 = new Field("field4payloadsVariable", "", bareType);
-    Field field5 = new Field("field5payloadsFixedOffsets", "", offsetsType);
-    Field field6 = new Field("field6payloadsVariableOffsets", "", offsetsType);
+    Field field1 = new Field("field1docs", "", docsOnlyType);
+    Field field2 = new Field("field2freqs", "", docsAndFreqsType);
+    Field field3 = new Field("field3positions", "", positionsType);
+    Field field4 = new Field("field4offsets", "", offsetsType);
+    Field field5 = new Field("field5payloadsFixed", "", positionsType);
+    Field field6 = new Field("field6payloadsVariable", "", positionsType);
+    Field field7 = new Field("field7payloadsFixedOffsets", "", offsetsType);
+    Field field8 = new Field("field8payloadsVariableOffsets", "", offsetsType);
     doc.add(field1);
     doc.add(field2);
     doc.add(field3);
     doc.add(field4);
     doc.add(field5);
     doc.add(field6);
+    doc.add(field7);
+    doc.add(field8);
     for (int i = 0; i < MAXDOC; i++) {
       String stringValue = Integer.toString(i) + " verycommon " + English.intToEnglish(i).replace('-', ' ') + " " + _TestUtil.randomSimpleString(random());
       field1.setStringValue(stringValue);
@@ -122,6 +131,8 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       field4.setStringValue(stringValue);
       field5.setStringValue(stringValue);
       field6.setStringValue(stringValue);
+      field7.setStringValue(stringValue);
+      field8.setStringValue(stringValue);
       iw.addDocument(doc);
     }
     iw.close();
@@ -139,11 +150,12 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     DirectoryReader ir = DirectoryReader.open(dir);
     for (AtomicReaderContext leaf : ir.leaves()) {
       AtomicReader leafReader = leaf.reader();
-      assertTerms(leafReader.terms("field1bare"), leafReader.terms("field2offsets"), true);
-      assertTerms(leafReader.terms("field2offsets"), leafReader.terms("field3payloadsFixed"), true);
-      assertTerms(leafReader.terms("field3payloadsFixed"), leafReader.terms("field4payloadsVariable"), true);
-      assertTerms(leafReader.terms("field4payloadsVariable"), leafReader.terms("field5payloadsFixedOffsets"), true);
-      assertTerms(leafReader.terms("field5payloadsFixedOffsets"), leafReader.terms("field6payloadsVariableOffsets"), true);
+      assertTerms(leafReader.terms("field1docs"), leafReader.terms("field2freqs"), true);
+      assertTerms(leafReader.terms("field3positions"), leafReader.terms("field4offsets"), true);
+      assertTerms(leafReader.terms("field4offsets"), leafReader.terms("field5payloadsFixed"), true);
+      assertTerms(leafReader.terms("field5payloadsFixed"), leafReader.terms("field6payloadsVariable"), true);
+      assertTerms(leafReader.terms("field6payloadsVariable"), leafReader.terms("field7payloadsFixedOffsets"), true);
+      assertTerms(leafReader.terms("field7payloadsFixedOffsets"), leafReader.terms("field8payloadsVariableOffsets"), true);
     }
     ir.close();
   }
@@ -334,39 +346,31 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
         
         // with freqs:
         assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs),
-            rightDocs = rightTermsEnum.docs(null, rightDocs),
-            true);
+            rightDocs = rightTermsEnum.docs(null, rightDocs));
         assertDocsEnum(leftDocs = leftTermsEnum.docs(randomBits, leftDocs),
-            rightDocs = rightTermsEnum.docs(randomBits, rightDocs),
-            true);
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs));
 
         // w/o freqs:
         assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(null, rightDocs, 0),
-            false);
+            rightDocs = rightTermsEnum.docs(null, rightDocs, 0));
         assertDocsEnum(leftDocs = leftTermsEnum.docs(randomBits, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, 0),
-            false);
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, 0));
         
         // with freqs:
         assertDocsSkipping(leftTermsEnum.docFreq(), 
             leftDocs = leftTermsEnum.docs(null, leftDocs),
-            rightDocs = rightTermsEnum.docs(null, rightDocs),
-            true);
+            rightDocs = rightTermsEnum.docs(null, rightDocs));
         assertDocsSkipping(leftTermsEnum.docFreq(), 
             leftDocs = leftTermsEnum.docs(randomBits, leftDocs),
-            rightDocs = rightTermsEnum.docs(randomBits, rightDocs),
-            true);
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs));
 
         // w/o freqs:
         assertDocsSkipping(leftTermsEnum.docFreq(), 
             leftDocs = leftTermsEnum.docs(null, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(null, rightDocs, 0),
-            false);
+            rightDocs = rightTermsEnum.docs(null, rightDocs, 0));
         assertDocsSkipping(leftTermsEnum.docFreq(), 
             leftDocs = leftTermsEnum.docs(randomBits, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, 0),
-            false);
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, 0));
       }
     }
     assertNull(rightTermsEnum.next());
@@ -409,7 +413,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
   /**
    * checks docs + freqs, sequentially
    */
-  public void assertDocsEnum(DocsEnum leftDocs, DocsEnum rightDocs, boolean hasFreqs) throws Exception {
+  public void assertDocsEnum(DocsEnum leftDocs, DocsEnum rightDocs) throws Exception {
     if (leftDocs == null) {
       assertNull(rightDocs);
       return;
@@ -419,9 +423,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     int docid;
     while ((docid = leftDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       assertEquals(docid, rightDocs.nextDoc());
-      if (hasFreqs) {
-        assertEquals(leftDocs.freq(), rightDocs.freq());
-      }
+      // we don't assert freqs, they are allowed to be different
     }
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, rightDocs.nextDoc());
   }
@@ -429,7 +431,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
   /**
    * checks advancing docs
    */
-  public void assertDocsSkipping(int docFreq, DocsEnum leftDocs, DocsEnum rightDocs, boolean hasFreqs) throws Exception {
+  public void assertDocsSkipping(int docFreq, DocsEnum leftDocs, DocsEnum rightDocs) throws Exception {
     if (leftDocs == null) {
       assertNull(rightDocs);
       return;
@@ -453,9 +455,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       if (docid == DocIdSetIterator.NO_MORE_DOCS) {
         return;
       }
-      if (hasFreqs) {
-        assertEquals(leftDocs.freq(), rightDocs.freq());
-      }
+      // we don't assert freqs, they are allowed to be different
     }
   }
   
