@@ -106,7 +106,7 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
    */
   public UAX29URLEmailTokenizer(Version matchVersion, Reader input) {
     super(input);
-    this.scanner = getScannerFor(matchVersion, input);
+    this.scanner = getScannerFor(matchVersion);
   }
 
   /**
@@ -114,7 +114,7 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
    */
   public UAX29URLEmailTokenizer(Version matchVersion, AttributeSource source, Reader input) {
     super(source, input);
-    this.scanner = getScannerFor(matchVersion, input);
+    this.scanner = getScannerFor(matchVersion);
   }
 
   /**
@@ -122,18 +122,19 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
    */
   public UAX29URLEmailTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
     super(factory, input);
-    this.scanner = getScannerFor(matchVersion, input);
+    this.scanner = getScannerFor(matchVersion);
   }
 
-  private static StandardTokenizerInterface getScannerFor(Version matchVersion, Reader input) {
+  private static StandardTokenizerInterface getScannerFor(Version matchVersion) {
+    // best effort NPE if you dont call reset
     if (matchVersion.onOrAfter(Version.LUCENE_40)) {
-      return new UAX29URLEmailTokenizerImpl(input);
+      return new UAX29URLEmailTokenizerImpl(null);
     } else if (matchVersion.onOrAfter(Version.LUCENE_36)) {
-      return new UAX29URLEmailTokenizerImpl36(input);
+      return new UAX29URLEmailTokenizerImpl36(null);
     } else if (matchVersion.onOrAfter(Version.LUCENE_34)) {
-      return new UAX29URLEmailTokenizerImpl34(input);
+      return new UAX29URLEmailTokenizerImpl34(null);
     } else {
-      return new UAX29URLEmailTokenizerImpl31(input);
+      return new UAX29URLEmailTokenizerImpl31(null);
     }
   }
 

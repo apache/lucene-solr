@@ -52,9 +52,12 @@ public class TestElision extends BaseTokenStreamTestCase {
   private List<String> filter(TokenFilter filter) throws IOException {
     List<String> tas = new ArrayList<String>();
     CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
+    filter.reset();
     while (filter.incrementToken()) {
       tas.add(termAtt.toString());
     }
+    filter.end();
+    filter.close();
     return tas;
   }
   

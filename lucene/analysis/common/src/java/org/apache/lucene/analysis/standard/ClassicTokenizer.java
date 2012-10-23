@@ -120,7 +120,7 @@ public final class ClassicTokenizer extends Tokenizer {
   }
 
   private void init(Version matchVersion) {
-    this.scanner = new ClassicTokenizerImpl(input);
+    this.scanner = new ClassicTokenizerImpl(null); // best effort NPE if you dont call reset
   }
 
   // this tokenizer generates three attributes:

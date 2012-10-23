@@ -147,14 +147,15 @@ public final class StandardTokenizer extends Tokenizer {
   }
 
   private final void init(Version matchVersion) {
+    // best effort NPE if you dont call reset
     if (matchVersion.onOrAfter(Version.LUCENE_40)) {
-      this.scanner = new StandardTokenizerImpl(input);
+      this.scanner = new StandardTokenizerImpl(null);
     } else if (matchVersion.onOrAfter(Version.LUCENE_34)) {
-      this.scanner = new StandardTokenizerImpl34(input);
+      this.scanner = new StandardTokenizerImpl34(null);
     } else if (matchVersion.onOrAfter(Version.LUCENE_31)) {
-      this.scanner = new StandardTokenizerImpl31(input);
+      this.scanner = new StandardTokenizerImpl31(null);
     } else {
-      this.scanner = new ClassicTokenizerImpl(input);
+      this.scanner = new ClassicTokenizerImpl(null);
     }
   }
 
