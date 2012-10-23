@@ -17,6 +17,11 @@ package org.apache.lucene.search.suggest.analyzing;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -802,5 +807,180 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         }));
 
     List<LookupResult> results = suggester.lookup("a", false, 4);
+  }
+
+  public void testExactFirstMissingResult() throws Exception {
+
+    Analyzer a = new MockAnalyzer(random());
+
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.EXACT_FIRST, 256, -1);
+
+    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
+          new TermFreq("a", 5),
+          new TermFreq("a b", 3),
+          new TermFreq("a c", 4),
+        }));
+
+    List<LookupResult> results = suggester.lookup("a", false, 3);
+    assertEquals(3, results.size());
+    assertEquals("a", results.get(0).key);
+    assertEquals(5, results.get(0).value);
+    assertEquals("a c", results.get(1).key);
+    assertEquals(4, results.get(1).value);
+    assertEquals("a b", results.get(2).key);
+    assertEquals(3, results.get(2).value);
+
+    // Try again after save/load:
+    File tmpDir = _TestUtil.getTempDir("AnalyzingSuggesterTest");
+    tmpDir.mkdir();
+
+    File path = new File(tmpDir, "suggester");
+
+    OutputStream os = new FileOutputStream(path);
+    suggester.store(os);
+    os.close();
+
+    InputStream is = new FileInputStream(path);
+    suggester.load(is);
+    is.close();
+
+    results = suggester.lookup("a", false, 3);
+    assertEquals(3, results.size());
+    assertEquals("a", results.get(0).key);
+    assertEquals(5, results.get(0).value);
+    assertEquals("a c", results.get(1).key);
+    assertEquals(4, results.get(1).value);
+    assertEquals("a b", results.get(2).key);
+    assertEquals(3, results.get(2).value);
+  }
+
+  public void testDupSurfaceFormsMissingResults() throws Exception {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        
+        return new TokenStreamComponents(tokenizer) {
+
+          @Override
+          public TokenStream getTokenStream() {
+            return new CannedTokenStream(new Token[] {
+                token("hairy", 1, 1),
+                token("smelly", 0, 1),
+                token("dog", 1, 1),
+              });
+          }
+         
+          @Override
+          protected void setReader(final Reader reader) throws IOException {
+          }
+        };
+      }
+    };
+
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, -1);
+
+    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
+          new TermFreq("hambone", 6),
+          new TermFreq("nellie", 5),
+        }));
+
+    List<LookupResult> results = suggester.lookup("nellie", false, 2);
+    assertEquals(2, results.size());
+    assertEquals("hambone", results.get(0).key);
+    assertEquals(6, results.get(0).value);
+    assertEquals("nellie", results.get(1).key);
+    assertEquals(5, results.get(1).value);
+
+    // Try again after save/load:
+    File tmpDir = _TestUtil.getTempDir("AnalyzingSuggesterTest");
+    tmpDir.mkdir();
+
+    File path = new File(tmpDir, "suggester");
+
+    OutputStream os = new FileOutputStream(path);
+    suggester.store(os);
+    os.close();
+
+    InputStream is = new FileInputStream(path);
+    suggester.load(is);
+    is.close();
+
+    results = suggester.lookup("nellie", false, 2);
+    assertEquals(2, results.size());
+    assertEquals("hambone", results.get(0).key);
+    assertEquals(6, results.get(0).value);
+    assertEquals("nellie", results.get(1).key);
+    assertEquals(5, results.get(1).value);
+  }
+
+  public void testDupSurfaceFormsMissingResults2() throws Exception {
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+        Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        
+        return new TokenStreamComponents(tokenizer) {
+
+          int count;
+
+          @Override
+          public TokenStream getTokenStream() {
+            if (count == 0) {
+              count++;
+              return new CannedTokenStream(new Token[] {
+                  token("p", 1, 1),
+                  token("q", 1, 1),
+                  token("r", 0, 1),
+                  token("s", 0, 1),
+                });
+            } else {
+              return new CannedTokenStream(new Token[] {
+                  token("p", 1, 1),
+                });
+            }
+          }
+         
+          @Override
+          protected void setReader(final Reader reader) throws IOException {
+          }
+        };
+      }
+    };
+
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, -1);
+
+    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
+          new TermFreq("a", 6),
+          new TermFreq("b", 5),
+        }));
+
+    List<LookupResult> results = suggester.lookup("a", false, 2);
+    assertEquals(2, results.size());
+    assertEquals("a", results.get(0).key);
+    assertEquals(6, results.get(0).value);
+    assertEquals("b", results.get(1).key);
+    assertEquals(5, results.get(1).value);
+
+    // Try again after save/load:
+    File tmpDir = _TestUtil.getTempDir("AnalyzingSuggesterTest");
+    tmpDir.mkdir();
+
+    File path = new File(tmpDir, "suggester");
+
+    OutputStream os = new FileOutputStream(path);
+    suggester.store(os);
+    os.close();
+
+    InputStream is = new FileInputStream(path);
+    suggester.load(is);
+    is.close();
+
+    results = suggester.lookup("a", false, 2);
+    assertEquals(2, results.size());
+    assertEquals("a", results.get(0).key);
+    assertEquals(6, results.get(0).value);
+    assertEquals("b", results.get(1).key);
+    assertEquals(5, results.get(1).value);
   }
 }

@@ -43,6 +43,27 @@
     <str name="queryAnalyzerFieldType">phrase_suggest</str>
   </searchComponent>
   
+  <!-- AnalyzingLookup suggest component -->
+  <searchComponent class="solr.SpellCheckComponent" name="suggest_analyzing">
+    <lst name="spellchecker">
+      <str name="name">suggest_analyzing</str>
+      <str name="classname">org.apache.solr.spelling.suggest.Suggester</str>
+      <str name="lookupImpl">org.apache.solr.spelling.suggest.fst.AnalyzingLookupFactory</str>
+      <str name="storeDir">suggest_analyzing</str>
+      <str name="buildOnCommit">false</str>
+
+      <!-- Suggester properties -->
+      <bool name="exactMatchFirst">true</bool>
+      <str name="suggestAnalyzerFieldType">ja_suggest</str>
+      <bool name="preserveSep">false</bool>
+      
+      <str name="sourceLocation">jasuggest.txt</str>
+    </lst>
+    
+    <!-- specify a fieldtype using keywordtokenizer + lowercase + cleanup -->
+    <str name="queryAnalyzerFieldType">phrase_suggest</str>
+  </searchComponent>
+  
   <!-- is this thing just configured globally or wtf is going on here?! -->
   <queryConverter name="queryConverter" class="org.apache.solr.spelling.SuggestQueryConverter"/>
   
@@ -57,6 +78,20 @@
     </lst>
     <arr name="components">
       <str>suggest_wfst</str>
+    </arr>
+  </requestHandler>
+  
+  <!--  analyzing (finite state automaton based) -->
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/suggest_analyzing">
+    <lst name="defaults">
+      <str name="spellcheck">true</str>
+      <str name="spellcheck.dictionary">suggest_analyzing</str>
+      <str name="spellcheck.collate">false</str>
+      <!-- NOTE: if this is false, results are alpha-ordered, not by weight! -->
+      <str name="spellcheck.onlyMorePopular">true</str>
+    </lst>
+    <arr name="components">
+      <str>suggest_analyzing</str>
     </arr>
   </requestHandler>
   

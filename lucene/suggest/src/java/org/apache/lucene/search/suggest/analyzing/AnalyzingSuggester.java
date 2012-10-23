@@ -37,6 +37,8 @@ import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.fst.Sort;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.ArrayUtil;
@@ -128,7 +130,7 @@ public class AnalyzingSuggester extends Lookup {
   private final boolean exactFirst;
   
   /** 
-   * True if separator between tokens should be preservered.
+   * True if separator between tokens should be preserved.
    */
   private final boolean preserveSep;
 
@@ -161,6 +163,11 @@ public class AnalyzingSuggester extends Lookup {
    *  makes lots of alternate paths (e.g. contains
    *  SynonymFilter). */
   private final int maxGraphExpansions;
+
+  /** Highest number of analyzed paths we saw for any single
+   *  input surface form.  For analyzers that never create
+   *  graphs this will always be 1. */
+  private int maxAnalyzedPathsForOneInput;
 
   /**
    * Calls {@link #AnalyzingSuggester(Analyzer,Analyzer,int,int,int)
@@ -335,6 +342,8 @@ public class AnalyzingSuggester extends Lookup {
       while ((surfaceForm = iterator.next()) != null) {
         Set<IntsRef> paths = toFiniteStrings(surfaceForm, ts2a);
         
+        maxAnalyzedPathsForOneInput = Math.max(maxAnalyzedPathsForOneInput, paths.size());
+
         for (IntsRef path : paths) {
 
           Util.toBytesRef(path, scratch);
@@ -450,8 +459,10 @@ public class AnalyzingSuggester extends Lookup {
 
   @Override
   public boolean store(OutputStream output) throws IOException {
+    DataOutput dataOut = new OutputStreamDataOutput(output);
     try {
-      fst.save(new OutputStreamDataOutput(output));
+      fst.save(dataOut);
+      dataOut.writeVInt(maxAnalyzedPathsForOneInput);
     } finally {
       IOUtils.close(output);
     }
@@ -460,8 +471,10 @@ public class AnalyzingSuggester extends Lookup {
 
   @Override
   public boolean load(InputStream input) throws IOException {
+    DataInput dataIn = new InputStreamDataInput(input);
     try {
-      this.fst = new FST<Pair<Long,BytesRef>>(new InputStreamDataInput(input), new PairOutputs<Long,BytesRef>(PositiveIntOutputs.getSingleton(true), ByteSequenceOutputs.getSingleton()));
+      this.fst = new FST<Pair<Long,BytesRef>>(dataIn, new PairOutputs<Long,BytesRef>(PositiveIntOutputs.getSingleton(true), ByteSequenceOutputs.getSingleton()));
+      maxAnalyzedPathsForOneInput = dataIn.readVInt();
     } finally {
       IOUtils.close(input);
     }
@@ -471,6 +484,10 @@ public class AnalyzingSuggester extends Lookup {
   @Override
   public List<LookupResult> lookup(final CharSequence key, boolean onlyMorePopular, int num) {
     assert num > 0;
+
+    if (onlyMorePopular) {
+      throw new IllegalArgumentException("this suggester only works with onlyMorePopular=false");
+    }
 
     //System.out.println("lookup key=" + key + " num=" + num);
     final BytesRef utf8Key = new BytesRef(key);
@@ -492,7 +509,7 @@ public class AnalyzingSuggester extends Lookup {
 
       FST.Arc<Pair<Long,BytesRef>> scratchArc = new FST.Arc<Pair<Long,BytesRef>>();
 
-      List<LookupResult> results = new ArrayList<LookupResult>();
+      final List<LookupResult> results = new ArrayList<LookupResult>();
 
       if (exactFirst) {
         final List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths = intersector.intersectExact();   
@@ -509,7 +526,7 @@ public class AnalyzingSuggester extends Lookup {
         // Searcher just to find the single exact only
         // match, if present:
         Util.TopNSearcher<Pair<Long,BytesRef>> searcher;
-        searcher = new Util.TopNSearcher<Pair<Long,BytesRef>>(fst, count * maxSurfaceFormsPerAnalyzedForm, weightComparator);
+        searcher = new Util.TopNSearcher<Pair<Long,BytesRef>>(fst, count * maxSurfaceFormsPerAnalyzedForm, count * maxSurfaceFormsPerAnalyzedForm, weightComparator);
 
         // NOTE: we could almost get away with only using
         // the first start node.  The only catch is if
@@ -556,12 +573,13 @@ public class AnalyzingSuggester extends Lookup {
       Util.TopNSearcher<Pair<Long,BytesRef>> searcher;
       searcher = new Util.TopNSearcher<Pair<Long,BytesRef>>(fst,
                                                             num - results.size(),
+                                                            num * maxAnalyzedPathsForOneInput,
                                                             weightComparator) {
         private final Set<BytesRef> seen = new HashSet<BytesRef>();
 
         @Override
         protected boolean acceptResult(IntsRef input, Pair<Long,BytesRef> output) {
-          
+
           // Dedup: when the input analyzes to a graph we
           // can get duplicate surface forms:
           if (seen.contains(output.output2)) {
@@ -575,7 +593,14 @@ public class AnalyzingSuggester extends Lookup {
             // In exactFirst mode, don't accept any paths
             // matching the surface form since that will
             // create duplicate results:
-            return !utf8Key.bytesEquals(output.output2);
+            if (utf8Key.bytesEquals(output.output2)) {
+              // We found exact match, which means we should
+              // have already found it in the first search:
+              assert results.size() == 1;
+              return false;
+            } else {
+              return true;
+            }
           }
         }
       };
@@ -592,6 +617,12 @@ public class AnalyzingSuggester extends Lookup {
         LookupResult result = new LookupResult(spare.toString(), decodeWeight(completion.output.output1));
         //System.out.println("    result=" + result);
         results.add(result);
+
+        if (results.size() == num) {
+          // In the exactFirst=true case the search may
+          // produce one extra path
+          break;
+        }
       }
 
       return results;

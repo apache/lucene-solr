@@ -38,6 +38,8 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.packed.PackedInts.Reader;
 
+import org.junit.Ignore;
+
 @Slow
 public class TestPackedInts extends LuceneTestCase {
   public void testBitsRequired() {
@@ -389,6 +391,7 @@ public class TestPackedInts extends LuceneTestCase {
     
     NOTE: this test allocates 256 MB
    */
+  @Ignore("See LUCENE-4488")
   public void testIntOverflow() {
     int INDEX = (int)Math.pow(2, 30)+1;
     int BITS = 2;

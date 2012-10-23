@@ -127,10 +127,10 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  * <ul>
  *   <li>Postings Metadata --&gt; Header, PackedBlockSize</li>
- *   <li>Term Metadata --&gt; DocFPDelta, PosFPDelta?, PosVIntBlockFPDelta?, PayFPDelta?, 
+ *   <li>Term Metadata --&gt; (DocFPDelta|SingletonDocID), PosFPDelta?, PosVIntBlockFPDelta?, PayFPDelta?, 
  *                            SkipFPDelta?</li>
  *   <li>Header, --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
- *   <li>PackedBlockSize --&gt; {@link DataOutput#writeVInt VInt}</li>
+ *   <li>PackedBlockSize, SingletonDocID --&gt; {@link DataOutput#writeVInt VInt}</li>
  *   <li>DocFPDelta, PosFPDelta, PayFPDelta, PosVIntBlockFPDelta, SkipFPDelta --&gt; {@link DataOutput#writeVLong VLong}</li>
  * </ul>
  * <p>Notes:</p>
@@ -162,6 +162,9 @@ import org.apache.lucene.util.packed.PackedInts;
  *        file. In particular, it is the length of the TermFreq data.
  *        SkipDelta is only stored if DocFreq is not smaller than SkipMinimum
  *        (i.e. 8 in Lucene41PostingsFormat).</li>
+ *    <li>SingletonDocID is an optimization when a term only appears in one document. In this case, instead
+ *        of writing a file pointer to the .doc file (DocFPDelta), and then a VIntBlock at that location, the 
+ *        single document ID is written to the term dictionary.</li>
  * </ul>
  * </dd>
  * </dl>
@@ -274,10 +277,10 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>TermPositions --&gt; &lt;PackedPosDeltaBlock&gt; <sup>PackedPosBlockNum</sup>,  
  *                            VIntBlock? </li>
- *   <li>VIntBlock --&gt; PosVIntCount, &lt;PositionDelta[, PayloadLength?], PayloadData?, 
+ *   <li>VIntBlock --&gt; &lt;PositionDelta[, PayloadLength?], PayloadData?, 
  *                        OffsetDelta?, OffsetLength?&gt;<sup>PosVIntCount</sup>
  *   <li>PackedPosDeltaBlock --&gt; {@link PackedInts PackedInts}</li>
- *   <li>PosVIntCount, PositionDelta, OffsetDelta, OffsetLength --&gt; 
+ *   <li>PositionDelta, OffsetDelta, OffsetLength --&gt; 
  *       {@link DataOutput#writeVInt VInt}</li>
  *   <li>PayloadData --&gt; {@link DataOutput#writeByte byte}<sup>PayLength</sup></li>
  * </ul>

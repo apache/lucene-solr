@@ -44,18 +44,31 @@ New Features
   the suggester to ignore such variations. (Robert Muir, Sudarshan
   Gaikaiwari, Mike McCandless)
 
+* LUCENE-4446: Lucene 4.1 has a new default index format (Lucene41Codec)
+  that incorporates the previously experimental "Block" postings format
+  for better search performance. 
+  (Han Jiang, Adrien Grand, Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-4399: Deprecated AppendingCodec. Lucene's term dictionaries
   no longer seek when writing.  (Adrien Grand, Robert Muir)
+
+* LUCENE-4479: Rename TokenStream.getTokenStream(IndexReader, int, String)
+  to TokenStream.getTokenStreamWithOffsets, and return null on failure
+  rather than throwing IllegalArgumentException.  (Alan Woodward)
+
+* LUCENE-4472: MergePolicy now accepts a MergeTrigger that provides 
+  information about the trigger of the merge ie. merge triggered due
+  to a segment merge or a full flush etc. (Simon Willnauer)
 
 Bug Fixes
 
 * LUCENE-1822: BaseFragListBuilder hard-coded 6 char margin is too naive.
   (Alex Vigdor, Arcadius Ahouansou, Koji Sekiguchi)
 
-* LUCENE-4468: Fix rareish integer overflows in Block and Lucene40 postings 
-  formats (Robert Muir)
+* LUCENE-4468: Fix rareish integer overflows in Lucene41 postings 
+  format. (Robert Muir)
   
 * LUCENE-4486: Add support for ConstantScoreQuery in Highlighter.
  (Simon Willnauer)
@@ -63,24 +76,41 @@ Bug Fixes
 * LUCENE-4485: When CheckIndex terms, terms/docs pairs and tokens,
   these counts now all exclude deleted documents.  (Mike McCandless)
 
+* LUCENE-4479: Highlighter works correctly for fields with term vector
+  positions, but no offsets.  (Alan Woodward)
+
+* SOLR-3906: JapaneseReadingFormFilter in romaji mode will return
+  romaji even for out-of-vocabulary kana cases (e.g. half-width forms).
+  (Robert Muir)
+
 Optimizations
 
-* LUCENE-4443: BlockPostingsFormat no longer writes unnecessary offsets 
-  into the skipdata. You need to reindex any indexes created with
-  this experimental codec.  (Robert Muir)
+* LUCENE-4443: Lucene41PostingsFormat no longer writes unnecessary offsets 
+  into the skipdata. (Robert Muir)
 
 * LUCENE-4459: Improve WeakIdentityMap.keyIterator() to remove GCed keys
   from backing map early instead of waiting for reap(). This makes test
   failures in TestWeakIdentityMap disappear, too.
   (Uwe Schindler, Mike McCandless, Robert Muir)
 
-* LUCENE-4473: BlockPostingsFormat encodes offsets more efficiently
+* LUCENE-4473: Lucene41PostingsFormat encodes offsets more efficiently
   for low frequency terms (< 128 occurrences).  (Robert Muir)
 
 * LUCENE-4462: DocumentsWriter now flushes deletes, segment infos and builds
   CFS files if necessary during segment flush and not during publishing. The latter
   was a single threaded process while now all IO and CPU heavy computation is done
   concurrently in DocumentsWriterPerThread. (Simon Willnauer)
+
+* LUCENE-4496: Optimize Lucene41PostingsFormat when requesting a subset of
+  the postings data (via flags to TermsEnum.docs/docsAndPositions) to use
+  ForUtil.skipBlock.  (Robert Muir)
+
+* LUCENE-4497: Don't write PosVIntCount to the positions file in 
+  Lucene41PostingsFormat, as its always totalTermFreq % BLOCK_SIZE. (Robert Muir)
+
+* LUCENE-4498: In Lucene41PostingsFormat, when a term appears in only one document, 
+  Instead of writing a file pointer to a VIntBlock containing the doc id, just 
+  write the doc id.  (Mike McCandless, Robert Muir)
 
 Build
 

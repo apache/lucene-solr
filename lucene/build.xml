@@ -226,59 +226,63 @@
   <target name="javadoc" depends="javadocs"/>
   <target name="javadocs" description="Generate javadoc" depends="javadocs-lucene-core, javadocs-modules, javadocs-test-framework"/>
 
+  <target name="documentation-lint" depends="-ecj-javadoc-lint,-documentation-lint,-documentation-lint-unsupported"
+          description="Validates the generated documentation (HTML errors, broken links,...)"/>
+  
   <!-- we check for broken links across all documentation -->
-  <target name="documentation-lint" depends="compile-test-framework,documentation,-ecj-resolve">
-    <sequential>
-      <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
-        <propertyset refid="uptodate.and.compiled.properties"/>
-        <fileset dir="core" includes="build.xml"/>
-        <fileset dir="test-framework" includes="build.xml"/>
-      </subant>
-      <modules-crawl target="-ecj-javadoc-lint"/>
-      <echo message="Checking for broken links..."/>
-      <check-broken-links dir="build/docs"/>
-      <echo message="Checking for missing docs..."/>
-      <!-- TODO: change this level=method -->
-      <check-missing-javadocs dir="build/docs" level="class"/>
-      <!-- too many classes to fix overall to just enable
-           the above to be level="method" right now, but we
-           can prevent the modules that don't have problems
-           from getting any worse -->
-      <!-- analyzers-common: problems -->
-      <check-missing-javadocs dir="build/docs/analyzers-icu" level="method"/>
-      <!-- analyzers-kuromoji: problems -->
-      <check-missing-javadocs dir="build/docs/analyzers-morfologik" level="method"/>
-      <check-missing-javadocs dir="build/docs/analyzers-phonetic" level="method"/>
-      <!-- analyzers-smartcn: problems -->
-      <check-missing-javadocs dir="build/docs/analyzers-stempel" level="method"/>
-      <!-- analyzers-uima: problems -->
-      <!-- benchmark: problems -->
-      <check-missing-javadocs dir="build/docs/classification" level="method"/>
-      <!-- codecs: problems -->
-      <!-- core: problems -->
-      <check-missing-javadocs dir="build/docs/demo" level="method"/>
-      <!-- facet: problems -->
-      <!-- grouping: problems -->
-      <!-- highlighter: problems -->
-      <check-missing-javadocs dir="build/docs/join" level="method"/>
-      <check-missing-javadocs dir="build/docs/memory" level="method"/>
-      <!-- misc: problems -->
-      <!-- queries: problems -->
-      <!-- queryparser: problems -->
-      <!-- sandbox: problems -->
-      <!-- spatial: problems -->
-      <check-missing-javadocs dir="build/docs/suggest" level="method"/>
-      <!-- test-framework: problems -->
+  <target name="-documentation-lint" if="documentation-lint.supported" depends="documentation">
+    <echo message="Checking for broken links..."/>
+    <check-broken-links dir="build/docs"/>
+    <echo message="Checking for missing docs..."/>
+    <!-- TODO: change this level=method -->
+    <check-missing-javadocs dir="build/docs" level="class"/>
+    <!-- too many classes to fix overall to just enable
+         the above to be level="method" right now, but we
+         can prevent the modules that don't have problems
+         from getting any worse -->
+    <!-- analyzers-common: problems -->
+    <check-missing-javadocs dir="build/docs/analyzers-icu" level="method"/>
+    <!-- analyzers-kuromoji: problems -->
+    <check-missing-javadocs dir="build/docs/analyzers-morfologik" level="method"/>
+    <check-missing-javadocs dir="build/docs/analyzers-phonetic" level="method"/>
+    <!-- analyzers-smartcn: problems -->
+    <check-missing-javadocs dir="build/docs/analyzers-stempel" level="method"/>
+    <!-- analyzers-uima: problems -->
+    <!-- benchmark: problems -->
+    <check-missing-javadocs dir="build/docs/classification" level="method"/>
+    <!-- codecs: problems -->
+    <!-- core: problems -->
+    <check-missing-javadocs dir="build/docs/demo" level="method"/>
+    <!-- facet: problems -->
+    <!-- grouping: problems -->
+    <!-- highlighter: problems -->
+    <check-missing-javadocs dir="build/docs/join" level="method"/>
+    <check-missing-javadocs dir="build/docs/memory" level="method"/>
+    <!-- misc: problems -->
+    <!-- queries: problems -->
+    <!-- queryparser: problems -->
+    <!-- sandbox: problems -->
+    <!-- spatial: problems -->
+    <check-missing-javadocs dir="build/docs/suggest" level="method"/>
+    <!-- test-framework: problems -->
 
-      <!-- too much to fix core/ for now, but enforce full javadocs for key packages -->
-      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/analysis" level="method"/>
-      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/document" level="method"/>
-      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/search/similarities" level="method"/>
-      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/index" level="method"/>
-      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/codecs" level="method"/>
-    </sequential>
+    <!-- too much to fix core/ for now, but enforce full javadocs for key packages -->
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/analysis" level="method"/>
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/document" level="method"/>
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/search/similarities" level="method"/>
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/index" level="method"/>
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/codecs" level="method"/>
   </target>
   
+  <target name="-ecj-javadoc-lint" depends="documentation,compile-test-framework,-ecj-resolve">
+    <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+    </subant>
+    <modules-crawl target="-ecj-javadoc-lint"/>
+  </target>
+
   <target name="process-webpages" depends="resolve-groovy,resolve-pegdown">
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,backwards/**,site/**"/>

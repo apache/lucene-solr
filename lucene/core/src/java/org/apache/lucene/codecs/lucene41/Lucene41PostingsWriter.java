@@ -354,13 +354,15 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     public final long payStartFP;
     public final long skipOffset;
     public final long lastPosBlockOffset;
+    public final int singletonDocID;
 
-    public PendingTerm(long docStartFP, long posStartFP, long payStartFP, long skipOffset, long lastPosBlockOffset) {
+    public PendingTerm(long docStartFP, long posStartFP, long payStartFP, long skipOffset, long lastPosBlockOffset, int singletonDocID) {
       this.docStartFP = docStartFP;
       this.posStartFP = posStartFP;
       this.payStartFP = payStartFP;
       this.skipOffset = skipOffset;
       this.lastPosBlockOffset = lastPosBlockOffset;
+      this.singletonDocID = singletonDocID;
     }
   }
 
@@ -384,18 +386,26 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     //     System.out.println("  write doc/freq vInt block (count=" + docBufferUpto + ") at fp=" + docOut.getFilePointer() + " docTermStartFP=" + docTermStartFP);
     //   }
     // }
-
-    // vInt encode the remaining doc deltas and freqs:
-    for(int i=0;i<docBufferUpto;i++) {
-      final int docDelta = docDeltaBuffer[i];
-      final int freq = freqBuffer[i];
-      if (!fieldHasFreqs) {
-        docOut.writeVInt(docDelta);
-      } else if (freqBuffer[i] == 1) {
-        docOut.writeVInt((docDelta<<1)|1);
-      } else {
-        docOut.writeVInt(docDelta<<1);
-        docOut.writeVInt(freq);
+    
+    // docFreq == 1, don't write the single docid/freq to a separate file along with a pointer to it.
+    final int singletonDocID;
+    if (stats.docFreq == 1) {
+      // pulse the singleton docid into the term dictionary, freq is implicitly totalTermFreq
+      singletonDocID = docDeltaBuffer[0];
+    } else {
+      singletonDocID = -1;
+      // vInt encode the remaining doc deltas and freqs:
+      for(int i=0;i<docBufferUpto;i++) {
+        final int docDelta = docDeltaBuffer[i];
+        final int freq = freqBuffer[i];
+        if (!fieldHasFreqs) {
+          docOut.writeVInt(docDelta);
+        } else if (freqBuffer[i] == 1) {
+          docOut.writeVInt((docDelta<<1)|1);
+        } else {
+          docOut.writeVInt(docDelta<<1);
+          docOut.writeVInt(freq);
+        }
       }
     }
 
@@ -417,9 +427,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
       } else {
         lastPosBlockOffset = -1;
       }
-      if (posBufferUpto > 0) {
-        posOut.writeVInt(posBufferUpto);
-        
+      if (posBufferUpto > 0) {       
         // TODO: should we send offsets/payloads to
         // .pay...?  seems wasteful (have to store extra
         // vLong for low (< BLOCK_SIZE) DF terms = vast vast
@@ -509,7 +517,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     //   System.out.println("  payStartFP=" + payStartFP);
     // }
 
-    pendingTerms.add(new PendingTerm(docTermStartFP, posTermStartFP, payStartFP, skipOffset, lastPosBlockOffset));
+    pendingTerms.add(new PendingTerm(docTermStartFP, posTermStartFP, payStartFP, skipOffset, lastPosBlockOffset, singletonDocID));
     docBufferUpto = 0;
     posBufferUpto = 0;
     lastDocID = 0;
@@ -537,8 +545,12 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
     for(int idx=limit-count; idx<limit; idx++) {
       PendingTerm term = pendingTerms.get(idx);
 
-      bytesWriter.writeVLong(term.docStartFP - lastDocStartFP);
-      lastDocStartFP = term.docStartFP;
+      if (term.singletonDocID == -1) {
+        bytesWriter.writeVLong(term.docStartFP - lastDocStartFP);
+        lastDocStartFP = term.docStartFP;
+      } else {
+        bytesWriter.writeVInt(term.singletonDocID);
+      }
 
       if (fieldHasPositions) {
         bytesWriter.writeVLong(term.posStartFP - lastPosStartFP);

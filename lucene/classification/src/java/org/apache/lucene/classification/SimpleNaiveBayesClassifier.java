@@ -80,7 +80,7 @@ public class SimpleNaiveBayesClassifier implements Classifier {
     return result.toArray(new String[result.size()]);
   }
 
-  public String assignClass(String inputDocument) throws IOException {
+  public ClassificationResult assignClass(String inputDocument) throws IOException {
     if (atomicReader == null) {
       throw new RuntimeException("need to train the classifier first");
     }
@@ -98,7 +98,7 @@ public class SimpleNaiveBayesClassifier implements Classifier {
         foundClass = next.utf8ToString();
       }
     }
-    return foundClass;
+    return new ClassificationResult(foundClass, max);
   }
 
 

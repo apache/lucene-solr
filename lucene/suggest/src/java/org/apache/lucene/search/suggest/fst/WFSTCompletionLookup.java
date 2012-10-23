@@ -143,6 +143,11 @@ public class WFSTCompletionLookup extends Lookup {
   @Override
   public List<LookupResult> lookup(CharSequence key, boolean onlyMorePopular, int num) {
     assert num > 0;
+
+    if (onlyMorePopular) {
+      throw new IllegalArgumentException("this suggester only works with onlyMorePopular=false");
+    }
+
     BytesRef scratch = new BytesRef(key);
     int prefixLength = scratch.length;
     Arc<Long> arc = new Arc<Long>();

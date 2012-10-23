@@ -100,9 +100,11 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals(6, results.get(0).value, 0.01F);
     
     results = suggester.lookup(_TestUtil.stringToCharSequence("barbar", random()), false, 2);
-    assertEquals(1, results.size());
+    assertEquals(2, results.size());
     assertEquals("barbar", results.get(0).key.toString());
     assertEquals(12, results.get(0).value, 0.01F);
+    assertEquals("barbara", results.get(1).key.toString());
+    assertEquals(6, results.get(1).value, 0.01F);
     
     results = suggester.lookup(_TestUtil.stringToCharSequence("barbaa", random()), false, 2);
     assertEquals(2, results.size());
@@ -653,7 +655,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       }
 
       final int topN = _TestUtil.nextInt(random(), 1, 10);
-      List<LookupResult> r = suggester.lookup(_TestUtil.stringToCharSequence(prefix, random()), true, topN);
+      List<LookupResult> r = suggester.lookup(_TestUtil.stringToCharSequence(prefix, random()), false, topN);
 
       // 2. go thru whole set to find suggestions:
       List<LookupResult> matches = new ArrayList<LookupResult>();

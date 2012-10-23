@@ -29,12 +29,12 @@ import java.io.IOException;
 public interface Classifier {
 
   /**
-   * Assign a class to the given text String
+   * Assign a class (with score) to the given text String
    * @param text a String containing text to be classified
-   * @return a String representing a class
+   * @return a {@link ClassificationResult} holding assigned class and score
    * @throws IOException If there is a low-level I/O error.
    */
-  public String assignClass(String text) throws IOException;
+  public ClassificationResult assignClass(String text) throws IOException;
 
   /**
    * Train the classifier using the underlying Lucene index

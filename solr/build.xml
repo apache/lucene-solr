@@ -520,16 +520,12 @@
     </sequential>
   </target>
 
+  <target name="documentation-lint" depends="-ecj-javadoc-lint,-documentation-lint,-documentation-lint-unsupported"
+          description="Validates the generated documentation (HTML errors, broken links,...)"/>
+  
   <!-- TODO: does solr have any other docs we should check? -->
   <!-- TODO: also integrate checkJavaDocs.py, which does more checks -->
-  <target name="documentation-lint" depends="compile-solr-test-framework,documentation,-ecj-resolve">
-    <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
-      <propertyset refid="uptodate.and.compiled.properties"/>
-      <fileset dir="core" includes="build.xml"/>
-      <fileset dir="solrj" includes="build.xml"/>
-      <fileset dir="test-framework" includes="build.xml"/>
-    </subant>
-    <contrib-crawl target="-ecj-javadoc-lint"/>
+  <target name="-documentation-lint" if="documentation-lint.supported" depends="documentation">
     <echo message="Checking for broken links..."/>
     <check-broken-links dir="${javadoc.dir}"/>
     <echo message="Checking for malformed docs..."/>
@@ -537,6 +533,16 @@
     <check-missing-javadocs dir="${javadoc.dir}" level="none"/>
   </target>
  
+  <target name="-ecj-javadoc-lint" depends="documentation,compile-solr-test-framework,-ecj-resolve">
+    <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="solrj" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+    </subant>
+    <contrib-crawl target="-ecj-javadoc-lint"/>
+  </target>
+
   <!-- install-maven-tasks is *not* a useless dependency. do not remove -->
   <target name="generate-maven-artifacts" depends="install-maven-tasks">
     <sequential>

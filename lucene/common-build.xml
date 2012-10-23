@@ -109,6 +109,8 @@
   </condition>
   <property name="tests.clover.args" value=""/>
 
+  <property name="tests.heapdump.args" value=""/>
+
   <property name="tests.tempDir" location="${build.dir}/test"/>
 
   <property name="tests.cachefile" location="${common.dir}/tools/junit4/cached-timehints.txt" />
@@ -262,6 +264,25 @@
       <not><antversion atleast="1.8.2" /></not>
     </condition>
   </fail>
+
+  <condition property="documentation-lint.supported">
+    <and>
+      <or>
+        <contains string="${java.vm.name}" substring="hotspot" casesensitive="false"/>
+        <contains string="${java.vm.name}" substring="openjdk" casesensitive="false"/>
+        <contains string="${java.vm.name}" substring="jrockit" casesensitive="false"/>
+      </or>
+      <or>
+        <equals arg1="${ant.java.version}" arg2="1.6"/>
+        <equals arg1="${ant.java.version}" arg2="1.7"/>
+        <equals arg1="${ant.java.version}" arg2="1.8"/>
+      </or>
+    </and>
+  </condition>
+
+  <target name="-documentation-lint-unsupported" unless="documentation-lint.supported">
+    <echo level="warning" message="WARN: Linting documentation HTML is not supported on this Java version (${ant.java.version}) / JVM (${java.vm.name}). NOTHING DONE!"/>
+  </target>
 
   <!-- Import custom ANT tasks. -->
   <import file="${common.dir}/tools/custom-tasks.xml" />
@@ -826,6 +847,7 @@
 
             <!-- JVM arguments and system properties. -->
             <jvmarg line="${args}"/>
+            <jvmarg line="${tests.heapdump.args}"/>
             <jvmarg line="${tests.clover.args}"/>
 
             <!-- set the number of times tests should run -->

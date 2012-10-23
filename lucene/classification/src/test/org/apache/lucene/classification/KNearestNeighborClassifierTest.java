@@ -17,34 +17,17 @@ package org.apache.lucene.classification;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.ngram.EdgeNGramTokenizer;
 import org.junit.Test;
 
-import java.io.Reader;
-
 /**
- * Testcase for {@link SimpleNaiveBayesClassifier}
+ * Testcase for {@link KNearestNeighborClassifier}
  */
-public class SimpleNaiveBayesClassifierTest extends ClassificationTestBase {
+public class KNearestNeighborClassifierTest extends ClassificationTestBase {
 
   @Test
   public void testBasicUsage() throws Exception {
-    checkCorrectClassification(new SimpleNaiveBayesClassifier(), new MockAnalyzer(random()));
-  }
-
-  @Test
-  public void testNGramUsage() throws Exception {
-    checkCorrectClassification(new SimpleNaiveBayesClassifier(), new NGramAnalyzer());
-  }
-
-  private class NGramAnalyzer extends Analyzer {
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      return new TokenStreamComponents(new EdgeNGramTokenizer(reader, EdgeNGramTokenizer.Side.BACK,
-          10, 20));
-    }
+     checkCorrectClassification(new KNearestNeighborClassifier(1), new MockAnalyzer(random()));
   }
 
 }

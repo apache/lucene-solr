@@ -30,43 +30,37 @@
     <subant buildpath="lucene" target="test-help" inheritall="false" failonerror="true"/>
   </target>
 
+  <property name="tests.heap-dump-dir" location="heapdumps"/>
+  
   <target name="precommit" description="Run basic checks before committing"
           depends="check-svn-working-copy,validate,documentation-lint"/>
 
   <target name="test" description="Test both Lucene and Solr">
-    <sequential>
-      <subant target="test" inheritall="false" failonerror="true">
-        <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="solr" includes="build.xml" />
-      </subant>
-    </sequential>
+    <subant target="test" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+    </subant>
   </target>
 
   <target name="pitest" description="Run PITest on both Lucene and Solr">
-    <sequential>
-      <subant target="pitest" inheritall="false" failonerror="false">
-        <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="solr" includes="build.xml" />
-      </subant>
-    </sequential>
+    <subant target="pitest" inheritall="false" failonerror="false">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+    </subant>
   </target>
 
   <target name="documentation" description="Generate Lucene and Solr Documentation">
-    <sequential>
-      <subant target="documentation" inheritall="false" failonerror="true">
-        <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="solr" includes="build.xml" />
-      </subant>
-    </sequential>
+    <subant target="documentation" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+    </subant>
   </target>
 
   <target name="documentation-lint" description="Validates the generated documentation (HTML errors, broken links,...)">
-    <sequential>
-      <subant target="documentation-lint" inheritall="false" failonerror="true">
-        <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="solr" includes="build.xml" />
-      </subant>
-    </sequential>
+    <subant target="documentation-lint" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+    </subant>
   </target>
 
   <target name="validate" description="Validate dependencies, licenses, etc." depends="-validate-source-patterns">
@@ -218,13 +212,11 @@
 
   <target name="clean" description="Clean Lucene and Solr build dirs">
     <delete dir="dist" />
-    <sequential>
-      <subant target="clean" inheritall="false" failonerror="true">
-        <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="solr" includes="build.xml" />
-      </subant>
-      <delete dir="dist" failonerror="false" />
-    </sequential>
+    <delete dir="${tests.heap-dump-dir}" />
+    <subant target="clean" inheritall="false" failonerror="true">
+      <fileset dir="lucene" includes="build.xml" />
+      <fileset dir="solr" includes="build.xml" />
+    </subant>
   </target>
 
   <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir">
@@ -258,46 +250,44 @@
   </target>
   
   <target name="nightly-smoke" description="Builds an unsigned release and smoke tests it" depends="clean,-env-JAVA6_HOME,-env-JAVA7_HOME">
-   <sequential>
-     <fail unless="JAVA6_HOME">JAVA6_HOME property or environment variable is not defined.</fail>
-     <fail unless="JAVA7_HOME">JAVA7_HOME property or environment variable is not defined.</fail>
-     <subant target="prepare-release-no-sign" inheritall="false" failonerror="true">
-       <fileset dir="lucene" includes="build.xml" />
-       <fileset dir="solr" includes="build.xml" />
-       <property name="version" value="${fakeReleaseVersion}" />
-     </subant>
-     <delete dir="${fakeRelease}"/>
-     <delete dir="${fakeReleaseTmp}"/>
-     <mkdir dir="${fakeRelease}"/>
-     <copy todir="${fakeRelease}/lucene">
-       <fileset dir="lucene/dist"/>
-     </copy>
-     <copy todir="${fakeRelease}/lucene/changes">
-       <fileset dir="lucene/build/docs/changes"/>
-     </copy>
-     <get src="http://people.apache.org/keys/group/lucene.asc" 
-          dest="${fakeRelease}/lucene/KEYS"/>
-     <copy todir="${fakeRelease}/solr">
-       <fileset dir="solr/package"/>
-     </copy>
-     <copy file="${fakeRelease}/lucene/KEYS" todir="${fakeRelease}/solr"/>
-     <copy todir="${fakeRelease}/solr/changes">
-       <fileset dir="solr/build/docs/changes"/>
-     </copy>
-     <makeurl file="${fakeRelease}" validate="false" property="fakeRelease.uri"/>
-     <exec executable="${python32.exe}" failonerror="true">
-       <arg value="-u"/>
-       <arg file="dev-tools/scripts/smokeTestRelease.py"/>
-       <arg value="${fakeRelease.uri}"/>
-       <arg value="${fakeReleaseVersion}"/>
-       <arg file="${fakeReleaseTmp}"/>
-       <arg value="false"/>
-       <env key="JAVA6_HOME" file="${JAVA6_HOME}"/>
-       <env key="JAVA7_HOME" file="${JAVA7_HOME}"/>
-     </exec>
-     <delete dir="${fakeRelease}"/>
-     <delete dir="${fakeReleaseTmp}"/>
-   </sequential>
+   <fail unless="JAVA6_HOME">JAVA6_HOME property or environment variable is not defined.</fail>
+   <fail unless="JAVA7_HOME">JAVA7_HOME property or environment variable is not defined.</fail>
+   <subant target="prepare-release-no-sign" inheritall="false" failonerror="true">
+     <fileset dir="lucene" includes="build.xml" />
+     <fileset dir="solr" includes="build.xml" />
+     <property name="version" value="${fakeReleaseVersion}" />
+   </subant>
+   <delete dir="${fakeRelease}"/>
+   <delete dir="${fakeReleaseTmp}"/>
+   <mkdir dir="${fakeRelease}"/>
+   <copy todir="${fakeRelease}/lucene">
+     <fileset dir="lucene/dist"/>
+   </copy>
+   <copy todir="${fakeRelease}/lucene/changes">
+     <fileset dir="lucene/build/docs/changes"/>
+   </copy>
+   <get src="http://people.apache.org/keys/group/lucene.asc" 
+        dest="${fakeRelease}/lucene/KEYS"/>
+   <copy todir="${fakeRelease}/solr">
+     <fileset dir="solr/package"/>
+   </copy>
+   <copy file="${fakeRelease}/lucene/KEYS" todir="${fakeRelease}/solr"/>
+   <copy todir="${fakeRelease}/solr/changes">
+     <fileset dir="solr/build/docs/changes"/>
+   </copy>
+   <makeurl file="${fakeRelease}" validate="false" property="fakeRelease.uri"/>
+   <exec executable="${python32.exe}" failonerror="true">
+     <arg value="-u"/>
+     <arg file="dev-tools/scripts/smokeTestRelease.py"/>
+     <arg value="${fakeRelease.uri}"/>
+     <arg value="${fakeReleaseVersion}"/>
+     <arg file="${fakeReleaseTmp}"/>
+     <arg value="false"/>
+     <env key="JAVA6_HOME" file="${JAVA6_HOME}"/>
+     <env key="JAVA7_HOME" file="${JAVA7_HOME}"/>
+   </exec>
+   <delete dir="${fakeRelease}"/>
+   <delete dir="${fakeReleaseTmp}"/>
   </target>
   
   <target name="check-svn-working-copy" description="Checks the status of the SVN working copy">
@@ -309,7 +299,7 @@
       <param name="run.clover" value="true"/>
       <!-- must be 1, as clover does not like parallel test runs: -->
       <param name="tests.jvms" value="1"/>
-      <!-- Also override some other props to be fast, ignoring what's set on command line: -->
+      <!-- Also override some other props to be fast: -->
       <param name="tests.multiplier" value="1"/>
       <param name="tests.nightly" value="false"/>
       <param name="tests.weekly" value="false"/>
@@ -326,19 +316,42 @@
     <subant buildpath="." antfile="extra-targets.xml" target="-generate-clover-reports" inheritall="false" failonerror="true"/>
   </target>
 
+  <target name="test-with-heapdumps" depends="-test-with-heapdumps-enabled,-test-with-heapdumps-disabled" description="Runs tests with heap dumps on OOM enabled (if VM supports this)"/>
+  
+  <condition property="vm.supports.heapdumps">
+    <or>
+      <contains string="${java.vm.name}" substring="hotspot" casesensitive="false"/>
+      <contains string="${java.vm.name}" substring="openjdk" casesensitive="false"/>
+      <contains string="${java.vm.name}" substring="jrockit" casesensitive="false"/>
+    </or>
+  </condition>
+
+  <target name="-test-with-heapdumps-enabled" if="vm.supports.heapdumps">
+    <echo level="info" message="${java.vm.name}: Enabling heap dumps on OutOfMemoryError to dir '${tests.heap-dump-dir}'."/>
+    <mkdir dir="${tests.heap-dump-dir}"/>
+    <delete includeEmptyDirs="true">
+      <fileset dir="${tests.heap-dump-dir}"  includes="**/*"/>
+    </delete>
+    <antcall inheritAll="false" target="test">
+      <param name="tests.heapdump.args" value="-XX:+HeapDumpOnOutOfMemoryError &quot;-XX:HeapDumpPath=${tests.heap-dump-dir}&quot;"/>
+    </antcall>
+    <pathconvert property="heapdumps.list" setonempty="false" pathsep="${line.separator}">
+      <fileset dir="${tests.heap-dump-dir}"/>
+      <map from="${tests.heap-dump-dir}${file.separator}" to="* "/>
+    </pathconvert>
+    <fail if="heapdumps.list" message="Some of the tests produced a heap dump, but did not fail. Maybe a suppressed OutOfMemoryError? Dumps created:${line.separator}${heapdumps.list}"/>
+    <delete dir="${tests.heap-dump-dir}"/>
+  </target>
+
+  <target name="-test-with-heapdumps-disabled" unless="vm.supports.heapdumps">
+    <echo level="warning" message="WARN: The used JVM (${java.vm.name}) does not support HPROF heap dumps on OutOfMemoryError."/>
+    <antcall target="test"/>
+  </target>
+
   <!-- Jenkins tasks -->
-  <target name="jenkins-hourly" depends="clean,test,validate,-jenkins-documentation-lint,jar-checksums,check-svn-working-copy"/>
+  <target name="jenkins-hourly" depends="clean,test-with-heapdumps,validate,documentation-lint,jar-checksums,check-svn-working-copy"/>
   
   <target name="jenkins-maven-nightly" depends="clean,remove-maven-artifacts,run-maven-build,generate-maven-artifacts,validate-maven-dependencies"/>
   
   <target name="jenkins-clover" depends="run-clover"/>
-  
-  <!-- we need this extra condition, as we want to match only on "true", not solely if property is set: -->
-  <property name="disable.documentation-lint" value="false" />
-  <condition property="-disable.documentation-lint">
-    <istrue value="${disable.documentation-lint}"/>
-  </condition>
-  <target name="-jenkins-documentation-lint" unless="-disable.documentation-lint">
-    <antcall target="documentation-lint"/> 
-  </target>
 </project>
