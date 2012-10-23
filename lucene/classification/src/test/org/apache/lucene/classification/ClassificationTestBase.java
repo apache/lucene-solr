@@ -31,7 +31,7 @@ import org.junit.Before;
 /**
  * Base class for testing {@link Classifier}s
  */
-public class ClassificationTestBase extends LuceneTestCase {
+public abstract class ClassificationTestBase extends LuceneTestCase {
 
   private RandomIndexWriter indexWriter;
   private String textFieldName;
