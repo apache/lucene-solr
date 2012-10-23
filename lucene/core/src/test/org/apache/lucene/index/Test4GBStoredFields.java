@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -41,11 +41,8 @@ public class Test4GBStoredFields extends LuceneTestCase {
 
   @Nightly
   public void test() throws Exception {
-    BaseDirectoryWrapper dir = newFSDirectory(_TestUtil.getTempDir("4GBStoredFields"));
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
-    }
-    dir.setCheckIndexOnClose(false); // don't double-checkindex
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new MMapDirectory(_TestUtil.getTempDir("4GBStoredFields")));
+    dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
 
     IndexWriter w = new IndexWriter(dir,
         new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
@@ -99,12 +96,6 @@ public class Test4GBStoredFields extends LuceneTestCase {
         System.out.println("No .fdt file larger than 4GB, test bug?");
       }
     }
-
-    CheckIndex ci = new CheckIndex(dir);
-    if (VERBOSE) {
-      ci.setInfoStream(System.out);
-    }
-    ci.checkIndex();
 
     DirectoryReader rd = DirectoryReader.open(dir);
     Document sd = rd.document(numDocs - 1);
