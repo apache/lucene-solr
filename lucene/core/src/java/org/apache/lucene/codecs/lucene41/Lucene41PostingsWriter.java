@@ -417,9 +417,7 @@ public final class Lucene41PostingsWriter extends PostingsWriterBase {
       } else {
         lastPosBlockOffset = -1;
       }
-      if (posBufferUpto > 0) {
-        posOut.writeVInt(posBufferUpto);
-        
+      if (posBufferUpto > 0) {       
         // TODO: should we send offsets/payloads to
         // .pay...?  seems wasteful (have to store extra
         // vLong for low (< BLOCK_SIZE) DF terms = vast vast

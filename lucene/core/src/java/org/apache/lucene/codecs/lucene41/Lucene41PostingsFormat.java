@@ -274,7 +274,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  *   <li>TermPositions --&gt; &lt;PackedPosDeltaBlock&gt; <sup>PackedPosBlockNum</sup>,  
  *                            VIntBlock? </li>
- *   <li>VIntBlock --&gt; PosVIntCount, &lt;PositionDelta[, PayloadLength?], PayloadData?, 
+ *   <li>VIntBlock --&gt; &lt;PositionDelta[, PayloadLength?], PayloadData?, 
  *                        OffsetDelta?, OffsetLength?&gt;<sup>PosVIntCount</sup>
  *   <li>PackedPosDeltaBlock --&gt; {@link PackedInts PackedInts}</li>
  *   <li>PosVIntCount, PositionDelta, OffsetDelta, OffsetLength --&gt; 
