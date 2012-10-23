@@ -33,6 +33,7 @@ import java.util.Map;
 /**
  * A k-Nearest Neighbor classifier (see <code>http://en.wikipedia.org/wiki/K-nearest_neighbors</code>) based
  * on {@link MoreLikeThis}
+ * @lucene.experimental
  */
 public class KNearestNeighborClassifier implements Classifier {
 
