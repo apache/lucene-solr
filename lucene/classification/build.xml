@@ -41,4 +41,12 @@
 
   <target name="compile-core" depends="jar-queries,jar-analyzers-common,common.compile-core" />
 
+  <target name="javadocs" depends="javadocs-queries,compile-core">
+    <invoke-module-javadoc>
+      <links>
+        <link href="../queries"/>
+      </links>
+    </invoke-module-javadoc>
+  </target>
+
 </project>
