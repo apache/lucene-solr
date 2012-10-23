@@ -22,7 +22,6 @@ import java.util.List;
 import java.io.IOException;
 
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.State;
 import org.apache.lucene.util.automaton.Transition;
@@ -106,11 +105,13 @@ public class FSTUtil {
                 .add(path.output, nextArc.output), newInput));
           }
         } else {
-          // TODO:
-          // if we accept the entire range possible in the FST (ie. 0 to 256)
+          // TODO: if this transition's TO state is accepting, and
+          // it accepts the entire range possible in the FST (ie. 0 to 255),
           // we can simply use the prefix as the accepted state instead of
-          // looking up all the
-          // ranges and terminate early here?
+          // looking up all the ranges and terminate early
+          // here.  This just shifts the work from one queue
+          // (this one) to another (the completion search
+          // done in AnalyzingSuggester).
           FST.Arc<T> nextArc = Util.readCeilArc(min, fst, path.fstNode,
               scratchArc, fstReader);
           while (nextArc != null && nextArc.label <= max) {

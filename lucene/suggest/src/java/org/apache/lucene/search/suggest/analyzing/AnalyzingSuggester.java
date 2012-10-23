@@ -31,6 +31,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.fst.Sort;
@@ -676,7 +677,12 @@ public class AnalyzingSuggester extends Lookup {
   };
   
   /**
-   * Returns a new {@link PathIntersector}  
+   * Returns a new {@link PathIntersector}.
+   *
+   * <p>NOTE: The labels on the transitions incoming
+   * automaton are bytes returned by the {@link
+   * TokenStream}'s {@link TermToBytesRefAttribute}, which
+   * are typically UTF8 encoded.
    */
   protected PathIntersector getPathIntersector(Automaton automaton, FST<Pair<Long,BytesRef>> fst) {
     return new PathIntersector(automaton, fst);

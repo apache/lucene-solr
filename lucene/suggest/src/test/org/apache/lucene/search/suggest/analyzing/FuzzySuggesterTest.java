@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CannedBinaryTokenStream.BinaryToken;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -49,9 +48,6 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.BasicAutomata;
-import org.apache.lucene.util.automaton.BasicOperations;
-import org.apache.lucene.util.automaton.LevenshteinAutomata;
 import org.apache.lucene.util.automaton.State;
 import org.apache.lucene.util.fst.Util;
 
@@ -74,8 +70,6 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       assertEquals("foo bar boo far", results.get(0).key.toString());
       assertEquals(12, results.get(0).value, 0.01F);  
     }
-    
-    
   }
   
   /** this is basically the WFST test ported to KeywordAnalyzer. so it acts the same */
@@ -333,10 +327,6 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     t.setPositionIncrement(posInc);
     t.setPositionLength(posLength);
     return t;
-  }
-
-  private static BinaryToken token(BytesRef term) {
-    return new BinaryToken(term);
   }
 
   /*
@@ -800,40 +790,48 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals(50, results.get(1).value);
   }
   
-  private static String addRandomEdit(String string, int prefixLenght) {
-    char[] charArray = string.toCharArray();
+  private static String addRandomEdit(String string, int prefixLength) {
+    char[] input = string.toCharArray();
     StringBuilder builder = new StringBuilder();
-    for (int i = 0; i < charArray.length; i++) {
-      if (i >= prefixLenght && random().nextBoolean() && i < charArray.length-1) {
-        switch(random().nextInt(3)){
+    for (int i = 0; i < input.length; i++) {
+      if (i >= prefixLength && random().nextBoolean() && i < input.length-1) {
+        switch(random().nextInt(3)) {
           case 2:
-            for (int j = i+1; j < charArray.length; j++) {
-              builder.append(charArray[j]);  
+            // Delete input[i]
+            for (int j = i+1; j < input.length; j++) {
+              builder.append(input[j]);  
             }
             return builder.toString();
           case 1:
-            if (i+1<charArray.length) {
-              builder.append(charArray[i+1]);
-              builder.append(charArray[i++]);
+            // Insert input[i+1] twice
+            if (i+1<input.length) {
+              builder.append(input[i+1]);
+              builder.append(input[i++]);
               i++;
             }
-            for (int j = i; j < charArray.length; j++) {
-              builder.append(charArray[j]);
+            for (int j = i; j < input.length; j++) {
+              builder.append(input[j]);
             }
             return builder.toString();
           case 0:
+            // Insert random byte.
+            // NOTE: can only use ascii here so that, in
+            // UTF8 byte space it's still a single
+            // insertion:
             int x = random().nextInt(128);
             builder.append((char) x);
-            for (int j = i; j < charArray.length; j++) {
-              builder.append(charArray[j]);  
+            for (int j = i; j < input.length; j++) {
+              builder.append(input[j]);  
             }
             return builder.toString();
-           
+
+          // nocommit need transposition too?
         }
       }
-      builder.append(charArray[i]);
-      
+
+      builder.append(input[i]);
     }
+
     return builder.toString();
   }
 }

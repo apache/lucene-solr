@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute; // javadocs
 import org.apache.lucene.search.suggest.analyzing.FSTUtil.Path;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
@@ -41,7 +43,12 @@ import org.apache.lucene.util.fst.PairOutputs.Pair;
  * At most, this query will match terms up to
  * {@value org.apache.lucene.util.automaton.LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE}
  * edits. Higher distances (especially with transpositions enabled), are not
- * supported.
+ * supported.  Note that the fuzzy distance is byte-by-byte
+ * as returned by the {@link TokenStream}'s {@link
+ * TermToBytesRefAttribute}, usually UTF8.  By default
+ * the first 2 (@link #DEFAULT_MIN_PREFIX) bytes must match,
+ * and by default we allow up to 1 (@link
+ * #DEFAULT_MAX_EDITS} edit.
  * <p>
  * Note: complex query analyzers can have a significant impact on the lookup
  * performance. It's recommended to not use analyzers that drop or inject terms
@@ -131,15 +138,13 @@ public final class FuzzySuggester extends AnalyzingSuggester {
     this.minPrefix = minPrefix;
   }
   
-  
-
   @Override
   protected PathIntersector getPathIntersector(Automaton automaton,
       FST<Pair<Long,BytesRef>> fst) {
     return new FuzzyPathIntersector(automaton, fst);
   }
 
-  final Automaton toLevenshteinAutomata(Automaton automaton) {
+  Automaton toLevenshteinAutomata(Automaton automaton) {
     final Set<IntsRef> ref = SpecialOperations.getFiniteStrings(automaton, -1);
     Automaton subs[] = new Automaton[ref.size()];
     int upto = 0;
