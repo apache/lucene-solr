@@ -235,8 +235,6 @@ public class DocumentBuilder {
       SchemaField sfield = schema.getFieldOrNull(name);
       boolean used = false;
 
-      float boost = field.getBoost();
-      boolean applyBoost = sfield != null && sfield.indexed() && !sfield.omitNorms();
       
       // Make sure it has the correct number
       if( sfield!=null && !sfield.multiValued() && field.getValueCount() > 1 ) {
@@ -245,17 +243,18 @@ public class DocumentBuilder {
               sfield.getName() + ": " +field.getValue() );
       }
       
-      if (applyBoost == false && boost != 1.0F) {
+      float fieldBoost = field.getBoost();
+      boolean applyBoost = sfield != null && sfield.indexed() && !sfield.omitNorms();
+
+      if (applyBoost == false && fieldBoost != 1.0F) {
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
             "ERROR: "+getID(doc, schema)+"cannot set an index-time boost, unindexed or norms are omitted for field " + 
               sfield.getName() + ": " +field.getValue() );
       }
 
       // Lucene no longer has a native docBoost, so we have to multiply 
-      // it ourselves (do this after the applyBoost error check so we don't 
-      // give an error on fields that don't support boost just because of a 
-      // docBoost)
-      boost *= docBoost;
+      // it ourselves 
+      float compoundBoost = fieldBoost * docBoost;
 
       // load each field value
       boolean hasField = false;
@@ -267,16 +266,20 @@ public class DocumentBuilder {
           hasField = true;
           if (sfield != null) {
             used = true;
-            addField(out, sfield, v, applyBoost ? boost : 1f);
+            addField(out, sfield, v, applyBoost ? compoundBoost : 1f);
           }
   
-          // Check if we should copy this field to any other fields.
+          // Check if we should copy this field value to any other fields.
           // This could happen whether it is explicit or not.
           List<CopyField> copyFields = schema.getCopyFieldsList(name);
           for (CopyField cf : copyFields) {
             SchemaField destinationField = cf.getDestination();
+
+            final boolean destHasValues = 
+              (null != out.getField(destinationField.getName()));
+
             // check if the copy field is a multivalued or not
-            if (!destinationField.multiValued() && out.getField(destinationField.getName()) != null) {
+            if (!destinationField.multiValued() && destHasValues) {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                       "ERROR: "+getID(doc, schema)+"multiple values encountered for non multiValued copy field " +
                               destinationField.getName() + ": " + v);
@@ -289,14 +292,23 @@ public class DocumentBuilder {
             if( val instanceof String && cf.getMaxChars() > 0 ) {
               val = cf.getLimitedValue((String)val);
             }
-            addField(out, destinationField, val, destinationField.indexed() && !destinationField.omitNorms() ? boost : 1F);
+
+            // we can't copy any boost unless the dest field is 
+            // indexed & !omitNorms, but which boost we copy depends
+            // on wether the dest field already contains values (we 
+            // don't want to apply the compounded docBoost more then once)
+            final float destBoost = 
+              (destinationField.indexed() && !destinationField.omitNorms()) ?
+              (destHasValues ? fieldBoost : compoundBoost) : 1.0F;
+            
+            addField(out, destinationField, val, destBoost);
           }
           
-          // The boost for a given field is the product of the 
+          // The final boost for a given field named is the product of the 
           // *all* boosts on values of that field. 
           // For multi-valued fields, we only want to set the boost on the
           // first field.
-          boost = 1.0f;
+          fieldBoost = compoundBoost = 1.0f;
         }
       }
       catch( SolrException ex ) {

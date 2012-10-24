@@ -84,6 +84,12 @@ Bug Fixes
 * SOLR-3961: Fixed error using LimitTokenCountFilterFactory 
   (Jack Krupansky, hossman)
 
+* SOLR-3988: Fixed SolrTestCaseJ4.adoc(SolrInputDocument) to respect 
+  field and document boosts (hossman)
+
+* SOLR-3981: Fixed bug that resulted in document boosts being compounded in
+  <copyField/> destination fields. (hossman)
+
 Other Changes
 ----------------------
 
