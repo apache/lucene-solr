@@ -119,7 +119,7 @@ import org.slf4j.LoggerFactory;
  *   </li>
  *   <li><code>http://.../ping?action=status</code>
  *       - returns a status code indicating if the healthcheck file exists 
- *       ("<code>enabled</code>") or not ("<code>disabled<code>")
+ *       ("<code>enabled</code>") or not ("<code>disabled</code>")
  *   </li>
  * </ul>
  *
