@@ -186,7 +186,7 @@ public class ZkStateReader {
           if (EventType.None.equals(event.getType())) {
             return;
           }
-          log.info("A cluster state change has occurred - updating...");
+          log.info("A cluster state change has occurred - updating... ({})", ZkStateReader.this.clusterState.getLiveNodes().size());
           try {
             
             // delayed approach
@@ -235,13 +235,13 @@ public class ZkStateReader {
               if (EventType.None.equals(event.getType())) {
                 return;
               }
-              log.info("Updating live nodes");
               try {
                 // delayed approach
                 // ZkStateReader.this.updateClusterState(false, true);
                 synchronized (ZkStateReader.this.getUpdateLock()) {
                   List<String> liveNodes = zkClient.getChildren(
                       LIVE_NODES_ZKNODE, this, true);
+                  log.info("Updating live nodes... ({})", liveNodes.size());
                   Set<String> liveNodesSet = new HashSet<String>();
                   liveNodesSet.addAll(liveNodes);
                   ClusterState clusterState = new ClusterState(
@@ -296,7 +296,7 @@ public class ZkStateReader {
           
           clusterState = ClusterState.load(zkClient, liveNodesSet);
         } else {
-          log.info("Updating live nodes from ZooKeeper... ");
+          log.info("Updating live nodes from ZooKeeper... ({})", liveNodesSet.size());
           clusterState = new ClusterState(
               ZkStateReader.this.clusterState.getZkClusterStateVersion(), liveNodesSet,
               ZkStateReader.this.clusterState.getCollectionStates());

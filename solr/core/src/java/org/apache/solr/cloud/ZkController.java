@@ -781,6 +781,7 @@ public final class ZkController {
     //System.out.println(Thread.currentThread().getStackTrace()[3]);
     Integer numShards = cd.getCloudDescriptor().getNumShards();
     if (numShards == null) { //XXX sys prop hack
+      log.info("numShards not found on descriptor - reading it from system property");
       numShards = Integer.getInteger(ZkStateReader.NUM_SHARDS_PROP);
     }
     
