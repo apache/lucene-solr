@@ -1605,7 +1605,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       	<link offline="true" packagelistLoc="${javadoc.dir}"/>
         <link offline="true" href="${javadoc.link}" packagelistLoc="${javadoc.packagelist.dir}/java6"/>
         <bottom><![CDATA[
-          <address>Copyright &copy; ${year} Apache Software Foundation.  All Rights Reserved.</address>
+          <i>Copyright &copy; ${year} Apache Software Foundation.  All Rights Reserved.</i>
           <script src='{@docRoot}/prettify.js' type='text/javascript'></script>
           <script type='text/javascript'>
             (function(){
