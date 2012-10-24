@@ -30,7 +30,7 @@ public abstract class IntervalIterator {
   public static final IntervalIterator[] EMPTY = new IntervalIterator[0];
   public static final IntervalIterator NO_MORE_POSITIONS = new EmptyIntervalIterator();
   public static final int NO_MORE_DOCS = Integer.MAX_VALUE;
-  
+
   protected final Scorer scorer;
   protected final boolean collectPositions;
   
@@ -38,11 +38,29 @@ public abstract class IntervalIterator {
     this.scorer = scorer;
     this.collectPositions = collectPositions;
   }
-  
+
+  /**
+   * Called after the parent scorer has been advanced.  If the scorer is
+   * currently positioned on docId, then subsequent calls to next() will
+   * return Intervals for that document; otherwise, no Intervals are
+   * available
+   * @param docId the document the parent scorer was advanced to
+   * @return the docId that the scorer is currently positioned at
+   * @throws IOException if a low-level I/O error is encountered
+   */
   public abstract int scorerAdvanced(int docId) throws IOException;
-  
+
+  /**
+   * Get the next Interval on the current document.
+   * @return the next Interval, or null if there are no remaining Intervals
+   * @throws IOException if a low-level I/O error is encountered
+   */
   public abstract Interval next() throws IOException;
-  
+
+  /**
+   * Called once for each positional match on a document
+   * @param collector
+   */
   public abstract void collect(IntervalCollector collector);
   
   public abstract IntervalIterator[] subs(boolean inOrder);

@@ -20,9 +20,13 @@ package org.apache.lucene.search.positions;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.ComplexExplanation;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Weight.PostingFeatures;
-import org.apache.lucene.search.positions.IntervalIterator.IntervalCollector;
 import org.apache.lucene.search.positions.IntervalIterator.IntervalFilter;
 import org.apache.lucene.util.Bits;
 
@@ -30,15 +34,21 @@ import java.io.IOException;
 import java.util.Set;
 
 /**
+ * A Query that filters the results of an inner {@link Query} using an
+ * {@link IntervalFilter}.
  *
  * @lucene.experimental
- */ // nocommit - javadoc
+ */
 public class IntervalFilterQuery extends Query implements Cloneable {
 
-  
   private Query inner;
   private IntervalFilter filter;
 
+  /**
+   * Constructs a query using an inner query and an IntervalFilter
+   * @param inner the query to wrap
+   * @param filter the filter to restrict results by
+   */
   public IntervalFilterQuery(Query inner, IntervalFilter filter) {
     this.inner = inner;
     this.filter = filter;
@@ -82,8 +92,8 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     @Override
     public Explanation explain(AtomicReaderContext context, int doc)
         throws IOException {
-      Scorer scorer = scorer(context, true, false, PostingFeatures.POSITIONS, context.reader()
-              .getLiveDocs());
+      Scorer scorer = scorer(context, true, false, PostingFeatures.POSITIONS,
+                              context.reader().getLiveDocs());
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {

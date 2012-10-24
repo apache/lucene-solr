@@ -16,9 +16,9 @@ package org.apache.lucene.search.positions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
-
 import org.apache.lucene.search.Scorer;
+
+import java.io.IOException;
 
 /**
  * @lucene.experimental
@@ -27,27 +27,20 @@ public final class OrderedConjunctionIntervalIterator extends
     IntervalIterator {
 
   private final IntervalIterator[] iterators;
-  private static final Interval INFINITE_INTERVAL = new Interval(
-      Integer.MIN_VALUE, Integer.MIN_VALUE, -1, -1);
   private final Interval[] intervals;
   private final int lastIter;
-  private final Interval interval = new Interval(
-      Integer.MAX_VALUE, Integer.MAX_VALUE, -1, -1);
+  private final Interval interval = new Interval();
+
   private int index = 1;
-  private int lastTopEnd;
-  private int lastEndBegin;
-  
-  
+  private int matchDistance = 0;
+
+  private SnapshotPositionCollector snapshot = null;
+
   public OrderedConjunctionIntervalIterator(boolean collectPositions, IntervalIterator other) {
-    super(other.scorer, collectPositions);
-    assert other.subs(true) != null;
-    iterators = other.subs(true);
-    assert iterators.length > 1;
-    intervals = new Interval[iterators.length];
-    lastIter = iterators.length - 1;
+    this(other.scorer, collectPositions, other.subs(true));
   }
   
-  public OrderedConjunctionIntervalIterator(Scorer scorer, boolean collectPositions, IntervalIterator... iterators) throws IOException {
+  public OrderedConjunctionIntervalIterator(Scorer scorer, boolean collectPositions, IntervalIterator... iterators) {
     super(scorer, collectPositions);
     this.iterators = iterators;
     assert iterators.length > 1;
@@ -60,10 +53,7 @@ public final class OrderedConjunctionIntervalIterator extends
     if(intervals[0] == null) {
       return null;
     }
-    interval.begin = Integer.MAX_VALUE;
-    interval.end = Integer.MAX_VALUE;
-    interval.offsetBegin = -1;
-    interval.offsetEnd = -1;
+    interval.setMaximum();
     int b = Integer.MAX_VALUE;
     while (true) {
       while (true) {
@@ -84,20 +74,17 @@ public final class OrderedConjunctionIntervalIterator extends
         } while (current.begin <= previous.end);
         index++;
       }
-      interval.begin = intervals[0].begin;
-      interval.end = intervals[lastIter].end;
-      interval.offsetBegin = intervals[0].offsetBegin;
-      interval.offsetEnd = intervals[lastIter].offsetEnd;
-      lastTopEnd = intervals[0].end;
-      lastEndBegin = intervals[lastIter].begin;
+      interval.update(intervals[0], intervals[lastIter]);
+      matchDistance = (intervals[lastIter].begin - lastIter) - intervals[0].end;
       b = intervals[lastIter].begin;
       index = 1;
+      if (collectPositions)
+        snapshotSubPositions();
       intervals[0] = iterators[0].next();
       if (intervals[0] == null) {
         return interval.begin == Integer.MAX_VALUE ? null : interval;
       }
     }
-
   }
 
   @Override
@@ -108,10 +95,29 @@ public final class OrderedConjunctionIntervalIterator extends
   @Override
   public void collect(IntervalCollector collector) {
     assert collectPositions;
+    if (snapshot == null) {
+      // we might not be initialized if the first interval matches
+      collectInternal(collector);
+    } else {
+      snapshot.replay(collector);
+    }
+  }
+
+  private void snapshotSubPositions() {
+    if (snapshot == null) {
+      snapshot = new SnapshotPositionCollector(iterators.length);
+    }
+    snapshot.reset();
+    collectInternal(snapshot);
+  }
+
+  private void collectInternal(IntervalCollector collector) {
+    assert collectPositions;
     collector.collectComposite(scorer, interval, docID());
     for (IntervalIterator iter : iterators) {
       iter.collect(collector);
     }
+
   }
 
   @Override
@@ -120,7 +126,7 @@ public final class OrderedConjunctionIntervalIterator extends
     for (int i = 0; i < iterators.length; i++) {
       int advanceTo = iterators[i].scorerAdvanced(docId);
       assert advanceTo == docId;
-      intervals[i] = INFINITE_INTERVAL;
+      intervals[i] = Interval.INFINITE_INTERVAL;
     }
     intervals[0] = iterators[0].next();
     index = 1;
@@ -129,7 +135,7 @@ public final class OrderedConjunctionIntervalIterator extends
 
   @Override
   public int matchDistance() {
-    return (lastEndBegin-lastIter) - lastTopEnd;
+    return matchDistance;
   }
 
 }

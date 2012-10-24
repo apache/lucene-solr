@@ -34,21 +34,27 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiPhraseQuery;
+import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.SimpleFragmenter;
 import org.apache.lucene.search.highlight.TextFragment;
-import org.apache.lucene.search.highlight.positions.HighlightingIntervalCollector;
-import org.apache.lucene.search.highlight.positions.IntervalTokenStream;
-import org.apache.lucene.search.highlight.positions.ArrayIntervalIterator;
-import org.apache.lucene.search.highlight.positions.DocAndPositions;
 import org.apache.lucene.search.positions.BlockIntervalIterator;
 import org.apache.lucene.search.positions.BrouwerianQuery;
 import org.apache.lucene.search.positions.IntervalFilterQuery;
 import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.search.positions.IntervalIterator.IntervalFilter;
+import org.apache.lucene.search.positions.OrderedConjunctionQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -121,6 +127,10 @@ public class IntervalHighlighterTest extends LuceneTestCase {
       searcher.getIndexReader().close();
     }
     searcher = new IndexSearcher(DirectoryReader.open(dir));
+  }
+
+  protected static TermQuery termQuery(String term) {
+    return new TermQuery(new Term(F, term));
   }
   
   private String[] doSearch(Query q) throws IOException,
@@ -195,7 +205,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   
   public void testTerm() throws Exception {
     insertDocs(analyzer, "This is a test test");
-    String frags[] = doSearch(new TermQuery(new Term(F, "test")));
+    String frags[] = doSearch(termQuery("test"));
     assertEquals("This is a <B>test</B> <B>test</B>", frags[0]);
     close();
   }
@@ -206,8 +216,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     String gold = "this is some <B>long</B> text.  It has the word <B>long</B> in many places.  In fact, it has <B>long</B> on some different fragments.  "
         + "Let us see what happens to <B>long</B> in this case.";
     insertDocs(analyzer, input);
-    String frags[] = doSearch(new TermQuery(new Term(F, "long")),
-        input.length());
+    String frags[] = doSearch(termQuery("long"), input.length());
     assertEquals(gold, frags[0]);
     close();
   }
@@ -215,8 +224,8 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   public void testBooleanAnd() throws Exception {
     insertDocs(analyzer, "This is a test");
     BooleanQuery bq = new BooleanQuery();
-    bq.add(new BooleanClause(new TermQuery(new Term(F, "This")), Occur.MUST));
-    bq.add(new BooleanClause(new TermQuery(new Term(F, "test")), Occur.MUST));
+    bq.add(new BooleanClause(termQuery("This"), Occur.MUST));
+    bq.add(new BooleanClause(termQuery("test"), Occur.MUST));
     String frags[] = doSearch(bq);
     assertEquals("<B>This</B> is a <B>test</B>", frags[0]);
     close();
@@ -225,8 +234,8 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   public void testConstantScore() throws Exception {
     insertDocs(analyzer, "This is a test");
     BooleanQuery bq = new BooleanQuery();
-    bq.add(new BooleanClause(new TermQuery(new Term(F, "This")), Occur.MUST));
-    bq.add(new BooleanClause(new TermQuery(new Term(F, "test")), Occur.MUST));
+    bq.add(new BooleanClause(termQuery("This"), Occur.MUST));
+    bq.add(new BooleanClause(termQuery("test"), Occur.MUST));
     String frags[] = doSearch(new ConstantScoreQuery(bq));
     assertEquals("<B>This</B> is a <B>test</B>", frags[0]);
     close();
@@ -443,8 +452,30 @@ public class IntervalHighlighterTest extends LuceneTestCase {
 
     close();
   }
-    
-    private Term[] terms(String field, String...tokens) {
+
+  public void testNearPhraseQuery() throws Exception {
+
+    insertDocs(analyzer, "pease porridge rather hot and pease porridge fairly cold");
+
+    Query firstQ = new OrderedConjunctionQuery(4, termQuery("pease"), termQuery("porridge"), termQuery("hot"));
+    {
+      String frags[] = doSearch(firstQ, Integer.MAX_VALUE);
+      assertEquals("<B>pease</B> <B>porridge</B> rather <B>hot</B> and pease porridge fairly cold", frags[0]);
+    }
+
+    // near.3(near.4(pease, porridge, hot), near.4(pease, porridge, cold))
+    Query q = new OrderedConjunctionQuery(3,
+                firstQ,
+                new OrderedConjunctionQuery(4, termQuery("pease"), termQuery("porridge"), termQuery("cold")));
+
+    String frags[] = doSearch(q, Integer.MAX_VALUE);
+    assertEquals("<B>pease</B> <B>porridge</B> rather <B>hot</B> and <B>pease</B> <B>porridge</B> fairly <B>cold</B>",
+                 frags[0]);
+
+    close();
+  }
+
+  private Term[] terms(String field, String...tokens) {
       Term[] terms = new Term[tokens.length];
       for (int i = 0; i < tokens.length; i++) {
         terms[i] = new Term(field, tokens[i]);
@@ -474,7 +505,8 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     assertSloppyPhrase( "A A X A Y B A", null , 1, "X", "A", "A");
     close();
   }
-  
+
+
   private void assertSloppyPhrase(String doc, String expected, int slop, String...query) throws Exception {
     insertDocs(analyzer, doc);
     PhraseQuery pq = new PhraseQuery();

@@ -64,8 +64,14 @@ public abstract class Scorer extends DocIdSetIterator {
       collector.collect(doc);
     }
   }
-  
-  //nocommit javadocs
+
+  /**
+   * Expert: Collects matching positions on the current document.
+   *
+   * @param collectPositions // nocommit, still not sure what this does!
+   * @return an {@link IntervalIterator} over matching positions
+   * @throws IOException if a low-level I/O error is encountered
+   */
   public abstract IntervalIterator positions(boolean collectPositions) throws IOException;
 
   /**
