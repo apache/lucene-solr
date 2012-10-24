@@ -98,6 +98,12 @@ Bug Fixes
   numShards=2 collection after starting up a second core and not specifying 
   numShards. (Mark Miller)
 
+* SOLR-3988: Fixed SolrTestCaseJ4.adoc(SolrInputDocument) to respect 
+  field and document boosts (hossman)
+
+* SOLR-3981: Fixed bug that resulted in document boosts being compounded in
+  <copyField/> destination fields. (hossman)
+
 Other Changes
 ----------------------
 
