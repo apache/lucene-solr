@@ -43,6 +43,10 @@ public class KNearestNeighborClassifier implements Classifier {
   private IndexSearcher indexSearcher;
   private int k;
 
+  /**
+   * Create a {@link Classifier} using kNN algorithm
+   * @param k the number of neighbors to analyze as an <code>int</code>
+   */
   public KNearestNeighborClassifier(int k) {
     this.k = k;
   }
