@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.search.positions.Interval;
 import org.apache.lucene.search.positions.IntervalIterator;
-import org.apache.lucene.search.positions.IntervalIterator.IntervalCollector;
+import org.apache.lucene.search.positions.IntervalCollector;
 import org.apache.lucene.search.similarities.Similarity;
 
 import java.io.IOException;

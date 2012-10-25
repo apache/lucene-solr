@@ -21,19 +21,29 @@ import org.apache.lucene.search.Scorer;
 import java.io.IOException;
 
 /**
- * 
+ * Iterator over the matching {@link Interval}s of a {@link Scorer}
+ *
  * @lucene.experimental
  */
-// nocommit - javadoc
 public abstract class IntervalIterator {
-  
+
+  /** An empty array of IntervalIterators */
   public static final IntervalIterator[] EMPTY = new IntervalIterator[0];
+
+  /** An IntervalIterator containing no further Intervals */
   public static final IntervalIterator NO_MORE_POSITIONS = new EmptyIntervalIterator();
+
+  /** Integer representing no more documents */
   public static final int NO_MORE_DOCS = Integer.MAX_VALUE;
 
   protected final Scorer scorer;
   protected final boolean collectPositions;
-  
+
+  /**
+   * Constructs an IntervalIterator over a {@link Scorer}
+   * @param scorer the {@link Scorer} to pull positions from
+   * @param collectPositions true if positions will be collected
+   */
   public IntervalIterator(Scorer scorer, boolean collectPositions) {
     this.scorer = scorer;
     this.collectPositions = collectPositions;
@@ -58,37 +68,44 @@ public abstract class IntervalIterator {
   public abstract Interval next() throws IOException;
 
   /**
-   * Called once for each positional match on a document
-   * @param collector
+   * If positions are to be collected, this will be called once
+   * for each Interval returned by the iterator.  The constructor
+   * must have been called with collectPositions=true.
+   * @param collector an {@link IntervalCollector} to collect the
+   *                  Interval positions
    */
   public abstract void collect(IntervalCollector collector);
-  
+
+  /**
+   * Get any subiterators
+   * @param inOrder true if the subiterators should be returned in order
+   * @return
+   */
   public abstract IntervalIterator[] subs(boolean inOrder);
-  
+
+  /**
+   * Get the distance between matching subintervals
+   */
   public abstract int matchDistance();
-  
+
+  /**
+   * Get the current docID
+   */
   public int docID() {
     return scorer.docID();
   }
-  
+
+  /**
+   * Get this iterator's {@link Scorer}
+   * @return
+   */
   public Scorer getScorer() {
     return scorer;
   }
-  
-  public static interface IntervalFilter {
-    public abstract IntervalIterator filter(
-        boolean collectPositions, IntervalIterator iter);
-  }
-  
-  public static interface IntervalCollector {
-    public void collectLeafPosition(Scorer scorer, Interval interval,
-        int docID);
-    
-    public void collectComposite(Scorer scorer, Interval interval,
-        int docID);
-    
-  }
-  
+
+  /**
+   * An iterator that is always exhausted
+   */
   private static final class EmptyIntervalIterator extends
       IntervalIterator {
     

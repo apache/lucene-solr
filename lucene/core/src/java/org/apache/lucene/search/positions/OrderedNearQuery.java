@@ -26,9 +26,13 @@ import org.apache.lucene.search.Query;
  * a given distance of each other within the document.  The subqueries
  * must appear in the document in order.
  *
+ * N.B. Positions must be included in the index for this query to work
+ *
  * Implements the AND&lt; operator as defined in <a href=
  * "http://vigna.dsi.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics"
  * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantic</a>
+ *
+ * @lucene.experimental
  */
 
 public class OrderedNearQuery extends IntervalFilterQuery {

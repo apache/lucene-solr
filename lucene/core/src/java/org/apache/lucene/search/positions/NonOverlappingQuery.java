@@ -53,9 +53,12 @@ import java.util.Set;
  * will match "the quick fox is brown", because here "brown" is outside
  * the minuend's interval.
  *
+ * N.B. Positions must be included in the index for this query to work
+ *
  * Implements the Brouwerian operator as defined in <a href=
  * "http://vigna.dsi.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics"
  * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantic</a>
+ *
  * @lucene.experimental
  */
 public final class NonOverlappingQuery extends Query implements Cloneable {

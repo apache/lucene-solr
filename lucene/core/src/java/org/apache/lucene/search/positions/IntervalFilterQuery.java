@@ -27,7 +27,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Weight.PostingFeatures;
-import org.apache.lucene.search.positions.IntervalIterator.IntervalFilter;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
@@ -36,6 +35,10 @@ import java.util.Set;
 /**
  * A Query that filters the results of an inner {@link Query} using an
  * {@link IntervalFilter}.
+ *
+ * @see OrderedNearQuery
+ * @see UnorderedNearQuery
+ * @see NonOverlappingQuery
  *
  * @lucene.experimental
  */

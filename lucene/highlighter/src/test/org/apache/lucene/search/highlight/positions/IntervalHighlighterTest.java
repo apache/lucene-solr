@@ -53,7 +53,7 @@ import org.apache.lucene.search.positions.BlockIntervalIterator;
 import org.apache.lucene.search.positions.NonOverlappingQuery;
 import org.apache.lucene.search.positions.IntervalFilterQuery;
 import org.apache.lucene.search.positions.IntervalIterator;
-import org.apache.lucene.search.positions.IntervalIterator.IntervalFilter;
+import org.apache.lucene.search.positions.IntervalFilter;
 import org.apache.lucene.search.positions.OrderedNearQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;

@@ -25,9 +25,13 @@ import org.apache.lucene.search.Query;
  * a given distance of each other within the document.  The subqueries
  * may appear in the document in any order.
  *
+ * N.B. Positions must be included in the index for this query to work
+ *
  * Implements the LOWPASS<sub>k</sub> operator as defined in <a href=
  * "http://vigna.dsi.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics"
  * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantic</a>
+ *
+ * @lucene.experimental
  */
 
 public class UnorderedNearQuery extends IntervalFilterQuery {

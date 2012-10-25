@@ -17,23 +17,27 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 
-public class WithinOrderedFilter implements IntervalFilter {
+import org.apache.lucene.search.Scorer;
 
-  private int slop;
+/**
+ * Used for collecting matching {@link Interval}s from a search
+ */
+public interface IntervalCollector {
 
-  public WithinOrderedFilter(int slop) {
-    this.slop = slop;
-  }
+  /**
+   * Collects an individual term match
+   * @param scorer the parent scorer
+   * @param interval the interval to collect
+   * @param docID the docID of the document matched
+   */
+  public void collectLeafPosition(Scorer scorer, Interval interval, int docID);
 
-  @Override
-  public IntervalIterator filter(boolean collectPositions, IntervalIterator iter) {
-    return new WithinIntervalIterator(collectPositions, slop,
-        new OrderedConjunctionIntervalIterator(collectPositions, iter));
-  }
-
-  @Override
-  public String toString() {
-    return "WithinOrderedFilter[" + slop + "]";
-  }
+  /**
+   * Collects a composite interval that may have sub-intervals
+   * @param scorer the parent scorer
+   * @param interval the interval to collect
+   * @param docID the docID of the document matched
+   */
+  public void collectComposite(Scorer scorer, Interval interval, int docID);
 
 }

@@ -23,7 +23,7 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.search.positions.IntervalIterator;
-import org.apache.lucene.search.positions.IntervalIterator.IntervalCollector;
+import org.apache.lucene.search.positions.IntervalCollector;
 import org.apache.lucene.search.positions.Interval;
 
 /**

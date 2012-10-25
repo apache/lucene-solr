@@ -30,7 +30,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * are required.
  */
 final class SnapshotPositionCollector implements
-    IntervalIterator.IntervalCollector {
+    IntervalCollector {
   private SingleSnapshot[] snapshots;
   private int index = 0;
 
@@ -66,7 +66,7 @@ final class SnapshotPositionCollector implements
     collect(scorer, interval, docID, false);
   }
 
-  void replay(IntervalIterator.IntervalCollector collector) {
+  void replay(IntervalCollector collector) {
     for (int i = 0; i < index; i++) {
       SingleSnapshot singleSnapshot = snapshots[i];
       if (singleSnapshot.isLeaf) {

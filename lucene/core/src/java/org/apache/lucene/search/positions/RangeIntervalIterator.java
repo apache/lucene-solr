@@ -18,8 +18,6 @@ package org.apache.lucene.search.positions;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.positions.IntervalIterator.IntervalFilter;
-
 /**
  * 
  * @lucene.experimental
