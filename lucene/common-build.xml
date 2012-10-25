@@ -273,7 +273,6 @@
         <contains string="${java.vm.name}" substring="jrockit" casesensitive="false"/>
       </or>
       <or>
-        <equals arg1="${ant.java.version}" arg2="1.6"/>
         <equals arg1="${ant.java.version}" arg2="1.7"/>
         <equals arg1="${ant.java.version}" arg2="1.8"/>
       </or>
