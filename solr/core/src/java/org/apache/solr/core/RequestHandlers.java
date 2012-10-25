@@ -189,8 +189,8 @@ public final class RequestHandlers {
     
 
   /**
-   * The <code>LazyRequestHandlerWrapper</core> wraps any {@link SolrRequestHandler}.  
-   * Rather then instanciate and initalize the handler on startup, this wrapper waits
+   * The <code>LazyRequestHandlerWrapper</code> wraps any {@link SolrRequestHandler}.  
+   * Rather then instantiate and initialize the handler on startup, this wrapper waits
    * until it is actually called.  This should only be used for handlers that are
    * unlikely to be used in the normal lifecycle.
    * 

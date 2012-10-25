@@ -41,12 +41,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * <p>
  * This takes one required argument, "encoder", and the rest are optional:
  * <dl>
- *  <dt>encoder<dd> required, one of "DoubleMetaphone", "Metaphone", "Soundex", "RefinedSoundex", "Caverphone" (v2.0),
+ *  <dt>encoder</dt><dd> required, one of "DoubleMetaphone", "Metaphone", "Soundex", "RefinedSoundex", "Caverphone" (v2.0),
  *  or "ColognePhonetic" (case insensitive). If encoder isn't one of these, it'll be resolved as a class name either by
- *  itself if it already contains a '.' or otherwise as in the same package as these others.
- *  <dt>inject<dd> (default=true) add tokens to the stream with the offset=0
- *  <dt>maxCodeLength<dd>The maximum length of the phonetic codes, as defined by the encoder. If an encoder doesn't
- *  support this then specifying this is an error.
+ *  itself if it already contains a '.' or otherwise as in the same package as these others.</dd>
+ *  <dt>inject</dt><dd> (default=true) add tokens to the stream with the offset=0</dd>
+ *  <dt>maxCodeLength</dt><dd>The maximum length of the phonetic codes, as defined by the encoder. If an encoder doesn't
+ *  support this then specifying this is an error.</dd>
  * </dl>
  *
  * <pre class="prettyprint" >

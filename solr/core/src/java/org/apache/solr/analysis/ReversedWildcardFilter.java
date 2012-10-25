@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * This class produces a special form of reversed tokens, suitable for
  * better handling of leading wildcards. Tokens from the input TokenStream
  * are reversed and prepended with a special "reversed" marker character.
- * If <code>withOriginal<code> argument is <code>true</code> then first the
+ * If <code>withOriginal</code> argument is <code>true</code> then first the
  * original token is returned, and then the reversed token (with
  * <code>positionIncrement == 0</code>) is returned. Otherwise only reversed
  * tokens are returned.
