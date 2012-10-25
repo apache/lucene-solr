@@ -32,7 +32,7 @@ import org.apache.lucene.facet.index.attributes.CategoryAttribute;
  * <P>
  * A CategoryAttributesStream object can be reused for producing more than one
  * stream. To do that, the user should cause the underlying
- * Iterable<CategoryAttribute> object to return a new set of categories, and
+ * Iterable&lt;CategoryAttribute&gt; object to return a new set of categories, and
  * then call {@link #reset()} to allow this stream to be used again.
  * 
  * @lucene.experimental
