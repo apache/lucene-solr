@@ -159,7 +159,7 @@ public interface ExtractingParams {
    * File format is Java properties format with one key=value per line.
    * The key is evaluated as a regex against the file name, and the value is the password
    * The rules are evaluated top-bottom, i.e. the first match will be used
-   * If you want a fallback password to be always used, supply a .*=<defaultmypassword> at the end  
+   * If you want a fallback password to be always used, supply a .*=&lt;defaultmypassword&gt; at the end  
    */
   public static final String PASSWORD_MAP_FILE = "passwordsFile";
 }

@@ -24,7 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /** 
- * Parser for trec doc content, invoked on doc text excluding <DOC> and <DOCNO>
+ * Parser for trec doc content, invoked on doc text excluding &lt;DOC&gt; and &lt;DOCNO&gt;
  * which are handled in TrecContentSource. Required to be stateless and hence thread safe. 
  */
 public abstract class TrecDocParser {

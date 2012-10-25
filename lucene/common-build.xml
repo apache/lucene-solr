@@ -1565,6 +1565,25 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </macrodef>
 
+  <!-- TODO: if we make a custom ant task, we can give better
+       errors and stuff here, and not make a stupid temp dir -->
+  <macrodef name="jtidy-macro">
+    <element name="nested" implicit="yes" optional="yes"/>
+    <sequential>
+      <ivy:cachepath organisation="net.sf.jtidy" module="jtidy" revision="r938"
+          log="download-only" inline="true" conf="master" type="jar" pathid="jtidy.classpath" />
+      <taskdef name="tidy" classname="org.w3c.tidy.ant.JTidyTask" classpathref="jtidy.classpath"/>
+      <delete dir="${common.dir}/build/jtidy_tmp" quiet="true"/>
+      <echo message="Checking for broken html (such as invalid tags)..." taskname="jtidy"/>
+      <tidy failonerror="true" destdir="${common.dir}/build/jtidy_tmp">
+         <nested/>
+         <parameter name="input-encoding" value="UTF-8" />
+         <parameter name="only-errors" value="true" />
+      </tidy>
+      <delete dir="${common.dir}/build/jtidy_tmp" quiet="true"/>
+    </sequential>
+  </macrodef>
+
   <property name="failonjavadocwarning" value="true"/>
   <macrodef name="invoke-javadoc">
     <element name="sources" optional="yes"/>
