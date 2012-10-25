@@ -289,7 +289,7 @@ public class SearcherLifetimeManager implements Closeable {
    *  should still call {@link #release} after they are
    *  done.
    *
-   *  <p><b>NOTE: you must ensure no other threads are
+   *  <p><b>NOTE</b>: you must ensure no other threads are
    *  calling {@link #record} while you call close();
    *  otherwise it's possible not all searcher references
    *  will be freed. */
