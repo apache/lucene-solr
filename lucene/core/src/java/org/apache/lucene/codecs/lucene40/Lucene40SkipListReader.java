@@ -28,8 +28,9 @@ import org.apache.lucene.store.IndexInput;
  * that stores positions and payloads.
  * 
  * @see Lucene40PostingsFormat
- * @lucene.experimental
+ * @deprecated Only for reading old 4.0 segments
  */
+@Deprecated
 public class Lucene40SkipListReader extends MultiLevelSkipListReader {
   private boolean currentFieldStoresPayloads;
   private boolean currentFieldStoresOffsets;
@@ -43,7 +44,7 @@ public class Lucene40SkipListReader extends MultiLevelSkipListReader {
   private int lastPayloadLength;
   private int lastOffsetLength;
                            
-
+  /** Sole constructor. */
   public Lucene40SkipListReader(IndexInput skipStream, int maxSkipLevels, int skipInterval) {
     super(skipStream, maxSkipLevels, skipInterval);
     freqPointer = new long[maxSkipLevels];
@@ -52,6 +53,7 @@ public class Lucene40SkipListReader extends MultiLevelSkipListReader {
     offsetLength = new int[maxSkipLevels];
   }
 
+  /** Per-term initialization. */
   public void init(long skipPointer, long freqBasePointer, long proxBasePointer, int df, boolean storesPayloads, boolean storesOffsets) {
     super.init(skipPointer, df);
     this.currentFieldStoresPayloads = storesPayloads;

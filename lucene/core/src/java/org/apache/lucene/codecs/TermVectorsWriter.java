@@ -59,6 +59,11 @@ import org.apache.lucene.util.BytesRef;
  */
 public abstract class TermVectorsWriter implements Closeable {
   
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected TermVectorsWriter() {
+  }
+
   /** Called before writing the term vectors of the document.
    *  {@link #startField(FieldInfo, int, boolean, boolean, boolean)} will 
    *  be called <code>numVectorFields</code> times. Note that if term 
@@ -279,4 +284,6 @@ public abstract class TermVectorsWriter implements Closeable {
   /** Return the BytesRef Comparator used to sort terms
    *  before feeding to this API. */
   public abstract Comparator<BytesRef> getComparator() throws IOException;
+
+  public abstract void close() throws IOException;
 }

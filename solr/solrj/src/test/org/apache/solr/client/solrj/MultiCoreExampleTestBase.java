@@ -39,7 +39,7 @@ import org.junit.Test;
 public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase 
 {
   // protected static final CoreContainer cores = new CoreContainer();
-  protected static CoreContainer cores;
+  protected CoreContainer cores;
   private File dataDir2;
 
   @Override public String getSolrHome() { return ExternalPaths.EXAMPLE_MULTICORE_HOME; }
@@ -73,6 +73,8 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
         System.err.println("!!!! WARNING: best effort to remove " + dataDir2.getAbsolutePath() + " FAILED !!!!!");
       }
     }
+    
+    cores = null;
   }
 
   @Override

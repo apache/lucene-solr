@@ -99,7 +99,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
    * can tolerate deleted documents being returned you might
    * gain some performance by passing false.
    * @return The new IndexReader
-   * @throws CorruptIndexException
+   * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    *
    * @see #openIfChanged(DirectoryReader,IndexWriter,boolean)
@@ -241,7 +241,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<AtomicReader> 
    * can tolerate deleted documents being returned you might
    * gain some performance by passing false.
    *
-   * @throws IOException
+   * @throws IOException if there is a low-level IO error
    *
    * @lucene.experimental
    */

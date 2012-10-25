@@ -1,6 +1,11 @@
 package org.apache.lucene.util.automaton;
 
+import java.util.Set;
+
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.fst.Util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -30,5 +35,21 @@ public class TestSpecialOperations extends LuceneTestCase {
       Automaton b = a.clone();
       assertEquals(AutomatonTestUtil.isFiniteSlow(a), SpecialOperations.isFinite(b));
     }
+  }
+  
+  /**
+   * Basic test for getFiniteStrings
+   */
+  public void testFiniteStrings() {
+    Automaton a = BasicOperations.union(BasicAutomata.makeString("dog"), BasicAutomata.makeString("duck"));
+    MinimizationOperations.minimize(a);
+    Set<IntsRef> strings = SpecialOperations.getFiniteStrings(a, -1);
+    assertEquals(2, strings.size());
+    IntsRef dog = new IntsRef();
+    Util.toIntsRef(new BytesRef("dog"), dog);
+    assertTrue(strings.contains(dog));
+    IntsRef duck = new IntsRef();
+    Util.toIntsRef(new BytesRef("duck"), duck);
+    assertTrue(strings.contains(duck));
   }
 }

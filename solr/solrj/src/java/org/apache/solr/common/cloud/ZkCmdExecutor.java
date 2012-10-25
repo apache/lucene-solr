@@ -53,10 +53,6 @@ public class ZkCmdExecutor {
 
   /**
    * Perform the given operation, retrying if the connection fails
-   * 
-   * @param operation
-   * @throws KeeperException
-   * @throws InterruptedException
    */
   @SuppressWarnings("unchecked")
   public <T> T retryOperation(ZkOperation operation)
@@ -107,7 +103,6 @@ public class ZkCmdExecutor {
    * 
    * @param attemptCount
    *          the number of the attempts performed so far
-   * @throws InterruptedException 
    */
   protected void retryDelay(int attemptCount) throws InterruptedException {
     if (attemptCount > 0) {

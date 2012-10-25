@@ -21,7 +21,6 @@ import java.util.Map;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.uima.processor.SolrUIMAConfiguration.MapField;
-import org.apache.solr.uima.processor.exception.FieldMappingException;
 import org.apache.uima.cas.FSIterator;
 import org.apache.uima.cas.FeatureStructure;
 import org.apache.uima.cas.Type;
@@ -39,9 +38,9 @@ public class UIMAToSolrMapper {
 
   private final Logger log = LoggerFactory.getLogger(UIMAToSolrMapper.class);
 
-  private SolrInputDocument document;
+  private final SolrInputDocument document;
 
-  private JCas cas;
+  private final JCas cas;
 
   public UIMAToSolrMapper(SolrInputDocument document, JCas cas) {
     this.document = document;
@@ -52,7 +51,6 @@ public class UIMAToSolrMapper {
    * map features of a certain UIMA type to corresponding Solr fields based on the mapping
    *
    * @param typeName             name of UIMA type to map
-   * @param featureFieldsmapping
    */
   void map(String typeName, Map<String, MapField> featureFieldsmapping) throws FieldMappingException {
     try {
@@ -66,15 +64,15 @@ public class UIMAToSolrMapper {
           String fieldNameFeatureValue = fieldNameFeature == null ? null :
               fs.getFeatureValueAsString(type.getFeatureByBaseName(fieldNameFeature));
           String fieldName = mapField.getFieldName(fieldNameFeatureValue);
-          log.info(new StringBuffer("mapping ").append(typeName).append("@").append(featureName)
+          log.info(new StringBuilder("mapping ").append(typeName).append("@").append(featureName)
               .append(" to ").append(fieldName).toString());
-          String featureValue = null;
+          String featureValue;
           if (fs instanceof Annotation && "coveredText".equals(featureName)) {
             featureValue = ((Annotation) fs).getCoveredText();
           } else {
             featureValue = fs.getFeatureValueAsString(type.getFeatureByBaseName(featureName));
           }
-          log.info(new StringBuffer("writing ").append(featureValue).append(" in ").append(
+          log.info(new StringBuilder("writing ").append(featureValue).append(" in ").append(
               fieldName).toString());
           document.addField(fieldName, featureValue, 1.0f);
         }

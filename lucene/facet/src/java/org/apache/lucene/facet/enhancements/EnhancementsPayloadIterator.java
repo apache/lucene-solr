@@ -50,7 +50,7 @@ public class EnhancementsPayloadIterator extends PayloadIterator {
    *            A reader of the index.
    * @param term
    *            The category term to iterate.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public EnhancementsPayloadIterator(
       List<CategoryEnhancement> enhancementsList,

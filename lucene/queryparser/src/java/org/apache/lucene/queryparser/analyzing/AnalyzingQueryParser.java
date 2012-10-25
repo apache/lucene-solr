@@ -72,7 +72,6 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
    *                 characters (? or *), but is not simple prefix term
    *
    * @return Resulting {@link Query} built for the term
-   * @throws ParseException
    */
   @Override
   protected Query getWildcardQuery(String field, String termStr) throws ParseException {
@@ -190,7 +189,6 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
    *                 (<b>without</b> trailing '*' character!)
    *
    * @return Resulting {@link Query} built for the term
-   * @throws ParseException
    */
   @Override
   protected Query getPrefixQuery(String field, String termStr) throws ParseException {
@@ -243,7 +241,6 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryparser.classic.
    * @param termStr Term token to use for building term for the query
    *
    * @return Resulting {@link Query} built for the term
-   * @exception ParseException
    */
   @Override
   protected Query getFuzzyQuery(String field, String termStr, float minSimilarity)

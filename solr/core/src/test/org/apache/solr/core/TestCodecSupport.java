@@ -37,14 +37,14 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     Map<String, SchemaField> fields = h.getCore().getSchema().getFields();
     SchemaField schemaField = fields.get("string_pulsing_f");
     PerFieldPostingsFormat format = (PerFieldPostingsFormat) codec.postingsFormat();
-    assertEquals("Pulsing40", format.getPostingsFormatForField(schemaField.getName()).getName());
+    assertEquals("Pulsing41", format.getPostingsFormatForField(schemaField.getName()).getName());
     schemaField = fields.get("string_simpletext_f");
     assertEquals("SimpleText",
         format.getPostingsFormatForField(schemaField.getName()).getName());
     schemaField = fields.get("string_standard_f");
-    assertEquals("Lucene40", format.getPostingsFormatForField(schemaField.getName()).getName());
+    assertEquals("Lucene41", format.getPostingsFormatForField(schemaField.getName()).getName());
     schemaField = fields.get("string_f");
-    assertEquals("Lucene40", format.getPostingsFormatForField(schemaField.getName()).getName());
+    assertEquals("Lucene41", format.getPostingsFormatForField(schemaField.getName()).getName());
   }
 
   public void testDynamicFields() {
@@ -53,10 +53,10 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
 
     assertEquals("SimpleText", format.getPostingsFormatForField("foo_simple").getName());
     assertEquals("SimpleText", format.getPostingsFormatForField("bar_simple").getName());
-    assertEquals("Pulsing40", format.getPostingsFormatForField("foo_pulsing").getName());
-    assertEquals("Pulsing40", format.getPostingsFormatForField("bar_pulsing").getName());
-    assertEquals("Lucene40", format.getPostingsFormatForField("foo_standard").getName());
-    assertEquals("Lucene40", format.getPostingsFormatForField("bar_standard").getName());
+    assertEquals("Pulsing41", format.getPostingsFormatForField("foo_pulsing").getName());
+    assertEquals("Pulsing41", format.getPostingsFormatForField("bar_pulsing").getName());
+    assertEquals("Lucene41", format.getPostingsFormatForField("foo_standard").getName());
+    assertEquals("Lucene41", format.getPostingsFormatForField("bar_standard").getName());
   }
 
   public void testUnknownField() {

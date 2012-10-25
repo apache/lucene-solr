@@ -33,11 +33,12 @@
   <patternset id="binary.root.dist.patterns"
               includes="LICENSE.txt,NOTICE.txt,README.txt,
                         MIGRATE.txt,JRE_VERSION_MIGRATION.txt,
+                        SYSTEM_REQUIREMENTS.txt,
                         CHANGES.txt,
                         **/lib/*.jar,
                         licenses/**,
                         */docs/,**/README*"
-              excludes="build/**,site/**,tools/**"
+              excludes="build/**,site/**,tools/**,**/lib/*servlet-api*.jar"
   />
 
 
@@ -51,7 +52,8 @@
     </ant>
   </target>
 
-  <target name="test" depends="test-core, test-modules, test-backwards"
+  <!-- "-clover.load" is *not* a useless dependency. do not remove -->
+  <target name="test" depends="-clover.load, test-core, test-modules, test-backwards"
           description="Runs all unit tests (core, modules and back-compat)"
   />
 
@@ -224,51 +226,71 @@
   <target name="javadoc" depends="javadocs"/>
   <target name="javadocs" description="Generate javadoc" depends="javadocs-lucene-core, javadocs-modules, javadocs-test-framework"/>
 
-  <!-- we check for broken links across all documentation -->
-  <target name="documentation-lint" depends="documentation">
-    <sequential>
-      <check-broken-links dir="build/docs"/>
-      <!-- TODO: change this level=method -->
-      <check-missing-javadocs dir="build/docs" level="class"/>
-      <!-- too many classes to fix overall to just enable
-           the above to be level="method" right now, but we
-           can prevent the modules that don't have problems
-           from getting any worse -->
-      <!-- analyzers-common: problems -->
-      <check-missing-javadocs dir="build/docs/analyzers-icu" level="method"/>
-      <!-- analyzers-kuromoji: problems -->
-      <check-missing-javadocs dir="build/docs/analyzers-morfologik" level="method"/>
-      <check-missing-javadocs dir="build/docs/analyzers-phonetic" level="method"/>
-      <!-- analyzers-smartcn: problems -->
-      <check-missing-javadocs dir="build/docs/analyzers-stempel" level="method"/>
-      <!-- analyzers-uima: problems -->
-      <!-- benchmark: problems -->
-      <check-missing-javadocs dir="build/docs/classification" level="method"/>
-      <!-- codecs: problems -->
-      <!-- core: problems -->
-      <check-missing-javadocs dir="build/docs/demo" level="method"/>
-      <!-- facet: problems -->
-      <!-- grouping: problems -->
-      <!-- highlighter: problems -->
-      <check-missing-javadocs dir="build/docs/join" level="method"/>
-      <check-missing-javadocs dir="build/docs/memory" level="method"/>
-      <!-- misc: problems -->
-      <!-- queries: problems -->
-      <!-- queryparser: problems -->
-      <!-- sandbox: problems -->
-      <!-- spatial: problems -->
-      <check-missing-javadocs dir="build/docs/suggest" level="method"/>
-      <!-- test-framework: problems -->
+  <target name="documentation-lint" depends="-ecj-javadoc-lint,-documentation-lint,-documentation-lint-unsupported"
+          description="Validates the generated documentation (HTML errors, broken links,...)"/>
 
-      <!-- too much to fix core/ for now, but enforce full javadocs for key packages -->
-      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/analysis" level="method"/>
-      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/document" level="method"/>
-      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/search/similarities" level="method"/>
-      <check-missing-javadocs dir="build/docs/core/org/apache/lucene/index" level="method"/>
-    </sequential>
+  <!-- we check for broken links across all documentation -->
+  <target name="-documentation-lint" if="documentation-lint.supported" depends="documentation">
+    <echo message="checking for broken html..."/>
+    <jtidy-macro>
+       <!-- NOTE: must currently exclude deprecated-list due to a javadocs bug (as of 1.7.0_09)
+            javadocs generates invalid XML if you deprecate a method that takes a parameter
+            with a generic type -->
+      <fileset dir="build/docs" includes="**/*.html" excludes="**/deprecated-list.html"/>
+    </jtidy-macro>
+    <echo message="Checking for broken links..."/>
+    <check-broken-links dir="build/docs"/>
+    <echo message="Checking for missing docs..."/>
+    <!-- TODO: change this level=method -->
+    <check-missing-javadocs dir="build/docs" level="class"/>
+    <!-- too many classes to fix overall to just enable
+         the above to be level="method" right now, but we
+         can prevent the modules that don't have problems
+         from getting any worse -->
+    <!-- analyzers-common: problems -->
+    <check-missing-javadocs dir="build/docs/analyzers-icu" level="method"/>
+    <!-- analyzers-kuromoji: problems -->
+    <check-missing-javadocs dir="build/docs/analyzers-morfologik" level="method"/>
+    <check-missing-javadocs dir="build/docs/analyzers-phonetic" level="method"/>
+    <!-- analyzers-smartcn: problems -->
+    <check-missing-javadocs dir="build/docs/analyzers-stempel" level="method"/>
+    <!-- analyzers-uima: problems -->
+    <!-- benchmark: problems -->
+    <check-missing-javadocs dir="build/docs/classification" level="method"/>
+    <!-- codecs: problems -->
+    <!-- core: problems -->
+    <check-missing-javadocs dir="build/docs/demo" level="method"/>
+    <!-- facet: problems -->
+    <!-- grouping: problems -->
+    <!-- highlighter: problems -->
+    <check-missing-javadocs dir="build/docs/join" level="method"/>
+    <check-missing-javadocs dir="build/docs/memory" level="method"/>
+    <!-- misc: problems -->
+    <!-- queries: problems -->
+    <!-- queryparser: problems -->
+    <!-- sandbox: problems -->
+    <!-- spatial: problems -->
+    <check-missing-javadocs dir="build/docs/suggest" level="method"/>
+    <!-- test-framework: problems -->
+
+    <!-- too much to fix core/ for now, but enforce full javadocs for key packages -->
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/analysis" level="method"/>
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/document" level="method"/>
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/search/similarities" level="method"/>
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/index" level="method"/>
+    <check-missing-javadocs dir="build/docs/core/org/apache/lucene/codecs" level="method"/>
   </target>
   
-  <target name="process-webpages" depends="resolve-pegdown">
+  <target name="-ecj-javadoc-lint" depends="documentation,compile-test-framework,-ecj-resolve">
+    <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+    </subant>
+    <modules-crawl target="-ecj-javadoc-lint"/>
+  </target>
+
+  <target name="process-webpages" depends="resolve-groovy,resolve-pegdown">
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="**/build.xml" excludes="build.xml,analysis/*,build/**,tools/**,backwards/**,site/**"/>
     </makeurl>
@@ -287,7 +309,7 @@
     </xslt>
     
     <pegdown todir="${javadoc.dir}">
-      <fileset dir="." includes="MIGRATE.txt,JRE_VERSION_MIGRATION.txt"/>
+      <fileset dir="." includes="MIGRATE.txt,JRE_VERSION_MIGRATION.txt,SYSTEM_REQUIREMENTS.txt"/>
       <globmapper from="*.txt" to="*.html"/>
     </pegdown>
 
@@ -406,8 +428,9 @@
     <!-- Exclude clover license files incompatible with the ASL -->
     <delete dir="${svn.export.dir}/tools/clover"/>
 
-    <build-changes changes.src.dir="${svn.export.dir}/site/changes"
-                   changes.target.dir="${svn.export.dir}/docs/changes"/>
+    <build-changes changes.src.file="${svn.export.dir}/CHANGES.txt"
+                   changes.target.dir="${svn.export.dir}/docs/changes"
+                   changes.product="LUCENE"/>
     <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset prefix="lucene-${version}" dir="${svn.export.dir}"/>
     </tar>
@@ -498,7 +521,7 @@
   </target>
 
   <target name="changes-to-html">
-    <build-changes changes.src.dir="${changes.src.dir}" changes.target.dir="${changes.target.dir}" />
+    <build-changes changes.product="LUCENE"/>
   </target>
 
   <target name="pitest-modules" depends="compile-test">
@@ -533,16 +556,6 @@
     <property name="lucene-core.uptodate" value="true"/>
   </target>
 
-  <!-- TODO: in the future, we don't need to actually put
-       jars in the lib/ folders, but can just put in classpath.
-       only packaging tasks really need that (and could do it
-       under build/ directories) -->
-  <target name="clean-jars" description="Clean local jars">
-     <delete>
-       <fileset dir="." includes="**/*.jar"/>
-     </delete>
-  </target>
-
   <target name="get-jenkins-line-docs" unless="enwiki.exists">
     <sequential>
       <!-- TODO: can get .lzma instead (it's ~17% smaller) but there's no builtin ant support...? -->
@@ -552,7 +565,7 @@
     </sequential>
   </target>
 
-  <target name="jar-checksums" depends="clean-jars,resolve">
+  <target name="jar-checksums" depends="resolve">
     <jar-checksum-macro srcdir="${common.dir}" dstdir="${common.dir}/licenses"/>
   </target>
 

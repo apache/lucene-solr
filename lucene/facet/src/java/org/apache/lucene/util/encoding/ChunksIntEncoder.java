@@ -47,7 +47,7 @@ import java.io.OutputStream;
  * manner: <code><pre class="prettyprint">
  * IntEncoder fourFlags = 
  *         new SortingEncoderFilter(new UniqueValuesIntEncoder(new DGapIntEncoder(new FlagsIntEncoderImpl())));
- * </code></pre>
+ * </pre></code>
  * 
  * @lucene.experimental
  */

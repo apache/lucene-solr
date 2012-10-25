@@ -30,8 +30,10 @@ import org.apache.lucene.util.NamedSPILoader;
  * written into the index. In order for the segment to be read, the
  * name must resolve to your implementation via {@link #forName(String)}.
  * This method uses Java's 
- * {@link ServiceLoader Service Provider Interface} to resolve codec names.
+ * {@link ServiceLoader Service Provider Interface} (SPI) to resolve codec names.
  * <p>
+ * If you implement your own codec, make sure that it has a no-arg constructor
+ * so SPI can load it.
  * @see ServiceLoader
  */
 public abstract class Codec implements NamedSPILoader.NamedSPI {
@@ -49,7 +51,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
    * SPI mechanism (registered in META-INF/ of your jar file, etc).
    * @param name must be all ascii alphanumeric, and less than 128 characters in length.
    */
-  public Codec(String name) {
+  protected Codec(String name) {
     NamedSPILoader.checkServiceName(name);
     this.name = name;
   }
@@ -86,11 +88,19 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   
   /** looks up a codec by name */
   public static Codec forName(String name) {
+    if (loader == null) {
+      throw new IllegalStateException("You called Codec.forName() before all Codecs could be initialized. "+
+          "This likely happens if you call it from a Codec's ctor.");
+    }
     return loader.lookup(name);
   }
   
   /** returns a list of all available codec names */
   public static Set<String> availableCodecs() {
+    if (loader == null) {
+      throw new IllegalStateException("You called Codec.availableCodecs() before all Codecs could be initialized. "+
+          "This likely happens if you call it from a Codec's ctor.");
+    }
     return loader.availableServices();
   }
   
@@ -109,7 +119,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
     loader.reload(classloader);
   }
   
-  private static Codec defaultCodec = Codec.forName("Lucene40");
+  private static Codec defaultCodec = Codec.forName("Lucene41");
   
   /** expert: returns the default codec used for newly created
    *  {@link IndexWriterConfig}s.

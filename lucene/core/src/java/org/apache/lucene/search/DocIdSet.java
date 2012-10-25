@@ -83,7 +83,7 @@ public abstract class DocIdSet {
    * should be cached without copying it into a BitSet. The default is to return
    * <code>false</code>. If you have an own <code>DocIdSet</code> implementation
    * that does its iteration very effective and fast without doing disk I/O,
-   * override this method and return <code>true</here>.
+   * override this method and return <code>true</code>.
    */
   public boolean isCacheable() {
     return false;

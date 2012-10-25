@@ -261,6 +261,9 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       assert state != DocsEnumState.START : "freq() called before nextDoc()/advance()";
       assert state != DocsEnumState.FINISHED : "freq() called after NO_MORE_DOCS";
       int freq = super.freq();
+      if (freq == 0) {
+        System.out.println();
+      }
       assert freq > 0;
       return freq;
     }

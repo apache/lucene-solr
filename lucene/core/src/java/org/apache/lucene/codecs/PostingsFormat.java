@@ -33,8 +33,10 @@ import org.apache.lucene.util.NamedSPILoader;
  * written into the index in certain configurations. In order for the segment 
  * to be read, the name must resolve to your implementation via {@link #forName(String)}.
  * This method uses Java's 
- * {@link ServiceLoader Service Provider Interface} to resolve codec names.
+ * {@link ServiceLoader Service Provider Interface} (SPI) to resolve format names.
  * <p>
+ * If you implement your own format, make sure that it has a no-arg constructor
+ * so SPI can load it.
  * @see ServiceLoader
  * @lucene.experimental */
 public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
@@ -42,7 +44,9 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
   private static final NamedSPILoader<PostingsFormat> loader =
     new NamedSPILoader<PostingsFormat>(PostingsFormat.class);
 
+  /** Zero-length {@code PostingsFormat} array. */
   public static final PostingsFormat[] EMPTY = new PostingsFormat[0];
+
   /** Unique name that's used to retrieve this format when
    *  reading the index.
    */
@@ -89,11 +93,19 @@ public abstract class PostingsFormat implements NamedSPILoader.NamedSPI {
   
   /** looks up a format by name */
   public static PostingsFormat forName(String name) {
+    if (loader == null) {
+      throw new IllegalStateException("You called PostingsFormat.forName() before all formats could be initialized. "+
+          "This likely happens if you call it from a PostingsFormat's ctor.");
+    }
     return loader.lookup(name);
   }
   
   /** returns a list of all available format names */
   public static Set<String> availablePostingsFormats() {
+    if (loader == null) {
+      throw new IllegalStateException("You called PostingsFormat.availablePostingsFormats() before all formats could be initialized. "+
+          "This likely happens if you call it from a PostingsFormat's ctor.");
+    }
     return loader.availableServices();
   }
   

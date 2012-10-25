@@ -110,7 +110,7 @@ public abstract class Weight {
    *          Bits that represent the allowable docs to match (typically deleted docs
    *          but possibly filtering other documents)
    * @return a {@link Scorer} which scores documents in/out-of order.
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   public abstract Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
       boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException;
@@ -144,7 +144,7 @@ public abstract class Weight {
     
     private PostingFeatures(int docFlags, int docsAndPositionsFlags, boolean isProximityFeature) {
       this.docsAndPositionsFlags = docsAndPositionsFlags;
-      this.docFlags = docsAndPositionsFlags;
+      this.docFlags = docFlags;
       this.isProximityFeature = isProximityFeature;
     }
     

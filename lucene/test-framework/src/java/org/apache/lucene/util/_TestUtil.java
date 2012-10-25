@@ -44,7 +44,7 @@ import java.util.zip.ZipFile;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.ByteDocValuesField;
 import org.apache.lucene.document.DerefBytesDocValuesField;
@@ -651,7 +651,7 @@ public class _TestUtil {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("forcing postings format to:" + format);
     }
-    return new Lucene40Codec() {
+    return new Lucene41Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
         return format;
@@ -662,7 +662,11 @@ public class _TestUtil {
   // TODO: generalize all 'test-checks-for-crazy-codecs' to
   // annotations (LUCENE-3489)
   public static String getPostingsFormat(String field) {
-    PostingsFormat p = Codec.getDefault().postingsFormat();
+    return getPostingsFormat(Codec.getDefault(), field);
+  }
+  
+  public static String getPostingsFormat(Codec codec, String field) {
+    PostingsFormat p = codec.postingsFormat();
     if (p instanceof PerFieldPostingsFormat) {
       return ((PerFieldPostingsFormat)p).getPostingsFormatForField(field).getName();
     } else {
@@ -1007,4 +1011,53 @@ public class _TestUtil {
     }
   }
 
+  /**
+   * Returns a random string in the specified length range consisting 
+   * entirely of whitespace characters 
+   * @see #WHITESPACE_CHARACTERS
+   */
+  public static String randomWhitespace(Random r, int minLength, int maxLength) {
+    final int end = nextInt(r, minLength, maxLength);
+    StringBuilder out = new StringBuilder();
+    for (int i = 0; i < end; i++) {
+      int offset = nextInt(r, 0, WHITESPACE_CHARACTERS.length-1);
+      char c = WHITESPACE_CHARACTERS[offset];
+      // sanity check
+      Assert.assertTrue("Not really whitespace? (@"+offset+"): " + c, Character.isWhitespace(c));
+      out.append(c);
+    }
+    return out.toString();
+  }
+  
+  /** List of characters that match {@link Character#isWhitespace} */
+  public static final char[] WHITESPACE_CHARACTERS = new char[] {
+    // :TODO: is this list exhaustive?
+    '\u0009',
+    '\n',    
+    '\u000B',
+    '\u000C',
+    '\r',    
+    '\u001C',
+    '\u001D',
+    '\u001E',
+    '\u001F',
+    '\u0020',
+    // '\u0085', faild sanity check?
+    '\u1680',
+    '\u180E',
+    '\u2000',
+    '\u2001',
+    '\u2002',
+    '\u2003',
+    '\u2004',
+    '\u2005',
+    '\u2006',
+    '\u2008',
+    '\u2009',
+    '\u200A',
+    '\u2028',
+    '\u2029',
+    '\u205F',
+    '\u3000',
+  };
 }

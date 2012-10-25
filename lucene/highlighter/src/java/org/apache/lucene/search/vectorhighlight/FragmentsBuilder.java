@@ -37,7 +37,7 @@ public interface FragmentsBuilder {
    * @param fieldName field of the document to be highlighted
    * @param fieldFragList FieldFragList object
    * @return a created fragment or null when no fragment created
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public String createFragment( IndexReader reader, int docId, String fieldName,
       FieldFragList fieldFragList ) throws IOException;
@@ -52,7 +52,7 @@ public interface FragmentsBuilder {
    * @param maxNumFragments maximum number of fragments
    * @return created fragments or null when no fragments created.
    *         size of the array can be less than maxNumFragments
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public String[] createFragments( IndexReader reader, int docId, String fieldName,
       FieldFragList fieldFragList, int maxNumFragments ) throws IOException;
@@ -68,7 +68,7 @@ public interface FragmentsBuilder {
    * @param postTags post-tags to be used to highlight terms
    * @param encoder an encoder that generates encoded text
    * @return a created fragment or null when no fragment created
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public String createFragment( IndexReader reader, int docId, String fieldName,
       FieldFragList fieldFragList, String[] preTags, String[] postTags,
@@ -87,7 +87,7 @@ public interface FragmentsBuilder {
    * @param encoder an encoder that generates encoded text
    * @return created fragments or null when no fragments created.
    *         size of the array can be less than maxNumFragments
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public String[] createFragments( IndexReader reader, int docId, String fieldName,
       FieldFragList fieldFragList, int maxNumFragments, String[] preTags, String[] postTags,

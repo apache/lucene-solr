@@ -36,9 +36,11 @@ public class Lucene40DocValuesConsumer extends DocValuesWriterBase {
   private final Directory mainDirectory;
   private Directory directory;
   private final String segmentSuffix;
+
+  /** Segment suffix used when writing doc values index files. */
   public final static String DOC_VALUES_SEGMENT_SUFFIX = "dv";
 
-
+  /** Sole constructor. */
   public Lucene40DocValuesConsumer(PerDocWriteState state, String segmentSuffix) {
     super(state);
     this.segmentSuffix = segmentSuffix;
@@ -68,11 +70,17 @@ public class Lucene40DocValuesConsumer extends DocValuesWriterBase {
   public void abort() {
     try {
       close();
-    } catch (IOException ignored) {
-    }
-    IOUtils.deleteFilesIgnoringExceptions(mainDirectory, IndexFileNames.segmentFileName(
+    } catch (Throwable t) {
+      // ignore
+    } finally {
+      // TODO: why the inconsistency here? we do this, but not SimpleText (which says IFD
+      // will do it).
+      // TODO: check that IFD really does this always, even if codec abort() throws a 
+      // RuntimeException (e.g. ThreadInterruptedException)
+      IOUtils.deleteFilesIgnoringExceptions(mainDirectory, IndexFileNames.segmentFileName(
         segmentName, segmentSuffix, IndexFileNames.COMPOUND_FILE_EXTENSION),
         IndexFileNames.segmentFileName(segmentName, segmentSuffix,
             IndexFileNames.COMPOUND_FILE_ENTRIES_EXTENSION));
+    }
   }
 }

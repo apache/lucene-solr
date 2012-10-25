@@ -134,7 +134,7 @@ public final class StandardTokenizer extends Tokenizer {
   }
 
   private final void init(Version matchVersion) {
-    this.scanner = new StandardTokenizerImpl(input);
+    this.scanner = new StandardTokenizerImpl(null); // best effort NPE if you dont call reset
   }
 
   // this tokenizer generates three attributes:

@@ -50,11 +50,14 @@ public abstract class DocValuesArraySource extends Source {
     templates.put(Type.FLOAT_64, new DoubleValues());
     TEMPLATES = Collections.unmodifiableMap(templates);
   }
-  
+
+  /** Returns the {@link DocValuesArraySource} for the given
+   *  {@link Type}. */
   public static DocValuesArraySource forType(Type type) {
     return TEMPLATES.get(type);
   }
 
+  /** Number of bytes to encode each doc value. */
   protected final int bytesPerValue;
 
   DocValuesArraySource(int bytesPerValue, Type type) {
@@ -66,9 +69,13 @@ public abstract class DocValuesArraySource extends Source {
   public abstract BytesRef getBytes(int docID, BytesRef ref);
 
   
+  /** Creates a {@link DocValuesArraySource} by loading a
+   *  previously saved one from an {@link IndexInput}. */
   public abstract DocValuesArraySource newFromInput(IndexInput input, int numDocs)
       throws IOException;
-  
+
+  /** Creates {@link DocValuesArraySource} from a native
+   *  array. */
   public abstract DocValuesArraySource newFromArray(Object array);
 
   @Override
@@ -76,10 +83,14 @@ public abstract class DocValuesArraySource extends Source {
     return true;
   }
 
+  /** Encode a long value into the provided {@link
+   *  BytesRef}. */
   public void toBytes(long value, BytesRef bytesRef) {
     copyLong(bytesRef, value);
   }
 
+  /** Encode a double value into the provided {@link
+   *  BytesRef}. */
   public void toBytes(double value, BytesRef bytesRef) {
     copyLong(bytesRef, Double.doubleToRawLongBits(value));
   }

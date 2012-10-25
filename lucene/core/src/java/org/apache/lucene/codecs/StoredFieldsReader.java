@@ -30,6 +30,10 @@ import org.apache.lucene.index.StoredFieldVisitor;
  * @lucene.experimental
  */
 public abstract class StoredFieldsReader implements Cloneable, Closeable {
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected StoredFieldsReader() {
+  }
   
   /** Visit the stored fields for document <code>n</code> */
   public abstract void visitDocument(int n, StoredFieldVisitor visitor) throws IOException;

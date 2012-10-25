@@ -201,7 +201,7 @@ public class ReturnFields
             sp.eatws();
             start = sp.pos;
           } else {
-            if (ch==' ' || ch == ',' || ch==0) {
+            if (Character.isWhitespace(ch) || ch == ',' || ch==0) {
               addField( field, key, augmenters, req );
               continue;
             }
@@ -215,7 +215,7 @@ public class ReturnFields
           // we read "key : "
           field = sp.getId(null);
           ch = sp.ch();
-          if (field != null && (ch==' ' || ch == ',' || ch==0)) {
+          if (field != null && (Character.isWhitespace(ch) || ch == ',' || ch==0)) {
             rename.add(field, key);
             addField( field, key, augmenters, req );
             continue;
@@ -231,7 +231,7 @@ public class ReturnFields
 
           field = sp.getGlobbedId(null);
           ch = sp.ch();
-          if (field != null && (ch==' ' || ch == ',' || ch==0)) {
+          if (field != null && (Character.isWhitespace(ch) || ch == ',' || ch==0)) {
             // "*" looks and acts like a glob, but we give it special treatment
             if ("*".equals(field)) {
               _wantsAllFields = true;

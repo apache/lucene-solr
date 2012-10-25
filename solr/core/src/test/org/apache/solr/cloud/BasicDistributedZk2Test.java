@@ -59,11 +59,11 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
           "now is the time for all good men", "foo_f", 1.414f, "foo_b", "true",
           "foo_d", 1.414d);
       
-      // make sure we are in a steady state...
-      waitForRecoveriesToFinish(false);
-      
       commit();
       
+      // make sure we are in a steady state...
+      waitForRecoveriesToFinish(false);
+
       assertDocCounts(false);
       
       indexAbunchOfDocs();
@@ -203,6 +203,9 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     }
     
     commit();
+    
+    printLayout();
+    
     query("q", "*:*", "sort", "n_tl1 desc");
     
     // long cloudClientDocs = cloudClient.query(new

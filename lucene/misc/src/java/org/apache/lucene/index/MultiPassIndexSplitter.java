@@ -55,7 +55,7 @@ public class MultiPassIndexSplitter {
    * @param seq if true, then the source index will be split into equal
    * increasing ranges of document id-s. If false, source document id-s will be
    * assigned in a deterministic round-robin fashion to one of the output splits.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public void split(Version version, IndexReader in, Directory[] outputs, boolean seq) throws IOException {
     if (outputs == null || outputs.length < 2) {

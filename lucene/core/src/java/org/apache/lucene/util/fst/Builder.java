@@ -399,8 +399,10 @@ public class Builder<T> {
     }
 
     final UnCompiledNode<T> lastNode = frontier[input.length];
-    lastNode.isFinal = true;
-    lastNode.output = NO_OUTPUT;
+    if (lastInput.length != input.length || prefixLenPlus1 != input.length + 1) {
+      lastNode.isFinal = true;
+      lastNode.output = NO_OUTPUT;
+    }
 
     // push conflicting outputs forward, only as far as
     // needed

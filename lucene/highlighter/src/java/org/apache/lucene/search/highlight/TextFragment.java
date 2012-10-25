@@ -55,7 +55,6 @@ public class TextFragment
     score=Math.max(score,frag2.score);
   }
   /**
-   * @param fragment
    * @return true if this fragment follows the one passed
    */
   public boolean follows(TextFragment fragment)

@@ -35,7 +35,7 @@ public class NGramPhraseQuery extends PhraseQuery {
   
   /**
    * Constructor that takes gram size.
-   * @param n
+   * @param n n-gram size
    */
   public NGramPhraseQuery(int n){
     super();

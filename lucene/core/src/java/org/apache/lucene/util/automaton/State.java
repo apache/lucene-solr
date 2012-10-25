@@ -165,6 +165,10 @@ public class State implements Comparable<State> {
     }
   }
   
+  /** Virtually adds an epsilon transition to the target
+   *  {@code to} state.  This is implemented by copying all
+   *  transitions from {@code to} to this state, and if {@code
+   *  to} is an accept state then set accept for this state. */
   void addEpsilon(State to) {
     if (to.accept) accept = true;
     for (Transition t : to.getTransitions())

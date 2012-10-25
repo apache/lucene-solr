@@ -59,7 +59,7 @@ import org.apache.lucene.util.encoding.IntEncoder;
  * DirectoryReader reader = DirectoryReader.open(oldDir);
  * IndexWriterConfig conf = new IndexWriterConfig(VER, ANALYZER);
  * IndexWriter writer = new IndexWriter(newDir, conf);
- * List<AtomicReaderContext> leaves = reader.leaves();
+ * List&lt;AtomicReaderContext&gt; leaves = reader.leaves();
  *   AtomicReader wrappedLeaves[] = new AtomicReader[leaves.size()];
  *   for (int i = 0; i < leaves.size(); i++) {
  *     wrappedLeaves[i] = new OrdinalMappingAtomicReader(leaves.get(i).reader(), ordmap);

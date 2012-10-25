@@ -313,7 +313,7 @@ public class DirectSpellChecker {
    * @param suggestMode specifies when to return suggested words
    * @param accuracy return only suggested words that match with this similarity
    * @return sorted list of the suggested words according to the comparator
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public SuggestWord[] suggestSimilar(Term term, int numSug, IndexReader ir, 
       SuggestMode suggestMode, float accuracy) throws IOException {

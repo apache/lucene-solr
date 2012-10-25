@@ -55,15 +55,16 @@ public abstract class MultiLevelSkipListWriter {
   /** number of levels in this skip list */
   protected int numberOfSkipLevels;
   
-  // the skip interval in the list with level = 0
+  /** the skip interval in the list with level = 0 */
   private int skipInterval;
 
-  // skipInterval used for level > 0
+  /** skipInterval used for level &gt; 0 */
   private int skipMultiplier;
   
-  // for every skip level a different buffer is used 
+  /** for every skip level a different buffer is used  */
   private RAMOutputStream[] skipBuffer;
 
+  /** Creates a {@code MultiLevelSkipListWriter}. */
   protected MultiLevelSkipListWriter(int skipInterval, int skipMultiplier, int maxSkipLevels, int df) {
     this.skipInterval = skipInterval;
     this.skipMultiplier = skipMultiplier;
@@ -81,11 +82,14 @@ public abstract class MultiLevelSkipListWriter {
     }
   }
   
-  // skipMultiplier and skipInterval are the same:
+  /** Creates a {@code MultiLevelSkipListWriter}, where
+   *  {@code skipInterval} and {@code skipMultiplier} are
+   *  the same. */
   protected MultiLevelSkipListWriter(int skipInterval, int maxSkipLevels, int df) {
     this(skipInterval, skipInterval, maxSkipLevels, df);
   }
 
+  /** Allocates internal skip buffers. */
   protected void init() {
     skipBuffer = new RAMOutputStream[numberOfSkipLevels];
     for (int i = 0; i < numberOfSkipLevels; i++) {
@@ -93,7 +97,7 @@ public abstract class MultiLevelSkipListWriter {
     }
   }
 
-  /** creates new buffers or empties the existing ones */
+  /** Creates new buffers or empties the existing ones */
   protected void resetSkip() {
     if (skipBuffer == null) {
       init();
@@ -117,7 +121,7 @@ public abstract class MultiLevelSkipListWriter {
    * the max level is skip data is to be written to. 
    * 
    * @param df the current document frequency 
-   * @throws IOException
+   * @throws IOException If an I/O error occurs
    */
   public void bufferSkip(int df) throws IOException {
 

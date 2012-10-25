@@ -96,10 +96,16 @@ public class SimpleTextPerDocProducer extends PerDocProducerBase {
 
     @Override
     public void close() throws IOException {
+      boolean success = false;
       try {
         super.close();
+        success = true;
       } finally {
-        IOUtils.close(input);
+        if (success) {
+          IOUtils.close(input);
+        } else {
+          IOUtils.closeWhileHandlingException(input);
+        }
       }
     }
 

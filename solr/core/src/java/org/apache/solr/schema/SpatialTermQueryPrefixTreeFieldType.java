@@ -19,6 +19,10 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
 
+/**
+ * @see TermQueryPrefixTreeStrategy
+ * @lucene.experimental
+ */
 public class SpatialTermQueryPrefixTreeFieldType extends AbstractSpatialPrefixTreeFieldType<TermQueryPrefixTreeStrategy> {
 
   @Override

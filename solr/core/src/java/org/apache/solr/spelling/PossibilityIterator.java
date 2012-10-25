@@ -63,8 +63,6 @@ public class PossibilityIterator implements
    * We assume here that the passed-in inner LinkedHashMaps are already sorted
    * in order of "Best Possible Correction".
    * </p>
-   * 
-   * @param suggestions
    */
   public PossibilityIterator(
       Map<Token,LinkedHashMap<String,Integer>> suggestions,

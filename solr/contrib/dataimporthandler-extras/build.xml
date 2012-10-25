@@ -89,6 +89,8 @@
     </ant>
   </target>
 
+  <target name="-ecj-javadoc-lint-tests" depends="compile-solr-dataimporthandler-tests,common.-ecj-javadoc-lint-tests"/>
+
   <target name="compile-core" depends="compile-solr-dataimporthandler,resolve-extraction-libs,solr-contrib-build.compile-core"/>
   <target name="compile-test" depends="compile-solr-dataimporthandler-tests, common-solr.compile-test"/>
 </project>

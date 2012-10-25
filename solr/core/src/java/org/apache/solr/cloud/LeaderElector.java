@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -43,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * Leader Election process. This class contains the logic by which a
  * leader is chosen. First call * {@link #setup(ElectionContext)} to ensure
  * the election process is init'd. Next call
- * {@link #joinElection(ElectionContext)} to start the leader election.
+ * {@link #joinElection(ElectionContext, boolean)} to start the leader election.
  * 
  * The implementation follows the classic ZooKeeper recipe of creating an
  * ephemeral, sequential node for each candidate and then looking at the set
@@ -75,13 +74,7 @@ public  class LeaderElector {
    * watching the candidate that is in line before this one - if it goes down, check
    * if this candidate is the leader again.
    *
-   * @param seq
-   * @param context 
    * @param replacement has someone else been the leader already?
-   * @throws KeeperException
-   * @throws InterruptedException
-   * @throws IOException 
-   * @throws UnsupportedEncodingException
    */
   private void checkIfIamLeader(final int seq, final ElectionContext context, boolean replacement) throws KeeperException,
       InterruptedException, IOException {
@@ -161,7 +154,6 @@ public  class LeaderElector {
   /**
    * Returns int given String of form n_0000000001 or n_0000000003, etc.
    * 
-   * @param nStringSequence
    * @return sequence number
    */
   private int getSeq(String nStringSequence) {
@@ -208,14 +200,9 @@ public  class LeaderElector {
    * node that is watched goes down, check if we are the new lowest node, else
    * watch the next lowest numbered node.
    * 
-   * @param context
    * @return sequential node number
-   * @throws KeeperException
-   * @throws InterruptedException
-   * @throws IOException 
-   * @throws UnsupportedEncodingException
    */
-  public int joinElection(ElectionContext context) throws KeeperException, InterruptedException, IOException {
+  public int joinElection(ElectionContext context, boolean replacement) throws KeeperException, InterruptedException, IOException {
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
     
     long sessionId = zkClient.getSolrZooKeeper().getSessionId();
@@ -271,17 +258,13 @@ public  class LeaderElector {
       }
     }
     int seq = getSeq(leaderSeqPath);
-    checkIfIamLeader(seq, context, false);
+    checkIfIamLeader(seq, context, replacement);
     
     return seq;
   }
   
   /**
    * Set up any ZooKeeper nodes needed for leader election.
-   * 
-   * @param context
-   * @throws InterruptedException
-   * @throws KeeperException
    */
   public void setup(final ElectionContext context) throws InterruptedException,
       KeeperException {
@@ -292,8 +275,6 @@ public  class LeaderElector {
   
   /**
    * Sort n string sequence list.
-   * 
-   * @param seqs
    */
   private void sortSeqs(List<String> seqs) {
     Collections.sort(seqs, new Comparator<String>() {

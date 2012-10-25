@@ -275,7 +275,6 @@ public class CSVConfig {
 
     /**
      * Specify if the end of the line needs to be trimmed. Defaults to false.
-     * @param endTrimmed
      */
     public void setEndTrimmed(boolean endTrimmed) {
         this.endTrimmed = endTrimmed;

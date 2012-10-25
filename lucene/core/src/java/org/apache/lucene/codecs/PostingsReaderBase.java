@@ -41,6 +41,14 @@ import org.apache.lucene.util.Bits;
 // TermsDict + PostingsReader/WriterBase == PostingsConsumer/Producer
 public abstract class PostingsReaderBase implements Closeable {
 
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected PostingsReaderBase() {
+  }
+
+  /** Performs any initialization, such as reading and
+   *  verifying the header from the provided terms
+   *  dictionary {@link IndexInput}. */
   public abstract void init(IndexInput termsIn) throws IOException;
 
   /** Return a newly created empty TermState */

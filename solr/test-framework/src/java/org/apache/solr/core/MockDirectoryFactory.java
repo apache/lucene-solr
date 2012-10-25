@@ -47,7 +47,7 @@ public class MockDirectoryFactory extends CachingDirectoryFactory {
   @Override
   public boolean exists(String path) {
     String fullPath = new File(path).getAbsolutePath();
-    synchronized (DirectoryFactory.class) {
+    synchronized (this) {
       CacheValue cacheValue = byPathCache.get(fullPath);
       Directory directory = null;
       if (cacheValue != null) {

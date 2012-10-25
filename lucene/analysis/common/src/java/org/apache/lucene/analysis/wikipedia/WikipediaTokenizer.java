@@ -140,11 +140,10 @@ public final class WikipediaTokenizer extends Tokenizer {
    *
    * @param input The input
    * @param tokenOutput One of {@link #TOKENS_ONLY}, {@link #UNTOKENIZED_ONLY}, {@link #BOTH}
-   * @param untokenizedTypes
    */
   public WikipediaTokenizer(Reader input, int tokenOutput, Set<String> untokenizedTypes) {
     super(input);
-    this.scanner = new WikipediaTokenizerImpl(input);
+    this.scanner = new WikipediaTokenizerImpl(null); // best effort NPE if you dont call reset
     init(tokenOutput, untokenizedTypes);
   }
 
@@ -154,11 +153,10 @@ public final class WikipediaTokenizer extends Tokenizer {
    *
    * @param input The input
    * @param tokenOutput One of {@link #TOKENS_ONLY}, {@link #UNTOKENIZED_ONLY}, {@link #BOTH}
-   * @param untokenizedTypes
    */
   public WikipediaTokenizer(AttributeFactory factory, Reader input, int tokenOutput, Set<String> untokenizedTypes) {
     super(factory, input);
-    this.scanner = new WikipediaTokenizerImpl(input);
+    this.scanner = new WikipediaTokenizerImpl(null); // best effort NPE if you dont call reset
     init(tokenOutput, untokenizedTypes);
   }
 
@@ -168,11 +166,10 @@ public final class WikipediaTokenizer extends Tokenizer {
    *
    * @param input The input
    * @param tokenOutput One of {@link #TOKENS_ONLY}, {@link #UNTOKENIZED_ONLY}, {@link #BOTH}
-   * @param untokenizedTypes
    */
   public WikipediaTokenizer(AttributeSource source, Reader input, int tokenOutput, Set<String> untokenizedTypes) {
     super(source, input);
-    this.scanner = new WikipediaTokenizerImpl(input);
+    this.scanner = new WikipediaTokenizerImpl(null); // best effort NPE if you dont call reset
     init(tokenOutput, untokenizedTypes);
   }
   

@@ -155,7 +155,7 @@ class ExtendedBufferedReader extends BufferedReader  {
   * 
   * @param c the character to read up to
   * @return the string up to the character <code>c</code>
-  * @throws IOException
+  * @throws IOException If there is a low-level I/O error.
   */
  public String readUntil(char c) throws IOException {
    if (lookaheadChar == UNDEFINED) {
@@ -253,10 +253,8 @@ class ExtendedBufferedReader extends BufferedReader  {
   /**
    * Skips all chars in the input until (but excluding) the given char
    * 
-   * @param c
    * @return counter
-   * @throws IllegalArgumentException
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public long skipUntil(char c) throws IllegalArgumentException, IOException {
     if (lookaheadChar == UNDEFINED) {

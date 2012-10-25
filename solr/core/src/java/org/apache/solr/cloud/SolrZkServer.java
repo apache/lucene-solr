@@ -321,8 +321,6 @@ class SolrZkServerProps extends QuorumPeerConfig {
   /**
    * Parse config from a Properties.
    * @param zkProp Properties to parse from.
-   * @throws java.io.IOException
-   * @throws ConfigException
    */
   @Override
   public void parseProperties(Properties zkProp)

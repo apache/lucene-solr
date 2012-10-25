@@ -70,7 +70,6 @@ final class SegmentMerger {
 
   /**
    * Add an IndexReader to the collection of readers that are to be merged
-   * @param reader
    */
   final void add(IndexReader reader) {
     for (final AtomicReaderContext ctx : reader.leaves()) {
@@ -253,7 +252,7 @@ final class SegmentMerger {
 
   /**
    * Merge the TermVectors from each of the segments into the new one.
-   * @throws IOException
+   * @throws IOException if there is a low-level IO error
    */
   private final int mergeVectors() throws IOException {
     final TermVectorsWriter termVectorsWriter = codec.termVectorsFormat().vectorsWriter(directory, mergeState.segmentInfo, context);

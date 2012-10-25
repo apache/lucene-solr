@@ -23,9 +23,17 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.ExternalPaths;
-import org.junit.BeforeClass;
 
+import java.util.EnumSet;
+import java.util.Arrays;
+import java.util.List;
+import java.util.ArrayList;
+
+import org.junit.BeforeClass;
+import org.junit.After;
 
 /**
  * 
@@ -34,6 +42,9 @@ import org.junit.BeforeClass;
  */
 @Slow
 public class SolrExampleStreamingTest extends SolrExampleTests {
+
+  protected Throwable handledException = null;
+
   @BeforeClass
   public static void beforeTest() throws Exception {
     createJetty(ExternalPaths.EXAMPLE_HOME, null, null);
@@ -50,7 +61,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
         public Throwable lastError = null;
         @Override
         public void handleError(Throwable ex) {
-          lastError = ex;
+          handledException = lastError = ex;
         }
       };
 
@@ -63,4 +74,39 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
       throw new RuntimeException( ex );
     }
   }
+
+  public void testWaitOptions() throws Exception {
+    // SOLR-3903
+    final List<Throwable> failures = new ArrayList<Throwable>();
+    ConcurrentUpdateSolrServer s = new ConcurrentUpdateSolrServer
+      ("http://127.0.0.1:"+port+context, 2, 2) {
+        @Override
+        public void handleError(Throwable ex) {
+          failures.add(ex);
+        }
+      };
+      
+    int docId = 42;
+    for (UpdateRequest.ACTION action : EnumSet.allOf(UpdateRequest.ACTION.class)) {
+      for (boolean waitSearch : Arrays.asList(true, false)) {
+        for (boolean waitFlush : Arrays.asList(true, false)) {
+          UpdateRequest updateRequest = new UpdateRequest();
+          SolrInputDocument document = new SolrInputDocument();
+          document.addField("id", docId++ );
+          updateRequest.add(document);
+          updateRequest.setAction(action, waitSearch, waitFlush);
+          s.request(updateRequest);
+        }
+      }
+    }
+    s.commit();
+    s.blockUntilFinished();
+    s.shutdown();
+
+    if (0 != failures.size()) {
+      assertEquals(failures.size() + " Unexpected Exception, starting with...", 
+                   null, failures.get(0));
+    }
+  }
+
 }

@@ -31,7 +31,7 @@ import org.apache.lucene.util.BytesRef;
 // TODO: we need to break out separate StoredField...
 
 /** Represents a single field for indexing.  IndexWriter
- *  consumes Iterable<IndexableField> as a document.
+ *  consumes Iterable&lt;IndexableField&gt; as a document.
  *
  *  @lucene.experimental */
 

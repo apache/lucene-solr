@@ -324,10 +324,9 @@ public class SolrResourceLoader implements ResourceLoader
    * A comment line is any line that starts with the character "#"
    * </p>
    *
-   * @param resource
    * @return a list of non-blank non-comment lines with whitespace trimmed
    * from front and back.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public List<String> getLines(String resource) throws IOException {
     return getLines(resource, UTF_8);
@@ -342,9 +341,8 @@ public class SolrResourceLoader implements ResourceLoader
    * </p>
    *
    * @param resource the file to be read
-   * @param encoding
    * @return a list of non-blank non-comment lines with whitespace trimmed
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public List<String> getLines(String resource,
       String encoding) throws IOException {

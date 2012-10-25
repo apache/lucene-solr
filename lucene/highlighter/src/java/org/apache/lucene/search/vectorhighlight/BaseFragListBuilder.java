@@ -69,13 +69,14 @@ public abstract class BaseFragListBuilder implements FragListBuilder {
 
       wpil.clear();
       wpil.add( phraseInfo );
+      int firstOffset = phraseInfo.getStartOffset();
       int st = phraseInfo.getStartOffset() - margin < startOffset ?
           startOffset : phraseInfo.getStartOffset() - margin;
       int en = st + fragCharSize;
       if( phraseInfo.getEndOffset() > en )
         en = phraseInfo.getEndOffset();
-      startOffset = en;
 
+      int lastEndOffset = phraseInfo.getEndOffset();
       while( true ){
         if( ite.hasNext() ){
           phraseInfo = ite.next();
@@ -84,11 +85,22 @@ public abstract class BaseFragListBuilder implements FragListBuilder {
         }
         else
           break;
-        if( phraseInfo.getEndOffset() <= en )
+        if( phraseInfo.getEndOffset() <= en ){
           wpil.add( phraseInfo );
+          lastEndOffset = phraseInfo.getEndOffset();
+        }
         else
           break;
       }
+      int matchLen = lastEndOffset - firstOffset;
+      //now recalculate the start and end position to "center" the result
+      int newMargin = (fragCharSize-matchLen)/2;
+      st = firstOffset - newMargin;
+      if(st<startOffset){
+        st = startOffset;
+      }
+      en = st+fragCharSize;
+      startOffset = en;
       fieldFragList.add( st, en, wpil );
     }
     return fieldFragList;

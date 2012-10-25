@@ -275,17 +275,17 @@
     </sequential>
   </macrodef>
 
-  <target name="define-lucene-javadoc-url" unless="lucene.javadoc.url">
-    <script language="javascript"><![CDATA[
-      var url, version = project.getProperty('version');
+  <target name="define-lucene-javadoc-url" depends="resolve-groovy" unless="lucene.javadoc.url">
+    <script language="groovy" classpathref="groovy.classpath"><![CDATA[
+      String url, version = project.getProperty('version');
       if (version.contains('-SNAPSHOT')) {
-        importClass(java.io.File);
         url = new File(project.getProperty('common.dir'), 'build' + File.separator + 'docs').toURI().toASCIIString();
-        if (!(/\/$/.test(url))) url += '/';
+        if (!(url =~ /\/$/)) url += '/';
       } else {
         version = version.replace('.', '_');
         url = 'http://lucene.apache.org/core/' + version + '/';
       }
+      self.log('Using the following URL to refer to Lucene Javadocs: ' + url);
       project.setProperty('lucene.javadoc.url', url);
     ]]></script>
   </target>

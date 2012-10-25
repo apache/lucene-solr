@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -34,6 +35,11 @@ public class TestIndexSplitter extends LuceneTestCase {
     _TestUtil.rmDir(destDir);
     destDir.mkdirs();
     Directory fsDir = newFSDirectory(dir);
+    // IndexSplitter.split makes its own commit directly with SIPC/SegmentInfos,
+    // so the unreferenced files are expected.
+    if (fsDir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)fsDir).setAssertNoUnrefencedFilesOnClose(false);
+    }
 
     LogMergePolicy mergePolicy = new LogByteSizeMergePolicy();
     mergePolicy.setNoCFSRatio(1.0);

@@ -28,10 +28,13 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * A spatial Prefix Tree, or Trie, which decomposes shapes into prefixed strings at variable lengths corresponding to
- * variable precision.  Each string corresponds to a spatial region.
- *
- * Implementations of this class should be thread-safe and immutable once initialized.
+ * A spatial Prefix Tree, or Trie, which decomposes shapes into prefixed strings
+ * at variable lengths corresponding to variable precision.   Each string
+ * corresponds to a rectangular spatial region.  This approach is
+ * also referred to "Grids", "Tiles", and "Spatial Tiers".
+ * <p/>
+ * Implementations of this class should be thread-safe and immutable once
+ * initialized.
  *
  * @lucene.experimental
  */

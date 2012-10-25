@@ -35,6 +35,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.fst.Util;
 
 /**
  * Special automata operations.
@@ -208,5 +210,61 @@ final public class SpecialOperations {
     a.deterministic = false;
     a.clearNumberedStates();
     return accept;
+  }
+
+  // TODO: this is a dangerous method ... Automaton could be
+  // huge ... and it's better in general for caller to
+  // enumerate & process in a single walk:
+
+  /**
+   * Returns the set of accepted strings, assuming that at most
+   * <code>limit</code> strings are accepted. If more than <code>limit</code> 
+   * strings are accepted, null is returned. If <code>limit</code>&lt;0, then 
+   * the limit is infinite.
+   */
+  public static Set<IntsRef> getFiniteStrings(Automaton a, int limit) {
+    HashSet<IntsRef> strings = new HashSet<IntsRef>();
+    if (a.isSingleton()) {
+      if (limit > 0) {
+        strings.add(Util.toUTF32(a.singleton, new IntsRef()));
+      } else {
+        return null;
+      }
+    } else if (!getFiniteStrings(a.initial, new HashSet<State>(), strings, new IntsRef(), limit)) {
+      return null;
+    }
+    return strings;
+  }
+  
+  /**
+   * Returns the strings that can be produced from the given state, or
+   * false if more than <code>limit</code> strings are found. 
+   * <code>limit</code>&lt;0 means "infinite".
+   */
+  private static boolean getFiniteStrings(State s, HashSet<State> pathstates, 
+      HashSet<IntsRef> strings, IntsRef path, int limit) {
+    pathstates.add(s);
+    for (Transition t : s.getTransitions()) {
+      if (pathstates.contains(t.to)) {
+        return false;
+      }
+      for (int n = t.min; n <= t.max; n++) {
+        path.grow(path.length+1);
+        path.ints[path.length] = n;
+        path.length++;
+        if (t.to.accept) {
+          strings.add(IntsRef.deepCopyOf(path));
+          if (limit >= 0 && strings.size() > limit) {
+            return false;
+          }
+        }
+        if (!getFiniteStrings(t.to, pathstates, strings, path, limit)) {
+          return false;
+        }
+        path.length--;
+      }
+    }
+    pathstates.remove(s);
+    return true;
   }
 }

@@ -56,7 +56,7 @@ public final class Term implements Comparable<Term> {
    * This serves two purposes: 1) reuse of a Term with the same field.
    * 2) pattern for a query.
    * 
-   * @param fld
+   * @param fld field's name
    */
   public Term(String fld) {
     this(fld, new BytesRef());

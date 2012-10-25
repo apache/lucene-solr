@@ -69,9 +69,9 @@ public class PayloadSpanUtil {
   /**
    * Query should be rewritten for wild/fuzzy support.
    * 
-   * @param query
+   * @param query rewritten query
    * @return payloads Collection
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   public Collection<byte[]> getPayloadsForQuery(Query query) throws IOException {
     Collection<byte[]> payloads = new ArrayList<byte[]>();

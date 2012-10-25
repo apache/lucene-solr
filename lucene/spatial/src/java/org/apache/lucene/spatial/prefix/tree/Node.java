@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Represents a grid cell. These are not necessarily threadsafe, although new Cell("") (world cell) must be.
+ * Represents a grid cell. These are not necessarily thread-safe, although new Cell("") (world cell) must be.
  *
  * @lucene.experimental
  */

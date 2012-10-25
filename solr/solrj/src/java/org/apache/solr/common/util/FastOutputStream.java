@@ -102,7 +102,6 @@ public class FastOutputStream extends OutputStream implements DataOutput {
 
   /** reserve at least len bytes at the end of the buffer.
    * Invalid if len > buffer.length
-   * @param len
    */
   public void reserve(int len) throws IOException {
     if (len > (buf.length - pos))

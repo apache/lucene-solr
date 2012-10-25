@@ -452,7 +452,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     }
 
     @Override
-    public void binaryField(FieldInfo fieldInfo, byte[] value, int offset, int length) throws IOException {
+    public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
       doc.add(new StoredField(fieldInfo.name, value));
     }
 
@@ -586,7 +586,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * Returns -1 if no document was found.
    * This method is primarily intended for clients that want to fetch
    * documents using a unique identifier."
-   * @param t
    * @return the first document number containing the term
    */
   public int getFirstMatch(Term t) throws IOException {
@@ -1033,7 +1032,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * If the answer was not cached, it may have been inserted into the cache as a result of this call.
    * <p>
    *
-   * @param query
    * @param filter may be null
    * @return DocSet meeting the specified criteria, should <b>not</b> be modified by the caller.
    */
@@ -1078,13 +1076,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * <p>
    * FUTURE: The returned DocList may be retrieved from a cache.
    *
-   * @param query
    * @param filter   may be null
    * @param lsort    criteria by which to sort (if null, query relevance is used)
    * @param offset   offset into the list of documents to return
    * @param len      maximum number of documents to return
    * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public DocList getDocList(Query query, Query filter, Sort lsort, int offset, int len) throws IOException {
     QueryCommand qc = new QueryCommand();
@@ -1108,13 +1105,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * <p>
    * FUTURE: The returned DocList may be retrieved from a cache.
    *
-   * @param query
    * @param filterList may be null
    * @param lsort    criteria by which to sort (if null, query relevance is used)
    * @param offset   offset into the list of documents to return
    * @param len      maximum number of documents to return
    * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public DocList getDocList(Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags) throws IOException {
     QueryCommand qc = new QueryCommand();
@@ -1555,13 +1551,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * and sorted by <code>sort</code>.
    * FUTURE: The returned DocList may be retrieved from a cache.
    *
-   * @param query
    * @param filter   may be null
    * @param lsort    criteria by which to sort (if null, query relevance is used)
    * @param offset   offset into the list of documents to return
    * @param len      maximum number of documents to return
    * @return DocList meeting the specified criteria, should <b>not</b> be modified by the caller.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public DocList getDocList(Query query, DocSet filter, Sort lsort, int offset, int len) throws IOException {
     QueryCommand qc = new QueryCommand();
@@ -1587,13 +1582,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * <p>
    * The DocList and DocSet returned should <b>not</b> be modified.
    *
-   * @param query
    * @param filter   may be null
    * @param lsort    criteria by which to sort (if null, query relevance is used)
    * @param offset   offset into the list of documents to return
    * @param len      maximum number of documents to return
    * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the caller.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public DocListAndSet getDocListAndSet(Query query, Query filter, Sort lsort, int offset, int len) throws IOException {
     QueryCommand qc = new QueryCommand();
@@ -1620,14 +1614,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * <p>
    * The DocList and DocSet returned should <b>not</b> be modified.
    *
-   * @param query
    * @param filter   may be null
    * @param lsort    criteria by which to sort (if null, query relevance is used)
    * @param offset   offset into the list of documents to return
    * @param len      maximum number of documents to return
    * @param flags    user supplied flags for the result set
    * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the caller.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public DocListAndSet getDocListAndSet(Query query, Query filter, Sort lsort, int offset, int len, int flags) throws IOException {
     QueryCommand qc = new QueryCommand();
@@ -1658,13 +1651,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * <p>
    * The DocList and DocSet returned should <b>not</b> be modified.
    *
-   * @param query
    * @param filterList   may be null
    * @param lsort    criteria by which to sort (if null, query relevance is used)
    * @param offset   offset into the list of documents to return
    * @param len      maximum number of documents to return
    * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the caller.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public DocListAndSet getDocListAndSet(Query query, List<Query> filterList, Sort lsort, int offset, int len) throws IOException {
     QueryCommand qc = new QueryCommand();
@@ -1693,14 +1685,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * <p>
    * The DocList and DocSet returned should <b>not</b> be modified.
    *
-   * @param query
    * @param filterList   may be null
    * @param lsort    criteria by which to sort (if null, query relevance is used)
    * @param offset   offset into the list of documents to return
    * @param len      maximum number of documents to return
    * @param flags    user supplied flags for the result set
    * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the caller.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public DocListAndSet getDocListAndSet(Query query, List<Query> filterList, Sort lsort, int offset, int len, int flags) throws IOException {
     QueryCommand qc = new QueryCommand();
@@ -1723,13 +1714,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * <p>
    * FUTURE: The returned DocList may be retrieved from a cache.
    *
-   * @param query
    * @param filter   may be null
    * @param lsort    criteria by which to sort (if null, query relevance is used)
    * @param offset   offset into the list of documents to return
    * @param len      maximum number of documents to return
    * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the caller.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public DocListAndSet getDocListAndSet(Query query, DocSet filter, Sort lsort, int offset, int len) throws IOException {
     QueryCommand qc = new QueryCommand();
@@ -1756,14 +1746,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * <p>
    * The DocList and DocSet returned should <b>not</b> be modified.
    *
-   * @param query
    * @param filter   may be null
    * @param lsort    criteria by which to sort (if null, query relevance is used)
    * @param offset   offset into the list of documents to return
    * @param len      maximum number of documents to return
    * @param flags    user supplied flags for the result set
    * @return DocListAndSet meeting the specified criteria, should <b>not</b> be modified by the caller.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public DocListAndSet getDocListAndSet(Query query, DocSet filter, Sort lsort, int offset, int len, int flags) throws IOException {
     QueryCommand qc = new QueryCommand();
@@ -1827,10 +1816,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * <p>
    * This method is cache-aware and may check as well as modify the cache.
    *
-   * @param a
-   * @param b
-   * @return the numer of documents in the intersection between <code>a</code> and <code>b</code>.
-   * @throws IOException
+   * @return the number of documents in the intersection between <code>a</code> and <code>b</code>.
+   * @throws IOException If there is a low-level I/O error.
    */
   public int numDocs(Query a, DocSet b) throws IOException {
     // Negative query if absolute value different from original
@@ -1861,10 +1848,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * <p>
    * This method is cache-aware and may check as well as modify the cache.
    *
-   * @param a
-   * @param b
-   * @return the numer of documents in the intersection between <code>a</code> and <code>b</code>.
-   * @throws IOException
+   * @return the number of documents in the intersection between <code>a</code> and <code>b</code>.
+   * @throws IOException If there is a low-level I/O error.
    */
   public int numDocs(Query a, Query b) throws IOException {
     Query absA = QueryUtils.getAbs(a);

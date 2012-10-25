@@ -257,7 +257,7 @@ public interface TaxonomyReader extends Closeable {
    * Expert: decreases the refCount of this TaxonomyReader instance. 
    * If the refCount drops to 0, then pending changes (if any) can be  
    * committed to the taxonomy index and this reader can be closed. 
-   * @throws IOException 
+   * @throws IOException If there is a low-level I/O error.
    */
   public void decRef() throws IOException;
   

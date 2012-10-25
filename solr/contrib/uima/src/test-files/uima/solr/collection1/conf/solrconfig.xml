@@ -827,7 +827,7 @@
             </lst>
           </lst>
           <lst name="type">
-            <str name="name">org.apache.solr.uima.ts.SentimentAnnotation</str>
+            <str name="name">org.apache.solr.uima.ts.DummySentimentAnnotation</str>
             <lst name="mapping">
               <str name="feature">mood</str>
               <str name="field">sentiment</str>

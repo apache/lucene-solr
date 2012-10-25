@@ -295,7 +295,6 @@ public class Algorithm {
 
   /**
    * Execute this algorithm
-   * @throws Exception 
    */
   public void execute() throws Exception {
     try {

@@ -204,7 +204,7 @@ public class CategoryContainer implements Iterable<CategoryAttribute>, Serializa
    * {@link ObjectOutputStream}.<br>
    * NOTE: {@link CategoryProperty}s are {@link Serializable}, but do not
    * assume that Lucene's {@link Attribute}s are as well
-   * @throws IOException 
+   * @throws IOException If there is a low-level I/O error.
    */
   protected void serializeCategoryAttribute(ObjectOutputStream out,
       CategoryAttribute ca) throws IOException {

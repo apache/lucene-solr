@@ -139,7 +139,7 @@ public final class ICUTokenizer extends Tokenizer {
    * Refill the buffer, accumulating the offset and setting usableLength to the
    * last unambiguous break position
    * 
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   private void refill() throws IOException {
     offset += usableLength;

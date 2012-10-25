@@ -39,14 +39,14 @@ public abstract class SearchComponent implements SolrInfoMBean, NamedListInitial
    *
    * The place to do initialization that is request dependent.
    * @param rb The {@link org.apache.solr.handler.component.ResponseBuilder}
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public abstract void prepare(ResponseBuilder rb) throws IOException;
 
   /**
    * Process the request for this component 
    * @param rb The {@link ResponseBuilder}
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public abstract void process(ResponseBuilder rb) throws IOException;
 

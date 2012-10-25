@@ -132,7 +132,7 @@ public class HyphenationCompoundWordTokenFilter extends
    * 
    * @param hyphenationFilename the filename of the XML grammar to load
    * @return An object representing the hyphenation patterns
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public static HyphenationTree getHyphenationTree(String hyphenationFilename)
       throws IOException {
@@ -144,7 +144,7 @@ public class HyphenationCompoundWordTokenFilter extends
    * 
    * @param hyphenationFile the file of the XML grammar to load
    * @return An object representing the hyphenation patterns
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public static HyphenationTree getHyphenationTree(File hyphenationFile)
       throws IOException {
@@ -156,7 +156,7 @@ public class HyphenationCompoundWordTokenFilter extends
    * 
    * @param hyphenationSource the InputSource pointing to the XML grammar
    * @return An object representing the hyphenation patterns
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public static HyphenationTree getHyphenationTree(InputSource hyphenationSource)
       throws IOException {

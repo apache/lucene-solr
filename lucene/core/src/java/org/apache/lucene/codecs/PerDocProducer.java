@@ -33,6 +33,11 @@ import org.apache.lucene.index.DocValues;
  * @lucene.experimental
  */
 public abstract class PerDocProducer implements Closeable {
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected PerDocProducer() {
+  }
+
   /**
    * Returns {@link DocValues} for the current field.
    * 
@@ -40,7 +45,10 @@ public abstract class PerDocProducer implements Closeable {
    *          the field name
    * @return the {@link DocValues} for this field or <code>null</code> if not
    *         applicable.
-   * @throws IOException
+   * @throws IOException If an I/O error occurs
    */
   public abstract DocValues docValues(String field) throws IOException;
+
+  @Override
+  public abstract void close() throws IOException;
 }

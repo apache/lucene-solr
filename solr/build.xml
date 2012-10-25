@@ -131,19 +131,20 @@
           depends="compile-core, compile-contrib"/>
   <target name="test" description="Validate, then run core, solrj, and contrib unit tests."
           depends="test-core, test-contrib"/>
+  <!-- "-clover.load" is *not* a useless dependency. do not remove -->
   <target name="test-core" description="Runs the core and solrj unit tests."
-          depends="test-solr-core, test-solrj"/>
+          depends="-clover.load, test-solr-core, test-solrj"/>
   <target name="pitest" description="Validate, then run core, solrj, and contrib unit tests."
           depends="pitest-core, pitest-contrib"/>
   <target name="compile-test" description="Compile unit tests."
           depends="compile-solr-test-framework, compile-test-solr-core, compile-test-solrj, compile-test-contrib"/>
   <target name="javadocs" description="Calls javadocs-all, javadocs-solrj, and javadocs-test-framework"
-          depends="javadocs-solr-core,javadocs-solrj,javadocs-test-framework,javadocs-contrib"/>
+          depends="define-lucene-javadoc-url,javadocs-solr-core,javadocs-solrj,javadocs-test-framework,javadocs-contrib"/>
   <target name="documentation" description="Generate all documentation"
     depends="javadocs,changes-to-html,process-webpages"/>
   <target name="compile-core" depends="compile-solr-core" unless="solr.core.compiled"/>
   
-  <target name="process-webpages" depends="define-lucene-javadoc-url"> <!--depends="resolve-pegdown">-->
+  <target name="process-webpages" depends="define-lucene-javadoc-url,resolve-groovy,resolve-pegdown">
     <makeurl property="process-webpages.buildfiles" separator="|">
       <fileset dir="." includes="core/build.xml,test-framework/build.xml,solrj/build.xml,contrib/**/build.xml"/>
     </makeurl>
@@ -162,12 +163,10 @@
       <param name="luceneJavadocUrl" expression="${lucene.javadoc.url}"/>
     </xslt>
     
-    <!--nothing at the moment:
     <pegdown todir="${javadoc.dir}">
-      <fileset dir="." includes="MIGRATE.txt,JRE_VERSION_MIGRATION.txt"/>
+      <fileset dir="." includes="SYSTEM_REQUIREMENTS.txt"/>
       <globmapper from="*.txt" to="*.html"/>
     </pegdown>
-    -->
 
     <copy todir="${javadoc.dir}">
       <fileset dir="site/html" includes="**/*"/>
@@ -369,8 +368,9 @@
     <!-- Exclude clover license files incompatible with the ASL -->
     <delete dir="${svn.export.dir}/lucene/tools/clover"/>
 
-    <build-changes changes.src.dir="${svn.export.dir}/lucene/site/changes"
-                   changes.target.dir="${svn.export.dir}/solr/docs/changes"/>
+    <build-changes changes.src.file="${svn.export.dir}/solr/CHANGES.txt"
+                   changes.target.dir="${svn.export.dir}/solr/docs/changes"
+                   changes.product="SOLR"/>
 
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
       <tarfileset dir="${svn.export.dir}"
@@ -437,8 +437,8 @@
     <tar destfile="${package.dir}/${fullnamever}.tgz" compression="gzip" longfile="gnu">
       <tarfileset dir="."
                   prefix="${fullnamever}"
-                  includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt example/**
-                            client/README.txt client/ruby/solr-ruby/** 
+                  includes="LICENSE.txt NOTICE.txt CHANGES.txt README.txt SYSTEM_REQUIREMENTS.txt
+                            example/** client/README.txt client/ruby/solr-ruby/** 
                             contrib/**/lib/** contrib/**/README.txt 
                             licenses/**"
                   excludes="lib/README.committers.txt **/data/ **/logs/* 
@@ -498,17 +498,13 @@
   </target>
 
   <target name="changes-to-html">
-    <build-changes changes.src.dir="${changes.src.dir}" changes.target.dir="${changes.target.dir}" />
+    <build-changes changes.product="SOLR"/>
   </target>
  
   <target name="sign-artifacts">
     <sign-artifacts-macro artifacts.dir="${package.dir}"/>
   </target>
  
-  <target name="javadocs-dep">
-    <!-- NOOP -->
-  </target>
-
   <target name="resolve" depends="resolve-example">
      <sequential>
      <ant dir="core" target="resolve" inheritall="false">
@@ -524,14 +520,35 @@
     </sequential>
   </target>
 
+  <target name="documentation-lint" depends="-ecj-javadoc-lint,-documentation-lint,-documentation-lint-unsupported"
+          description="Validates the generated documentation (HTML errors, broken links,...)"/>
+  
   <!-- TODO: does solr have any other docs we should check? -->
   <!-- TODO: also integrate checkJavaDocs.py, which does more checks -->
-  <target name="documentation-lint" depends="documentation">
+  <target name="-documentation-lint" if="documentation-lint.supported" depends="documentation">
+    <jtidy-macro>
+       <!-- NOTE: must currently exclude deprecated-list due to a javadocs bug (as of 1.7.0_09)
+            javadocs generates invalid XML if you deprecate a method that takes a parameter
+            with a generic type -->
+      <fileset dir="build/docs" includes="**/*.html" excludes="**/deprecated-list.html"/>
+    </jtidy-macro>
+    <echo message="Checking for broken links..."/>
     <check-broken-links dir="${javadoc.dir}"/>
+    <echo message="Checking for malformed docs..."/>
     <!-- TODO: add missing package.htmls and bump this to level=package -->
     <check-missing-javadocs dir="${javadoc.dir}" level="none"/>
   </target>
  
+  <target name="-ecj-javadoc-lint" depends="documentation,compile-solr-test-framework,-ecj-resolve">
+    <subant target="-ecj-javadoc-lint" failonerror="true" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+      <fileset dir="core" includes="build.xml"/>
+      <fileset dir="solrj" includes="build.xml"/>
+      <fileset dir="test-framework" includes="build.xml"/>
+    </subant>
+    <contrib-crawl target="-ecj-javadoc-lint"/>
+  </target>
+
   <!-- install-maven-tasks is *not* a useless dependency. do not remove -->
   <target name="generate-maven-artifacts" depends="install-maven-tasks">
     <sequential>
@@ -570,99 +587,7 @@
   <!-- ========================================================================= -->
   <!-- ========================= COMMITTERS' HELPERS =========================== -->
   <!-- ========================================================================= -->
- 
-  <target name="stub-factories" depends="dist-core,lucene-jars-to-solr"
-          description="Generates stub factories as needed">
- 
-    <path id="stub.jars">
-      <!-- this needs to be a list of all jars that might contain
-            classes we want to build factories for
-         -->
-      <fileset dir="${lucene-libs}">
-        <include name="*.jar"/>
-      </fileset>
-      <fileset dir="${dist}">
-        <include name="*.jar"/>
-        <exclude name="*solrj*.jar"/>
-      </fileset>
-    </path>
-    <pathconvert property="jar.list" pathsep=" " refid="stub.jars" />
-    <path id="missing.factories.classpath">
-      <pathelement path="${common.dir}/contrib/queries/lib/jakarta-regexp-1.4.jar"/>
-      <path refid="test.classpath"/>
-    </path>
-    <property name="stub.list" value="${dest}/need-stub-factories.txt" />
-    <java fork="false"
-          classname="org.apache.solr.util.SuggestMissingFactories"
-          logError="true"
-          failonerror="true"
-          classpathref="missing.factories.classpath"
-          output="${stub.list}">
-      <arg line="${jar.list}" />
-    </java>
-    <fail unless="stub.src.path">...
- 
-      This task requires that the property 'stub.src.path' be set.
- 
-      It must contain a "path" listing directories containing source
-      files that this task should use when looking for classes that
-      need factories created, the format is platform specific --
-      typically it is  colon seperated in Unix, semi-colon seperated
-      on windows, ie:
- 
-      ant stub-factories -Dstub.src.path="core/src:../lucene/contrib:../lucene/core/src/java:../lucene/analysis"
- 
-      FYI: The file ${stub.list} contains a list of classes
-      that seem to need stub factories. (if java files can be found to
-      use as guides for creating them).
-    </fail>
- 
-    <pathconvert pathsep=" " property="stub.src.dirs">
-      <path>
-        <pathelement path="${stub.src.path}"/>
-      </path>
-    </pathconvert>
-    <exec executable="perl"
-          dir="core/src/java/org/apache/solr/analysis/"
-          failonerror="true">
-      <arg value="${common-solr.dir}/dev-tools/stub-analysis-factory-maker.pl"/>
-      <redirector input="${stub.list}">
-        <!-- place to put special case classes we want to ignore -->
-        <inputfilterchain>
-          <linecontainsregexp negate="true">
-            <!-- only for internal Solr highlighting purposes -->
-            <regexp pattern="TokenOrderingFilter"/>
-          </linecontainsregexp>
-          <linecontainsregexp negate="true">
-            <!-- no way to leverage this in Solr -->
-            <regexp pattern="CachingTokenFilter"/>
-          </linecontainsregexp>
-          <linecontainsregexp negate="true">
-            <!-- no way to leverage this in Solr -->
-            <regexp pattern="HyphenationCompoundWordTokenFilter"/>
-          </linecontainsregexp>
-          <linecontainsregexp negate="true">
-            <!-- no way to leverage these in Solr (yet) -->
-            <regexp pattern="Sink|Tee"/>
-          </linecontainsregexp>
-          <linecontainsregexp negate="true">
-            <!-- Solr already has a different impl for this -->
-            <regexp pattern="SynonymTokenFilter"/>
-          </linecontainsregexp>
-          <linecontainsregexp negate="true">
-            <!-- solr and lucene both have one? ? ? ? -->
-            <regexp pattern="LengthFilter"/>
-          </linecontainsregexp>
-          <linecontainsregexp negate="true">
-            <!-- solr provides it's own SnowballPorterFilter variant -->
-            <regexp pattern="SnowballFilter"/>
-          </linecontainsregexp>
-        </inputfilterchain>
-      </redirector>
-      <arg line="${stub.src.dirs}"/>
-    </exec>
-  </target>
- 
+  
   <property name="analysis-common.res.dir"  value="../lucene/analysis/common/src/resources/org/apache/lucene/analysis"/>
   <property name="analysis-kuromoji.res.dir"  value="../lucene/analysis/kuromoji/src/resources/org/apache/lucene/analysis"/>
   <property name="analysis.conf.dest" value="${example}/solr/conf/lang"/>
@@ -760,17 +685,7 @@
                          tofile="${analysis.conf.dest}/stopwords_tr.txt"/>
   </target>
 
-  <!-- TODO: in the future, we don't need to actually put
-       jars in the lib/ folders, but can just put in classpath.
-       only packaging tasks really need that (and could do it
-       under build/ directories) -->
-  <target name="clean-jars" description="Clean local jars">
-     <delete>
-       <fileset dir="." includes="**/*.jar"/>
-     </delete>
-  </target>
-
-  <target name="jar-checksums" depends="clean-jars,resolve">
+  <target name="jar-checksums" depends="resolve">
     <jar-checksum-macro srcdir="${common-solr.dir}" dstdir="${common-solr.dir}/licenses"/>
   </target>
 

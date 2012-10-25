@@ -267,19 +267,23 @@ sammy.bind
       if( 'field' === type )
       {
         navigation_data.fields.push( value );
-        navigation_data.types.push( app.schema_browser_data.relations.f_t[value] );
+
+        if( app.schema_browser_data.relations.f_t[value] )
+        {
+          navigation_data.types.push( app.schema_browser_data.relations.f_t[value] );
+        }
 
         if( app.schema_browser_data.relations.f_df[value] )
         {
           navigation_data.dynamic_fields.push( app.schema_browser_data.relations.f_df[value] );
         }
 
-        if( 0 !== app.schema_browser_data.fields[value].copySources.length )
+        if( app.schema_browser_data.fields[value].copySources && 0 !== app.schema_browser_data.fields[value].copySources.length )
         {
           navigation_data.copyfield_source = app.schema_browser_data.fields[value].copySources;
         }
 
-        if( 0 !== app.schema_browser_data.fields[value].copyDests.length )
+        if( app.schema_browser_data.fields[value].copyDests && 0 !== app.schema_browser_data.fields[value].copyDests.length )
         {
           navigation_data.copyfield_dest = app.schema_browser_data.fields[value].copyDests;
         }
@@ -490,30 +494,39 @@ sammy.bind
 
                 for( var field in app.schema_browser_data.fields )
                 {
-                  app.schema_browser_data.fields[field].copySourcesRaw = null;
-
-                  if( app.schema_browser_data.fields[field].copySources &&
-                    0 !== app.schema_browser_data.fields[field].copySources.length )
+                  var copy_dests = app.schema_browser_data.fields[field].copyDests;
+                  for( var i in copy_dests )
                   {
-                    app.schema_browser_data.fields[field].copySourcesRaw =
-                      app.schema_browser_data.fields[field].copySources;
-                  }
-                                        
-                  app.schema_browser_data.fields[field].copyDests = [];
-                  app.schema_browser_data.fields[field].copySources = [];
-                }
-
-                for( var field in app.schema_browser_data.fields )
-                {
-                  if( app.schema_browser_data.fields[field].copySourcesRaw )
-                  {
-                    var copy_sources = app.schema_browser_data.fields[field].copySourcesRaw;
-                    for( var i in copy_sources )
+                    var copy_dest = copy_dests[i];
+                    if( !app.schema_browser_data.fields[copy_dest] )
                     {
-                      var target = copy_sources[i].replace( /^.+:(.+)\{.+$/, '$1' );
+                      app.schema_browser_data.fields[copy_dest] = {
+                        partial : true,
+                        copySources : []
+                      };
+                    }
 
-                      app.schema_browser_data.fields[field].copySources.push( target );
-                      app.schema_browser_data.fields[target].copyDests.push( field );
+                    if( app.schema_browser_data.fields[copy_dest].partial )
+                    {
+                      app.schema_browser_data.fields[copy_dest].copySources.push( field );
+                    }
+                  }
+
+                  var copy_sources = app.schema_browser_data.fields[field].copySources;
+                  for( var i in copy_sources )
+                  {
+                    var copy_source = copy_sources[i];
+                    if( !app.schema_browser_data.fields[copy_source] )
+                    {
+                      app.schema_browser_data.fields[copy_source] = {
+                        partial : true,
+                        copyDests : []
+                      };
+                    }
+
+                    if( app.schema_browser_data.fields[copy_source].partial )
+                    {
+                      app.schema_browser_data.fields[copy_source].copyDests.push( field );
                     }
                   }
 
@@ -762,6 +775,16 @@ sammy.get
           $( '.type', head_element ).html( 'Type' );
         }
         $( '.name', head_element ).html( field.esc() );
+
+
+        var partial_state = false;
+        if( is_f )
+        {
+          partial_state = !!schema_browser_data.fields[field].partial;
+        }
+
+        $( '.partial', data_element )
+          .toggle( partial_state );
 
         // -- properties
         var properties_element = $( 'dt.properties', options_element );

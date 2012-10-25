@@ -42,9 +42,9 @@ import org.slf4j.LoggerFactory;
  * 
  */
 public abstract class CachingDirectoryFactory extends DirectoryFactory {
-  class CacheValue {
-    Directory directory;
-    int refCnt = 1;
+  protected class CacheValue {
+    public Directory directory;
+    public int refCnt = 1;
     public String path;
     public boolean doneWithDir = false;
     public String toString() {

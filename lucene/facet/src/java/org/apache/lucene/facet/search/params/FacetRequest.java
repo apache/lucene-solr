@@ -318,7 +318,7 @@ public abstract class FacetRequest implements Cloneable {
    *          index reader in effect.
    * @param taxonomy
    *          reader of taxonomy in effect.
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public abstract Aggregator createAggregator(boolean useComplements,
       FacetArrays arrays, IndexReader indexReader,

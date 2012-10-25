@@ -64,8 +64,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   private final String segment;
   private IndexOutput tvx = null, tvd = null, tvf = null;
   
- 
-
+  /** Sole constructor. */
   public Lucene40TermVectorsWriter(Directory directory, String segment, IOContext context) throws IOException {
     this.directory = directory;
     this.segment = segment;
@@ -277,7 +276,7 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
   public void abort() {
     try {
       close();
-    } catch (IOException ignored) {}
+    } catch (Throwable ignored) {}
     IOUtils.deleteFilesIgnoringExceptions(directory, IndexFileNames.segmentFileName(segment, "", Lucene40TermVectorsReader.VECTORS_INDEX_EXTENSION),
         IndexFileNames.segmentFileName(segment, "", Lucene40TermVectorsReader.VECTORS_DOCUMENTS_EXTENSION),
         IndexFileNames.segmentFileName(segment, "", Lucene40TermVectorsReader.VECTORS_FIELDS_EXTENSION));

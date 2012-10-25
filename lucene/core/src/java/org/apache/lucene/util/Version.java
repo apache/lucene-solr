@@ -39,6 +39,13 @@ public enum Version {
    */
   @Deprecated
   LUCENE_40,
+  
+  /**
+   * Match settings and bugs in Lucene's 4.1 release.
+   * @deprecated (5.0) Use latest
+   */
+  @Deprecated
+  LUCENE_41,
 
   /** Match settings and bugs in Lucene's 5.0 release. 
    *  <p>

@@ -72,8 +72,6 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
   
   /**
    * Verifies that the index has the correct number of documents.
-   * 
-   * @throws Exception
    */
   public void testVerifyIndex() throws Exception {
     final IndexReader reader = DirectoryReader.open(mDirectory);
@@ -83,8 +81,6 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
   
   /**
    * Tests a single span query that matches multiple documents.
-   * 
-   * @throws IOException
    */
   public void testSingleSpanQuery() throws IOException {
     
@@ -99,8 +95,6 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
   
   /**
    * Tests a single span query that matches multiple documents.
-   * 
-   * @throws IOException
    */
   public void testMultipleDifferentSpanQueries() throws IOException {
     
@@ -119,8 +113,6 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
   
   /**
    * Tests two span queries.
-   * 
-   * @throws IOException
    */
   @Override
   public void testBooleanQueryWithSpanQueries() throws IOException {

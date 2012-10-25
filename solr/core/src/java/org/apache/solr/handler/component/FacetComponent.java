@@ -53,14 +53,6 @@ public class FacetComponent extends SearchComponent
 
   static final String PIVOT_KEY = "facet_pivot";
 
-  PivotFacetHelper pivotHelper;
-
-  @Override
-  public void init( NamedList args )
-  {
-    pivotHelper = new PivotFacetHelper(); // Maybe this would configurable?
-  }
-
   @Override
   public void prepare(ResponseBuilder rb) throws IOException
   {
@@ -72,7 +64,6 @@ public class FacetComponent extends SearchComponent
 
   /**
    * Actually run the query
-   * @param rb
    */
   @Override
   public void process(ResponseBuilder rb) throws IOException
@@ -87,7 +78,11 @@ public class FacetComponent extends SearchComponent
       NamedList<Object> counts = f.getFacetCounts();
       String[] pivots = params.getParams( FacetParams.FACET_PIVOT );
       if( pivots != null && pivots.length > 0 ) {
-        NamedList v = pivotHelper.process(rb, params, pivots);
+        PivotFacetHelper pivotHelper = new PivotFacetHelper(rb.req,
+            rb.getResults().docSet,
+            params,
+            rb );
+        NamedList v = pivotHelper.process(pivots);
         if( v != null ) {
           counts.add( PIVOT_KEY, v );
         }

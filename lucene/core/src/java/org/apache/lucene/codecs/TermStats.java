@@ -26,9 +26,15 @@ import org.apache.lucene.index.TermsEnum; // javadocs
  * @see TermsEnum#totalTermFreq
  */
 public class TermStats {
+  /** How many documents have at least one occurrence of
+   *  this term. */
   public final int docFreq;
+  
+  /** Total number of times this term occurs across all
+   *  documents in the field. */
   public final long totalTermFreq;
 
+  /** Sole constructor. */
   public TermStats(int docFreq, long totalTermFreq) {
     this.docFreq = docFreq;
     this.totalTermFreq = totalTermFreq;

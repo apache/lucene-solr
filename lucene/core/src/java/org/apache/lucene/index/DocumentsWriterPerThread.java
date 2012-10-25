@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.text.NumberFormat;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Locale;
 
@@ -118,7 +119,7 @@ class DocumentsWriterPerThread {
   static class FlushedSegment {
     final SegmentInfoPerCommit segmentInfo;
     final FieldInfos fieldInfos;
-    final BufferedDeletes segmentDeletes;
+    final FrozenBufferedDeletes segmentDeletes;
     final MutableBits liveDocs;
     final int delCount;
 
@@ -126,7 +127,7 @@ class DocumentsWriterPerThread {
                            BufferedDeletes segmentDeletes, MutableBits liveDocs, int delCount) {
       this.segmentInfo = segmentInfo;
       this.fieldInfos = fieldInfos;
-      this.segmentDeletes = segmentDeletes;
+      this.segmentDeletes = segmentDeletes != null && segmentDeletes.any() ? new FrozenBufferedDeletes(segmentDeletes, true) : null;
       this.liveDocs = liveDocs;
       this.delCount = delCount;
     }
@@ -137,6 +138,7 @@ class DocumentsWriterPerThread {
    *  currently buffered docs.  This resets our state,
    *  discarding any docs added since last flush. */
   void abort() {
+    //System.out.println(Thread.currentThread().getName() + ": now abort seg=" + segmentInfo.name);
     hasAborted = aborting = true;
     try {
       if (infoStream.isEnabled("DWPT")) {
@@ -518,6 +520,7 @@ class DocumentsWriterPerThread {
 
       FlushedSegment fs = new FlushedSegment(segmentInfoPerCommit, flushState.fieldInfos,
                                              segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush);
+      sealFlushedSegment(fs);
       doAfterFlush();
       success = true;
 
@@ -525,11 +528,76 @@ class DocumentsWriterPerThread {
     } finally {
       if (!success) {
         if (segmentInfo != null) {
-          synchronized(parent.indexWriter) {
-            parent.indexWriter.deleter.refresh(segmentInfo.name);
-          }
+          writer.flushFailed(segmentInfo);
         }
         abort();
+      }
+    }
+  }
+  
+  /**
+   * Seals the {@link SegmentInfo} for the new flushed segment and persists
+   * the deleted documents {@link MutableBits}.
+   */
+  void sealFlushedSegment(FlushedSegment flushedSegment) throws IOException {
+    assert flushedSegment != null;
+
+    SegmentInfoPerCommit newSegment = flushedSegment.segmentInfo;
+
+    IndexWriter.setDiagnostics(newSegment.info, "flush");
+    
+    IOContext context = new IOContext(new FlushInfo(newSegment.info.getDocCount(), newSegment.info.sizeInBytes()));
+
+    boolean success = false;
+    try {
+      if (writer.useCompoundFile(newSegment)) {
+
+        // Now build compound file
+        Collection<String> oldFiles = IndexWriter.createCompoundFile(infoStream, directory, MergeState.CheckAbort.NONE, newSegment.info, context);
+        newSegment.info.setUseCompoundFile(true);
+        writer.deleteNewFiles(oldFiles);
+      }
+
+      // Have codec write SegmentInfo.  Must do this after
+      // creating CFS so that 1) .si isn't slurped into CFS,
+      // and 2) .si reflects useCompoundFile=true change
+      // above:
+      codec.segmentInfoFormat().getSegmentInfoWriter().write(directory, newSegment.info, flushedSegment.fieldInfos, context);
+
+      // TODO: ideally we would freeze newSegment here!!
+      // because any changes after writing the .si will be
+      // lost... 
+
+      // Must write deleted docs after the CFS so we don't
+      // slurp the del file into CFS:
+      if (flushedSegment.liveDocs != null) {
+        final int delCount = flushedSegment.delCount;
+        assert delCount > 0;
+        if (infoStream.isEnabled("DWPT")) {
+          infoStream.message("DWPT", "flush: write " + delCount + " deletes gen=" + flushedSegment.segmentInfo.getDelGen());
+        }
+
+        // TODO: in the NRT case it'd be better to hand
+        // this del vector over to the
+        // shortly-to-be-opened SegmentReader and let it
+        // carry the changes; there's no reason to use
+        // filesystem as intermediary here.
+          
+        SegmentInfoPerCommit info = flushedSegment.segmentInfo;
+        Codec codec = info.info.getCodec();
+        codec.liveDocsFormat().writeLiveDocs(flushedSegment.liveDocs, directory, info, delCount, context);
+        newSegment.setDelCount(delCount);
+        newSegment.advanceDelGen();
+      }
+
+      success = true;
+    } finally {
+      if (!success) {
+        if (infoStream.isEnabled("DWPT")) {
+          infoStream.message("DWPT", "hit exception " +
+              "reating compound file for newly flushed segment " + newSegment.info.name);
+        }
+        writer.flushFailed(newSegment.info);
       }
     }
   }

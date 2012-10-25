@@ -39,14 +39,9 @@ public abstract class IndexOutput extends DataOutput implements Closeable {
 
   /** Returns the current position in this file, where the next write will
    * occur.
-   * @see #seek(long)
    */
   public abstract long getFilePointer();
 
-  /** Sets current position in this file, where the next write will occur.
-   * @see #getFilePointer()
-   */
-  public abstract void seek(long pos) throws IOException;
 
   /** The number of bytes in the file. */
   public abstract long length() throws IOException;

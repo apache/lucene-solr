@@ -21,10 +21,10 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
-import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
+import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
@@ -57,10 +57,10 @@ public class TestPositionsAndOffsets extends LuceneTestCase {
     if (codecName.equals("Lucene40")) {
       // Sep etc are not implemented
       switch(random().nextInt(4)) {
-        case 0: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())); break;
+        case 0: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())); break;
         case 1: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat())); break;
         case 2: iwc.setCodec(_TestUtil.alwaysPostingsFormat(
-            new Pulsing40PostingsFormat(_TestUtil.nextInt(random(), 1, 3)))); break;
+            new Pulsing41PostingsFormat(_TestUtil.nextInt(random(), 1, 3)))); break;
         case 3: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new NestedPulsingPostingsFormat())); break;
       }
     }
@@ -100,7 +100,7 @@ public class TestPositionsAndOffsets extends LuceneTestCase {
     List<AtomicReaderContext> leaves = topReaderContext.leaves();
     assertEquals(1, leaves.size());
     Scorer scorer = weight.scorer(leaves.get(0),
-        true, true, PostingFeatures.POSITIONS, leaves.get(0).reader().getLiveDocs());
+        true, true, PostingFeatures.OFFSETS, leaves.get(0).reader().getLiveDocs());
 
     int nextDoc = scorer.nextDoc();
     assertEquals(0, nextDoc);

@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.index.FieldInfo;
@@ -46,7 +45,7 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextStoredFieldsWriter.*
  * @lucene.experimental
  */
 public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
-  private ArrayList<Long> offsets; /* docid -> offset in .fld file */
+  private long offsets[]; /* docid -> offset in .fld file */
   private IndexInput in;
   private BytesRef scratch = new BytesRef();
   private CharsRef scratchUTF16 = new CharsRef();
@@ -60,14 +59,16 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
       success = true;
     } finally {
       if (!success) {
-        close();
+        try {
+          close();
+        } catch (Throwable t) {} // ensure we throw our original exception
       }
     }
-    readIndex();
+    readIndex(si.getDocCount());
   }
   
   // used by clone
-  SimpleTextStoredFieldsReader(ArrayList<Long> offsets, IndexInput in, FieldInfos fieldInfos) {
+  SimpleTextStoredFieldsReader(long offsets[], IndexInput in, FieldInfos fieldInfos) {
     this.offsets = offsets;
     this.in = in;
     this.fieldInfos = fieldInfos;
@@ -76,19 +77,22 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
   // we don't actually write a .fdx-like index, instead we read the 
   // stored fields file in entirety up-front and save the offsets 
   // so we can seek to the documents later.
-  private void readIndex() throws IOException {
-    offsets = new ArrayList<Long>();
+  private void readIndex(int size) throws IOException {
+    offsets = new long[size];
+    int upto = 0;
     while (!scratch.equals(END)) {
       readLine();
       if (StringHelper.startsWith(scratch, DOC)) {
-        offsets.add(in.getFilePointer());
+        offsets[upto] = in.getFilePointer();
+        upto++;
       }
     }
+    assert upto == offsets.length;
   }
   
   @Override
   public void visitDocument(int n, StoredFieldVisitor visitor) throws IOException {
-    in.seek(offsets.get(n));
+    in.seek(offsets[n]);
     readLine();
     assert StringHelper.startsWith(scratch, NUM);
     int numFields = parseIntAt(NUM.length);
@@ -139,10 +143,9 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
     if (type == TYPE_STRING) {
       visitor.stringField(fieldInfo, new String(scratch.bytes, scratch.offset+VALUE.length, scratch.length-VALUE.length, "UTF-8"));
     } else if (type == TYPE_BINARY) {
-      // TODO: who owns the bytes?
       byte[] copy = new byte[scratch.length-VALUE.length];
       System.arraycopy(scratch.bytes, scratch.offset+VALUE.length, copy, 0, copy.length);
-      visitor.binaryField(fieldInfo, copy, 0, copy.length);
+      visitor.binaryField(fieldInfo, copy);
     } else if (type == TYPE_INT) {
       UnicodeUtil.UTF8toUTF16(scratch.bytes, scratch.offset+VALUE.length, scratch.length-VALUE.length, scratchUTF16);
       visitor.intField(fieldInfo, Integer.parseInt(scratchUTF16.toString()));

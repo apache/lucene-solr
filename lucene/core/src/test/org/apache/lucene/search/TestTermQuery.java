@@ -215,7 +215,7 @@ public class TestTermQuery extends LuceneTestCase {
             scorer.advance(docID + 1 + random().nextInt((maxDoc - docID)));
           }
 
-        } while (scorer.nextDoc() != Scorer.NO_MORE_DOCS);
+        } while (scorer.docID() != Scorer.NO_MORE_DOCS && scorer.nextDoc() != Scorer.NO_MORE_DOCS);
       }
 
     }

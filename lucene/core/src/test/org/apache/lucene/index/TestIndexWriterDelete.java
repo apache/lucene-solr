@@ -17,7 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -1069,6 +1071,49 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     closing.set(true);
     assertTrue(sawAfterFlush.get());
     w.close();
+    dir.close();
+  }
+
+  // LUCENE-4455
+  public void testDeletesCheckIndexOutput() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setMaxBufferedDocs(2);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(newField("field", "0", StringField.TYPE_NOT_STORED));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(newField("field", "1", StringField.TYPE_NOT_STORED));
+    w.addDocument(doc);
+    w.commit();
+    assertEquals(1, w.getSegmentCount());
+
+    w.deleteDocuments(new Term("field", "0"));
+    w.commit();
+    assertEquals(1, w.getSegmentCount());
+    w.close();
+
+    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+    CheckIndex checker = new CheckIndex(dir);
+    checker.setInfoStream(new PrintStream(bos, false, "UTF-8"), false);
+    CheckIndex.Status indexStatus = checker.checkIndex(null);
+    assertTrue(indexStatus.clean);
+    String s = bos.toString("UTF-8");
+
+    // Segment should have deletions:
+    assertTrue(s.contains("has deletions"));
+    w = new IndexWriter(dir, iwc);
+    w.forceMerge(1);
+    w.close();
+
+    bos = new ByteArrayOutputStream(1024);
+    checker.setInfoStream(new PrintStream(bos, false, "UTF-8"), false);
+    indexStatus = checker.checkIndex(null);
+    assertTrue(indexStatus.clean);
+    s = bos.toString("UTF-8");
+    assertFalse(s.contains("has deletions"));
     dir.close();
   }
 }

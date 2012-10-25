@@ -81,6 +81,10 @@ import org.apache.lucene.store.IOContext;
  * @lucene.experimental */
 public class Lucene40StoredFieldsFormat extends StoredFieldsFormat {
 
+  /** Sole constructor. */
+  public Lucene40StoredFieldsFormat() {
+  }
+
   @Override
   public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si,
       FieldInfos fn, IOContext context) throws IOException {

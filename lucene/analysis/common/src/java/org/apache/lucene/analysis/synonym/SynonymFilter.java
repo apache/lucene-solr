@@ -480,7 +480,7 @@ public final class SynonymFilter extends TokenFilter {
             // endOffset (ie, endOffset of the last input
             // token it matched):
             endOffset = matchEndOffset;
-            posLen = matchInputLength;
+            posLen = keepOrig ? matchInputLength : 1;
           } else {
             // This rule has more than one output token; we
             // can't pick any particular endOffset for this

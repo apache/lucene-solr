@@ -106,7 +106,8 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    assertEquals( "a b c  <b>d</b> e", sfb.createFragment( reader, 0, F, ffl ) );
+    // Should we probably be trimming?
+    assertEquals( "  a b c  <b>d</b> e", sfb.createFragment( reader, 0, F, ffl ) );
   }
   
   public void test1PhraseLongMV() throws Exception {
@@ -118,7 +119,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    assertEquals( "The most <b>search engines</b> use only one of these methods. Even the <b>search engines</b> that says they can use the",
+    assertEquals( "customization: The most <b>search engines</b> use only one of these methods. Even the <b>search engines</b> that says they can",
         sfb.createFragment( reader, 0, F, ffl ) );
   }
 
@@ -131,7 +132,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
-    assertEquals( "processing <b>speed</b>, the", sfb.createFragment( reader, 0, F, ffl ) );
+    assertEquals( "additional hardware. \nWhen you talk about processing <b>speed</b>, the", sfb.createFragment( reader, 0, F, ffl ) );
   }
   
   public void testUnstoredField() throws Exception {
@@ -209,7 +210,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     String[] result = sfb.createFragments(reader, 0, F, ffl, 3);
     assertEquals(2, result.length);
     assertEquals("some <b>text</b> to highlight", result[0]);
-    assertEquals("other <b>text</b>", result[1]);
+    assertEquals("highlight other <b>text</b>", result[1]);
 
     fq = new FieldQuery( tq( "highlight" ), true, true );
     stack = new FieldTermStack( reader, 0, F, fq );

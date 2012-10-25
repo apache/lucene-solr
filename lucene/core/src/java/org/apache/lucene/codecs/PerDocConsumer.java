@@ -35,6 +35,11 @@ import org.apache.lucene.index.DocValues.Type;
  * @lucene.experimental
  */
 public abstract class PerDocConsumer implements Closeable {
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected PerDocConsumer() {
+  }
+
   /** Adds a new DocValuesField */
   public abstract DocValuesConsumer addValuesField(DocValues.Type type, FieldInfo field)
       throws IOException;
@@ -104,4 +109,7 @@ public abstract class PerDocConsumer implements Closeable {
    * This method should cleanup all resources.
    */
   public abstract void abort();
+
+  @Override
+  public abstract void close() throws IOException;
 }

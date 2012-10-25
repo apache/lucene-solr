@@ -62,12 +62,16 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
     ts_1.reset();
     ts_1.incrementToken();
     assertEquals("first stream", "liście", termAtt_1.toString());
+    ts_1.end();
+    ts_1.close();
 
     TokenStream ts_2 = a.tokenStream("dummy", new StringReader("danych"));
     CharTermAttribute termAtt_2 = ts_2.getAttribute(CharTermAttribute.class);
     ts_2.reset();
     ts_2.incrementToken();
     assertEquals("second stream", "dany", termAtt_2.toString());
+    ts_2.end();
+    ts_2.close();
   }
 
   /** Test stemming of mixed-case tokens. */
@@ -110,6 +114,7 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
   public final void testPOSAttribute() throws IOException {
     TokenStream ts = getTestAnalyzer().tokenStream("dummy", new StringReader("liście"));
 
+    ts.reset();
     assertPOSToken(ts, "liście",  
         "subst:sg:acc:n2",
         "subst:sg:nom:n2",
@@ -127,6 +132,8 @@ public class TestMorfologikAnalyzer extends BaseTokenStreamTestCase {
     assertPOSToken(ts, "lista", 
         "subst:sg:dat:f",
         "subst:sg:loc:f");
+    ts.end();
+    ts.close();
   }
 
   /** blast some random strings through the analyzer */

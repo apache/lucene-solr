@@ -17,14 +17,11 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
-import org.apache.noggit.JSONUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ClosableThread;
@@ -210,11 +207,11 @@ public class Overseer {
       private ClusterState updateState(ClusterState state, final ZkNodeProps message) {
         final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
         final String zkCoreNodeName = message.getStr(ZkStateReader.NODE_NAME_PROP) + "_" + message.getStr(ZkStateReader.CORE_NAME_PROP);
-        final Integer numShards = message.getStr(ZkStateReader.NUM_SHARDS_PROP)!=null?Integer.parseInt(message.getStr(ZkStateReader.NUM_SHARDS_PROP)):null;
-        
+        Integer numShards = message.getStr(ZkStateReader.NUM_SHARDS_PROP)!=null?Integer.parseInt(message.getStr(ZkStateReader.NUM_SHARDS_PROP)):null;
+        log.info("Update state numShards={} message={}", numShards, message);
         //collection does not yet exist, create placeholders if num shards is specified
-        if (!state.getCollections().contains(collection)
-            && numShards!=null) {
+        boolean collectionExists = state.getCollections().contains(collection);
+        if (!collectionExists && numShards!=null) {
           state = createCollection(state, collection, numShards);
         }
         
@@ -227,6 +224,10 @@ public class Overseer {
         }
         if(sliceName == null) {
           //request new shardId 
+          if (collectionExists) {
+            // use existing numShards
+            numShards = state.getCollectionStates().get(collection).size();
+          }
           sliceName = AssignShard.assignShard(collection, state, numShards);
         }
 
@@ -269,6 +270,8 @@ public class Overseer {
       }
 
       private ClusterState createCollection(ClusterState state, String collectionName, int numShards) {
+        log.info("Create collection {} with numShards {}", collectionName, numShards);
+        
         HashPartitioner hp = new HashPartitioner();
         List<HashPartitioner.Range> ranges = hp.partitionRange(numShards, hp.fullRange());
 

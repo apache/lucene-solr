@@ -15,16 +15,19 @@ package org.apache.lucene.search.highlight.positions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.io.IOException;
+import java.io.StringReader;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene40.Lucene40PostingsFormat;
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
-import org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat;
+import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -50,18 +53,15 @@ import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.SimpleFragmenter;
 import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.search.positions.BlockIntervalIterator;
-import org.apache.lucene.search.positions.NonOverlappingQuery;
 import org.apache.lucene.search.positions.IntervalFilterQuery;
 import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.search.positions.IntervalFilter;
+import org.apache.lucene.search.positions.NonOverlappingQuery;
 import org.apache.lucene.search.positions.OrderedNearQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Ignore;
-
-import java.io.IOException;
-import java.io.StringReader;
 
 /**
  * TODO: FIX THIS TEST Phrase and Span Queries positions callback API
@@ -88,10 +88,10 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     if (codecName.equals("Lucene40")) {
       // Sep etc are not implemented
       switch(random().nextInt(4)) {
-        case 0: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene40PostingsFormat())); break;
+        case 0: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())); break;
         case 1: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat())); break;
         case 2: iwc.setCodec(_TestUtil.alwaysPostingsFormat(
-            new Pulsing40PostingsFormat(_TestUtil.nextInt(random(), 1, 3)))); break;
+            new Pulsing41PostingsFormat(_TestUtil.nextInt(random(), 1, 3)))); break;
         case 3: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new NestedPulsingPostingsFormat())); break;
       }
     }

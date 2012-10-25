@@ -40,12 +40,12 @@ import org.apache.lucene.spatial.query.SpatialArgs;
  *   <li>What types of query shapes can be used?</li>
  *   <li>What types of query operations are supported?
  *   This might vary per shape.</li>
- *   <li>Are there caches?  Under what circumstances are they used?
- *   Roughly how big are they?  Is it segmented by Lucene segments, such as is
- *   done by the Lucene {@link org.apache.lucene.search.FieldCache} and
- *   {@link org.apache.lucene.index.DocValues} (ideal) or is it for the entire
- *   index?
+ *   <li>Does it use the {@link org.apache.lucene.search.FieldCache}, {@link
+ *   org.apache.lucene.index.DocValues} or some other type of cache?  When?
  * </ul>
+ * If a strategy only supports certain shapes at index or query time, then in
+ * general it will throw an exception if given an incompatible one.  It will not
+ * be coerced into compatibility.
  * <p/>
  * Note that a SpatialStrategy is not involved with the Lucene stored field
  * values of shapes, which is immaterial to indexing & search.
@@ -85,7 +85,7 @@ public abstract class SpatialStrategy {
   }
 
   /**
-   * Returns the IndexableField(s) from the <code>shape</code> that are to be
+   * Returns the IndexableField(s) from the {@code shape} that are to be
    * added to the {@link org.apache.lucene.document.Document}.  These fields
    * are expected to be marked as indexed and not stored.
    * <p/>
@@ -96,6 +96,7 @@ public abstract class SpatialStrategy {
    * since it doesn't use it.
    *
    * @return Not null nor will it have null elements.
+   * @throws UnsupportedOperationException if given a shape incompatible with the strategy
    */
   public abstract Field[] createIndexableFields(Shape shape);
 
@@ -111,6 +112,10 @@ public abstract class SpatialStrategy {
    * and {@link Shape} from the supplied {@code args}.
    * The default implementation is
    * <pre>return new ConstantScoreQuery(makeFilter(args));</pre>
+   *
+   * @throws UnsupportedOperationException If the strategy does not support the shape in {@code args}
+   * @throws org.apache.lucene.spatial.query.UnsupportedSpatialOperation If the strategy does not support the {@link
+   * org.apache.lucene.spatial.query.SpatialOperation} in {@code args}.
    */
   public ConstantScoreQuery makeQuery(SpatialArgs args) {
     return new ConstantScoreQuery(makeFilter(args));
@@ -124,13 +129,17 @@ public abstract class SpatialStrategy {
    * {@link #makeQuery(org.apache.lucene.spatial.query.SpatialArgs)}
    * then this method could be simply:
    * <pre>return new QueryWrapperFilter(makeQuery(args).getQuery());</pre>
+   *
+   * @throws UnsupportedOperationException If the strategy does not support the shape in {@code args}
+   * @throws org.apache.lucene.spatial.query.UnsupportedSpatialOperation If the strategy does not support the {@link
+   * org.apache.lucene.spatial.query.SpatialOperation} in {@code args}.
    */
   public abstract Filter makeFilter(SpatialArgs args);
 
   /**
    * Returns a ValueSource with values ranging from 1 to 0, depending inversely
    * on the distance from {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point)}.
-   * The formula is <code>c/(d + c)</code> where 'd' is the distance and 'c' is
+   * The formula is {@code c/(d + c)} where 'd' is the distance and 'c' is
    * one tenth the distance to the farthest edge from the center. Thus the
    * scores will be 1 for indexed points at the center of the query shape and as
    * low as ~0.1 at its furthest edges.

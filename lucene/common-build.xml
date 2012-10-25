@@ -109,6 +109,8 @@
   </condition>
   <property name="tests.clover.args" value=""/>
 
+  <property name="tests.heapdump.args" value=""/>
+
   <property name="tests.tempDir" location="${build.dir}/test"/>
 
   <property name="tests.cachefile" location="${common.dir}/tools/junit4/cached-timehints.txt" />
@@ -169,6 +171,7 @@
 
   <property name="src.dir" location="src/java"/>
   <property name="tests.src.dir" location="src/test"/>
+  <available property="module.has.tests" type="dir" file="${tests.src.dir}"/>
   <property name="build.dir" location="build"/>
   <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
   <property name="common.build.dir" location="${common.dir}/build"/>
@@ -208,6 +211,7 @@
   -->
   <property name="svnversion.exe" value="svnversion" />
   <property name="svn.exe" value="svn" />
+  <property name="perl.exe" value="perl" />
   
   <property name="hg.exe" value="hg" />
   <property name="moman.url" value="https://bitbucket.org/jpbarrette/moman" />
@@ -240,6 +244,7 @@
     <propertyref regex=".*\.uptodate$$"/>
     <propertyref regex=".*\.compiled$$"/>
     <propertyref regex=".*\.loaded$$"/>
+    <propertyref name="lucene.javadoc.url"/><!-- for Solr -->
   </propertyset>
 
   <patternset id="lucene.local.src.package.patterns"
@@ -259,6 +264,24 @@
       <not><antversion atleast="1.8.2" /></not>
     </condition>
   </fail>
+
+  <condition property="documentation-lint.supported">
+    <and>
+      <or>
+        <contains string="${java.vm.name}" substring="hotspot" casesensitive="false"/>
+        <contains string="${java.vm.name}" substring="openjdk" casesensitive="false"/>
+        <contains string="${java.vm.name}" substring="jrockit" casesensitive="false"/>
+      </or>
+      <or>
+        <equals arg1="${ant.java.version}" arg2="1.7"/>
+        <equals arg1="${ant.java.version}" arg2="1.8"/>
+      </or>
+    </and>
+  </condition>
+
+  <target name="-documentation-lint-unsupported" unless="documentation-lint.supported">
+    <echo level="warning" message="WARN: Linting documentation HTML is not supported on this Java version (${ant.java.version}) / JVM (${java.vm.name}). NOTHING DONE!"/>
+  </target>
 
   <!-- Import custom ANT tasks. -->
   <import file="${common.dir}/tools/custom-tasks.xml" />
@@ -768,6 +791,7 @@
         <property name="tests.method" value="" />
         <property name="tests.dynamicAssignmentRatio" value="0.50" /> <!-- 50% of suites -->
         <property name="tests.haltonfailure" value="true" />
+        <property name="tests.leaveTemporary" value="false" />
         <property name="tests.iters" value="" />
         <property name="tests.dups"  value="1" />
 
@@ -805,7 +829,7 @@
 
             dynamicAssignmentRatio="${tests.dynamicAssignmentRatio}"
             shuffleOnSlave="true"
-            leaveTemporary="false"
+            leaveTemporary="${tests.leaveTemporary}"
             seed="${tests.seed}"
 
             heartbeat="${tests.heartbeat}"
@@ -823,6 +847,7 @@
 
             <!-- JVM arguments and system properties. -->
             <jvmarg line="${args}"/>
+            <jvmarg line="${tests.heapdump.args}"/>
             <jvmarg line="${tests.clover.args}"/>
 
             <!-- set the number of times tests should run -->
@@ -1113,6 +1138,10 @@ ant -Dtests.timestamps=on ...
 # Override forked JVM file.encoding
 ant -Dtests.file.encoding=XXX ...
 
+# Don't remove temporary files under slave directories, even if
+# the test passes.
+ant -Dtests.leaveTemporary=true
+
 # Output test files and reports.
 ${tests-output}/tests-report.txt    - full ASCII tests report
 ${tests-output}/tests-failures.txt  - failures only (if any)
@@ -1135,7 +1164,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
 
   <!-- note: order here is important, the taskdef depends on test-framework
        jars so we just order it after compile-test to ensure that -->
-  <target name="test" depends="compile-test,install-junit4-taskdef,clover,validate" description="Runs unit tests">
+  <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate" description="Runs unit tests">
     <mkdir dir="${junit.output.dir}"/>
     <test-macro threadNum="${tests.jvms}" />
   </target>
@@ -1143,9 +1172,9 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <!--
    See http://issues.apache.org/jira/browse/LUCENE-721
    -->
-  <target name="clover" depends="-clover.disable,-clover.setup" description="Instrument the Unit tests using Clover. To use, specify -Drun.clover=true on the command line."/>
+  <target name="clover" depends="-clover.disable,-clover.load,-clover.classpath,-clover.setup" description="Instrument the Unit tests using Clover. To use, specify -Drun.clover=true on the command line."/>
   
-  <target name="-clover.setup" if="run.clover" unless="clover.loaded">
+  <target name="-clover.load" if="run.clover" unless="clover.loaded">
     <available file="${clover.license.path}" property="clover.license.available" />
     <fail unless="clover.license.available"><![CDATA[.
 
@@ -1170,6 +1199,18 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       inline="true" conf="master" type="jar" pathid="clover.classpath"/>
     <taskdef resource="cloverlib.xml" classpathref="clover.classpath" />
     <mkdir dir="${clover.db.dir}"/>
+    <!-- This is a hack, instead of setting "clover.loaded" to "true", we set it
+     to the stringified classpath. So it can be passed down to subants,
+     and reloaded by "-clover.classpath" task (see below): -->
+    <pathconvert property="clover.loaded" refid="clover.classpath"/>
+  </target>
+  
+  <target name="-clover.classpath" if="run.clover">
+    <!-- redefine the clover classpath refid for tests by using the hack above: -->
+    <path id="clover.classpath" path="${clover.loaded}"/>
+  </target>
+
+  <target name="-clover.setup" if="run.clover">
     <clover-setup initString="${clover.db.dir}/coverage.db" encoding="${build.encoding}">
       <fileset dir="${src.dir}" erroronmissingdir="no">
         <include name="org/apache/**/*.java" />
@@ -1178,7 +1219,6 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
         <include name="org/apache/**/*.java" />
       </testsources>
     </clover-setup>
-    <property name="clover.loaded" value="true"/>
   </target>
 
   <target name="-clover.disable" unless="run.clover">
@@ -1349,7 +1389,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <sequential>
       <property name="output.build.xml" location="${build.dir}/stage_maven_build.xml"/>
       <property name="dev-tools.scripts.dir" value="../dev-tools/scripts"/>
-      <exec dir="." executable="perl" failonerror="true" outputproperty="stage.maven.script.output">
+      <exec dir="." executable="${perl.exe}" failonerror="true" outputproperty="stage.maven.script.output">
+        <arg value="-CSD"/>
         <arg value="${dev-tools.scripts.dir}/write.stage.maven.build.xml.pl"/>
         <arg value="${maven.dist.dir}"/>              <!-- Maven distribution artifacts directory -->
         <arg value="${output.build.xml}"/>            <!-- Ant build file to be written -->
@@ -1474,6 +1515,74 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </macrodef>
 
+  <target name="-ecj-javadoc-lint" depends="-ecj-javadoc-lint-src,-ecj-javadoc-lint-tests"/>
+
+  <target name="-ecj-javadoc-lint-src" depends="-ecj-resolve">
+    <ecj-macro srcdir="${src.dir}" configuration="${common.dir}/tools/javadoc/ecj.javadocs.prefs">
+      <classpath refid="classpath"/>
+    </ecj-macro>
+  </target>
+
+  <target name="-ecj-javadoc-lint-tests" depends="-ecj-resolve" if="module.has.tests">
+    <ecj-macro srcdir="${tests.src.dir}" configuration="${common.dir}/tools/javadoc/ecj.javadocs.prefs">
+      <classpath refid="test.classpath"/>
+    </ecj-macro>
+  </target>
+  
+  <target name="-ecj-resolve" unless="ecj.loaded" depends="ivy-availability-check,ivy-fail,ivy-configure">
+    <ivy:cachepath organisation="org.eclipse.jdt.core.compiler" module="ecj" revision="3.7.2"
+     inline="true" conf="master" type="jar" pathid="ecj.classpath" />
+    <componentdef classname="org.eclipse.jdt.core.JDTCompilerAdapter"
+     classpathref="ecj.classpath" name="ecj-component"/>
+    <property name="ecj.loaded" value="true"/>
+  </target>
+
+  <macrodef name="ecj-macro">
+    <attribute name="srcdir"/>
+    <attribute name="javac.source" default="${javac.source}"/>
+    <attribute name="includeantruntime" default="${javac.includeAntRuntime}" />
+    <attribute name="configuration"/>
+
+    <element name="nested" implicit="yes" optional="yes"/>
+
+    <sequential>
+      <javac
+        includeAntRuntime="@{includeantruntime}"
+        encoding="${build.encoding}"
+        srcdir="@{srcdir}"
+        source="@{javac.source}"
+        target="@{javac.source}"
+        taskname="ecj-lint">
+        <ecj-component/>
+        <nested/>
+        <compilerarg value="-d"/>
+        <compilerarg value="none"/>
+        <compilerarg value="-enableJavadoc"/>
+        <compilerarg value="-properties"/>
+        <compilerarg value="@{configuration}"/>
+      </javac>
+    </sequential>
+  </macrodef>
+
+  <!-- TODO: if we make a custom ant task, we can give better
+       errors and stuff here, and not make a stupid temp dir -->
+  <macrodef name="jtidy-macro">
+    <element name="nested" implicit="yes" optional="yes"/>
+    <sequential>
+      <ivy:cachepath organisation="net.sf.jtidy" module="jtidy" revision="r938"
+          log="download-only" inline="true" conf="master" type="jar" pathid="jtidy.classpath" />
+      <taskdef name="tidy" classname="org.w3c.tidy.ant.JTidyTask" classpathref="jtidy.classpath"/>
+      <delete dir="${common.dir}/build/jtidy_tmp" quiet="true"/>
+      <echo message="Checking for broken html (such as invalid tags)..." taskname="jtidy"/>
+      <tidy failonerror="true" destdir="${common.dir}/build/jtidy_tmp">
+         <nested/>
+         <parameter name="input-encoding" value="UTF-8" />
+         <parameter name="only-errors" value="true" />
+      </tidy>
+      <delete dir="${common.dir}/build/jtidy_tmp" quiet="true"/>
+    </sequential>
+  </macrodef>
+
   <property name="failonjavadocwarning" value="true"/>
   <macrodef name="invoke-javadoc">
     <element name="sources" optional="yes"/>
@@ -1503,6 +1612,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
           use="true"
           failonerror="true"
           source="${ant.java.version}"
+          locale="en_US"
           windowtitle="${Name} ${version} API"
           doctitle="@{title}"
           maxmemory="${javadoc.maxmemory}">
@@ -1513,7 +1623,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       	<link offline="true" packagelistLoc="${javadoc.dir}"/>
         <link offline="true" href="${javadoc.link}" packagelistLoc="${javadoc.packagelist.dir}/java6"/>
         <bottom><![CDATA[
-          <address>Copyright &copy; ${year} Apache Software Foundation.  All Rights Reserved.</address>
+          <i>Copyright &copy; ${year} Apache Software Foundation.  All Rights Reserved.</i>
           <script src='{@docRoot}/prettify.js' type='text/javascript'></script>
           <script type='text/javascript'>
             (function(){
@@ -1750,6 +1860,13 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </macrodef>
   
+  <!-- GROOVY scripting engine for ANT tasks -->
+  <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-fail,ivy-configure">
+    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.0.4"
+      inline="true" conf="default" type="jar" transitive="true" pathid="groovy.classpath"/>
+    <property name="groovy.loaded" value="true"/>
+  </target>
+  
   <!-- PEGDOWN macro: Before using depend on the target "resolve-pegdown" -->
   
   <target name="resolve-pegdown" unless="pegdown.loaded" depends="ivy-availability-check,ivy-fail,ivy-configure">
@@ -1771,24 +1888,24 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
           <tokenfilter>
             <filetokenizer/>
             <replaceregex pattern="\b(LUCENE|SOLR)\-\d+\b" replace="[\0](https://issues.apache.org/jira/browse/\0)" flags="gs"/>
-            <scriptfilter language="javascript" classpathref="pegdown.classpath"><![CDATA[
-              importClass(java.lang.StringBuilder);
-              importClass(org.pegdown.PegDownProcessor);
-              importClass(org.pegdown.Extensions);
-              importClass(org.pegdown.FastEncoder);
-              var markdownSource = self.getToken();
-              var title = undefined;
-              // match the first heading in markdown and use as title:
-              if (markdownSource.search(/^#+\s*(.+)$/m) >= 0) {
-                title = RegExp.$1;
-              }
-              var processor = new PegDownProcessor(
+            <scriptfilter language="groovy">
+              <classpath>
+                <path refid="groovy.classpath"/>
+                <path refid="pegdown.classpath"/>
+              </classpath><![CDATA[
+              import org.pegdown.PegDownProcessor;
+              import org.pegdown.Extensions;
+              import org.pegdown.FastEncoder;
+              
+              String markdownSource = self.getToken();
+              PegDownProcessor processor = new PegDownProcessor(
                 Extensions.ABBREVIATIONS | Extensions.AUTOLINKS |
                 Extensions.FENCED_CODE_BLOCKS | Extensions.SMARTS
               );
-              var html = new StringBuilder('<html>\n<head>\n');
-              if (title) {
-                html.append('<title>').append(FastEncoder.encode(title)).append('</title>\n');
+              StringBuilder html = new StringBuilder('<html>\n<head>\n');
+              // match the first heading in markdown and use as title:
+              markdownSource.find(~/(?m)^#+\s*(.+)$/) {
+                match, title -> html.append('<title>').append(FastEncoder.encode(title)).append('</title>\n');
               }
               html.append('<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">\n')
                 .append('</head>\n<body>\n')
@@ -1829,16 +1946,23 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
    compile changes.txt into an html file
    -->
   <macrodef name="build-changes">
-    <attribute name="changes.src.dir" default="${changes.src.dir}"/>
+    <attribute name="changes.product"/>
+    <attribute name="changes.src.file" default="CHANGES.txt"/>
     <attribute name="changes.target.dir" default="${changes.target.dir}"/>
     <sequential>
       <mkdir dir="@{changes.target.dir}"/>
-      <exec executable="perl" input="CHANGES.txt" output="@{changes.target.dir}/Changes.html"
+      <get src="https://issues.apache.org/jira/rest/api/2/project/@{changes.product}"
+        dest="@{changes.target.dir}/jiraVersionList.json" httpusecaches="false"/>
+      <exec executable="${perl.exe}" input="@{changes.src.file}" output="@{changes.target.dir}/Changes.html"
             failonerror="true" logError="true">
-        <arg value="@{changes.src.dir}/changes2html.pl"/>
+        <arg value="-CSD"/>
+        <arg value="${changes.src.dir}/changes2html.pl"/>
+        <arg value="@{changes.product}"/>
+        <arg value="@{changes.target.dir}/jiraVersionList.json"/>
       </exec>
+      <delete file="@{changes.target.dir}/jiraVersionList.json"/>
       <copy todir="@{changes.target.dir}">
-        <fileset dir="@{changes.src.dir}" includes="*.css"/>
+        <fileset dir="${changes.src.dir}" includes="*.css"/>
       </copy>
     </sequential>
   </macrodef>

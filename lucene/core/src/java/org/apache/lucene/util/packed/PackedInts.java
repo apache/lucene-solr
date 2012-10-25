@@ -712,7 +712,7 @@ public class PackedInts {
    * @param valueCount   how many values the stream holds
    * @param bitsPerValue the number of bits per value
    * @return             a Reader
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    * @see PackedInts#getWriterNoHeader(DataOutput, Format, int, int, int)
    * @lucene.internal
    */
@@ -754,7 +754,7 @@ public class PackedInts {
    *
    * @param in           the stream to read data from
    * @return             a Reader
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    * @lucene.internal
    */
   public static Reader getReader(DataInput in) throws IOException {
@@ -846,7 +846,7 @@ public class PackedInts {
    *
    * @param in           the stream to read data from
    * @return a direct Reader
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    * @lucene.internal
    */
   public static Reader getDirectReader(IndexInput in) throws IOException {
@@ -990,7 +990,7 @@ public class PackedInts {
    * @param bitsPerValue the number of bits per value
    * @param acceptableOverheadRatio an acceptable overhead ratio per value
    * @return             a Writer
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    * @lucene.internal
    */
   public static Writer getWriter(DataOutput out,

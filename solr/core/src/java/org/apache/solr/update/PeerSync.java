@@ -19,6 +19,7 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -28,6 +29,7 @@ import java.util.Set;
 
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -78,6 +80,7 @@ public class PeerSync  {
   private long ourLowThreshold;  // 20th percentile
   private long ourHighThreshold; // 80th percentile
   private boolean cantReachIsSuccess;
+  private boolean getNoVersionsIsSuccess;
   private static final HttpClient client;
   static {
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -128,20 +131,15 @@ public class PeerSync  {
   }
 
   public PeerSync(SolrCore core, List<String> replicas, int nUpdates) {
-    this(core, replicas, nUpdates, false);
+    this(core, replicas, nUpdates, false, true);
   }
   
-  /**
-   *
-   * @param core
-   * @param replicas
-   * @param nUpdates
-   */
-  public PeerSync(SolrCore core, List<String> replicas, int nUpdates, boolean cantReachIsSuccess) {
+  public PeerSync(SolrCore core, List<String> replicas, int nUpdates, boolean cantReachIsSuccess, boolean getNoVersionsIsSuccess) {
     this.replicas = replicas;
     this.nUpdates = nUpdates;
     this.maxUpdates = nUpdates;
     this.cantReachIsSuccess = cantReachIsSuccess;
+    this.getNoVersionsIsSuccess = getNoVersionsIsSuccess;
 
     
     uhandler = core.getUpdateHandler();
@@ -305,8 +303,8 @@ public class PeerSync  {
       if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrServerException) {
         Throwable solrException = ((SolrServerException) srsp.getException())
             .getRootCause();
-        if (solrException instanceof ConnectException
-            || solrException instanceof NoHttpResponseException) {
+        if (solrException instanceof ConnectException || solrException instanceof ConnectTimeoutException
+            || solrException instanceof NoHttpResponseException || solrException instanceof SocketException) {
           log.warn(msg() + " couldn't connect to " + srsp.getShardAddress() + ", counting as success");
 
           return true;
@@ -315,6 +313,11 @@ public class PeerSync  {
       
       if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 503) {
         log.warn(msg() + " got a 503 from " + srsp.getShardAddress() + ", counting as success");
+        return true;
+      }
+      
+      if (cantReachIsSuccess && sreq.purpose == 1 && srsp.getException() instanceof SolrException && ((SolrException) srsp.getException()).code() == 404) {
+        log.warn(msg() + " got a 404 from " + srsp.getShardAddress() + ", counting as success");
         return true;
       }
       // TODO: at least log???
@@ -343,7 +346,7 @@ public class PeerSync  {
     log.info(msg() + " Received " + otherVersions.size() + " versions from " + sreq.shards[0] );
 
     if (otherVersions.size() == 0) {
-      return true;
+      return getNoVersionsIsSuccess; 
     }
     
     boolean completeList = otherVersions.size() < nUpdates;  // do we have their complete list of updates?

@@ -29,12 +29,12 @@ import java.io.IOException;
 public interface Classifier {
 
   /**
-   * Assign a class to the given text String
+   * Assign a class (with score) to the given text String
    * @param text a String containing text to be classified
-   * @return a String representing a class
-   * @throws IOException
+   * @return a {@link ClassificationResult} holding assigned class and score
+   * @throws IOException If there is a low-level I/O error.
    */
-  public String assignClass(String text) throws IOException;
+  public ClassificationResult assignClass(String text) throws IOException;
 
   /**
    * Train the classifier using the underlying Lucene index
@@ -42,7 +42,7 @@ public interface Classifier {
    * @param textFieldName the name of the field used to compare documents
    * @param classFieldName the name of the field containing the class assigned to documents
    * @param analyzer the analyzer used to tokenize / filter the unseen text
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer)
       throws IOException;

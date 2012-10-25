@@ -60,8 +60,6 @@ public class TestBooleanOr extends LuceneTestCase {
   /**
    * <code>T:files T:deleting C:production C:optimize </code>
    * it works.
-   *
-   * @throws IOException
    */
   public void testFlat() throws IOException {
     BooleanQuery q = new BooleanQuery();
@@ -75,8 +73,6 @@ public class TestBooleanOr extends LuceneTestCase {
   /**
    * <code>(T:files T:deleting) (+C:production +C:optimize)</code>
    * it works.
-   *
-   * @throws IOException
    */
   public void testParenthesisMust() throws IOException {
     BooleanQuery q3 = new BooleanQuery();
@@ -94,8 +90,6 @@ public class TestBooleanOr extends LuceneTestCase {
   /**
    * <code>(T:files T:deleting) +(C:production C:optimize)</code>
    * not working. results NO HIT.
-   *
-   * @throws IOException
    */
   public void testParenthesisMust2() throws IOException {
     BooleanQuery q3 = new BooleanQuery();
@@ -113,8 +107,6 @@ public class TestBooleanOr extends LuceneTestCase {
   /**
    * <code>(T:files T:deleting) (C:production C:optimize)</code>
    * not working. results NO HIT.
-   *
-   * @throws IOException
    */
   public void testParenthesisShould() throws IOException {
     BooleanQuery q3 = new BooleanQuery();

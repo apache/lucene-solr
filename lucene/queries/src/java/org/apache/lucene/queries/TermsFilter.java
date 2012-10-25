@@ -42,8 +42,6 @@ public class TermsFilter extends Filter {
 
   /**
    * Adds a term to the list of acceptable terms
-   *
-   * @param term
    */
   public void addTerm(Term term) {
     terms.add(term);
@@ -81,7 +79,7 @@ public class TermsFilter extends Filter {
       if (terms != null) { // TODO this check doesn't make sense, decide which variable its supposed to be for
         br.copyBytes(term.bytes());
         assert termsEnum != null;
-        if (termsEnum.seekCeil(br) == TermsEnum.SeekStatus.FOUND) {
+        if (termsEnum.seekExact(br,true)) {
           docs = termsEnum.docs(acceptDocs, docs, 0);
           while (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             result.set(docs.docID());

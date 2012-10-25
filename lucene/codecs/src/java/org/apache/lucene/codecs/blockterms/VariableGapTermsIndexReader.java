@@ -54,7 +54,9 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
   final HashMap<FieldInfo,FieldIndexData> fields = new HashMap<FieldInfo,FieldIndexData>();
   
   // start of the field info data
-  protected long dirOffset;
+  private long dirOffset;
+  
+  private final int version;
 
   final String segment;
   public VariableGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, String segmentSuffix, IOContext context)
@@ -66,7 +68,7 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
 
     try {
       
-      readHeader(in);
+      version = readHeader(in);
       this.indexDivisor = indexDivisor;
 
       seekDir(in, dirOffset);
@@ -103,10 +105,13 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     return indexDivisor;
   }
   
-  protected void readHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, VariableGapTermsIndexWriter.CODEC_NAME,
-      VariableGapTermsIndexWriter.VERSION_START, VariableGapTermsIndexWriter.VERSION_START);
-    dirOffset = input.readLong();
+  private int readHeader(IndexInput input) throws IOException {
+    int version = CodecUtil.checkHeader(input, VariableGapTermsIndexWriter.CODEC_NAME,
+      VariableGapTermsIndexWriter.VERSION_START, VariableGapTermsIndexWriter.VERSION_CURRENT);
+    if (version < VariableGapTermsIndexWriter.VERSION_APPEND_ONLY) {
+      dirOffset = input.readLong();
+    }
+    return version;
   }
 
   private static class IndexEnum extends FieldIndexEnum {
@@ -229,7 +234,11 @@ public class VariableGapTermsIndexReader extends TermsIndexReaderBase {
     }
   }
 
-  protected void seekDir(IndexInput input, long dirOffset) throws IOException {
+  private void seekDir(IndexInput input, long dirOffset) throws IOException {
+    if (version >= VariableGapTermsIndexWriter.VERSION_APPEND_ONLY) {
+      input.seek(input.length() - 8);
+      dirOffset = input.readLong();
+    }
     input.seek(dirOffset);
   }
 }

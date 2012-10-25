@@ -34,7 +34,7 @@ import java.util.StringTokenizer;
  * ShapeReadWriter#readShape(String)}. There are some optional name-value pair parameters
  * that follow the closing parenthesis.  Example:
  * <pre>
- *   Intersects(-10,20,-8,22) distPec=0.025
+ *   Intersects(-10,20,-8,22) distErrPct=0.025
  * </pre>
  * <p/>
  * In the future it would be good to support something at least semi-standardized like a
@@ -86,7 +86,7 @@ public class SpatialArgsParser {
       throw new IllegalArgumentException("missing body : " + v, null);
     }
 
-    Shape shape = new ShapeReadWriter(ctx).readShape(body);
+    Shape shape = ctx.readShape(body);
     SpatialArgs args = new SpatialArgs(op, shape);
 
     if (v.length() > (edx + 1)) {

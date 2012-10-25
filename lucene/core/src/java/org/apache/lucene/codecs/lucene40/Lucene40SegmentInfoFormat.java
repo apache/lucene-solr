@@ -22,6 +22,7 @@ import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.SegmentInfoReader;
 import org.apache.lucene.codecs.SegmentInfoWriter;
 import org.apache.lucene.index.IndexWriter; // javadocs
+import org.apache.lucene.index.SegmentInfo; // javadocs
 import org.apache.lucene.index.SegmentInfos; // javadocs
 import org.apache.lucene.store.DataOutput; // javadocs
 
@@ -70,6 +71,10 @@ import org.apache.lucene.store.DataOutput; // javadocs
 public class Lucene40SegmentInfoFormat extends SegmentInfoFormat {
   private final SegmentInfoReader reader = new Lucene40SegmentInfoReader();
   private final SegmentInfoWriter writer = new Lucene40SegmentInfoWriter();
+
+  /** Sole constructor. */
+  public Lucene40SegmentInfoFormat() {
+  }
   
   @Override
   public SegmentInfoReader getSegmentInfoReader() {
@@ -81,6 +86,7 @@ public class Lucene40SegmentInfoFormat extends SegmentInfoFormat {
     return writer;
   }
 
+  /** File extension used to store {@link SegmentInfo}. */
   public final static String SI_EXTENSION = "si";
   static final String CODEC_NAME = "Lucene40SegmentInfo";
   static final int VERSION_START = 0;

@@ -32,12 +32,17 @@ class FindHyperlinks(HTMLParser):
 
   def __init__(self, baseURL):
     HTMLParser.__init__(self)
+    self.stack = []
     self.anchors = set()
     self.links = []
     self.baseURL = baseURL
     self.printed = False
 
   def handle_starttag(self, tag, attrs):
+    # NOTE: I don't think 'a' should be in here. But try debugging 
+    # NumericRangeQuery.html. (Could be javadocs bug, its a generic type...)
+    if tag not in ('link', 'meta', 'frame', 'br', 'hr', 'p', 'li', 'img', 'col', 'a'):
+      self.stack.append(tag)
     if tag == 'a':
       name = None
       href = None
@@ -73,6 +78,18 @@ class FindHyperlinks(HTMLParser):
           pass
         else:
           raise RuntimeError('couldn\'t find an href nor name in link in %s: only got these attrs: %s' % (self.baseURL, attrs))
+
+  def handle_endtag(self, tag):
+    if tag in ('link', 'meta', 'frame', 'br', 'hr', 'p', 'li', 'img', 'col', 'a'):
+      return
+    
+    if len(self.stack) == 0:
+      raise RuntimeError('%s %s:%s: saw </%s> no opening <%s>' % (self.baseURL, self.getpos()[0], self.getpos()[1], tag, self.stack[-1]))
+
+    if self.stack[-1] == tag:
+      self.stack.pop()
+    else:
+      raise RuntimeError('%s %s:%s: saw </%s> but expected </%s>' % (self.baseURL, self.getpos()[0], self.getpos()[1], tag, self.stack[-1]))
 
   def printFile(self):
     if not self.printed:

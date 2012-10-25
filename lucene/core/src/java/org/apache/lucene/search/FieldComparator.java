@@ -148,7 +148,7 @@ public abstract class FieldComparator<T> {
    * @return the comparator to use for this segment; most
    *   comparators can just return "this" to reuse the same
    *   comparator across segments
-   * @throws IOException
+   * @throws IOException if there is a low-level IO error
    */
   public abstract FieldComparator<T> setNextReader(AtomicReaderContext context) throws IOException;
 

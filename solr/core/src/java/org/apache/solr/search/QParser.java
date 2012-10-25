@@ -137,8 +137,6 @@ public abstract class QParser {
   /**
    * Returns the resulting query from this QParser, calling parse() only the
    * first time and caching the Query result.
-   *
-   * @throws ParseException
    */
   public Query getQuery() throws ParseException {
     if (query==null) {

@@ -38,9 +38,17 @@ import org.apache.lucene.util.BytesRef;
  */
 public abstract class PerDocProducerBase extends PerDocProducer {
 
+  /** Closes provided Closables. */
   protected abstract void closeInternal(Collection<? extends Closeable> closeables) throws IOException;
+
+  /** Returns a map, mapping field names to doc values. */
   protected abstract Map<String, DocValues> docValues();
   
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected PerDocProducerBase() {
+  }
+
   @Override
   public void close() throws IOException {
     closeInternal(docValues().values());
@@ -50,12 +58,13 @@ public abstract class PerDocProducerBase extends PerDocProducer {
   public DocValues docValues(String field) throws IOException {
     return docValues().get(field);
   }
-  
+
+  /** Returns the comparator used to sort {@link BytesRef} values. */
   public Comparator<BytesRef> getComparator() throws IOException {
     return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 
-  // Only opens files... doesn't actually load any values
+  /** Only opens files... doesn't actually load any values. */
   protected TreeMap<String, DocValues> load(FieldInfos fieldInfos,
       String segment, int docCount, Directory dir, IOContext context)
       throws IOException {
@@ -76,24 +85,31 @@ public abstract class PerDocProducerBase extends PerDocProducer {
     } finally {
       if (!success) {
         // if we fail we must close all opened resources if there are any
-        closeInternal(values.values());
+        try {
+          closeInternal(values.values());
+        } catch (Throwable t) {} // keep our original exception
       }
     }
     return values;
   }
-  
+
+  /** Returns true if this field indexed doc values. */
   protected boolean canLoad(FieldInfo info) {
     return info.hasDocValues();
   }
   
+  /** Returns the doc values type for this field. */
   protected Type getDocValuesType(FieldInfo info) {
     return info.getDocValuesType();
   }
   
+  /** Returns true if any fields indexed doc values. */
   protected boolean anyDocValuesFields(FieldInfos infos) {
     return infos.hasDocValues();
   }
-  
+
+  /** Returns the unique segment and field id for any
+   *  per-field files this implementation needs to write. */
   public static String docValuesId(String segmentsName, int fieldId) {
     return segmentsName + "_" + fieldId;
   }

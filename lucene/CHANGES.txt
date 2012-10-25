@@ -5,10 +5,6 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 5.0.0 =======================
-New Features
-
-* LUCENE-4410: FilteredQuery now exposes a FilterStrategy that exposes
-  how filters are applied during query execution. (Simon Willnauer) 
 
 Changes in backwards compatibility policy
 
@@ -20,6 +16,109 @@ Changes in backwards compatibility policy
   (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
   Robert Muir)
 
+======================= Lucene 4.1.0 =======================
+
+New Features
+
+* LUCENE-4226: New experimental StoredFieldsFormat (in lucene/codecs) that
+  compresses chunks of documents together in order to improve the compression
+  ratio. (Adrien Grand)
+
+* LUCENE-4426: New ValueSource implementations (in lucene/queries) for
+  DocValues fields. (Adrien Grand)
+
+* LUCENE-4410: FilteredQuery now exposes a FilterStrategy that exposes
+  how filters are applied during query execution. (Simon Willnauer) 
+
+* LUCENE-4404: New ListOfOutputs (in lucene/misc) for FSTs wraps
+  another Outputs implementation, allowing you to store more than one
+  output for a single input.  UpToTwoPositiveIntsOutputs was moved
+  from lucene/core to lucene/misc.  (Mike McCandless)
+
+* LUCENE-3842: New AnalyzingCompletionLookup, for doing auto-suggest
+  using an analyzer.  This can create powerful suggesters: if the analyzer
+  remove stop words then "ghost chr..." could suggest "The Ghost of
+  Christmas Past"; if SynonymFilter is used to map wifi and wireless
+  network to hotspot, then "wirele..." could suggest "wifi router";
+  token normalization likes stemmers, accent removel, etc. would allow
+  the suggester to ignore such variations. (Robert Muir, Sudarshan
+  Gaikaiwari, Mike McCandless)
+
+* LUCENE-4446: Lucene 4.1 has a new default index format (Lucene41Codec)
+  that incorporates the previously experimental "Block" postings format
+  for better search performance. 
+  (Han Jiang, Adrien Grand, Robert Muir, Mike McCandless)
+
+API Changes
+
+* LUCENE-4399: Deprecated AppendingCodec. Lucene's term dictionaries
+  no longer seek when writing.  (Adrien Grand, Robert Muir)
+
+* LUCENE-4479: Rename TokenStream.getTokenStream(IndexReader, int, String)
+  to TokenStream.getTokenStreamWithOffsets, and return null on failure
+  rather than throwing IllegalArgumentException.  (Alan Woodward)
+
+* LUCENE-4472: MergePolicy now accepts a MergeTrigger that provides 
+  information about the trigger of the merge ie. merge triggered due
+  to a segment merge or a full flush etc. (Simon Willnauer)
+
+Bug Fixes
+
+* LUCENE-1822: BaseFragListBuilder hard-coded 6 char margin is too naive.
+  (Alex Vigdor, Arcadius Ahouansou, Koji Sekiguchi)
+
+* LUCENE-4468: Fix rareish integer overflows in Lucene41 postings 
+  format. (Robert Muir)
+  
+* LUCENE-4486: Add support for ConstantScoreQuery in Highlighter.
+ (Simon Willnauer)
+
+* LUCENE-4485: When CheckIndex terms, terms/docs pairs and tokens,
+  these counts now all exclude deleted documents.  (Mike McCandless)
+
+* LUCENE-4479: Highlighter works correctly for fields with term vector
+  positions, but no offsets.  (Alan Woodward)
+
+* SOLR-3906: JapaneseReadingFormFilter in romaji mode will return
+  romaji even for out-of-vocabulary kana cases (e.g. half-width forms).
+  (Robert Muir)
+
+Optimizations
+
+* LUCENE-4443: Lucene41PostingsFormat no longer writes unnecessary offsets 
+  into the skipdata. (Robert Muir)
+
+* LUCENE-4459: Improve WeakIdentityMap.keyIterator() to remove GCed keys
+  from backing map early instead of waiting for reap(). This makes test
+  failures in TestWeakIdentityMap disappear, too.
+  (Uwe Schindler, Mike McCandless, Robert Muir)
+
+* LUCENE-4473: Lucene41PostingsFormat encodes offsets more efficiently
+  for low frequency terms (< 128 occurrences).  (Robert Muir)
+
+* LUCENE-4462: DocumentsWriter now flushes deletes, segment infos and builds
+  CFS files if necessary during segment flush and not during publishing. The latter
+  was a single threaded process while now all IO and CPU heavy computation is done
+  concurrently in DocumentsWriterPerThread. (Simon Willnauer)
+
+* LUCENE-4496: Optimize Lucene41PostingsFormat when requesting a subset of
+  the postings data (via flags to TermsEnum.docs/docsAndPositions) to use
+  ForUtil.skipBlock.  (Robert Muir)
+
+* LUCENE-4497: Don't write PosVIntCount to the positions file in 
+  Lucene41PostingsFormat, as its always totalTermFreq % BLOCK_SIZE. (Robert Muir)
+
+* LUCENE-4498: In Lucene41PostingsFormat, when a term appears in only one document, 
+  Instead of writing a file pointer to a VIntBlock containing the doc id, just 
+  write the doc id.  (Mike McCandless, Robert Muir)
+
+Build
+
+* LUCENE-4451: Memory leak per unique thread caused by 
+  RandomizedContext.contexts static map. Upgrade randomized testing
+  to version 2.0.2 (Mike McCandless, Dawid Weiss)
+
+  
 ======================= Lucene 4.0.0 =======================
 
 Changes in backwards compatibility policy
@@ -56,9 +155,11 @@ New Features
   
 API Changes
 
-* LUCENE-4391: All methods of Lucene40Codec but getPostingsFormatForField are
-  now final. To reuse functionality of Lucene40, you should extend FilterCodec
-  and delegate to Lucene40 instead of extending Lucene40Codec. (Adrien Grand)
+* LUCENE-4391, LUCENE-4440: All methods of Lucene40Codec but
+  getPostingsFormatForField are now final. To reuse functionality 
+  of Lucene40, you should extend FilterCodec and delegate to Lucene40
+  instead of extending Lucene40Codec.  (Adrien Grand, Shai Erea,
+  Robert Muir, Uwe Schindler)
 
 * LUCENE-4299: Added Terms.hasPositions() and Terms.hasOffsets().
   Previously you had no real way to know that a term vector field
@@ -125,7 +226,14 @@ API Changes
   Bits as liveDocs, then use the flex apis (fields(), terms(), etc) directly.
   (Mike McCandless, Robert Muir)
 
+* LUCENE-4425: clarify documentation of StoredFieldVisitor.binaryValue
+  and simplify the api to binaryField(FieldInfo, byte[]).
+  (Adrien Grand, Robert Muir)
+
 Bug Fixes
+
+* LUCENE-4423: DocumentStoredFieldVisitor.binaryField ignored offset and
+  length. (Adrien Grand)
 
 * LUCENE-4297: BooleanScorer2 would multiply the coord() factor
   twice for conjunctions: for most users this is no problem, but
@@ -177,6 +285,23 @@ Bug Fixes
 
 * LUCENE-4401: Fix bug where DisjunctionSumScorer would sometimes call score()
   on a subscorer that had already returned NO_MORE_DOCS.  (Liu Chao, Robert Muir)
+
+* LUCENE-4411: when sampling is enabled for a FacetRequest, its depth
+  parameter is reset to the default (1), even if set otherwise.
+  (Gilad Barkai via Shai Erera)
+
+* LUCENE-4455: Fix bug in SegmentInfoPerCommit.sizeInBytes() that was
+  returning 2X the true size, inefficiently.  Also fixed bug in
+  CheckIndex that would report no deletions when a segment has
+  deletions, and vice/versa.  (Uwe Schindler, Robert Muir, Mike McCandless)
+
+* LUCENE-4456: Fixed double-counting sizeInBytes for a segment
+  (affects how merge policies pick merges); fixed CheckIndex's
+  incorrect reporting of whether a segment has deletions; fixed case
+  where on abort Lucene could remove files it didn't create; fixed
+  many cases where IndexWriter could leave leftover files (on
+  exception in various places, on reuse of a segment name after crash
+  and recovery.  (Uwe Schindler, Robert Muir, Mike McCandless)
 
 Optimizations
 

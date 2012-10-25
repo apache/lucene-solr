@@ -1134,6 +1134,36 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
       assertEquals( null, p.getPivot() );
     }
 
+    // -- SOLR-2255 Test excluding a filter Query --
+    // this test is a slight modification to the first pivot facet test
+    query = new SolrQuery( "*:*" );
+    query.addFacetPivotField( "{!ex=mytag key=mykey}features,cat" );
+    query.addFilterQuery("{!tag=mytag}-(features:bbb AND cat:a AND inStock:true)");//filters out one
+    query.setFacetMinCount( 0 );
+    query.setRows( 0 );
+
+    rsp = server.query( query );
+    assertEquals( docs.size() - 1, rsp.getResults().getNumFound() );//one less due to filter
+
+    //The rest of this test should be just like the original since we've
+    // excluded the 'fq' from the facet count
+    pivots = rsp.getFacetPivot();
+    pivot = pivots.getVal(0);
+    assertEquals( "mykey", pivots.getName( 0 ) );
+    assertEquals( 2, pivot.size() );
+
+    ff = pivot.get( 0 );
+    assertEquals( "features", ff.getField() );
+    assertEquals( "bbb", ff.getValue() );
+    assertEquals( 6, ff.getCount() );
+    counts = ff.getPivot();
+    assertEquals( 2, counts.size() );
+    assertEquals( "cat", counts.get(0).getField() );
+    assertEquals( "b", counts.get(0).getValue() );
+    assertEquals(   4, counts.get(0).getCount() );
+    assertEquals( "a", counts.get(1).getValue() );
+    assertEquals(   2, counts.get(1).getCount() );
+
   }
   
   public static SolrInputDocument makeTestDoc( Object ... kvp )

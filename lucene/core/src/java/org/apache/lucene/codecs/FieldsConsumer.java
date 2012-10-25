@@ -45,12 +45,22 @@ import org.apache.lucene.index.Terms;
  */
 public abstract class FieldsConsumer implements Closeable {
 
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected FieldsConsumer() {
+  }
+
   /** Add a new field */
   public abstract TermsConsumer addField(FieldInfo field) throws IOException;
   
   /** Called when we are done adding everything. */
   public abstract void close() throws IOException;
 
+  /** Called during merging to merge all {@link Fields} from
+   *  sub-readers.  This must recurse to merge all postings
+   *  (terms, docs, positions, etc.).  A {@link
+   *  PostingsFormat} can override this default
+   *  implementation to do its own merging. */
   public void merge(MergeState mergeState, Fields fields) throws IOException {
     for (String field : fields) {
       mergeState.fieldInfo = mergeState.fieldInfos.fieldInfo(field);

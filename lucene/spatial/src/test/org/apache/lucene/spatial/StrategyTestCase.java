@@ -19,7 +19,6 @@ package org.apache.lucene.spatial;
  */
 
 import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.io.ShapeReadWriter;
 import com.spatial4j.core.io.sample.SampleData;
 import com.spatial4j.core.io.sample.SampleDataReader;
 import com.spatial4j.core.shape.Shape;
@@ -35,6 +34,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.junit.Assert;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -89,7 +89,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       Document document = new Document();
       document.add(new StringField("id", data.id, Field.Store.YES));
       document.add(new StringField("name", data.name, Field.Store.YES));
-      Shape shape = new ShapeReadWriter(ctx).readShape(data.shape);
+      Shape shape = ctx.readShape(data.shape);
       shape = convertShapeFromGetDocuments(shape);
       if (shape != null) {
         for (Field f : strategy.createIndexableFields(shape)) {
@@ -110,8 +110,11 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   }
 
   protected Iterator<SampleData> getSampleData(String testDataFile) throws IOException {
-    return new SampleDataReader(
-        getClass().getClassLoader().getResourceAsStream("data/"+testDataFile) );
+    String path = "data/" + testDataFile;
+    InputStream stream = getClass().getClassLoader().getResourceAsStream(path);
+    if (stream == null)
+      throw new FileNotFoundException("classpath resource not found: "+path);
+    return new SampleDataReader(stream);
   }
 
   protected Iterator<SpatialTestQuery> getTestQueries(String testQueryFile, SpatialContext ctx) throws IOException {
@@ -130,7 +133,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       SearchResults got = executeQuery(strategy.makeQuery(q.args), 100);
       if (storeShape && got.numFound > 0) {
         //check stored value is there & parses
-        assertNotNull(new ShapeReadWriter(ctx).readShape(got.results.get(0).document.get(strategy.getFieldName())));
+        assertNotNull(ctx.readShape(got.results.get(0).document.get(strategy.getFieldName())));
       }
       if (concern.orderIsImportant) {
         Iterator<String> ids = q.ids.iterator();
@@ -174,7 +177,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   }
 
   protected void adoc(String id, String shapeStr) throws IOException {
-    Shape shape = shapeStr==null ? null : new ShapeReadWriter(ctx).readShape(shapeStr);
+    Shape shape = shapeStr==null ? null : ctx.readShape(shapeStr);
     addDocument(newDoc(id, shape));
   }
   protected void adoc(String id, Shape shape) throws IOException {

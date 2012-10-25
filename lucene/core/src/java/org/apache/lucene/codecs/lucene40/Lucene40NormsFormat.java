@@ -47,6 +47,10 @@ import org.apache.lucene.store.CompoundFileDirectory; // javadocs
  */
 public class Lucene40NormsFormat extends NormsFormat {
   private final static String NORMS_SEGMENT_SUFFIX = "nrm";
+
+  /** Sole constructor. */
+  public Lucene40NormsFormat() {
+  }
   
   @Override
   public PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException {
@@ -65,6 +69,7 @@ public class Lucene40NormsFormat extends NormsFormat {
    */
   public static class Lucene40NormsDocValuesProducer extends Lucene40DocValuesProducer {
 
+    /** Sole constructor. */
     public Lucene40NormsDocValuesProducer(SegmentReadState state,
         String segmentSuffix) throws IOException {
       super(state, segmentSuffix);
@@ -95,6 +100,7 @@ public class Lucene40NormsFormat extends NormsFormat {
    */
   public static class Lucene40NormsDocValuesConsumer extends Lucene40DocValuesConsumer {
 
+    /** Sole constructor. */
     public Lucene40NormsDocValuesConsumer(PerDocWriteState state,
         String segmentSuffix) {
       super(state, segmentSuffix);

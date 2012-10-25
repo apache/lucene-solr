@@ -150,6 +150,25 @@ public class HighlighterTest extends SolrTestCaseJ4 {
             "//arr[@name='tv_text']/str[.=' <em>long</em> fragments.']"
             );
   }
+
+  @Test
+  public void testTermVectorWithoutOffsetsHighlight() {
+
+    HashMap<String,String> args = new HashMap<String, String>();
+    args.put("hl", "true");
+    args.put("hl.fl", "tv_no_off_text");
+
+    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory("standard", 0, 200, args);
+
+    assertU(adoc("tv_no_off_text", "Crackerjack Cameron", "id", "1"));
+    assertU(commit());
+    assertU(optimize());
+
+    assertQ("Fields with term vectors switched on but no offsets should be correctly highlighted",
+            sumLRF.makeRequest("tv_no_off_text:cameron"),
+            "//arr[@name='tv_no_off_text']/str[.='Crackerjack <em>Cameron</em>']");
+
+  }
   
   @Test
   public void testTermOffsetsTokenStream() throws Exception {
@@ -296,6 +315,22 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         sumLRF.makeRequest("foo bar"),
         "//lst[@name='highlighting']/lst[@name='1']",
         "//lst[@name='1']/arr[@name='textgap']/str[.=\'second entry has both words <em>foo</em> <em>bar</em>\']"
+    );
+  }
+
+
+  @Test
+  public void testPreserveMulti() throws Exception {
+    assertU(adoc("id","1", "cat", "electronics", "cat", "monitor"));
+    assertU(commit());
+
+    assertJQ(req("q", "cat:monitor", "hl", "true", "hl.fl", "cat", "hl.snippets", "2", "f.cat.hl.preserveMulti", "true"),
+        "/highlighting/1/cat==['electronics','<em>monitor</em>']"
+    );
+
+    // No match still lists all snippets?
+    assertJQ(req("q", "id:1 OR cat:duuuude", "hl", "true", "hl.fl", "cat", "hl.snippets", "2", "f.cat.hl.preserveMulti", "true"),
+        "/highlighting/1/cat==['electronics','monitor']"
     );
   }
 

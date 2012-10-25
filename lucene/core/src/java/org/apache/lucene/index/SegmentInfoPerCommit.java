@@ -67,9 +67,7 @@ public class SegmentInfoPerCommit {
    *  segment. */
   public long sizeInBytes() throws IOException {
     if (sizeInBytes == -1) {
-      final Collection<String> files = new HashSet<String>();
-      info.getCodec().liveDocsFormat().files(this, files);
-      long sum = info.sizeInBytes();
+      long sum = 0;
       for (final String fileName : files()) {
         sum += info.dir.fileLength(fileName);
       }
@@ -81,6 +79,7 @@ public class SegmentInfoPerCommit {
 
   /** Returns all files in use by this segment. */
   public Collection<String> files() throws IOException {
+    // Start from the wrapped info's files:
     Collection<String> files = new HashSet<String>(info.files());
 
     // Must separately add any live docs files:

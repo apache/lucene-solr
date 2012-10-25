@@ -179,7 +179,7 @@ public abstract class Similarity {
    * @param weight collection information from {@link #computeWeight(float, CollectionStatistics, TermStatistics...)}
    * @param context segment of the inverted index to be scored.
    * @return ExactSimScorer for scoring documents across <code>context</code>
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   public abstract ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException;
   
@@ -188,7 +188,7 @@ public abstract class Similarity {
    * @param weight collection information from {@link #computeWeight(float, CollectionStatistics, TermStatistics...)}
    * @param context segment of the inverted index to be scored.
    * @return SloppySimScorer for scoring documents across <code>context</code>
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   public abstract SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException;
   

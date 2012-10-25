@@ -27,7 +27,7 @@ curl "$URL/select?q=hello&params=explicit&wt=python" 2> /dev/null | grep 'hello'
 if [ $? = 0 ]; then
   echo "Solr server is up."
 else
-  echo "ERROR: Solr is not up."
+  echo "ERROR: Could not curl to Solr - is curl installed? Is Solr not running?"
   exit 1
 fi
 

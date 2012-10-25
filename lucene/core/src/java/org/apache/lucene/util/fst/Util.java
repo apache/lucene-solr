@@ -233,13 +233,14 @@ public final class Util {
   private static class FSTPath<T> implements Comparable<FSTPath<T>> {
     public FST.Arc<T> arc;
     public T cost;
-    public final IntsRef input = new IntsRef();
+    public final IntsRef input;
     final Comparator<T> comparator;
 
-    public FSTPath(T cost, FST.Arc<T> arc, Comparator<T> comparator) {
+    public FSTPath(T cost, FST.Arc<T> arc, Comparator<T> comparator, IntsRef input) {
       this.arc = new FST.Arc<T>().copyFrom(arc);
       this.cost = cost;
       this.comparator = comparator;
+      this.input = input;
     }
 
     @Override
@@ -258,24 +259,29 @@ public final class Util {
     }
   }
 
-  private static class TopNSearcher<T> {
+  /** Utility class to find top N shortest paths from start
+   *  point(s). */
+  public static class TopNSearcher<T> {
 
     private final FST<T> fst;
-    private final FST.Arc<T> fromNode;
+    private final FST.BytesReader bytesReader;
     private final int topN;
+    private final int maxQueueDepth;
+
+    private final FST.Arc<T> scratchArc = new FST.Arc<T>();
     
     final Comparator<T> comparator;
 
-    // Set once the queue has filled:
-    FSTPath<T> bottom = null;
-
     TreeSet<FSTPath<T>> queue = null;
 
-    public TopNSearcher(FST<T> fst, FST.Arc<T> fromNode, int topN, Comparator<T> comparator) {
+    public TopNSearcher(FST<T> fst, int topN, int maxQueueDepth, Comparator<T> comparator) {
       this.fst = fst;
+      this.bytesReader = fst.getBytesReader(0);
       this.topN = topN;
-      this.fromNode = fromNode;
+      this.maxQueueDepth = maxQueueDepth;
       this.comparator = comparator;
+
+      queue = new TreeSet<FSTPath<T>>();
     }
 
     // If back plus this arc is competitive then add to queue:
@@ -284,9 +290,10 @@ public final class Util {
       assert queue != null;
 
       T cost = fst.outputs.add(path.cost, path.arc.output);
-      //System.out.println("  addIfCompetitive bottom=" + bottom + " queue.size()=" + queue.size());
+      //System.out.println("  addIfCompetitive queue.size()=" + queue.size() + " path=" + path + " + label=" + path.arc.label);
 
-      if (bottom != null) {
+      if (queue.size() == maxQueueDepth) {
+        FSTPath<T> bottom = queue.last();
         int comp = comparator.compare(cost, bottom.cost);
         if (comp > 0) {
           // Doesn't compete
@@ -308,32 +315,52 @@ public final class Util {
         // Queue isn't full yet, so any path we hit competes:
       }
 
-      final FSTPath<T> newPath = new FSTPath<T>(cost, path.arc, comparator);
+      // copy over the current input to the new input
+      // and add the arc.label to the end
+      IntsRef newInput = new IntsRef(path.input.length+1);     
+      System.arraycopy(path.input.ints, 0, newInput.ints, 0, path.input.length);
+      newInput.ints[path.input.length] = path.arc.label;
+      newInput.length = path.input.length+1;
+      final FSTPath<T> newPath = new FSTPath<T>(cost, path.arc, comparator, newInput);
 
-      newPath.input.grow(path.input.length+1);
-      System.arraycopy(path.input.ints, 0, newPath.input.ints, 0, path.input.length);
-      newPath.input.ints[path.input.length] = path.arc.label;
-      newPath.input.length = path.input.length+1;
-
-      //System.out.println("    add path=" + newPath);
       queue.add(newPath);
-      if (bottom != null) {
-        final FSTPath<T> removed = queue.pollLast();
-        assert removed == bottom;
-        bottom = queue.last();
-        //System.out.println("    now re-set bottom: " + bottom + " queue=" + queue);
-      } else if (queue.size() == topN) {
-        // Queue just filled up:
-        bottom = queue.last();
-        //System.out.println("    now set bottom: " + bottom);
+
+      if (queue.size() == maxQueueDepth+1) {
+        queue.pollLast();
+      }
+    }
+
+    /** Adds all leaving arcs, including 'finished' arc, if
+     *  the node is final, from this node into the queue.  */
+    public void addStartPaths(FST.Arc<T> node, T startOutput, boolean allowEmptyString, IntsRef input) throws IOException {
+
+      // De-dup NO_OUTPUT since it must be a singleton:
+      if (startOutput.equals(fst.outputs.getNoOutput())) {
+        startOutput = fst.outputs.getNoOutput();
+      }
+
+      FSTPath<T> path = new FSTPath<T>(startOutput, node, comparator, input);
+      fst.readFirstTargetArc(node, path.arc, bytesReader);
+
+      //System.out.println("add start paths");
+
+      // Bootstrap: find the min starting arc
+      while (true) {
+        if (allowEmptyString || path.arc.label != FST.END_LABEL) {
+          addIfCompetitive(path);
+        }
+        if (path.arc.isLast()) {
+          break;
+        }
+        fst.readNextArc(path.arc, bytesReader);
       }
     }
 
     public MinResult<T>[] search() throws IOException {
-      //System.out.println("  search topN=" + topN);
-      final FST.Arc<T> scratchArc = new FST.Arc<T>();
 
       final List<MinResult<T>> results = new ArrayList<MinResult<T>>();
+
+      //System.out.println("search topN=" + topN);
 
       final FST.BytesReader fstReader = fst.getBytesReader(0);
       final T NO_OUTPUT = fst.outputs.getNoOutput();
@@ -344,75 +371,26 @@ public final class Util {
 
       // TODO: maybe we should make an FST.INPUT_TYPE.BYTE0.5!?
       // (nibbles)
+      int rejectCount = 0;
 
       // For each top N path:
       while (results.size() < topN) {
-        //System.out.println("\nfind next path");
+        //System.out.println("\nfind next path: queue.size=" + queue.size());
 
         FSTPath<T> path;
 
         if (queue == null) {
+          // Ran out of paths
+          break;
+        }
 
-          if (results.size() != 0) {
-            // Ran out of paths
-            break;
-          }
+        // Remove top path since we are now going to
+        // pursue it:
+        path = queue.pollFirst();
 
-          // First pass (top path): start from original fromNode
-          if (topN > 1) {
-            queue = new TreeSet<FSTPath<T>>();
-          }
-
-          T minArcCost = null;
-          FST.Arc<T> minArc = null;
-
-          path = new FSTPath<T>(NO_OUTPUT, fromNode, comparator);
-          fst.readFirstTargetArc(fromNode, path.arc, fstReader);
-
-          // Bootstrap: find the min starting arc
-          while (true) {
-            T arcScore = path.arc.output;
-            //System.out.println("  arc=" + (char) path.arc.label + " cost=" + arcScore);
-            if (minArcCost == null || comparator.compare(arcScore, minArcCost) < 0) {
-              minArcCost = arcScore;
-              minArc = scratchArc.copyFrom(path.arc);
-              //System.out.println("    **");
-            }
-            if (queue != null) {
-              addIfCompetitive(path);
-            }
-            if (path.arc.isLast()) {
-              break;
-            }
-            fst.readNextArc(path.arc, fstReader);
-          }
-
-          assert minArc != null;
-
-          if (queue != null) {
-            // Remove top path since we are now going to
-            // pursue it:
-            path = queue.pollFirst();
-            //System.out.println("  remove init path=" + path);
-            assert path.arc.label == minArc.label;
-            if (bottom != null && queue.size() == topN-1) {
-              bottom = queue.last();
-              //System.out.println("    set init bottom: " + bottom);
-            }
-          } else {
-            path.arc.copyFrom(minArc);
-            path.input.grow(1);
-            path.input.ints[0] = minArc.label;
-            path.input.length = 1;
-            path.cost = minArc.output;
-          }
-
-        } else {
-          path = queue.pollFirst();
-          if (path == null) {
-            // There were less than topN paths available:
-            break;
-          }
+        if (path == null) {
+          // There were less than topN paths available:
+          break;
         }
 
         if (path.arc.label == FST.END_LABEL) {
@@ -423,7 +401,7 @@ public final class Util {
           continue;
         }
 
-        if (results.size() == topN-1) {
+        if (results.size() == topN-1 && maxQueueDepth == topN) {
           // Last path -- don't bother w/ queue anymore:
           queue = null;
         }
@@ -480,7 +458,13 @@ public final class Util {
           if (path.arc.label == FST.END_LABEL) {
             // Add final output:
             //System.out.println("    done!: " + path);
-            results.add(new MinResult<T>(path.input, fst.outputs.add(path.cost, path.arc.output), comparator));
+            T finalOutput = fst.outputs.add(path.cost, path.arc.output);
+            if (acceptResult(path.input, finalOutput)) {
+              results.add(new MinResult<T>(path.input, finalOutput, comparator));
+            } else {
+              rejectCount++;
+              assert rejectCount + topN <= maxQueueDepth: "maxQueueDepth (" + maxQueueDepth + ") is too small for topN (" + topN + "): rejected " + rejectCount + " paths";
+            }
             break;
           } else {
             path.input.grow(1+path.input.length);
@@ -494,6 +478,10 @@ public final class Util {
       @SuppressWarnings({"rawtypes","unchecked"}) final MinResult<T>[] arr =
         (MinResult<T>[]) new MinResult[results.size()];
       return results.toArray(arr);
+    }
+
+    protected boolean acceptResult(IntsRef input, T output) {
+      return true;
     }
   }
 
@@ -521,14 +509,22 @@ public final class Util {
   }
 
   /** Starting from node, find the top N min cost 
-   * completions to a final node.
+   *  completions to a final node.
    *
    *  <p>NOTE: you must share the outputs when you build the
    *  FST (pass doShare=true to {@link
    *  PositiveIntOutputs#getSingleton}). */
+  public static <T> MinResult<T>[] shortestPaths(FST<T> fst, FST.Arc<T> fromNode, T startOutput, Comparator<T> comparator, int topN,
+                                                 boolean allowEmptyString) throws IOException {
 
-  public static <T> MinResult<T>[] shortestPaths(FST<T> fst, FST.Arc<T> fromNode, Comparator<T> comparator, int topN) throws IOException {
-    return new TopNSearcher<T>(fst, fromNode, topN, comparator).search();
+    // All paths are kept, so we can pass topN for
+    // maxQueueDepth and the pruning is admissible:
+    TopNSearcher<T> searcher = new TopNSearcher<T>(fst, topN, topN, comparator);
+
+    // since this search is initialized with a single start node 
+    // it is okay to start with an empty input path here
+    searcher.addStartPaths(fromNode, startOutput, allowEmptyString, new IntsRef());
+    return searcher.search();
   } 
 
   /**
@@ -832,9 +828,22 @@ public final class Util {
   public static BytesRef toBytesRef(IntsRef input, BytesRef scratch) {
     scratch.grow(input.length);
     for(int i=0;i<input.length;i++) {
-      scratch.bytes[i] = (byte) input.ints[i+input.offset];
+      int value = input.ints[i+input.offset];
+      // NOTE: we allow -128 to 255
+      assert value >= Byte.MIN_VALUE && value <= 255: "value " + value + " doesn't fit into byte";
+      scratch.bytes[i] = (byte) value;
     }
     scratch.length = input.length;
     return scratch;
   }
+
+  // Uncomment for debugging:
+
+  /*
+  public static <T> void dotToFile(FST<T> fst, String filePath) throws IOException {
+    Writer w = new OutputStreamWriter(new FileOutputStream(filePath));
+    toDot(fst, w, true, true);
+    w.close();
+  }
+  */
 }

@@ -46,8 +46,7 @@ public interface QueryNode {
   public boolean containsTag(String tagName);
   
   /**
-   * @param tagName
-   * @return of stored on under that tag name
+   * Returns object stored under that tag name
    */
   public Object getTag(String tagName);
   
@@ -58,7 +57,6 @@ public interface QueryNode {
    * when you call the cloneTree() method
    * 
    * @return the cloned tree
-   * @throws CloneNotSupportedException
    */
   public QueryNode cloneTree() throws CloneNotSupportedException;
 
@@ -77,16 +75,11 @@ public interface QueryNode {
    * Associate the specified value with the specified tagName. If the tagName
    * already exists, the old value is replaced. The tagName and value cannot be
    * null. tagName will be converted to lowercase.
-   * 
-   * @param tagName
-   * @param value
    */
   public void setTag(String tagName, Object value);
   
   /**
    * Unset a tag. tagName will be converted to lowercase.
-   * 
-   * @param tagName
    */
   public void unsetTag(String tagName);
   

@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.RequestHandlers.LazyRequestHandlerWrapper;
@@ -177,6 +178,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     UpdateRequest ureq = new UpdateRequest();
     ureq.setParams(new ModifiableSolrParams());
     ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
+    ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
     ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(
         server);
     server.shutdown();
@@ -346,7 +348,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           // System.out.println("Attempting to PeerSync from " + leaderUrl
           // + " i am:" + zkController.getNodeName());
           PeerSync peerSync = new PeerSync(core,
-              Collections.singletonList(leaderUrl), ulog.numRecordsToKeep);
+              Collections.singletonList(leaderUrl), ulog.numRecordsToKeep, false, false);
           peerSync.setStartingVersions(recentVersions);
           boolean syncSuccess = peerSync.sync();
           if (syncSuccess) {
@@ -441,7 +443,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         // Or do a fall off retry...
         try {
 
-          log.error("Recovery failed - trying again... core=" + coreName);
+          log.error("Recovery failed - trying again... (" + retries + ") core=" + coreName);
           
           if (isClosed()) {
             retries = INTERRUPTED;
@@ -449,7 +451,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           
           retries++;
           if (retries >= MAX_RETRIES) {
-            if (retries == INTERRUPTED) {
+            if (retries >= INTERRUPTED) {
               SolrException.log(log, "Recovery failed - interrupted. core="
                   + coreName);
               try {
@@ -461,7 +463,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
               }
             } else {
               SolrException.log(log,
-                  "Recovery failed - max retries exceeded. core=" + coreName);
+                  "Recovery failed - max retries exceeded (" + retries + "). core=" + coreName);
               try {
                 recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
                     core.getCoreDescriptor());
@@ -480,6 +482,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         try {
           // start at 1 sec and work up to a couple min
           double loopCount = Math.min(Math.pow(2, retries), 600); 
+          log.info("Wait {} seconds before trying to recover again ({})", loopCount, retries);
           for (int i = 0; i < loopCount; i++) {
             if (isClosed()) break; // check if someone closed us
             Thread.sleep(STARTING_RECOVERY_DELAY);

@@ -41,6 +41,10 @@ public final class MappingMultiDocsEnum extends DocsEnum {
   int doc = -1;
   private MergeState mergeState;
 
+  /** Sole constructor. */
+  public MappingMultiDocsEnum() {
+  }
+
   MappingMultiDocsEnum reset(MultiDocsEnum docsEnum) {
     this.numSubs = docsEnum.getNumSubs();
     this.subs = docsEnum.getSubs();
@@ -49,14 +53,19 @@ public final class MappingMultiDocsEnum extends DocsEnum {
     return this;
   }
 
+  /** Sets the {@link MergeState}, which is used to re-map
+   *  document IDs. */
   public void setMergeState(MergeState mergeState) {
     this.mergeState = mergeState;
   }
   
+  /** How many sub-readers we are merging.
+   *  @see #getSubs */
   public int getNumSubs() {
     return numSubs;
   }
 
+  /** Returns sub-readers we are merging. */
   public EnumWithSlice[] getSubs() {
     return subs;
   }

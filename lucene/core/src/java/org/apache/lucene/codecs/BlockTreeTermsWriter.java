@@ -23,10 +23,12 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
@@ -76,6 +78,97 @@ import org.apache.lucene.util.fst.Util;
  * Writes terms dict and index, block-encoding (column
  * stride) each term's metadata for each set of terms
  * between two index terms.
+ * <p>
+ * Files:
+ * <ul>
+ *   <li><tt>.tim</tt>: <a href="#Termdictionary">Term Dictionary</a></li>
+ *   <li><tt>.tip</tt>: <a href="#Termindex">Term Index</a></li>
+ * </ul>
+ * <p>
+ * <a name="Termdictionary" id="Termdictionary"></a>
+ * <h3>Term Dictionary</h3>
+ *
+ * <p>The .tim file contains the list of terms in each
+ * field along with per-term statistics (such as docfreq)
+ * and per-term metadata (typically pointers to the postings list
+ * for that term in the inverted index).
+ * </p>
+ *
+ * <p>The .tim is arranged in blocks: with blocks containing
+ * a variable number of entries (by default 25-48), where
+ * each entry is either a term or a reference to a
+ * sub-block.</p>
+ *
+ * <p>NOTE: The term dictionary can plug into different postings implementations:
+ * the postings writer/reader are actually responsible for encoding 
+ * and decoding the Postings Metadata and Term Metadata sections.</p>
+ *
+ * <ul>
+ * <!-- TODO: expand on this, its not really correct and doesnt explain sub-blocks etc -->
+ *    <li>TermsDict (.tim) --&gt; Header, <i>Postings Metadata</i>, Block<sup>NumBlocks</sup>,
+ *                               FieldSummary, DirOffset</li>
+ *    <li>Block --&gt; SuffixBlock, StatsBlock, MetadataBlock</li>
+ *    <li>SuffixBlock --&gt; EntryCount, SuffixLength, Byte<sup>SuffixLength</sup></li>
+ *    <li>StatsBlock --&gt; StatsLength, &lt;DocFreq, TotalTermFreq&gt;<sup>EntryCount</sup></li>
+ *    <li>MetadataBlock --&gt; MetaLength, &lt;<i>Term Metadata</i>&gt;<sup>EntryCount</sup></li>
+ *    <li>FieldSummary --&gt; NumFields, &lt;FieldNumber, NumTerms, RootCodeLength, Byte<sup>RootCodeLength</sup>,
+ *                            SumDocFreq, DocCount&gt;<sup>NumFields</sup></li>
+ *    <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *    <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
+ *    <li>EntryCount,SuffixLength,StatsLength,DocFreq,MetaLength,NumFields,
+ *        FieldNumber,RootCodeLength,DocCount --&gt; {@link DataOutput#writeVInt VInt}</li>
+ *    <li>TotalTermFreq,NumTerms,SumTotalTermFreq,SumDocFreq --&gt; 
+ *        {@link DataOutput#writeVLong VLong}</li>
+ * </ul>
+ * <p>Notes:</p>
+ * <ul>
+ *    <li>Header is a {@link CodecUtil#writeHeader CodecHeader} storing the version information
+ *        for the BlockTree implementation.</li>
+ *    <li>DirOffset is a pointer to the FieldSummary section.</li>
+ *    <li>DocFreq is the count of documents which contain the term.</li>
+ *    <li>TotalTermFreq is the total number of occurrences of the term. This is encoded
+ *        as the difference between the total number of occurrences and the DocFreq.</li>
+ *    <li>FieldNumber is the fields number from {@link FieldInfos}. (.fnm)</li>
+ *    <li>NumTerms is the number of unique terms for the field.</li>
+ *    <li>RootCode points to the root block for the field.</li>
+ *    <li>SumDocFreq is the total number of postings, the number of term-document pairs across
+ *        the entire field.</li>
+ *    <li>DocCount is the number of documents that have at least one posting for this field.</li>
+ *    <li>PostingsMetadata and TermMetadata are plugged into by the specific postings implementation:
+ *        these contain arbitrary per-file data (such as parameters or versioning information) 
+ *        and per-term data (such as pointers to inverted files).
+ * </ul>
+ * <a name="Termindex" id="Termindex"></a>
+ * <h3>Term Index</h3>
+ * <p>The .tip file contains an index into the term dictionary, so that it can be 
+ * accessed randomly.  The index is also used to determine
+ * when a given term cannot exist on disk (in the .tim file), saving a disk seek.</p>
+ * <ul>
+ *   <li>TermsIndex (.tip) --&gt; Header, FSTIndex<sup>NumFields</sup>
+ *                                &lt;IndexStartFP&gt;<sup>NumFields</sup>, DirOffset</li>
+ *   <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *   <li>DirOffset --&gt; {@link DataOutput#writeLong Uint64}</li>
+ *   <li>IndexStartFP --&gt; {@link DataOutput#writeVLong VLong}</li>
+ *   <!-- TODO: better describe FST output here -->
+ *   <li>FSTIndex --&gt; {@link FST FST&lt;byte[]&gt;}</li>
+ * </ul>
+ * <p>Notes:</p>
+ * <ul>
+ *   <li>The .tip file contains a separate FST for each
+ *       field.  The FST maps a term prefix to the on-disk
+ *       block that holds all terms starting with that
+ *       prefix.  Each field's IndexStartFP points to its
+ *       FST.</li>
+ *   <li>DirOffset is a pointer to the start of the IndexStartFPs
+ *       for all fields</li>
+ *   <li>It's possible that an on-disk block would contain
+ *       too many terms (more than the allowed maximum
+ *       (default: 48)).  When this happens, the block is
+ *       sub-divided into new blocks (called "floor
+ *       blocks"), and then the output in the FST for the
+ *       block's prefix encodes the leading byte of each
+ *       sub-block, and its file pointer.
+ * </ul>
  *
  * @see BlockTreeTermsReader
  * @lucene.experimental
@@ -83,11 +176,18 @@ import org.apache.lucene.util.fst.Util;
 
 public class BlockTreeTermsWriter extends FieldsConsumer {
 
+  /** Suggested default value for the {@code
+   *  minItemsInBlock} parameter to {@link
+   *  #BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
   public final static int DEFAULT_MIN_BLOCK_SIZE = 25;
+
+  /** Suggested default value for the {@code
+   *  maxItemsInBlock} parameter to {@link
+   *  #BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)}. */
   public final static int DEFAULT_MAX_BLOCK_SIZE = 48;
 
   //public final static boolean DEBUG = false;
-  public final static boolean SAVE_DOT_FILES = false;
+  private final static boolean SAVE_DOT_FILES = false;
 
   static final int OUTPUT_FLAGS_NUM_BITS = 2;
   static final int OUTPUT_FLAGS_MASK = 0x3;
@@ -97,16 +197,28 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   /** Extension of terms file */
   static final String TERMS_EXTENSION = "tim";
   final static String TERMS_CODEC_NAME = "BLOCK_TREE_TERMS_DICT";
-  // Initial format
+
+  /** Initial terms format. */
   public static final int TERMS_VERSION_START = 0;
-  public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_START;
+  
+  /** Append-only */
+  public static final int TERMS_VERSION_APPEND_ONLY = 1;
+
+  /** Current terms format. */
+  public static final int TERMS_VERSION_CURRENT = TERMS_VERSION_APPEND_ONLY;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
   final static String TERMS_INDEX_CODEC_NAME = "BLOCK_TREE_TERMS_INDEX";
-  // Initial format
+
+  /** Initial index format. */
   public static final int TERMS_INDEX_VERSION_START = 0;
-  public static final int TERMS_INDEX_VERSION_CURRENT = TERMS_INDEX_VERSION_START;
+  
+  /** Append-only */
+  public static final int TERMS_INDEX_VERSION_APPEND_ONLY = 1;
+
+  /** Current index format. */
+  public static final int TERMS_INDEX_VERSION_CURRENT = TERMS_INDEX_VERSION_APPEND_ONLY;
 
   private final IndexOutput out;
   private final IndexOutput indexOut;
@@ -116,7 +228,30 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
   FieldInfo currentField;
-  private final List<TermsWriter> fields = new ArrayList<TermsWriter>();
+
+  private static class FieldMetaData {
+    public final FieldInfo fieldInfo;
+    public final BytesRef rootCode;
+    public final long numTerms;
+    public final long indexStartFP;
+    public final long sumTotalTermFreq;
+    public final long sumDocFreq;
+    public final int docCount;
+
+    public FieldMetaData(FieldInfo fieldInfo, BytesRef rootCode, long numTerms, long indexStartFP, long sumTotalTermFreq, long sumDocFreq, int docCount) {
+      assert numTerms > 0;
+      this.fieldInfo = fieldInfo;
+      assert rootCode != null: "field=" + fieldInfo.name + " numTerms=" + numTerms;
+      this.rootCode = rootCode;
+      this.indexStartFP = indexStartFP;
+      this.numTerms = numTerms;
+      this.sumTotalTermFreq = sumTotalTermFreq;
+      this.sumDocFreq = sumDocFreq;
+      this.docCount = docCount;
+    }
+  }
+
+  private final List<FieldMetaData> fields = new ArrayList<FieldMetaData>();
   // private final String segment;
 
   /** Create a new writer.  The number of items (terms or
@@ -174,24 +309,24 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
     }
     this.indexOut = indexOut;
   }
-  
-  protected void writeHeader(IndexOutput out) throws IOException {
-    CodecUtil.writeHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT); 
-    out.writeLong(0);                             // leave space for end index pointer    
+
+  /** Writes the terms file header. */
+  private void writeHeader(IndexOutput out) throws IOException {
+    CodecUtil.writeHeader(out, TERMS_CODEC_NAME, TERMS_VERSION_CURRENT);   
   }
 
-  protected void writeIndexHeader(IndexOutput out) throws IOException {
+  /** Writes the index file header. */
+  private void writeIndexHeader(IndexOutput out) throws IOException {
     CodecUtil.writeHeader(out, TERMS_INDEX_CODEC_NAME, TERMS_INDEX_VERSION_CURRENT); 
-    out.writeLong(0);                             // leave space for end index pointer    
   }
 
-  protected void writeTrailer(IndexOutput out, long dirStart) throws IOException {
-    out.seek(CodecUtil.headerLength(TERMS_CODEC_NAME));
+  /** Writes the terms file trailer. */
+  private void writeTrailer(IndexOutput out, long dirStart) throws IOException {
     out.writeLong(dirStart);    
   }
 
-  protected void writeIndexTrailer(IndexOutput indexOut, long dirStart) throws IOException {
-    indexOut.seek(CodecUtil.headerLength(TERMS_INDEX_CODEC_NAME));
+  /** Writes the index file trailer. */
+  private void writeIndexTrailer(IndexOutput indexOut, long dirStart) throws IOException {
     indexOut.writeLong(dirStart);    
   }
   
@@ -201,9 +336,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
     //if (DEBUG) System.out.println("\nBTTW.addField seg=" + segment + " field=" + field.name);
     assert currentField == null || currentField.name.compareTo(field.name) < 0;
     currentField = field;
-    final TermsWriter terms = new TermsWriter(field);
-    fields.add(terms);
-    return terms;
+    return new TermsWriter(field);
   }
 
   static long encodeOutput(long fp, boolean hasTerms, boolean isFloor) {
@@ -895,6 +1028,14 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
         //   System.out.println("SAVED to " + dotFileName);
         //   w.close();
         // }
+
+        fields.add(new FieldMetaData(fieldInfo,
+                                     ((PendingBlock) pending.get(0)).index.getEmptyOutput(),
+                                     numTerms,
+                                     indexStartFP,
+                                     sumTotalTermFreq,
+                                     sumDocFreq,
+                                     docCount));
       } else {
         assert sumTotalTermFreq == 0 || fieldInfo.getIndexOptions() == IndexOptions.DOCS_ONLY && sumTotalTermFreq == -1;
         assert sumDocFreq == 0;
@@ -912,34 +1053,23 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
     IOException ioe = null;
     try {
       
-      int nonZeroCount = 0;
-      for(TermsWriter field : fields) {
-        if (field.numTerms > 0) {
-          nonZeroCount++;
-        }
-      }
-
       final long dirStart = out.getFilePointer();
       final long indexDirStart = indexOut.getFilePointer();
 
-      out.writeVInt(nonZeroCount);
+      out.writeVInt(fields.size());
       
-      for(TermsWriter field : fields) {
-        if (field.numTerms > 0) {
-          //System.out.println("  field " + field.fieldInfo.name + " " + field.numTerms + " terms");
-          out.writeVInt(field.fieldInfo.number);
-          out.writeVLong(field.numTerms);
-          final BytesRef rootCode = ((PendingBlock) field.pending.get(0)).index.getEmptyOutput();
-          assert rootCode != null: "field=" + field.fieldInfo.name + " numTerms=" + field.numTerms;
-          out.writeVInt(rootCode.length);
-          out.writeBytes(rootCode.bytes, rootCode.offset, rootCode.length);
-          if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
-            out.writeVLong(field.sumTotalTermFreq);
-          }
-          out.writeVLong(field.sumDocFreq);
-          out.writeVInt(field.docCount);
-          indexOut.writeVLong(field.indexStartFP);
+      for(FieldMetaData field : fields) {
+        //System.out.println("  field " + field.fieldInfo.name + " " + field.numTerms + " terms");
+        out.writeVInt(field.fieldInfo.number);
+        out.writeVLong(field.numTerms);
+        out.writeVInt(field.rootCode.length);
+        out.writeBytes(field.rootCode.bytes, field.rootCode.offset, field.rootCode.length);
+        if (field.fieldInfo.getIndexOptions() != IndexOptions.DOCS_ONLY) {
+          out.writeVLong(field.sumTotalTermFreq);
         }
+        out.writeVLong(field.sumDocFreq);
+        out.writeVInt(field.docCount);
+        indexOut.writeVLong(field.indexStartFP);
       }
       writeTrailer(out, dirStart);
       writeIndexTrailer(indexOut, indexDirStart);

@@ -32,8 +32,6 @@ public abstract class ZkOperation {
      * to ZooKeeper closes during this operation
      *
      * @return the result of the operation or null
-     * @throws KeeperException
-     * @throws InterruptedException
      */
     public abstract Object execute() throws KeeperException, InterruptedException;
 }

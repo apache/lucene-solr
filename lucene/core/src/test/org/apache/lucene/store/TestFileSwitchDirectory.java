@@ -37,7 +37,6 @@ import org.apache.lucene.util._TestUtil;
 public class TestFileSwitchDirectory extends LuceneTestCase {
   /**
    * Test if writing doc stores to disk and everything else to ram works.
-   * @throws IOException
    */
   public void testBasic() throws IOException {
     Set<String> fileExtensions = new HashSet<String>();

@@ -24,6 +24,101 @@ $Id$
 
 (No changes)
 
+==================  4.1.0 ==================
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+* SOLR-2255: Enhanced pivot faceting to use local-params in the same way that
+  regular field value faceting can. This means support for excluding a filter
+  query, using a different output key, and specifying 'threads' to do
+  facet.method=fcs concurrently. PivotFacetHelper now extends SimpleFacet and
+  the getFacetImplementation() extension hook was removed. (dsmiley)
+
+* SOLR-3897: A highlighter parameter "hl.preserveMulti" to return all of the
+  values of a multiValued field in their original order when highlighting.
+  (Joel Bernstein via yonik)
+
+* SOLR-3929: Support configuring IndexWriter max thread count in solrconfig.
+  (phunt via Mark Miller)
+
+* SOLR-3906: Add support for AnalyzingSuggester (LUCENE-3842), where the
+  underlying analyzed form used for suggestions is separate from the returned
+  text.  (Robert Muir)
+
+Optimizations
+----------------------
+
+* SOLR-3788: Admin Cores UI should redirect to newly created core details
+  (steffkes)
+
+* SOLR-3895: XML and XSLT UpdateRequestHandler should not try to resolve
+  external entities. This improves speed of loading e.g. XSL-transformed
+  XHTML documents.  (Martin Herfurt, uschindler, hossman)
+
+* SOLR-3614: Fix XML parsing in XPathEntityProcessor to correctly expand
+  named entities, but ignore external entities.  (uschindler, hossman)
+
+* SOLR-3734: Improve Schema-Browser Handling for CopyField using
+  dynamicField's (steffkes)
+  
+* SOLR-3941: The "commitOnLeader" part of distributed recovery can use
+  openSearcher=false. (Tomas Fernandez Lobbe via Mark Miller)
+
+Bug Fixes
+----------------------
+
+* SOLR-3560: Handle different types of Exception Messages for Logging UI
+  (steffkes)
+
+* SOLR-3637: Commit Status at Core-Admin UI is always false (steffkes)
+
+* SOLR-3917: Partial State on Schema-Browser UI is not defined for Dynamic
+  Fields & Types (steffkes)
+  
+* SOLR-3939: Consider a sync attempt from leader to replica that fails due 
+  to 404 a success. (Mark Miller, Joel Bernstein)
+  
+* SOLR-3940: Rejoining the leader election incorrectly triggers the code path
+  for a fresh cluster start rather than fail over. (Mark Miller)
+
+* SOLR-3961: Fixed error using LimitTokenCountFilterFactory 
+  (Jack Krupansky, hossman)
+
+* SOLR-3933: Distributed commits are not guaranteed to be ordered within a 
+  request. (Mark Miller)
+
+* SOLR-3939: An empty or just replicated index cannot become the leader of a
+  shard after a leader goes down. (Joel Bernstein, yonik, Mark Miller)
+  
+* SOLR-3971: A collection that is created with numShards=1 turns into a 
+  numShards=2 collection after starting up a second core and not specifying 
+  numShards. (Mark Miller)
+
+* SOLR-3988: Fixed SolrTestCaseJ4.adoc(SolrInputDocument) to respect 
+  field and document boosts (hossman)
+
+* SOLR-3981: Fixed bug that resulted in document boosts being compounded in
+  <copyField/> destination fields. (hossman)
+
+Other Changes
+----------------------
+
+* SOLR-3899: SolrCore should not log at warning level when the index directory
+  changes - it's an info event. (Tobias Bergman, Mark Miller)
+
+* SOLR-3861: Refactor SolrCoreState so that it's managed by SolrCore.
+  (Mark Miller, hossman)
+
+* SOLR-3966: Eliminate superfluous warning from LanguageIdentifierUpdateProcessor
+  (Markus Jelsma via hossman)
+
+* SOLR-3932: SolrCmdDistributorTest either takes 3 seconds or 3 minutes.
+  (yonik, Mark Miller)  
+
 ==================  4.0.0 ==================
 
 Versions of Major Components
@@ -166,6 +261,7 @@ Optimizations
 
 * SOLR-3709: Cache the url list created from the ClusterState in CloudSolrServer
   on each request. (Mark Miller)
+
 
 Bug Fixes
 ----------------------
@@ -333,6 +429,28 @@ Bug Fixes
 
 * SOLR-3783: Fixed Pivot Faceting to work with facet.missing=true (hossman)
 
+* SOLR-3869: A PeerSync attempt to it's replicas by a candidate leader should
+  not fail on o.a.http.conn.ConnectTimeoutException. (Mark Miller)
+
+* SOLR-3875: Fixed index boosts on multi-valued fields when docBoost is used 
+  (hossman)
+
+* SOLR-3878: Exception when using open-ended range query with CurrencyField (janhoy)
+
+* SOLR-3891: CacheValue in CachingDirectoryFactory cannot be used outside of 
+  solr.core package. (phunt via Mark Miller)
+  
+* SOLR-3892: Inconsistent locking when accessing cache in CachingDirectoryFactory
+  from RAMDirectoryFactory and MockDirectoryFactory. (phunt via Mark Miller)
+
+* SOLR-3883: Distributed indexing forwards non-applicable request params.
+  (Dan Sutton, Per Steffensen, yonik, Mark Miller)
+
+* SOLR-3903: Fixed MissingFormatArgumentException in ConcurrentUpdateSolrServer
+  (hossman)
+
+* SOLR-3916: Fixed whitespace bug in parsing the fl param (hossman)
+
 Other Changes
 ----------------------
 
@@ -384,6 +502,12 @@ Other Changes
 
 * SOLR-3815: SolrCloud - Add properties such as "range" to shards, which changes
   the clusterstate.json and puts the shard replicas under "replicas". (yonik)
+
+* SOLR-3871: SyncStrategy should use an executor for the threads it creates to
+  request recoveries. (Mark Miller)
+  
+* SOLR-3870: SyncStrategy should have a close so it can abort earlier on 
+  shutdown. (Mark Miller)
 
 
 ==================  4.0.0-BETA ===================

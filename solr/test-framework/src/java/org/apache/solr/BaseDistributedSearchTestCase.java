@@ -719,8 +719,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    * causing a spelling index not to get built:  both control & shard data would have no results
    * but because they match the test would pass.  This method gives us a chance to ensure something
    * exists in the control data.
-   * 
-   * @throws Exception
    */
   public void validateControlData(QueryResponse control) throws Exception {
     /* no-op */

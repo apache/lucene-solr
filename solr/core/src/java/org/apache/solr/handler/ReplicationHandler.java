@@ -568,8 +568,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   /**
    * Used for showing statistics and progress information.
-   *
-   * @param showSlaveDetails
    */
   private NamedList<Object> getReplicationDetails(boolean showSlaveDetails) {
     NamedList<Object> details = new SimpleOrderedMap<Object>();

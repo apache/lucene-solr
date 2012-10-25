@@ -45,7 +45,7 @@ public class SolrXMLSerializer {
   /**
    * @param w
    *          Writer to use
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error.
    */
   void persist(Writer w, SolrXMLDef solrXMLDef) throws IOException {
     w.write("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");

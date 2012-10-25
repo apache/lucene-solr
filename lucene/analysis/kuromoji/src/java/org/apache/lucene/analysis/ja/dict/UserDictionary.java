@@ -172,7 +172,6 @@ public final class UserDictionary implements Dictionary {
   
   /**
    * Convert Map of index and wordIdAndLength to array of {wordId, index, length}
-   * @param input
    * @return array of {wordId, index, length}
    */
   private int[][] toIndexArray(Map<Integer, int[]> input) {

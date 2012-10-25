@@ -763,7 +763,6 @@ public abstract class LuceneTestCase extends Assert {
     } else {
       c.setMergePolicy(newLogMergePolicy());
     }
-
     c.setReaderPooling(r.nextBoolean());
     c.setReaderTermsIndexDivisor(_TestUtil.nextInt(r, 1, 4));
     return c;
@@ -948,6 +947,7 @@ public abstract class LuceneTestCase extends Assert {
     if (rarely(random)) {
       directory = new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
     }
+
     if (bare) {
       BaseDirectoryWrapper base = new BaseDirectoryWrapper(directory);
       closeAfterSuite(new CloseableDirectory(base, suiteFailureMarker));

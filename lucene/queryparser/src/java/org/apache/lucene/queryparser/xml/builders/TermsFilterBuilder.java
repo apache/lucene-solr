@@ -39,9 +39,6 @@ public class TermsFilterBuilder implements FilterBuilder {
 
   private final Analyzer analyzer;
 
-  /**
-   * @param analyzer
-   */
   public TermsFilterBuilder(Analyzer analyzer) {
     this.analyzer = analyzer;
   }

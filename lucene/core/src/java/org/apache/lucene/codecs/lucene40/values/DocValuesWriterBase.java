@@ -39,9 +39,13 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental
  */
 public abstract class DocValuesWriterBase extends PerDocConsumer {
+  /** Segment name to use when writing files. */
   protected final String segmentName;
   private final Counter bytesUsed;
+
+  /** {@link IOContext} to use when writing files. */
   protected final IOContext context;
+
   private final float acceptableOverheadRatio;
 
   /**
@@ -55,6 +59,8 @@ public abstract class DocValuesWriterBase extends PerDocConsumer {
   public static final String DATA_EXTENSION = "dat";
 
   /**
+   * Creates {@code DocValuesWriterBase}, using {@link
+   * PackedInts#FAST}.
    * @param state The state to initiate a {@link PerDocConsumer} instance
    */
   protected DocValuesWriterBase(PerDocWriteState state) {
@@ -62,6 +68,7 @@ public abstract class DocValuesWriterBase extends PerDocConsumer {
   }
 
   /**
+   * Creates {@code DocValuesWriterBase}.
    * @param state The state to initiate a {@link PerDocConsumer} instance
    * @param acceptableOverheadRatio
    *          how to trade space for speed. This option is only applicable for
@@ -76,6 +83,8 @@ public abstract class DocValuesWriterBase extends PerDocConsumer {
     this.acceptableOverheadRatio = acceptableOverheadRatio;
   }
 
+  /** Returns the {@link Directory} that files should be
+   *  written to. */
   protected abstract Directory getDirectory() throws IOException;
   
   @Override
@@ -89,7 +98,9 @@ public abstract class DocValuesWriterBase extends PerDocConsumer {
         getDirectory(), getComparator(), bytesUsed, context, acceptableOverheadRatio);
   }
 
-  
+
+  /** Returns the comparator used to sort {@link BytesRef}
+   *  values. */
   public Comparator<BytesRef> getComparator() throws IOException {
     return BytesRef.getUTF8SortedAsUnicodeComparator();
   }

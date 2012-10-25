@@ -29,7 +29,7 @@
     <typeSystemDescription>
       <types>
         <typeDescription>
-          <name>org.apache.solr.uima.ts.SentimentAnnotation</name>
+          <name>org.apache.solr.uima.ts.DummySentimentAnnotation</name>
           <description/>
           <supertypeName>uima.tcas.Annotation</supertypeName>
           <features>

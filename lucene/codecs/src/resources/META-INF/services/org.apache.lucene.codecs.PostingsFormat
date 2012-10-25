@@ -13,9 +13,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-org.apache.lucene.codecs.pulsing.Pulsing40PostingsFormat
+org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat
 org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat
 org.apache.lucene.codecs.memory.MemoryPostingsFormat
 org.apache.lucene.codecs.bloom.BloomFilteringPostingsFormat
 org.apache.lucene.codecs.memory.DirectPostingsFormat
-org.apache.lucene.codecs.block.BlockPostingsFormat

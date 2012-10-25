@@ -37,10 +37,12 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.handler.UpdateRequestHandler;
+import org.apache.solr.util.EmptyEntityResolver;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
+import org.xml.sax.XMLReader;
 
 import javax.xml.stream.XMLStreamReader;
 import javax.xml.stream.XMLStreamException;
@@ -52,6 +54,7 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.sax.SAXSource;
+import javax.xml.parsers.SAXParserFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -72,10 +75,14 @@ public class XMLLoader extends ContentStreamLoader {
   
   int xsltCacheLifetimeSeconds;
   XMLInputFactory inputFactory;
+  SAXParserFactory saxFactory;
 
   @Override
   public XMLLoader init(SolrParams args) {
+    // Init StAX parser:
     inputFactory = XMLInputFactory.newInstance();
+    EmptyEntityResolver.configureXMLInputFactory(inputFactory);
+    inputFactory.setXMLReporter(xmllog);
     try {
       // The java 1.6 bundled stax parser (sjsxp) does not currently have a thread-safe
       // XMLInputFactory, as that implementation tries to cache and reuse the
@@ -84,13 +91,16 @@ public class XMLLoader extends ContentStreamLoader {
       // All other known open-source stax parsers (and the bea ref impl)
       // have thread-safe factories.
       inputFactory.setProperty("reuse-instance", Boolean.FALSE);
-    }
-    catch (IllegalArgumentException ex) {
+    } catch (IllegalArgumentException ex) {
       // Other implementations will likely throw this exception since "reuse-instance"
       // isimplementation specific.
       log.debug("Unable to set the 'reuse-instance' property for the input chain: " + inputFactory);
     }
-    inputFactory.setXMLReporter(xmllog);
+    
+    // Init SAX parser (for XSL):
+    saxFactory = SAXParserFactory.newInstance();
+    saxFactory.setNamespaceAware(true); // XSL needs this!
+    EmptyEntityResolver.configureSAXParserFactory(saxFactory);
     
     xsltCacheLifetimeSeconds = XSLT_CACHE_DEFAULT;
     if(args != null) {
@@ -113,7 +123,7 @@ public class XMLLoader extends ContentStreamLoader {
 
     String tr = req.getParams().get(CommonParams.TR,null);
     if(tr!=null) {
-      Transformer t = getTransformer(tr,req);
+      final Transformer t = getTransformer(tr,req);
       final DOMResult result = new DOMResult();
       
       // first step: read XML and build DOM using Transformer (this is no overhead, as XSL always produces
@@ -122,14 +132,17 @@ public class XMLLoader extends ContentStreamLoader {
         is = stream.getStream();
         final InputSource isrc = new InputSource(is);
         isrc.setEncoding(charset);
-        final SAXSource source = new SAXSource(isrc);
+        final XMLReader xmlr = saxFactory.newSAXParser().getXMLReader();
+        xmlr.setErrorHandler(xmllog);
+        xmlr.setEntityResolver(EmptyEntityResolver.SAX_INSTANCE);
+        final SAXSource source = new SAXSource(xmlr, isrc);
         t.transform(source, result);
       } catch(TransformerException te) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, te.getMessage(), te);
       } finally {
         IOUtils.closeQuietly(is);
       }
-      // second step feed the intermediate DOM tree into StAX parser:
+      // second step: feed the intermediate DOM tree into StAX parser:
       try {
         parser = inputFactory.createXMLStreamReader(new DOMSource(result.getNode()));
         this.processUpdate(req, processor, parser);

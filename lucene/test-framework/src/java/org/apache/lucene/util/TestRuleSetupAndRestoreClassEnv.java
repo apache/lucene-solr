@@ -29,9 +29,11 @@ import java.util.TimeZone;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.appending.AppendingCodec;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
+import org.apache.lucene.codecs.compressing.CompressingCodec;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
+import org.apache.lucene.codecs.lucene40.Lucene40RWPostingsFormat;
+import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.RandomCodec;
@@ -129,26 +131,23 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       avoidCodecs.addAll(Arrays.asList(a.value()));
     }
     
-    PREFLEX_IMPERSONATION_IS_ACTIVE = false;
     savedCodec = Codec.getDefault();
     int randomVal = random.nextInt(10);
 
-    /* note: re-enable this if we make a 4.x impersonator
-      if ("Lucene3x".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
+    if ("Lucene40".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
                                           "random".equals(TEST_POSTINGSFORMAT) &&
                                           randomVal < 2 &&
-                                          !shouldAvoidCodec("Lucene3x"))) { // preflex-only setup
-      codec = Codec.forName("Lucene3x");
-      assert (codec instanceof PreFlexRWCodec) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
-      PREFLEX_IMPERSONATION_IS_ACTIVE = true;
-    } else */ if (!"random".equals(TEST_POSTINGSFORMAT)) {
+                                          !shouldAvoidCodec("Lucene40"))) {
+      codec = Codec.forName("Lucene40");
+      assert (PostingsFormat.forName("Lucene40") instanceof Lucene40RWPostingsFormat) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
+    } else if (!"random".equals(TEST_POSTINGSFORMAT)) {
       final PostingsFormat format;
       if ("MockRandom".equals(TEST_POSTINGSFORMAT)) {
         format = new MockRandomPostingsFormat(random);
       } else {
         format = PostingsFormat.forName(TEST_POSTINGSFORMAT);
       }
-      codec = new Lucene40Codec() {       
+      codec = new Lucene41Codec() {       
         @Override
         public PostingsFormat getPostingsFormatForField(String field) {
           return format;
@@ -161,10 +160,10 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       };
     } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9 && !shouldAvoidCodec("SimpleText"))) {
       codec = new SimpleTextCodec();
-    } else if ("Appending".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 8 && !shouldAvoidCodec("Appending"))) {
-      codec = new AppendingCodec();
     } else if ("Asserting".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 7 && !shouldAvoidCodec("Asserting"))) {
       codec = new AssertingCodec();
+    } else if ("Compressing".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 6 && !shouldAvoidCodec("Compressing"))) {
+      codec = CompressingCodec.randomInstance(random);
     } else if (!"random".equals(TEST_CODEC)) {
       codec = Codec.forName(TEST_CODEC);
     } else if ("random".equals(TEST_POSTINGSFORMAT)) {

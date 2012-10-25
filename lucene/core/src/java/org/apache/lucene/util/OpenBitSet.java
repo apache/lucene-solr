@@ -81,9 +81,7 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
   // Used only for assert:
   private long numBits;
 
-  /** Constructs an OpenBitSet large enough to hold numBits.
-   *
-   * @param numBits
+  /** Constructs an OpenBitSet large enough to hold <code>numBits</code>.
    */
   public OpenBitSet(long numBits) {
     this.numBits = numBits;

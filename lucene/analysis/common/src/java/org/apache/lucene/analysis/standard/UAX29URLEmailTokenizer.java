@@ -98,7 +98,7 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
    */
   public UAX29URLEmailTokenizer(Version matchVersion, Reader input) {
     super(input);
-    this.scanner = getScannerFor(matchVersion, input);
+    this.scanner = getScannerFor(matchVersion);
   }
 
   /**
@@ -106,7 +106,7 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
    */
   public UAX29URLEmailTokenizer(Version matchVersion, AttributeSource source, Reader input) {
     super(source, input);
-    this.scanner = getScannerFor(matchVersion, input);
+    this.scanner = getScannerFor(matchVersion);
   }
 
   /**
@@ -114,11 +114,11 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
    */
   public UAX29URLEmailTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
     super(factory, input);
-    this.scanner = getScannerFor(matchVersion, input);
+    this.scanner = getScannerFor(matchVersion);
   }
 
-  private static StandardTokenizerInterface getScannerFor(Version matchVersion, Reader input) {
-    return new UAX29URLEmailTokenizerImpl(input);
+  private static StandardTokenizerInterface getScannerFor(Version matchVersion) {
+    return new UAX29URLEmailTokenizerImpl(null); // best effort NPE if you dont call reset
   }
 
   // this tokenizer generates three attributes:

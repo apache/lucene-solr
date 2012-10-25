@@ -97,7 +97,7 @@ public class NativeUnixDirectory extends FSDirectory {
    *   not use direct IO.  See {@link
    *   #DEFAULT_MIN_BYTES_DIRECT}
    * @param delegate fallback Directory for non-merges
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public NativeUnixDirectory(File path, int mergeBufferSize, long minBytesDirect, Directory delegate) throws IOException {
     super(path, delegate.getLockFactory());
@@ -113,7 +113,7 @@ public class NativeUnixDirectory extends FSDirectory {
    * 
    * @param path the path of the directory
    * @param delegate fallback Directory for non-merges
-   * @throws IOException
+   * @throws IOException If there is a low-level I/O error
    */
   public NativeUnixDirectory(File path, Directory delegate) throws IOException {
     this(path, DEFAULT_MERGE_BUFFER_SIZE, DEFAULT_MIN_BYTES_DIRECT, delegate);
@@ -234,26 +234,6 @@ public class NativeUnixDirectory extends FSDirectory {
     @Override
     public long getFilePointer() {
       return filePos + bufferPos;
-    }
-
-    // TODO: seek is fragile at best; it can only properly
-    // handle seek & then change bytes that fit entirely
-    // within one buffer
-    @Override
-    public void seek(long pos) throws IOException {
-      if (pos != getFilePointer()) {
-        dump();
-        final long alignedPos = pos & ALIGN_NOT_MASK;
-        filePos = alignedPos;
-        int n = (int) NativePosixUtil.pread(fos.getFD(), filePos, buffer);
-        if (n < bufferSize) {
-          buffer.limit(n);
-        }
-        //System.out.println("seek refill=" + n);
-        final int delta = (int) (pos - alignedPos);
-        buffer.position(delta);
-        bufferPos = delta;
-      }
     }
 
     @Override

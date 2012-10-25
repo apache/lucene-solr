@@ -37,6 +37,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.InfoStream;
@@ -112,6 +113,13 @@ public class TestDoc extends LuceneTestCase {
       PrintWriter out = new PrintWriter(sw, true);
       
       Directory directory = newFSDirectory(indexDir, null);
+
+      if (directory instanceof MockDirectoryWrapper) {
+        // We create unreferenced files (we don't even write
+        // a segments file):
+        ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(false);
+      }
+
       IndexWriter writer = new IndexWriter(
           directory,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).
@@ -147,6 +155,13 @@ public class TestDoc extends LuceneTestCase {
       out = new PrintWriter(sw, true);
 
       directory = newFSDirectory(indexDir, null);
+
+      if (directory instanceof MockDirectoryWrapper) {
+        // We create unreferenced files (we don't even write
+        // a segments file):
+        ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(false);
+      }
+
       writer = new IndexWriter(
           directory,
           newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).

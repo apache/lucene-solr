@@ -17,6 +17,7 @@ package org.apache.lucene.codecs.lucene40;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -50,7 +51,7 @@ import org.apache.lucene.util.IOUtils;
  * 
  * @see Lucene40TermVectorsFormat
  */
-public class Lucene40TermVectorsReader extends TermVectorsReader {
+public class Lucene40TermVectorsReader extends TermVectorsReader implements Closeable {
 
   static final byte STORE_POSITIONS_WITH_TERMVECTOR = 0x1;
 
@@ -89,7 +90,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
   private int numTotalDocs;
   
 
-  // used by clone
+  /** Used by clone. */
   Lucene40TermVectorsReader(FieldInfos fieldInfos, IndexInput tvx, IndexInput tvd, IndexInput tvf, int size, int numTotalDocs) {
     this.fieldInfos = fieldInfos;
     this.tvx = tvx;
@@ -99,6 +100,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     this.numTotalDocs = numTotalDocs;
   }
     
+  /** Sole constructor. */
   public Lucene40TermVectorsReader(Directory d, SegmentInfo si, FieldInfos fieldInfos, IOContext context)
     throws IOException {
     final String segment = si.name;
@@ -137,7 +139,9 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
       // of things that were opened so that we don't have to
       // wait for a GC to do so.
       if (!success) {
-        close();
+        try {
+          close();
+        } catch (Throwable t) {} // ensure we throw our original exception
       }
     }
   }
@@ -202,6 +206,7 @@ public class Lucene40TermVectorsReader extends TermVectorsReader {
     }
   }
 
+  @Override
   public void close() throws IOException {
     IOUtils.close(tvx, tvd, tvf);
   }

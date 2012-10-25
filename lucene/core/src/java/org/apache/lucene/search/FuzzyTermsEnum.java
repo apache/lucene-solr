@@ -96,7 +96,7 @@ public class FuzzyTermsEnum extends TermsEnum {
    * @param minSimilarity Minimum required similarity for terms from the reader. Pass an integer value
    *        representing edit distance. Passing a fraction is deprecated.
    * @param prefixLength Length of required common prefix. Default value is 0.
-   * @throws IOException
+   * @throws IOException if there is a low-level IO error
    */
   public FuzzyTermsEnum(Terms terms, AttributeSource atts, Term term, 
       final float minSimilarity, final int prefixLength, boolean transpositions) throws IOException {

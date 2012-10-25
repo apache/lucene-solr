@@ -60,7 +60,7 @@ public class SolrIndexWriter extends IndexWriter {
     final Directory d = directoryFactory.get(path, config.lockType, forceNewDirectory);
     try {
       w = new SolrIndexWriter(name, path, d, create, schema, 
-                              config, delPolicy, codec, forceNewDirectory);
+                              config, delPolicy, codec);
       w.setDirectoryFactory(directoryFactory);
       return w;
     } finally {
@@ -71,7 +71,7 @@ public class SolrIndexWriter extends IndexWriter {
     }
   }
 
-  private SolrIndexWriter(String name, String path, Directory directory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec, boolean forceNewDirectory) throws IOException {
+  private SolrIndexWriter(String name, String path, Directory directory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec) throws IOException {
     super(directory,
           config.toIndexWriterConfig(schema).
           setOpenMode(create ? IndexWriterConfig.OpenMode.CREATE : IndexWriterConfig.OpenMode.APPEND).

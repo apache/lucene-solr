@@ -167,7 +167,7 @@ public class SimpleTextTermVectorsWriter extends TermVectorsWriter {
   public void abort() {
     try {
       close();
-    } catch (IOException ignored) {}
+    } catch (Throwable ignored) {}
     IOUtils.deleteFilesIgnoringExceptions(directory, IndexFileNames.segmentFileName(segment, "", VECTORS_EXTENSION));
   }
 

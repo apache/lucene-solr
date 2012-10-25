@@ -241,7 +241,7 @@ public class NearSpansUnordered extends Spans {
   /**
    * WARNING: The List is not necessarily in order of the the positions
    * @return Collection of <code>byte[]</code> payloads
-   * @throws IOException
+   * @throws IOException if there is a low-level I/O error
    */
   @Override
   public Collection<byte[]> getPayload() throws IOException {

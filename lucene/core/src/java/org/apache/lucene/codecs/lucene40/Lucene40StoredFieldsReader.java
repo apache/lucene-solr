@@ -64,7 +64,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
     return new Lucene40StoredFieldsReader(fieldInfos, numTotalDocs, size, fieldsStream.clone(), indexStream.clone());
   }
   
-  // Used only by clone
+  /** Used only by clone. */
   private Lucene40StoredFieldsReader(FieldInfos fieldInfos, int numTotalDocs, int size, IndexInput fieldsStream, IndexInput indexStream) {
     this.fieldInfos = fieldInfos;
     this.numTotalDocs = numTotalDocs;
@@ -73,6 +73,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
     this.indexStream = indexStream;
   }
 
+  /** Sole constructor. */
   public Lucene40StoredFieldsReader(Directory d, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
     final String segment = si.name;
     boolean success = false;
@@ -101,7 +102,9 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
       // of things that were opened so that we don't have to
       // wait for a GC to do so.
       if (!success) {
-        close();
+        try {
+          close();
+        } catch (Throwable t) {} // ensure we throw our original exception
       }
     }
   }
@@ -119,7 +122,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
    * Closes the underlying {@link org.apache.lucene.store.IndexInput} streams.
    * This means that the Fields values will not be accessible.
    *
-   * @throws IOException
+   * @throws IOException If an I/O error occurs
    */
   public final void close() throws IOException {
     if (!closed) {
@@ -128,6 +131,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
     }
   }
 
+  /** Returns number of documents. */
   public final int size() {
     return size;
   }
@@ -136,6 +140,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
     indexStream.seek(HEADER_LENGTH_IDX + docID * 8L);
   }
 
+  @Override
   public final void visitDocument(int n, StoredFieldVisitor visitor) throws IOException {
     seekIndex(n);
     fieldsStream.seek(indexStream.readLong());
@@ -185,7 +190,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
       byte bytes[] = new byte[length];
       fieldsStream.readBytes(bytes, 0, length);
       if ((bits & FIELD_IS_BINARY) != 0) {
-        visitor.binaryField(info, bytes, 0, bytes.length);
+        visitor.binaryField(info, bytes);
       } else {
         visitor.stringField(info, new String(bytes, 0, bytes.length, IOUtils.CHARSET_UTF_8));
       }

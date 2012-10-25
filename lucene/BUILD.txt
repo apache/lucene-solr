@@ -73,6 +73,8 @@ location of your ant installation, typing "ant" at the shell prompt
 and command prompt should run ant.  Ant will by default look for the
 "build.xml" file in your current directory, and compile Lucene.
 
+If you want to build the documentation, type "ant documentation".
+
 For further information on Lucene, go to:
   http://lucene.apache.org/
 

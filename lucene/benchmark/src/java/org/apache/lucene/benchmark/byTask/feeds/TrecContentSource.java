@@ -130,8 +130,8 @@ public class TrecContentSource extends ContentSource {
    * @param lineStart line start to look for, must not be null.
    * @param collectMatchLine whether to collect the matching line into <code>buffer</code>.
    * @param collectAll whether to collect all lines into <code>buffer</code>.
-   * @throws IOException
-   * @throws NoMoreDataException
+   * @throws IOException If there is a low-level I/O error.
+   * @throws NoMoreDataException If the source is exhausted.
    */
    private void read(StringBuilder buf, String lineStart, 
        boolean collectMatchLine, boolean collectAll) throws IOException, NoMoreDataException {

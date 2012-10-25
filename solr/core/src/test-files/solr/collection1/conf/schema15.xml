@@ -269,6 +269,12 @@
         <filter class="solr.LengthFilterFactory" min="2" max="5"/>
       </analyzer>
     </fieldtype>
+    <fieldtype name="limitfilt" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.MockTokenizerFactory"/>
+        <filter class="solr.LimitTokenCountFilterFactory" maxTokenCount="100" />
+      </analyzer>
+    </fieldtype>
 
     <fieldtype name="subword" class="solr.TextField" multiValued="true" positionIncrementGap="100">
       <analyzer type="index">

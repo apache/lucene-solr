@@ -29,7 +29,7 @@ import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
-import org.apache.lucene.spatial.vector.TwoDoublesStrategy;
+import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -54,7 +54,7 @@ public class DistanceStrategyTest extends StrategyTestCase {
     strategy = new TermQueryPrefixTreeStrategy(grid, "termquery_geohash");
     ctorArgs.add(new Object[]{new Param(strategy)});
 
-    strategy = new TwoDoublesStrategy(ctx, "twodoubles");
+    strategy = new PointVectorStrategy(ctx, "pointvector");
     ctorArgs.add(new Object[]{new Param(strategy)});
 
     strategy = new BBoxStrategy(ctx, "bbox");

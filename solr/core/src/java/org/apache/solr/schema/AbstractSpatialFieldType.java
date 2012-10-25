@@ -47,6 +47,11 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Abstract base class for Solr FieldTypes based on a Lucene 4 {@link SpatialStrategy}.
+ *
+ * @lucene.experimental
+ */
 public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extends FieldType {
 
   /** A local-param with one of "none" (default), "distance", or "recipDistance". */
@@ -61,6 +66,11 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
+
+    String units = args.remove("units");
+    if (!"degrees".equals(units))
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Must specify units=\"degrees\" on field types with class "+getClass().getSimpleName());
 
     //Solr expects us to remove the parameters we've used.
     MapListener<String, String> argsWrap = new MapListener<String, String>(args);

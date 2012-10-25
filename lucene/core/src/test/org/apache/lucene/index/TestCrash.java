@@ -20,12 +20,13 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCrash extends LuceneTestCase {
 
@@ -67,20 +68,42 @@ public class TestCrash extends LuceneTestCase {
     // before any documents were added.
     IndexWriter writer = initIndex(random(), true);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
+
+    // We create leftover files because merging could be
+    // running when we crash:
+    dir.setAssertNoUnrefencedFilesOnClose(false);
+
     crash(writer);
+
     IndexReader reader = DirectoryReader.open(dir);
     assertTrue(reader.numDocs() < 157);
     reader.close();
+
+    // Make a new dir, copying from the crashed dir, and
+    // open IW on it, to confirm IW "recovers" after a
+    // crash:
+    Directory dir2 = newDirectory(dir);
     dir.close();
+
+    new RandomIndexWriter(random(), dir2).close();
+    dir2.close();
   }
 
   public void testWriterAfterCrash() throws IOException {
     // This test relies on being able to open a reader before any commit
     // happened, so we must create an initial commit just to allow that, but
     // before any documents were added.
+    System.out.println("TEST: initIndex");
     IndexWriter writer = initIndex(random(), true);
+    System.out.println("TEST: done initIndex");
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
+
+    // We create leftover files because merging could be
+    // running / store files could be open when we crash:
+    dir.setAssertNoUnrefencedFilesOnClose(false);
+
     dir.setPreventDoubleWrite(false);
+    System.out.println("TEST: now crash");
     crash(writer);
     writer = initIndex(random(), dir, false);
     writer.close();
@@ -88,12 +111,25 @@ public class TestCrash extends LuceneTestCase {
     IndexReader reader = DirectoryReader.open(dir);
     assertTrue(reader.numDocs() < 314);
     reader.close();
+
+    // Make a new dir, copying from the crashed dir, and
+    // open IW on it, to confirm IW "recovers" after a
+    // crash:
+    Directory dir2 = newDirectory(dir);
     dir.close();
+
+    new RandomIndexWriter(random(), dir2).close();
+    dir2.close();
   }
 
   public void testCrashAfterReopen() throws IOException {
     IndexWriter writer = initIndex(random(), false);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
+
+    // We create leftover files because merging could be
+    // running when we crash:
+    dir.setAssertNoUnrefencedFilesOnClose(false);
+
     writer.close();
     writer = initIndex(random(), dir, false);
     assertEquals(314, writer.maxDoc());
@@ -111,7 +147,15 @@ public class TestCrash extends LuceneTestCase {
     IndexReader reader = DirectoryReader.open(dir);
     assertTrue(reader.numDocs() >= 157);
     reader.close();
+
+    // Make a new dir, copying from the crashed dir, and
+    // open IW on it, to confirm IW "recovers" after a
+    // crash:
+    Directory dir2 = newDirectory(dir);
     dir.close();
+
+    new RandomIndexWriter(random(), dir2).close();
+    dir2.close();
   }
 
   public void testCrashAfterClose() throws IOException {

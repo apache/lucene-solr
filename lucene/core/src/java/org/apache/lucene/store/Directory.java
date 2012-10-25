@@ -201,7 +201,18 @@ public abstract class Directory implements Closeable {
     } catch (IOException ioe) {
       priorException = ioe;
     } finally {
-      IOUtils.closeWhileHandlingException(priorException, os, is);
+      boolean success = false;
+      try {
+        IOUtils.closeWhileHandlingException(priorException, os, is);
+        success = true;
+      } finally {
+        if (!success) {
+          try {
+            to.deleteFile(dest);
+          } catch (Throwable t) {
+          }
+        }
+      }
     }
   }
 

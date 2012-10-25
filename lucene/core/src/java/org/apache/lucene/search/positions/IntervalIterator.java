@@ -79,7 +79,6 @@ public abstract class IntervalIterator {
   /**
    * Get any subiterators
    * @param inOrder true if the subiterators should be returned in order
-   * @return
    */
   public abstract IntervalIterator[] subs(boolean inOrder);
 
@@ -97,7 +96,6 @@ public abstract class IntervalIterator {
 
   /**
    * Get this iterator's {@link Scorer}
-   * @return
    */
   public Scorer getScorer() {
     return scorer;

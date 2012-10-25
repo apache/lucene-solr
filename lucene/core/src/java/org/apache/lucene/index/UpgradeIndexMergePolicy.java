@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.MergePolicy.MergeTrigger;
 import org.apache.lucene.util.Constants;
 
 import java.io.IOException;
@@ -75,8 +76,8 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
   }
   
   @Override
-  public MergeSpecification findMerges(SegmentInfos segmentInfos) throws IOException {
-    return base.findMerges(segmentInfos);
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos) throws IOException {
+    return base.findMerges(null, segmentInfos);
   }
   
   @Override

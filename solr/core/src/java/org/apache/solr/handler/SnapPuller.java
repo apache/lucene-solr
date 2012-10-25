@@ -422,8 +422,6 @@ public class SnapPuller {
 
   /**
    * terminate the fsync service and wait for all the tasks to complete. If it is already terminated
-   *
-   * @throws Exception
    */
   private void terminateAndWaitFsyncService() throws Exception {
     if (fsyncService.isTerminated()) return;

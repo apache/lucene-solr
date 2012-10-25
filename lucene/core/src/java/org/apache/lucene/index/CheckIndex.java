@@ -233,8 +233,11 @@ public class CheckIndex {
       TermIndexStatus() {
       }
 
-      /** Total term count */
+      /** Number of terms with at least one live doc. */
       public long termCount = 0L;
+
+      /** Number of terms with zero live docs docs. */
+      public long delTermCount = 0L;
 
       /** Total frequency across all terms. */
       public long totFreq = 0L;
@@ -520,7 +523,7 @@ public class CheckIndex {
 
         // TODO: we could append the info attributes() to the msg?
 
-        if (info.hasDeletions()) {
+        if (!info.hasDeletions()) {
           msg("    no deletions");
           segInfoStat.hasDeletions = false;
         }
@@ -750,7 +753,7 @@ public class CheckIndex {
       final TermsEnum termsEnum = terms.iterator(null);
       
       boolean hasOrd = true;
-      final long termCountStart = status.termCount;
+      final long termCountStart = status.delTermCount + status.termCount;
       
       BytesRef lastTerm = null;
       
@@ -781,7 +784,6 @@ public class CheckIndex {
         if (docFreq <= 0) {
           throw new RuntimeException("docfreq: " + docFreq + " is out of bounds");
         }
-        status.totFreq += docFreq;
         sumDocFreq += docFreq;
         
         docs = termsEnum.docs(liveDocs, docs);
@@ -796,14 +798,12 @@ public class CheckIndex {
           }
           
           if (hasOrd) {
-            final long ordExpected = status.termCount - termCountStart;
+            final long ordExpected = status.delTermCount + status.termCount - termCountStart;
             if (ord != ordExpected) {
               throw new RuntimeException("ord mismatch: TermsEnum has ord=" + ord + " vs actual=" + ordExpected);
             }
           }
         }
-        
-        status.termCount++;
         
         final DocsEnum docs2;
         if (postings != null) {
@@ -820,6 +820,7 @@ public class CheckIndex {
           if (doc == DocIdSetIterator.NO_MORE_DOCS) {
             break;
           }
+          status.totFreq++;
           visitedDocs.set(doc);
           int freq = -1;
           if (hasFreqs) {
@@ -881,6 +882,12 @@ public class CheckIndex {
               }
             }
           }
+        }
+        
+        if (docCount != 0) {
+          status.termCount++;
+        } else {
+          status.delTermCount++;
         }
         
         final long totalTermFreq2 = termsEnum.totalTermFreq();
@@ -1063,11 +1070,11 @@ public class CheckIndex {
         // check unique term count
         long termCount = -1;
         
-        if (status.termCount-termCountStart > 0) {
+        if ((status.delTermCount+status.termCount)-termCountStart > 0) {
           termCount = fields.terms(field).size();
           
-          if (termCount != -1 && termCount != status.termCount - termCountStart) {
-            throw new RuntimeException("termCount mismatch " + termCount + " vs " + (status.termCount - termCountStart));
+          if (termCount != -1 && termCount != status.delTermCount + status.termCount - termCountStart) {
+            throw new RuntimeException("termCount mismatch " + (status.delTermCount + termCount) + " vs " + (status.termCount - termCountStart));
           }
         }
         
@@ -1326,7 +1333,7 @@ public class CheckIndex {
     final Status.DocValuesStatus status = new Status.DocValuesStatus();
     try {
       if (infoStream != null) {
-        infoStream.print("    test: DocValues........");
+        infoStream.print("    test: docvalues...........");
       }
       for (FieldInfo fieldInfo : fieldInfos) {
         if (fieldInfo.hasDocValues()) {
@@ -1340,8 +1347,7 @@ public class CheckIndex {
         }
       }
 
-      msg("OK [" + status.docCount + " total doc Count; Num DocValues Fields "
-          + status.totalValueFields);
+      msg("OK [" + status.docCount + " total doc count; " + status.totalValueFields + " docvalues fields]");
     } catch (Throwable e) {
       msg("ERROR [" + String.valueOf(e.getMessage()) + "]");
       status.error = e;
