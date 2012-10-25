@@ -276,6 +276,8 @@
         <equals arg1="${ant.java.version}" arg2="1.7"/>
         <equals arg1="${ant.java.version}" arg2="1.8"/>
       </or>
+      <!-- TODO: Fix this! For now only run this on 64bit, because jTIDY OOMs with default heap size: -->
+      <contains string="${os.arch}" substring="64"/>
     </and>
   </condition>
 
