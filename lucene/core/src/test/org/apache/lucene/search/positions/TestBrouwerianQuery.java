@@ -77,7 +77,7 @@ public class TestBrouwerianQuery extends LuceneTestCase {
     query.add(new BooleanClause(new TermQuery(new Term("field", "jumps")), Occur.MUST));
     BooleanQuery sub = new BooleanQuery();
     sub.add(new BooleanClause(new TermQuery(new Term("field", "fox")), Occur.MUST));
-    BrouwerianQuery q = new BrouwerianQuery(query, sub);
+    NonOverlappingQuery q = new NonOverlappingQuery(query, sub);
     TopDocs search = searcher.search(q, 10);
     ScoreDoc[] scoreDocs = search.scoreDocs;
     assertEquals(1, search.totalHits);
@@ -102,7 +102,7 @@ public class TestBrouwerianQuery extends LuceneTestCase {
     query.add(new BooleanClause(new TermQuery(new Term("field", "jumps")), Occur.MUST));
     BooleanQuery sub = new BooleanQuery();
     sub.add(new BooleanClause(new TermQuery(new Term("field", "blox")), Occur.MUST));
-    BrouwerianQuery q = new BrouwerianQuery(query, sub);
+    NonOverlappingQuery q = new NonOverlappingQuery(query, sub);
     TopDocs search = searcher.search(q, 10);
     ScoreDoc[] scoreDocs = search.scoreDocs;
     assertEquals(2, search.totalHits);
@@ -129,7 +129,7 @@ public class TestBrouwerianQuery extends LuceneTestCase {
     query.add(new BooleanClause(new TermQuery(new Term("field", "jumps")), Occur.MUST));
     BooleanQuery sub = new BooleanQuery();
     sub.add(new BooleanClause(new TermQuery(new Term("field", "fox")), Occur.MUST));
-    BrouwerianQuery q = new BrouwerianQuery(query, sub);
+    NonOverlappingQuery q = new NonOverlappingQuery(query, sub);
     Weight weight = q.createWeight(searcher);
     IndexReaderContext topReaderContext = searcher.getTopReaderContext();
     List<AtomicReaderContext> leaves = topReaderContext.leaves();

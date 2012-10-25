@@ -79,8 +79,19 @@ public class TestIntervalFilterQueries extends LuceneTestCase {
 
   // or(w1 pre/2 w2, w1 pre/3 w10)
   public void testOrNearNearQuery() throws IOException {
-    Query near1 = new OrderedConjunctionQuery(2, makeTermQuery("w1"), makeTermQuery("w2"));
-    Query near2 = new OrderedConjunctionQuery(3, makeTermQuery("w1"), makeTermQuery("w10"));
+    Query near1 = new OrderedNearQuery(2, makeTermQuery("w1"), makeTermQuery("w2"));
+    Query near2 = new OrderedNearQuery(3, makeTermQuery("w1"), makeTermQuery("w10"));
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(near1, BooleanClause.Occur.SHOULD);
+    bq.add(near2, BooleanClause.Occur.SHOULD);
+
+    checkHits(bq, new int[] { 0, 2, 3 });
+  }
+
+  // or(w2 within/2 w1, w10 within/3 w1)
+  public void testUnorderedNearNearQuery() throws IOException {
+    Query near1 = new UnorderedNearQuery(2, makeTermQuery("w2"), makeTermQuery("w1"));
+    Query near2 = new UnorderedNearQuery(3, makeTermQuery("w10"), makeTermQuery("w1"));
     BooleanQuery bq = new BooleanQuery();
     bq.add(near1, BooleanClause.Occur.SHOULD);
     bq.add(near2, BooleanClause.Occur.SHOULD);
@@ -90,9 +101,9 @@ public class TestIntervalFilterQueries extends LuceneTestCase {
 
   // (a pre/2 b) pre/6 (c pre/2 d)
   public void testNearNearNearQuery() throws IOException {
-    Query near1 = new OrderedConjunctionQuery(2, makeTermQuery("w1"), makeTermQuery("w4"));
-    Query near2 = new OrderedConjunctionQuery(2, makeTermQuery("w10"), makeTermQuery("w12"));
-    Query near3 = new OrderedConjunctionQuery(6, near1, near2);
+    Query near1 = new OrderedNearQuery(2, makeTermQuery("w1"), makeTermQuery("w4"));
+    Query near2 = new OrderedNearQuery(2, makeTermQuery("w10"), makeTermQuery("w12"));
+    Query near3 = new OrderedNearQuery(6, near1, near2);
     checkHits(near3, new int[] { 0 });
   }
 }

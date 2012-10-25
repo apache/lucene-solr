@@ -21,10 +21,25 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 
-public class OrderedConjunctionQuery extends IntervalFilterQuery {
+/**
+ * A query that matches if a set of subqueries also match, and are within
+ * a given distance of each other within the document.  The subqueries
+ * must appear in the document in order.
+ *
+ * Implements the AND&lt; operator as defined in <a href=
+ * "http://vigna.dsi.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics"
+ * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantic</a>
+ */
 
-  public OrderedConjunctionQuery(int slop, Query... queries) {
-    super(buildBooleanQuery(queries), new WithinOrderedFilter(slop + queries.length - 1));
+public class OrderedNearQuery extends IntervalFilterQuery {
+
+  /**
+   * Constructs an OrderedNearQuery
+   * @param slop the maximum distance between the subquery matches
+   * @param subqueries the subqueries to match.
+   */
+  public OrderedNearQuery(int slop, Query... subqueries) {
+    super(buildBooleanQuery(subqueries), new WithinOrderedFilter(slop + subqueries.length - 1));
   }
 
   private static BooleanQuery buildBooleanQuery(Query... queries) {

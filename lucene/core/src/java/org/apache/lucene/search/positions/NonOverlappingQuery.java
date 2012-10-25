@@ -17,9 +17,6 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Set;
-
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -31,19 +28,50 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.util.Bits;
 
+import java.io.IOException;
+import java.util.Set;
+
 /**
+ * A Query that matches documents containing an interval (the minuend) that
+ * does not contain another interval (the subtrahend).
  *
+ * As an example, given the following {@link org.apache.lucene.search.BooleanQuery}:
+ * <pre>
+ *   BooleanQuery bq = new BooleanQuery();
+ *   bq.add(new TermQuery(new Term(field, "quick")), BooleanQuery.Occur.MUST);
+ *   bq.add(new TermQuery(new Term(field, "fox")), BooleanQuery.Occur.MUST);
+ * </pre>
+ *
+ * The document "the quick brown fox" will be matched by this query.  But
+ * create a BrouwerianQuery using this query as a minuend:
+ * <pre>
+ *   BrouwerianQuery brq = new BrouwerianQuery(bq, new TermQuery(new Term(field, "brown")));
+ * </pre>
+ *
+ * This query will not match "the quick brown fox", because "brown" is found
+ * within the interval of the boolean query for "quick" and "fox.  The query
+ * will match "the quick fox is brown", because here "brown" is outside
+ * the minuend's interval.
+ *
+ * Implements the Brouwerian operator as defined in <a href=
+ * "http://vigna.dsi.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics"
+ * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantic</a>
  * @lucene.experimental
- */ // nocommit - javadoc
-public final class BrouwerianQuery extends Query implements Cloneable {
+ */
+public final class NonOverlappingQuery extends Query implements Cloneable {
   
   private Query minuted;
   private Query subtracted;
 
-
-  public BrouwerianQuery(Query minuted, Query subtracted) {
-    this.minuted = minuted;
-    this.subtracted = subtracted;
+  /**
+   * Constructs a Query that matches documents containing intervals of the minuend
+   * that are not subtended by the subtrahend
+   * @param minuend the minuend Query
+   * @param subtrahend the subtrahend Query
+   */
+  public NonOverlappingQuery(Query minuend, Query subtrahend) {
+    this.minuted = minuend;
+    this.subtracted = subtrahend;
   }
 
   @Override
@@ -54,12 +82,12 @@ public final class BrouwerianQuery extends Query implements Cloneable {
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
-    BrouwerianQuery clone = null;
+    NonOverlappingQuery clone = null;
 
     Query rewritten =  minuted.rewrite(reader);
     Query subRewritten =  subtracted.rewrite(reader);
     if (rewritten != minuted || subRewritten != subtracted) {
-      clone = (BrouwerianQuery) this.clone();
+      clone = (NonOverlappingQuery) this.clone();
       clone.minuted = rewritten;
       clone.subtracted = subRewritten;
     }
@@ -107,7 +135,7 @@ public final class BrouwerianQuery extends Query implements Cloneable {
     
     @Override
     public Query getQuery() {
-      return BrouwerianQuery.this;
+      return NonOverlappingQuery.this;
     }
     
     @Override
@@ -297,9 +325,6 @@ public final class BrouwerianQuery extends Query implements Cloneable {
     return minuted.toString();
   }
 
-  /* 
-   *
-   */
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -310,15 +335,12 @@ public final class BrouwerianQuery extends Query implements Cloneable {
     return result;
   }
 
-  /* 
-   *
-   */
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
     if (!super.equals(obj)) return false;
     if (getClass() != obj.getClass()) return false;
-    BrouwerianQuery other = (BrouwerianQuery) obj;
+    NonOverlappingQuery other = (NonOverlappingQuery) obj;
     if (minuted == null) {
       if (other.minuted != null) return false;
     } else if (!minuted.equals(other.minuted)) return false;
