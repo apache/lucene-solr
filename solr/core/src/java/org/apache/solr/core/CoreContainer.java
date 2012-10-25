@@ -34,9 +34,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -59,7 +56,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.SolrXMLSerializer.SolrCoreXMLDef;
 import org.apache.solr.core.SolrXMLSerializer.SolrXMLDef;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -72,7 +68,6 @@ import org.apache.solr.logging.jul.JulWatcher;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.util.DOMUtil;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.zookeeper.KeeperException;
@@ -760,9 +755,6 @@ public class CoreContainer
     try {
       // Make the instanceDir relative to the cores instanceDir if not absolute
       File idir = new File(dcore.getInstanceDir());
-      if (!idir.isAbsolute()) {
-        idir = new File(solrHome, dcore.getInstanceDir());
-      }
       String instanceDir = idir.getPath();
       log.info("Creating SolrCore '{}' using instanceDir: {}", 
                dcore.getName(), instanceDir);
@@ -973,9 +965,6 @@ public class CoreContainer
       CoreDescriptor cd = core.getCoreDescriptor();
   
       File instanceDir = new File(cd.getInstanceDir());
-      if (!instanceDir.isAbsolute()) {
-        instanceDir = new File(getSolrHome(), cd.getInstanceDir());
-      }
 
       log.info("Reloading SolrCore '{}' using instanceDir: {}", 
                cd.getName(), instanceDir.getAbsolutePath());
@@ -1283,7 +1272,7 @@ public class CoreContainer
 
         coreAttribs.put(CORE_NAME, coreName);
         
-        String instanceDir = dcore.getInstanceDir();
+        String instanceDir = dcore.getRawInstanceDir();
         addCoreProperty(coreAttribs, coreNode, CORE_INSTDIR, instanceDir, null);
         
         // write config 
