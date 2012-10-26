@@ -204,7 +204,6 @@ public class CloudSolrServer extends SolrServer {
 
     List<String> theUrlList;
     synchronized (cachLock) {
-      System.out.println("work with collection:" + collection);
       List<String> leaderUrlList = leaderUrlLists.get(collection);
       List<String> urlList = urlLists.get(collection);
       List<String> replicasList = replicasLists.get(collection);
