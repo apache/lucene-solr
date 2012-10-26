@@ -668,7 +668,12 @@ public class CoreAdminHandler extends RequestHandlerBase {
         });
       }
     } finally {
-      if (core != null) core.close();
+      if (core != null) {
+        if (coreContainer.getZkController() != null) {
+          core.getSolrCoreState().cancelRecovery();
+        }
+        core.close();
+      }
     }
     return coreContainer.isPersistent();
     

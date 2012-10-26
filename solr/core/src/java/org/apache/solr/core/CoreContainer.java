@@ -1072,7 +1072,9 @@ public class CoreContainer
 
     synchronized(cores) {
       SolrCore core = cores.remove( name );
-      coreToOrigName.remove(core);
+      if (core != null) {
+        coreToOrigName.remove(core);
+      }
       return core;
     }
 

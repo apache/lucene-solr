@@ -109,6 +109,8 @@ Bug Fixes
 * SOLR-3992: QuerySenderListener doesn't populate document cache.
   (Shotaro Kamio, yonik)
 
+* SOLR-3995: Recovery may never finish on SolrCore shutdown if the last reference to 
+  a SolrCore is closed by the recovery process. (Mark Miller)
 
 Other Changes
 ----------------------

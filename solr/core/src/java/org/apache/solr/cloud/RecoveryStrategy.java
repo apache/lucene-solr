@@ -313,7 +313,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       }
     }
 
-    while (!successfulRecovery && !isInterrupted()) { // don't use interruption or it will close channels though
+    while (!successfulRecovery && !isInterrupted() && !isClosed()) { // don't use interruption or it will close channels though
       try {
         CloudDescriptor cloudDesc = core.getCoreDescriptor()
             .getCloudDescriptor();

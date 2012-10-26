@@ -17,6 +17,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.UpdateLog;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,7 @@ import org.slf4j.LoggerFactory;
  */
 
 public abstract class ElectionContext {
-  
+  private static Logger log = LoggerFactory.getLogger(ElectionContext.class);
   final String electionPath;
   final ZkNodeProps leaderProps;
   final String id;
@@ -58,7 +59,12 @@ public abstract class ElectionContext {
   public void close() {}
   
   public void cancelElection() throws InterruptedException, KeeperException {
-    zkClient.delete(leaderSeqPath, -1, true);
+    try {
+      zkClient.delete(leaderSeqPath, -1, true);
+    } catch (NoNodeException e) {
+      // fine
+      log.warn("cancelElection did not find election node to remove");
+    }
   }
 
   abstract void runLeaderProcess(boolean weAreReplacement) throws KeeperException, InterruptedException, IOException;

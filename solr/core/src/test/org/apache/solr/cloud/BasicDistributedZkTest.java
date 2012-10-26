@@ -67,7 +67,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
@@ -322,19 +321,19 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     // would be better if these where all separate tests - but much, much
     // slower
-//    doOptimisticLockingAndUpdating();
-//    testMultipleCollections();
-//    testANewCollectionInOneInstance();
-//    testSearchByCollectionName();
-//    testANewCollectionInOneInstanceWithManualShardAssignement();
-//    testNumberOfCommitsWithCommitAfterAdd();
-//
-//    testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-explicit");
-//    testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-implicit");
-//
-//    testCollectionsAPI();
+    doOptimisticLockingAndUpdating();
+    testMultipleCollections();
+    testANewCollectionInOneInstance();
+    testSearchByCollectionName();
+    testANewCollectionInOneInstanceWithManualShardAssignement();
+    testNumberOfCommitsWithCommitAfterAdd();
+
+    testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-explicit");
+    testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-implicit");
+
+    testCollectionsAPI();
     testCoreUnloadAndLeaders();
-    
+    testUnloadLotsOfCores();
     // Thread.sleep(10000000000L);
     if (DEBUG) {
       super.printLayout();
@@ -412,8 +411,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     createCmd.setDataDir(core3dataDir);
     server.request(createCmd);
     
-    Thread.sleep(1000);
-    
     waitForRecoveriesToFinish("unloadcollection", zkStateReader, false);
     
     // so that we start with some versions when we reload...
@@ -474,8 +471,6 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     createCmd.setDataDir(core4dataDir);
     server.request(createCmd);
     
-    Thread.sleep(1000);
-    
     waitForRecoveriesToFinish("unloadcollection", zkStateReader, false);
     
     // unload the leader again
@@ -509,9 +504,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     createCmd.setCollection("unloadcollection");
     createCmd.setDataDir(core1DataDir);
     server.request(createCmd);
-    
-    Thread.sleep(1000);
-    
+
     waitForRecoveriesToFinish("unloadcollection", zkStateReader, false);
     
     
@@ -538,7 +531,65 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     assertEquals(found3, found4);
     
   }
-
+  
+  private void testUnloadLotsOfCores() throws Exception {
+    SolrServer client = clients.get(2);
+    String url3 = getBaseUrl(client);
+    final HttpSolrServer server = new HttpSolrServer(url3);
+    
+    ThreadPoolExecutor executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+        5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+        new DefaultSolrThreadFactory("testExecutor"));
+    int cnt = atLeast(6);
+    for (int i = 0; i < cnt; i++) {
+      final int freezeI = i;
+      executor.execute(new Runnable() {
+        
+        @Override
+        public void run() {
+          Create createCmd = new Create();
+          createCmd.setCoreName("multiunload" + freezeI);
+          createCmd.setCollection("multiunload");
+          String core3dataDir = dataDir.getAbsolutePath() + File.separator
+              + System.currentTimeMillis() + "unloadcollection" + "_3n" + freezeI;
+          createCmd.setDataDir(core3dataDir);
+          try {
+            server.request(createCmd);
+          } catch (SolrServerException e) {
+            throw new RuntimeException(e);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+        
+      });
+    }
+    executor.shutdown();
+    executor.awaitTermination(120, TimeUnit.SECONDS);
+    executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
+        TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+        new DefaultSolrThreadFactory("testExecutor"));
+    for (int j = 0; j < cnt; j++) {
+      final int freezeJ = j;
+      executor.execute(new Runnable() {
+        @Override
+        public void run() {
+          Unload unloadCmd = new Unload(true);
+          unloadCmd.setCoreName("multiunload" + freezeJ);
+          try {
+            server.request(unloadCmd);
+          } catch (SolrServerException e) {
+            throw new RuntimeException(e);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+      });
+      Thread.sleep(random().nextInt(50));
+    }
+    executor.shutdown();
+    executor.awaitTermination(120, TimeUnit.SECONDS);
+  }
 
   private String getBaseUrl(SolrServer client) {
     String url2 = ((HttpSolrServer) client).getBaseURL()
@@ -794,7 +845,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       }
       Thread.sleep(50);
     }
-    printLayout();
+
     fail("Could not find the new collection - " + exp.code() + " : " + collectionClient.getBaseURL());
   }
 
