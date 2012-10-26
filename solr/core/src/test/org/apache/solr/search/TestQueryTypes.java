@@ -18,13 +18,15 @@ package org.apache.solr.search;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 
 public class TestQueryTypes extends AbstractSolrTestCase {
 
-  @Override
-  public String getSchemaFile() { return "schema11.xml"; }
-  @Override
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema11.xml");
+  }
+  
   public String getCoreName() { return "basic"; }
 
 

@@ -16,22 +16,22 @@
  */
 package org.apache.solr.request;
 
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.JavaBinCodec;
-import org.apache.solr.response.BinaryQueryResponseWriter;
-import org.apache.solr.response.BinaryResponseWriter.Resolver;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.ReturnFields;
-
-import org.apache.solr.util.AbstractSolrTestCase;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Locale;
 import java.util.UUID;
+
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.response.BinaryQueryResponseWriter;
+import org.apache.solr.response.BinaryResponseWriter.Resolver;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.ReturnFields;
+import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 
 /**
  * Test for BinaryResponseWriter
@@ -41,14 +41,10 @@ import java.util.UUID;
  */
 public class TestBinaryResponseWriter extends AbstractSolrTestCase {
 
-  @Override
-  public String getSchemaFile() {
-    return "schema12.xml";
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
+  
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema12.xml");
   }
 
   /**
@@ -96,7 +92,7 @@ public class TestBinaryResponseWriter extends AbstractSolrTestCase {
     assertTrue("ddd_s not found", out.getFieldNames().contains("ddd_s"));
     assertEquals("Wrong number of fields found", 
                  2, out.getFieldNames().size());
-
+    req.close();
 
   }
 

@@ -193,8 +193,6 @@ public final class ZkController {
               ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
               overseerElector.joinElection(context, true);
               zkStateReader.createClusterStateWatchersAndUpdate();
-
-            //  cc.newCmdDistribExecutor();
               
               // we have to register as live first to pick up docs in the buffer
               createEphemeralLiveNode();
@@ -308,7 +306,11 @@ public final class ZkController {
     }
     
     for (ElectionContext context : electionContexts.values()) {
-      context.close();
+      try {
+        context.close();
+      } catch (Throwable t) {
+        log.error("Error closing overseer", t);
+      }
     }
     
     try {

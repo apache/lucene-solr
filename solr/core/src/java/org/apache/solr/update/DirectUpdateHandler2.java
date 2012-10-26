@@ -45,7 +45,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -604,8 +603,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   }
 
   @Override
-  public void newIndexWriter(boolean rollback) throws IOException {
-    solrCoreState.newIndexWriter(core, rollback);
+  public void newIndexWriter(boolean rollback, boolean forceNewDir) throws IOException {
+    solrCoreState.newIndexWriter(core, rollback, forceNewDir);
   }
   
   /**

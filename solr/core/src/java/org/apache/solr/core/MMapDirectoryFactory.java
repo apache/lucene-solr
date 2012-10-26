@@ -39,7 +39,7 @@ import java.io.IOException;
  * </ul>
  *
  **/
-public class MMapDirectoryFactory extends CachingDirectoryFactory {
+public class MMapDirectoryFactory extends StandardDirectoryFactory {
   private transient static Logger log = LoggerFactory.getLogger(MMapDirectoryFactory.class);
   boolean unmapHack;
   private int maxChunk;

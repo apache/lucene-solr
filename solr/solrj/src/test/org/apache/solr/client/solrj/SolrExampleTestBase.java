@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj;
 
 
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 
 /**
  * This should include tests against the example solr config
@@ -32,9 +33,13 @@ abstract public class SolrExampleTestBase extends AbstractSolrTestCase
 {
   @Override
   public String getSolrHome() { return "../../../example/solr/"; }
-  
-  @Override public String getSchemaFile()     { return getSolrHome()+"conf/schema.xml";     }
-  @Override public String getSolrConfigFile() { return getSolrHome()+"conf/solrconfig.xml"; }
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    if (dataDir == null) {
+      createTempDir();
+    }
+  }
  
   @Override
   public void setUp() throws Exception

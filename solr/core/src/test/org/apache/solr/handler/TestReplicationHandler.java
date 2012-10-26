@@ -54,8 +54,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 
 /**
  * Test for ReplicationHandler
@@ -72,9 +72,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       + File.separator + "collection1" + File.separator + "conf"
       + File.separator;
 
-  static JettySolrRunner masterJetty, slaveJetty;
-  static SolrServer masterClient, slaveClient;
-  static SolrInstance master = null, slave = null;
+  JettySolrRunner masterJetty, slaveJetty;
+  SolrServer masterClient, slaveClient;
+  SolrInstance master = null, slave = null;
 
   static String context = "/solr";
 
@@ -83,9 +83,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   static int nDocs = 500;
 
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    useFactory(null); // need an FS factory
+  @Before
+  public void setup() throws Exception {
+    super.setUp();
+    // For manual testing only
+    // useFactory(null); // force an FS factory
     master = new SolrInstance("master", null);
     master.setUp();
     masterJetty = createJetty(master);
@@ -109,8 +111,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
   }
 
-  @AfterClass
-  public static void afterClass() throws Exception {
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
     masterJetty.stop();
     slaveJetty.stop();
     master.tearDown();
@@ -415,7 +418,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // setup an xslt dir to force subdir file replication
     File masterXsltDir = new File(master.getConfDir() + File.separator + "xslt");
     File masterXsl = new File(masterXsltDir, "dummy.xsl");
-    assertTrue(masterXsltDir.mkdir());
+    assertTrue("could not make dir " + masterXsltDir, masterXsltDir.mkdirs());
     assertTrue(masterXsl.createNewFile());
 
     File slaveXsltDir = new File(slave.getConfDir() + File.separator + "xslt");
@@ -596,14 +599,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     nDocs--;
     masterClient.deleteByQuery("*:*");
-    for (int i = 0; i < nDocs; i++)
-      index(masterClient, "id", i, "name", "name = " + i);
 
     masterClient.commit();
 
-    NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
-    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
-    assertEquals(nDocs, masterQueryResult.getNumFound());
+
 
     //change solrconfig having 'replicateAfter startup' option on master
     master.copyConfigFile(CONF_DIR + "solrconfig-master2.xml",
@@ -613,6 +612,16 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
+    
+    for (int i = 0; i < nDocs; i++)
+      index(masterClient, "id", i, "name", "name = " + i);
+
+    masterClient.commit();
+    
+    NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
+    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    assertEquals(nDocs, masterQueryResult.getNumFound());
+    
 
     slave.setTestPort(masterJetty.getLocalPort());
     slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
@@ -650,15 +659,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     //stop slave
     slaveJetty.stop();
 
-    masterClient.deleteByQuery("*:*");
-    for (int i = 0; i < 10; i++)
-      index(masterClient, "id", i, "name", "name = " + i);
-
-    masterClient.commit();
-
-    NamedList masterQueryRsp = rQuery(10, "*:*", masterClient);
-    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
-    assertEquals(10, masterQueryResult.getNumFound());
 
     //change solrconfig having 'replicateAfter startup' option on master
     master.copyConfigFile(CONF_DIR + "solrconfig-master3.xml",
@@ -669,6 +669,16 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
+    masterClient.deleteByQuery("*:*");
+    for (int i = 0; i < 10; i++)
+      index(masterClient, "id", i, "name", "name = " + i);
+
+    masterClient.commit();
+
+    NamedList masterQueryRsp = rQuery(10, "*:*", masterClient);
+    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    assertEquals(10, masterQueryResult.getNumFound());
+    
     slave.setTestPort(masterJetty.getLocalPort());
     slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
 

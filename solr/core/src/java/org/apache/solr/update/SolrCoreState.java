@@ -44,7 +44,7 @@ public abstract class SolrCoreState {
    * @param rollback close IndexWriter if false, else rollback
    * @throws IOException If there is a low-level I/O error.
    */
-  public abstract void newIndexWriter(SolrCore core, boolean rollback) throws IOException;
+  public abstract void newIndexWriter(SolrCore core, boolean rollback, boolean forceNewDir) throws IOException;
   
   /**
    * Get the current IndexWriter. If a new IndexWriter must be created, use the

@@ -41,6 +41,7 @@ import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -77,7 +78,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
   private final SolrCore core;
   private final IndexSchema schema;
-  private String indexDir;
+
   private boolean debug = log.isDebugEnabled();
 
   private final String name;
@@ -147,8 +148,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       // keep the directory from being released while we use it
       directoryFactory.incRef(dir);
     }
-
-    this.indexDir = getIndexDir(dir);
 
     this.closeReader = closeReader;
     setSimilarity(schema.getSimilarity());
@@ -273,7 +272,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     // super.close();
     // can't use super.close() since it just calls reader.close() and that may only be called once
     // per reader (even if incRef() was previously called).
-    if (closeReader) reader.decRef();
+    try {
+      if (closeReader) reader.decRef();
+    } catch (Throwable t) {
+      SolrException.log(log, "Problem dec ref'ing reader", t);
+    }
 
     for (SolrCache cache : cacheList) {
       cache.close();
@@ -409,12 +412,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 //    }
 //  }
 
-  /**
-   * @return the indexDir on which this searcher is opened
-   */
-  public String getIndexDir() {
-    return indexDir;
-  }
 
   /* ********************** Document retrieval *************************/
    

@@ -74,6 +74,7 @@ import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrCmdDistributor.Request;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Before;
+import org.junit.BeforeClass;
 
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
@@ -113,6 +114,12 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   CompletionService<Request> completionService;
   Set<Future<Request>> pending;
   
+  @BeforeClass
+  public static void beforeThisClass2() throws Exception {
+    // TODO: we use an fs based dir because something
+    // like a ram dir will not recover correctly right now
+    useFactory(null);
+  }
   
   @Before
   @Override
@@ -153,7 +160,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   public void doTest() throws Exception {
     // setLoggingLevel(null);
 
-    
+    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     // make sure we have leaders for each shard
     for (int j = 1; j < sliceCount; j++) {
       zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard" + j, 10000);
@@ -356,6 +363,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     String core1DataDir = dataDir.getAbsolutePath() + File.separator + System.currentTimeMillis() + "unloadcollection1" + "_1n";
     createCmd.setDataDir(core1DataDir);
     server.request(createCmd);
+    
+    ZkStateReader zkStateReader = solrj.getZkStateReader();
     
     zkStateReader.updateClusterState(true);
 
@@ -591,6 +600,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     executor.awaitTermination(120, TimeUnit.SECONDS);
   }
 
+
   private String getBaseUrl(SolrServer client) {
     String url2 = ((HttpSolrServer) client).getBaseURL()
         .substring(
@@ -631,7 +641,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       // poll for a second - it can take a moment before we are ready to serve
       waitForNon403or404or503(collectionClient);
     }
-    
+    ZkStateReader zkStateReader = solrj.getZkStateReader();
     for (int j = 0; j < cnt; j++) {
       waitForRecoveriesToFinish("awholynewcollection_" + j, zkStateReader, false);
     }
@@ -1235,21 +1245,30 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     indexDoc("collection2", getDoc(id, "10000000")); 
     indexDoc("collection2", getDoc(id, "10000001")); 
-    indexDoc("collection2", getDoc(id, "10000003")); 
-    
+    indexDoc("collection2", getDoc(id, "10000003"));
+    solrj.setDefaultCollection("collection2");
+    solrj.add(getDoc(id, "10000004"));
+    solrj.setDefaultCollection(null);
     
     indexDoc("collection3", getDoc(id, "20000000"));
     indexDoc("collection3", getDoc(id, "20000001")); 
+    solrj.setDefaultCollection("collection3");
+    solrj.add(getDoc(id, "10000005"));
+    solrj.setDefaultCollection(null);
     
     otherCollectionClients.get("collection2").get(0).commit();
     otherCollectionClients.get("collection3").get(0).commit();
     
+    solrj.setDefaultCollection("collection1");
     long collection1Docs = solrj.query(new SolrQuery("*:*")).getResults()
         .getNumFound();
+
     long collection2Docs = otherCollectionClients.get("collection2").get(0)
         .query(new SolrQuery("*:*")).getResults().getNumFound();
+    System.out.println("found2: "+ collection2Docs);
     long collection3Docs = otherCollectionClients.get("collection3").get(0)
         .query(new SolrQuery("*:*")).getResults().getNumFound();
+    System.out.println("found3: "+ collection3Docs);
     
     SolrQuery query = new SolrQuery("*:*");
     query.set("collection", "collection2,collection3");
@@ -1276,6 +1295,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     query.remove("collection");
     found = solrj.query(query).getResults().getNumFound();
     assertEquals(collection1Docs, found);
+    
+    assertEquals(collection3Docs, collection2Docs - 1);
   }
   
   protected SolrInputDocument getDoc(Object... fields) throws Exception {

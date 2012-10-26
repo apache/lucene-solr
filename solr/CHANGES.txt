@@ -52,6 +52,9 @@ New Features
 * SOLR-3985: ExternalFileField caches can be reloaded on firstSearcher/
   newSearcher events using the ExternalFileFieldReloader (Alan Woodward)
 
+* SOLR-3911: Make Directory and DirectoryFactory first class so that the majority 
+  of Solr's features work with any custom implementations. (Mark Miller)
+
 Optimizations
 ----------------------
 

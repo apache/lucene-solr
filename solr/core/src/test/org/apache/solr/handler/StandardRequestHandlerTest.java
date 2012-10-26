@@ -27,15 +27,19 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 
 /**
  * Most of the tests for StandardRequestHandler are in ConvertedLegacyTest
  * 
  */
 public class StandardRequestHandlerTest extends AbstractSolrTestCase {
-
-  @Override public String getSchemaFile() { return "schema.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
+  
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
+  }
+  
   @Override public void setUp() throws Exception {
     super.setUp();
     lrf = h.getRequestFactory("standard", 0, 20 );

@@ -113,7 +113,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   }
 
   @Override
-  public synchronized void newIndexWriter(SolrCore core, boolean rollback) throws IOException {
+  public synchronized void newIndexWriter(SolrCore core, boolean rollback, boolean forceNewDir) throws IOException {
     log.info("Creating new IndexWriter...");
     String coreName = core.getName();
     synchronized (writerPauseLock) {
@@ -148,7 +148,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
             }
           }
         }
-        indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", true);
+        indexWriter = createMainIndexWriter(core, "DirectUpdateHandler2", forceNewDir);
         log.info("New IndexWriter is ready to be used.");
         // we need to null this so it picks up the new writer next get call
         refCntWriter = null;
@@ -162,7 +162,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public synchronized void rollbackIndexWriter(SolrCore core) throws IOException {
-    newIndexWriter(core, true);
+    newIndexWriter(core, true, true);
   }
   
   protected SolrIndexWriter createMainIndexWriter(SolrCore core, String name, boolean forceNewDirectory) throws IOException {

@@ -22,7 +22,9 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.index.Term;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 
 import java.util.List;
 
@@ -31,10 +33,11 @@ import java.util.List;
  */
 public class TestQueryUtils extends AbstractSolrTestCase {
 
-  @Override
-  public String getSchemaFile() { return "schema.xml"; }
-  @Override
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
+  }
+
 
   @Override
   public void setUp() throws Exception {

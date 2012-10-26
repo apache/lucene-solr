@@ -27,7 +27,7 @@ import org.apache.lucene.util.LuceneTestCase;
 /**
  * Opens a directory with {@link LuceneTestCase#newFSDirectory(File)}
  */
-public class MockFSDirectoryFactory extends CachingDirectoryFactory {
+public class MockFSDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
   public Directory create(String path) throws IOException {

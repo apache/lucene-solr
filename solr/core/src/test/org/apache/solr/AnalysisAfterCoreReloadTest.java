@@ -23,49 +23,26 @@ import java.io.IOException;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.AbstractSolrTestCase;
-import org.junit.After;
+import org.junit.BeforeClass;
 
-public class AnalysisAfterCoreReloadTest extends AbstractSolrTestCase {
-  private File homeDir;
+public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
+  
   int port = 0;
   static final String context = "/solr";
-  JettySolrRunner jetty;
+
   static final String collection = "collection1";
   
-  @After
-  public void cleanUp() throws Exception {
-    jetty.stop();
-    if (homeDir != null && homeDir.isDirectory() && homeDir.exists())
-      recurseDelete(homeDir);
-  }
-  
-  @Override
-  public String getSolrHome() { 
-    return homeDir.getAbsolutePath(); 
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
   }
 
-  @Override
-  public void setUp() throws Exception {
-    homeDir = new File(TEMP_DIR + File.separator + "solr-test-home-" + System.nanoTime());
-    homeDir.mkdirs();
-    FileUtils.copyDirectory(new File(getFile("solr/" + collection).getParent()), homeDir, false);
-
-    super.setUp();
-    
-    jetty = new JettySolrRunner(getSolrHome(), context, 0 );
-    jetty.start(false);
-    port = jetty.getLocalPort();
-  }
-  
   public void testStopwordsAfterCoreReload() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField( "id", "42" );
@@ -100,8 +77,7 @@ public class AnalysisAfterCoreReloadTest extends AbstractSolrTestCase {
 
     // overwrite stopwords file with stopword list ["stopwordc"] and reload the core
     overwriteStopwords("stopwordc\n");
-    SolrServer coreadmin = getSolrAdmin();
-    CoreAdminRequest.reloadCore(collection, coreadmin);
+    h.getCoreContainer().reload(collection);
 
     up.process( getSolrCore() );
 
@@ -133,42 +109,33 @@ public class AnalysisAfterCoreReloadTest extends AbstractSolrTestCase {
     SolrCore core = h.getCoreContainer().getCore(collection);
     try {
       String configDir = core.getResourceLoader().getConfigDir();
+      FileUtils.moveFile(new File(configDir, "stopwords.txt"), new File(configDir, "stopwords.txt.bak"));
       File file = new File(configDir, "stopwords.txt");
       FileUtils.writeStringToFile(file, stopwords);
+     
     } finally {
       core.close();
     }
   }
   
-  protected SolrServer getSolrAdmin() {
-    return createServer("");
-  }
-  protected SolrServer getSolrCore() {
-    return createServer(collection);
-  }
-  private SolrServer createServer( String name ) {
+  @Override
+  public void tearDown() throws Exception {
+    SolrCore core = h.getCoreContainer().getCore(collection);
+    String configDir;
     try {
-      // setup the server...
-      String url = "http://127.0.0.1:"+port+context+"/"+name;
-      HttpSolrServer s = new HttpSolrServer( url );
-      s.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
-      s.setDefaultMaxConnectionsPerHost(100);
-      s.setMaxTotalConnections(100);
-      return s;
+      configDir = core.getResourceLoader().getConfigDir();
+    } finally {
+      core.close();
     }
-    catch( Exception ex ) {
-      throw new RuntimeException( ex );
+    super.tearDown();
+    if (new File(configDir, "stopwords.txt.bak").exists()) {
+      FileUtils.deleteQuietly(new File(configDir, "stopwords.txt"));
+      FileUtils.moveFile(new File(configDir, "stopwords.txt.bak"), new File(configDir, "stopwords.txt"));
     }
   }
 
-  @Override
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
+  protected SolrServer getSolrCore() {
+    return new EmbeddedSolrServer(h.getCore());
   }
 
 }

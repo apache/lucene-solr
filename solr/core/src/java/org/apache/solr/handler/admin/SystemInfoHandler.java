@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 
 import java.io.DataInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
@@ -104,7 +105,13 @@ public class SystemInfoHandler extends RequestHandlerBase
     dirs.add( "cwd" , new File( System.getProperty("user.dir")).getAbsolutePath() );
     dirs.add( "instance", new File( core.getResourceLoader().getInstanceDir() ).getAbsolutePath() );
     dirs.add( "data", new File( core.getDataDir() ).getAbsolutePath() );
-    dirs.add( "index", new File( core.getIndexDir() ).getAbsolutePath() );
+    dirs.add( "dirimpl", core.getDirectoryFactory().getClass().getName());
+    try {
+      dirs.add( "index", core.getDirectoryFactory().normalize(core.getIndexDir()) );
+    } catch (IOException e) {
+      log.warn("Problem getting the normalized index directory path", e);
+      dirs.add( "index", "N/A" );
+    }
     info.add( "directory", dirs );
     return info;
   }

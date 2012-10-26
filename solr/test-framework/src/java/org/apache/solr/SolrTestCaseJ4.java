@@ -178,6 +178,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
    * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
   public static void initCore(String config, String schema, String solrHome) throws Exception {
+    assertNotNull(solrHome);
     configString = config;
     schemaString = schema;
     testSolrHome = solrHome;
@@ -378,6 +379,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   public static void createCore() {
+    assertNotNull(testSolrHome);
     solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
     h = new TestHarness( dataDir.getAbsolutePath(),
             solrConfig,

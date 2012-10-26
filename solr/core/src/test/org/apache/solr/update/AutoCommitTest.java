@@ -34,6 +34,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.RefCounted;
+import org.junit.BeforeClass;
 
 class NewSearcherListener implements SolrEventListener {
 
@@ -108,10 +109,10 @@ class NewSearcherListener implements SolrEventListener {
 @Slow
 public class AutoCommitTest extends AbstractSolrTestCase {
 
-  @Override
-  public String getSchemaFile() { return "schema.xml"; }
-  @Override
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+   @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
+  }
 
   public static void verbose(Object... args) {
     if (!VERBOSE) return;
@@ -124,6 +125,14 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     }
     log.info(sb.toString());
     // System.out.println(sb.toString());
+  }
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    clearIndex();
+    // reload the core to clear stats
+    h.getCoreContainer().reload(h.getCore().getName());
   }
 
   /**
@@ -141,8 +150,8 @@ public class AutoCommitTest extends AbstractSolrTestCase {
   }
 
   public void testMaxDocs() throws Exception {
-
     SolrCore core = h.getCore();
+    
     NewSearcherListener trigger = new NewSearcherListener();
 
     DirectUpdateHandler2 updateHandler = (DirectUpdateHandler2)core.getUpdateHandler();
@@ -190,6 +199,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
 
   public void testMaxTime() throws Exception {
     SolrCore core = h.getCore();
+    
     NewSearcherListener trigger = new NewSearcherListener();    
     core.registerNewSearcherListener(trigger);
     DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
@@ -263,6 +273,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
   
   public void testCommitWithin() throws Exception {
     SolrCore core = h.getCore();
+    
     NewSearcherListener trigger = new NewSearcherListener();    
     core.registerNewSearcherListener(trigger);
     DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
