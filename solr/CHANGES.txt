@@ -100,6 +100,9 @@ Bug Fixes
 * SOLR-3981: Fixed bug that resulted in document boosts being compounded in
   <copyField/> destination fields. (hossman)
 
+* SOLR-3920: Fix server list caching in CloudSolrServer when using more than one
+  collection list with the same instance. (Grzegorz Sobczyk, Mark Miller)
+
 Other Changes
 ----------------------
 
