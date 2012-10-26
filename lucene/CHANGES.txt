@@ -83,6 +83,9 @@ Bug Fixes
   romaji even for out-of-vocabulary kana cases (e.g. half-width forms).
   (Robert Muir)
 
+* LUCENE-4504: Fix broken sort comparator in ValueSource.getSortField,
+  used when sorting by a function query.  (Tom Shally via Robert Muir)
+
 Optimizations
 
 * LUCENE-4443: Lucene41PostingsFormat no longer writes unnecessary offsets 
