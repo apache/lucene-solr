@@ -16,24 +16,32 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
 
+import java.io.IOException;
+
 
 /**
- * 
+ * Iterates over the individual positions of a term in a document
  */
-//nocommmit javadocs
 public final class TermIntervalIterator extends IntervalIterator {
+
   private final Interval interval;
   int positionsPending;
   private final DocsAndPositionsEnum docsAndPos;
   private int docID = -1;
 
-  public TermIntervalIterator(Scorer scorer, DocsAndPositionsEnum docsAndPos, boolean doPayloads,  boolean collectPositions) {
+  /**
+   * Constructs a new TermIntervalIterator
+   * @param scorer the parent Scorer
+   * @param docsAndPos a DocsAndPositionsEnum positioned on the current document
+   * @param doPayloads true if payloads should be retrieved for the positions
+   * @param collectPositions true if positions will be collected
+   */
+  public TermIntervalIterator(Scorer scorer, DocsAndPositionsEnum docsAndPos,
+                              boolean doPayloads, boolean collectPositions) {
     super(scorer, collectPositions);
     this.docsAndPos = docsAndPos;
     this.interval = doPayloads ? new PayloadInterval(docsAndPos, this)

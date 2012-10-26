@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.util.List;
 import java.io.IOException;
 
-import org.apache.lucene.search.positions.BooleanIntervalIterator;
 import org.apache.lucene.search.positions.ConjunctionIntervalIterator;
 import org.apache.lucene.search.positions.DisjunctionIntervalIterator;
 import org.apache.lucene.search.positions.IntervalIterator;
@@ -176,8 +175,8 @@ class DisjunctionSumScorer extends DisjunctionScorer {
   public IntervalIterator positions(boolean collectPositions) throws IOException {
     if (minimumNrMatchers > 1) {
       return new ConjunctionIntervalIterator(this,
-          collectPositions, minimumNrMatchers, BooleanIntervalIterator.pullIterators(collectPositions, subScorers));
+          collectPositions, minimumNrMatchers, pullIterators(collectPositions, subScorers));
     }
-    return new DisjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(collectPositions, subScorers));
+    return new DisjunctionIntervalIterator(this, collectPositions, pullIterators(collectPositions, subScorers));
   }
 }

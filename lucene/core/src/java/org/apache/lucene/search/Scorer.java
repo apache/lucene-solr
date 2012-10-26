@@ -75,6 +75,22 @@ public abstract class Scorer extends DocIdSetIterator {
   public abstract IntervalIterator positions(boolean collectPositions) throws IOException;
 
   /**
+   * Get the IntervalIterators from a list of scorers
+   * @param collectPositions true if positions will be collected
+   * @param scorers the list of scorers to retrieve IntervalIterators from
+   * @return a list of IntervalIterators pulled from the passed in Scorers
+   * @throws java.io.IOException
+   */
+  public static IntervalIterator[] pullIterators(boolean collectPositions, Scorer... scorers)
+      throws IOException {
+    IntervalIterator[] iterators = new IntervalIterator[scorers.length];
+    for (int i = 0; i < scorers.length; i++) {
+      iterators[i] = scorers[i].positions(collectPositions);
+    }
+    return iterators;
+  }
+
+  /**
    * Expert: Collects matching documents in a range. Hook for optimization.
    * Note, <code>firstDocID</code> is added to ensure that {@link #nextDoc()}
    * was called before this method.

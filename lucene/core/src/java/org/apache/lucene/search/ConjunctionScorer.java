@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 
-import org.apache.lucene.search.positions.BooleanIntervalIterator;
 import org.apache.lucene.search.positions.ConjunctionIntervalIterator;
 import org.apache.lucene.search.positions.IntervalIterator;
 import org.apache.lucene.util.ArrayUtil;
@@ -150,7 +149,7 @@ class ConjunctionScorer extends Scorer {
       throw new IllegalStateException("no positions requested for this scorer");
     }
       // only created if needed for this scorer - no penalty for non-positional queries
-    return new ConjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(collectPositions, scorersOrdered));
+    return new ConjunctionIntervalIterator(this, collectPositions, pullIterators(collectPositions, scorersOrdered));
   }
 
 

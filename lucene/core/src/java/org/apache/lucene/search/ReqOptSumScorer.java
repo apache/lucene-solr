@@ -16,7 +16,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.positions.BooleanIntervalIterator;
 import org.apache.lucene.search.positions.DisjunctionIntervalIterator;
 import org.apache.lucene.search.positions.IntervalIterator;
 
@@ -91,7 +90,7 @@ class ReqOptSumScorer extends Scorer {
 
   @Override
   public IntervalIterator positions(boolean collectPositions) throws IOException {
-    return new DisjunctionIntervalIterator(this, collectPositions, BooleanIntervalIterator.pullIterators(collectPositions, reqScorer, optScorer));
+    return new DisjunctionIntervalIterator(this, collectPositions, pullIterators(collectPositions, reqScorer, optScorer));
   }
 
   @Override

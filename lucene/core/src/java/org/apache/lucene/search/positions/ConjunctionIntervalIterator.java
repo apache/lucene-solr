@@ -31,11 +31,12 @@ import java.io.IOException;
  * 
  * @lucene.experimental
  */
-// nocommit - javadoc
-public final class ConjunctionIntervalIterator extends BooleanIntervalIterator {
+public final class ConjunctionIntervalIterator extends IntervalIterator {
+
   private final IntervalQueueAnd queue;
   private final int nrMustMatch;
   private SnapshotPositionCollector snapshot;
+  private final IntervalIterator[] iterators;
   private int rightExtremeBegin;
   
 
@@ -47,13 +48,13 @@ public final class ConjunctionIntervalIterator extends BooleanIntervalIterator {
   public ConjunctionIntervalIterator(Scorer scorer, boolean collectPositions,
       int minimuNumShouldMatch, IntervalIterator... iterators)
       throws IOException {
-    super(scorer, iterators, new IntervalQueueAnd(iterators.length),
-        collectPositions);
-    this.queue = (IntervalQueueAnd) super.queue; // avoid lots of casts?
+    super(scorer, collectPositions);
+    this.iterators = iterators;
+    this.queue = new IntervalQueueAnd(iterators.length);
     this.nrMustMatch = minimuNumShouldMatch;
   }
   
-  void advance() throws IOException {
+  private void advance() throws IOException {
     final IntervalRef top = queue.top();
     Interval interval = null;
     if ((interval = iterators[top.index].next()) != null) {
@@ -114,6 +115,11 @@ public final class ConjunctionIntervalIterator extends BooleanIntervalIterator {
       }
     }
     return docId;
+  }
+
+  @Override
+  public IntervalIterator[] subs(boolean inOrder) {
+    return iterators;
   }
   
   

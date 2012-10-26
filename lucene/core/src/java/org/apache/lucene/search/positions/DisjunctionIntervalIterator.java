@@ -16,10 +16,10 @@ package org.apache.lucene.search.positions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
-
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.positions.IntervalQueue.IntervalRef;
+
+import java.io.IOException;
 
 /**
  * DisjunctionPositionIterator based on minimal interval semantics for OR
@@ -31,15 +31,26 @@ import org.apache.lucene.search.positions.IntervalQueue.IntervalRef;
  * 
  * @lucene.experimental
  */
-// nocommit - javadoc
-public final class DisjunctionIntervalIterator extends BooleanIntervalIterator {
+public final class DisjunctionIntervalIterator extends IntervalIterator {
 
+  private final IntervalQueue queue;
+  private final IntervalIterator[] iterators;
+
+  /**
+   * Creates a new DisjunctionIntervalIterator over a set of IntervalIterators
+   * @param scorer the parent Scorer
+   * @param collectPositions true if positions will be collected
+   * @param intervals the IntervalIterators to iterate over
+   * @throws IOException
+   */
   public DisjunctionIntervalIterator(Scorer scorer, boolean collectPositions, IntervalIterator... intervals)
       throws IOException {
-    super(scorer, intervals, new IntervalQueueOr(intervals.length), collectPositions);
+    super(scorer, collectPositions);
+    this.iterators = intervals;
+    queue = new IntervalQueueOr(intervals.length);
   }
 
-  void advance() throws IOException {
+  private void advance() throws IOException {
     final IntervalRef top = queue.top();
     Interval interval = null;
     if ((interval = iterators[top.index].next()) != null) {
