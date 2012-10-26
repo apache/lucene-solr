@@ -243,7 +243,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
 
   // called by the modified version of parseProperties
   // when the myid file is missing.
-  public Long getMySeverId() {
+  public Long getMyServerId() {
     if (zkRun == null && solrPort == null) return null;
 
     Map<Long, QuorumPeer.QuorumServer> slist = getServers();
@@ -450,7 +450,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
       File myIdFile = new File(dataDir, "myid");
       if (!myIdFile.exists()) {
         ///////////////// ADDED FOR SOLR //////
-        Long myid = getMySeverId();
+        Long myid = getMyServerId();
         if (myid != null) {
           serverId = myid;
           return;
