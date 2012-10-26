@@ -657,11 +657,21 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
       print('    run tests w/ Java 6...')
       run('%s; ant test' % javaExe('1.6'), '%s/test.log' % unpackPath)
       run('%s; ant jar' % javaExe('1.6'), '%s/compile.log' % unpackPath)
-      testDemo(isSrc, version)
+      testDemo(isSrc, version, '1.6')
       # test javadocs
       print('    generate javadocs w/ Java 6...')
       run('%s; ant javadocs' % javaExe('1.6'), '%s/javadocs.log' % unpackPath)
       checkJavadocpath('%s/build/docs' % unpackPath)
+
+      print('    run tests w/ Java 7...')
+      run('%s; ant clean test' % javaExe('1.7'), '%s/test.log' % unpackPath)
+      run('%s; ant jar' % javaExe('1.7'), '%s/compile.log' % unpackPath)
+      testDemo(isSrc, version, '1.7')
+
+      print('    generate javadocs w/ Java 7...')
+      run('%s; ant javadocs' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
+      checkJavadocpathFull('%s/build/docs' % unpackPath)
+
     else:
       os.chdir('solr')
       # DISABLED until solr tests consistently pass
@@ -679,8 +689,8 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
  
       # test javadocs
       print('    generate javadocs w/ Java 7...')
-      run('%s; ant javadocs' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
-      checkJavadocpath('%s/solr/build/docs' % unpackPath, False)
+      run('%s; ant clean javadocs' % javaExe('1.7'), '%s/javadocs.log' % unpackPath)
+      checkJavadocpathFull('%s/solr/build/docs' % unpackPath, False)
 
       print('    test solr example w/ Java 6...')
       run('%s; ant clean example' % javaExe('1.6'), '%s/antexample.log' % unpackPath)
@@ -699,7 +709,8 @@ def verifyUnpacked(project, artifact, unpackPath, version, tmpDir):
     checkAllJARs(os.getcwd(), project, version)
     
     if project == 'lucene':
-      testDemo(isSrc, version)
+      testDemo(isSrc, version, '1.6')
+      testDemo(isSrc, version, '1.7')
 
     else:
       checkSolrWAR('%s/example/webapps/solr.war' % unpackPath, version)
@@ -819,6 +830,9 @@ def testSolrExample(unpackPath, javaPath, isSrc):
     
   os.chdir('..')
     
+# the weaker check: we can use this on java6 for some checks,
+# but its generated HTML is hopelessly broken so we cannot run
+# the link checking that checkJavadocpathFull does.
 def checkJavadocpath(path, failOnMissing=True):
   # check for level='package'
   # we fail here if its screwed up
@@ -831,11 +845,20 @@ def checkJavadocpath(path, failOnMissing=True):
     # raise RuntimeError('javadoc problems')
     print('\n***WARNING***: javadocs want to fail!\n')
 
+# full checks
+def checkJavadocpathFull(path, failOnMissing=True):
+  # check for missing, etc
+  checkJavadocpath(path, failOnMissing)
+
+  # also validate html/check for broken links
   if checkJavadocLinks.checkAll(path):
     raise RuntimeError('broken javadocs links found!')
 
-def testDemo(isSrc, version):
-  print('    test demo...')
+def testDemo(isSrc, version, jdk):
+  if (os.access('index', os.F_OK)):
+    shutil.rmtree('index') # nuke any index from any previous iteration
+
+  print('    test demo with %s...' % jdk)
   sep = ';' if cygwin else ':'
   if isSrc:
     cp = 'build/core/classes/java{0}build/demo/classes/java{0}build/analysis/common/classes/java{0}build/queryparser/classes/java'.format(sep)
@@ -843,8 +866,8 @@ def testDemo(isSrc, version):
   else:
     cp = 'core/lucene-core-{0}.jar{1}demo/lucene-demo-{0}.jar{1}analysis/common/lucene-analyzers-common-{0}.jar{1}queryparser/lucene-queryparser-{0}.jar'.format(version, sep)
     docsDir = 'docs'
-  run('%s; java -cp "%s" org.apache.lucene.demo.IndexFiles -index index -docs %s' % (javaExe('1.6'), cp, docsDir), 'index.log')
-  run('%s; java -cp "%s" org.apache.lucene.demo.SearchFiles -index index -query lucene' % (javaExe('1.6'), cp), 'search.log')
+  run('%s; java -cp "%s" org.apache.lucene.demo.IndexFiles -index index -docs %s' % (javaExe(jdk), cp, docsDir), 'index.log')
+  run('%s; java -cp "%s" org.apache.lucene.demo.SearchFiles -index index -query lucene' % (javaExe(jdk), cp), 'search.log')
   reMatchingDocs = re.compile('(\d+) total matching documents')
   m = reMatchingDocs.search(open('search.log', encoding='UTF-8').read())
   if m is None:
