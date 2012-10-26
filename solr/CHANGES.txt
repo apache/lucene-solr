@@ -103,6 +103,9 @@ Bug Fixes
 * SOLR-3920: Fix server list caching in CloudSolrServer when using more than one
   collection list with the same instance. (Grzegorz Sobczyk, Mark Miller)
 
+* SOLR-3938: prepareCommit command omits commitData causing a failure to trigger
+  replication to slaves. (yonik)
+
 Other Changes
 ----------------------
 
