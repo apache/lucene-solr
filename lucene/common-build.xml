@@ -181,6 +181,7 @@
   <makeurl file="${maven.dist.dir}" property="m2.repository.url" validate="false"/>
   <property name="m2.repository.private.key" value="${user.home}/.ssh/id_dsa"/>
   <property name="m2.repository.id" value="local"/>
+  <property name="m2.credentials.prompt" value="true"/>
 
   <property name="jflex.home" location="${common.dir}"/>
 
@@ -458,37 +459,24 @@
 
   <macrodef name="m2-deploy" description="Builds a Maven artifact">
   	<element name="artifact-attachments" optional="yes"/>
+    <element name="parent-poms" optional="yes"/>
+    <element name="credentials" optional="yes"/>
     <attribute name="pom.xml"/>
     <attribute name="jar.file" default="${build.dir}/${final.name}.jar"/>
     <sequential>
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
+      <parent-poms/>
       <artifact:pom id="maven.project" file="@{pom.xml}"/>
       <artifact:deploy file="@{jar.file}">
         <artifact-attachments/>
-      	<remoteRepository id="${m2.repository.id}" url="${m2.repository.url}"/>
+        <remoteRepository id="${m2.repository.id}" url="${m2.repository.url}">
+          <credentials/>
+        </remoteRepository>
         <pom refid="maven.project"/>
       </artifact:deploy>
     </sequential>
   </macrodef>
   
-  <macrodef name="m2-deploy-with-pom-template" description="Builds a Maven artifact given a POM template">
-    <attribute name="pom.xml"/>
-    <attribute name="jar.file"/>
-    <sequential>
-      <copy file="@{pom.xml}" tofile="${maven.build.dir}/pom.xml" overwrite="true">
-        <filterset begintoken="@" endtoken="@">
-          <filter token="version" value="${version}"/>
-        </filterset>
-      </copy>
-      <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
-      <artifact:pom id="maven.project" file="${maven.build.dir}/pom.xml" />
-      <artifact:deploy file="@{jar.file}">
-        <remoteRepository id="${m2.repository.id}" url="${m2.repository.url}"/>
-        <pom refid="maven.project"/>
-      </artifact:deploy>
-    </sequential>
-  </macrodef>
-	
   <!-- validate maven dependencies -->
   <macrodef name="m2-validate-dependencies">
       <attribute name="pom.xml"/>
@@ -1391,14 +1379,25 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     <sequential>
       <property name="output.build.xml" location="${build.dir}/stage_maven_build.xml"/>
       <property name="dev-tools.scripts.dir" value="../dev-tools/scripts"/>
-      <exec dir="." executable="${perl.exe}" failonerror="true" outputproperty="stage.maven.script.output">
+      <exec dir="." executable="${perl.exe}" failonerror="false" outputproperty="stage.maven.script.output"
+        resultproperty="stage.maven.script.success">
         <arg value="-CSD"/>
         <arg value="${dev-tools.scripts.dir}/write.stage.maven.build.xml.pl"/>
         <arg value="${maven.dist.dir}"/>              <!-- Maven distribution artifacts directory -->
         <arg value="${output.build.xml}"/>            <!-- Ant build file to be written -->
         <arg value="${common.dir}/common-build.xml"/> <!-- Imported from the ant file to be written -->
+        <arg value="${m2.credentials.prompt}"/>
+        <arg value="${m2.repository.id}"/>
+        <arg value="${m2.repository.url}"/>
       </exec>
       <echo message="${stage.maven.script.output}"/>
+      <fail message="maven stage script failed!">
+        <condition>
+          <not>
+            <equals arg1="${stage.maven.script.success}" arg2="0"/>
+          </not>
+        </condition>
+      </fail>
     </sequential>
     <echo>Invoking target stage-maven in ${output.build.xml} now...</echo>
     <ant target="stage-maven" antfile="${output.build.xml}" inheritall="false">
@@ -1808,6 +1807,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       <available property="gpg.input.handler" classname="org.apache.tools.ant.input.SecureInputHandler"
                  value="org.apache.tools.ant.input.SecureInputHandler"/>
       <!--else:--><property name="gpg.input.handler" value="org.apache.tools.ant.input.DefaultInputHandler"/>
+      <echo>WARNING: ON SOME PLATFORMS YOUR PASSPHRASE WILL BE ECHOED BACK!!!!!</echo>
       <input message="Enter GPG keystore password: >" addproperty="gpg.passphrase">
         <handler classname="${gpg.input.handler}" />
       </input>
