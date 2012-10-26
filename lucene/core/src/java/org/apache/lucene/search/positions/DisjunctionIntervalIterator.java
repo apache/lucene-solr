@@ -39,13 +39,13 @@ public final class DisjunctionIntervalIterator extends IntervalIterator {
   /**
    * Creates a new DisjunctionIntervalIterator over a set of IntervalIterators
    * @param scorer the parent Scorer
-   * @param collectPositions true if positions will be collected
+   * @param collectIntervals <code>true</code> if intervals will be collected
    * @param intervals the IntervalIterators to iterate over
-   * @throws IOException
+   * @throws IOException if a low-level I/O error is encountered
    */
-  public DisjunctionIntervalIterator(Scorer scorer, boolean collectPositions, IntervalIterator... intervals)
+  public DisjunctionIntervalIterator(Scorer scorer, boolean collectIntervals, IntervalIterator... intervals)
       throws IOException {
-    super(scorer, collectPositions);
+    super(scorer, collectIntervals);
     this.iterators = intervals;
     queue = new IntervalQueueOr(intervals.length);
   }
@@ -80,7 +80,7 @@ public final class DisjunctionIntervalIterator extends IntervalIterator {
 
   @Override
   public void collect(IntervalCollector collector) {
-    assert collectPositions;
+    assert collectIntervals;
     collector.collectComposite(scorer, queue.currentCandidate, docID());
     iterators[queue.top().index].collect(collector);
   }

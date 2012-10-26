@@ -138,7 +138,7 @@ class DisjunctionMaxScorer extends DisjunctionScorer {
   }
   
   @Override
-  public IntervalIterator positions(boolean collectPositions) throws IOException {
-    return new DisjunctionIntervalIterator(this, collectPositions, pullIterators(collectPositions, subScorers));
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+    return new DisjunctionIntervalIterator(this, collectIntervals, pullIterators(collectIntervals, subScorers));
   }
 }

@@ -349,8 +349,8 @@ public class CustomScoreQuery extends Query {
     }
 
     @Override
-    public IntervalIterator positions(boolean collectPositions) throws IOException {
-      return subQueryScorer.positions(collectPositions);
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+      return subQueryScorer.intervals(collectIntervals);
     }
   }
 

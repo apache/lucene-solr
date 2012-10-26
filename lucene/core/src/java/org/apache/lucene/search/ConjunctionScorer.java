@@ -144,12 +144,12 @@ class ConjunctionScorer extends Scorer {
   }
   
   @Override
-  public IntervalIterator positions(boolean collectPositions) throws IOException {
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
     if (scorersOrdered == null) {
       throw new IllegalStateException("no positions requested for this scorer");
     }
       // only created if needed for this scorer - no penalty for non-positional queries
-    return new ConjunctionIntervalIterator(this, collectPositions, pullIterators(collectPositions, scorersOrdered));
+    return new ConjunctionIntervalIterator(this, collectIntervals, pullIterators(collectIntervals, scorersOrdered));
   }
 
 

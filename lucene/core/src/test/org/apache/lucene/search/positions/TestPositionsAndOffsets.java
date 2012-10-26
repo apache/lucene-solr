@@ -104,7 +104,7 @@ public class TestPositionsAndOffsets extends LuceneTestCase {
 
     int nextDoc = scorer.nextDoc();
     assertEquals(0, nextDoc);
-    IntervalIterator positions = scorer.positions(false);
+    IntervalIterator positions = scorer.intervals(false);
     int startOffsets[] = expectedOffsets[0];
     int endOffsets[] = expectedOffsets[1];
 

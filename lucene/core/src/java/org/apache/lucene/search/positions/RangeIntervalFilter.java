@@ -40,8 +40,8 @@ public class RangeIntervalFilter implements IntervalFilter {
   }
 
   @Override
-  public IntervalIterator filter(boolean collectPositions, IntervalIterator iter) {
-    return new RangeIntervalIterator(collectPositions, iter);
+  public IntervalIterator filter(boolean collectIntervals, IntervalIterator iter) {
+    return new RangeIntervalIterator(collectIntervals, iter);
   }
 
   /**
@@ -53,8 +53,8 @@ public class RangeIntervalFilter implements IntervalFilter {
     private final IntervalIterator iterator;
     private Interval interval;
 
-    RangeIntervalIterator(boolean collectPositions, IntervalIterator iter) {
-      super(iter == null ? null : iter.scorer, collectPositions);
+    RangeIntervalIterator(boolean collectIntervals, IntervalIterator iter) {
+      super(iter == null ? null : iter.scorer, collectIntervals);
       this.iterator = iter;
     }
 
@@ -77,7 +77,7 @@ public class RangeIntervalFilter implements IntervalFilter {
 
     @Override
     public void collect(IntervalCollector collector) {
-      assert collectPositions;
+      assert collectIntervals;
       collector.collectComposite(null, interval, iterator.docID());
       iterator.collect(collector);
     }

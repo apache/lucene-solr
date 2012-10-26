@@ -192,7 +192,7 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
       super(weight);
       this.other = other;
       this.subtracted = subtracted;
-      this.filter = new BrouwerianIntervalIterator(other, false, other.positions(false), subtracted.positions(false));
+      this.filter = new BrouwerianIntervalIterator(other, false, other.intervals(false), subtracted.intervals(false));
       this.factory = factory;
     }
 
@@ -202,12 +202,12 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
     }
 
     @Override
-    public IntervalIterator positions(boolean collectPositions) throws IOException {
-      if (collectPositions) {
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+      if (collectIntervals) {
         final Scorer minuted  = factory.minutedScorer();
         final Scorer subtracted = factory.subtractedScorer();
-        final BrouwerianIntervalIterator brouwerianIntervalIterator = new BrouwerianIntervalIterator(subtracted, true, minuted.positions(true), subtracted.positions(true));
-        return new IntervalIterator(this, collectPositions) {
+        final BrouwerianIntervalIterator brouwerianIntervalIterator = new BrouwerianIntervalIterator(subtracted, true, minuted.intervals(true), subtracted.intervals(true));
+        return new IntervalIterator(this, collectIntervals) {
 
           @Override
           public int scorerAdvanced(int docId) throws IOException {

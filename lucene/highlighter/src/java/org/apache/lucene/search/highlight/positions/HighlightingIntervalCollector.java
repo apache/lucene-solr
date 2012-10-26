@@ -72,7 +72,7 @@ public class HighlightingIntervalCollector extends Collector implements Interval
 
   public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
-    positions = scorer.positions(true);
+    positions = scorer.intervals(true);
     // If we want to visit the other scorers, we can, here...
   }
   

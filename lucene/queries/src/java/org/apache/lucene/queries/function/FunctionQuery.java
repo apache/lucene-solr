@@ -177,7 +177,7 @@ public class FunctionQuery extends Query {
     }
 
     @Override
-    public IntervalIterator positions(boolean collectPositions) throws IOException {
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       throw new UnsupportedOperationException();
       //nocommit - is that correct here?
     }

@@ -133,7 +133,7 @@ class ReqExclScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator positions(boolean collectPositions) throws IOException {
-    return new ConjunctionIntervalIterator(this, collectPositions, reqScorer.positions(collectPositions));
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+    return new ConjunctionIntervalIterator(this, collectIntervals, reqScorer.intervals(collectIntervals));
   }
 }

@@ -537,8 +537,8 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   public static class BlockPositionIteratorFilter implements IntervalFilter {
 
     @Override
-    public IntervalIterator filter(boolean collectPositions, IntervalIterator iter) {
-      return new BlockIntervalIterator(collectPositions, iter);
+    public IntervalIterator filter(boolean collectIntervals, IntervalIterator iter) {
+      return new BlockIntervalIterator(collectIntervals, iter);
     }
     
   }

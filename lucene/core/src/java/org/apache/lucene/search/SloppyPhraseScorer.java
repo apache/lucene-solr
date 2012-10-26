@@ -542,7 +542,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
   }
 
   @Override
-  public IntervalIterator positions(boolean collectPositions) throws IOException {
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
     // nocommit - payloads?
     Map<Term, IterAndOffsets> map = new HashMap<Term, IterAndOffsets>();
     List<DocsAndPositionsEnum> enums = new ArrayList<DocsAndPositionsEnum>();
@@ -563,7 +563,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
             .docsAndPositionsEnum();
         enums.add(docsAndPosEnum);
         iterAndOffset = new IterAndOffsets(new TermIntervalIterator(this, docsAndPosEnum, false,
-            collectPositions));
+            collectIntervals));
         map.put(term, iterAndOffset);
       } else {
         iterAndOffset = map.get(term);
@@ -575,9 +575,9 @@ final class SloppyPhraseScorer extends PhraseScorer {
     IntervalIterator[] iters = new IntervalIterator[values.size()];
     int i = 0;
     for (IterAndOffsets iterAndOffsets : values) {
-      iters[i++] = SloppyIntervalIterator.create(this, collectPositions, iterAndOffsets.iter, iterAndOffsets.toIntArray());
+      iters[i++] = SloppyIntervalIterator.create(this, collectIntervals, iterAndOffsets.iter, iterAndOffsets.toIntArray());
     }
-    return new AdvancingIntervalIterator(this, collectPositions, enums.toArray(new DocsAndPositionsEnum[enums.size()]), new SloppyIntervalIterator(this, slop, collectPositions, iters));
+    return new AdvancingIntervalIterator(this, collectIntervals, enums.toArray(new DocsAndPositionsEnum[enums.size()]), new SloppyIntervalIterator(this, slop, collectIntervals, iters));
   }
   
   

@@ -117,7 +117,7 @@ public class TestBlockIntervalIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(0, nextDoc);
-        IntervalIterator positions = new BlockIntervalIterator(false, scorer.positions(false));
+        IntervalIterator positions = new BlockIntervalIterator(false, scorer.intervals(false));
         assertEquals(0, positions.scorerAdvanced(0));
         Interval interval = null;
         int[] start = new int[] {0, 31};
@@ -136,7 +136,7 @@ public class TestBlockIntervalIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(1, nextDoc);
-        IntervalIterator positions =  new BlockIntervalIterator(false, scorer.positions(false));
+        IntervalIterator positions =  new BlockIntervalIterator(false, scorer.intervals(false));
         assertEquals(1, positions.scorerAdvanced(1));
         Interval interval = null;
         int[] start = new int[] {3, 34};
@@ -163,8 +163,8 @@ public class TestBlockIntervalIterator extends LuceneTestCase {
   public static class BlockPositionIteratorFilter implements IntervalFilter {
 
     @Override
-    public IntervalIterator filter(boolean collectPositions, IntervalIterator iter) {
-      return new BlockIntervalIterator(collectPositions, iter);
+    public IntervalIterator filter(boolean collectIntervals, IntervalIterator iter) {
+      return new BlockIntervalIterator(collectIntervals, iter);
     }
     
   }

@@ -137,15 +137,15 @@ class ConjunctionTermScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator positions(boolean collectPositions) throws IOException {
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
     
     TermIntervalIterator[] positionIters = new TermIntervalIterator[origDocsAndFreqs.length];
     for (int i = 0; i < positionIters.length; i++) {
       DocsAndFreqs d = origDocsAndFreqs[i];
       assert d.docs instanceof DocsAndPositionsEnum;
-      positionIters[i] = new TermIntervalIterator(this, (DocsAndPositionsEnum)d.docs, false, collectPositions);
+      positionIters[i] = new TermIntervalIterator(this, (DocsAndPositionsEnum)d.docs, false, collectIntervals);
     }
-    return new ConjunctionIntervalIterator(this, collectPositions, positionIters);
+    return new ConjunctionIntervalIterator(this, collectIntervals, positionIters);
   }
 
 }

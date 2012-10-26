@@ -36,12 +36,12 @@ public final class OrderedConjunctionIntervalIterator extends
 
   private SnapshotPositionCollector snapshot = null;
 
-  public OrderedConjunctionIntervalIterator(boolean collectPositions, IntervalIterator other) {
-    this(other.scorer, collectPositions, other.subs(true));
+  public OrderedConjunctionIntervalIterator(boolean collectIntervals, IntervalIterator other) {
+    this(other.scorer, collectIntervals, other.subs(true));
   }
   
-  public OrderedConjunctionIntervalIterator(Scorer scorer, boolean collectPositions, IntervalIterator... iterators) {
-    super(scorer, collectPositions);
+  public OrderedConjunctionIntervalIterator(Scorer scorer, boolean collectIntervals, IntervalIterator... iterators) {
+    super(scorer, collectIntervals);
     this.iterators = iterators;
     assert iterators.length > 1;
     intervals = new Interval[iterators.length];
@@ -78,7 +78,7 @@ public final class OrderedConjunctionIntervalIterator extends
       matchDistance = (intervals[lastIter].begin - lastIter) - intervals[0].end;
       b = intervals[lastIter].begin;
       index = 1;
-      if (collectPositions)
+      if (collectIntervals)
         snapshotSubPositions();
       intervals[0] = iterators[0].next();
       if (intervals[0] == null) {
@@ -94,7 +94,7 @@ public final class OrderedConjunctionIntervalIterator extends
 
   @Override
   public void collect(IntervalCollector collector) {
-    assert collectPositions;
+    assert collectIntervals;
     if (snapshot == null) {
       // we might not be initialized if the first interval matches
       collectInternal(collector);
@@ -112,7 +112,7 @@ public final class OrderedConjunctionIntervalIterator extends
   }
 
   private void collectInternal(IntervalCollector collector) {
-    assert collectPositions;
+    assert collectIntervals;
     collector.collectComposite(scorer, interval, docID());
     for (IntervalIterator iter : iterators) {
       iter.collect(collector);

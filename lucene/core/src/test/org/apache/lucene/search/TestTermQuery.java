@@ -43,7 +43,7 @@ public class TestTermQuery extends LuceneTestCase {
   private String fieldName = "field";
 
   /**
-   * Simple testcase for {@link TermScorer#positions(boolean)}
+   * Simple testcase for {@link TermScorer#intervals(boolean)}
    */
   public void testPositionsSimple() throws IOException {
     Directory directory = newDirectory();
@@ -82,7 +82,7 @@ public class TestTermQuery extends LuceneTestCase {
         assertNotNull(scorer);
         int toDoc = 1 + random().nextInt(atomicReaderContext.reader().docFreq(new Term(fieldName, "1")) - 1 );
         final int advance = scorer.advance(toDoc);
-        IntervalIterator positions = scorer.positions(false);
+        IntervalIterator positions = scorer.intervals(false);
 
         do {
           assertEquals(scorer.docID(), positions.scorerAdvanced(scorer.docID()));
@@ -189,7 +189,7 @@ public class TestTermQuery extends LuceneTestCase {
           if (docID == Scorer.NO_MORE_DOCS) {
             break;
           }
-          IntervalIterator positions = scorer.positions(false);
+          IntervalIterator positions = scorer.intervals(false);
           Integer[] pos = positionsInDoc[atomicReaderContext.docBase + docID];
 
           assertEquals((float) pos.length, positions.getScorer().freq(), 0.0f);
@@ -271,7 +271,7 @@ public class TestTermQuery extends LuceneTestCase {
           initDoc = scorer.advance(random().nextInt(maxDoc));
         }
         String msg = "Iteration: " + i + " initDoc: " + initDoc;
-        IntervalIterator positions = scorer.positions(false);
+        IntervalIterator positions = scorer.intervals(false);
         assertEquals(howMany / 2.f, positions.getScorer().freq(), 0.0);
         assertEquals(scorer.docID(), positions.scorerAdvanced(scorer.docID()));
         for (int j = 0; j < howMany; j += 2) {

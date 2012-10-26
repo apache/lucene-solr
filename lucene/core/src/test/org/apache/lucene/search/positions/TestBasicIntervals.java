@@ -185,7 +185,7 @@ public class TestBasicIntervals extends LuceneTestCase {
    
    Scorer scorer = createWeight.scorer(r.getContext(), random()
        .nextBoolean(), true, PostingFeatures.POSITIONS, r.getLiveDocs());
-   IntervalIterator positions = scorer.positions(false);
+   IntervalIterator positions = scorer.intervals(false);
    positions.scorer.advance(11);
    positions.scorerAdvanced(11);
    Interval interval = positions.next();
@@ -207,8 +207,8 @@ public class TestBasicIntervals extends LuceneTestCase {
   public static class BlockPositionIteratorFilter implements IntervalFilter {
 
     @Override
-    public IntervalIterator filter(boolean collectPositions, IntervalIterator iter) {
-      return new BlockIntervalIterator(collectPositions, iter);
+    public IntervalIterator filter(boolean collectIntervals, IntervalIterator iter) {
+      return new BlockIntervalIterator(collectIntervals, iter);
     }
     
   }
@@ -229,7 +229,7 @@ public class TestBasicIntervals extends LuceneTestCase {
       
       Scorer scorer = createWeight.scorer(r.getContext(), random()
           .nextBoolean(), true, PostingFeatures.POSITIONS, r.getLiveDocs());
-      IntervalIterator positions = scorer.positions(false);
+      IntervalIterator positions = scorer.intervals(false);
       advanceIter(positions, 4);
 
       Interval interval = positions.next();
@@ -290,7 +290,7 @@ public class TestBasicIntervals extends LuceneTestCase {
       Scorer scorer = createWeight.scorer(r.getContext(), random()
           .nextBoolean(), true, PostingFeatures.POSITIONS, r.getLiveDocs());
       
-      IntervalIterator iterator = scorer.positions(false);
+      IntervalIterator iterator = scorer.intervals(false);
       assertEquals(4, advanceIter(iterator, 4));
       Interval interval = iterator.next();
 
@@ -350,7 +350,7 @@ public class TestBasicIntervals extends LuceneTestCase {
     Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
     
     Scorer scorer = createWeight.scorer(r.getContext(), true, true, PostingFeatures.POSITIONS, r.getLiveDocs());
-    return scorer.positions(false);
+    return scorer.intervals(false);
   }
   
   private IntervalIterator tstNextPosition(

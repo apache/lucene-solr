@@ -141,8 +141,8 @@ abstract class PhraseScorer extends Scorer {
   
   final static class AdvancingIntervalIterator extends IntervalIterator {
 
-    public AdvancingIntervalIterator(Scorer scorer, boolean collectPositions, final DocsAndPositionsEnum[] enums, final IntervalIterator delegate) {
-      super(scorer, collectPositions);
+    public AdvancingIntervalIterator(Scorer scorer, boolean collectIntervals, final DocsAndPositionsEnum[] enums, final IntervalIterator delegate) {
+      super(scorer, collectIntervals);
       this.enums = enums;
       this.delegate = delegate;
     }

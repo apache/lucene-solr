@@ -327,12 +327,12 @@ final class ExactPhraseScorer extends Scorer {
   }
   
   @Override
-  public IntervalIterator positions(boolean collectPositions) throws IOException {
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
     TermIntervalIterator[] posIters = new TermIntervalIterator[chunkStates.length];
     DocsAndPositionsEnum[] enums = new DocsAndPositionsEnum[chunkStates.length];
     for (int i = 0; i < chunkStates.length; i++) {
-      posIters[i] = new TermIntervalIterator(this, enums[i] = chunkStates[i].factory.docsAndPositionsEnum(), false, collectPositions);
+      posIters[i] = new TermIntervalIterator(this, enums[i] = chunkStates[i].factory.docsAndPositionsEnum(), false, collectIntervals);
     }
-    return new PhraseScorer.AdvancingIntervalIterator(this, collectPositions, enums, new BlockIntervalIterator(this, collectPositions, posIters));
+    return new PhraseScorer.AdvancingIntervalIterator(this, collectIntervals, enums, new BlockIntervalIterator(this, collectIntervals, posIters));
   }
 }

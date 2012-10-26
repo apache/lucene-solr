@@ -29,11 +29,11 @@ public class SloppyIntervalIterator extends IntervalIterator {
   private final IntervalIterator iterator;
   
   public SloppyIntervalIterator(Scorer scorer, int maxLength,
-      boolean collectPositions, IntervalIterator... iterators)
+      boolean collectIntervals, IntervalIterator... iterators)
       throws IOException {
-    super(scorer, collectPositions);
+    super(scorer, collectIntervals);
     this.maxLen = maxLength;
-    this.iterator = new ConjunctionIntervalIterator(scorer, collectPositions, iterators);
+    this.iterator = new ConjunctionIntervalIterator(scorer, collectIntervals, iterators);
   }
   
   @Override
@@ -62,12 +62,12 @@ public class SloppyIntervalIterator extends IntervalIterator {
     return matchDistance;
   }
   
-  public static IntervalIterator create(Scorer scorer, boolean collectPositions,
+  public static IntervalIterator create(Scorer scorer, boolean collectIntervals,
         IntervalIterator iterator, int... offsets) {
     if (offsets.length == 1) {
-      return new SingleSlopplyIntervalIterator(scorer, collectPositions, iterator, offsets[0]);
+      return new SingleSlopplyIntervalIterator(scorer, collectIntervals, iterator, offsets[0]);
     } else {
-      return new SloppyGroupIntervalIterator(scorer, collectPositions, iterator, offsets);
+      return new SloppyGroupIntervalIterator(scorer, collectIntervals, iterator, offsets);
     }
     
   }
@@ -80,8 +80,8 @@ public class SloppyIntervalIterator extends IntervalIterator {
     private int offset;
     
     public SingleSlopplyIntervalIterator(Scorer scorer,
-        boolean collectPositions, IntervalIterator iterator, int offset) {
-      super(scorer, collectPositions);
+        boolean collectIntervals, IntervalIterator iterator, int offset) {
+      super(scorer, collectIntervals);
       this.iterator = iterator;
       this.offset = offset;
     }
@@ -130,9 +130,9 @@ public class SloppyIntervalIterator extends IntervalIterator {
     private int currentIndex;
     private boolean initialized;
     
-    public SloppyGroupIntervalIterator(Scorer scorer, boolean collectPositions,
+    public SloppyGroupIntervalIterator(Scorer scorer, boolean collectIntervals,
         IntervalIterator groupIterator, int... offsets) {
-      super(scorer, collectPositions);
+      super(scorer, collectIntervals);
       this.offsets = offsets;
       this.groupIterator = groupIterator;
       this.intervalPositions = new Interval[offsets.length];
@@ -214,7 +214,7 @@ public class SloppyIntervalIterator extends IntervalIterator {
   
   @Override
   public void collect(IntervalCollector collector) {
-    assert collectPositions;
+    assert collectIntervals;
     this.iterator.collect(collector);
     
   }

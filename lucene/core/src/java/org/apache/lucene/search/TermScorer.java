@@ -97,9 +97,9 @@ final class TermScorer extends Scorer {
   public String toString() { return "scorer(" + weight + ")"; }
   
   @Override
-  public IntervalIterator positions(boolean collectPositions) throws IOException {
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
     assert docsEnum instanceof DocsAndPositionsEnum;
-    return new TermIntervalIterator(this, (DocsAndPositionsEnum) docsEnum, false, collectPositions);
+    return new TermIntervalIterator(this, (DocsAndPositionsEnum) docsEnum, false, collectIntervals);
   }
   // TODO: benchmark if the specialized conjunction really benefits
   // from this, or if instead its from sorting by docFreq, or both

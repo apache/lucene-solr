@@ -28,8 +28,8 @@ public class BrouwerianIntervalIterator extends IntervalIterator {
   private Interval subtractedInterval = new Interval();
   private Interval currentInterval = new Interval();
 
-  public BrouwerianIntervalIterator(Scorer scorer, boolean collectPositions, IntervalIterator minuted, IntervalIterator subtracted) {
-    super(scorer, collectPositions);
+  public BrouwerianIntervalIterator(Scorer scorer, boolean collectIntervals, IntervalIterator minuted, IntervalIterator subtracted) {
+    super(scorer, collectIntervals);
     this.minuted = minuted;
     this.subtracted = subtracted;
   }
@@ -60,7 +60,7 @@ public class BrouwerianIntervalIterator extends IntervalIterator {
   
   @Override
   public void collect(IntervalCollector collector) {
-    assert collectPositions;
+    assert collectIntervals;
     collector.collectComposite(scorer, currentInterval, docID());
     minuted.collect(collector);
     

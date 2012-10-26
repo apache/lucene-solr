@@ -213,9 +213,9 @@ public class FilteredQuery extends Query {
     }
 
     @Override
-    public IntervalIterator positions(boolean collectPositions)
+    public IntervalIterator intervals(boolean collectIntervals)
         throws IOException {
-      return scorer.positions(collectPositions);
+      return scorer.intervals(collectIntervals);
     }
   }
   
@@ -313,9 +313,9 @@ public class FilteredQuery extends Query {
     }
 
     @Override
-    public IntervalIterator positions(boolean collectPositions)
+    public IntervalIterator intervals(boolean collectIntervals)
         throws IOException {
-      return scorer.positions(collectPositions);
+      return scorer.intervals(collectIntervals);
     }
   }
   

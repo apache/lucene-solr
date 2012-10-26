@@ -26,9 +26,9 @@ public class WithinOrderedFilter implements IntervalFilter {
   }
 
   @Override
-  public IntervalIterator filter(boolean collectPositions, IntervalIterator iter) {
-    return new WithinIntervalIterator(collectPositions, slop,
-        new OrderedConjunctionIntervalIterator(collectPositions, iter));
+  public IntervalIterator filter(boolean collectIntervals, IntervalIterator iter) {
+    return new WithinIntervalIterator(collectIntervals, slop,
+        new OrderedConjunctionIntervalIterator(collectIntervals, iter));
   }
 
   @Override

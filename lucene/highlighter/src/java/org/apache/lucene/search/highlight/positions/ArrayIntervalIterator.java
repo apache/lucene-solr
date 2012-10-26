@@ -53,7 +53,7 @@ public class ArrayIntervalIterator extends IntervalIterator {
 
   @Override
   public void collect(IntervalCollector collector) {
-    assert collectPositions;
+    assert collectIntervals;
   }
 
   @Override

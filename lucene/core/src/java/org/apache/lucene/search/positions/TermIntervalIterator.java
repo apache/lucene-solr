@@ -38,11 +38,11 @@ public final class TermIntervalIterator extends IntervalIterator {
    * @param scorer the parent Scorer
    * @param docsAndPos a DocsAndPositionsEnum positioned on the current document
    * @param doPayloads true if payloads should be retrieved for the positions
-   * @param collectPositions true if positions will be collected
+   * @param collectIntervals true if positions will be collected
    */
   public TermIntervalIterator(Scorer scorer, DocsAndPositionsEnum docsAndPos,
-                              boolean doPayloads, boolean collectPositions) {
-    super(scorer, collectPositions);
+                              boolean doPayloads, boolean collectIntervals) {
+    super(scorer, collectIntervals);
     this.docsAndPos = docsAndPos;
     this.interval = doPayloads ? new PayloadInterval(docsAndPos, this)
         : new Interval();

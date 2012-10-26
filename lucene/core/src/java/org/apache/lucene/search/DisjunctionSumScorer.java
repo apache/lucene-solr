@@ -172,11 +172,11 @@ class DisjunctionSumScorer extends DisjunctionScorer {
   }
   
   @Override
-  public IntervalIterator positions(boolean collectPositions) throws IOException {
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
     if (minimumNrMatchers > 1) {
       return new ConjunctionIntervalIterator(this,
-          collectPositions, minimumNrMatchers, pullIterators(collectPositions, subScorers));
+          collectIntervals, minimumNrMatchers, pullIterators(collectIntervals, subScorers));
     }
-    return new DisjunctionIntervalIterator(this, collectPositions, pullIterators(collectPositions, subScorers));
+    return new DisjunctionIntervalIterator(this, collectIntervals, pullIterators(collectIntervals, subScorers));
   }
 }

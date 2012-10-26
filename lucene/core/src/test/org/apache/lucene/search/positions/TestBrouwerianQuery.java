@@ -136,7 +136,7 @@ public class TestBrouwerianQuery extends LuceneTestCase {
     assertEquals(1, leaves.size());
     for (AtomicReaderContext atomicReaderContext : leaves) {
       Scorer scorer = weight.scorer(atomicReaderContext, true, true, PostingFeatures.POSITIONS, atomicReaderContext.reader().getLiveDocs());
-        IntervalIterator positions = scorer.positions(false);
+        IntervalIterator positions = scorer.intervals(false);
         int nextDoc = scorer.nextDoc();
         assertEquals(1, positions.scorerAdvanced(nextDoc));
 

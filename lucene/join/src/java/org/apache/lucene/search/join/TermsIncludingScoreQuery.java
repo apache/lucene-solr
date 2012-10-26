@@ -219,7 +219,7 @@ class TermsIncludingScoreQuery extends Query {
       return docId;
     }
     @Override
-    public IntervalIterator positions(boolean collectPositions) throws IOException {
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       throw new UnsupportedOperationException();
     }
 
@@ -340,7 +340,7 @@ class TermsIncludingScoreQuery extends Query {
     }
 
     @Override
-    public IntervalIterator positions(boolean collectPositions)
+    public IntervalIterator intervals(boolean collectIntervals)
         throws IOException {
       return null;
     }

@@ -545,9 +545,9 @@ class JoinQuery extends Query {
     }
 
     @Override
-    public IntervalIterator positions(boolean collectPositions) throws IOException {
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       if (iter instanceof Scorer) {
-        return ((Scorer) iter).positions(collectPositions);
+        return ((Scorer) iter).intervals(collectIntervals);
       }
       throw new UnsupportedOperationException("Positions are only supported for Scorers");
 

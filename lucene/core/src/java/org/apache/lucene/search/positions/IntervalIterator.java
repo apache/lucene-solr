@@ -37,16 +37,16 @@ public abstract class IntervalIterator {
   public static final int NO_MORE_DOCS = Integer.MAX_VALUE;
 
   protected final Scorer scorer;
-  protected final boolean collectPositions;
+  protected final boolean collectIntervals;
 
   /**
    * Constructs an IntervalIterator over a {@link Scorer}
    * @param scorer the {@link Scorer} to pull positions from
-   * @param collectPositions true if positions will be collected
+   * @param collectIntervals true if positions will be collected
    */
-  public IntervalIterator(Scorer scorer, boolean collectPositions) {
+  public IntervalIterator(Scorer scorer, boolean collectIntervals) {
     this.scorer = scorer;
-    this.collectPositions = collectPositions;
+    this.collectIntervals = collectIntervals;
   }
 
   /**
@@ -68,17 +68,21 @@ public abstract class IntervalIterator {
   public abstract Interval next() throws IOException;
 
   /**
-   * If positions are to be collected, this will be called once
+   * If intervals are to be collected, this will be called once
    * for each Interval returned by the iterator.  The constructor
-   * must have been called with collectPositions=true.
+   * must have been called with collectIntervals=true.
    * @param collector an {@link IntervalCollector} to collect the
    *                  Interval positions
+   * @see Scorer#intervals(boolean)                 
    */
   public abstract void collect(IntervalCollector collector);
-
+  
   /**
-   * Get any subiterators
-   * @param inOrder true if the subiterators should be returned in order
+   * Get any sub-iterators
+   * 
+   * @param inOrder
+   *          true if the sub-iterators should be returned in the same order the
+   *          queries were provided
    */
   public abstract IntervalIterator[] subs(boolean inOrder);
 

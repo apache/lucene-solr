@@ -111,7 +111,7 @@ public class TestOrderedConjunctionIntervalIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(0, nextDoc);
-        IntervalIterator positions = new OrderedConjunctionIntervalIterator(false, scorer.positions(false));
+        IntervalIterator positions = new OrderedConjunctionIntervalIterator(false, scorer.intervals(false));
         assertEquals(0, positions.scorerAdvanced(nextDoc));
         Interval interval = null;
         int[] start = new int[] {0, 31};
@@ -132,7 +132,7 @@ public class TestOrderedConjunctionIntervalIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(1, nextDoc);
-        IntervalIterator positions = new OrderedConjunctionIntervalIterator(false, scorer.positions(false));
+        IntervalIterator positions = new OrderedConjunctionIntervalIterator(false, scorer.intervals(false));
         assertEquals(1, positions.scorerAdvanced(nextDoc));
         Interval interval = null;
         int[] start = new int[] {3, 34};
@@ -156,8 +156,8 @@ public class TestOrderedConjunctionIntervalIterator extends LuceneTestCase {
   public static class OrderedConjunctionPositionIteratorFilter implements IntervalFilter {
 
     @Override
-    public IntervalIterator filter(boolean collectPositions, IntervalIterator iter) {
-      return new OrderedConjunctionIntervalIterator(collectPositions, iter);
+    public IntervalIterator filter(boolean collectIntervals, IntervalIterator iter) {
+      return new OrderedConjunctionIntervalIterator(collectIntervals, iter);
     }
     
   }

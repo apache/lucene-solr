@@ -64,28 +64,36 @@ public abstract class Scorer extends DocIdSetIterator {
       collector.collect(doc);
     }
   }
-
+  
   /**
-   * Expert: Collects matching positions on the current document.
-   *
-   * @param collectPositions // nocommit, still not sure what this does!
-   * @return an {@link IntervalIterator} over matching positions
-   * @throws IOException if a low-level I/O error is encountered
+   * Expert: Retrieves an {@link IntervalIterator} for this scorer allowing
+   * access to position and offset intervals for each matching document. The
+   * returned iterator is aligned with the scorer that created the iterator and
+   * should only be advanced to the currently matched document.
+   * 
+   * @param collectIntervals
+   *          if <code>true</code> the {@link IntervalIterator} can we used to
+   *          collect all individual sub-intervals this {@link IntervalIterator}
+   *          is composed of via
+   *          {@link IntervalIterator#collect(org.apache.lucene.search.positions.IntervalCollector)}
+   * @return an {@link IntervalIterator} over matching intervals
+   * @throws IOException
+   *           if a low-level I/O error is encountered
    */
-  public abstract IntervalIterator positions(boolean collectPositions) throws IOException;
+  public abstract IntervalIterator intervals(boolean collectIntervals) throws IOException;
 
   /**
    * Get the IntervalIterators from a list of scorers
-   * @param collectPositions true if positions will be collected
+   * @param collectIntervals true if positions will be collected
    * @param scorers the list of scorers to retrieve IntervalIterators from
    * @return a list of IntervalIterators pulled from the passed in Scorers
-   * @throws java.io.IOException
+   * @throws java.io.IOException if a low-evel I/O error is encountered
    */
-  public static IntervalIterator[] pullIterators(boolean collectPositions, Scorer... scorers)
+  public static IntervalIterator[] pullIterators(boolean collectIntervals, Scorer... scorers)
       throws IOException {
     IntervalIterator[] iterators = new IntervalIterator[scorers.length];
     for (int i = 0; i < scorers.length; i++) {
-      iterators[i] = scorers[i].positions(collectPositions);
+      iterators[i] = scorers[i].intervals(collectIntervals);
     }
     return iterators;
   }

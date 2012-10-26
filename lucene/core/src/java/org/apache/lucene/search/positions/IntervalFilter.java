@@ -24,11 +24,11 @@ public interface IntervalFilter {
 
   /**
    * Filter the passed in IntervalIterator
-   * @param collectPositions true if the returned {@link IntervalIterator} will
+   * @param collectIntervals true if the returned {@link IntervalIterator} will
    *                         be passed to an {@link IntervalCollector}
    * @param iter the {@link IntervalIterator} to filter
    * @return a filtered {@link IntervalIterator}
    */
-  public abstract IntervalIterator filter(boolean collectPositions, IntervalIterator iter);
+  public abstract IntervalIterator filter(boolean collectIntervals, IntervalIterator iter);
 
 }

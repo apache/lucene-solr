@@ -38,12 +38,12 @@ public final class BlockIntervalIterator extends IntervalIterator {
 
   private final int lastIter;
 
-  public BlockIntervalIterator(boolean collectPositions, IntervalIterator other) {
-    this(other, collectPositions, defaultGaps(other.subs(true).length));
+  public BlockIntervalIterator(boolean collectIntervals, IntervalIterator other) {
+    this(other, collectIntervals, defaultGaps(other.subs(true).length));
   }
 
-  public BlockIntervalIterator(IntervalIterator other, boolean collectPositions, int[] gaps) {
-    super(other.getScorer(), collectPositions);
+  public BlockIntervalIterator(IntervalIterator other, boolean collectIntervals, int[] gaps) {
+    super(other.getScorer(), collectIntervals);
     assert other.subs(true) != null;
     iterators = other.subs(true);
     assert iterators.length > 1;
@@ -52,9 +52,9 @@ public final class BlockIntervalIterator extends IntervalIterator {
     this.gaps = gaps;
   }
 
-  public BlockIntervalIterator(Scorer scorer, boolean collectPositions, Scorer... subScorers)
+  public BlockIntervalIterator(Scorer scorer, boolean collectIntervals, Scorer... subScorers)
       throws IOException {
-    this(scorer, collectPositions, defaultGaps(subScorers.length), subScorers);
+    this(scorer, collectIntervals, defaultGaps(subScorers.length), subScorers);
   }
 
   private static int[] defaultGaps(int num) {
@@ -63,22 +63,22 @@ public final class BlockIntervalIterator extends IntervalIterator {
     return gaps;
   }
 
-  public BlockIntervalIterator(Scorer scorer,  boolean collectPositions, int[] gaps, Scorer... subScorers)
+  public BlockIntervalIterator(Scorer scorer,  boolean collectIntervals, int[] gaps, Scorer... subScorers)
       throws IOException {
-    super(scorer, collectPositions);
+    super(scorer, collectIntervals);
     assert subScorers.length > 1;
     iterators = new IntervalIterator[subScorers.length];
     intervals = new Interval[subScorers.length];
     for (int i = 0; i < subScorers.length; i++) {
-      iterators[i] = subScorers[i].positions(collectPositions);
+      iterators[i] = subScorers[i].intervals(collectIntervals);
       assert iterators[i] != null;
     }
     lastIter = iterators.length - 1;
     this.gaps = gaps;
   }
 
-  public BlockIntervalIterator(Scorer scorer, int[] gaps, boolean collectPositions, IntervalIterator... iterators) {
-    super(scorer, collectPositions);
+  public BlockIntervalIterator(Scorer scorer, int[] gaps, boolean collectIntervals, IntervalIterator... iterators) {
+    super(scorer, collectIntervals);
     assert iterators.length > 1;
     this.iterators = iterators;
     intervals = new Interval[iterators.length];
@@ -86,8 +86,8 @@ public final class BlockIntervalIterator extends IntervalIterator {
     this.gaps = gaps;
   }
 
-  public BlockIntervalIterator(Scorer scorer, boolean collectPositions, IntervalIterator... iterators) {
-    this(scorer, defaultGaps(iterators.length), collectPositions, iterators);
+  public BlockIntervalIterator(Scorer scorer, boolean collectIntervals, IntervalIterator... iterators) {
+    this(scorer, defaultGaps(iterators.length), collectIntervals, iterators);
   }
 
   @Override
@@ -135,7 +135,7 @@ public final class BlockIntervalIterator extends IntervalIterator {
 
   @Override
   public void collect(IntervalCollector collector) {
-    assert collectPositions;
+    assert collectIntervals;
     collector.collectComposite(scorer, interval, docID());
     for (IntervalIterator iter : iterators) {
       iter.collect(collector);

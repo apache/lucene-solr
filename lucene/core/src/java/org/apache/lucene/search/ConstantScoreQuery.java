@@ -258,9 +258,9 @@ public class ConstantScoreQuery extends Query {
     }
         
     @Override
-    public IntervalIterator positions(boolean collectPositions) throws IOException {
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       if (docIdSetIterator instanceof Scorer) {
-        return ((Scorer) docIdSetIterator).positions(collectPositions);
+        return ((Scorer) docIdSetIterator).intervals(collectIntervals);
       } else {
         throw new UnsupportedOperationException("positions are only supported on Scorer subclasses");
       }

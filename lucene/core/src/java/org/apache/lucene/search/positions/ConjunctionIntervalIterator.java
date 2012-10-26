@@ -40,15 +40,15 @@ public final class ConjunctionIntervalIterator extends IntervalIterator {
   private int rightExtremeBegin;
   
 
-  public ConjunctionIntervalIterator(Scorer scorer, boolean collectPositions,
+  public ConjunctionIntervalIterator(Scorer scorer, boolean collectIntervals,
       IntervalIterator... iterators) throws IOException {
-    this(scorer, collectPositions, iterators.length, iterators);
+    this(scorer, collectIntervals, iterators.length, iterators);
   }
   
-  public ConjunctionIntervalIterator(Scorer scorer, boolean collectPositions,
+  public ConjunctionIntervalIterator(Scorer scorer, boolean collectIntervals,
       int minimuNumShouldMatch, IntervalIterator... iterators)
       throws IOException {
-    super(scorer, collectPositions);
+    super(scorer, collectIntervals);
     this.iterators = iterators;
     this.queue = new IntervalQueueAnd(iterators.length);
     this.nrMustMatch = minimuNumShouldMatch;
@@ -79,7 +79,7 @@ public final class ConjunctionIntervalIterator extends IntervalIterator {
     do {
       queue.updateCurrentCandidate();
       Interval top = queue.top().interval; 
-      if (collectPositions) {
+      if (collectIntervals) {
         snapShotSubPositions(); // this looks odd? -> see SnapShotCollector below for
                                 // details!
       }
@@ -132,7 +132,7 @@ public final class ConjunctionIntervalIterator extends IntervalIterator {
   }
   
   private void collectInternal(IntervalCollector collector) {
-    assert collectPositions;
+    assert collectIntervals;
     collector.collectComposite(scorer, queue.currentCandidate, docID());
     for (IntervalIterator iter : iterators) {
       iter.collect(collector);
@@ -142,7 +142,7 @@ public final class ConjunctionIntervalIterator extends IntervalIterator {
   
   @Override
   public void collect(IntervalCollector collector) {
-    assert collectPositions;
+    assert collectIntervals;
     if (snapshot == null) {
       // we might not be initialized if the first interval matches
       collectInternal(collector);

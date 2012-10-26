@@ -88,8 +88,8 @@ public class ScoreCachingWrappingScorer extends Scorer {
   }
 
   @Override
-  public IntervalIterator positions(boolean collectPositions) throws IOException {
-    return scorer.positions(collectPositions);
+  public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+    return scorer.intervals(collectIntervals);
   }
 
   @Override

@@ -165,7 +165,7 @@ public class IntervalFilterQuery extends Query implements Cloneable {
       this.other = other;
       this.factory = factory;
       // nocommit - offsets and payloads?
-      this.filter = IntervalFilterQuery.this.filter.filter(false, other.positions(false));
+      this.filter = IntervalFilterQuery.this.filter.filter(false, other.intervals(false));
     }
 
     @Override
@@ -174,10 +174,10 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     }
 
     @Override
-    public IntervalIterator positions(boolean collectPositions) throws IOException {
-      if (collectPositions) {
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+      if (collectIntervals) {
         final Scorer collectingScorer = factory.scorer();
-        final IntervalIterator filter = IntervalFilterQuery.this.filter.filter(true, collectingScorer.positions(true));
+        final IntervalIterator filter = IntervalFilterQuery.this.filter.filter(true, collectingScorer.intervals(true));
         return new IntervalIterator(this, true) {
 
           @Override
@@ -210,7 +210,7 @@ public class IntervalFilterQuery extends Query implements Cloneable {
         };
       }
       
-      return new IntervalIterator(this, collectPositions) {
+      return new IntervalIterator(this, collectIntervals) {
         private boolean buffered = true;
         @Override
         public int scorerAdvanced(int docId) throws IOException {

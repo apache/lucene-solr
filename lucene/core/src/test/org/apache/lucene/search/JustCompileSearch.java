@@ -203,7 +203,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public IntervalIterator positions(boolean collectPositions) throws IOException {
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
@@ -255,7 +255,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public IntervalIterator positions(boolean collectPositions) throws IOException {
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
   }

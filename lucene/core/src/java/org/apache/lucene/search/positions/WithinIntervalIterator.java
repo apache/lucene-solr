@@ -26,8 +26,8 @@ public class WithinIntervalIterator extends IntervalIterator implements Interval
   private IntervalIterator iterator;
   private Interval interval;
   
-  public WithinIntervalIterator(boolean collectPositions, int howMany, IntervalIterator iterator) {
-    super(iterator != null ? iterator.scorer : null, collectPositions);
+  public WithinIntervalIterator(boolean collectIntervals, int howMany, IntervalIterator iterator) {
+    super(iterator != null ? iterator.scorer : null, collectIntervals);
     this.howMany = howMany;
     this.iterator = iterator;
   }
@@ -50,13 +50,13 @@ public class WithinIntervalIterator extends IntervalIterator implements Interval
     return new IntervalIterator[] {iterator};
   }
 
-  public IntervalIterator filter(boolean collectPositions, IntervalIterator iter) {
-    return new WithinIntervalIterator(collectPositions, howMany, iter);
+  public IntervalIterator filter(boolean collectIntervals, IntervalIterator iter) {
+    return new WithinIntervalIterator(collectIntervals, howMany, iter);
   }
 
   @Override
   public void collect(IntervalCollector collector) {
-    assert collectPositions;
+    assert collectIntervals;
     collector.collectComposite(null, interval, iterator.docID());
     iterator.collect(collector);
   }

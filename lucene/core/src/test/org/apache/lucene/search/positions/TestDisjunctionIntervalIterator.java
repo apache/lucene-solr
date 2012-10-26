@@ -106,7 +106,7 @@ public class TestDisjunctionIntervalIterator extends LuceneTestCase {
     assertEquals(1, leaves.size());
     Scorer scorer = weight.scorer(leaves.get(0),
         true, true, PostingFeatures.POSITIONS, leaves.get(0).reader().getLiveDocs());
-    IntervalIterator positions = scorer.positions(false);
+    IntervalIterator positions = scorer.intervals(false);
     for (int i = 0; i < 2; i++) {
 
       int nextDoc = scorer.nextDoc();
@@ -164,7 +164,7 @@ public class TestDisjunctionIntervalIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(0, nextDoc);
-        IntervalIterator positions = scorer.positions(false);
+        IntervalIterator positions = scorer.intervals(false);
         assertEquals(0, positions.scorerAdvanced(nextDoc));
         Interval interval = null;
         int[] start = new int[] { 0, 1, 2, 31, 32, 33 };
@@ -183,7 +183,7 @@ public class TestDisjunctionIntervalIterator extends LuceneTestCase {
       {
         int nextDoc = scorer.nextDoc();
         assertEquals(1, nextDoc);
-        IntervalIterator positions = scorer.positions(false);
+        IntervalIterator positions = scorer.intervals(false);
         assertEquals(1, positions.scorerAdvanced(nextDoc));
         Interval interval = null;
         int[] start = new int[] {  3, 4, 5, 34 };
