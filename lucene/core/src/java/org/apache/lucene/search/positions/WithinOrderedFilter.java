@@ -17,23 +17,33 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 
+/**
+ * An IntervalFilter that restricts an IntervalIterator to return
+ * only Intervals that occur in order within a given distance.
+ *
+ * @see WithinIntervalFilter
+ */
 public class WithinOrderedFilter implements IntervalFilter {
 
-  private int slop;
+  private final WithinIntervalFilter innerFilter;
 
+  /**
+   * Constructs a new WithinOrderedFilter with a given slop
+   * @param slop The maximum distance allowed between subintervals
+   */
   public WithinOrderedFilter(int slop) {
-    this.slop = slop;
+    this.innerFilter = new WithinIntervalFilter(slop);
   }
 
   @Override
   public IntervalIterator filter(boolean collectIntervals, IntervalIterator iter) {
-    return new WithinIntervalIterator(collectIntervals, slop,
-        new OrderedConjunctionIntervalIterator(collectIntervals, iter));
+    return innerFilter.filter(collectIntervals,
+                              new OrderedConjunctionIntervalIterator(collectIntervals, iter));
   }
 
   @Override
   public String toString() {
-    return "WithinOrderedFilter[" + slop + "]";
+    return "WithinOrderedFilter[" + this.innerFilter.getSlop() + "]";
   }
 
 }

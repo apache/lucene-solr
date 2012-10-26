@@ -42,7 +42,7 @@ public class UnorderedNearQuery extends IntervalFilterQuery {
    * @param subqueries the subqueries to match.
    */
   public UnorderedNearQuery(int slop, Query... subqueries) {
-    super(buildBooleanQuery(subqueries), new WithinIntervalIterator(slop + subqueries.length - 1));
+    super(buildBooleanQuery(subqueries), new WithinIntervalFilter(slop + subqueries.length - 1));
   }
 
   private static BooleanQuery buildBooleanQuery(Query... queries) {

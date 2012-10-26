@@ -19,6 +19,8 @@ package org.apache.lucene.search.positions;
 
 /**
  * Filters an {@link IntervalIterator}
+ *
+ * @see IntervalFilterQuery
  */
 public interface IntervalFilter {
 
