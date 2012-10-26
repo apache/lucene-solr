@@ -106,6 +106,10 @@ Bug Fixes
 * SOLR-3938: prepareCommit command omits commitData causing a failure to trigger
   replication to slaves. (yonik)
 
+* SOLR-3992: QuerySenderListener doesn't populate document cache.
+  (Shotaro Kamio, yonik)
+
+
 Other Changes
 ----------------------
 

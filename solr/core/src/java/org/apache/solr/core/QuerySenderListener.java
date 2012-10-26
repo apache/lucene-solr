@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.ResultContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocIterator;
@@ -68,6 +69,9 @@ public class QuerySenderListener extends AbstractSolrEventListener {
         NamedList values = rsp.getValues();
         for (int i=0; i<values.size(); i++) {
           Object o = values.getVal(i);
+          if (o instanceof ResultContext) {
+            o = ((ResultContext)o).docs;
+          }
           if (o instanceof DocList) {
             DocList docs = (DocList)o;
             for (DocIterator iter = docs.iterator(); iter.hasNext();) {
