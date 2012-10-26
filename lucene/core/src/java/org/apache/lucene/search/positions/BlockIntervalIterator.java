@@ -16,16 +16,21 @@ package org.apache.lucene.search.positions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import org.apache.lucene.search.Scorer;
+
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.search.Scorer;
-
 /**
- * 
+ * An IntervalIterator implementing minimum interval semantics for the
+ * BLOCK operator
+ *
+ * See <a href=
+ * "http://vigna.dsi.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics"
+ * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantic</a>
+ *
  * @lucene.experimental
  */
-// nocommit - javadoc
 public final class BlockIntervalIterator extends IntervalIterator {
   private final IntervalIterator[] iterators;
 
@@ -42,6 +47,7 @@ public final class BlockIntervalIterator extends IntervalIterator {
     this(other, collectIntervals, defaultGaps(other.subs(true).length));
   }
 
+  // nocommit - clean up the constructor API!
   public BlockIntervalIterator(IntervalIterator other, boolean collectIntervals, int[] gaps) {
     super(other.getScorer(), collectIntervals);
     assert other.subs(true) != null;
@@ -52,29 +58,10 @@ public final class BlockIntervalIterator extends IntervalIterator {
     this.gaps = gaps;
   }
 
-  public BlockIntervalIterator(Scorer scorer, boolean collectIntervals, Scorer... subScorers)
-      throws IOException {
-    this(scorer, collectIntervals, defaultGaps(subScorers.length), subScorers);
-  }
-
   private static int[] defaultGaps(int num) {
     int[] gaps = new int[num];
     Arrays.fill(gaps, 1);
     return gaps;
-  }
-
-  public BlockIntervalIterator(Scorer scorer,  boolean collectIntervals, int[] gaps, Scorer... subScorers)
-      throws IOException {
-    super(scorer, collectIntervals);
-    assert subScorers.length > 1;
-    iterators = new IntervalIterator[subScorers.length];
-    intervals = new Interval[subScorers.length];
-    for (int i = 0; i < subScorers.length; i++) {
-      iterators[i] = subScorers[i].intervals(collectIntervals);
-      assert iterators[i] != null;
-    }
-    lastIter = iterators.length - 1;
-    this.gaps = gaps;
   }
 
   public BlockIntervalIterator(Scorer scorer, int[] gaps, boolean collectIntervals, IntervalIterator... iterators) {

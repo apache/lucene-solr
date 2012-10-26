@@ -22,10 +22,10 @@ import org.apache.lucene.search.positions.IntervalQueue.IntervalRef;
 import java.io.IOException;
 
 /**
- * ConjuctionPositionIterator based on minimal interval semantics for AND
+ * ConjuctionIntervalIterator based on minimal interval semantics for AND
  * operator.
  * 
- * <a href=
+ * See <a href=
  * "http://vigna.dsi.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics"
  * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantic</a>
  * 
@@ -38,14 +38,30 @@ public final class ConjunctionIntervalIterator extends IntervalIterator {
   private SnapshotPositionCollector snapshot;
   private final IntervalIterator[] iterators;
   private int rightExtremeBegin;
-  
 
-  // nocommit javadocs!
+
+  /**
+   * Create a new ConjunctionIntervalIterator over a set of subiterators
+   * @param scorer the parent scorer
+   * @param collectIntervals true if intervals will be collected
+   * @param iterators a list of iterators to combine
+   * @throws IOException
+   */
   public ConjunctionIntervalIterator(Scorer scorer, boolean collectIntervals,
       IntervalIterator... iterators) throws IOException {
     this(scorer, collectIntervals, iterators.length, iterators);
   }
-  
+
+  /**
+   * Create a new ConjunctionIntervalIterator over a set of subiterators,
+   * with a minimum number of matching subiterators per document
+   * @param scorer the parent Scorer
+   * @param collectIntervals true if intervals will be collected
+   * @param minimuNumShouldMatch the number of subiterators that should
+   *                             match a document for a match to be returned
+   * @param iterators a list of iterators to combine
+   * @throws IOException
+   */
   public ConjunctionIntervalIterator(Scorer scorer, boolean collectIntervals,
       int minimuNumShouldMatch, IntervalIterator... iterators)
       throws IOException {

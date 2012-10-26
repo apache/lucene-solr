@@ -21,8 +21,15 @@ import org.apache.lucene.search.Scorer;
 import java.io.IOException;
 
 /**
+ * An IntervalIterator based on minimum interval semantics for the
+ * AND< operator
+ *
+ * See <a href=
+ * "http://vigna.dsi.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics"
+ * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantic</a>
+ *
  * @lucene.experimental
- */ // nocommit - javadoc
+ */
 public final class OrderedConjunctionIntervalIterator extends
     IntervalIterator {
 
@@ -36,10 +43,21 @@ public final class OrderedConjunctionIntervalIterator extends
 
   private SnapshotPositionCollector snapshot = null;
 
+  /**
+   * Create an OrderedConjunctionIntervalIterator over a composite IntervalIterator
+   * @param collectIntervals true if intervals will be collected
+   * @param other a composite IntervalIterator to wrap
+   */
   public OrderedConjunctionIntervalIterator(boolean collectIntervals, IntervalIterator other) {
     this(other.scorer, collectIntervals, other.subs(true));
   }
-  
+
+  /**
+   * Create an OrderedConjunctionIntervalIterator over a set of subiterators
+   * @param scorer the parent Scorer
+   * @param collectIntervals true if intervals will be collected
+   * @param iterators the subintervals to wrap
+   */
   public OrderedConjunctionIntervalIterator(Scorer scorer, boolean collectIntervals, IntervalIterator... iterators) {
     super(scorer, collectIntervals);
     this.iterators = iterators;

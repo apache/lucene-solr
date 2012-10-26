@@ -63,8 +63,8 @@ import java.util.Set;
  */
 public final class NonOverlappingQuery extends Query implements Cloneable {
   
-  private Query minuted;
-  private Query subtracted;
+  private Query minuend;
+  private Query subtrahend;
 
   /**
    * Constructs a Query that matches documents containing intervals of the minuend
@@ -73,26 +73,26 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
    * @param subtrahend the subtrahend Query
    */
   public NonOverlappingQuery(Query minuend, Query subtrahend) {
-    this.minuted = minuend;
-    this.subtracted = subtrahend;
+    this.minuend = minuend;
+    this.subtrahend = subtrahend;
   }
 
   @Override
   public void extractTerms(Set<Term> terms) {
-    minuted.extractTerms(terms);
-    subtracted.extractTerms(terms);
+    minuend.extractTerms(terms);
+    subtrahend.extractTerms(terms);
   }
 
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     NonOverlappingQuery clone = null;
 
-    Query rewritten =  minuted.rewrite(reader);
-    Query subRewritten =  subtracted.rewrite(reader);
-    if (rewritten != minuted || subRewritten != subtracted) {
+    Query rewritten =  minuend.rewrite(reader);
+    Query subRewritten =  subtrahend.rewrite(reader);
+    if (rewritten != minuend || subRewritten != subtrahend) {
       clone = (NonOverlappingQuery) this.clone();
-      clone.minuted = rewritten;
-      clone.subtracted = subRewritten;
+      clone.minuend = rewritten;
+      clone.subtrahend = subRewritten;
     }
 
     if (clone != null) {
@@ -104,7 +104,7 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
 
   @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
-    return new BrouwerianQueryWeight(minuted.createWeight(searcher), subtracted.createWeight(searcher));
+    return new BrouwerianQueryWeight(minuend.createWeight(searcher), subtrahend.createWeight(searcher));
   }
 
   class BrouwerianQueryWeight extends Weight {
@@ -324,17 +324,16 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
 
   @Override
   public String toString(String field) {
-    //nocommit TODO
-    return minuted.toString();
+    return "NonOverlappingQuery[" + minuend + ", " + subtrahend + "]";
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
-    result = prime * result + ((minuted == null) ? 0 : minuted.hashCode());
+    result = prime * result + ((minuend == null) ? 0 : minuend.hashCode());
     result = prime * result
-        + ((subtracted == null) ? 0 : subtracted.hashCode());
+        + ((subtrahend == null) ? 0 : subtrahend.hashCode());
     return result;
   }
 
@@ -344,12 +343,12 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
     if (!super.equals(obj)) return false;
     if (getClass() != obj.getClass()) return false;
     NonOverlappingQuery other = (NonOverlappingQuery) obj;
-    if (minuted == null) {
-      if (other.minuted != null) return false;
-    } else if (!minuted.equals(other.minuted)) return false;
-    if (subtracted == null) {
-      if (other.subtracted != null) return false;
-    } else if (!subtracted.equals(other.subtracted)) return false;
+    if (minuend == null) {
+      if (other.minuend != null) return false;
+    } else if (!minuend.equals(other.minuend)) return false;
+    if (subtrahend == null) {
+      if (other.subtrahend != null) return false;
+    } else if (!subtrahend.equals(other.subtrahend)) return false;
     return true;
   }
 
