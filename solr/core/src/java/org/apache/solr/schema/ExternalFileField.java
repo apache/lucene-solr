@@ -53,7 +53,7 @@ import java.io.IOException;
  * <p/>The external file may be sorted or unsorted by the key field, but it will be substantially slower (untested) if it isn't sorted.
  * <p/>Fields of this type may currently only be used as a ValueSource in a FunctionQuery.
  *
- *
+ * @see ExternalFileFieldReloader
  */
 public class ExternalFileField extends FieldType {
   private FieldType ftype;
@@ -92,10 +92,26 @@ public class ExternalFileField extends FieldType {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    // default key field to unique key
-    SchemaField keyField = keyFieldName==null ? schema.getUniqueKeyField() : schema.getField(keyFieldName);
-    return new FileFloatSource(field, keyField, defVal, parser);
+    return getFileFloatSource(field, parser.getReq().getCore().getDataDir());
   }
 
+  /**
+   * Get a FileFloatSource for the given field, looking in datadir for the relevant file
+   * @param field the field to get a source for
+   * @param datadir the data directory in which to look for the external file
+   * @return a FileFloatSource
+   */
+  public FileFloatSource getFileFloatSource(SchemaField field, String datadir) {
+    // Because the float source uses a static cache, all source objects will
+    // refer to the same data.
+    return new FileFloatSource(field, getKeyField(), defVal, datadir);
+  }
+
+  // If no key field is defined, we use the unique key field
+  private SchemaField getKeyField() {
+    return keyFieldName == null ?
+        schema.getUniqueKeyField() :
+        schema.getField(keyFieldName);
+  }
 
 }

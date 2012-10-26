@@ -45,6 +45,9 @@ New Features
   underlying analyzed form used for suggestions is separate from the returned
   text.  (Robert Muir)
 
+* SOLR-3985: ExternalFileField caches can be reloaded on firstSearcher/
+  newSearcher events using the ExternalFileFieldReloader (Alan Woodward)
+
 Optimizations
 ----------------------
 
