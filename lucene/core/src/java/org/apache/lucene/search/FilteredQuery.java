@@ -491,7 +491,7 @@ public class FilteredQuery extends Query {
      *          be called.
      * @param weight the {@link FilteredQuery} {@link Weight} to create the filtered scorer.
      * @param docIdSet the filter {@link DocIdSet} to apply
-     * //nocommit add javadoc 
+     * @param flags the low level {@link PostingFeatures} for this scorer.
      * @return a filtered scorer
      * 
      * @throws IOException if an {@link IOException} occurs

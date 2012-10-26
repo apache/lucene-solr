@@ -174,7 +174,10 @@ public abstract class Collector {
    */
   public abstract boolean acceptsDocsOutOfOrder();
   
-  //nocommit add javadocs
+  /**
+   * Returns the posting features required by this collector. Default value is
+   * {@link PostingFeatures#DOCS_AND_FREQS}.
+   */
   public PostingFeatures postingFeatures() {
     return PostingFeatures.DOCS_AND_FREQS;
   }

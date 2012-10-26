@@ -432,6 +432,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     close();
   }
   
+  @Ignore("not implemented yet - unsupported")
   public void testMultiPhraseQuery() throws Exception {
     MultiPhraseQuery query = new MultiPhraseQuery();
     insertDocs(analyzer, "pease porridge hot but not too hot or otherwise pease porridge cold");
@@ -447,7 +448,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
     close();
   }
   
-  @Ignore("not implemented yet")
+  @Ignore("not implemented yet - unsupported")
   public void testMultiPhraseQueryCollisions() throws Exception {
     MultiPhraseQuery query = new MultiPhraseQuery();
     insertDocs(analyzer, "pease porridge hot not too hot or otherwise pease porridge porridge");

@@ -45,7 +45,7 @@ import java.util.Set;
 public class IntervalFilterQuery extends Query implements Cloneable {
 
   private Query inner;
-  private IntervalFilter filter;
+  private final IntervalFilter filter;
 
   /**
    * Constructs a query using an inner query and an IntervalFilter
@@ -154,8 +154,7 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     
   }
 
-  class PositionFilterScorer extends Scorer {
-
+  final class PositionFilterScorer extends Scorer {
     private final Scorer other;
     private IntervalIterator filter;
     private Interval current;
@@ -164,7 +163,6 @@ public class IntervalFilterQuery extends Query implements Cloneable {
       super(weight);
       this.other = other;
       this.factory = factory;
-      // nocommit - offsets and payloads?
       this.filter = IntervalFilterQuery.this.filter.filter(false, other.intervals(false));
     }
 

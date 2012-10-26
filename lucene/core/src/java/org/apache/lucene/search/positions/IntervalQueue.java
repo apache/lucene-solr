@@ -20,31 +20,46 @@ import org.apache.lucene.search.positions.IntervalQueue.IntervalRef;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
- * 
+ * Abstract base class for calculating minimal spanning intervals with Queues.
+ * @see IntervalQueueAnd
+ *  
  * @lucene.experimental
+ * @lucene.internal
  */
-// nocommit - javadoc
 abstract class IntervalQueue extends PriorityQueue<IntervalRef> {
+  /**
+   * The current interval spanning the queue
+   */
   final Interval currentCandidate = new Interval(
       Integer.MIN_VALUE, Integer.MIN_VALUE, -1, -1);
-
-  public void reset() {
-    clear();
-    currentCandidate.begin = Integer.MIN_VALUE;
-    currentCandidate.end = Integer.MIN_VALUE;
-    currentCandidate.offsetBegin = -1;
-    currentCandidate.offsetEnd = -1;
-  }
-
-  abstract public void updateCurrentCandidate();
-
+  
+  /**
+   * Creates a new {@link IntervalQueue} with a fixed size
+   * @param size the size of the queue
+   */
   public IntervalQueue(int size) {
     super(size);
   }
+  
+  /**
+   * Clears and resets the queue to its initial values;
+   */
+  void reset() {
+    clear();
+    currentCandidate.reset();
+  }
 
+  /**
+   * Called by the consumer each time the head of the queue was updated
+   */
+  abstract void updateCurrentCandidate();
+
+  /**
+   * Holds a reference to an interval and its index.
+   */
   final static class IntervalRef {
     Interval interval;
-    int index;
+    final int index;
 
     IntervalRef(Interval interval, int index) {
       super();

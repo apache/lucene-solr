@@ -40,6 +40,7 @@ public final class ConjunctionIntervalIterator extends IntervalIterator {
   private int rightExtremeBegin;
   
 
+  // nocommit javadocs!
   public ConjunctionIntervalIterator(Scorer scorer, boolean collectIntervals,
       IntervalIterator... iterators) throws IOException {
     this(scorer, collectIntervals, iterators.length, iterators);
@@ -102,9 +103,6 @@ public final class ConjunctionIntervalIterator extends IntervalIterator {
     queue.reset();
     for (int i = 0; i < iterators.length; i++) {
       int scorerAdvanced = iterators[i].scorerAdvanced(docId);
-      if (scorerAdvanced != docId) {
-        System.out.println();  // nocommit!
-      }
       assert scorerAdvanced == docId;
       final Interval interval = iterators[i].next();
       if (interval != null) {

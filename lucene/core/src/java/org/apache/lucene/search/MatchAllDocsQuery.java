@@ -81,8 +81,7 @@ public class MatchAllDocsQuery extends Query {
 
     @Override
     public IntervalIterator intervals(boolean collectIntervals) throws IOException {
-      // nocommit this is tricky - I think we can't really provide positions here?
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException("MatchAllDocsQuery doesn't support IntervalIterators");
     }
   }
 

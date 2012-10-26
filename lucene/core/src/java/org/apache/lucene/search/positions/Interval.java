@@ -16,10 +16,6 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
-
 /**
  * Represents a section of a document that matches a query
  */
@@ -132,11 +128,6 @@ public class Interval implements Cloneable {
     end = other.end;
     offsetBegin = other.offsetBegin;
     offsetEnd = other.offsetEnd;
-  }
-
-  // nocommit javadocs
-  public BytesRef nextPayload() throws IOException {
-    return null;
   }
 
   /**

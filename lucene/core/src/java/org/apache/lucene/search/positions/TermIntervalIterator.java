@@ -18,7 +18,6 @@ package org.apache.lucene.search.positions;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 
@@ -44,8 +43,7 @@ public final class TermIntervalIterator extends IntervalIterator {
                               boolean doPayloads, boolean collectIntervals) {
     super(scorer, collectIntervals);
     this.docsAndPos = docsAndPos;
-    this.interval = doPayloads ? new PayloadInterval(docsAndPos, this)
-        : new Interval();
+    this.interval = new Interval();
   }
 
   @Override
@@ -96,32 +94,32 @@ public final class TermIntervalIterator extends IntervalIterator {
   public int matchDistance() {
     return 0;
   }
-  
-  private static final class PayloadInterval extends Interval {
-    private int pos = -1;
-    private final DocsAndPositionsEnum payloads;
-    private final TermIntervalIterator termPos;
-
-    public PayloadInterval(DocsAndPositionsEnum payloads, TermIntervalIterator pos) {
-      this.payloads = payloads;
-      this.termPos = pos;
-    }
-
-    @Override
-    public BytesRef nextPayload() throws IOException {
-      if (pos == termPos.positionsPending) {
-        return null;
-      } else {
-        pos = termPos.positionsPending;
-        return payloads.getPayload();
-      }
-    }
-
-    @Override
-    public void reset() {
-      super.reset();
-      pos = -1;
-    }
-
-  }
+// TODO not supported yet - need to figure out what that means really to support payloads
+//  private static final class PayloadInterval extends Interval {
+//    private int pos = -1;
+//    private final DocsAndPositionsEnum payloads;
+//    private final TermIntervalIterator termPos;
+//
+//    public PayloadInterval(DocsAndPositionsEnum payloads, TermIntervalIterator pos) {
+//      this.payloads = payloads;
+//      this.termPos = pos;
+//    }
+//
+//    @Override
+//    public BytesRef nextPayload() throws IOException {
+//      if (pos == termPos.positionsPending) {
+//        return null;
+//      } else {
+//        pos = termPos.positionsPending;
+//        return payloads.getPayload();
+//      }
+//    }
+//
+//    @Override
+//    public void reset() {
+//      super.reset();
+//      pos = -1;
+//    }
+//
+//  }
 }

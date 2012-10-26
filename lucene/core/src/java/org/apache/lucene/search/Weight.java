@@ -24,6 +24,7 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReaderContext; // javadocs
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 
@@ -105,7 +106,7 @@ public abstract class Weight {
    *          if true, {@link Scorer#score(Collector)} will be called; if false,
    *          {@link Scorer#nextDoc()} and/or {@link Scorer#advance(int)} will
    *          be called.
-   * @param flags TODO
+   * @param flags the low level {@link PostingFeatures} for this scorer.
    * @param acceptDocs
    *          Bits that represent the allowable docs to match (typically deleted docs
    *          but possibly filtering other documents)
@@ -128,12 +129,23 @@ public abstract class Weight {
    */
   public boolean scoresDocsOutOfOrder() { return false; }
   
+  /**
+   * Feature flags used to control low-level posting list features. These flags
+   * all Collectors and scorers to specify their requirements for document
+   * collection and scoring ahead of time for best performance.
+   */
   public static enum PostingFeatures {
+    /**Only document IDs are required for document collection and scoring*/
     DOCS_ONLY(0, 0, false), 
-    DOCS_AND_FREQS(DocsEnum.FLAG_FREQS, 0, false), 
+    /**Document IDs and Term Frequencies are required for document collection and scoring*/
+    DOCS_AND_FREQS(DocsEnum.FLAG_FREQS, 0, false),
+    /**Document IDs, Term Frequencies and Positions are required for document collection and scoring*/
     POSITIONS(DocsEnum.FLAG_FREQS, 0, true),
+    /**Document IDs, Term Frequencies, Positions and Payloads are required for document collection and scoring*/
     POSITIONS_AND_PAYLOADS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_PAYLOADS, true),
+    /**Document IDs, Term Frequencies, Positions and Offsets are required for document collection and scoring*/
     OFFSETS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_OFFSETS, true),
+    /**Document IDs, Term Frequencies, Positions, Offsets and Payloads are required for document collection and scoring*/
     OFFSETS_AND_PAYLOADS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_OFFSETS
             | DocsAndPositionsEnum.FLAG_PAYLOADS, true);
     
@@ -141,21 +153,38 @@ public abstract class Weight {
     private final int docFlags;
     private final boolean isProximityFeature;
     
-    
     private PostingFeatures(int docFlags, int docsAndPositionsFlags, boolean isProximityFeature) {
       this.docsAndPositionsFlags = docsAndPositionsFlags;
       this.docFlags = docFlags;
       this.isProximityFeature = isProximityFeature;
     }
     
+    /**
+     * Returns the flags for {@link DocsAndPositionsEnum}. This value should be
+     * passed to
+     * {@link TermsEnum#docsAndPositions(Bits, DocsAndPositionsEnum, int)}
+     * 
+     * @return {@link DocsAndPositionsEnum} flags
+     */
     public int docsAndPositionsFlags() {
       return docsAndPositionsFlags;
     }
     
+    /**
+     * Returns the flags for {@link DocsEnum}. This value should be
+     * passed to
+     * {@link TermsEnum#docs(Bits, DocsEnum, int)}
+     * 
+     * @return {@link DocsEnum} flags
+     */
     public int docFlags() {
       return docFlags;
     }
     
+    /**
+     * Returns <code>true</code> iff the current flags set requires positions
+     * ie. a {@link DocsAndPositionsEnum}.
+     */
     public boolean isProximityFeature() {
       return isProximityFeature;
     }

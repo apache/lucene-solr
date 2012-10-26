@@ -180,7 +180,7 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
     
   }
   
-  class PositionFilterScorer extends Scorer {
+  final class PositionFilterScorer extends Scorer {
 
     private final Scorer other;
     private IntervalIterator filter;

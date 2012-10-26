@@ -17,28 +17,42 @@ package org.apache.lucene.search.positions;
  */
 
 /**
- * 
+ * Queue class for calculating minimal spanning conjunction intervals
  * @lucene.experimental
- */ // nocommit - javadoc/
+ */ 
 final class IntervalQueueAnd extends IntervalQueue {
-
+  
+  /** the current right extreme positions of the queue */
   int rightExtreme = Integer.MIN_VALUE;
+  /** the current right extreme offset of the queue */
   int rightExtremeOffset = Integer.MIN_VALUE;
+  /** the current right extreme begin position*/
   int rightExtremeBegin;  
+  /** the end of the internval on top of the queue*/
   int currentTopEnd;
   
-  
-  public IntervalQueueAnd(int size) {
+  /**
+   * Creates a new {@link IntervalQueueAnd} with a fixed size
+   * @param size the size of the queue
+   */
+  IntervalQueueAnd(int size) {
     super(size);
   }
 
-  public void reset () {
+  @Override
+  void reset () {
     super.reset();
     rightExtreme = Integer.MIN_VALUE;
     rightExtremeOffset = Integer.MIN_VALUE;
   }
-
-  public void updateRightExtreme(IntervalRef intervalRef) {
+  
+  /**
+   * Updates the right extreme of this queue if the end of the given interval is
+   * greater or equal than the current right extreme of the queue.
+   * 
+   * @param intervalRef the interval to compare
+   */
+  void updateRightExtreme(IntervalRef intervalRef) {
     final Interval interval = intervalRef.interval;
     if (rightExtreme <= interval.end) {
       rightExtreme = interval.end;
@@ -47,7 +61,8 @@ final class IntervalQueueAnd extends IntervalQueue {
     }
   }
  
-  public void updateCurrentCandidate() {
+  @Override
+  void updateCurrentCandidate() {
     final IntervalRef top = top();
     Interval interval = top.interval;
     currentCandidate.begin = interval.begin;

@@ -16,16 +16,21 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 /**
- * 
+ * Queue class for calculating minimal spanning disjunct intervals
  * @lucene.experimental
- */ // nocommit - javadoc
+ */
 final class IntervalQueueOr extends IntervalQueue {
   
-  public IntervalQueueOr(int size) {
+  /**
+   * Creates a new {@link IntervalQueueOr} with a fixed size
+   * @param size the size of the queue
+   */
+  IntervalQueueOr(int size) {
     super(size);
   }
   
-  public void updateCurrentCandidate() {
+  @Override
+  void updateCurrentCandidate() {
     currentCandidate.copy(top().interval);
   }
   

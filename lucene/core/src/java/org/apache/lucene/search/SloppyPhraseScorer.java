@@ -543,21 +543,15 @@ final class SloppyPhraseScorer extends PhraseScorer {
 
   @Override
   public IntervalIterator intervals(boolean collectIntervals) throws IOException {
-    // nocommit - payloads?
     Map<Term, IterAndOffsets> map = new HashMap<Term, IterAndOffsets>();
     List<DocsAndPositionsEnum> enums = new ArrayList<DocsAndPositionsEnum>();
 
     for (int i = 0; i < postings.length; i++) {
+      if (postings[i].terms.length > 1) {
+        throw new UnsupportedOperationException("IntervalIterators for MulitPhraseQuery is not supported");
+      }
       Term term = postings[i].terms[0];
-//      System.out.println(Arrays.toString(postings[i].terms));
       IterAndOffsets iterAndOffset;
-      /*
-       * NOCOMMIT This currently only works if there is only one term per position.
-       * For multiple terms we need to extend the MaxLengthPI. and specialize 
-       * ConjunctionPositionIterator - we should do this anyway.
-       * We can then pull a D&PEnum per term instead of the union and assign the correct
-       * ords to them internally everything else should just work as before
-       */
       if (!map.containsKey(term)) {
         DocsAndPositionsEnum docsAndPosEnum = postings[i].factory
             .docsAndPositionsEnum();
@@ -569,7 +563,6 @@ final class SloppyPhraseScorer extends PhraseScorer {
         iterAndOffset = map.get(term);
       }
       iterAndOffset.offsets.add(postings[i].position);
-//      System.out.println("POS: " + postings[i].position + " " + term);
     }
     Collection<IterAndOffsets> values = map.values();
     IntervalIterator[] iters = new IntervalIterator[values.size()];
@@ -580,24 +573,21 @@ final class SloppyPhraseScorer extends PhraseScorer {
     return new AdvancingIntervalIterator(this, collectIntervals, enums.toArray(new DocsAndPositionsEnum[enums.size()]), new SloppyIntervalIterator(this, slop, collectIntervals, iters));
   }
   
-  
-  
-  private static class IterAndOffsets {
+  private final static class IterAndOffsets {
     final List<Integer> offsets = new ArrayList<Integer>();
     final IntervalIterator iter;
+    
     IterAndOffsets(IntervalIterator iter) {
       this.iter = iter;
     }
     
-    public int[] toIntArray() {
+    int[] toIntArray() {
       int[] array = new int[offsets.size()];
       for (int i = 0; i < array.length; i++) {
         array[i] = offsets.get(i).intValue();
       }
       return array;
     }
-    
-    
   }
   
 
