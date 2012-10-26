@@ -83,6 +83,16 @@ Bug Fixes
 
 * SOLR-3961: Fixed error using LimitTokenCountFilterFactory 
   (Jack Krupansky, hossman)
+  
+* SOLR-3933: Distributed commits are not guaranteed to be ordered within a 
+  request. (Mark Miller)
+
+* SOLR-3939: An empty or just replicated index cannot become the leader of a
+  shard after a leader goes down. (Joel Bernstein, yonik, Mark Miller)
+  
+* SOLR-3971: A collection that is created with numShards=1 turns into a 
+  numShards=2 collection after starting up a second core and not specifying 
+  numShards. (Mark Miller)
 
 * SOLR-3988: Fixed SolrTestCaseJ4.adoc(SolrInputDocument) to respect 
   field and document boosts (hossman)
@@ -101,6 +111,9 @@ Other Changes
 
 * SOLR-3966: Eliminate superfluous warning from LanguageIdentifierUpdateProcessor
   (Markus Jelsma via hossman)
+
+* SOLR-3932: SolrCmdDistributorTest either takes 3 seconds or 3 minutes.
+  (yonik, Mark Miller)  
 
 ==================  4.0.0 ==================
 

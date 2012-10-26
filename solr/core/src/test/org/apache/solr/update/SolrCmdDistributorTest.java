@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -38,9 +39,15 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrEventListener;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.SolrCmdDistributor.Node;
 import org.apache.solr.update.SolrCmdDistributor.Response;
 import org.apache.solr.update.SolrCmdDistributor.StdNode;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 
 public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
@@ -92,6 +99,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(5, executor);
     
     ModifiableSolrParams params = new ModifiableSolrParams();
+
     List<Node> nodes = new ArrayList<Node>();
 
     ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
@@ -103,12 +111,17 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     AddUpdateCommand cmd = new AddUpdateCommand(null);
     cmd.solrDoc = sdoc("id", 1);
+    params = new ModifiableSolrParams();
+
     cmdDistrib.distribAdd(cmd, nodes, params);
     
     CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
+    params = new ModifiableSolrParams();
+    params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
     cmdDistrib.distribCommit(ccmd, nodes, params);
     cmdDistrib.finish();
 
+    
     Response response = cmdDistrib.getResponse();
     
     assertEquals(response.errors.toString(), 0, response.errors.size());
@@ -125,18 +138,26 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     // add another 2 docs to control and 3 to client
     cmdDistrib = new SolrCmdDistributor(5, executor);
     cmd.solrDoc = sdoc("id", 2);
+    params = new ModifiableSolrParams();
+    params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
     cmdDistrib.distribAdd(cmd, nodes, params);
     
     AddUpdateCommand cmd2 = new AddUpdateCommand(null);
     cmd2.solrDoc = sdoc("id", 3);
 
+    params = new ModifiableSolrParams();
+    params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
     cmdDistrib.distribAdd(cmd2, nodes, params);
     
     AddUpdateCommand cmd3 = new AddUpdateCommand(null);
     cmd3.solrDoc = sdoc("id", 4);
     
+    params = new ModifiableSolrParams();
+    params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
     cmdDistrib.distribAdd(cmd3, Collections.singletonList(nodes.get(1)), params);
     
+    params = new ModifiableSolrParams();
+    params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
     cmdDistrib.distribCommit(ccmd, nodes, params);
     cmdDistrib.finish();
     response = cmdDistrib.getResponse();
@@ -156,8 +177,17 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     DeleteUpdateCommand dcmd = new DeleteUpdateCommand(null);
     dcmd.id = "2";
     
+    
+
     cmdDistrib = new SolrCmdDistributor(5, executor);
+    
+    params = new ModifiableSolrParams();
+    params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
+    
     cmdDistrib.distribDelete(dcmd, nodes, params);
+    
+    params = new ModifiableSolrParams();
+    params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
     
     cmdDistrib.distribCommit(ccmd, nodes, params);
     cmdDistrib.finish();
@@ -184,7 +214,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     
     cmdDistrib = new SolrCmdDistributor(5, executor);
     
-    int cnt = atLeast(201);
+    int cnt = atLeast(303);
     for (int i = 0; i < cnt; i++) {
       nodes.clear();
       for (SolrServer c : clients) {
@@ -194,13 +224,13 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
         HttpSolrServer httpClient = (HttpSolrServer) c;
         nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
             httpClient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
-        System.out.println("node props:" + nodeProps);
         nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
 
       }
       AddUpdateCommand c = new AddUpdateCommand(null);
       c.solrDoc = sdoc("id", id++);
       if (nodes.size() > 0) {
+        params = new ModifiableSolrParams();
         cmdDistrib.distribAdd(c, nodes, params);
       }
     }
@@ -214,11 +244,37 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       
       nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
     }
+    
+    final AtomicInteger commits = new AtomicInteger();
+    for(JettySolrRunner jetty : jettys) {
+      CoreContainer cores = ((SolrDispatchFilter) jetty.getDispatchFilter().getFilter()).getCores();
+      SolrCore core = cores.getCore("collection1");
+      try {
+        core.getUpdateHandler().registerCommitCallback(new SolrEventListener() {
+          @Override
+          public void init(NamedList args) {}
+          @Override
+          public void postSoftCommit() {}
+          @Override
+          public void postCommit() {
+            commits.incrementAndGet();
+          }
+          @Override
+          public void newSearcher(SolrIndexSearcher newSearcher,
+              SolrIndexSearcher currentSearcher) {}
+        });
+      } finally {
+        core.close();
+      }
+    }
+    params = new ModifiableSolrParams();
+    params.set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
 
     cmdDistrib.distribCommit(ccmd, nodes, params);
     
-    
     cmdDistrib.finish();
+
+    assertEquals(shardCount, commits.get());
     
     for (SolrServer c : clients) {
       NamedList<Object> resp = c.request(new LukeRequest());
