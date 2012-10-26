@@ -21,19 +21,26 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
-/*
- * Due to the laziness of Conjunction position iterators and the minimizing algorithm
- * we advance the underlying iterators before the consumer can call collect on
- * the top level iterator. If we need to collect positions we need to record
- * the last possible match in order to allow the consumer to get the right
- * positions for the match. This is particularly important if leaf positions
- * are required.
+/**
+ * An IntervalCollector that allows a snapshot of the state of an
+ * IntervalIterator to be taken before it is advanced.
+ *
+ * Conjunction iterators advance their subiterators before the consumer
+ * can call collect on the top level iterator.  If intervals are to be
+ * collected, we need to record the last possible match so that we can
+ * return the correct intervals for the match.
+ *
+ * @lucene.internal
  */
-final class SnapshotPositionCollector implements
-    IntervalCollector {
+final class SnapshotPositionCollector implements IntervalCollector {
+
   private SingleSnapshot[] snapshots;
   private int index = 0;
 
+  /**
+   * Create a new collector with n snapshots
+   * @param subs the number of subiterators to record
+   */
   SnapshotPositionCollector(int subs) {
     snapshots = new SingleSnapshot[subs];
   }

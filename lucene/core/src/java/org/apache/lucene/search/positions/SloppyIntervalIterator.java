@@ -16,9 +16,9 @@ package org.apache.lucene.search.positions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
-
 import org.apache.lucene.search.Scorer;
+
+import java.io.IOException;
 
 /**
  * An interval iterator that has the semantics of sloppy phrase query.
@@ -27,7 +27,16 @@ public class SloppyIntervalIterator extends IntervalIterator {
   private final int maxLen;
   private int matchDistance;
   private final IntervalIterator iterator;
-  
+
+  /**
+   * Create a SloppyIntervalIterator that matches subiterators within
+   * a specified maxLength
+   * @param scorer the parent Scorer
+   * @param maxLength the maximum distance between the first and last subiterator match
+   * @param collectIntervals true if intervals will be collected
+   * @param iterators the subiterators
+   * @throws IOException
+   */
   public SloppyIntervalIterator(Scorer scorer, int maxLength,
       boolean collectIntervals, IntervalIterator... iterators)
       throws IOException {

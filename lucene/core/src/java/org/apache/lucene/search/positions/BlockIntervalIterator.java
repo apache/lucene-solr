@@ -43,38 +43,65 @@ public final class BlockIntervalIterator extends IntervalIterator {
 
   private final int lastIter;
 
+  /**
+   * Construct a BlockIntervalIterator over a compound IntervalIterator.  The
+   * subiterators must be in order and sequential for a match.
+   * @param collectIntervals true if intervals will be collected
+   * @param other the compound IntervalIterator
+   */
   public BlockIntervalIterator(boolean collectIntervals, IntervalIterator other) {
-    this(other, collectIntervals, defaultGaps(other.subs(true).length));
+    this(collectIntervals, defaultIncrements(other.subs(true).length), other);
   }
 
-  // nocommit - clean up the constructor API!
-  public BlockIntervalIterator(IntervalIterator other, boolean collectIntervals, int[] gaps) {
+  /**
+   * Construct a BlockIntervalIterator over a compound IntervalIterator using
+   * a supplied increments array.
+   * @param collectIntervals
+   * @param increments
+   * @param other
+   */
+  public BlockIntervalIterator(boolean collectIntervals, int[] increments, IntervalIterator other) {
     super(other.getScorer(), collectIntervals);
     assert other.subs(true) != null;
     iterators = other.subs(true);
     assert iterators.length > 1;
     intervals = new Interval[iterators.length];
     lastIter = iterators.length - 1;
-    this.gaps = gaps;
+    this.gaps = increments;
   }
 
-  private static int[] defaultGaps(int num) {
-    int[] gaps = new int[num];
-    Arrays.fill(gaps, 1);
-    return gaps;
-  }
-
-  public BlockIntervalIterator(Scorer scorer, int[] gaps, boolean collectIntervals, IntervalIterator... iterators) {
+  /**
+   * Construct a BlockIntervalIterator over a set of subiterators using a supplied
+   * increments array
+   * @param scorer the parent Scorer
+   * @param increments an array of position increments between the iterators
+   * @param collectIntervals true if intervals will be collected
+   * @param iterators the subiterators
+   */
+  public BlockIntervalIterator(Scorer scorer, int[] increments, boolean collectIntervals,
+                               IntervalIterator... iterators) {
     super(scorer, collectIntervals);
     assert iterators.length > 1;
     this.iterators = iterators;
     intervals = new Interval[iterators.length];
     lastIter = iterators.length - 1;
-    this.gaps = gaps;
+    this.gaps = increments;
   }
 
+  /**
+   * Construct a BlockIntervalIterator over a set of subiterators
+   * @param scorer the parent Scorer
+   * @param collectIntervals true if intervals will be collected
+   * @param iterators the subiterators
+   */
   public BlockIntervalIterator(Scorer scorer, boolean collectIntervals, IntervalIterator... iterators) {
-    this(scorer, defaultGaps(iterators.length), collectIntervals, iterators);
+    this(scorer, defaultIncrements(iterators.length), collectIntervals, iterators);
+  }
+
+  private static int[] defaultIncrements(int num) {
+    int[] gaps = new int[num];
+    Arrays.fill(gaps, 1);
+    return gaps;
   }
 
   @Override
