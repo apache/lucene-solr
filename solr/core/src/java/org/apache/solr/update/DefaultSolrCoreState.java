@@ -44,7 +44,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   private volatile boolean recoveryRunning;
   private RecoveryStrategy recoveryStrat;
-  private boolean closed = false;
+  private volatile boolean closed = false;
 
   private RefCounted<IndexWriter> refCntWriter;
 

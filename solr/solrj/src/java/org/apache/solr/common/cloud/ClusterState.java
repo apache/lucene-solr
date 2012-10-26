@@ -117,6 +117,7 @@ public class ClusterState implements JSONWriter.Writable {
    */
   public Replica getShardProps(final String collection, final String coreNodeName) {
     Map<String, Slice> slices = getSlices(collection);
+    if (slices == null) return null;
     for(Slice slice: slices.values()) {
       if(slice.getReplicasMap().get(coreNodeName)!=null) {
         return slice.getReplicasMap().get(coreNodeName);

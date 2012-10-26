@@ -211,7 +211,6 @@ public class CloudSolrServer extends SolrServer {
       if ((sendToLeaders && leaderUrlList == null) || (!sendToLeaders
           && urlList == null)
           || clusterState.hashCode() != this.lastClusterStateHashCode) {
-        System.out.println("build a new map for " + collection);
         // build a map of unique nodes
         // TODO: allow filtering by group, role, etc
         Map<String,ZkNodeProps> nodes = new HashMap<String,ZkNodeProps>();
