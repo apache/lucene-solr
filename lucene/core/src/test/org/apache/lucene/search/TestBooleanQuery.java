@@ -40,7 +40,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.search.positions.IntervalFilterQuery;
-import org.apache.lucene.search.positions.RangeIntervalIterator;
+import org.apache.lucene.search.positions.RangeIntervalFilter;
 import org.apache.lucene.search.positions.WithinIntervalIterator;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -330,7 +330,7 @@ public class TestBooleanQuery extends LuceneTestCase {
      query.add(new BooleanClause(new TermQuery(new Term("field", "hot!")), Occur.MUST));
      
      {
-       IntervalFilterQuery filter = new IntervalFilterQuery(query, new RangeIntervalIterator(0,3));
+       IntervalFilterQuery filter = new IntervalFilterQuery(query, new RangeIntervalFilter(0,3));
        TopDocs search = searcher.search(filter, 10);
        ScoreDoc[] scoreDocs = search.scoreDocs;
        assertEquals(1, search.totalHits);

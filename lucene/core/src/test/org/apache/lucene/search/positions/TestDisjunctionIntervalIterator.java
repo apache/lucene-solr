@@ -55,7 +55,7 @@ public class TestDisjunctionIntervalIterator extends LuceneTestCase {
         Occur.SHOULD));
     {
       IntervalFilterQuery filter = new IntervalFilterQuery(query,
-          new RangeIntervalIterator(0, 3));
+          new RangeIntervalFilter(0, 3));
       TopDocs search = searcher.search(filter, 10);
       ScoreDoc[] scoreDocs = search.scoreDocs;
       assertEquals(2, search.totalHits);
