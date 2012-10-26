@@ -522,6 +522,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     for (int i = 0; i < nDocs; i++)
       index(masterClient, "id", i, "name", "name = " + i);
 
+    // make sure prepareCommit doesn't mess up commit  (SOLR-3938)
+    // todo: make SolrJ easier to pass arbitrary params to
+    String masterUrl = "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/update?prepareCommit=true";
+    URL url = new URL(masterUrl);
+    InputStream stream = url.openStream();
+    try {
+      stream.close();
+    } catch (IOException e) {
+      //e.printStackTrace();
+    }
+
     masterClient.commit();
 
     NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
@@ -529,10 +540,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, masterQueryResult.getNumFound());
 
     // snappull
-    String masterUrl = "http://127.0.0.1:" + slaveJetty.getLocalPort() + "/solr/replication?command=fetchindex&masterUrl=";
+    masterUrl = "http://127.0.0.1:" + slaveJetty.getLocalPort() + "/solr/replication?command=fetchindex&masterUrl=";
     masterUrl += "http://127.0.0.1:" + masterJetty.getLocalPort() + "/solr/replication";
-    URL url = new URL(masterUrl);
-    InputStream stream = url.openStream();
+    url = new URL(masterUrl);
+    stream = url.openStream();
     try {
       stream.close();
     } catch (IOException e) {

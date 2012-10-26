@@ -447,7 +447,11 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
       log.info("start "+cmd);
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
-        iw.get().prepareCommit();
+        final Map<String,String> commitData = new HashMap<String,String>();
+        commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY,
+            String.valueOf(System.currentTimeMillis()));
+
+        iw.get().prepareCommit(commitData);
       } finally {
         iw.decref();
       }
