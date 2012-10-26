@@ -603,7 +603,7 @@ public final class ZkController {
           recoveryFuture.get(); // NOTE: this could potentially block for
           // minutes or more!
           // TODO: public as recovering in the mean time?
-          // TODO: in the future we could do peerync in parallel with recoverFromLog
+          // TODO: in the future we could do peersync in parallel with recoverFromLog
         } else {
           log.info("No LogReplay needed for core="+core.getName() + " baseURL=" + baseUrl);
         }
