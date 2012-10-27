@@ -125,6 +125,10 @@ Bug Fixes
 * SOLR-3998: Atomic update on uniqueKey field itself causes duplicate document.
   (Eric Spencer, yonik)
 
+* SOLR-4001: In CachingDirectoryFactory#close, if there are still refs for a
+  Directory outstanding, we need to wait for them to be released before closing.
+  (Mark Miller)
+
 Other Changes
 ----------------------
 
