@@ -16,9 +16,6 @@ package org.apache.lucene.search.positions;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.List;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
@@ -28,12 +25,29 @@ import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.*;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiPhraseQuery;
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Weight.PostingFeatures;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+
+import java.io.IOException;
+import java.util.List;
 
 public class TestPositionsAndOffsets extends LuceneTestCase {
 
@@ -50,7 +64,7 @@ public class TestPositionsAndOffsets extends LuceneTestCase {
     String codecName = Codec.getDefault().getName();
     assumeTrue("Codec does not support offsets: " + codecName,
         codecName.equals("SimpleText") ||
-            codecName.equals("Lucene40"));
+            codecName.equals("Lucene40") || codecName.equals("Lucene41"));
 
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
 
