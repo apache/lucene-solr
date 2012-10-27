@@ -109,6 +109,18 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     synchronized (this) {
       for (CacheValue val : byDirectoryCache.values()) {
         try {
+          // if there are still refs out, we have to wait for them
+          int cnt = 0;
+          while(val.refCnt != 0) {
+            wait(100);
+            
+            if (cnt++ >= 300) {
+              log.error("Timeout waiting for all directory ref counts to be released");
+              break;
+            }
+          }
+          
+          assert val.refCnt == 0 : val.refCnt;
           val.directory.close();
         } catch (Throwable t) {
           SolrException.log(log, "Error closing directory", t);
@@ -184,9 +196,22 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         directory = cacheValue.directory;
         if (forceNew) {
           cacheValue.doneWithDir = true;
+          
+          // we make a quick close attempt,
+          // otherwise this should be closed
+          // when whatever is using it, releases it
+          
           if (cacheValue.refCnt == 0) {
-            close(cacheValue.directory);
+            try {
+              // the following will decref, so
+              // first incref
+              cacheValue.refCnt++;
+              close(cacheValue.directory);
+            } catch (IOException e) {
+              SolrException.log(log, "Error closing directory", e);
+            }
           }
+          
         }
       }
       
