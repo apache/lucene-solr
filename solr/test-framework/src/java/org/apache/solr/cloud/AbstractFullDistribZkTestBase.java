@@ -1230,7 +1230,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       if (tries++ == 30) {
         fail("Shard still reported as live in zk - " + cnt + " jetty");
       }
-
+      Thread.sleep(1000);
       clusterState = zkStateReader.getClusterState();
     }
   }
