@@ -603,11 +603,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         for (Entry<String,Object> entry : ((Map<String,Object>) val).entrySet()) {
           String key = entry.getKey();
           Object fieldVal = entry.getValue();
+          boolean updateField = false;
           if ("add".equals(key)) {
+            updateField = true;
             oldDoc.addField( sif.getName(), fieldVal, sif.getBoost());
           } else if ("set".equals(key)) {
+            updateField = true;
             oldDoc.setField(sif.getName(),  fieldVal, sif.getBoost());
           } else if ("inc".equals(key)) {
+            updateField = true;
             SolrInputField numericField = oldDoc.get(sif.getName());
             if (numericField == null) {
               oldDoc.setField(sif.getName(),  fieldVal, sif.getBoost());
@@ -636,6 +640,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             }
 
           }
+
+          // validate that the field being modified is not the id field.
+          if (updateField && idField.getName().equals(sif.getName())) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid update of id field: " + sif);
+          }
+
         }
       } else {
         // normal fields are treated as a "set"
