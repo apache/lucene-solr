@@ -45,9 +45,9 @@ public final class BlockIntervalIterator extends IntervalIterator {
 
   /**
    * Construct a BlockIntervalIterator over a compound IntervalIterator.  The
-   * subiterators must be in order and sequential for a match.
-   * @param collectIntervals true if intervals will be collected
-   * @param other the compound IntervalIterator
+   * sub-iterators must be in order and sequential for a match.
+   * @param collectIntervals <code>true</code> if intervals will be collected
+   * @param other the compound {@link IntervalIterator} used to extract the individual block iterators
    */
   public BlockIntervalIterator(boolean collectIntervals, IntervalIterator other) {
     this(collectIntervals, defaultIncrements(other.subs(true).length), other);
@@ -56,9 +56,9 @@ public final class BlockIntervalIterator extends IntervalIterator {
   /**
    * Construct a BlockIntervalIterator over a compound IntervalIterator using
    * a supplied increments array.
-   * @param collectIntervals
-   * @param increments
-   * @param other
+   * @param collectIntervals <code>true</code> if intervals will be collected
+   * @param increments an array of position increments between the iterators
+   * @param other the compound {@link IntervalIterator} used to extract the individual block iterators 
    */
   public BlockIntervalIterator(boolean collectIntervals, int[] increments, IntervalIterator other) {
     super(other.getScorer(), collectIntervals);

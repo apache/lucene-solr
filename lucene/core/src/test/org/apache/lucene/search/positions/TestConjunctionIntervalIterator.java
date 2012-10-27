@@ -72,7 +72,7 @@ public class TestConjunctionIntervalIterator extends LuceneTestCase {
       assertEquals(0, scoreDocs[0].doc);
     }
     {
-      IntervalFilterQuery filter = new IntervalFilterQuery(query, new WithinIntervalIterator(3));
+      IntervalFilterQuery filter = new IntervalFilterQuery(query, new WithinIntervalFilter(3));
       TopDocs search = searcher.search(filter, 10);
       ScoreDoc[] scoreDocs = search.scoreDocs;
       assertEquals(2, search.totalHits);

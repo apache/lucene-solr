@@ -71,6 +71,13 @@ public abstract class Scorer extends DocIdSetIterator {
    * returned iterator is aligned with the scorer that created the iterator and
    * should only be advanced to the currently matched document.
    * 
+   * <p>
+   * Note: {@link IntervalIterator} can be pulled multiple times from a scorer.
+   * Yet, there should only be one iterator advanced on the same document. It is
+   * recommended that the caller maintains a single interval iterator per
+   * scorer.
+   * </p>
+   * 
    * @param collectIntervals
    *          if <code>true</code> the {@link IntervalIterator} can we used to
    *          collect all individual sub-intervals this {@link IntervalIterator}

@@ -43,9 +43,9 @@ import java.util.Set;
  * </pre>
  *
  * The document "the quick brown fox" will be matched by this query.  But
- * create a BrouwerianQuery using this query as a minuend:
+ * create a NonOverlappingQuery using this query as a minuend:
  * <pre>
- *   BrouwerianQuery brq = new BrouwerianQuery(bq, new TermQuery(new Term(field, "brown")));
+ *   NonOverlappingQuery brq = new NonOverlappingQuery(bq, new TermQuery(new Term(field, "brown")));
  * </pre>
  *
  * This query will not match "the quick brown fox", because "brown" is found
@@ -60,6 +60,7 @@ import java.util.Set;
  * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantic</a>
  *
  * @lucene.experimental
+ * @see BrouwerianIntervalIterator
  */
 public final class NonOverlappingQuery extends Query implements Cloneable {
   

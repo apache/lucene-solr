@@ -35,7 +35,7 @@ public class SloppyIntervalIterator extends IntervalIterator {
    * @param maxLength the maximum distance between the first and last subiterator match
    * @param collectIntervals true if intervals will be collected
    * @param iterators the subiterators
-   * @throws IOException
+   * @throws IOException if an low level I/O exception occurs
    */
   public SloppyIntervalIterator(Scorer scorer, int maxLength,
       boolean collectIntervals, IntervalIterator... iterators)

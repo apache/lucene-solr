@@ -45,7 +45,7 @@ public final class ConjunctionIntervalIterator extends IntervalIterator {
    * @param scorer the parent scorer
    * @param collectIntervals true if intervals will be collected
    * @param iterators a list of iterators to combine
-   * @throws IOException
+   * @throws IOException if a low level I/O exception occurs
    */
   public ConjunctionIntervalIterator(Scorer scorer, boolean collectIntervals,
       IntervalIterator... iterators) throws IOException {
@@ -60,7 +60,7 @@ public final class ConjunctionIntervalIterator extends IntervalIterator {
    * @param minimuNumShouldMatch the number of subiterators that should
    *                             match a document for a match to be returned
    * @param iterators a list of iterators to combine
-   * @throws IOException
+   * @throws IOException if an low level I/O exception occurs
    */
   public ConjunctionIntervalIterator(Scorer scorer, boolean collectIntervals,
       int minimuNumShouldMatch, IntervalIterator... iterators)

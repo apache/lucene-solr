@@ -221,7 +221,7 @@ public class TestBasicIntervals extends LuceneTestCase {
       BooleanQuery query = new BooleanQuery();
       query.add(makeTermQuery("u1"), Occur.MUST);
       query.add(makeTermQuery("u2"), Occur.MUST);
-      Query snq = new IntervalFilterQuery(query, new WithinIntervalIterator(
+      Query snq = new IntervalFilterQuery(query, new WithinIntervalFilter(
           0));
       Query rewrite = this.searcher.rewrite(snq);
       AtomicReader r = this.reader.getContext().leaves().get(0).reader();
@@ -276,7 +276,7 @@ public class TestBasicIntervals extends LuceneTestCase {
       query.add(makeTermQuery("u1"), Occur.MUST);
       query.add(makeTermQuery("u2"), Occur.MUST);
       Query nearQuery = new IntervalFilterQuery(query,
-          new WithinIntervalIterator(0));
+          new WithinIntervalFilter(0));
       
       BooleanQuery topLevel = new BooleanQuery();
       topLevel.add(nearQuery, Occur.MUST);
@@ -284,7 +284,7 @@ public class TestBasicIntervals extends LuceneTestCase {
 
 
       Query rewrite = this.searcher.rewrite(new IntervalFilterQuery(topLevel,
-          new WithinIntervalIterator(1)));
+          new WithinIntervalFilter(1)));
       AtomicReader r = this.reader.getContext().leaves().get(0).reader();
       Weight createWeight = rewrite.createWeight(new IndexSearcher(r));
       Scorer scorer = createWeight.scorer(r.getContext(), random()
