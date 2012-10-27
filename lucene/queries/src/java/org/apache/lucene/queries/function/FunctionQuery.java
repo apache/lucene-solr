@@ -178,8 +178,7 @@ public class FunctionQuery extends Query {
 
     @Override
     public IntervalIterator intervals(boolean collectIntervals) throws IOException {
-      throw new UnsupportedOperationException();
-      //nocommit - is that correct here?
+      throw new UnsupportedOperationException("AllScorer doesn't support interval iterators.");
     }
   }
 

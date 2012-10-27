@@ -90,8 +90,7 @@ public class ValueSourceScorer extends Scorer {
 
   @Override
   public IntervalIterator intervals(boolean collectIntervals) throws IOException {    
-    throw new UnsupportedOperationException();
-    //nocommit - is that correct here?
+    throw new UnsupportedOperationException("ValueSourceScorer doesn't support interval iterators.");
   }
 
   @Override

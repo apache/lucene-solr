@@ -304,7 +304,7 @@ public class ToChildBlockJoinQuery extends Query {
     }
 
     @Override
-    public IntervalIterator intervals(boolean collectIntervals) throws IOException {      // nocommit is that correct here?
+    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       return parentScorer.intervals(collectIntervals);
     }
   }
