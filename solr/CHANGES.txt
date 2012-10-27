@@ -122,6 +122,9 @@ Bug Fixes
 * SOLR-3995: Recovery may never finish on SolrCore shutdown if the last reference to 
   a SolrCore is closed by the recovery process. (Mark Miller)
 
+* SOLR-3998: Atomic update on uniqueKey field itself causes duplicate document.
+  (Eric Spencer, yonik)
+
 Other Changes
 ----------------------
 

@@ -16,34 +16,12 @@
  */
 package org.apache.solr.update;
 
-
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
-import org.apache.noggit.ObjectBuilder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-import static org.apache.solr.core.SolrCore.verbose;
+import java.util.concurrent.Callable;
 
 public class TestUpdate extends SolrTestCaseJ4 {
   @BeforeClass
@@ -218,6 +196,49 @@ public class TestUpdate extends SolrTestCaseJ4 {
 
     assertJQ(req("qt","/get", "id","1", "fl","id,val*")
         ,"=={'doc':{'id':'1', 'val_i':5, 'val_is':[1999999996], 'val2_i':-2000000004, 'val2_f':1.0E20, 'val2_d':-1.2345678901e+100, 'val2_l':4999999996}}"
+    );
+
+
+    // remove some fields
+    version = addAndGetVersion(sdoc(
+        "id", "1",
+        "val_is", map("set",null),
+        "val2_f", map("set",null)
+    ),
+        null);
+
+    afterUpdate.call();
+
+    assertJQ(req("qt","/get", "id","1", "fl","id,val*")
+        ,"=={'doc':{'id':'1', 'val_i':5, 'val2_i':-2000000004, 'val2_d':-1.2345678901e+100, 'val2_l':4999999996}}"
+    );
+
+    // test that updating a unique id results in failure.
+    try {
+      ignoreException("Invalid update of id field");
+      version = addAndGetVersion(sdoc(
+          "id", map("set","1"),
+          "val_is", map("inc","2000000000")
+      ),
+          null);
+
+      fail();
+    } catch (SolrException se) {
+      resetExceptionIgnores();
+      assertEquals(400, se.code());
+      assertTrue(se.getMessage().indexOf("Invalid update of id field") >= 0);
+    }
+
+    afterUpdate.call();
+
+    assertJQ(req("qt","/get", "id","1", "fl","id,val*")
+        ,"=={'doc':{'id':'1', 'val_i':5, 'val2_i':-2000000004, 'val2_d':-1.2345678901e+100, 'val2_l':4999999996}}"
+    );
+
+   // nothing should have changed - check with a normal query that we didn't create a duplicate
+    assertU(commit("softCommit","false"));
+    assertJQ(req("q","id:1", "fl","id")
+        ,"/response/numFound==1"
     );
 
   }
