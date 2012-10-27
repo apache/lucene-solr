@@ -159,7 +159,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     // to talk to a downed node causes grief
     waitToSeeDownInClusterState(leaderJetty, jetties);
 
-    waitForThingsToLevelOut(30);
+    waitForThingsToLevelOut(45);
     
     checkShardConsistency(false, true);
     
