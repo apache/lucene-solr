@@ -116,7 +116,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           while(val.refCnt != 0) {
             wait(100);
             
-            if (cnt++ >= 100*10*30) {
+            if (cnt++ >= 300) {
               log.error("Timeout waiting for all directory ref counts to be released");
               break;
             }
