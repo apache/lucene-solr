@@ -855,7 +855,7 @@ def checkJavadocpathFull(path, failOnMissing=True):
     raise RuntimeError('broken javadocs links found!')
 
 def testDemo(isSrc, version, jdk):
-  if (os.access('index', os.F_OK)):
+  if os.path.exists('index'):
     shutil.rmtree('index') # nuke any index from any previous iteration
 
   print('    test demo with %s...' % jdk)
