@@ -35,7 +35,7 @@ New Features
   output for a single input.  UpToTwoPositiveIntsOutputs was moved
   from lucene/core to lucene/misc.  (Mike McCandless)
 
-* LUCENE-3842: New AnalyzingCompletionLookup, for doing auto-suggest
+* LUCENE-3842: New AnalyzingSuggester, for doing auto-suggest
   using an analyzer.  This can create powerful suggesters: if the analyzer
   remove stop words then "ghost chr..." could suggest "The Ghost of
   Christmas Past"; if SynonymFilter is used to map wifi and wireless
@@ -83,6 +83,9 @@ Bug Fixes
   romaji even for out-of-vocabulary kana cases (e.g. half-width forms).
   (Robert Muir)
 
+* LUCENE-4504: Fix broken sort comparator in ValueSource.getSortField,
+  used when sorting by a function query.  (Tom Shally via Robert Muir)
+
 Optimizations
 
 * LUCENE-4443: Lucene41PostingsFormat no longer writes unnecessary offsets 
@@ -113,6 +116,10 @@ Optimizations
   write the doc id.  (Mike McCandless, Robert Muir)
 
 Build
+
+* Upgrade randomized testing to version 2.0.4: avoid hangs on shutdown
+  hooks hanging forever by calling Runtime.halt() in addition to 
+  Runtime.exit() after a short delay to allow graceful shutdown (Dawid Weiss)
 
 * LUCENE-4451: Memory leak per unique thread caused by 
   RandomizedContext.contexts static map. Upgrade randomized testing

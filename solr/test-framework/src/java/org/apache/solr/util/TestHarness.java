@@ -72,7 +72,7 @@ import java.util.Map;
  */
 public class TestHarness {
   String coreName;
-  protected CoreContainer container;
+  protected volatile CoreContainer container;
   private final ThreadLocal<DocumentBuilder> builderTL = new ThreadLocal<DocumentBuilder>();
   private final ThreadLocal<XPath> xpathTL = new ThreadLocal<XPath>();
   public UpdateRequestHandler updater;
@@ -124,6 +124,7 @@ public class TestHarness {
   
   public TestHarness(String coreName, CoreContainer.Initializer init) {
     try {
+
       container = init.initialize();
       if (coreName == null)
         coreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;

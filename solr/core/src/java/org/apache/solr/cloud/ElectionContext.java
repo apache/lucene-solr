@@ -17,6 +17,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.UpdateLog;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,7 @@ import org.slf4j.LoggerFactory;
  */
 
 public abstract class ElectionContext {
-  
+  private static Logger log = LoggerFactory.getLogger(ElectionContext.class);
   final String electionPath;
   final ZkNodeProps leaderProps;
   final String id;
@@ -58,7 +59,12 @@ public abstract class ElectionContext {
   public void close() {}
   
   public void cancelElection() throws InterruptedException, KeeperException {
-    zkClient.delete(leaderSeqPath, -1, true);
+    try {
+      zkClient.delete(leaderSeqPath, -1, true);
+    } catch (NoNodeException e) {
+      // fine
+      log.warn("cancelElection did not find election node to remove");
+    }
   }
 
   abstract void runLeaderProcess(boolean weAreReplacement) throws KeeperException, InterruptedException, IOException;
@@ -233,6 +239,13 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     } catch (Throwable t) {
       try {
         core = cc.getCore(coreName);
+        if (core == null) {
+          cancelElection();
+          throw new SolrException(ErrorCode.SERVER_ERROR,
+              "Fatal Error, SolrCore not found:" + coreName + " in "
+                  + cc.getCoreNames());
+        }
+        
         core.getCoreDescriptor().getCloudDescriptor().isLeader = false;
         
         // we could not publish ourselves as leader - rejoin election
@@ -342,12 +355,15 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       return false;
     }
     
-    if (core.getCoreDescriptor().getCloudDescriptor().getLastPublished().equals(ZkStateReader.ACTIVE)) {
+    if (core.getCoreDescriptor().getCloudDescriptor().getLastPublished()
+        .equals(ZkStateReader.ACTIVE)) {
       log.info("My last published State was Active, it's okay to be the leader.");
       return true;
     }
-    
-//    TODO: and if no is a good candidate?
+    log.info("My last published State was "
+        + core.getCoreDescriptor().getCloudDescriptor().getLastPublished()
+        + ", I won't be the leader.");
+    // TODO: and if no one is a good candidate?
     
     return false;
   }

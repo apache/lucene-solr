@@ -610,20 +610,26 @@ public class CoreAdminHandler extends RequestHandlerBase {
           
           @Override
           public void postClose(SolrCore core) {
-            File dataDir = new File(core.getIndexDir());
-            File[] files = dataDir.listFiles();
-            if (files != null) {
-              for (File file : files) {
-                if (!file.delete()) {
-                  log.error(file.getAbsolutePath()
-                      + " could not be deleted on core unload");
+            Directory dir = null;
+            try {
+              dir = core.getDirectoryFactory().get(core.getIndexDir(), null);
+              core.getDirectoryFactory().remove(dir);
+              core.getDirectoryFactory().doneWithDirectory(dir);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            } finally {
+              if (dir != null) {
+                try {
+                  core.getDirectoryFactory().release(dir);
+                } catch (IOException e) {
+                  log.error("IOException trying to release directory", e);
                 }
               }
-              if (!dataDir.delete()) log.error(dataDir.getAbsolutePath()
-                  + " could not be deleted on core unload");
-            } else {
-              log.error(dataDir.getAbsolutePath()
-                  + " could not be deleted on core unload");
+            }
+            try {
+              core.getDirectoryFactory().remove(dir);
+            } catch (IOException e) {
+              log.error("IOException trying to remove directory", e);
             }
           }
         });
@@ -668,7 +674,16 @@ public class CoreAdminHandler extends RequestHandlerBase {
         });
       }
     } finally {
-      if (core != null) core.close();
+      // it's important that we try and cancel recovery
+      // before we close here - else we might close the
+      // core *in* recovery and end up locked in recovery
+      // waiting to for recovery to be cancelled
+      if (core != null) {
+        if (coreContainer.getZkController() != null) {
+          core.getSolrCoreState().cancelRecovery();
+        }
+        core.close();
+      }
     }
     return coreContainer.isPersistent();
     
@@ -996,7 +1011,19 @@ public class CoreAdminHandler extends RequestHandlerBase {
   }
   
   private long getIndexSize(SolrCore core) {
-    return FileUtils.sizeOfDirectory(new File(core.getIndexDir()));
+    Directory dir;
+    long size = 0;
+    try {
+      dir = core.getDirectoryFactory().get(core.getIndexDir(), null);
+      try {
+        size = DirectoryFactory.sizeOfDirectory(dir);
+      } finally {
+        core.getDirectoryFactory().release(dir);
+      }
+    } catch (IOException e) {
+      SolrException.log(log, "IO error while trying to get the size of the Directory", e);
+    }
+    return size;
   }
 
   protected static String normalizePath(String path) {

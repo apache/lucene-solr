@@ -17,6 +17,7 @@
 
 package org.apache.solr.update;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -41,9 +42,11 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
   // TODO: fix this test to not require FSDirectory
   static String savedFactory;
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeClass() throws Exception {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
+
+    initCore("solrconfig_perf.xml", "schema12.xml");
   }
   @AfterClass
   public static void afterClass() {
@@ -56,11 +59,7 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
 
   public static final Logger log 
     = LoggerFactory.getLogger(TestIndexingPerformance.class);
-
-  @Override
-  public String getSchemaFile() { return "schema12.xml"; }
-  @Override
-  public String getSolrConfigFile() { return "solrconfig_perf.xml"; }
+  
 
   public void testIndexingPerf() throws IOException {
     int iter=1000;

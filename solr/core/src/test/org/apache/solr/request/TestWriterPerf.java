@@ -17,19 +17,22 @@
 
 package org.apache.solr.request;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.util.ArrayList;
+
+import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
-
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.io.*;
 
 
 public class TestWriterPerf extends AbstractSolrTestCase {
@@ -37,10 +40,11 @@ public class TestWriterPerf extends AbstractSolrTestCase {
   public static final Logger log 
     = LoggerFactory.getLogger(TestWriterPerf.class);
 
-  @Override
-  public String getSchemaFile() { return "schema11.xml"; }
-  @Override
-  public String getSolrConfigFile() { return "solrconfig-functionquery.xml"; }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-functionquery.xml", "schema11.xml");
+  }
+  
   public String getCoreName() { return "basic"; }
 
   @Override

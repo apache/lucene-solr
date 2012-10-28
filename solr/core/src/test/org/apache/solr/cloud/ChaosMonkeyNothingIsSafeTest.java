@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -82,7 +83,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       handle.clear();
       handle.put("QTime", SKIPVAL);
       handle.put("timestamp", SKIPVAL);
-      
+      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
       // make sure we have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
         zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard" + j, 10000);
@@ -189,19 +190,6 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       }
     }
   }
-  
-  // skip the randoms - they can deadlock...
-  protected void indexr(Object... fields) throws Exception {
-    SolrInputDocument doc = getDoc(fields);
-    indexDoc(doc);
-  }
-
-  private SolrInputDocument getDoc(Object... fields) {
-    SolrInputDocument doc = new SolrInputDocument();
-    addFields(doc, fields);
-    addFields(doc, "rnd_b", true);
-    return doc;
-  }
 
   class FullThrottleStopableIndexingThread extends StopableIndexingThread {
     private HttpClient httpClient = HttpClientUtil.createClient(null);
@@ -305,5 +293,19 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     }
     
   };
+  
+  
+  // skip the randoms - they can deadlock...
+  protected void indexr(Object... fields) throws Exception {
+    SolrInputDocument doc = getDoc(fields);
+    indexDoc(doc);
+  }
+
+  SolrInputDocument getDoc(Object... fields) throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    addFields(doc, fields);
+    addFields(doc, "rnd_b", true);
+    return doc;
+  }
   
 }

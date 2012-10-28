@@ -17,7 +17,6 @@
 
 package org.apache.solr.core;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
@@ -26,28 +25,11 @@ import org.apache.lucene.store.RAMDirectory;
 /**
  * Factory to instantiate {@link org.apache.lucene.store.RAMDirectory}
  */
-public class RAMDirectoryFactory extends StandardDirectoryFactory {
+public class RAMDirectoryFactory extends EphemeralDirectoryFactory {
 
   @Override
   protected Directory create(String path) throws IOException {
     return new RAMDirectory();
-  }
-  
-  @Override
-  public boolean exists(String path) {
-    String fullPath = new File(path).getAbsolutePath();
-    synchronized (this) {
-      CacheValue cacheValue = byPathCache.get(fullPath);
-      Directory directory = null;
-      if (cacheValue != null) {
-        directory = cacheValue.directory;
-      }
-      if (directory == null) {
-        return false;
-      } else {
-        return true;
-      }
-    }
   }
 
 }

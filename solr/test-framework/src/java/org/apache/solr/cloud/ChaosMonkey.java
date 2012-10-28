@@ -189,7 +189,7 @@ public class ChaosMonkey {
   }
   
   private static void stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
-    
+    assert(jetty != null);
     monkeyLog("stop shard! " + jetty.getLocalPort());
     // get a clean shutdown so that no dirs are left open...
     FilterHolder fh = jetty.getDispatchFilter();

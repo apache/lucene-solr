@@ -19,6 +19,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -26,6 +27,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.BeforeClass;
 
 import java.util.*;
 import java.io.IOException;
@@ -35,10 +37,12 @@ import java.io.IOException;
  */
 public class TestSearchPerf extends AbstractSolrTestCase {
 
-  @Override
-  public String getSchemaFile() { return "schema11.xml"; }
-  @Override
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+  
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema11.xml");
+  }
+
 
   @Override
   public void setUp() throws Exception {

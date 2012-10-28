@@ -17,26 +17,19 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.update.processor.RegexReplaceProcessorFactory;
-
-import org.apache.solr.util.AbstractSolrTestCase;
-
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.solr.update.processor.RegexReplaceProcessorFactory;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.Assume;
+import org.junit.BeforeClass;
 
 public class TestXIncludeConfig extends AbstractSolrTestCase {
 
-  @Override
-  public String getSchemaFile() {
-    return "schema-xinclude.xml";
-  }
-
-  //public String getSolrConfigFile() { return "solrconfig.xml"; }
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig-xinclude.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-xinclude.xml", "schema-xinclude.xml");
   }
 
   @Override

@@ -19,23 +19,26 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Assert;
-import junit.framework.TestCase;
 
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 public class ZkSolrClientTest extends AbstractSolrTestCase {
   private static final boolean DEBUG = false;
 
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
+  }
+  
   public void testConnect() throws Exception {
     String zkDir = dataDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
@@ -43,7 +46,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
 
     server = new ZkTestServer(zkDir);
     server.run();
-
+    AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
     SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
 
     zkClient.close();
@@ -57,7 +60,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
 
     server = new ZkTestServer(zkDir);
     server.run();
-
+    AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
     AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
     SolrZkClient zkClient = new SolrZkClient(server.getZkHost(),
@@ -77,7 +80,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
     try {
       server = new ZkTestServer(zkDir);
       server.run();
-
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
       AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       zkClient = new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
@@ -170,6 +173,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
     final AtomicInteger cnt = new AtomicInteger();
     ZkTestServer server = new ZkTestServer(zkDir);
     server.run();
+    AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
     Thread.sleep(400);
     AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
     final SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), AbstractZkTestCase.TIMEOUT);
@@ -233,16 +237,6 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
     }
   }
 
-  @Override
-  public String getSchemaFile() {
-    return null;
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return null;
-  }
-  
   @Override
   public void tearDown() throws Exception {
     super.tearDown();

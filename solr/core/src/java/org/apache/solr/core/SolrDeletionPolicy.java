@@ -132,7 +132,11 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
     synchronized (this) {
       long maxCommitAgeTimeStamp = -1L;
       IndexCommit newest = commits.get(commits.size() - 1);
-      log.info("newest commit = " + newest.getGeneration());
+      try {
+        log.info("newest commit = " + newest.getGeneration() + newest.getFileNames().toString());
+      } catch (IOException e1) {
+        throw new RuntimeException();
+      }
 
       int singleSegKept = (newest.getSegmentCount() == 1) ? 1 : 0;
       int totalKept = 1;

@@ -17,7 +17,6 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
@@ -27,7 +26,7 @@ import org.apache.lucene.util.LuceneTestCase;
 /**
  * Opens a directory with {@link LuceneTestCase#newDirectory()}
  */
-public class MockDirectoryFactory extends CachingDirectoryFactory {
+public class MockDirectoryFactory extends EphemeralDirectoryFactory {
 
   @Override
   protected Directory create(String path) throws IOException {
@@ -41,23 +40,13 @@ public class MockDirectoryFactory extends CachingDirectoryFactory {
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setAssertNoUnrefencedFilesOnClose(false);
     }
+    
+    // ram dirs in cores that are restarted end up empty
+    // and check index fails
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper)dir).setCheckIndexOnClose(false);
+    }
     return dir;
   }
-  
-  @Override
-  public boolean exists(String path) {
-    String fullPath = new File(path).getAbsolutePath();
-    synchronized (this) {
-      CacheValue cacheValue = byPathCache.get(fullPath);
-      Directory directory = null;
-      if (cacheValue != null) {
-        directory = cacheValue.directory;
-      }
-      if (directory == null) {
-        return false;
-      } else {
-        return true;
-      }
-    }
-  }
+
 }

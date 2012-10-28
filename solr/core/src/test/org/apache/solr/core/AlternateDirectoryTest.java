@@ -41,7 +41,7 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
     assertTrue(TestIndexReaderFactory.newReaderCalled);
   }
 
-  static public class TestFSDirectoryFactory extends CachingDirectoryFactory {
+  static public class TestFSDirectoryFactory extends StandardDirectoryFactory {
     public static volatile boolean openCalled = false;
     public static volatile Directory dir;
     

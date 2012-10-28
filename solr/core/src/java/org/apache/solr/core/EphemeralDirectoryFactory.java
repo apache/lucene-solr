@@ -16,22 +16,41 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.SimpleFSDirectory;
-
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.lucene.store.Directory;
 
 /**
- * Factory to instantiate {@link org.apache.lucene.store.SimpleFSDirectory}
- *
- **/
-public class SimpleFSDirectoryFactory extends StandardDirectoryFactory {
-
+ * Directory provider for implementations that do not persist over reboots.
+ * 
+ */
+public abstract class EphemeralDirectoryFactory extends CachingDirectoryFactory {
+  
   @Override
-  protected Directory create(String path) throws IOException {
-    return new SimpleFSDirectory(new File(path));
+  public boolean exists(String path) {
+    String fullPath = new File(path).getAbsolutePath();
+    synchronized (this) {
+      CacheValue cacheValue = byPathCache.get(fullPath);
+      Directory directory = null;
+      if (cacheValue != null) {
+        directory = cacheValue.directory;
+      }
+      if (directory == null) {
+        return false;
+      } else {
+        return true;
+      }
+    }
   }
-
+  
+  @Override
+  public void remove(Directory dir) throws IOException {
+    // ram dir does not persist its dir anywhere
+  }
+  
+  @Override
+  public String normalize(String path) throws IOException {
+    return path;
+  }
 }

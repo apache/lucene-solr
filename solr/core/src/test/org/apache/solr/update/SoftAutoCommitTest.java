@@ -32,6 +32,7 @@ import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.Before;
+import org.junit.BeforeClass;
 
 /**
  * Test auto commit functionality in a way that doesn't suck.
@@ -55,10 +56,11 @@ import org.junit.Before;
 @Slow
 public class SoftAutoCommitTest extends AbstractSolrTestCase {
 
-  @Override
-  public String getSchemaFile() { return "schema.xml"; }
-  @Override
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
+  }
 
   private MockEventListener monitor;
   private DirectUpdateHandler2 updater;
@@ -76,6 +78,13 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     core.registerNewSearcherListener(monitor);
     updater.registerSoftCommitCallback(monitor);
     updater.registerCommitCallback(monitor);
+  }
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    // reset stats
+    h.getCoreContainer().reload("collection1");
   }
 
   public void testSoftAndHardCommitMaxTimeMixedAdds() throws Exception {
@@ -179,7 +188,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
   }
 
   public void testSoftAndHardCommitMaxTimeDelete() throws Exception {
-
+    
     final int softCommitWaitMillis = 500;
     final int hardCommitWaitMillis = 1200;
 
