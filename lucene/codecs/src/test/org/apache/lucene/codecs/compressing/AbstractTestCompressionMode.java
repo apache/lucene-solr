@@ -76,6 +76,16 @@ public abstract class AbstractTestCompressionMode extends LuceneTestCase {
     return Arrays.copyOfRange(bytes.bytes, bytes.offset, bytes.offset + bytes.length);
   }
 
+  static byte[] copyCompressedData(Uncompressor uncompressor, byte[] compressed) throws IOException {
+    GrowableByteArrayDataOutput out = new GrowableByteArrayDataOutput(compressed.length);
+    uncompressor.copyCompressedData(new ByteArrayDataInput(compressed), out);
+    return Arrays.copyOf(out.bytes, out.length);
+  }
+
+  byte[] copyCompressedData(byte[] compressed) throws IOException {
+    return copyCompressedData(mode.newUncompressor(), compressed);
+  }
+
   public void testUncompress() throws IOException {
     final byte[] uncompressed = randomArray();
     final byte[] compressed = compress(uncompressed);
@@ -103,9 +113,47 @@ public abstract class AbstractTestCompressionMode extends LuceneTestCase {
   public void testCopyCompressedData() throws IOException {
     final byte[] uncompressed = randomArray();
     final byte[] compressed = compress(uncompressed);
-    GrowableByteArrayDataOutput out = new GrowableByteArrayDataOutput(uncompressed.length);
-    mode.newUncompressor().copyCompressedData(new ByteArrayDataInput(compressed), out);
-    assertArrayEquals(compressed, Arrays.copyOf(out.bytes, out.length));
+    assertArrayEquals(compressed, copyCompressedData(compressed));
+  }
+
+  public void test(byte[] uncompressed) throws IOException {
+    final byte[] compressed = compress(uncompressed);
+    final byte[] restored = uncompress(compressed);
+    assertEquals(uncompressed.length, restored.length);
+    assertArrayEquals(compressed, copyCompressedData(compressed));
+  }
+
+  public void testEmptySequence() throws IOException {
+    test(new byte[0]);
+  }
+
+  public void testShortSequence() throws IOException {
+    test(new byte[] { (byte) random().nextInt(256) });
+  }
+
+  public void testIncompressible() throws IOException {
+    final byte[] uncompressed = new byte[RandomInts.randomIntBetween(random(), 20, 256)];
+    for (int i = 0; i < uncompressed.length; ++i) {
+      uncompressed[i] = (byte) i;
+    }
+    test(uncompressed);
+  }
+
+  // for LZ compression
+
+  public void testShortLiteralsAndMatchs() throws IOException {
+    // literals and matchs lengths <= 15
+    final byte[] uncompressed = "1234562345673456745678910123".getBytes("UTF-8");
+    test(uncompressed);
+  }
+
+  public void testLongLiteralsAndMatchs() throws IOException {
+    // literals and matchs length > 16
+    final byte[] uncompressed = new byte[RandomInts.randomIntBetween(random(), 300, 1024)];
+    for (int i = 0; i < uncompressed.length; ++i) {
+      uncompressed[i] = (byte) i;
+    }
+    test(uncompressed);
   }
 
 }
