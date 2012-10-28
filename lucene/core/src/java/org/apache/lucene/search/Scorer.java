@@ -67,16 +67,13 @@ public abstract class Scorer extends DocIdSetIterator {
   
   /**
    * Expert: Retrieves an {@link IntervalIterator} for this scorer allowing
-   * access to position and offset intervals for each matching document. The
-   * returned iterator is aligned with the scorer that created the iterator and
-   * should only be advanced to the currently matched document.
-   * 
-   * <p>
-   * Note: {@link IntervalIterator} can be pulled multiple times from a scorer.
-   * Yet, there should only be one iterator advanced on the same document. It is
-   * recommended that the caller maintains a single interval iterator per
-   * scorer.
-   * </p>
+   * access to position and offset intervals for each
+   * matching document.  Call this up-front and use it as
+   * long as you are still using this scorer.  The
+   * returned iterator is bound to scorer that created it;
+   * after {@link #nextDoc} or {@link #advance} you must
+   * call {@link IntervalIterator#scorerAdvanced} before
+   * iterating over that document's intervals.
    * 
    * @param collectIntervals
    *          if <code>true</code> the {@link IntervalIterator} can be used to
@@ -86,6 +83,8 @@ public abstract class Scorer extends DocIdSetIterator {
    * @return an {@link IntervalIterator} over matching intervals
    * @throws IOException
    *           if a low-level I/O error is encountered
+   *
+   * @lucene.experimental
    */
   public abstract IntervalIterator intervals(boolean collectIntervals) throws IOException;
 
