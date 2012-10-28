@@ -16,6 +16,9 @@ package org.apache.lucene.search.intervals;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.List;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
@@ -40,17 +43,16 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Weight.PostingFeatures;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.intervals.Interval;
 import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
-import java.io.IOException;
-import java.util.List;
-
+@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
 public class TestPositionsAndOffsets extends LuceneTestCase {
 
   // What am I testing here?
