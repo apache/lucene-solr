@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;

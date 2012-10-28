@@ -19,7 +19,7 @@ package org.apache.solr.search;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;

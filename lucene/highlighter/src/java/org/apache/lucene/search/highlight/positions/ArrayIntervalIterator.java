@@ -19,9 +19,9 @@ package org.apache.lucene.search.highlight.positions;
 
 import java.io.IOException;
 
-import org.apache.lucene.search.positions.IntervalCollector;
-import org.apache.lucene.search.positions.IntervalIterator;
-import org.apache.lucene.search.positions.Interval;
+import org.apache.lucene.search.intervals.Interval;
+import org.apache.lucene.search.intervals.IntervalCollector;
+import org.apache.lucene.search.intervals.IntervalIterator;
 
 /**
  * Present an array of PositionIntervals as an Iterator.

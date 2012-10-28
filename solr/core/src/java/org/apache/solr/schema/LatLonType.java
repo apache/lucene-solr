@@ -24,7 +24,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
 
 import com.spatial4j.core.io.ParseUtils;
 import com.spatial4j.core.context.SpatialContext;

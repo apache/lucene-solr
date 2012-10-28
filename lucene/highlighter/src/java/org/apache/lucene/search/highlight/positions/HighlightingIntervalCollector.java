@@ -22,9 +22,9 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight.PostingFeatures;
-import org.apache.lucene.search.positions.IntervalIterator;
-import org.apache.lucene.search.positions.IntervalCollector;
-import org.apache.lucene.search.positions.Interval;
+import org.apache.lucene.search.intervals.Interval;
+import org.apache.lucene.search.intervals.IntervalCollector;
+import org.apache.lucene.search.intervals.IntervalIterator;
 
 /**
  * Collects the first maxDocs docs and their positions matching the query

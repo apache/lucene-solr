@@ -20,7 +20,7 @@ package org.apache.lucene.queries.function;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;

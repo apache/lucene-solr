@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
-import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 
 /* See the description in BooleanScorer.java, comparing

@@ -23,7 +23,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.Scorer.ChildScorer;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
-import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.util.ArrayUtil;
 
 import java.io.IOException;

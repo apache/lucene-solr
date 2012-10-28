@@ -19,9 +19,9 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.search.PhraseQuery.TermDocsEnumFactory;
-import org.apache.lucene.search.positions.BlockIntervalIterator;
-import org.apache.lucene.search.positions.IntervalIterator;
-import org.apache.lucene.search.positions.TermIntervalIterator;
+import org.apache.lucene.search.intervals.BlockIntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
+import org.apache.lucene.search.intervals.TermIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 
 import java.io.IOException;

@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -82,7 +82,7 @@ public abstract class Scorer extends DocIdSetIterator {
    *          if <code>true</code> the {@link IntervalIterator} can we used to
    *          collect all individual sub-intervals this {@link IntervalIterator}
    *          is composed of via
-   *          {@link IntervalIterator#collect(org.apache.lucene.search.positions.IntervalCollector)}
+   *          {@link IntervalIterator#collect(org.apache.lucene.search.intervals.IntervalCollector)}
    * @return an {@link IntervalIterator} over matching intervals
    * @throws IOException
    *           if a low-level I/O error is encountered

@@ -30,11 +30,11 @@ import java.util.Map;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.positions.ConjunctionIntervalIterator;
-import org.apache.lucene.search.positions.Interval;
-import org.apache.lucene.search.positions.SloppyIntervalIterator;
-import org.apache.lucene.search.positions.IntervalIterator;
-import org.apache.lucene.search.positions.TermIntervalIterator;
+import org.apache.lucene.search.intervals.ConjunctionIntervalIterator;
+import org.apache.lucene.search.intervals.Interval;
+import org.apache.lucene.search.intervals.IntervalIterator;
+import org.apache.lucene.search.intervals.SloppyIntervalIterator;
+import org.apache.lucene.search.intervals.TermIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.OpenBitSet;
 

@@ -21,8 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.positions.IntervalIterator;
-import org.apache.lucene.search.positions.TermIntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
+import org.apache.lucene.search.intervals.TermIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.

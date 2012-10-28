@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 
 /**

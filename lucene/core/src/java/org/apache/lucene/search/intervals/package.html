@@ -1,0 +1,70 @@
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+
+<HTML>
+<HEAD>
+    <TITLE>org.apache.lucene.search.intervals</TITLE>
+</HEAD>
+<BODY>
+<h2>Interval Iterators</h2>
+<p>
+Lucene offers extensive query and scoring flexibility including boolean queries, specialized phrase queries, wildcards and many more. The intervals package aims
+to provide a common interface to Lucene's proximity features available on all core queries. The central class in this package is
+{@link org.apache.lucene.search.intervals.IntervalIterator IntervalIterator}, which allows iterative consumption of term positions and offsets on complex queries.
+{@link org.apache.lucene.search.Scorer Scorer} exposes direct access to the queries' {@link org.apache.lucene.search.intervals.IntervalIterator IntervalIterator} reflecting a logical view
+of the scorer on positions and offsets for each matching document.</p>
+<p>
+Intervals are entirely detached from scoring/matching documents and have no effect on query performance if proximity information or offsets are not needed or consumed. Its lazy nature requires
+the user to specify the need for positions/offsets at scorer creation time per segment allowing for a large number of usecases:
+
+<ul>
+<li>Proximity matching without scoring ie. if token positions are needed for filtering out documents but the actual query score should not be modified</li>
+<li>Second pass scoring ie. for high-performance proximity queries common practice is to re-score the top N (usually a large N) results of a non-proximity query with proximity information to improve precision.</li>
+<li>Collecting an exhaustive list of intervals per query ie. complex queries might be interested in actual term positions across the entire query tree</li>
+<li>Highlighting queries without re-analyzing the document or storing term vectors if offsets are stored in the index. Especially large documents will see a tremendous performance and space-consumption improvement over term-vectors / re-analyzing</li>
+<li>Specializing queries for exotic proximity operators based on core queries</li>
+</ul>
+
+<h2>Core Iterators and Queries</h2>
+
+The intervals package provides a basic set of {@link org.apache.lucene.search.intervals.IntervalIterator IntervalIterator} and {@link org.apache.lucene.search.Query Query} implementation 
+based on minimum interval semantics, as defined in
+<a href="http://vigna.dsi.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics">"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantics</a>
+<p>
+  The following {@link org.apache.lucene.search.intervals.IntervalIterator IntervalIterator} implementations are provided:
+  <ol>
+    <li>{@link org.apache.lucene.search.intervals.BlockIntervalIterator - BlockIntervalIterator} -- an iterator providing an ordered <i>phrasal operator</i> with given gaps between sub-iterators</li>
+    <li>{@link org.apache.lucene.search.intervals.OrderedConjunctionIntervalIterator - OrderedConjunctionIntervalIterator} -- an iterator providing an <i>ordered non-overlapping conjunction operator</i></li>
+    <li>{@link org.apache.lucene.search.intervals.ConjunctionIntervalIterator - ConjunctionIntervalIterator} -- an iterator providing a <i>unordered conjunction operator</i></li>
+    <li>{@link org.apache.lucene.search.intervals.BrouwerianIntervalIterator - BrouwerianIntervalIterator} -- an iterator computing the non-overlapping difference between two iterators</li>
+    <li>{@link org.apache.lucene.search.intervals.DisjunctionIntervalIterator - DisjunctionIntervalIterator} -- an iterator providing a <i>unordered disjunction operator</i></li>
+  </ol>
+  All queries require positions to be stored in the index.
+</p>
+
+<p>
+  The following Query implementations are provided:
+  <ol>
+    <li>{@link org.apache.lucene.search.intervals.IntervalFilterQuery - IntervalFilterQuery} -- Filters a Query based on the positions or ranges of its component parts</li>
+    <li>{@link org.apache.lucene.search.intervals.OrderedNearQuery - OrderedNearQuery} -- Filters queries based on the ordered difference between their match positions in a document</li>
+    <li>{@link org.apache.lucene.search.intervals.UnorderedNearQuery - UnorderedNearQuery} -- Filters queries based on the unordered difference between their match positions in a document</li>
+    <li>{@link org.apache.lucene.search.intervals.NonOverlappingQuery - NonOverlappingQuery} -- Filters out queries with overlapping match positions</li>
+  </ol>
+  All queries require positions to be stored in the index.
+</p>
+</BODY>
+</HTML>

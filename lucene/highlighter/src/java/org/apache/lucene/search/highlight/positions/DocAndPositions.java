@@ -20,7 +20,7 @@ package org.apache.lucene.search.highlight.positions;
 import java.util.Comparator;
 
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.positions.Interval;
+import org.apache.lucene.search.intervals.Interval;
 import org.apache.lucene.util.ArrayUtil;
 
 /** Used to accumulate position intervals while scoring 

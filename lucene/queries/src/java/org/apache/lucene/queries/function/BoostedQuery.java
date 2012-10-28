@@ -18,7 +18,7 @@ package org.apache.lucene.queries.function;
  */
 
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;

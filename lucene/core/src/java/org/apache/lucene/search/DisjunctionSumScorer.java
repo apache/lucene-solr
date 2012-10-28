@@ -20,9 +20,9 @@ package org.apache.lucene.search;
 import java.util.List;
 import java.io.IOException;
 
-import org.apache.lucene.search.positions.ConjunctionIntervalIterator;
-import org.apache.lucene.search.positions.DisjunctionIntervalIterator;
-import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.intervals.ConjunctionIntervalIterator;
+import org.apache.lucene.search.intervals.DisjunctionIntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
 
 /** A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>.
  * This Scorer implements {@link Scorer#advance(int)} and uses advance() on the given Scorers. 

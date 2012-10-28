@@ -16,8 +16,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.positions.DisjunctionIntervalIterator;
-import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.intervals.DisjunctionIntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
 
 import java.io.IOException;
 import java.util.ArrayList;

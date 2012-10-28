@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 
-import org.apache.lucene.search.positions.ConjunctionIntervalIterator;
-import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.intervals.ConjunctionIntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.util.ArrayUtil;
 
 /** Scorer for conjunctions, sets of queries, all of which are required. */

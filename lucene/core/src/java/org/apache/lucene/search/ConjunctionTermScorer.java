@@ -24,9 +24,9 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.search.positions.ConjunctionIntervalIterator;
-import org.apache.lucene.search.positions.IntervalIterator;
-import org.apache.lucene.search.positions.TermIntervalIterator;
+import org.apache.lucene.search.intervals.ConjunctionIntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
+import org.apache.lucene.search.intervals.TermIntervalIterator;
 import org.apache.lucene.util.ArrayUtil;
 
 

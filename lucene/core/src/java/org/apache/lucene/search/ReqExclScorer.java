@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.apache.lucene.search.positions.ConjunctionIntervalIterator;
-import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.intervals.ConjunctionIntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
 
 /** A Scorer for queries with a required subscorer
  * and an excluding (prohibited) sub DocIdSetIterator.

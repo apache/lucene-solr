@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.BooleanQuery.BooleanWeight;
-import org.apache.lucene.search.positions.IntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
 
 import java.io.IOException;
 import java.util.Collection;
