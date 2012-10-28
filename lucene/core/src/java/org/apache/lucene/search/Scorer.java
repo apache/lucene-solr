@@ -79,7 +79,7 @@ public abstract class Scorer extends DocIdSetIterator {
    * </p>
    * 
    * @param collectIntervals
-   *          if <code>true</code> the {@link IntervalIterator} can we used to
+   *          if <code>true</code> the {@link IntervalIterator} can be used to
    *          collect all individual sub-intervals this {@link IntervalIterator}
    *          is composed of via
    *          {@link IntervalIterator#collect(org.apache.lucene.search.intervals.IntervalCollector)}
