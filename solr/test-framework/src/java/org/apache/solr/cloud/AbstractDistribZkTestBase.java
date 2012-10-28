@@ -151,13 +151,13 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
         if (!sawLiveRecovering) {
           if (verbose) System.out.println("no one is recoverying");
         } else {
+          if (verbose) System.out
+          .println("Gave up waiting for recovery to finish..");
           if (failOnTimeout) {
-            fail("There are still nodes recoverying");
+            fail("There are still nodes recoverying - waited for " + timeoutSeconds + " seconds");
             printLayout();
             return;
           }
-          if (verbose) System.out
-              .println("gave up waiting for recovery to finish..");
         }
         cont = false;
       } else {
