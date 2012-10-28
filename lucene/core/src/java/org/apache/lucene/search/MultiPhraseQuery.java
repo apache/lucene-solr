@@ -223,7 +223,7 @@ public class MultiPhraseQuery extends Query {
             throw new IllegalStateException("field \"" + term.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + term.text() + ")");
           }
 
-          factory = new TermDocsEnumFactory(BytesRef.deepCopyOf(term.bytes()), termsEnum, flags, acceptDocs);
+          factory = new TermDocsEnumFactory(term.bytes(), termState, termsEnum, flags, acceptDocs);
         }
         
         postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, factory, termsEnum.docFreq() , positions.get(pos).intValue(), terms);

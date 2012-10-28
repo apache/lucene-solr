@@ -261,7 +261,7 @@ public class PhraseQuery extends Query {
           // term does exist, but has no positions
           throw new IllegalStateException("field \"" + t.field() + "\" was indexed without position data; cannot run PhraseQuery (term=" + t.text() + ")");
         }
-        TermDocsEnumFactory factory = new TermDocsEnumFactory(BytesRef.deepCopyOf(t.bytes()), te, flags, acceptDocs);
+        TermDocsEnumFactory factory = new TermDocsEnumFactory(t.bytes(), state, te, flags, acceptDocs);
         postingsFreqs[i] = new PostingsAndFreq(postingsEnum, factory, te.docFreq(), positions.get(i).intValue(), t);
       }
 
@@ -391,15 +391,18 @@ public class PhraseQuery extends Query {
   static class TermDocsEnumFactory {
     protected final TermsEnum termsEnum;
     protected final Bits liveDocs;
-    protected final BytesRef term;
     protected final PostingFeatures flags;
+
+    private final BytesRef term;
+    private final TermState termState;
     
     TermDocsEnumFactory(TermsEnum termsEnum, PostingFeatures flags, Bits liveDocs) {
-      this(null, termsEnum, flags, liveDocs);
+      this(null, null, termsEnum, flags, liveDocs);
     }
     
-    TermDocsEnumFactory(BytesRef term, TermsEnum termsEnum, PostingFeatures flags,  Bits liveDocs) {
+    TermDocsEnumFactory(BytesRef term, TermState termState, TermsEnum termsEnum, PostingFeatures flags,  Bits liveDocs) {
       this.termsEnum = termsEnum;
+      this.termState = termState;
       this.liveDocs = liveDocs;
       this.term = term;
       this.flags = flags;
@@ -408,10 +411,8 @@ public class PhraseQuery extends Query {
     
     public DocsAndPositionsEnum docsAndPositionsEnum()
         throws IOException {
-      if (term != null) {
-        assert term != null;
-        termsEnum.seekExact(term, false);
-      }
+      assert term != null;
+      termsEnum.seekExact(term, termState);
       return termsEnum.docsAndPositions(liveDocs, null, flags.docsAndPositionsFlags());
     }
 
