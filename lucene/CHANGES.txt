@@ -117,6 +117,10 @@ Optimizations
 
 Build
 
+* Upgrade randomized testing to version 2.0.4: avoid hangs on shutdown
+  hooks hanging forever by calling Runtime.halt() in addition to 
+  Runtime.exit() after a short delay to allow graceful shutdown (Dawid Weiss)
+
 * LUCENE-4451: Memory leak per unique thread caused by 
   RandomizedContext.contexts static map. Upgrade randomized testing
   to version 2.0.2 (Mike McCandless, Dawid Weiss)
