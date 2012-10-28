@@ -93,7 +93,7 @@ public class TermQuery extends Query {
         return null;
       }
       DocsEnum docs;
-      if (!flags.isProximityFeature()) {
+      if (flags.compareTo(PostingFeatures.POSITIONS) < 0) {
         docs = termsEnum.docs(acceptDocs, null, flags.docFlags());
       } else {
         docs =  termsEnum.docsAndPositions(acceptDocs, null, flags.docsAndPositionsFlags());

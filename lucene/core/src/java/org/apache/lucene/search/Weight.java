@@ -136,27 +136,25 @@ public abstract class Weight {
    */
   public static enum PostingFeatures {
     /**Only document IDs are required for document collection and scoring*/
-    DOCS_ONLY(0, 0, false), 
+    DOCS_ONLY(0, 0), 
     /**Document IDs and Term Frequencies are required for document collection and scoring*/
-    DOCS_AND_FREQS(DocsEnum.FLAG_FREQS, 0, false),
+    DOCS_AND_FREQS(DocsEnum.FLAG_FREQS, 0),
     /**Document IDs, Term Frequencies and Positions are required for document collection and scoring*/
-    POSITIONS(DocsEnum.FLAG_FREQS, 0, true),
+    POSITIONS(DocsEnum.FLAG_FREQS, 0),
     /**Document IDs, Term Frequencies, Positions and Payloads are required for document collection and scoring*/
-    POSITIONS_AND_PAYLOADS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_PAYLOADS, true),
+    POSITIONS_AND_PAYLOADS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_PAYLOADS),
     /**Document IDs, Term Frequencies, Positions and Offsets are required for document collection and scoring*/
-    OFFSETS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_OFFSETS, true),
+    OFFSETS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_OFFSETS),
     /**Document IDs, Term Frequencies, Positions, Offsets and Payloads are required for document collection and scoring*/
     OFFSETS_AND_PAYLOADS(DocsEnum.FLAG_FREQS, DocsAndPositionsEnum.FLAG_OFFSETS
-            | DocsAndPositionsEnum.FLAG_PAYLOADS, true);
+            | DocsAndPositionsEnum.FLAG_PAYLOADS);
     
     private final int docsAndPositionsFlags;
     private final int docFlags;
-    private final boolean isProximityFeature;
     
-    private PostingFeatures(int docFlags, int docsAndPositionsFlags, boolean isProximityFeature) {
+    private PostingFeatures(int docFlags, int docsAndPositionsFlags) {
       this.docsAndPositionsFlags = docsAndPositionsFlags;
       this.docFlags = docFlags;
-      this.isProximityFeature = isProximityFeature;
     }
     
     /**
@@ -180,14 +178,5 @@ public abstract class Weight {
     public int docFlags() {
       return docFlags;
     }
-    
-    /**
-     * Returns <code>true</code> iff the current flags set requires positions
-     * ie. a {@link DocsAndPositionsEnum}.
-     */
-    public boolean isProximityFeature() {
-      return isProximityFeature;
-    }
-    
   }
 }
