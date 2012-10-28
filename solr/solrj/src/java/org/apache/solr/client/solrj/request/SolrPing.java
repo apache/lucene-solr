@@ -17,18 +17,20 @@
 
 package org.apache.solr.client.solrj.request;
 
-import java.io.IOException;
-import java.util.Collection;
-
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 
+import java.io.IOException;
+import java.util.Collection;
+
 /**
- * 
+ * Verify that there is a working Solr core at the URL of a {@link SolrServer}.
+ * To use this class, the solrconfig.xml for the relevant core must include the
+ * request handler for <code>/admin/ping</code>.
  *
  * @since solr 1.3
  */
