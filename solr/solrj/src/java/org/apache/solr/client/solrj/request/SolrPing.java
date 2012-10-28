@@ -28,8 +28,10 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 
 /**
- * 
- *
+ * Verify that there is a working Solr core at the URL of a {@link SolrServer}.
+ * To use this class, the solrconfig.xml for the relevant core must include the
+ * request handler for <code>/admin/ping</code>.
+ *  
  * @since solr 1.3
  */
 public class SolrPing extends SolrRequest
