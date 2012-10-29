@@ -113,7 +113,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   
   protected void waitForRecoveriesToFinish(String collection, ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout)
       throws Exception {
-    waitForRecoveriesToFinish(collection, zkStateReader, verbose, failOnTimeout, 600 * (TEST_NIGHTLY ? 2 : 1) * RANDOM_MULTIPLIER);
+    waitForRecoveriesToFinish(collection, zkStateReader, verbose, failOnTimeout, 180 * (TEST_NIGHTLY ? 2 : 1) * RANDOM_MULTIPLIER);
   }
   
   protected void waitForRecoveriesToFinish(String collection,
@@ -154,8 +154,17 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
           if (verbose) System.out
           .println("Gave up waiting for recovery to finish..");
           if (failOnTimeout) {
-            fail("There are still nodes recoverying - waited for " + timeoutSeconds + " seconds");
+            Map<Thread,StackTraceElement[]> stackTraces = Thread.getAllStackTraces();
+            for (Map.Entry<Thread,StackTraceElement[]>  entry : stackTraces.entrySet()) {
+              System.out.println("");
+              System.out.println(entry.getKey().toString());
+              for (StackTraceElement st : entry.getValue()) {
+                System.out.println(st);
+              }
+            }
             printLayout();
+            fail("There are still nodes recoverying - waited for " + timeoutSeconds + " seconds");
+            // won't get here
             return;
           }
         }
