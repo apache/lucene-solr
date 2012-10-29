@@ -714,6 +714,40 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     //collectionNameList.remove(collectionName);
 
+    // remove an unknown collection
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.DELETE.toString());
+    params.set("name", "unknown_collection");
+    request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+ 
+    createNewSolrServer("", baseUrl).request(request);
+    
+    // create another collection should still work
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATE.toString());
+
+    params.set("numShards", 1);
+    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, 1);
+    collectionName = "acollectionafterbaddelete";
+
+    params.set("name", collectionName);
+    request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    createNewSolrServer("", baseUrl).request(request);
+    
+    checkForCollection(collectionName, 1);
+    
+    url = getUrlFromZk(collectionName);
+    
+    collectionClient = new HttpSolrServer(url);
+    
+    // poll for a second - it can take a moment before we are ready to serve
+    waitForNon403or404or503(collectionClient);
+    
+    for (int j = 0; j < cnt; j++) {
+      waitForRecoveriesToFinish(collectionName, zkStateReader, false);
+    }
   }
 
 

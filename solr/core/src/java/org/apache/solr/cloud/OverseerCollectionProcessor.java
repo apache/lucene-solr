@@ -80,7 +80,7 @@ public class OverseerCollectionProcessor implements Runnable {
   
   @Override
   public void run() {
-    log.info("Process current queue of collection creations");
+    log.info("Process current queue of collection messages");
     while (amILeader() && !isClosed) {
       try {
         byte[] head = workQueue.peek(true);
@@ -88,13 +88,20 @@ public class OverseerCollectionProcessor implements Runnable {
         //if (head != null) {    // should not happen since we block above
           final ZkNodeProps message = ZkNodeProps.load(head);
           final String operation = message.getStr(QUEUE_OPERATION);
-          
+        try {
           boolean success = processMessage(message, operation);
           if (!success) {
             // TODO: what to do on failure / partial failure
             // if we fail, do we clean up then ?
-            SolrException.log(log, "Collection creation of " + message.getStr("name") + " failed");
+            SolrException.log(log,
+                "Collection " + operation + " of " + message.getStr("name")
+                    + " failed");
           }
+        } catch(Throwable t) {
+          SolrException.log(log,
+              "Collection " + operation + " of " + message.getStr("name")
+                  + " failed", t);
+        }
         //}
         workQueue.remove();
       } catch (KeeperException e) {
