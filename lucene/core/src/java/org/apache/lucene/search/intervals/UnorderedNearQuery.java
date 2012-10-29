@@ -29,7 +29,7 @@ import org.apache.lucene.search.Query;
  *
  * Implements the LOWPASS<sub>k</sub> operator as defined in <a href=
  * "http://vigna.dsi.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics"
- * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantic</a>
+ * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantics"</a>
  *
  * @lucene.experimental
  */

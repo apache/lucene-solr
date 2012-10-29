@@ -27,7 +27,7 @@ import java.io.IOException;
  * 
  * <a href=
  * "http://vigna.dsi.unimi.it/ftp/papers/EfficientAlgorithmsMinimalIntervalSemantics"
- * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantic</a>
+ * >"Efficient Optimally Lazy Algorithms for Minimal-Interval Semantics"</a>
  * 
  * @lucene.experimental
  */
