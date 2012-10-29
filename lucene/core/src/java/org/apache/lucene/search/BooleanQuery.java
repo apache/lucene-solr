@@ -17,12 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.ConjunctionTermScorer.DocsAndFreqs;
 import org.apache.lucene.search.TermQuery.TermWeight;
 import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 
