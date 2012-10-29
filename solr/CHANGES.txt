@@ -55,6 +55,10 @@ New Features
 * SOLR-3911: Make Directory and DirectoryFactory first class so that the majority 
   of Solr's features work with any custom implementations. (Mark Miller)
 
+* SOLR-1972: Add extra statistics to RequestHandlers - 5 & 15-minute reqs/sec
+  rolling averages; median, 75th, 95th, 99th, 99.9th percentile request times
+  (Alan Woodward)
+
 Optimizations
 ----------------------
 
