@@ -38,11 +38,13 @@ import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import java.util.zip.DeflaterOutputStream;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -53,6 +55,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CloseHook;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrDeletionPolicy;
@@ -204,9 +207,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         rsp.add(STATUS,ERR_STATUS);
         rsp.add("message","No slave configured");
       }
-    } else if (command.equals(CMD_FILE_CHECKSUM)) {
-      // this command is not used by anyone
-      getFileChecksum(solrParams, rsp);
     } else if (command.equals(CMD_SHOW_COMMITS)) {
       rsp.add(CMD_SHOW_COMMITS, getCommits());
     } else if (command.equals(CMD_DETAILS)) {
@@ -237,30 +237,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
     return l;
-  }
-
-  /**
-   * Gets the checksum of a file
-   */
-  private void getFileChecksum(SolrParams solrParams, SolrQueryResponse rsp) {
-    Checksum checksum = new Adler32();
-    File dir = new File(core.getIndexDir());
-    rsp.add(CHECKSUM, getCheckSums(solrParams.getParams(FILE), dir, checksum));
-    dir = new File(core.getResourceLoader().getConfigDir());
-    rsp.add(CONF_CHECKSUM, getCheckSums(solrParams.getParams(CONF_FILE_SHORT), dir, checksum));
-  }
-
-  private Map<String, Long> getCheckSums(String[] files, File dir, Checksum checksum) {
-    Map<String, Long> checksumMap = new HashMap<String, Long>();
-    if (files == null || files.length == 0)
-      return checksumMap;
-    for (String file : files) {
-      File f = new File(dir, file);
-      Long checkSumVal = getCheckSum(checksum, f);
-      if (checkSumVal != null)
-        checksumMap.put(file, checkSumVal);
-    }
-    return checksumMap;
   }
 
   static Long getCheckSum(Checksum checksum, File f) {
@@ -343,15 +319,22 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   /**
-   * This method adds an Object of FileStream to the resposnse . The FileStream implements a custom protocol which is
+   * This method adds an Object of FileStream to the response . The FileStream implements a custom protocol which is
    * understood by SnapPuller.FileFetcher
    *
-   * @see org.apache.solr.handler.SnapPuller.FileFetcher
+   * @see org.apache.solr.handler.SnapPuller.LocalFsFileFetcher
+   * @see org.apache.solr.handler.SnapPuller.DirectoryFileFetcher
    */
   private void getFileStream(SolrParams solrParams, SolrQueryResponse rsp) {
     ModifiableSolrParams rawParams = new ModifiableSolrParams(solrParams);
     rawParams.set(CommonParams.WT, FILE_STREAM);
-    rsp.add(FILE_STREAM, new FileStream(solrParams));
+    
+    String cfileName = solrParams.get(CONF_FILE_SHORT);
+    if (cfileName != null) {
+      rsp.add(FILE_STREAM, new LocalFsFileStream(solrParams));
+    } else {
+      rsp.add(FILE_STREAM, new DirectoryFileStream(solrParams));
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -372,21 +355,29 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     // reserve the indexcommit for sometime
     core.getDeletionPolicy().setReserveDuration(gen, reserveCommitDuration);
     List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
+    Directory dir = null;
     try {
-      //get all the files in the commit
-      //use a set to workaround possible Lucene bug which returns same file name multiple times
+      // get all the files in the commit
+      // use a set to workaround possible Lucene bug which returns same file
+      // name multiple times
       Collection<String> files = new HashSet<String>(commit.getFileNames());
-      for (String fileName : files) {
-        if(fileName.endsWith(".lock")) continue;
-        File file = new File(core.getIndexDir(), fileName);
-        Map<String, Object> fileMeta = getFileInfo(file);
-        result.add(fileMeta);
+      dir = core.getDirectoryFactory().get(core.getNewIndexDir(), null);
+      try {
+        
+        for (String fileName : files) {
+          if (fileName.endsWith(".lock")) continue;
+          Map<String,Object> fileMeta = new HashMap<String,Object>();
+          fileMeta.put(NAME, fileName);
+          fileMeta.put(SIZE, dir.fileLength(fileName));
+          result.add(fileMeta);
+        }
+      } finally {
+        core.getDirectoryFactory().release(dir);
       }
     } catch (IOException e) {
       rsp.add("status", "unable to get file names for given index generation");
       rsp.add("exception", e);
-      LOG.warn("Unable to get file names for indexCommit generation: "
-               + gen, e);
+      LOG.error("Unable to get file names for indexCommit generation: " + gen, e);
     }
     rsp.add(CMD_GET_FILE_LIST, result);
     if (confFileNameAlias.size() < 1 || core.getCoreDescriptor().getCoreContainer().isZooKeeperAware())
@@ -444,7 +435,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       Map<String, Object> map = new HashMap<String, Object>();
       map.put(NAME, name);
       map.put(SIZE, size);
-      map.put(LAST_MODIFIED, lastmodified);
       map.put(CHECKSUM, checksum);
       return map;
     }
@@ -474,18 +464,19 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   long getIndexSize() {
-    return FileUtils.sizeOfDirectory(new File(core.getIndexDir()));
-  }
-
-  /**
-   * Collects the details such as name, size ,lastModified of a file
-   */
-  private Map<String, Object> getFileInfo(File file) {
-    Map<String, Object> fileMeta = new HashMap<String, Object>();
-    fileMeta.put(NAME, file.getName());
-    fileMeta.put(SIZE, file.length());
-    fileMeta.put(LAST_MODIFIED, file.lastModified());
-    return fileMeta;
+    Directory dir;
+    long size = 0;
+    try {
+      dir = core.getDirectoryFactory().get(core.getIndexDir(), null);
+      try {
+        size = DirectoryFactory.sizeOfDirectory(dir);
+      } finally {
+        core.getDirectoryFactory().release(dir);
+      }
+    } catch (IOException e) {
+      SolrException.log(LOG, "IO error while trying to get the size of the Directory", e);
+    }
+    return size;
   }
 
   @Override
@@ -885,7 +876,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           }
 
           // reboot the writer on the new index
-          core.getUpdateHandler().newIndexWriter(true);
+          // TODO: perhaps this is no longer necessary then?
+         // core.getUpdateHandler().newIndexWriter(true);
 
         } catch (IOException e) {
           LOG.warn("Unable to get IndexCommit on startup", e);
@@ -936,7 +928,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private void registerFileStreamResponseWriter() {
     core.registerResponseWriter(FILE_STREAM, new BinaryQueryResponseWriter() {
       public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse resp) throws IOException {
-        FileStream stream = (FileStream) resp.getValues().get(FILE_STREAM);
+        DirectoryFileStream stream = (DirectoryFileStream) resp.getValues().get(FILE_STREAM);
         stream.write(out);
       }
 
@@ -1009,17 +1001,111 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     };
   }
 
-  private class FileStream {
-    private SolrParams params;
+  private class DirectoryFileStream {
+    protected SolrParams params;
 
-    private FastOutputStream fos;
+    protected FastOutputStream fos;
 
-    private Long indexGen;
-    private IndexDeletionPolicyWrapper delPolicy;
+    protected Long indexGen;
+    protected IndexDeletionPolicyWrapper delPolicy;
 
-    public FileStream(SolrParams solrParams) {
+    public DirectoryFileStream(SolrParams solrParams) {
       params = solrParams;
       delPolicy = core.getDeletionPolicy();
+    }
+
+    public void write(OutputStream out) throws IOException {
+      String fileName = params.get(FILE);
+      String cfileName = params.get(CONF_FILE_SHORT);
+      String sOffset = params.get(OFFSET);
+      String sLen = params.get(LEN);
+      String compress = params.get(COMPRESSION);
+      String sChecksum = params.get(CHECKSUM);
+      String sGen = params.get(GENERATION);
+      if (sGen != null) indexGen = Long.parseLong(sGen);
+      if (Boolean.parseBoolean(compress)) {
+        fos = new FastOutputStream(new DeflaterOutputStream(out));
+      } else {
+        fos = new FastOutputStream(out);
+      }
+
+      int packetsWritten = 0;
+      IndexInput in = null;
+      try {
+        long offset = -1;
+        int len = -1;
+        // check if checksum is requested
+        boolean useChecksum = Boolean.parseBoolean(sChecksum);
+        if (sOffset != null) offset = Long.parseLong(sOffset);
+        if (sLen != null) len = Integer.parseInt(sLen);
+        if (fileName == null && cfileName == null) {
+          // no filename do nothing
+          writeNothing();
+        }
+        
+        RefCounted<SolrIndexSearcher> sref = core.getSearcher();
+        Directory dir;
+        try {
+          SolrIndexSearcher searcher = sref.get();
+          dir = searcher.getIndexReader().directory();
+        } finally {
+          sref.decref();
+        }
+        in = dir.openInput(fileName, IOContext.READONCE);
+        // if offset is mentioned move the pointer to that point
+        if (offset != -1) in.seek(offset);
+        byte[] buf = new byte[(len == -1 || len > PACKET_SZ) ? PACKET_SZ : len];
+        Checksum checksum = null;
+        if (useChecksum) checksum = new Adler32();
+        
+        long filelen = dir.fileLength(fileName);
+        while (true) {
+          offset = offset == -1 ? 0 : offset;
+          int read = (int) Math.min(buf.length, filelen - offset);
+          in.readBytes(buf, offset == -1 ? 0 : (int) offset, read);
+          
+          fos.writeInt((int) read);
+          if (useChecksum) {
+            checksum.reset();
+            checksum.update(buf, 0, read);
+            fos.writeLong(checksum.getValue());
+          }
+          fos.write(buf, 0, read);
+          fos.flush();
+          if (indexGen != null && (packetsWritten % 5 == 0)) {
+            // after every 5 packets reserve the commitpoint for some time
+            delPolicy.setReserveDuration(indexGen, reserveCommitDuration);
+          }
+          packetsWritten++;
+          if (read != buf.length) {
+            writeNothing();
+            fos.close();
+            break;
+          }
+        }
+      } catch (IOException e) {
+        LOG.warn("Exception while writing response for params: " + params, e);
+      } finally {
+        if (in != null) {
+          in.close();
+        }
+      }
+    }
+
+
+    /**
+     * Used to write a marker for EOF
+     */
+    protected void writeNothing() throws IOException {
+      fos.writeInt(0);
+      fos.flush();
+    }
+  }
+
+  private class LocalFsFileStream extends DirectoryFileStream {
+
+    public LocalFsFileStream(SolrParams solrParams) {
+      super(solrParams);
     }
 
     public void write(OutputStream out) throws IOException {
@@ -1053,13 +1139,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
 
         File file = null;
-        if (cfileName != null) {
-          //if if is a conf file read from config diectory
-          file = new File(core.getResourceLoader().getConfigDir(), cfileName);
-        } else {
-          //else read from the indexdirectory
-          file = new File(core.getIndexDir(), fileName);
-        }
+  
+        //if if is a conf file read from config diectory
+        file = new File(core.getResourceLoader().getConfigDir(), cfileName);
+
         if (file.exists() && file.canRead()) {
           inputStream = new FileInputStream(file);
           FileChannel channel = inputStream.getChannel();
@@ -1103,17 +1186,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         IOUtils.closeQuietly(inputStream);
       }
     }
-
-
-    /**
-     * Used to write a marker for EOF
-     */
-    private void writeNothing() throws IOException {
-      fos.writeInt(0);
-      fos.flush();
-    }
-  }
-
+  } 
+  
   public static final String MASTER_URL = "masterUrl";
 
   public static final String STATUS = "status";
@@ -1131,8 +1205,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String CMD_GET_FILE_LIST = "filelist";
 
   public static final String CMD_GET_FILE = "filecontent";
-
-  public static final String CMD_FILE_CHECKSUM = "filechecksum";
 
   public static final String CMD_DISABLE_POLL = "disablepoll";
 
@@ -1157,8 +1229,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String NAME = "name";
 
   public static final String SIZE = "size";
-
-  public static final String LAST_MODIFIED = "lastmodified";
 
   public static final String CONF_FILE_SHORT = "cf";
 

@@ -16,24 +16,7 @@
  */
 package org.apache.solr.search.function;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
-
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.*;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
@@ -47,29 +30,45 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.QParser;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.VersionedFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.*;
+
 /**
  * Obtains float field values from an external file.
  *
+ * @see org.apache.solr.schema.ExternalFileField
+ * @see org.apache.solr.schema.ExternalFileFieldReloader
  */
 
 public class FileFloatSource extends ValueSource {
+
   private SchemaField field;
   private final SchemaField keyField;
   private final float defVal;
-
   private final String dataDir;
 
-  public FileFloatSource(SchemaField field, SchemaField keyField, float defVal, QParser parser) {
+  private static final Logger log = LoggerFactory.getLogger(FileFloatSource.class);
+
+  /**
+   * Creates a new FileFloatSource
+   * @param field the source's SchemaField
+   * @param keyField the field to use as a key
+   * @param defVal the default value to use if a field has no entry in the external file
+   * @param datadir the directory in which to look for the external file
+   */
+  public FileFloatSource(SchemaField field, SchemaField keyField, float defVal, String datadir) {
     this.field = field;
     this.keyField = keyField;
     this.defVal = defVal;
-    this.dataDir = parser.getReq().getCore().getDataDir();
+    this.dataDir = datadir;
   }
 
   @Override
@@ -117,9 +116,25 @@ public class FileFloatSource extends ValueSource {
             + ",defVal="+defVal+",dataDir="+dataDir+")";
 
   }
-  
+
+  /**
+   * Remove all cached entries.  Values are lazily loaded next time getValues() is
+   * called.
+   */
   public static void resetCache(){
     floatCache.resetCache();
+  }
+
+  /**
+   * Refresh the cache for an IndexReader.  The new values are loaded in the background
+   * and then swapped in, so queries against the cache should not block while the reload
+   * is happening.
+   * @param reader the IndexReader whose cache needs refreshing
+   */
+  public void refreshCache(IndexReader reader) {
+    log.info("Refreshing FlaxFileFloatSource cache for field {}", this.field.getName());
+    floatCache.refresh(reader, new Entry(this));
+    log.info("FlaxFileFloatSource cache for field {} reloaded", this.field.getName());
   }
 
   private final float[] getCachedFloats(IndexReader reader) {
@@ -138,6 +153,18 @@ public class FileFloatSource extends ValueSource {
     private final Map readerCache = new WeakHashMap();
 
     protected abstract Object createValue(IndexReader reader, Object key);
+
+    public void refresh(IndexReader reader, Object key) {
+      Object refreshedValues = createValue(reader, key);
+      synchronized (readerCache) {
+        Map innerCache = (Map) readerCache.get(reader);
+        if (innerCache == null) {
+          innerCache = new HashMap();
+          readerCache.put(reader, innerCache);
+        }
+        innerCache.put(key, refreshedValues);
+      }
+    }
 
     public Object get(IndexReader reader, Object key) {
       Map innerCache;

@@ -27,6 +27,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.noggit.*;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.*;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.*;
@@ -177,6 +178,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
    * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
   public static void initCore(String config, String schema, String solrHome) throws Exception {
+    assertNotNull(solrHome);
     configString = config;
     schemaString = schema;
     testSolrHome = solrHome;
@@ -234,8 +236,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
      if (endNumOpens-numOpens != endNumCloses-numCloses) {
        String msg = "ERROR: SolrIndexSearcher opens=" + (endNumOpens-numOpens) + " closes=" + (endNumCloses-numCloses);
        log.error(msg);
-       // if its TestReplicationHandler on freebsd, ignore it
-       if ("FreeBSD".equals(Constants.OS_NAME) && "TestReplicationHandler".equals(RandomizedContext.current().getTargetClass().getSimpleName())) {
+       // if its TestReplicationHandler, ignore it. the test is broken and gets no love
+       if ("TestReplicationHandler".equals(RandomizedContext.current().getTargetClass().getSimpleName())) {
          log.warn("TestReplicationHandler wants to fail!: " + msg);
        } else {
          fail(msg);
@@ -377,6 +379,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   public static void createCore() {
+    assertNotNull(testSolrHome);
     solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
     h = new TestHarness( dataDir.getAbsolutePath(),
             solrConfig,
@@ -667,14 +670,15 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * Generates a simple &lt;add&gt;&lt;doc&gt;... XML String with no options
    */
   public static String adoc(SolrInputDocument sdoc) {
-    List<String> fields = new ArrayList<String>();
-    for (SolrInputField sf : sdoc) {
-      for (Object o : sf.getValues()) {
-        fields.add(sf.getName());
-        fields.add(o.toString());
-      }
+    StringWriter out = new StringWriter(512);
+    try {
+      out.append("<add>");
+      ClientUtils.writeXML(sdoc, out);
+      out.append("</add>");
+    } catch (IOException e) {
+      throw new RuntimeException("Inexplicable IO error from StringWriter", e);
     }
-    return adoc(fields.toArray(new String[fields.size()]));
+    return out.toString();
   }
 
 

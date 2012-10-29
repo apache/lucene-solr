@@ -17,23 +17,24 @@
 
 package org.apache.solr.update.processor;
 
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.update.processor.CustomUpdateRequestProcessor;
-import org.apache.solr.util.AbstractSolrTestCase;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 import java.util.Arrays;
 
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 
 /**
  * 
  */
 public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
-
-  @Override public String getSchemaFile()     { return "schema.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig-transformers.xml"; }
+  
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-transformers.xml", "schema.xml");
+  }
   
 
   public void testConfiguration() throws Exception 

@@ -16,15 +16,15 @@ package org.apache.solr.update;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import java.io.File;
+import java.io.FileFilter;
+
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
-
-import java.io.File;
-import java.io.FileFilter;
+import org.junit.BeforeClass;
 
 
 /**
@@ -33,15 +33,9 @@ import java.io.FileFilter;
  **/
 public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
 
-  @Override
-  public String getSchemaFile() {
-    return "schema12.xml";
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    // return "solrconfig-duh-optimize.xml";
-    return "solrconfig.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema12.xml");
   }
 
 

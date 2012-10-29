@@ -493,20 +493,24 @@ public class SolrDispatchFilter implements Filter
    * filter into a larger web application.
    *
    * For example, if web.xml specifies:
-   *
+   * <pre class="prettyprint">
+   * {@code
    * <filter-mapping>
    *  <filter-name>SolrRequestFilter</filter-name>
    *  <url-pattern>/xxx/*</url-pattern>
-   * </filter-mapping>
+   * </filter-mapping>}
+   * </pre>
    *
    * Make sure to set the PathPrefix to "/xxx" either with this function
    * or in web.xml.
    *
+   * <pre class="prettyprint">
+   * {@code
    * <init-param>
    *  <param-name>path-prefix</param-name>
    *  <param-value>/xxx</param-value>
-   * </init-param>
-   *
+   * </init-param>}
+   * </pre>
    */
   public void setPathPrefix(String pathPrefix) {
     this.pathPrefix = pathPrefix;

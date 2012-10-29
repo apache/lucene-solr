@@ -130,10 +130,24 @@ public class CoreDescriptor {
   }
 
   /**@return the core instance directory. */
-  public String getInstanceDir() {
-    return instanceDir;
+  public String getRawInstanceDir() {
+    return this.instanceDir;
   }
 
+  /**
+   *
+   * @return the core instance directory, prepended with solr_home if not an absolute path.
+   */
+  public String getInstanceDir() {
+    String instDir = this.instanceDir;
+    if (instDir == null) return null; // No worse than before.
+
+    if (new File(instDir).isAbsolute()) {
+      return SolrResourceLoader.normalizeDir(SolrResourceLoader.normalizeDir(instanceDir));
+    }
+    return SolrResourceLoader.normalizeDir(coreContainer.getSolrHome() +
+        SolrResourceLoader.normalizeDir(instDir));
+  }
   /**Sets the core configuration resource name. */
   public void setConfigName(String name) {
     if (name == null || name.length() == 0)

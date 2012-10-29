@@ -47,8 +47,11 @@ import org.junit.BeforeClass;
 public class SyncSliceTest extends AbstractFullDistribZkTestBase {
   
   @BeforeClass
-  public static void beforeSuperClass() {
-    
+  public static void beforeSuperClass() throws Exception {
+    // TODO: we use an fs based dir because something
+    // like a ram dir will not recovery correctly right now
+    // due to tran log persisting across restarts
+    useFactory(null);
   }
   
   @AfterClass
@@ -159,7 +162,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     // to talk to a downed node causes grief
     waitToSeeDownInClusterState(leaderJetty, jetties);
 
-    waitForThingsToLevelOut(15);
+    waitForThingsToLevelOut(45);
     
     checkShardConsistency(false, true);
     

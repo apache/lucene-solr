@@ -24,7 +24,7 @@
     <groupId>org.apache.lucene</groupId>
     <artifactId>lucene-parent</artifactId>
     <version>@version@</version>
-    <relativePath>../pom.xml</relativePath>
+    <relativePath>../../../pom.xml</relativePath>
   </parent>
   <groupId>org.apache.lucene</groupId>
   <artifactId>lucene-core</artifactId>

@@ -32,7 +32,7 @@ import java.util.Properties;
  * <p/>
  * The datasouce may be configured as follows
  * <p/>
- * <datasource name="f1" type="FieldReaderDataSource" />
+ * &lt;datasource name="f1" type="FieldReaderDataSource" /&gt;
  * <p/>
  * The enity which uses this datasource must keep the url value as the variable name url="field-name"
  * <p/>

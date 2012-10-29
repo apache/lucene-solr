@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.bio.SocketConnector;
 import org.eclipse.jetty.server.handler.GzipHandler;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -92,6 +93,7 @@ public class JettySolrRunner {
   private void init(String solrHome, String context, int port, boolean stopAtShutdown) {
     this.context = context;
     server = new Server(port);
+
     this.solrHome = solrHome;
     this.stopAtShutdown = stopAtShutdown;
     server.setStopAtShutdown(stopAtShutdown);
@@ -100,32 +102,45 @@ public class JettySolrRunner {
     }
     System.setProperty("solr.solr.home", solrHome);
     if (System.getProperty("jetty.testMode") != null) {
-      // SelectChannelConnector connector = new SelectChannelConnector();
-      // Normal SocketConnector is what solr's example server uses by default
-      SocketConnector connector = new SocketConnector();
+      SelectChannelConnector connector = new SelectChannelConnector();
       connector.setPort(port);
       connector.setReuseAddress(true);
-      if (!stopAtShutdown) {
-        QueuedThreadPool threadPool = (QueuedThreadPool) connector
-            .getThreadPool();
-        if (threadPool != null) {
+      connector.setLowResourcesMaxIdleTime(1500);
+      QueuedThreadPool threadPool = (QueuedThreadPool) connector
+          .getThreadPool();
+      if (threadPool != null) {
+        threadPool.setMaxThreads(10000);
+        threadPool.setMaxIdleTimeMs(5000);
+        if (!stopAtShutdown) {
           threadPool.setMaxStopTimeMs(100);
         }
       }
+      
       server.setConnectors(new Connector[] {connector});
       server.setSessionIdManager(new HashSessionIdManager(new Random()));
     } else {
-      if (!stopAtShutdown) {
-        for (Connector connector : server.getConnectors()) {
-          if (connector instanceof SocketConnector) {
-            QueuedThreadPool threadPool = (QueuedThreadPool) ((SocketConnector) connector)
-                .getThreadPool();
-            if (threadPool != null) {
-              threadPool.setMaxStopTimeMs(100);
-            }
+      
+      for (Connector connector : server.getConnectors()) {
+        QueuedThreadPool threadPool = null;
+        if (connector instanceof SocketConnector) {
+          threadPool = (QueuedThreadPool) ((SocketConnector) connector)
+              .getThreadPool();
+        }
+        if (connector instanceof SelectChannelConnector) {
+          threadPool = (QueuedThreadPool) ((SelectChannelConnector) connector)
+              .getThreadPool();
+        }
+        
+        if (threadPool != null) {
+          threadPool.setMaxThreads(10000);
+          threadPool.setMaxIdleTimeMs(5000);
+          if (!stopAtShutdown) {
+            threadPool.setMaxStopTimeMs(100);
           }
         }
+        
       }
+
     }
 
     // Initialize the servlets

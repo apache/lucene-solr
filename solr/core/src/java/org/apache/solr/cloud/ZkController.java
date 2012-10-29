@@ -193,8 +193,6 @@ public final class ZkController {
               ElectionContext context = new OverseerElectionContext(zkClient, overseer, getNodeName());
               overseerElector.joinElection(context, true);
               zkStateReader.createClusterStateWatchersAndUpdate();
-
-            //  cc.newCmdDistribExecutor();
               
               // we have to register as live first to pick up docs in the buffer
               createEphemeralLiveNode();
@@ -308,7 +306,11 @@ public final class ZkController {
     }
     
     for (ElectionContext context : electionContexts.values()) {
-      context.close();
+      try {
+        context.close();
+      } catch (Throwable t) {
+        log.error("Error closing overseer", t);
+      }
     }
     
     try {
@@ -603,7 +605,7 @@ public final class ZkController {
           recoveryFuture.get(); // NOTE: this could potentially block for
           // minutes or more!
           // TODO: public as recovering in the mean time?
-          // TODO: in the future we could do peerync in parallel with recoverFromLog
+          // TODO: in the future we could do peersync in parallel with recoverFromLog
         } else {
           log.info("No LogReplay needed for core="+core.getName() + " baseURL=" + baseUrl);
         }
@@ -781,6 +783,7 @@ public final class ZkController {
     //System.out.println(Thread.currentThread().getStackTrace()[3]);
     Integer numShards = cd.getCloudDescriptor().getNumShards();
     if (numShards == null) { //XXX sys prop hack
+      log.info("numShards not found on descriptor - reading it from system property");
       numShards = Integer.getInteger(ZkStateReader.NUM_SHARDS_PROP);
     }
     

@@ -478,7 +478,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   }
   
   private void verifyShardLeader(ZkStateReader reader, String collection, String shard, String expectedCore) throws InterruptedException, KeeperException {
-    int maxIterations = 100;
+    int maxIterations = 200;
     while(maxIterations-->0) {
       reader.updateClusterState(true); // poll state
       ZkNodeProps props =  reader.getClusterState().getLeader(collection, shard);

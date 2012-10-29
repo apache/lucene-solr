@@ -1,5 +1,3 @@
-package org.apache.lucene.classification;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.classification;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.classification;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.AtomicReader;
@@ -43,6 +42,10 @@ public class KNearestNeighborClassifier implements Classifier {
   private IndexSearcher indexSearcher;
   private int k;
 
+  /**
+   * Create a {@link Classifier} using kNN algorithm
+   * @param k the number of neighbors to analyze as an <code>int</code>
+   */
   public KNearestNeighborClassifier(int k) {
     this.k = k;
   }

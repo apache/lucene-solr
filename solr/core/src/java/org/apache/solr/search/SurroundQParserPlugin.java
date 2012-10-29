@@ -34,8 +34,8 @@ import org.slf4j.LoggerFactory;
  * Plugin for lucene/contrib Surround query parser, bringing SpanQuery support
  * to Solr
  * 
- * <queryParser name="surround"
- * class="org.apache.solr.search.SurroundQParserPlugin" />
+ * &lt;queryParser name="surround"
+ * class="org.apache.solr.search.SurroundQParserPlugin" /&gt;
  * 
  * Examples of query syntax can be found in lucene/queryparser/docs/surround
  * 

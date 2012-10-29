@@ -1,5 +1,3 @@
-package org.apache.lucene.classification;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.classification;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.classification;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -31,7 +30,7 @@ import org.junit.Before;
 /**
  * Base class for testing {@link Classifier}s
  */
-public class ClassificationTestBase extends LuceneTestCase {
+public abstract class ClassificationTestBase extends LuceneTestCase {
 
   private RandomIndexWriter indexWriter;
   private String textFieldName;

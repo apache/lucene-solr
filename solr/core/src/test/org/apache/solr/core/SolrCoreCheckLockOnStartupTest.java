@@ -67,7 +67,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
       assertNotNull(t.getCause());
       assertTrue(t.getCause() instanceof RuntimeException);
       assertNotNull(t.getCause().getCause());
-      assertTrue(t.getCause().getCause() instanceof LockObtainFailedException);
+      assertTrue(t.getCause().getCause().toString(), t.getCause().getCause() instanceof LockObtainFailedException);
     } finally {
       indexWriter.close();
       directory.close();

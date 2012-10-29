@@ -85,16 +85,6 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
 
   }
 
-  @Override
-  public String getSchemaFile() {
-    return null;
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return null;  // prevent superclass from creating it's own TestHarness
-  }
-
   @Test
   public void testLoadNewIndexDir() throws IOException, ParserConfigurationException, SAXException, ParseException {
     //add a doc in original index dir

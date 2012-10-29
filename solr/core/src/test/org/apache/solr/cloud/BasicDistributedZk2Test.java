@@ -33,13 +33,22 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.junit.BeforeClass;
 
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
  * work as expected.
  */
 public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
-
+  @BeforeClass
+  public static void beforeThisClass2() throws Exception {
+    // TODO: we use an fs based dir because something
+    // like a ram dir will not recover correctly right now
+    // because tran log will still exist on restart and ram
+    // dir will not persist - perhaps translog can empty on
+    // start if using an EphemeralDirectoryFactory 
+    useFactory(null);
+  }
   /*
    * (non-Javadoc)
    * 
@@ -59,11 +68,11 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
           "now is the time for all good men", "foo_f", 1.414f, "foo_b", "true",
           "foo_d", 1.414d);
       
-      // make sure we are in a steady state...
-      waitForRecoveriesToFinish(false);
-      
       commit();
       
+      // make sure we are in a steady state...
+      waitForRecoveriesToFinish(false);
+
       assertDocCounts(false);
       
       indexAbunchOfDocs();
@@ -100,6 +109,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       
       // TODO: bring this to it's own method?
       // try indexing to a leader that has no replicas up
+      ZkStateReader zkStateReader = cloudClient.getZkStateReader();
       ZkNodeProps leaderProps = zkStateReader.getLeaderProps(
           DEFAULT_COLLECTION, SHARD2);
       
@@ -175,9 +185,13 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
     query("q", "*:*", "sort", "n_tl1 desc");
     
+    int oldLiveNodes = cloudClient.getZkStateReader().getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true).size();
+    
+    assertEquals(5, oldLiveNodes);
+    
     // kill a shard
     CloudJettyRunner deadShard = chaosMonkey.stopShard(SHARD2, 0);
-    cloudClient.connect();
+
 
     // we are careful to make sure the downed node is no longer in the state,
     // because on some systems (especially freebsd w/ blackhole enabled), trying
@@ -186,10 +200,23 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     jetties.addAll(shardToJetty.get(SHARD2));
     jetties.remove(deadShard);
     
+    // wait till live nodes drops by 1
+    int liveNodes = cloudClient.getZkStateReader().getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true).size();
+    int tries = 50;
+    while(oldLiveNodes == liveNodes) {
+      Thread.sleep(100);
+      if (tries-- == 0) {
+        fail("We expected a node to drop...");
+      }
+      liveNodes = cloudClient.getZkStateReader().getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true).size();
+    }
+    assertEquals(4, liveNodes);
+
+    int cnt = 0;
     for (CloudJettyRunner cjetty : jetties) {
       waitToSeeNotLive(((SolrDispatchFilter) cjetty.jetty.getDispatchFilter()
           .getFilter()).getCores().getZkController().getZkStateReader(),
-          deadShard);
+          deadShard, cnt++);
     }
     waitToSeeNotLive(cloudClient.getZkStateReader(), deadShard);
 
@@ -203,6 +230,9 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     }
     
     commit();
+    
+    printLayout();
+    
     query("q", "*:*", "sort", "n_tl1 desc");
     
     // long cloudClientDocs = cloudClient.query(new

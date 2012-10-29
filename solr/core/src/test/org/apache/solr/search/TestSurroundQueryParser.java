@@ -19,13 +19,14 @@ package org.apache.solr.search;
  */
 
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 
 public class TestSurroundQueryParser extends AbstractSolrTestCase {
 
-  @Override
-  public String getSchemaFile() { return "schemasurround.xml"; }
-  @Override
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schemasurround.xml");
+  }
   // public String getCoreName() { return "collection1"; }
 
   @Override

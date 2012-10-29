@@ -19,15 +19,19 @@ package org.apache.solr.servlet;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 
 
 
 public class DirectSolrConnectionTest extends AbstractSolrTestCase 
 {
-  @Override
-  public String getSchemaFile() { return "solr/crazy-path-to-schema.xml"; }
-  @Override
-  public String getSolrConfigFile() { return "solr/crazy-path-to-config.xml"; }
+
+  
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solr/crazy-path-to-config.xml", "solr/crazy-path-to-schema.xml");
+  }
+
   
   DirectSolrConnection direct;
   

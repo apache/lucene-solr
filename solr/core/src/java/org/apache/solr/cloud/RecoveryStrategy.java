@@ -313,7 +313,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       }
     }
 
-    while (!successfulRecovery && !isInterrupted()) { // don't use interruption or it will close channels though
+    while (!successfulRecovery && !isInterrupted() && !isClosed()) { // don't use interruption or it will close channels though
       try {
         CloudDescriptor cloudDesc = core.getCoreDescriptor()
             .getCloudDescriptor();
@@ -348,7 +348,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           // System.out.println("Attempting to PeerSync from " + leaderUrl
           // + " i am:" + zkController.getNodeName());
           PeerSync peerSync = new PeerSync(core,
-              Collections.singletonList(leaderUrl), ulog.numRecordsToKeep);
+              Collections.singletonList(leaderUrl), ulog.numRecordsToKeep, false, false);
           peerSync.setStartingVersions(recentVersions);
           boolean syncSuccess = peerSync.sync();
           if (syncSuccess) {
@@ -443,7 +443,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         // Or do a fall off retry...
         try {
 
-          log.error("Recovery failed - trying again... core=" + coreName);
+          log.error("Recovery failed - trying again... (" + retries + ") core=" + coreName);
           
           if (isClosed()) {
             retries = INTERRUPTED;
@@ -451,7 +451,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
           
           retries++;
           if (retries >= MAX_RETRIES) {
-            if (retries == INTERRUPTED) {
+            if (retries >= INTERRUPTED) {
               SolrException.log(log, "Recovery failed - interrupted. core="
                   + coreName);
               try {
@@ -463,7 +463,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
               }
             } else {
               SolrException.log(log,
-                  "Recovery failed - max retries exceeded. core=" + coreName);
+                  "Recovery failed - max retries exceeded (" + retries + "). core=" + coreName);
               try {
                 recoveryFailed(core, zkController, baseUrl, coreZkNodeName,
                     core.getCoreDescriptor());
@@ -482,6 +482,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         try {
           // start at 1 sec and work up to a couple min
           double loopCount = Math.min(Math.pow(2, retries), 600); 
+          log.info("Wait {} seconds before trying to recover again ({})", loopCount, retries);
           for (int i = 0; i < loopCount; i++) {
             if (isClosed()) break; // check if someone closed us
             Thread.sleep(STARTING_RECOVERY_DELAY);

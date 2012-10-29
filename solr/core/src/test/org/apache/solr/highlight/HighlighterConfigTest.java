@@ -16,16 +16,19 @@
  */
 package org.apache.solr.highlight;
 
+import java.util.HashMap;
+
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
-
-import java.util.HashMap;
+import org.junit.BeforeClass;
 
 public class HighlighterConfigTest extends AbstractSolrTestCase {
-    @Override public String getSchemaFile() { return "schema.xml"; }
-    // the default case (i.e. <highlight> without a class attribute) is tested every time sorlconfig.xml is used
-    @Override public String getSolrConfigFile() { return "solrconfig-highlight.xml"; }
+
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+      initCore("solrconfig-highlight.xml", "schema.xml");
+    }
 
     @Override
     public void setUp() throws Exception {

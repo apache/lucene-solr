@@ -131,6 +131,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   }
 
   private void testThatCantForwardToLeaderFails() throws Exception {
+    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     ZkNodeProps props = zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard1");
     
     chaosMonkey.stopShard("shard1");
@@ -250,7 +251,6 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   
   private void testOptimisticUpdate(QueryResponse results) throws Exception {
     SolrDocument doc = results.getResults().get(0);
-    System.out.println("version:" + doc.getFieldValue(VersionInfo.VERSION_FIELD));
     Long version = (Long) doc.getFieldValue(VersionInfo.VERSION_FIELD);
     Integer theDoc = (Integer) doc.getFieldValue("id");
     UpdateRequest uReq = new UpdateRequest();

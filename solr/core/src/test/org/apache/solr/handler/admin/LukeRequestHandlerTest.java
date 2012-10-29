@@ -17,28 +17,24 @@
 
 package org.apache.solr.handler.admin;
 
+import java.util.Arrays;
+import java.util.EnumSet;
+
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.EnumSet;
-import java.util.Arrays;
 
 /**
  * :TODO: currently only tests some of the utilities in the LukeRequestHandler
  */
 public class LukeRequestHandlerTest extends AbstractSolrTestCase {
 
-  @Override
-  public String getSchemaFile() {
-    return "schema12.xml";
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema12.xml");
   }
 
   @Before

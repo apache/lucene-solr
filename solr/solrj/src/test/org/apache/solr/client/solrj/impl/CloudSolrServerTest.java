@@ -25,6 +25,7 @@ import java.util.Set;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -85,12 +86,13 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
   
   @Override
   public void doTest() throws Exception {
+    assertNotNull(cloudClient);
     
     handle.clear();
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     
-    waitForThingsToLevelOut(15);
+    waitForThingsToLevelOut(30);
 
     del("*:*");
 
@@ -99,9 +101,9 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
     // compare leaders list
     CloudJettyRunner shard1Leader = shardToLeaderJetty.get("shard1");
     CloudJettyRunner shard2Leader = shardToLeaderJetty.get("shard2");
-    assertEquals(2, cloudClient.getLeaderUrlList().size());
+    assertEquals(2, cloudClient.getLeaderUrlLists().get("collection1").size());
     HashSet<String> leaderUrlSet = new HashSet<String>();
-    leaderUrlSet.addAll(cloudClient.getLeaderUrlList());
+    leaderUrlSet.addAll(cloudClient.getLeaderUrlLists().get("collection1"));
     assertTrue("fail check for leader:" + shard1Leader.url + " in "
         + leaderUrlSet, leaderUrlSet.contains(shard1Leader.url + "/"));
     assertTrue("fail check for leader:" + shard2Leader.url + " in "
@@ -120,9 +122,9 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
     replicas.remove(shard1Leader.url);
     replicas.remove(shard2Leader.url);
     
-    assertEquals(replicas.size(), cloudClient.getReplicasList().size());
+    assertEquals(replicas.size(), cloudClient.getReplicasLists().get("collection1").size());
     
-    for (String url : cloudClient.getReplicasList()) {
+    for (String url : cloudClient.getReplicasLists().get("collection1")) {
       assertTrue("fail check for replica:" + url + " in " + replicas,
           replicas.contains(stripTrailingSlash(url)));
     }
@@ -134,6 +136,18 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
       return url.substring(0, url.length() - 1);
     }
     return url;
+  }
+  
+  
+  protected void indexr(Object... fields) throws Exception {
+    SolrInputDocument doc = getDoc(fields);
+    indexDoc(doc);
+  }
+
+  SolrInputDocument getDoc(Object... fields) throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    addFields(doc, fields);
+    return doc;
   }
 
 }

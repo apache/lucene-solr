@@ -84,6 +84,10 @@ public  class LeaderElector {
     
     sortSeqs(seqs);
     List<Integer> intSeqs = getSeqs(seqs);
+    if (intSeqs.size() == 0) {
+      log.warn("Our node is no longer in line to be leader");
+      return;
+    }
     if (seq <= intSeqs.get(0)) {
       // first we delete the node advertising the old leader in case the ephem is still there
       try {

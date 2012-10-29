@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * /a/b/c
  * </pre>
  * A record is a Map&lt;String,Object&gt; . The key is the provided name
- * and the value is a String or a List<String>
+ * and the value is a String or a List&lt;String&gt;
  *
  * This class is thread-safe for parsing xml. But adding fields is not
  * thread-safe. The recommended usage is to addField() in one thread and 
@@ -651,10 +651,10 @@ public class XPathRecordReader {
     /**
      * @param record The record map. The key is the field name as provided in 
      * the addField() methods. The value can be a single String (for single 
-     * valued fields) or a List<String> (for multiValued).
+     * valued fields) or a List&lt;String&gt; (for multiValued).
      * @param xpath The forEach XPATH for which this record is being emitted
      * If there is any change all parsing will be aborted and the Exception
-     * is propogated up
+     * is propagated up
      */
     public void handle(Map<String, Object> record, String xpath);
   }

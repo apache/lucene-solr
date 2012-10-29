@@ -24,6 +24,8 @@ import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
@@ -84,8 +86,9 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
+
+import java.io.EOFException;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
@@ -214,13 +217,8 @@ public final class SolrCore implements SolrInfoMBean {
     return dataDir;
   }
 
-  public String getIndexDir() {
-    synchronized (searcherLock) {
-      if (_searcher == null)
-        return dataDir + "index/";
-      SolrIndexSearcher searcher = _searcher.get();
-      return searcher.getIndexDir() == null ? dataDir + "index/" : searcher.getIndexDir();
-    }
+  public String getIndexDir() {  
+    return dataDir + "index/";
   }
 
 
@@ -234,23 +232,55 @@ public final class SolrCore implements SolrInfoMBean {
    */
   public String getNewIndexDir() {
     String result = dataDir + "index/";
-    File propsFile = new File(dataDir + "index.properties");
-    if (propsFile.exists()) {
-      Properties p = new Properties();
-      InputStream is = null;
-      try {
-        is = new FileInputStream(propsFile);
-        p.load(is);
-      } catch (IOException e) {
-        /*no op*/
-      } finally {
-        IOUtils.closeQuietly(is);
+    Properties p = new Properties();
+    Directory dir = null;
+    try {
+      dir = getDirectoryFactory().get(getDataDir(), null);
+      if (dir.fileExists("index.properties")){
+        final IndexInput input = dir.openInput("index.properties", IOContext.DEFAULT);
+  
+        final InputStream is = new InputStream() {
+          
+          @Override
+          public int read() throws IOException {
+            byte next;
+            try {
+              next = input.readByte();
+            } catch (EOFException e) {
+              return -1;
+            }
+            return next;
+          }
+          
+          @Override
+          public void close() throws IOException {
+            super.close();
+            input.close();
+          }
+        };
+        
+        try {
+          p.load(is);
+          
+          String s = p.getProperty("index");
+          if (s != null && s.trim().length() > 0) {
+              result = dataDir + s;
+          }
+          
+        } catch (Exception e) {
+          log.error("Unable to load index.properties", e);
+        } finally {
+          IOUtils.closeQuietly(is);
+        }
       }
-      String s = p.getProperty("index");
-      if (s != null && s.trim().length() > 0) {
-        File tmp = new File(dataDir + s);
-        if (tmp.exists() && tmp.isDirectory())
-          result = dataDir + s;
+    } catch (IOException e) {
+      SolrException.log(log, "", e);
+    } finally {
+    
+      try {
+        getDirectoryFactory().release(dir);
+      } catch (IOException e) {
+        SolrException.log(log, "", e);
       }
     }
     if (!result.equals(lastNewIndexDir)) {
@@ -365,6 +395,11 @@ public final class SolrCore implements SolrInfoMBean {
     return responseWriters.put(name, responseWriter);
   }
   
+  public SolrCore reload(SolrCore prev) throws IOException,
+      ParserConfigurationException, SAXException {
+    return reload(prev.getResourceLoader(), prev);
+  }
+  
   public SolrCore reload(SolrResourceLoader resourceLoader, SolrCore prev) throws IOException,
       ParserConfigurationException, SAXException {
     // TODO - what if indexwriter settings have changed
@@ -379,6 +414,7 @@ public final class SolrCore implements SolrInfoMBean {
     
     SolrCore core = new SolrCore(getName(), getDataDir(), config,
         schema, coreDescriptor, updateHandler, prev);
+    core.solrDelPolicy = this.solrDelPolicy;
     return core;
   }
 
@@ -393,9 +429,11 @@ public final class SolrCore implements SolrInfoMBean {
     DirectoryFactory dirFactory;
     PluginInfo info = solrConfig.getPluginInfo(DirectoryFactory.class.getName());
     if (info != null) {
+      log.info(info.className);
       dirFactory = getResourceLoader().newInstance(info.className, DirectoryFactory.class);
       dirFactory.init(info.initArgs);
     } else {
+      log.info("solr.NRTCachingDirectoryFactory");
       dirFactory = new NRTCachingDirectoryFactory();
     }
     // And set it
@@ -417,8 +455,8 @@ public final class SolrCore implements SolrInfoMBean {
   // protect via synchronized(SolrCore.class)
   private static Set<String> dirs = new HashSet<String>();
 
-  void initIndex(boolean reload) {
-    try {
+  void initIndex(boolean reload) throws IOException {
+ 
       String indexDir = getNewIndexDir();
       boolean indexExists = getDirectoryFactory().exists(indexDir);
       boolean firstTime;
@@ -430,19 +468,28 @@ public final class SolrCore implements SolrInfoMBean {
       initIndexReaderFactory();
 
       if (indexExists && firstTime && !reload) {
-        // to remove locks, the directory must already exist... so we create it
-        // if it didn't exist already...
-        Directory dir = directoryFactory.get(indexDir, getSolrConfig().indexConfig.lockType);
-        if (dir != null)  {
+        
+        Directory dir = directoryFactory.get(indexDir,
+            getSolrConfig().indexConfig.lockType);
+        try {
           if (IndexWriter.isLocked(dir)) {
             if (removeLocks) {
-              log.warn(logid + "WARNING: Solr index directory '{}' is locked.  Unlocking...", indexDir);
+              log.warn(
+                  logid
+                      + "WARNING: Solr index directory '{}' is locked.  Unlocking...",
+                  indexDir);
               IndexWriter.unlock(dir);
             } else {
-              log.error(logid + "Solr index directory '{}' is locked.  Throwing exception", indexDir);
-              throw new LockObtainFailedException("Index locked for write for core " + name);
+              log.error(logid
+                  + "Solr index directory '{}' is locked.  Throwing exception",
+                  indexDir);
+              throw new LockObtainFailedException(
+                  "Index locked for write for core " + name);
             }
+            
+            directoryFactory.release(dir);
           }
+        } finally {
           directoryFactory.release(dir);
         }
       }
@@ -456,9 +503,7 @@ public final class SolrCore implements SolrInfoMBean {
         writer.close();
       }
 
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+ 
   }
 
   /** Creates an instance by trying a constructor that accepts a SolrCore before
@@ -636,42 +681,45 @@ public final class SolrCore implements SolrInfoMBean {
 
     booleanQueryMaxClauseCount();
   
-    initListeners();
-
-    initDeletionPolicy();
-
-    this.codec= initCodec(solrConfig, schema);
-    
-    if (updateHandler == null) {
-      initDirectoryFactory();
-      solrCoreState = new DefaultSolrCoreState(getDirectoryFactory());
-    } else {
-      solrCoreState = updateHandler.getSolrCoreState();
-      directoryFactory = solrCoreState.getDirectoryFactory();
-      this.isReloaded = true;
-    }
-    
-    initIndex(prev != null);
-
-    initWriters();
-    initQParsers();
-    initValueSourceParsers();
-    initTransformerFactories();
-
-    this.searchComponents = Collections.unmodifiableMap(loadSearchComponents());
-
-    // Processors initialized before the handlers
-    updateProcessorChains = loadUpdateProcessorChains();
-    reqHandlers = new RequestHandlers(this);
-    reqHandlers.initHandlersFromConfig( solrConfig );
-
-
-    // Handle things that should eventually go away
-    initDeprecatedSupport();
-
     final CountDownLatch latch = new CountDownLatch(1);
 
     try {
+      
+      initListeners();
+      
+      if (updateHandler == null) {
+        initDeletionPolicy();
+      }
+      
+      this.codec = initCodec(solrConfig, schema);
+      
+      if (updateHandler == null) {
+        initDirectoryFactory();
+        solrCoreState = new DefaultSolrCoreState(getDirectoryFactory());
+      } else {
+        solrCoreState = updateHandler.getSolrCoreState();
+        directoryFactory = solrCoreState.getDirectoryFactory();
+        this.isReloaded = true;
+      }
+      
+      initIndex(prev != null);
+      
+      initWriters();
+      initQParsers();
+      initValueSourceParsers();
+      initTransformerFactories();
+      
+      this.searchComponents = Collections
+          .unmodifiableMap(loadSearchComponents());
+      
+      // Processors initialized before the handlers
+      updateProcessorChains = loadUpdateProcessorChains();
+      reqHandlers = new RequestHandlers(this);
+      reqHandlers.initHandlersFromConfig(solrConfig);
+      
+      // Handle things that should eventually go away
+      initDeprecatedSupport();
+      
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
       // searchExecutor must be single-threaded for this to work
@@ -681,7 +729,7 @@ public final class SolrCore implements SolrInfoMBean {
           return null;
         }
       });
-
+      
       // use the (old) writer to open the first searcher
       RefCounted<IndexWriter> iwRef = null;
       if (prev != null) {
@@ -696,20 +744,22 @@ public final class SolrCore implements SolrInfoMBean {
           };
         }
       }
-
-      // Open the searcher *before* the update handler so we don't end up opening
+      
+      // Open the searcher *before* the update handler so we don't end up
+      // opening
       // one in the middle.
-      // With lockless commits in Lucene now, this probably shouldn't be an issue anymore
-
+      // With lockless commits in Lucene now, this probably shouldn't be an
+      // issue anymore
+      
       try {
-        getSearcher(false,false,null,true);
+        getSearcher(false, false, null, true);
       } finally {
         newReaderCreator = null;
         if (iwRef != null) iwRef.decref();
       }
-
+      
       String updateHandlerClass = solrConfig.getUpdateHandlerInfo().className;
-
+      
       if (updateHandler == null) {
         this.updateHandler = createUpdateHandler(updateHandlerClass == null ? DirectUpdateHandler2.class
             .getName() : updateHandlerClass);
@@ -719,10 +769,10 @@ public final class SolrCore implements SolrInfoMBean {
                 : updateHandlerClass, updateHandler);
       }
       infoRegistry.put("updateHandler", this.updateHandler);
-
+      
       // Finally tell anyone who wants to know
-      resourceLoader.inform( resourceLoader );
-      resourceLoader.inform( this );  // last call before the latch is released.
+      resourceLoader.inform(resourceLoader);
+      resourceLoader.inform(this); // last call before the latch is released.
     } catch (Throwable e) {
       latch.countDown();//release the latch, otherwise we block trying to do the close.  This should be fine, since counting down on a latch of 0 is still fine
       //close down the searcher and any other resources, if it exists, as this is not recoverable
@@ -911,11 +961,14 @@ public final class SolrCore implements SolrInfoMBean {
       SolrException.log(log,e);
     }
     
-    
-    if (updateHandler instanceof IndexWriterCloser) {
-      decrefSolrCoreState((IndexWriterCloser)updateHandler);
-    } else {
-      decrefSolrCoreState(null);
+    try {
+      if (updateHandler instanceof IndexWriterCloser) {
+        decrefSolrCoreState((IndexWriterCloser) updateHandler);
+      } else {
+        decrefSolrCoreState(null);
+      }
+    } catch (Throwable e) {
+      SolrException.log(log, e);
     }
     
     try {
@@ -948,12 +1001,14 @@ public final class SolrCore implements SolrInfoMBean {
       SolrException.log(log,e);
     }
     
-    synchronized (solrCoreState) {
-      if (solrCoreStateRefCnt == 0) {
-        try {
-          directoryFactory.close();
-        } catch (Throwable t) {
-          SolrException.log(log, t);
+    if (solrCoreState != null) { // bad startup case
+      synchronized (solrCoreState) {
+        if (solrCoreStateRefCnt == 0) {
+          try {
+            directoryFactory.close();
+          } catch (Throwable t) {
+            SolrException.log(log, t);
+          }
         }
       }
     }
@@ -1271,13 +1326,13 @@ public final class SolrCore implements SolrInfoMBean {
     openSearcherLock.lock();
     try {
       String newIndexDir = getNewIndexDir();
-      File indexDirFile = null;
-      File newIndexDirFile = null;
+      String indexDirFile = null;
+      String newIndexDirFile = null;
 
       // if it's not a normal near-realtime update, check that paths haven't changed.
       if (!nrt) {
-        indexDirFile = new File(getIndexDir()).getCanonicalFile();
-        newIndexDirFile = new File(newIndexDir).getCanonicalFile();
+        indexDirFile = getDirectoryFactory().normalize(getIndexDir());
+        newIndexDirFile = getDirectoryFactory().normalize(newIndexDir);
       }
 
       synchronized (searcherLock) {
@@ -1305,6 +1360,7 @@ public final class SolrCore implements SolrInfoMBean {
         } else {
           // verbose("start reopen without writer, reader=", currentReader);
           newReader = DirectoryReader.openIfChanged(currentReader);
+     
           // verbose("reopen result", newReader);
         }
 

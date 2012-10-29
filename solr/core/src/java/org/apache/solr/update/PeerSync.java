@@ -19,6 +19,7 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -79,6 +80,7 @@ public class PeerSync  {
   private long ourLowThreshold;  // 20th percentile
   private long ourHighThreshold; // 80th percentile
   private boolean cantReachIsSuccess;
+  private boolean getNoVersionsIsSuccess;
   private static final HttpClient client;
   static {
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -129,14 +131,15 @@ public class PeerSync  {
   }
 
   public PeerSync(SolrCore core, List<String> replicas, int nUpdates) {
-    this(core, replicas, nUpdates, false);
+    this(core, replicas, nUpdates, false, true);
   }
   
-  public PeerSync(SolrCore core, List<String> replicas, int nUpdates, boolean cantReachIsSuccess) {
+  public PeerSync(SolrCore core, List<String> replicas, int nUpdates, boolean cantReachIsSuccess, boolean getNoVersionsIsSuccess) {
     this.replicas = replicas;
     this.nUpdates = nUpdates;
     this.maxUpdates = nUpdates;
     this.cantReachIsSuccess = cantReachIsSuccess;
+    this.getNoVersionsIsSuccess = getNoVersionsIsSuccess;
 
     
     uhandler = core.getUpdateHandler();
@@ -301,7 +304,7 @@ public class PeerSync  {
         Throwable solrException = ((SolrServerException) srsp.getException())
             .getRootCause();
         if (solrException instanceof ConnectException || solrException instanceof ConnectTimeoutException
-            || solrException instanceof NoHttpResponseException) {
+            || solrException instanceof NoHttpResponseException || solrException instanceof SocketException) {
           log.warn(msg() + " couldn't connect to " + srsp.getShardAddress() + ", counting as success");
 
           return true;
@@ -343,7 +346,7 @@ public class PeerSync  {
     log.info(msg() + " Received " + otherVersions.size() + " versions from " + sreq.shards[0] );
 
     if (otherVersions.size() == 0) {
-      return true;
+      return getNoVersionsIsSuccess; 
     }
     
     boolean completeList = otherVersions.size() < nUpdates;  // do we have their complete list of updates?

@@ -19,13 +19,23 @@ package org.apache.solr.update;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.DocList;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.ResultContext;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -208,7 +218,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertNull(h.validateUpdate(add(xml, new String[0])));
   }
   
-  public void testMultiValuedFielAndDocBoosts() throws Exception {
+  public void testMultiValuedFieldAndDocBoosts() throws Exception {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getSchema();
     SolrInputDocument doc = new SolrInputDocument();
@@ -234,11 +244,127 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     
   }
 
+  public void testCopyFieldsAndFieldBoostsAndDocBoosts() throws Exception {
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getSchema();
+    SolrInputDocument doc = new SolrInputDocument();
+
+    final float DOC_BOOST = 3.0F;
+    doc.setDocumentBoost(DOC_BOOST);
+    doc.addField("id", "42");
+
+    SolrInputField inTitle = new SolrInputField( "title" );
+    inTitle.addValue( "titleA" , 2.0F ); 
+    inTitle.addValue( "titleB" , 7.0F ); 
+    final float TITLE_BOOST = 2.0F * 7.0F;
+    assertEquals(TITLE_BOOST, inTitle.getBoost(), 0.0F);
+    doc.put( inTitle.getName(), inTitle );
+    
+    SolrInputField inFoo = new SolrInputField( "foo_t" );
+    inFoo.addValue( "summer time" , 1.0F );
+    inFoo.addValue( "in the city" , 5.0F ); 
+    inFoo.addValue( "living is easy" , 11.0F );
+    final float FOO_BOOST = 1.0F * 5.0F * 11.0F;
+    assertEquals(FOO_BOOST, inFoo.getBoost(), 0.0F);
+    doc.put( inFoo.getName(), inFoo );
+
+    Document out = DocumentBuilder.toDocument( doc, core.getSchema() );
+
+    IndexableField[] outTitle = out.getFields( inTitle.getName() );
+    assertEquals("wrong number of title values",
+                 2, outTitle.length);
+
+    IndexableField[] outNoNorms = out.getFields( "title_stringNoNorms" );
+    assertEquals("wrong number of nonorms values",
+                 2, outNoNorms.length);
+
+    IndexableField[] outFoo = out.getFields( inFoo.getName() );
+    assertEquals("wrong number of foo values",
+                 3, outFoo.length);
+
+    IndexableField[] outText = out.getFields( "text" );
+    assertEquals("wrong number of text values",
+                 5, outText.length);
+
+    // since Lucene no longer has native document boosts, we should find
+    // the doc boost multiplied into the boost on the first field value
+    // of each field.  All other field values should be 1.0f
+    // (lucene will multiply all of the field value boosts later)
+    assertEquals(TITLE_BOOST * DOC_BOOST, outTitle[0].boost(), 0.0F);
+    assertEquals(1.0F,                    outTitle[1].boost(), 0.0F);
+    //
+    assertEquals(FOO_BOOST * DOC_BOOST,   outFoo[0].boost(), 0.0F);
+    assertEquals(1.0F,                    outFoo[1].boost(), 0.0F);
+    assertEquals(1.0F,                    outFoo[2].boost(), 0.0F);
+    //
+    assertEquals(TITLE_BOOST * DOC_BOOST, outText[0].boost(), 0.0F);
+    assertEquals(1.0F,                    outText[1].boost(), 0.0F);
+    assertEquals(FOO_BOOST,               outText[2].boost(), 0.0F);
+    assertEquals(1.0F,                    outText[3].boost(), 0.0F);
+    assertEquals(1.0F,                    outText[4].boost(), 0.0F);
+    
+    // copyField dest with no norms should not have recieved any boost
+    assertEquals(1.0F, outNoNorms[0].boost(), 0.0F);
+    assertEquals(1.0F, outNoNorms[1].boost(), 0.0F);
+    
+    // now index that SolrInputDocument to check the computed norms
+
+    assertU(adoc(doc));
+    assertU(commit());
+
+    SolrQueryRequest req = req("q", "id:42");
+    try {
+      // very hack-ish
+
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
+
+      DocList dl = ((ResultContext) rsp.getValues().get("response")).docs;
+      assertTrue("can't find the doc we just added", 1 == dl.size());
+      int docid = dl.iterator().nextDoc();
+
+      SolrIndexSearcher searcher = req.getSearcher();
+      AtomicReader reader = SlowCompositeReaderWrapper.wrap(searcher.getTopReaderContext().reader());
+
+      assertTrue("similarity doesn't extend DefaultSimilarity, " + 
+                 "config or defaults have changed since test was written",
+                 searcher.getSimilarity() instanceof DefaultSimilarity);
+
+      DefaultSimilarity sim = (DefaultSimilarity) searcher.getSimilarity();
+      
+      byte[] titleNorms = (byte[]) reader.normValues("title").getSource().getArray();
+      byte[] fooNorms = (byte[]) reader.normValues("foo_t").getSource().getArray();
+      byte[] textNorms = (byte[]) reader.normValues("text").getSource().getArray();
+
+      assertEquals(expectedNorm(sim, 2, TITLE_BOOST * DOC_BOOST),
+                   titleNorms[docid]);
+
+      assertEquals(expectedNorm(sim, 8-3, FOO_BOOST * DOC_BOOST),
+                   fooNorms[docid]);
+
+      assertEquals(expectedNorm(sim, 2 + 8-3, 
+                                TITLE_BOOST * FOO_BOOST * DOC_BOOST),
+                   textNorms[docid]);
+
+    } finally {
+      req.close();
+    }
+  }
+
   /**
-   * Its not ok to boost a field if it omits norms
+   * Given a length, and boost returns the expected encoded norm 
    */
+  private static byte expectedNorm(final DefaultSimilarity sim,
+                                   final int length, final float boost) {
+    
+    return sim.encodeNormValue(boost / ((float) Math.sqrt(length)));
+
+  }
+    
+
   public void testBoostOmitNorms() throws Exception {
     XmlDoc xml = new XmlDoc();
+    // explicitly boosting a field if that omits norms is not ok
     xml.xml = "<doc>"
         + "<field name=\"id\">ignore_exception</field>"
         + "<field name=\"title_stringNoNorms\" boost=\"3.0\">mytitle</field>"
@@ -249,6 +375,12 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     } catch (SolrException expected) {
       // expected exception
     }
+    // boosting a field that is copied to another field that omits norms is ok
+    xml.xml = "<doc>"
+      + "<field name=\"id\">42</field>"
+      + "<field name=\"title\" boost=\"3.0\">mytitle</field>"
+      + "</doc>";
+    assertNull(h.validateUpdate(add(xml, new String[0])));
   }
   
   /**

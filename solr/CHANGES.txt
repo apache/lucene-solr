@@ -49,6 +49,12 @@ New Features
   underlying analyzed form used for suggestions is separate from the returned
   text.  (Robert Muir)
 
+* SOLR-3985: ExternalFileField caches can be reloaded on firstSearcher/
+  newSearcher events using the ExternalFileFieldReloader (Alan Woodward)
+
+* SOLR-3911: Make Directory and DirectoryFactory first class so that the majority 
+  of Solr's features work with any custom implementations. (Mark Miller)
+
 Optimizations
 ----------------------
 
@@ -88,6 +94,41 @@ Bug Fixes
 * SOLR-3961: Fixed error using LimitTokenCountFilterFactory 
   (Jack Krupansky, hossman)
 
+* SOLR-3933: Distributed commits are not guaranteed to be ordered within a 
+  request. (Mark Miller)
+
+* SOLR-3939: An empty or just replicated index cannot become the leader of a
+  shard after a leader goes down. (Joel Bernstein, yonik, Mark Miller)
+  
+* SOLR-3971: A collection that is created with numShards=1 turns into a 
+  numShards=2 collection after starting up a second core and not specifying 
+  numShards. (Mark Miller)
+
+* SOLR-3988: Fixed SolrTestCaseJ4.adoc(SolrInputDocument) to respect 
+  field and document boosts (hossman)
+
+* SOLR-3981: Fixed bug that resulted in document boosts being compounded in
+  <copyField/> destination fields. (hossman)
+
+* SOLR-3920: Fix server list caching in CloudSolrServer when using more than one
+  collection list with the same instance. (Grzegorz Sobczyk, Mark Miller)
+
+* SOLR-3938: prepareCommit command omits commitData causing a failure to trigger
+  replication to slaves. (yonik)
+
+* SOLR-3992: QuerySenderListener doesn't populate document cache.
+  (Shotaro Kamio, yonik)
+
+* SOLR-3995: Recovery may never finish on SolrCore shutdown if the last reference to 
+  a SolrCore is closed by the recovery process. (Mark Miller)
+
+* SOLR-3998: Atomic update on uniqueKey field itself causes duplicate document.
+  (Eric Spencer, yonik)
+
+* SOLR-4001: In CachingDirectoryFactory#close, if there are still refs for a
+  Directory outstanding, we need to wait for them to be released before closing.
+  (Mark Miller)
+
 Other Changes
 ----------------------
 
@@ -99,6 +140,9 @@ Other Changes
 
 * SOLR-3966: Eliminate superfluous warning from LanguageIdentifierUpdateProcessor
   (Markus Jelsma via hossman)
+
+* SOLR-3932: SolrCmdDistributorTest either takes 3 seconds or 3 minutes.
+  (yonik, Mark Miller)  
 
 ==================  4.0.0 ==================
 

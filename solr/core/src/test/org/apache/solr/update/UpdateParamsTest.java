@@ -21,21 +21,22 @@ import java.util.HashMap;
 
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.core.*;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 
 
 
 public class UpdateParamsTest extends AbstractSolrTestCase {
 
-  @Override
-  public String getSchemaFile() { return "schema.xml"; }
-  @Override
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
-
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
+  }
+  
   /**
    * Tests that only update.chain and not update.processor works (SOLR-2105)
    */

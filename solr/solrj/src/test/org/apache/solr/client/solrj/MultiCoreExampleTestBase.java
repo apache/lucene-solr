@@ -19,16 +19,19 @@ package org.apache.solr.client.solrj;
 
 import java.io.File;
 
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.ExternalPaths;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 
@@ -38,18 +41,26 @@ import org.junit.Test;
  */
 public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase 
 {
-  // protected static final CoreContainer cores = new CoreContainer();
-  protected CoreContainer cores;
+  protected static CoreContainer cores;
+
   private File dataDir2;
 
   @Override public String getSolrHome() { return ExternalPaths.EXAMPLE_MULTICORE_HOME; }
+
   
-  @Override public String getSchemaFile()     { return getSolrHome()+"/core0/conf/schema.xml";     }
-  @Override public String getSolrConfigFile() { return getSolrHome()+"/core0/conf/solrconfig.xml"; }
+  @BeforeClass
+  public static void beforeThisClass2() throws Exception {
+    cores = new CoreContainer();
+  }
+  
+  @AfterClass
+  public static void afterClass() {
+    cores.shutdown();
+  }
   
   @Override public void setUp() throws Exception {
     super.setUp();
-    cores = h.getCoreContainer();
+
     SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
     cores.setPersistent(false);
     
@@ -57,7 +68,7 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
         + System.currentTimeMillis());
     dataDir2.mkdirs();
     
-    System.setProperty( "solr.core0.data.dir", this.dataDir.getCanonicalPath() ); 
+    System.setProperty( "solr.core0.data.dir", SolrTestCaseJ4.dataDir.getCanonicalPath() ); 
     System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() ); 
   }
   
@@ -73,8 +84,6 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
         System.err.println("!!!! WARNING: best effort to remove " + dataDir2.getAbsolutePath() + " FAILED !!!!!");
       }
     }
-    
-    cores = null;
   }
 
   @Override
@@ -208,6 +217,12 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     NamedList<Object> response = getSolrCore("corefoo").query(new SolrQuery().setRequestHandler("/admin/system")).getResponse();
     NamedList<Object> coreInfo = (NamedList<Object>) response.get("core");
     String indexDir = (String) ((NamedList<Object>) coreInfo.get("directory")).get("index");
+    
+    
+
+    System.out.println( (String) ((NamedList<Object>) coreInfo.get("directory")).get("dirimpl"));
+
+    
     // test delete index on core
     CoreAdminRequest.unloadCore("corefoo", true, coreadmin);
     File dir = new File(indexDir);

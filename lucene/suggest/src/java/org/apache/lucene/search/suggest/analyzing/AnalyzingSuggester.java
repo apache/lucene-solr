@@ -99,6 +99,7 @@ import org.apache.lucene.util.fst.Util;
  *
  *   <li> Lookups with the empty string return no results
  *        instead of all results.
+ * </ul>
  * 
  * @lucene.experimental
  */

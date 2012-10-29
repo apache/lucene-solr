@@ -17,17 +17,13 @@ package org.apache.solr.core;
  */
 
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 
 public class IndexReaderFactoryTest extends AbstractSolrTestCase {
 
-  @Override
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig-termindex.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-termindex.xml", "schema.xml");
   }
 
   /**

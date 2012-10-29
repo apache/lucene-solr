@@ -101,7 +101,6 @@ public class SolrCmdDistributor {
   
   public void finish() {
 
-    // piggyback on any outstanding adds or deletes if possible.
     flushAdds(1);
     flushDeletes(1);
 
@@ -150,6 +149,12 @@ public class SolrCmdDistributor {
   
   public void distribCommit(CommitUpdateCommand cmd, List<Node> nodes,
       ModifiableSolrParams params) throws IOException {
+    
+    // make sure we are ordered
+    flushAdds(1);
+    flushDeletes(1);
+
+    
     // Wait for all outstanding responses to make sure that a commit
     // can't sneak in ahead of adds or deletes we already sent.
     // We could do this on a per-server basis, but it's more complex
@@ -163,7 +168,7 @@ public class SolrCmdDistributor {
     
     addCommit(ureq, cmd);
     
-    log.info("Distrib commit to:" + nodes);
+    log.info("Distrib commit to:" + nodes + " params:" + params);
     
     for (Node node : nodes) {
       submit(ureq, node);

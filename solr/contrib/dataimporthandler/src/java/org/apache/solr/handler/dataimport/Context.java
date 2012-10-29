@@ -87,7 +87,7 @@ public abstract class Context {
 
   /**
    * Returns the VariableResolver used in this entity which can be used to
-   * resolve the tokens in ${<namespce.name>}
+   * resolve the tokens in ${&lt;namespce.name&gt;}
    *
    * @return a VariableResolver instance
    * @see org.apache.solr.handler.dataimport.VariableResolver
