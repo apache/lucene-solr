@@ -129,6 +129,10 @@ Bug Fixes
   Directory outstanding, we need to wait for them to be released before closing.
   (Mark Miller)
 
+* SOLR-4005: If CoreContainer fails to register a created core, it should close it.
+  (Mark Miller)
+
+
 Other Changes
 ----------------------
 
