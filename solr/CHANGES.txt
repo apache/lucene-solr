@@ -121,6 +121,8 @@ Bug Fixes
 * SOLR-4005: If CoreContainer fails to register a created core, it should close it.
   (Mark Miller)
 
+* SOLR-4009: OverseerCollectionProcessor is not resiliant to many error conditions
+  and can stop running on errors. (milesli, Mark Miller)
 
 Other Changes
 ----------------------
