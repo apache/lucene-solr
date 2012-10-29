@@ -23,7 +23,7 @@ import java.io.IOException;
 
 /**
  * IntervalIterator based on minimum interval semantics for the Brouwerian
- * operator. This {@link IntervalIterator} computes the different <tt>M-S</tt>
+ * operator. This {@link IntervalIterator} computes the difference <tt>M-S</tt>
  * between the anti-chains M (minuend) and S (subtracted).
  * <p>
  * 
