@@ -491,7 +491,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     p = (ModifiableSolrParams) unloadCmd.getParams();
     collectionClient.request(unloadCmd);
     
-    tries = 20;
+    tries = 50;
     while (leaderProps.getCoreUrl().equals(zkStateReader.getLeaderUrl("unloadcollection", "shard1", 15000))) {
       Thread.sleep(100);
       if (tries-- == 0) {
