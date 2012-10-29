@@ -65,7 +65,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
   private final static int warmup = 5;
 
   private final int num = 7;
-  private final boolean onlyMorePopular = true;
+  private final boolean onlyMorePopular = false;
 
   private final static Random random = new Random(0xdeadbeef);
 

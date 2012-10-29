@@ -619,8 +619,8 @@ public class AnalyzingSuggester extends Lookup {
         UnicodeUtil.UTF8toUTF16(completion.output.output2, spare);
         LookupResult result = new LookupResult(spare.toString(), decodeWeight(completion.output.output1));
 
-        // nocommit for fuzzy case would be nice to return
-        // how many edits were required...:
+        // TODO: for fuzzy case would be nice to return
+        // how many edits were required
 
         //System.out.println("    result=" + result);
         results.add(result);

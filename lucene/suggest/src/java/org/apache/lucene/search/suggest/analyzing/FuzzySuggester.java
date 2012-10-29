@@ -40,17 +40,26 @@ import org.apache.lucene.util.fst.PairOutputs.Pair;
  * Implements a fuzzy {@link AnalyzingSuggester}. The similarity measurement is
  * based on the Damerau-Levenshtein (optimal string alignment) algorithm, though
  * you can explicitly choose classic Levenshtein by passing <code>false</code>
- * to the <code>transpositions</code> parameter.
+ * for the <code>transpositions</code> parameter.
  * <p>
  * At most, this query will match terms up to
  * {@value org.apache.lucene.util.automaton.LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE}
- * edits. Higher distances (especially with transpositions enabled), are not
- * supported.  Note that the fuzzy distance is byte-by-byte
- * as returned by the {@link TokenStream}'s {@link
+ * edits. Higher distances are not supported.  Note that the
+ * fuzzy distance is measured in "byte space" on the bytes
+ * returned by the {@link TokenStream}'s {@link
  * TermToBytesRefAttribute}, usually UTF8.  By default
- * the first 2 (@link #DEFAULT_MIN_PREFIX) bytes must match,
- * and by default we allow up to 1 (@link
+ * the analyzed bytes must be at least 3 {@link
+ * #DEFAULT_MIN_FUZZY_LENGTH} bytes before any edits are
+ * considered.  Furthermore, the first 1 {@link
+ * #DEFAULT_NON_FUZZY_PREFIX} byte is not allowed to be
+ * edited.  We allow up to 1 (@link
  * #DEFAULT_MAX_EDITS} edit.
+ *
+ * <p>
+ * NOTE: This suggester does not boost suggestions that
+ * required no edits over suggestions that did require
+ * edits.  This is a known limitation.
+ *
  * <p>
  * Note: complex query analyzers can have a significant impact on the lookup
  * performance. It's recommended to not use analyzers that drop or inject terms
@@ -61,31 +70,36 @@ import org.apache.lucene.util.fst.PairOutputs.Pair;
 public final class FuzzySuggester extends AnalyzingSuggester {
   private final int maxEdits;
   private final boolean transpositions;
-  private final int minPrefix;
+  private final int nonFuzzyPrefix;
+  private final int minFuzzyLength;
+  private final boolean allowSepEdit;
 
-  // nocommit separate param for "min length before we
-  // enable fuzzy"?  eg type "nusglasses" into google...
-  
   /**
-   * The default minimum shared (non-fuzzy) prefix. Set to <tt>2</tt>
+   * The default minimum length of the key passed to {@link
+   * #lookup} before any edits are allowed.
    */
-  // nocommit should we do 1...?
-  public static final int DEFAULT_MIN_PREFIX = 2;
+  public static final int DEFAULT_MIN_FUZZY_LENGTH = 3;
+
+  /**
+   * The default prefix length where edits are not allowed.
+   */
+  public static final int DEFAULT_NON_FUZZY_PREFIX = 1;
   
   /**
-   * The default maximum number of edits for fuzzy suggestions. Set to <tt>1</tt>
+   * The default maximum number of edits for fuzzy
+   * suggestions.
    */
   public static final int DEFAULT_MAX_EDITS = 1;
+
+  /**
+   * We allow token separator to be deleted/inserted, by default.
+   */
+  public static final boolean DEFAULT_ALLOW_SEP_EDIT = true;
   
   /**
    * Creates a {@link FuzzySuggester} instance initialized with default values.
-   * Calls
-   * {@link FuzzySuggester#FuzzySuggester(Analyzer, Analyzer, int, int, int, int, boolean, int)}
-   * FuzzySuggester(analyzer, analyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1,
-   * DEFAULT_MAX_EDITS, true, DEFAULT_MIN_PREFIX)
    * 
-   * @param analyzer
-   *          the analyzer used for this suggester
+   * @param analyzer the analyzer used for this suggester
    */
   public FuzzySuggester(Analyzer analyzer) {
     this(analyzer, analyzer);
@@ -93,10 +107,6 @@ public final class FuzzySuggester extends AnalyzingSuggester {
   
   /**
    * Creates a {@link FuzzySuggester} instance with an index & a query analyzer initialized with default values.
-   * Calls
-   * {@link FuzzySuggester#FuzzySuggester(Analyzer, Analyzer, int, int, int, int, boolean, int)}
-   * FuzzySuggester(indexAnalyzer, queryAnalyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1,
-   * DEFAULT_MAX_EDITS, true, DEFAULT_MIN_PREFIX)
    * 
    * @param indexAnalyzer
    *           Analyzer that will be used for analyzing suggestions while building the index.
@@ -104,7 +114,8 @@ public final class FuzzySuggester extends AnalyzingSuggester {
    *           Analyzer that will be used for analyzing query text during lookup
    */
   public FuzzySuggester(Analyzer indexAnalyzer, Analyzer queryAnalyzer) {
-    this(indexAnalyzer, queryAnalyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1, DEFAULT_MAX_EDITS, true, DEFAULT_MIN_PREFIX);
+    this(indexAnalyzer, queryAnalyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1, DEFAULT_MAX_EDITS, true,
+         DEFAULT_NON_FUZZY_PREFIX, DEFAULT_MIN_FUZZY_LENGTH, DEFAULT_ALLOW_SEP_EDIT);
   }
 
   /**
@@ -122,26 +133,34 @@ public final class FuzzySuggester extends AnalyzingSuggester {
    * @param maxGraphExpansions Maximum number of graph paths
    *        to expand from the analyzed form.  Set this to -1 for
    *        no limit.
-   *   
-   * @param maxEdits must be >= 0 and <= {@link LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE}.
+   * @param maxEdits must be >= 0 and <= {@link LevenshteinAutomata#MAXIMUM_SUPPORTED_DISTANCE} .
    * @param transpositions <code>true</code> if transpositions should be treated as a primitive 
    *        edit operation. If this is false, comparisons will implement the classic
    *        Levenshtein algorithm.
-   * @param minPrefix length of common (non-fuzzy) prefix
-   *          
+   * @param nonFuzzyPrefix length of common (non-fuzzy) prefix (see default {@link #DEFAULT_NON_FUZZY_PREFIX}
+   * @param minFuzzyLength minimum length of lookup key before any edits are allowed (see default {@link #DEFAULT_MIN_FUZZY_LENGTH})
+   * @param allowSepEdit if true, the token separater is allowed to be an edit (so words may be split/joined) (see default {@link #DEFAULT_ALLOW_SEP_EDIT})
    */
   public FuzzySuggester(Analyzer indexAnalyzer, Analyzer queryAnalyzer,
-      int options, int maxSurfaceFormsPerAnalyzedForm, int maxGraphExpansions, int maxEdits, boolean transpositions, int minPrefix) {
+                        int options, int maxSurfaceFormsPerAnalyzedForm, int maxGraphExpansions,
+                        int maxEdits, boolean transpositions, int nonFuzzyPrefix,
+                        int minFuzzyLength, boolean allowSepEdit) {
     super(indexAnalyzer, queryAnalyzer, options, maxSurfaceFormsPerAnalyzedForm, maxGraphExpansions);
     if (maxEdits < 0 || maxEdits > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
       throw new IllegalArgumentException("maxEdits must be between 0 and " + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
     }
-    if (minPrefix < 0) {
-      throw new IllegalArgumentException("minPrefix must not be < 0");
+    if (nonFuzzyPrefix < 0) {
+      throw new IllegalArgumentException("nonFuzzyPrefix must not be >= 0 (got " + nonFuzzyPrefix + ")");
     }
+    if (minFuzzyLength < 0) {
+      throw new IllegalArgumentException("minFuzzyLength must not be >= 0 (got " + minFuzzyLength + ")");
+    }
+    
     this.maxEdits = maxEdits;
     this.transpositions = transpositions;
-    this.minPrefix = minPrefix;
+    this.nonFuzzyPrefix = nonFuzzyPrefix;
+    this.minFuzzyLength = minFuzzyLength;
+    this.allowSepEdit = allowSepEdit;
   }
   
   @Override
@@ -149,12 +168,17 @@ public final class FuzzySuggester extends AnalyzingSuggester {
                                                                        Automaton lookupAutomaton,
                                                                        FST<Pair<Long,BytesRef>> fst)
     throws IOException {
-    // nocommit we don't "penalize" for edits
-    // ... shouldn't we?  ie, ed=0 completions should have
-    // higher rank than ed=1, at the same "weight"?  maybe
-    // we can punt on this for starters ... or maybe we
-    // can re-run each prefix path through lev0, lev1,
-    // lev2 to figure out the number of edits?
+
+    // TODO: right now there's no penalty for fuzzy/edits,
+    // ie a completion whose prefix matched exactly what the
+    // user typed gets no boost over completions that
+    // required an edit, which get no boost over completions
+    // requiring two edits.  I suspect a multiplicative
+    // factor is appropriate (eg, say a fuzzy match must be at
+    // least 2X better weight than the non-fuzzy match to
+    // "compete") ... in which case I think the wFST needs
+    // to be log weights or something ...
+
     Automaton levA = toLevenshteinAutomata(lookupAutomaton);
     /*
       Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
@@ -170,21 +194,19 @@ public final class FuzzySuggester extends AnalyzingSuggester {
     Automaton subs[] = new Automaton[ref.size()];
     int upto = 0;
     for (IntsRef path : ref) {
-      if (path.length <= minPrefix) {
+      if (path.length <= nonFuzzyPrefix || path.length < minFuzzyLength) {
         subs[upto] = BasicAutomata.makeString(path.ints, path.offset, path.length);
         upto++;
       } else {
-        Automaton prefix = BasicAutomata.makeString(path.ints, path.offset, minPrefix);
-        int ints[] = new int[path.length-minPrefix];
-        System.arraycopy(path.ints, path.offset+minPrefix, ints, 0, ints.length);
-        // nocommit i think we should pass 254 max?  ie
-        // exclude 0xff ... this way we can't 'edit away'
-        // the sep?  or ... maybe we want to allow that to
-        // be edited away?
-        // nocommit also the 0 byte ... we use that as
-        // trailer ... we probably shouldn't allow that byte
-        // to be edited (we could add alphaMin?)
-        LevenshteinAutomata lev = new LevenshteinAutomata(ints, 255, transpositions);
+        Automaton prefix = BasicAutomata.makeString(path.ints, path.offset, nonFuzzyPrefix);
+        int ints[] = new int[path.length-nonFuzzyPrefix];
+        System.arraycopy(path.ints, path.offset+nonFuzzyPrefix, ints, 0, ints.length);
+        // TODO: maybe add alphaMin to LevenshteinAutomata,
+        // and pass 1 instead of 0?  We probably don't want
+        // to allow the trailing dedup bytes to be
+        // edited... but then 0 byte is "in general" allowed
+        // on input (but not in UTF8).
+        LevenshteinAutomata lev = new LevenshteinAutomata(ints, allowSepEdit ? 255 : 254, transpositions);
         Automaton levAutomaton = lev.toAutomaton(maxEdits);
         Automaton combined = BasicOperations.concatenate(Arrays.asList(prefix, levAutomaton));
         combined.setDeterministic(true); // its like the special case in concatenate itself, except we cloneExpanded already
@@ -192,10 +214,6 @@ public final class FuzzySuggester extends AnalyzingSuggester {
         upto++;
       }
     }
-
-    // nocommit maybe we should reduce the LevN?  the added
-    // arcs add cost during intersect (extra FST arc
-    // lookups...).  could be net win...
 
     if (subs.length == 0) {
       return BasicAutomata.makeEmpty(); // matches nothing
@@ -206,6 +224,10 @@ public final class FuzzySuggester extends AnalyzingSuggester {
       // TODO: we could call toLevenshteinAutomata() before det? 
       // this only happens if you have multiple paths anyway (e.g. synonyms)
       BasicOperations.determinize(a);
+
+      // Does not seem to help (and hurt maybe a bit: 6-9
+      // prefix went from 19 to 18 kQPS):
+      // a.reduce();
       return a;
     }
   }

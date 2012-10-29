@@ -139,9 +139,6 @@ public class Transition implements Cloneable {
   static void appendCharString(int c, StringBuilder b) {
     if (c >= 0x21 && c <= 0x7e && c != '\\' && c != '"') b.appendCodePoint(c);
     else {
-      b.append("\\\\U" + Integer.toHexString(c));
-      // nocommit
-      /*
       b.append("\\\\U");
       String s = Integer.toHexString(c);
       if (c < 0x10) b.append("0000000").append(s);
@@ -152,7 +149,6 @@ public class Transition implements Cloneable {
       else if (c < 0x1000000) b.append("00").append(s);
       else if (c < 0x10000000) b.append("0").append(s);
       else b.append(s);
-      */
     }
   }
   

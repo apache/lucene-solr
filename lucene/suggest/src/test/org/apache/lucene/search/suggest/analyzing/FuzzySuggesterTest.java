@@ -64,7 +64,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     suggester.build(new TermFreqArrayIterator(keys));
     int numIters = atLeast(10);
     for (int i = 0; i < numIters; i++) {
-      String addRandomEdit = addRandomEdit("foo bar boo", 2);
+      String addRandomEdit = addRandomEdit("foo bar boo", FuzzySuggester.DEFAULT_NON_FUZZY_PREFIX);
       List<LookupResult> results = suggester.lookup(_TestUtil.stringToCharSequence(addRandomEdit, random()), false, 2);
       assertEquals(addRandomEdit, 1, results.size());
       assertEquals("foo bar boo far", results.get(0).key.toString());
@@ -184,7 +184,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     int options = 0;
 
     Analyzer a = new MockAnalyzer(random());
-    FuzzySuggester suggester = new FuzzySuggester(a, a, options, 256, -1, 1, true, 1);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, options, 256, -1, 1, true, 1, 3, true);
     suggester.build(new TermFreqArrayIterator(keys));
     // TODO: would be nice if "ab " would allow the test to
     // pass, and more generally if the analyzer can know
@@ -387,7 +387,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
   public void testExactFirst() throws Exception {
 
     Analyzer a = getUnusualAnalyzer();
-    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, 1, true, 1);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, 1, true, 1, 3, true);
     suggester.build(new TermFreqArrayIterator(new TermFreq[] {
           new TermFreq("x y", 1),
           new TermFreq("x y z", 3),
@@ -426,7 +426,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
   public void testNonExactFirst() throws Exception {
 
     Analyzer a = getUnusualAnalyzer();
-    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, 1, true, 1);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, 1, true, 1, 3, true);
 
     suggester.build(new TermFreqArrayIterator(new TermFreq[] {
           new TermFreq("x y", 1),
@@ -645,7 +645,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
     Analyzer a = new MockTokenEatingAnalyzer(numStopChars, preserveHoles);
     FuzzySuggester suggester = new FuzzySuggester(a, a,
-                                                          preserveSep ? AnalyzingSuggester.PRESERVE_SEP : 0, 256, -1, 1, false, 1);
+                                                  preserveSep ? AnalyzingSuggester.PRESERVE_SEP : 0, 256, -1, 1, false, 1, 3, true);
     suggester.build(new TermFreqArrayIterator(keys));
 
     for (String prefix : allPrefixes) {
@@ -703,8 +703,10 @@ public class FuzzySuggesterTest extends LuceneTestCase {
       }
       TokenStreamToAutomaton tokenStreamToAutomaton = suggester.getTokenStreamToAutomaton();
 
-      // nocommit this is putting fox in charge of hen
-      // house!  ie maybe we have a bug in suggester.toLevA ...
+      // NOTE: not great that we ask the suggester to give
+      // us the "answer key" (ie maybe we have a bug in
+      // suggester.toLevA ...) ... but testRandom2() fixes
+      // this:
       Automaton automaton = suggester.toLevenshteinAutomata(suggester.toLookupAutomaton(analyzedKey));
       assertTrue(automaton.isDeterministic());
       // TODO: could be faster... but its slowCompletor for a reason
@@ -776,7 +778,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
  
   public void testMaxSurfaceFormsPerAnalyzedForm() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    FuzzySuggester suggester = new FuzzySuggester(a, a, 0, 2, -1, 1, true, 1);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, 0, 2, -1, 1, true, 1, 3, true);
 
     List<TermFreq> keys = Arrays.asList(new TermFreq[] {
         new TermFreq("a", 40),
@@ -800,7 +802,18 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     StringBuilder builder = new StringBuilder();
     for (int i = 0; i < input.length; i++) {
       if (i >= prefixLength && random().nextBoolean() && i < input.length-1) {
-        switch(random().nextInt(3)) {
+        switch(random().nextInt(4)) {
+          case 3:
+            if (i < input.length-1) {
+              // Transpose input[i] and input[1+i]:
+              builder.append(input[i+1]);
+              builder.append(input[i]);
+              for(int j=i+2;j<input.length;j++) {
+                builder.append(input[j]);
+              }
+              return builder.toString();
+            }
+            // NOTE: fall through to delete:
           case 2:
             // Delete input[i]
             for (int j = i+1; j < input.length; j++) {
@@ -829,8 +842,6 @@ public class FuzzySuggesterTest extends LuceneTestCase {
               builder.append(input[j]);  
             }
             return builder.toString();
-
-          // nocommit need transposition too?
         }
       }
 
@@ -854,7 +865,6 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     final List<TermFreq> answers = new ArrayList<TermFreq>();
     final Set<String> seen = new HashSet<String>();
     for(int i=0;i<NUM;i++) {
-      // nocommit mixin some unicode here?
       final String s = randomSimpleString(8);
       if (!seen.contains(s)) {
         answers.add(new TermFreq(s, random().nextInt(1000)));
@@ -881,7 +891,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     boolean transpositions = random().nextBoolean();
     // TODO: test graph analyzers
     // TODO: test exactFirst / preserveSep permutations
-    FuzzySuggester suggest = new FuzzySuggester(a, a, 0, 256, -1, maxEdits, transpositions, prefixLen);
+    FuzzySuggester suggest = new FuzzySuggester(a, a, 0, 256, -1, maxEdits, transpositions, prefixLen, 3, true);
 
     if (VERBOSE) {
       System.out.println("TEST: maxEdits=" + maxEdits + " prefixLen=" + prefixLen + " transpositions=" + transpositions + " num=" + NUM);
@@ -911,7 +921,6 @@ public class FuzzySuggesterTest extends LuceneTestCase {
         }
       }
 
-      // nocommit must fix lookup to tie break properly!!:
       Collections.sort(actual, new CompareByCostThenAlpha());
 
       final int limit = Math.min(expected.size(), actual.size());
@@ -960,6 +969,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
           } else {
             //System.out.println("    try loop");
             d = maxEdits + 1;
+            //for(int ed=-maxEdits;ed<=maxEdits;ed++) {
             for(int ed=-maxEdits;ed<=maxEdits;ed++) {
               if (s.length() < fragLen - ed) {
                 continue;
