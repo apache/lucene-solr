@@ -829,6 +829,7 @@
             <classpath refid="@{junit.classpath}"/>
             <classpath refid="clover.classpath" />
 
+            <!-- Assertions. -->
             <assertions>
               <enable package="org.apache.lucene"/>
               <enable package="org.apache.solr"/>
