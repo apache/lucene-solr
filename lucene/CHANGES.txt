@@ -49,6 +49,10 @@ New Features
   for better search performance. 
   (Han Jiang, Adrien Grand, Robert Muir, Mike McCandless)
 
+* LUCENE-3846: New FuzzySuggester, like AnalyzingSuggester except it
+  also finds completions allowing for fuzzy edits in the input string.
+  (Robert Muir, Simon Willnauer, Mike McCandless)
+
 API Changes
 
 * LUCENE-4399: Deprecated AppendingCodec. Lucene's term dictionaries
