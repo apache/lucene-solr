@@ -910,7 +910,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     boolean transpositions = random().nextBoolean();
     // TODO: test graph analyzers
     // TODO: test exactFirst / preserveSep permutations
-    FuzzySuggester suggest = new FuzzySuggester(a, a, 0, 256, -1, maxEdits, transpositions, prefixLen, 3);
+    FuzzySuggester suggest = new FuzzySuggester(a, a, 0, 256, -1, maxEdits, transpositions, prefixLen, prefixLen);
 
     if (VERBOSE) {
       System.out.println("TEST: maxEdits=" + maxEdits + " prefixLen=" + prefixLen + " transpositions=" + transpositions + " num=" + NUM);
