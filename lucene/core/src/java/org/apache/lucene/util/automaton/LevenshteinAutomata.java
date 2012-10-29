@@ -36,7 +36,7 @@ public class LevenshteinAutomata {
   final int word[];
   /* the automata alphabet. */
   final int alphabet[];
-  /* the maximum symbol in the alphabet (e.g. 256 for UTF-8 or 10FFFF for UTF-32) */
+  /* the maximum symbol in the alphabet (e.g. 255 for UTF-8 or 10FFFF for UTF-32) */
   final int alphaMax;
 
   /* the ranges outside of alphabet */
@@ -53,18 +53,24 @@ public class LevenshteinAutomata {
   public LevenshteinAutomata(String input, boolean withTranspositions) {
     this(codePoints(input), Character.MAX_CODE_POINT, withTranspositions);
   }
-  
+
   /**
-   * Expert: Don't use this!
+   * Expert: specify a custom maximum possible symbol
+   * (alphaMax); default is Character.MAX_CODE_POINT.
    */
   public LevenshteinAutomata(int[] word, int alphaMax, boolean withTranspositions) {
     this.word = word;
     this.alphaMax = alphaMax;
-    
+
     // calculate the alphabet
     SortedSet<Integer> set = new TreeSet<Integer>();
-    for (int i = 0; i < word.length; i++)
-      set.add(word[i]);
+    for (int i = 0; i < word.length; i++) {
+      int v = word[i];
+      if (v > alphaMax) {
+        throw new IllegalArgumentException("alphaMax exceeded by symbol " + v + " in word");
+      }
+      set.add(v);
+    }
     alphabet = new int[set.size()];
     Iterator<Integer> iterator = set.iterator();
     for (int i = 0; i < alphabet.length; i++)

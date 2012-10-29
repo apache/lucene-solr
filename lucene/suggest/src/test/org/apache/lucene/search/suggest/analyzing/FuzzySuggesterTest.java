@@ -184,7 +184,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     int options = 0;
 
     Analyzer a = new MockAnalyzer(random());
-    FuzzySuggester suggester = new FuzzySuggester(a, a, options, 256, -1, 1, true, 1, 3, true);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, options, 256, -1, 1, true, 1, 3);
     suggester.build(new TermFreqArrayIterator(keys));
     // TODO: would be nice if "ab " would allow the test to
     // pass, and more generally if the analyzer can know
@@ -387,7 +387,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
   public void testExactFirst() throws Exception {
 
     Analyzer a = getUnusualAnalyzer();
-    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, 1, true, 1, 3, true);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.EXACT_FIRST | AnalyzingSuggester.PRESERVE_SEP, 256, -1, 1, true, 1, 3);
     suggester.build(new TermFreqArrayIterator(new TermFreq[] {
           new TermFreq("x y", 1),
           new TermFreq("x y z", 3),
@@ -426,7 +426,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
   public void testNonExactFirst() throws Exception {
 
     Analyzer a = getUnusualAnalyzer();
-    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, 1, true, 1, 3, true);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1, 1, true, 1, 3);
 
     suggester.build(new TermFreqArrayIterator(new TermFreq[] {
           new TermFreq("x y", 1),
@@ -645,7 +645,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
     Analyzer a = new MockTokenEatingAnalyzer(numStopChars, preserveHoles);
     FuzzySuggester suggester = new FuzzySuggester(a, a,
-                                                  preserveSep ? AnalyzingSuggester.PRESERVE_SEP : 0, 256, -1, 1, false, 1, 3, true);
+                                                  preserveSep ? AnalyzingSuggester.PRESERVE_SEP : 0, 256, -1, 1, false, 1, 3);
     suggester.build(new TermFreqArrayIterator(keys));
 
     for (String prefix : allPrefixes) {
@@ -775,10 +775,9 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     }
   }
 
- 
   public void testMaxSurfaceFormsPerAnalyzedForm() throws Exception {
     Analyzer a = new MockAnalyzer(random());
-    FuzzySuggester suggester = new FuzzySuggester(a, a, 0, 2, -1, 1, true, 1, 3, true);
+    FuzzySuggester suggester = new FuzzySuggester(a, a, 0, 2, -1, 1, true, 1, 3);
 
     List<TermFreq> keys = Arrays.asList(new TermFreq[] {
         new TermFreq("a", 40),
@@ -795,6 +794,26 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals(60, results.get(0).value);
     assertEquals("a ", results.get(1).key);
     assertEquals(50, results.get(1).value);
+  }
+
+  public void testEditSeps() throws Exception {
+    Analyzer a = new MockAnalyzer(random());
+    FuzzySuggester suggester = new FuzzySuggester(a, a, FuzzySuggester.PRESERVE_SEP, 2, -1, 2, true, 1, 3);
+
+    List<TermFreq> keys = Arrays.asList(new TermFreq[] {
+        new TermFreq("foo bar", 40),
+        new TermFreq("foo bar baz", 50),
+        new TermFreq("barbaz", 60),
+        new TermFreq("barbazfoo", 10),
+      });
+
+    Collections.shuffle(keys, random());
+    suggester.build(new TermFreqArrayIterator(keys));
+
+    assertEquals("[foo bar baz/50, foo bar/40]", suggester.lookup("foobar", false, 5).toString());
+    assertEquals("[foo bar baz/50]", suggester.lookup("foobarbaz", false, 5).toString());
+    assertEquals("[barbaz/60, barbazfoo/10]", suggester.lookup("bar baz", false, 5).toString());
+    assertEquals("[barbazfoo/10]", suggester.lookup("bar baz foo", false, 5).toString());
   }
   
   private static String addRandomEdit(String string, int prefixLength) {
@@ -891,7 +910,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     boolean transpositions = random().nextBoolean();
     // TODO: test graph analyzers
     // TODO: test exactFirst / preserveSep permutations
-    FuzzySuggester suggest = new FuzzySuggester(a, a, 0, 256, -1, maxEdits, transpositions, prefixLen, 3, true);
+    FuzzySuggester suggest = new FuzzySuggester(a, a, 0, 256, -1, maxEdits, transpositions, prefixLen, 3);
 
     if (VERBOSE) {
       System.out.println("TEST: maxEdits=" + maxEdits + " prefixLen=" + prefixLen + " transpositions=" + transpositions + " num=" + NUM);

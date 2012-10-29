@@ -72,7 +72,6 @@ public final class FuzzySuggester extends AnalyzingSuggester {
   private final boolean transpositions;
   private final int nonFuzzyPrefix;
   private final int minFuzzyLength;
-  private final boolean allowSepEdit;
 
   /**
    * The default minimum length of the key passed to {@link
@@ -92,11 +91,6 @@ public final class FuzzySuggester extends AnalyzingSuggester {
   public static final int DEFAULT_MAX_EDITS = 1;
 
   /**
-   * We allow token separator to be deleted/inserted, by default.
-   */
-  public static final boolean DEFAULT_ALLOW_SEP_EDIT = true;
-  
-  /**
    * Creates a {@link FuzzySuggester} instance initialized with default values.
    * 
    * @param analyzer the analyzer used for this suggester
@@ -115,7 +109,7 @@ public final class FuzzySuggester extends AnalyzingSuggester {
    */
   public FuzzySuggester(Analyzer indexAnalyzer, Analyzer queryAnalyzer) {
     this(indexAnalyzer, queryAnalyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1, DEFAULT_MAX_EDITS, true,
-         DEFAULT_NON_FUZZY_PREFIX, DEFAULT_MIN_FUZZY_LENGTH, DEFAULT_ALLOW_SEP_EDIT);
+         DEFAULT_NON_FUZZY_PREFIX, DEFAULT_MIN_FUZZY_LENGTH);
   }
 
   /**
@@ -139,12 +133,11 @@ public final class FuzzySuggester extends AnalyzingSuggester {
    *        Levenshtein algorithm.
    * @param nonFuzzyPrefix length of common (non-fuzzy) prefix (see default {@link #DEFAULT_NON_FUZZY_PREFIX}
    * @param minFuzzyLength minimum length of lookup key before any edits are allowed (see default {@link #DEFAULT_MIN_FUZZY_LENGTH})
-   * @param allowSepEdit if true, the token separater is allowed to be an edit (so words may be split/joined) (see default {@link #DEFAULT_ALLOW_SEP_EDIT})
    */
   public FuzzySuggester(Analyzer indexAnalyzer, Analyzer queryAnalyzer,
                         int options, int maxSurfaceFormsPerAnalyzedForm, int maxGraphExpansions,
                         int maxEdits, boolean transpositions, int nonFuzzyPrefix,
-                        int minFuzzyLength, boolean allowSepEdit) {
+                        int minFuzzyLength) {
     super(indexAnalyzer, queryAnalyzer, options, maxSurfaceFormsPerAnalyzedForm, maxGraphExpansions);
     if (maxEdits < 0 || maxEdits > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
       throw new IllegalArgumentException("maxEdits must be between 0 and " + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
@@ -160,7 +153,6 @@ public final class FuzzySuggester extends AnalyzingSuggester {
     this.transpositions = transpositions;
     this.nonFuzzyPrefix = nonFuzzyPrefix;
     this.minFuzzyLength = minFuzzyLength;
-    this.allowSepEdit = allowSepEdit;
   }
   
   @Override
@@ -206,7 +198,7 @@ public final class FuzzySuggester extends AnalyzingSuggester {
         // to allow the trailing dedup bytes to be
         // edited... but then 0 byte is "in general" allowed
         // on input (but not in UTF8).
-        LevenshteinAutomata lev = new LevenshteinAutomata(ints, allowSepEdit ? 255 : 254, transpositions);
+        LevenshteinAutomata lev = new LevenshteinAutomata(ints, 255, transpositions);
         Automaton levAutomaton = lev.toAutomaton(maxEdits);
         Automaton combined = BasicOperations.concatenate(Arrays.asList(prefix, levAutomaton));
         combined.setDeterministic(true); // its like the special case in concatenate itself, except we cloneExpanded already
