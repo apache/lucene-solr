@@ -23,11 +23,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
-import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
-import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
-import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -60,12 +55,13 @@ import org.apache.lucene.search.intervals.NonOverlappingQuery;
 import org.apache.lucene.search.intervals.OrderedNearQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.Ignore;
 
 /**
  * TODO: FIX THIS TEST Phrase and Span Queries positions callback API
  */
+@SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
 public class IntervalHighlighterTest extends LuceneTestCase {
   
   protected final static String F = "f";
@@ -79,22 +75,7 @@ public class IntervalHighlighterTest extends LuceneTestCase {
   
   public void setUp() throws Exception {
     super.setUp();
-    // Currently only SimpleText and Lucene40 can index offsets into postings:
-    String codecName = Codec.getDefault().getName();
-    assumeTrue("Codec does not support offsets: " + codecName,
-        codecName.equals("SimpleText") || codecName.equals("Lucene40"));
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.CREATE);
-
-    if (codecName.equals("Lucene40")) {
-      // Sep etc are not implemented
-      switch(random().nextInt(4)) {
-        case 0: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())); break;
-        case 1: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat())); break;
-        case 2: iwc.setCodec(_TestUtil.alwaysPostingsFormat(
-            new Pulsing41PostingsFormat(_TestUtil.nextInt(random(), 1, 3)))); break;
-        case 3: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new NestedPulsingPostingsFormat())); break;
-      }
-    }
     analyzer = iwc.getAnalyzer();
     dir = newDirectory();
   }

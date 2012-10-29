@@ -59,30 +59,6 @@ public class TestPositionsAndOffsets extends LuceneTestCase {
   // - can get offsets out of a basic TermQuery, and a more complex BooleanQuery
   // - if offsets are not stored, then we get -1 returned
 
-  IndexWriterConfig iwc;
-
-  public void setUp() throws Exception {
-    super.setUp();
-
-    // Currently only SimpleText and Lucene40 can index offsets into postings:
-    String codecName = Codec.getDefault().getName();
-    assumeTrue("Codec does not support offsets: " + codecName,
-        codecName.equals("SimpleText") ||
-            codecName.equals("Lucene40") || codecName.equals("Lucene41"));
-
-    iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-
-    if (codecName.equals("Lucene40")) {
-      // Sep etc are not implemented
-      switch(random().nextInt(4)) {
-        case 0: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new Lucene41PostingsFormat())); break;
-        case 1: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat())); break;
-        case 2: iwc.setCodec(_TestUtil.alwaysPostingsFormat(
-            new Pulsing41PostingsFormat(_TestUtil.nextInt(random(), 1, 3)))); break;
-        case 3: iwc.setCodec(_TestUtil.alwaysPostingsFormat(new NestedPulsingPostingsFormat())); break;
-      }
-    }
-  }
 
 
   private static void addDocs(RandomIndexWriter writer, boolean withOffsets) throws IOException {
@@ -106,7 +82,7 @@ public class TestPositionsAndOffsets extends LuceneTestCase {
 
   private void testQuery(Query query, int[][] expectedOffsets, boolean needsOffsets) throws IOException {
     Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, iwc);
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     addDocs(writer, needsOffsets);
 
     IndexReader reader = writer.getReader();

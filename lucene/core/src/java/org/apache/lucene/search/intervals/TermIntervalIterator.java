@@ -75,7 +75,7 @@ public final class TermIntervalIterator extends IntervalIterator {
 
   @Override
   public int scorerAdvanced(int docId) throws IOException {
-    interval.reset();
+//    interval.reset();
     if (docsAndPos.docID() == docId) {
       positionsPending = docsAndPos.freq();
     } else {
