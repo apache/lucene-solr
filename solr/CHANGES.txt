@@ -118,6 +118,10 @@ Bug Fixes
 * SOLR-3998: Atomic update on uniqueKey field itself causes duplicate document.
   (Eric Spencer, yonik)
 
+* SOLR-4005: If CoreContainer fails to register a created core, it should close it.
+  (Mark Miller)
+
+
 Other Changes
 ----------------------
 
