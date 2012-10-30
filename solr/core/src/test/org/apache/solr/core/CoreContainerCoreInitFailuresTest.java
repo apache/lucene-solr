@@ -251,9 +251,12 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
       cc.reload("col_bad");
       fail("corrupt solrconfig.xml failed to trigger exception from reload");
     } catch (SolrException e) {
-      assertTrue("reload exception doesn't refer to prolog " + e.getCause().getMessage(),
-                 0 < e.getCause().getMessage().indexOf("prolog"));
-      
+      assertTrue("We're supposed to have a wrapped SAXParserException here, but we don't",
+          e.getCause() instanceof SAXParseException);
+      SAXParseException se = (SAXParseException)e.getCause();
+      assertTrue("reload exception doesn't refer to slrconfig.xml " + se.getSystemId(),
+          0 < se.getSystemId().indexOf("solrconfig.xml"));
+
     }
 
     assertEquals("Failed core reload should not have changed start time",
