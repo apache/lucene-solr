@@ -833,7 +833,7 @@
             <assertions>
               <enable package="org.apache.lucene"/>
               <enable package="org.apache.solr"/>
-            </assertions>
+            </assertions>  
 
             <!-- JVM arguments and system properties. -->
             <jvmarg line="${args}"/>
