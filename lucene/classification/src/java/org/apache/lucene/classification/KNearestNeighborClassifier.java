@@ -77,7 +77,7 @@ public class KNearestNeighborClassifier implements Classifier {
         assignedClass = cl;
       }
     }
-    double score = classCounts.get(assignedClass) / k;
+    double score = max / k;
     return new ClassificationResult(assignedClass, score);
   }
 
