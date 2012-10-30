@@ -29,7 +29,12 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.OpenBitSet;
 
-final class SloppyPhraseScorer extends PhraseScorer {
+final class SloppyPhraseScorer extends Scorer {
+  private PhrasePositions min, max;
+
+  private float sloppyFreq; //phrase frequency in current doc as computed by phraseFreq().
+
+  private final Similarity.SloppySimScorer docScorer;
   
   private final int slop;
   private final int numPostings;
@@ -43,12 +48,32 @@ final class SloppyPhraseScorer extends PhraseScorer {
   private PhrasePositions[][] rptGroups; // in each group are PPs that repeats each other (i.e. same term), sorted by (query) offset 
   private PhrasePositions[] rptStack; // temporary stack for switching colliding repeating pps 
   
+  private int numMatches;
+  
   SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
       int slop, Similarity.SloppySimScorer docScorer) {
-    super(weight, postings, docScorer);
+    super(weight);
+    this.docScorer = docScorer;
     this.slop = slop;
     this.numPostings = postings==null ? 0 : postings.length;
     pq = new PhraseQueue(postings.length);
+    // convert tps to a list of phrase positions.
+    // note: phrase-position differs from term-position in that its position
+    // reflects the phrase offset: pp.pos = tp.pos - offset.
+    // this allows to easily identify a matching (exact) phrase 
+    // when all PhrasePositions have exactly the same position.
+    if (postings.length > 0) {
+      min = new PhrasePositions(postings[0].postings, postings[0].position, 0, postings[0].terms);
+      max = min;
+      max.doc = -1;
+      for (int i = 1; i < postings.length; i++) {
+        PhrasePositions pp = new PhrasePositions(postings[i].postings, postings[i].position, i, postings[i].terms);
+        max.next = pp;
+        max = pp;
+        max.doc = -1;
+      }
+      max.next = min; // make it cyclic for easier manipulation
+    }
   }
 
   /**
@@ -69,12 +94,12 @@ final class SloppyPhraseScorer extends PhraseScorer {
    * would get same score as "g f"~2, although "c b"~2 could be matched twice.
    * We may want to fix this in the future (currently not, for performance reasons).
    */
-  @Override
-  protected float phraseFreq() throws IOException {
+  private float phraseFreq() throws IOException {
     if (!initPhrasePositions()) {
       return 0.0f;
     }
     float freq = 0.0f;
+    numMatches = 0;
     PhrasePositions pp = pq.pop();
     int matchLength = end - pp.position;
     int next = pq.top().position; 
@@ -85,6 +110,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
       if (pp.position > next) { // done minimizing current match-length 
         if (matchLength <= slop) {
           freq += docScorer.computeSlopFactor(matchLength); // score match
+          numMatches++;
         }      
         pq.add(pp);
         pp = pq.pop();
@@ -99,6 +125,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
     }
     if (matchLength <= slop) {
       freq += docScorer.computeSlopFactor(matchLength); // score match
+      numMatches++;
     }    
     return freq;
   }
@@ -482,6 +509,15 @@ final class SloppyPhraseScorer extends PhraseScorer {
     }
     return tg;
   }
+
+  @Override
+  public int freq() {
+    return numMatches;
+  }
+  
+  float sloppyFreq() {
+    return sloppyFreq;
+  }
   
 //  private void printQueue(PrintStream ps, PhrasePositions ext, String title) {
 //    //if (min.doc != ?) return;
@@ -504,4 +540,54 @@ final class SloppyPhraseScorer extends PhraseScorer {
 //    }
 //  }
   
+  private boolean advanceMin(int target) throws IOException {
+    if (!min.skipTo(target)) { 
+      max.doc = NO_MORE_DOCS; // for further calls to docID() 
+      return false;
+    }
+    min = min.next; // cyclic
+    max = max.next; // cyclic
+    return true;
+  }
+  
+  @Override
+  public int docID() {
+    return max.doc; 
+  }
+
+  @Override
+  public int nextDoc() throws IOException {
+    return advance(max.doc);
+  }
+  
+  @Override
+  public float score() {
+    return docScorer.score(max.doc, sloppyFreq);
+  }
+
+  @Override
+  public int advance(int target) throws IOException {
+    sloppyFreq = 0.0f;
+    if (!advanceMin(target)) {
+      return NO_MORE_DOCS;
+    }        
+    boolean restart=false;
+    while (sloppyFreq == 0.0f) {
+      while (min.doc < max.doc || restart) {
+        restart = false;
+        if (!advanceMin(max.doc)) {
+          return NO_MORE_DOCS;
+        }        
+      }
+      // found a doc with all of the terms
+      sloppyFreq = phraseFreq(); // check for phrase
+      restart = true;
+    } 
+
+    // found a match
+    return max.doc;
+  }
+  
+  @Override
+  public String toString() { return "scorer(" + weight + ")"; }
 }

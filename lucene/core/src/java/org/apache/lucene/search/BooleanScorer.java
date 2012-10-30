@@ -127,7 +127,7 @@ final class BooleanScorer extends Scorer {
     public int docID() { return doc; }
 
     @Override
-    public float freq() { return freq; }
+    public int freq() { return freq; }
 
     @Override
     public int nextDoc() { return NO_MORE_DOCS; }
@@ -322,7 +322,7 @@ final class BooleanScorer extends Scorer {
   }
 
   @Override
-  public float freq() throws IOException {
+  public int freq() throws IOException {
     throw new UnsupportedOperationException();
   }
 

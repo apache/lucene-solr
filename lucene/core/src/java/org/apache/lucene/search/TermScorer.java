@@ -55,7 +55,7 @@ final class TermScorer extends Scorer {
   }
 
   @Override
-  public float freq() throws IOException {
+  public int freq() throws IOException {
     return docsEnum.freq();
   }
 

@@ -188,7 +188,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
     }
     
     @Override
-    public float freq() throws IOException {
+    public int freq() throws IOException {
       return 1;
     }
 

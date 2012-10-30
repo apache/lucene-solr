@@ -219,7 +219,7 @@ class TermsIncludingScoreQuery extends Query {
     }
 
     @Override
-    public float freq() {
+    public int freq() {
       return 1;
     }
   }
@@ -318,7 +318,7 @@ class TermsIncludingScoreQuery extends Query {
       return scores[currentDoc];
     }
 
-    public float freq() throws IOException {
+    public int freq() throws IOException {
       return 1;
     }
 

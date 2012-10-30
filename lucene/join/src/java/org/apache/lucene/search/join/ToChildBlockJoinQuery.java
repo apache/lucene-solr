@@ -169,7 +169,7 @@ public class ToChildBlockJoinQuery extends Query {
     private final Bits acceptDocs;
 
     private float parentScore;
-    private float parentFreq = 1;
+    private int parentFreq = 1;
 
     private int childDoc = -1;
     private int parentDoc;
@@ -258,7 +258,7 @@ public class ToChildBlockJoinQuery extends Query {
     }
 
     @Override
-    public float freq() throws IOException {
+    public int freq() throws IOException {
       return parentFreq;
     }
 

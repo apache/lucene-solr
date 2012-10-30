@@ -303,7 +303,7 @@ public class PhraseQuery extends Query {
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
-          float freq = scorer.freq();
+          float freq = slop == 0 ? scorer.freq() : ((SloppyPhraseScorer)scorer).sloppyFreq();
           SloppySimScorer docScorer = similarity.sloppySimScorer(stats, context);
           ComplexExplanation result = new ComplexExplanation();
           result.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");

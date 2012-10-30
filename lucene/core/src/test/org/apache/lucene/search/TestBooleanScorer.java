@@ -81,7 +81,7 @@ public class TestBooleanScorer extends LuceneTestCase
     Scorer[] scorers = new Scorer[] {new Scorer(weight) {
       private int doc = -1;
       @Override public float score() { return 0; }
-      @Override public float freq()  { return 0; }
+      @Override public int freq()  { return 0; }
       @Override public int docID() { return doc; }
       
       @Override public int nextDoc() {

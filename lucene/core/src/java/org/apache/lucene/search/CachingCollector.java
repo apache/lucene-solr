@@ -85,7 +85,7 @@ public abstract class CachingCollector extends Collector {
     public final int docID() { return doc; }
     
     @Override
-    public final float freq() { throw new UnsupportedOperationException(); }
+    public final int freq() { throw new UnsupportedOperationException(); }
     
     @Override
     public final int nextDoc() { throw new UnsupportedOperationException(); }

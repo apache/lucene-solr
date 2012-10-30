@@ -100,7 +100,7 @@ class DisjunctionMaxScorer extends DisjunctionScorer {
   }
 
   @Override
-  public float freq() throws IOException {
+  public int freq() throws IOException {
     int doc = subScorers[0].docID();
     int size = numScorers;
     return 1 + freq(1, size, doc) + freq(2, size, doc);
