@@ -638,7 +638,8 @@ public class AnalyzingSuggester extends Lookup {
       throw new RuntimeException(bogus);
     }
   }
-  
+
+  /** Returns all prefix paths to initialize the search. */
   protected List<FSTUtil.Path<Pair<Long,BytesRef>>> getFullPrefixPaths(List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths,
                                                                        Automaton lookupAutomaton,
                                                                        FST<Pair<Long,BytesRef>> fst)
