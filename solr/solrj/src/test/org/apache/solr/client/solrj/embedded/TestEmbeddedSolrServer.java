@@ -23,6 +23,7 @@ import java.util.List;
 
 import junit.framework.Assert;
 
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.core.SolrCore;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -31,7 +32,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class
+})
 public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
 
   @Rule
