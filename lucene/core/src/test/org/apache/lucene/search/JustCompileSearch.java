@@ -189,25 +189,6 @@ final class JustCompileSearch {
     
   }
 
-  static final class JustCompilePhraseScorer extends PhraseScorer {
-
-    JustCompilePhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-        Similarity.SloppySimScorer docScorer) {
-      super(weight, postings, docScorer);
-    }
-
-    @Override
-    protected float phraseFreq() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public int freq() throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-  }
-
   static final class JustCompileQuery extends Query {
 
     @Override
