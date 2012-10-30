@@ -196,6 +196,10 @@
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpmime</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.yammer.metrics</groupId>
+      <artifactId>metrics-core</artifactId>
+    </dependency>
   </dependencies>
   <build>
     <sourceDirectory>${module-path}</sourceDirectory>
