@@ -36,7 +36,10 @@ public class CoreDescriptor {
   protected String schemaName;
   private final CoreContainer coreContainer;
   private Properties coreProperties;
-  
+  private boolean loadOnStartup = true;
+  private boolean swappable = false;
+
+
   private CloudDescriptor cloudDesc;
 
   public CoreDescriptor(CoreContainer coreContainer, String name, String instanceDir) {
@@ -206,5 +209,20 @@ public class CoreDescriptor {
   
   public void setCloudDescriptor(CloudDescriptor cloudDesc) {
     this.cloudDesc = cloudDesc;
+  }
+  public boolean isLoadOnStartup() {
+    return loadOnStartup;
+  }
+
+  public void setLoadOnStartup(boolean loadOnStartup) {
+    this.loadOnStartup = loadOnStartup;
+  }
+
+  public boolean isSwappable() {
+    return swappable;
+  }
+
+  public void setSwappable(boolean swappable) {
+    this.swappable = swappable;
   }
 }

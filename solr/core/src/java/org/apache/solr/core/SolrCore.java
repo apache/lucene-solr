@@ -308,7 +308,7 @@ public final class SolrCore implements SolrInfoMBean {
     this.name = v;
     this.logid = (v==null)?"":("["+v+"] ");
   }
-  
+
   public String getLogId()
   {
     return this.logid;
@@ -617,7 +617,31 @@ public final class SolrCore implements SolrInfoMBean {
   public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd) {
     this(name, dataDir, config, schema, cd, null, null);
   }
-  
+
+
+  /**
+   * Creates a new core that is to be loaded lazily. i.e. lazyLoad="true" in solr.xml
+   * @since solr 4.1
+   */
+  public SolrCore(String name, CoreDescriptor cd) {
+    this.setName(name);
+    coreDescriptor = cd;
+    this.schema = null;
+    this.dataDir = null;
+    this.solrConfig = null;
+    this.startTime = System.currentTimeMillis();
+    this.maxWarmingSearchers = 2;  // we don't have a config yet, just pick a number.
+    this.resourceLoader = null;
+    this.updateHandler = null;
+    this.isReloaded = true;
+    this.reqHandlers = null;
+    this.searchComponents = null;
+    this.updateProcessorChains = null;
+    this.infoRegistry = null;
+    this.codec = null;
+
+    solrCoreState = null;
+  }
   /**
    * Creates a new core and register it in the list of cores.
    * If a core with the same name already exists, it will be stopped and replaced by this one.
