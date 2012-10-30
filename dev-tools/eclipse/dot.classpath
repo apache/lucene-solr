@@ -119,6 +119,7 @@
   <classpathentry kind="lib" path="solr/core/lib/commons-lang-2.6.jar"/>
   <classpathentry kind="lib" path="solr/core/lib/easymock-2.2.jar"/>
   <classpathentry kind="lib" path="solr/core/lib/guava-r05.jar"/>
+  <classpathentry kind="lib" path="solr/core/lib/metrics-core-2.1.2.jar"/>
   <classpathentry kind="lib" path="solr/solrj/lib/jcl-over-slf4j-1.6.4.jar"/>
   <classpathentry kind="lib" path="solr/solrj/lib/log4j-over-slf4j-1.6.4.jar"/>
   <classpathentry kind="lib" path="solr/solrj/lib/slf4j-api-1.6.4.jar"/>
