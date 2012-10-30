@@ -129,7 +129,7 @@ class BooleanScorer2 extends Scorer {
     }
 
     @Override
-    public float freq() throws IOException {
+    public int freq() throws IOException {
       return 1;
     }
 
@@ -313,7 +313,7 @@ class BooleanScorer2 extends Scorer {
   }
 
   @Override
-  public float freq() throws IOException {
+  public int freq() throws IOException {
     return countingSumScorer.freq();
   }
 

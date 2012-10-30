@@ -86,7 +86,7 @@ class ReqOptSumScorer extends Scorer {
   }
 
   @Override
-  public float freq() throws IOException {
+  public int freq() throws IOException {
     // we might have deferred advance()
     score();
     return (optScorer != null && optScorer.docID() == reqScorer.docID()) ? 2 : 1;

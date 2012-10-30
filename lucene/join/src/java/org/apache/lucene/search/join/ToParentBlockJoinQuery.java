@@ -218,7 +218,7 @@ public class ToParentBlockJoinQuery extends Query {
     private int parentDoc = -1;
     private int prevParentDoc;
     private float parentScore;
-    private float parentFreq;
+    private int parentFreq;
     private int nextChildDoc;
 
     private int[] pendingChildDocs = new int[5];
@@ -300,11 +300,10 @@ public class ToParentBlockJoinQuery extends Query {
         }
 
         float totalScore = 0;
-        float totalFreq = 0;
         float maxScore = Float.NEGATIVE_INFINITY;
-        float maxFreq = 0;
 
         childDocUpto = 0;
+        parentFreq = 0;
         do {
 
           //System.out.println("  c=" + nextChildDoc);
@@ -318,12 +317,11 @@ public class ToParentBlockJoinQuery extends Query {
           if (scoreMode != ScoreMode.None) {
             // TODO: specialize this into dedicated classes per-scoreMode
             final float childScore = childScorer.score();
-            final float childFreq = childScorer.freq();
+            final int childFreq = childScorer.freq();
             pendingChildScores[childDocUpto] = childScore;
             maxScore = Math.max(childScore, maxScore);
-            maxFreq = Math.max(childFreq, maxFreq);
             totalScore += childScore;
-            totalFreq += childFreq;
+            parentFreq += childFreq;
           }
           childDocUpto++;
           nextChildDoc = childScorer.nextDoc();
@@ -335,15 +333,12 @@ public class ToParentBlockJoinQuery extends Query {
         switch(scoreMode) {
         case Avg:
           parentScore = totalScore / childDocUpto;
-          parentFreq = totalFreq / childDocUpto;
           break;
         case Max:
           parentScore = maxScore;
-          parentFreq = maxFreq;
           break;
         case Total:
           parentScore = totalScore;
-          parentFreq = totalFreq;
           break;
         case None:
           break;
@@ -365,7 +360,7 @@ public class ToParentBlockJoinQuery extends Query {
     }
     
     @Override
-    public float freq() {
+    public int freq() {
       return parentFreq;
     }
 

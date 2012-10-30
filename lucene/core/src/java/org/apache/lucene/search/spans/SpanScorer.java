@@ -33,6 +33,7 @@ public class SpanScorer extends Scorer {
 
   protected int doc;
   protected float freq;
+  protected int numMatches;
   protected final Similarity.SloppySimScorer docScorer;
   
   protected SpanScorer(Spans spans, Weight weight, Similarity.SloppySimScorer docScorer)
@@ -77,9 +78,11 @@ public class SpanScorer extends Scorer {
     }
     doc = spans.doc();
     freq = 0.0f;
+    numMatches = 0;
     do {
       int matchLength = spans.end() - spans.start();
       freq += docScorer.computeSlopFactor(matchLength);
+      numMatches++;
       more = spans.next();
     } while (more && (doc == spans.doc()));
     return true;
@@ -94,7 +97,14 @@ public class SpanScorer extends Scorer {
   }
   
   @Override
-  public float freq() throws IOException {
+  public int freq() throws IOException {
+    return numMatches;
+  }
+  
+  /** Returns the intermediate "sloppy freq" adjusted for edit distance 
+   *  @lucene.internal */
+  // only public so .payloads can see it.
+  public float sloppyFreq() throws IOException {
     return freq;
   }
 }

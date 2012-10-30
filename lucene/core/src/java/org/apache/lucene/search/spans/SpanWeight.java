@@ -92,11 +92,11 @@ public class SpanWeight extends Weight {
 
   @Override
   public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
-    Scorer scorer = scorer(context, true, false, context.reader().getLiveDocs());
+    SpanScorer scorer = (SpanScorer) scorer(context, true, false, context.reader().getLiveDocs());
     if (scorer != null) {
       int newDoc = scorer.advance(doc);
       if (newDoc == doc) {
-        float freq = scorer.freq();
+        float freq = scorer.sloppyFreq();
         SloppySimScorer docScorer = similarity.sloppySimScorer(stats, context);
         ComplexExplanation result = new ComplexExplanation();
         result.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");

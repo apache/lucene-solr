@@ -18,6 +18,14 @@ Changes in backwards compatibility policy
 
 ======================= Lucene 4.1.0 =======================
 
+Changes in backwards compatibility policy
+
+* LUCENE-4514: Scorer's freq() method returns an integer value indicating
+  the number of times the scorer matches the current document. Previously
+  this was only sometimes the case, in some cases it returned a (meaningless)
+  floating point value.  Scorer now extends DocsEnum so it has attributes().
+  (Robert Muir)
+
 New Features
 
 * LUCENE-4226: New experimental StoredFieldsFormat (in lucene/codecs) that

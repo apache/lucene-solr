@@ -36,7 +36,7 @@ public class TestCachingCollector extends LuceneTestCase {
     public float score() throws IOException { return 0; }
     
     @Override
-    public float freq() throws IOException { return 0; }
+    public int freq() throws IOException { return 0; }
 
     @Override
     public int docID() { return 0; }

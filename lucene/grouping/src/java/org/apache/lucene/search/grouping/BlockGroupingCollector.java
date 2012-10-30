@@ -99,7 +99,7 @@ public class BlockGroupingCollector extends Collector {
     }
     
     @Override
-    public float freq() {
+    public int freq() {
       throw new UnsupportedOperationException(); // TODO: wtf does this class do?
     }
 
