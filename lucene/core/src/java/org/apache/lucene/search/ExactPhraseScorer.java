@@ -184,7 +184,7 @@ final class ExactPhraseScorer extends Scorer {
   }
 
   @Override
-  public float freq() {
+  public int freq() {
     return freq;
   }
 

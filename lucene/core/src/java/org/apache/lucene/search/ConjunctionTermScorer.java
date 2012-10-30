@@ -99,7 +99,7 @@ class ConjunctionTermScorer extends Scorer {
   }
   
   @Override
-  public float freq() {
+  public int freq() {
     return docsAndFreqs.length;
   }
 

@@ -43,6 +43,8 @@ final class SloppyPhraseScorer extends PhraseScorer {
   private PhrasePositions[][] rptGroups; // in each group are PPs that repeats each other (i.e. same term), sorted by (query) offset 
   private PhrasePositions[] rptStack; // temporary stack for switching colliding repeating pps 
   
+  private int numMatches;
+  
   SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
       int slop, Similarity.SloppySimScorer docScorer) {
     super(weight, postings, docScorer);
@@ -75,6 +77,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
       return 0.0f;
     }
     float freq = 0.0f;
+    numMatches = 0;
     PhrasePositions pp = pq.pop();
     int matchLength = end - pp.position;
     int next = pq.top().position; 
@@ -85,6 +88,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
       if (pp.position > next) { // done minimizing current match-length 
         if (matchLength <= slop) {
           freq += docScorer.computeSlopFactor(matchLength); // score match
+          numMatches++;
         }      
         pq.add(pp);
         pp = pq.pop();
@@ -99,6 +103,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
     }
     if (matchLength <= slop) {
       freq += docScorer.computeSlopFactor(matchLength); // score match
+      numMatches++;
     }    
     return freq;
   }
@@ -482,6 +487,11 @@ final class SloppyPhraseScorer extends PhraseScorer {
     }
     return tg;
   }
+
+  @Override
+  public int freq() throws IOException {
+    return numMatches;
+  }
   
 //  private void printQueue(PrintStream ps, PhrasePositions ext, String title) {
 //    //if (min.doc != ?) return;
@@ -503,5 +513,6 @@ final class SloppyPhraseScorer extends PhraseScorer {
 //      }
 //    }
 //  }
+  
   
 }

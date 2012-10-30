@@ -758,7 +758,7 @@ public class IndexSearcher {
       }
 
       @Override
-      public float freq() {
+      public int freq() {
         throw new UnsupportedOperationException();
       }
 

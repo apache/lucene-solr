@@ -138,7 +138,7 @@ class ConjunctionScorer extends Scorer {
   }
 
   @Override
-  public float freq() throws IOException {
+  public int freq() throws IOException {
     return scorers.length;
   }
 

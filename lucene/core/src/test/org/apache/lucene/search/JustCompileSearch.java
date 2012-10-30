@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.search.similarities.Similarity;
@@ -198,6 +200,11 @@ final class JustCompileSearch {
     protected float phraseFreq() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
+
+    @Override
+    public int freq() throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
     
   }
 
@@ -227,7 +234,7 @@ final class JustCompileSearch {
     }
     
     @Override
-    public float freq() {
+    public int freq() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

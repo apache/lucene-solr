@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.apache.lucene.index.DocsEnum;
+
 /**
  * Expert: Common scoring functionality for different types of queries.
  *
@@ -39,7 +41,7 @@ import java.util.Collections;
  * TopScoreDocCollector}) will not properly collect hits
  * with these scores.
  */
-public abstract class Scorer extends DocIdSetIterator {
+public abstract class Scorer extends DocsEnum {
   /** the Scorer's parent Weight. in some cases this may be null */
   // TODO can we clean this up?
   protected final Weight weight;
@@ -93,14 +95,6 @@ public abstract class Scorer extends DocIdSetIterator {
    * {@link Collector#collect}.
    */
   public abstract float score() throws IOException;
-
-  /** Returns number of matches for the current document.
-   *  This returns a float (not int) because
-   *  SloppyPhraseScorer discounts its freq according to how
-   *  "sloppy" the match was.
-   *
-   * @lucene.experimental */
-  public abstract float freq() throws IOException;
   
   /** returns parent Weight
    * @lucene.experimental

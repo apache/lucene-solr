@@ -44,7 +44,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       return idx == scores.length ? Float.NaN : scores[idx++];
     }
     
-    @Override public float freq() throws IOException {
+    @Override public int freq() throws IOException {
       return 1;
     }
 

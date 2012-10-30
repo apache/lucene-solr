@@ -34,7 +34,7 @@ import org.apache.lucene.search.similarities.Similarity;
 abstract class PhraseScorer extends Scorer {
   PhrasePositions min, max;
 
-  private float freq; //phrase frequency in current doc as computed by phraseFreq().
+  protected float freq; //phrase frequency in current doc as computed by phraseFreq().
 
   final Similarity.SloppySimScorer docScorer;
 
@@ -110,14 +110,6 @@ abstract class PhraseScorer extends Scorer {
     return max.doc;
   }
   
-  /**
-   * phrase frequency in current doc as computed by phraseFreq().
-   */
-  @Override
-  public final float freq() {
-    return freq;
-  }
-
   /**
    * For a document containing all the phrase query terms, compute the
    * frequency of the phrase in that document. 

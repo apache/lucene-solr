@@ -204,7 +204,7 @@ public class FilteredQuery extends Query {
     }
     
     @Override
-    public float freq() throws IOException { return scorer.freq(); }
+    public int freq() throws IOException { return scorer.freq(); }
     
     @Override
     public Collection<ChildScorer> getChildren() {
@@ -298,7 +298,7 @@ public class FilteredQuery extends Query {
     }
     
     @Override
-    public final float freq() throws IOException { return scorer.freq(); }
+    public final int freq() throws IOException { return scorer.freq(); }
     
     @Override
     public final Collection<ChildScorer> getChildren() {
