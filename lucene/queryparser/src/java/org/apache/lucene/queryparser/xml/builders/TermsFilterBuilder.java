@@ -14,6 +14,8 @@ import org.w3c.dom.Element;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -49,7 +51,7 @@ public class TermsFilterBuilder implements FilterBuilder {
     * @see org.apache.lucene.xmlparser.FilterBuilder#process(org.w3c.dom.Element)
     */
   public Filter getFilter(Element e) throws ParserException {
-    TermsFilter tf = new TermsFilter();
+    List<BytesRef> terms = new ArrayList<BytesRef>();
     String text = DOMUtils.getNonBlankTextOrFail(e);
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
 
@@ -61,8 +63,7 @@ public class TermsFilterBuilder implements FilterBuilder {
       ts.reset();
       while (ts.incrementToken()) {
         termAtt.fillBytesRef();
-        term = new Term(fieldName, BytesRef.deepCopyOf(bytes));
-        tf.addTerm(term);
+        terms.add(BytesRef.deepCopyOf(bytes));
       }
       ts.end();
       ts.close();
@@ -70,6 +71,6 @@ public class TermsFilterBuilder implements FilterBuilder {
     catch (IOException ioe) {
       throw new RuntimeException("Error constructing terms from index:" + ioe);
     }
-    return tf;
+    return new TermsFilter(fieldName, terms);
   }
 }

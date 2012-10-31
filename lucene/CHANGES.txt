@@ -74,6 +74,9 @@ API Changes
   information about the trigger of the merge ie. merge triggered due
   to a segment merge or a full flush etc. (Simon Willnauer)
 
+* Lucene-4415: TermsFilter is now immutable. All terms need to be provided
+  as constructor argument. (Simon Willnauer)
+
 Bug Fixes
 
 * LUCENE-1822: BaseFragListBuilder hard-coded 6 char margin is too naive.
@@ -97,6 +100,9 @@ Bug Fixes
 
 * LUCENE-4504: Fix broken sort comparator in ValueSource.getSortField,
   used when sorting by a function query.  (Tom Shally via Robert Muir)
+
+* LUCENE-4511: TermsFilter might return wrong results if a field is not 
+  indexed or doesn't exist in the index. (Simon Willnauer)
 
 Optimizations
 

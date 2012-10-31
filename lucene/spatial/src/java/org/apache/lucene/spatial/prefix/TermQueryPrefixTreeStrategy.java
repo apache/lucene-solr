@@ -18,7 +18,6 @@ package org.apache.lucene.spatial.prefix;
  */
 
 import com.spatial4j.core.shape.Shape;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.tree.Node;
@@ -26,6 +25,7 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
+import org.apache.lucene.util.BytesRef;
 
 import java.util.List;
 
@@ -55,11 +55,12 @@ public class TermQueryPrefixTreeStrategy extends PrefixTreeStrategy {
     Shape shape = args.getShape();
     int detailLevel = grid.getLevelForDistance(args.resolveDistErr(ctx, distErrPct));
     List<Node> cells = grid.getNodes(shape, detailLevel, false);
-    TermsFilter filter = new TermsFilter();
+    BytesRef[] terms = new BytesRef[cells.size()];
+    int i = 0;
     for (Node cell : cells) {
-      filter.addTerm(new Term(getFieldName(), cell.getTokenString()));
+      terms[i++] = new BytesRef(cell.getTokenString());
     }
-    return filter;
+    return new TermsFilter(getFieldName(), terms);
   }
 
 }
