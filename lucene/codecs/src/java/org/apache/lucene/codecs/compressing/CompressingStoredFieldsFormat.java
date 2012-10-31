@@ -95,9 +95,7 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
    * @see CompressingStoredFieldsFormat#CompressingStoredFieldsFormat(CompressionMode, int, CompressingStoredFieldsIndex)
    */
   public CompressingStoredFieldsFormat(CompressionMode compressionMode, int chunkSize) {
-    this (compressionMode, chunkSize, chunkSize == 1
-        ? CompressingStoredFieldsIndex.MEMORY_DOC
-        : CompressingStoredFieldsIndex.MEMORY_CHUNK);
+    this (compressionMode, chunkSize, CompressingStoredFieldsIndex.MEMORY_CHUNK);
   }
 
   /**

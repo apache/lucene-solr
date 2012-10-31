@@ -106,6 +106,9 @@ Bug Fixes
 
 Optimizations
 
+* LUCENE-4512: Additional memory savings for CompressingStoredFieldsIndex.MEMORY_CHUNK
+  (Adrien Grand, Robert Muir)
+
 * LUCENE-4443: Lucene41PostingsFormat no longer writes unnecessary offsets 
   into the skipdata. (Robert Muir)
 
