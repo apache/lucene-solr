@@ -81,6 +81,9 @@ Optimizations
 Bug Fixes
 ----------------------
 
+* SOLR-4007: Morfologik dictionaries not available in Solr field type
+  due to class loader lookup problems. (Lance Norskog, Dawid Weiss)
+
 * SOLR-3560: Handle different types of Exception Messages for Logging UI
   (steffkes)
 

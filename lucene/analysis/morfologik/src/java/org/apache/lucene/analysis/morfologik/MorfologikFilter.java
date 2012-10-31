@@ -67,9 +67,18 @@ public class MorfologikFilter extends TokenFilter {
   public MorfologikFilter(final TokenStream in, final DICTIONARY dict, final Version version) {
     super(in);
     this.input = in;
-    this.stemmer = new PolishStemmer(dict);
-    this.charUtils = CharacterUtils.getInstance(version);
-    this.lemmaList = Collections.emptyList();
+    
+    // SOLR-4007: temporarily substitute context class loader to allow finding dictionary resources.
+    Thread me = Thread.currentThread();
+    ClassLoader cl = me.getContextClassLoader();
+    try {
+      me.setContextClassLoader(PolishStemmer.class.getClassLoader());
+      this.stemmer = new PolishStemmer(dict);
+      this.charUtils = CharacterUtils.getInstance(version);
+      this.lemmaList = Collections.emptyList();
+    } finally {
+      me.setContextClassLoader(cl);
+    }  
   }
 
   private void popNextLemma() {
