@@ -29,14 +29,14 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * A compression mode. Tells how much effort should be spent on compression and
- * uncompression of stored fields.
+ * decompression of stored fields.
  * @lucene.experimental
  */
 public enum CompressionMode {
 
   /**
    * A compression mode that trades compression ratio for speed. Although the
-   * compression ratio might remain high, compression and uncompression are
+   * compression ratio might remain high, compression and decompression are
    * very fast. Use this mode with indices that have a high update rate but
    * should be able to load documents from disk quickly.
    */
@@ -48,15 +48,15 @@ public enum CompressionMode {
     }
 
     @Override
-    Uncompressor newUncompressor() {
-      return LZ4_UNCOMPRESSOR;
+    Decompressor newDecompressor() {
+      return LZ4_DECOMPRESSOR;
     }
 
   },
 
   /**
    * A compression mode that trades speed for compression ratio. Although
-   * compression and uncompression might be slow, this compression mode should
+   * compression and decompression might be slow, this compression mode should
    * provide a good compression ratio. This mode might be interesting if/when
    * your index size is much bigger than your OS cache.
    */
@@ -68,8 +68,8 @@ public enum CompressionMode {
     }
 
     @Override
-    Uncompressor newUncompressor() {
-      return new DeflateUncompressor();
+    Decompressor newDecompressor() {
+      return new DeflateDecompressor();
     }
 
   },
@@ -80,7 +80,7 @@ public enum CompressionMode {
    * mode is best used with indices that have a low update rate but should be
    * able to load documents from disk quickly.
    */
-  FAST_UNCOMPRESSION(2) {
+  FAST_DECOMPRESSION(2) {
 
     @Override
     Compressor newCompressor() {
@@ -88,8 +88,8 @@ public enum CompressionMode {
     }
 
     @Override
-    Uncompressor newUncompressor() {
-      return LZ4_UNCOMPRESSOR;
+    Decompressor newDecompressor() {
+      return LZ4_DECOMPRESSOR;
     }
 
   };
@@ -124,56 +124,56 @@ public enum CompressionMode {
   abstract Compressor newCompressor();
 
   /**
-   * Create a new {@link Uncompressor} instance.
+   * Create a new {@link Decompressor} instance.
    */
-  abstract Uncompressor newUncompressor();
+  abstract Decompressor newDecompressor();
 
 
-  private static final Uncompressor LZ4_UNCOMPRESSOR = new Uncompressor() {
+  private static final Decompressor LZ4_DECOMPRESSOR = new Decompressor() {
 
     @Override
-    public void uncompress(DataInput in, BytesRef bytes) throws IOException {
-      final int uncompressedLen = in.readVInt();
-      if (bytes.bytes.length < uncompressedLen + 8) {
-        bytes.bytes = ArrayUtil.grow(bytes.bytes, uncompressedLen + 8);
+    public void decompress(DataInput in, BytesRef bytes) throws IOException {
+      final int decompressedLen = in.readVInt();
+      if (bytes.bytes.length < decompressedLen + 8) {
+        bytes.bytes = ArrayUtil.grow(bytes.bytes, decompressedLen + 8);
       }
-      LZ4.uncompress(in, uncompressedLen, bytes);
-      if (bytes.length != uncompressedLen) {
+      LZ4.decompress(in, decompressedLen, bytes);
+      if (bytes.length != decompressedLen) {
         throw new IOException("Corrupted");
       }
     }
 
     @Override
-    public void uncompress(DataInput in, int offset, int length, BytesRef bytes) throws IOException {
-      final int uncompressedLen = in.readVInt();
-      if (offset > uncompressedLen) {
+    public void decompress(DataInput in, int offset, int length, BytesRef bytes) throws IOException {
+      final int decompressedLen = in.readVInt();
+      if (offset > decompressedLen) {
         bytes.length = 0;
         return;
       }
-      if (bytes.bytes.length < uncompressedLen) {
-        bytes.bytes = ArrayUtil.grow(bytes.bytes, uncompressedLen);
+      if (bytes.bytes.length < decompressedLen) {
+        bytes.bytes = ArrayUtil.grow(bytes.bytes, decompressedLen);
       }
-      LZ4.uncompress(in, offset + length, bytes);
+      LZ4.decompress(in, offset + length, bytes);
       bytes.offset = offset;
-      if (offset + length >= uncompressedLen) {
-        if (bytes.length != uncompressedLen) {
+      if (offset + length >= decompressedLen) {
+        if (bytes.length != decompressedLen) {
           throw new IOException("Corrupted");
         }
-        bytes.length = uncompressedLen - offset;
+        bytes.length = decompressedLen - offset;
       } else {
         bytes.length = length;
       }
     }
 
     public void copyCompressedData(DataInput in, DataOutput out) throws IOException {
-      final int uncompressedLen = in.readVInt();
-      out.writeVInt(uncompressedLen);
-      if (uncompressedLen == 0) {
+      final int decompressedLen = in.readVInt();
+      out.writeVInt(decompressedLen);
+      if (decompressedLen == 0) {
         out.writeByte((byte) 0); // the token
         return;
       }
       int n = 0;
-      while (n < uncompressedLen) {
+      while (n < decompressedLen) {
         // literals
         final byte token = in.readByte();
         out.writeByte(token);
@@ -189,7 +189,7 @@ public enum CompressionMode {
         }
         out.copyBytes(in, literalLen);
         n += literalLen;
-        if (n >= uncompressedLen) {
+        if (n >= decompressedLen) {
           break;
         }
 
@@ -209,13 +209,13 @@ public enum CompressionMode {
         n += matchLen;
       }
 
-      if (n != uncompressedLen) {
-        throw new IOException("Currupted compressed stream: expected " + uncompressedLen + " bytes, but got at least" + n);
+      if (n != decompressedLen) {
+        throw new IOException("Currupted compressed stream: expected " + decompressedLen + " bytes, but got at least" + n);
       }
     }
 
     @Override
-    public Uncompressor clone() {
+    public Decompressor clone() {
       return this;
     }
 
@@ -243,18 +243,18 @@ public enum CompressionMode {
 
   };
 
-  private static final class DeflateUncompressor extends Uncompressor {
+  private static final class DeflateDecompressor extends Decompressor {
 
-    final Inflater uncompressor;
+    final Inflater decompressor;
     byte[] compressed;
 
-    DeflateUncompressor() {
-      uncompressor = new Inflater();
+    DeflateDecompressor() {
+      decompressor = new Inflater();
       compressed = new byte[0];
     }
 
     @Override
-    public void uncompress(DataInput in, BytesRef bytes) throws IOException {
+    public void decompress(DataInput in, BytesRef bytes) throws IOException {
       bytes.offset = bytes.length = 0;
 
       final int compressedLength = in.readVInt();
@@ -263,9 +263,9 @@ public enum CompressionMode {
       }
       in.readBytes(compressed, 0, compressedLength);
 
-      uncompressor.reset();
-      uncompressor.setInput(compressed, 0, compressedLength);
-      if (uncompressor.needsInput()) {
+      decompressor.reset();
+      decompressor.setInput(compressed, 0, compressedLength);
+      if (decompressor.needsInput()) {
         return;
       }
 
@@ -273,12 +273,12 @@ public enum CompressionMode {
         final int count;
         try {
           final int remaining = bytes.bytes.length - bytes.length;
-          count = uncompressor.inflate(bytes.bytes, bytes.length, remaining);
+          count = decompressor.inflate(bytes.bytes, bytes.length, remaining);
         } catch (DataFormatException e) {
           throw new IOException(e);
         }
         bytes.length += count;
-        if (uncompressor.finished()) {
+        if (decompressor.finished()) {
           break;
         } else {
           bytes.bytes = ArrayUtil.grow(bytes.bytes);
@@ -294,8 +294,8 @@ public enum CompressionMode {
     }
 
     @Override
-    public Uncompressor clone() {
-      return new DeflateUncompressor();
+    public Decompressor clone() {
+      return new DeflateDecompressor();
     }
 
   }

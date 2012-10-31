@@ -24,23 +24,23 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * An uncompressor.
+ * An decompressor.
  */
-abstract class Uncompressor implements Cloneable {
+abstract class Decompressor implements Cloneable {
 
   /**
-   * Uncompress bytes. This method is free to resize <code>bytes</code> in case
-   * it is too small to hold all the uncompressed data.
+   * Decompress bytes. This method is free to resize <code>bytes</code> in case
+   * it is too small to hold all the decompressed data.
    */
-  public abstract void uncompress(DataInput in, BytesRef bytes) throws IOException;
+  public abstract void decompress(DataInput in, BytesRef bytes) throws IOException;
 
   /**
    * Method to use if you are only interested into <code>length</code>
-   * uncompressed bytes starting at offset <code>offset</code>. Some compression
+   * decompressed bytes starting at offset <code>offset</code>. Some compression
    * codecs might have optimizations for this special case.
    */
-  public void uncompress(DataInput in, int offset, int length, BytesRef bytes) throws IOException {
-    uncompress(in, bytes);
+  public void decompress(DataInput in, int offset, int length, BytesRef bytes) throws IOException {
+    decompress(in, bytes);
     if (bytes.length < offset + length) {
       throw new IndexOutOfBoundsException((offset + length) + " > " + bytes.length);
     }
@@ -51,6 +51,6 @@ abstract class Uncompressor implements Cloneable {
   public abstract void copyCompressedData(DataInput in, DataOutput out) throws IOException;
 
   @Override
-  public abstract Uncompressor clone();
+  public abstract Decompressor clone();
 
 }

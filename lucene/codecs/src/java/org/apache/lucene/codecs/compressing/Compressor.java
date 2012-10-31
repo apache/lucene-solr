@@ -28,8 +28,8 @@ abstract class Compressor {
 
   /**
    * Compress bytes into <code>out</code>. It it the responsibility of the
-   * compressor to add all necessary information so that a {@link Uncompressor}
-   * will know when to stop uncompressing bytes from the stream.
+   * compressor to add all necessary information so that a {@link Decompressor}
+   * will know when to stop decompressing bytes from the stream.
    */
   public abstract void compress(byte[] bytes, int off, int len, DataOutput out) throws IOException;
 
