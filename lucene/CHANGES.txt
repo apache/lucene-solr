@@ -104,6 +104,12 @@ Bug Fixes
 * LUCENE-4511: TermsFilter might return wrong results if a field is not 
   indexed or doesn't exist in the index. (Simon Willnauer)
 
+* LUCENE-4521: IndexWriter.tryDeleteDocument could return true
+  (successfully deleting the document) but then on IndexWriter
+  close/commit fail to write the new deletions, if no other changes
+  happened in the IndexWriter instance.  (Ivan Vasilev via Mike
+  McCandless)
+
 Optimizations
 
 * LUCENE-4512: Additional memory savings for CompressingStoredFieldsIndex.MEMORY_CHUNK

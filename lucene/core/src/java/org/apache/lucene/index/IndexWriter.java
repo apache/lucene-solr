@@ -1317,6 +1317,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
                 checkpoint();
               }
             }
+
+            // Must bump changeCount so if no other changes
+            // happened, we still commit this change:
+            changeCount++;
           }
           //System.out.println("  yes " + info.info.name + " " + docID);
           return true;
