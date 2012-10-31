@@ -903,6 +903,7 @@
                 <propertyref prefix="tests.maxfailures" />
                 <propertyref prefix="tests.failfast" />
                 <propertyref prefix="tests.badapples" />
+                <propertyref prefix="tests.timeoutSuite" />
             </syspropertyset>
 
             <!-- Pass randomized settings to the forked JVM. -->
@@ -1118,6 +1119,9 @@ ant -verbose test
 # sysout/syserr, even if the test passes.
 # Enabled automatically when running for a single test case.
 ant -Dtests.showSuccess=true test
+
+# Change the default suite timeout to 5 seconds.
+ant -Dtests.timeoutSuite=5000! ...
 
 # Display local averaged stats, if any (30 slowest tests).
 ant test-times -Dmax=30
