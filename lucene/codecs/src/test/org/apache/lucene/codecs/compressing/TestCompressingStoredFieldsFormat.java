@@ -18,9 +18,11 @@ package org.apache.lucene.codecs.compressing;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.lucene41.Lucene41Codec;
@@ -38,22 +40,54 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
 
-  public void testWriteReadMerge() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwConf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+  private Directory dir;
+  IndexWriterConfig iwConf;
+  private RandomIndexWriter iw;
+
+  public void setUp() throws Exception {
+    super.setUp();
+    dir = newDirectory();
+    iwConf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
     iwConf.setCodec(CompressingCodec.randomInstance(random()));
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
+    iw = new RandomIndexWriter(random(), dir, iwConf);
+  }
+
+  public void tearDown() throws Exception {
+    super.tearDown();
+    IOUtils.close(iw, dir);
+    iw = null;
+    dir = null;
+  }
+
+  private byte[] randomByteArray(int length, int max) {
+    final byte[] result = new byte[length];
+    for (int i = 0; i < length; ++i) {
+      result[i] = (byte) random().nextInt(max);
+    }
+    return result;
+  }
+
+  public void testWriteReadMerge() throws IOException {
     final int docCount = atLeast(200);
     final byte[][][] data = new byte [docCount][][];
     for (int i = 0; i < docCount; ++i) {
@@ -65,12 +99,8 @@ public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
         final int length = rarely()
             ? random().nextInt(1000)
             : random().nextInt(10);
-        final byte[] arr = new byte[length];
         final int max = rarely() ? 256 : 2;
-        for (int k = 0; k < length; ++k) {
-          arr[k] = (byte) random().nextInt(max);
-        }
-        data[i][j] = arr;
+        data[i][j] = randomByteArray(length, max);
       }
     }
 
@@ -133,21 +163,13 @@ public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
     iw.deleteAll();
     iw.commit();
     iw.forceMerge(1);
-    iw.close();
-    dir.close();
   }
 
   public void testReadSkip() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwConf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
-    iwConf.setCodec(CompressingCodec.randomInstance(random()));
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
-
     FieldType ft = new FieldType();
     ft.setStored(true);
     ft.freeze();
-    
+
     final String string = _TestUtil.randomSimpleString(random(), 50);
     final byte[] bytes = string.getBytes("UTF-8");
     final long l = random().nextBoolean() ? random().nextInt(42) : random().nextLong();
@@ -171,7 +193,7 @@ public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
       }
       iw.w.addDocument(doc);
     }
-    iw.close();
+    iw.commit();
 
     final DirectoryReader reader = DirectoryReader.open(dir);
     final int docID = random().nextInt(100);
@@ -187,7 +209,147 @@ public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
       }
     }
     reader.close();
-    dir.close();
+  }
+
+  public void testEmptyDocs() throws IOException {
+    // make sure that the fact that documents might be empty is not a problem
+    final Document emptyDoc = new Document();
+    final int numDocs = random().nextBoolean() ? 1 : atLeast(1000);
+    for (int i = 0; i < numDocs; ++i) {
+      iw.addDocument(emptyDoc);
+    }
+    iw.commit();
+    final DirectoryReader rd = DirectoryReader.open(dir);
+    for (int i = 0; i < numDocs; ++i) {
+      final StoredDocument doc = rd.document(i);
+      assertNotNull(doc);
+      assertTrue(doc.getFields().isEmpty());
+    }
+    rd.close();
+  }
+
+  public void testConcurrentReads() throws Exception {
+    // make sure the readers are properly cloned
+    final Document doc = new Document();
+    final Field field = new StringField("fld", "", Store.YES);
+    doc.add(field);
+    final int numDocs = atLeast(1000);
+    for (int i = 0; i < numDocs; ++i) {
+      field.setStringValue("" + i);
+      iw.addDocument(doc);
+    }
+    iw.commit();
+
+    final DirectoryReader rd = DirectoryReader.open(dir);
+    final IndexSearcher searcher = new IndexSearcher(rd);
+    final int concurrentReads = atLeast(5);
+    final int readsPerThread = atLeast(50);
+    final List<Thread> readThreads = new ArrayList<Thread>();
+    final AtomicReference<Exception> ex = new AtomicReference<Exception>();
+    for (int i = 0; i < concurrentReads; ++i) {
+      readThreads.add(new Thread() {
+
+        int[] queries;
+
+        {
+          queries = new int[readsPerThread];
+          for (int i = 0; i < queries.length; ++i) {
+            queries[i] = random().nextInt(numDocs);
+          }
+        }
+
+        @Override
+        public void run() {
+          for (int q : queries) {
+            final Query query = new TermQuery(new Term("fld", "" + q));
+            try {
+              final TopDocs topDocs = searcher.search(query, 1);
+              if (topDocs.totalHits != 1) {
+                throw new IllegalStateException("Expected 1 hit, got " + topDocs.totalHits);
+              }
+              final StoredDocument sdoc = rd.document(topDocs.scoreDocs[0].doc);
+              if (sdoc == null || sdoc.get("fld") == null) {
+                throw new IllegalStateException("Could not find document " + q);
+              }
+              if (!Integer.toString(q).equals(sdoc.get("fld"))) {
+                throw new IllegalStateException("Expected " + q + ", but got " + sdoc.get("fld"));
+              }
+            } catch (Exception e) {
+              ex.compareAndSet(null, e);
+            }
+          }
+        }
+      });
+    }
+    for (Thread thread : readThreads) {
+      thread.start();
+    }
+    for (Thread thread : readThreads) {
+      thread.join();
+    }
+    rd.close();
+    if (ex.get() != null) {
+      throw ex.get();
+    }
+  }
+
+  @Nightly
+  public void testBigDocuments() throws IOException {
+    // much bigger than the chunk size
+    if (dir instanceof MockDirectoryWrapper) {
+      ((MockDirectoryWrapper) dir).setThrottling(Throttling.NEVER);
+    }
+
+    final Document emptyDoc = new Document(); // emptyDoc
+    final Document bigDoc1 = new Document(); // lot of small fields
+    final Document bigDoc2 = new Document(); // 1 very big field
+
+    final Field idField = new StringField("id", "", Store.NO);
+    emptyDoc.add(idField);
+    bigDoc1.add(idField);
+    bigDoc2.add(idField);
+
+    final FieldType onlyStored = new FieldType(StringField.TYPE_STORED);
+    onlyStored.setIndexed(false);
+
+    final Field smallField = new Field("fld", randomByteArray(random().nextInt(10), 256), onlyStored);
+    final int numFields = atLeast(1000000);
+    for (int i = 0; i < numFields; ++i) {
+      bigDoc1.add(smallField);
+    }
+
+    final Field bigField = new Field("fld", randomByteArray(RandomInts.randomIntBetween(random(), 1000000, 5000000), 2), onlyStored);
+    bigDoc2.add(bigField);
+
+    final int numDocs = atLeast(5);
+    final Document[] docs = new Document[numDocs];
+    for (int i = 0; i < numDocs; ++i) {
+      docs[i] = RandomPicks.randomFrom(random(), Arrays.asList(emptyDoc, bigDoc1, bigDoc2));
+    }
+    for (int i = 0; i < numDocs; ++i) {
+      idField.setStringValue("" + i);
+      iw.addDocument(docs[i]);
+      if (random().nextInt(numDocs) == 0) {
+        iw.commit();
+      }
+    }
+    iw.commit();
+    iw.forceMerge(1); // look at what happens when big docs are merged
+    final DirectoryReader rd = DirectoryReader.open(dir);
+    final IndexSearcher searcher = new IndexSearcher(rd);
+    for (int i = 0; i < numDocs; ++i) {
+      final Query query = new TermQuery(new Term("id", "" + i));
+      final TopDocs topDocs = searcher.search(query, 1);
+      assertEquals("" + i, 1, topDocs.totalHits);
+      final StoredDocument doc = rd.document(topDocs.scoreDocs[0].doc);
+      assertNotNull(doc);
+      final StorableField[] fieldValues = doc.getFields("fld");
+      assertEquals(docs[i].getFields("fld").length, fieldValues.length);
+      if (fieldValues.length > 0) {
+        assertEquals(docs[i].getFields("fld")[0].binaryValue(), fieldValues[0].binaryValue());
+      }
+    }
+    rd.close();
   }
 
 }
