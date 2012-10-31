@@ -19,13 +19,14 @@ package org.apache.lucene.codecs.compressing;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.packed.GrowableWriter;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -42,7 +43,7 @@ public enum CompressingStoredFieldsIndex {
    * the start offsets of chunks in the fields data file.
    * <p>
    * This format has no memory overhead and requires at most 1 disk seek to
-   * locate a document in the fields data file. Use this format in
+   * locate a document in the fields data file. Use this fields index in
    * memory-constrained environments.
    */
   DISK_DOC(0) {
@@ -57,38 +58,18 @@ public enum CompressingStoredFieldsIndex {
   },
 
   /**
-   * For every document in the segment, this format stores the offset of the
-   * compressed chunk that contains it in the fields data file.
-   * <p>
-   * This fields index format requires at most <code>8 * numDocs</code> bytes
-   * of memory. Locating a document in the fields data file requires no disk
-   * seek. Use this format when blocks are very likely to contain few
-   * documents (in particular when <code>chunkSize = 1</code>).
-   */
-  MEMORY_DOC(1) {
-    @Override
-    Writer newWriter(IndexOutput out) throws IOException {
-      return new ChunksFieldsIndexWriter(out);
-    }
-    @Override
-    Reader newReader(IndexInput in, SegmentInfo si) throws IOException {
-      return new MemoryDocFieldsIndexReader(in, si);
-    }
-  },
-
-  /**
-   * For every chunk of compressed documents, this format stores the first doc
+   * For every chunk of compressed documents, this index stores the first doc
    * ID of the chunk as well as the start offset of the chunk.
    * <p>
-   * This fields index format require at most
-   * <code>12 * numChunks</code> bytes of memory. Locating a document in the
-   * fields data file requires no disk seek. Use this format when chunks are
-   * likely to contain several documents.
+   * This fields index uses a very compact in-memory representation (up to
+   * <code>12 * numChunks</code> bytes, but likely much less) and requires no
+   * disk seek to locate a document in the fields data file. Unless you are
+   * working with very little memory, you should use this instance.
    */
-  MEMORY_CHUNK(2) {
+  MEMORY_CHUNK(1) {
     @Override
     Writer newWriter(IndexOutput out) throws IOException {
-      return new ChunksFieldsIndexWriter(out);
+      return new MemoryChunkFieldsIndexWriter(out);
     }
     @Override
     Reader newReader(IndexInput in, SegmentInfo si) throws IOException {
@@ -176,45 +157,139 @@ public enum CompressingStoredFieldsIndex {
 
   }
 
-  private static class ChunksFieldsIndexWriter extends Writer {
+  private static class MemoryChunkFieldsIndexWriter extends Writer {
 
-    int numChunks;
+    static final int BLOCK_SIZE = 1024; // number of chunks to serialize at once
+
+    static long moveSignToLowOrderBit(long n) {
+      return (n >> 63) ^ (n << 1);
+    }
+
+    int totalDocs;
+    int blockDocs;
+    int blockChunks;
+    long firstStartPointer;
     long maxStartPointer;
-    GrowableWriter docBaseDeltas;
-    GrowableWriter startPointerDeltas;
+    final int[] docBaseDeltas;
+    final long[] startPointerDeltas;
 
-    ChunksFieldsIndexWriter(IndexOutput indexOutput) {
+    MemoryChunkFieldsIndexWriter(IndexOutput indexOutput) throws IOException {
       super(indexOutput);
-      numChunks = 0;
-      maxStartPointer = 0;
-      docBaseDeltas = new GrowableWriter(2, 128, PackedInts.COMPACT);
-      startPointerDeltas = new GrowableWriter(5, 128, PackedInts.COMPACT);
+      reset();
+      totalDocs = 0;
+      docBaseDeltas = new int[BLOCK_SIZE];
+      startPointerDeltas = new long[BLOCK_SIZE];
+      fieldsIndexOut.writeVInt(PackedInts.VERSION_CURRENT);
+    }
+
+    private void reset() {
+      blockChunks = 0;
+      blockDocs = 0;
+      firstStartPointer = -1; // means unset
+    }
+
+    private void writeBlock() throws IOException {
+      assert blockChunks > 0;
+      fieldsIndexOut.writeVInt(blockChunks);
+
+      // The trick here is that we only store the difference from the average start
+      // pointer or doc base, this helps save bits per value.
+      // And in order to prevent a few chunks that would be far from the average to
+      // raise the number of bits per value for all of them, we only encode blocks
+      // of 1024 chunks at once
+      // See LUCENE-4512
+
+      // doc bases
+      final int avgChunkDocs;
+      if (blockChunks == 1) {
+        avgChunkDocs = 0;
+      } else {
+        avgChunkDocs = Math.round((float) (blockDocs - docBaseDeltas[blockChunks - 1]) / (blockChunks - 1));
+      }
+      fieldsIndexOut.writeVInt(totalDocs - blockDocs); // docBase
+      fieldsIndexOut.writeVInt(avgChunkDocs);
+      int docBase = 0;
+      long maxDelta = 0;
+      for (int i = 0; i < blockChunks; ++i) {
+        final int delta = docBase - avgChunkDocs * i;
+        maxDelta |= moveSignToLowOrderBit(delta);
+        docBase += docBaseDeltas[i];
+      }
+
+      final int bitsPerDocBase = PackedInts.bitsRequired(maxDelta);
+      fieldsIndexOut.writeVInt(bitsPerDocBase);
+      PackedInts.Writer writer = PackedInts.getWriterNoHeader(fieldsIndexOut,
+          PackedInts.Format.PACKED, blockChunks, bitsPerDocBase, 1);
+      docBase = 0;
+      for (int i = 0; i < blockChunks; ++i) {
+        final long delta = docBase - avgChunkDocs * i;
+        assert PackedInts.bitsRequired(moveSignToLowOrderBit(delta)) <= writer.bitsPerValue();
+        writer.add(moveSignToLowOrderBit(delta));
+        docBase += docBaseDeltas[i];
+      }
+      writer.finish();
+
+      // start pointers
+      fieldsIndexOut.writeVLong(firstStartPointer);
+      final long avgChunkSize;
+      if (blockChunks == 1) {
+        avgChunkSize = 0;
+      } else {
+        avgChunkSize = (maxStartPointer - firstStartPointer) / (blockChunks - 1);
+      }
+      fieldsIndexOut.writeVLong(avgChunkSize);
+      long startPointer = 0;
+      maxDelta = 0;
+      for (int i = 0; i < blockChunks; ++i) {
+        startPointer += startPointerDeltas[i];
+        final long delta = startPointer - avgChunkSize * i;
+        maxDelta |= moveSignToLowOrderBit(delta);
+      }
+
+      final int bitsPerStartPointer = PackedInts.bitsRequired(maxDelta);
+      fieldsIndexOut.writeVInt(bitsPerStartPointer);
+      writer = PackedInts.getWriterNoHeader(fieldsIndexOut, PackedInts.Format.PACKED,
+          blockChunks, bitsPerStartPointer, 1);
+      startPointer = 0;
+      for (int i = 0; i < blockChunks; ++i) {
+        startPointer += startPointerDeltas[i];
+        final long delta = startPointer - avgChunkSize * i;
+        assert PackedInts.bitsRequired(moveSignToLowOrderBit(delta)) <= writer.bitsPerValue();
+        writer.add(moveSignToLowOrderBit(delta));
+      }
+      writer.finish();
     }
 
     @Override
     void writeIndex(int numDocs, long startPointer) throws IOException {
-      if (numChunks == docBaseDeltas.size()) {
-        final int newSize = ArrayUtil.oversize(numChunks + 1, 1);
-        docBaseDeltas = docBaseDeltas.resize(newSize);
-        startPointerDeltas = startPointerDeltas.resize(newSize);
+      if (blockChunks == BLOCK_SIZE) {
+        writeBlock();
+        reset();
       }
-      docBaseDeltas.set(numChunks, numDocs);
-      startPointerDeltas.set(numChunks, startPointer - maxStartPointer);
 
-      ++numChunks;
+      if (firstStartPointer == -1) {
+        firstStartPointer = maxStartPointer = startPointer;
+      }
+      assert firstStartPointer > 0 && startPointer >= firstStartPointer;
+
+      docBaseDeltas[blockChunks] = numDocs;
+      startPointerDeltas[blockChunks] = startPointer - maxStartPointer;
+
+      ++blockChunks;
+      blockDocs += numDocs;
+      totalDocs += numDocs;
       maxStartPointer = startPointer;
     }
 
     @Override
     void finish(int numDocs) throws IOException {
-      if (numChunks != docBaseDeltas.size()) {
-        docBaseDeltas = docBaseDeltas.resize(numChunks);
-        startPointerDeltas = startPointerDeltas.resize(numChunks);
+      if (numDocs != totalDocs) {
+        throw new IllegalStateException("Expected " + numDocs + " docs, but got " + totalDocs);
       }
-      fieldsIndexOut.writeVInt(numChunks);
-      fieldsIndexOut.writeByte((byte) PackedInts.bitsRequired(maxStartPointer));
-      docBaseDeltas.save(fieldsIndexOut);
-      startPointerDeltas.save(fieldsIndexOut);
+      if (blockChunks > 0) {
+        writeBlock();
+      }
+      fieldsIndexOut.writeVInt(0); // end marker
     }
 
   }
@@ -231,9 +306,7 @@ public enum CompressingStoredFieldsIndex {
     abstract long getStartPointer(int docID) throws IOException;
 
     public void close() throws IOException {
-      if (fieldsIndexIn != null) {
-        fieldsIndexIn.close();
-      }
+      IOUtils.close(fieldsIndexIn);
     }
 
     public abstract Reader clone();
@@ -271,130 +344,141 @@ public enum CompressingStoredFieldsIndex {
 
   }
 
-  private static class MemoryDocFieldsIndexReader extends Reader {
-
-    private final PackedInts.Reader startPointers;
-
-    MemoryDocFieldsIndexReader(IndexInput fieldsIndexIn, SegmentInfo si) throws IOException {
-      super(fieldsIndexIn);
-      final int numChunks = fieldsIndexIn.readVInt();
-      final int bitsPerStartPointer = fieldsIndexIn.readByte() & 0xFF;
-      if (bitsPerStartPointer > 64) {
-        throw new CorruptIndexException("Corrupted");
-      }
-
-      final PackedInts.Reader chunkDocs = PackedInts.getReader(fieldsIndexIn);
-      if (chunkDocs.size() != numChunks) {
-        throw new CorruptIndexException("Expected " + numChunks + " chunks, but got " + chunkDocs.size());
-      }
-
-      final PackedInts.ReaderIterator startPointerDeltas = PackedInts.getReaderIterator(fieldsIndexIn, PackedInts.DEFAULT_BUFFER_SIZE);
-      if (startPointerDeltas.size() != numChunks) {
-        throw new CorruptIndexException("Expected " + numChunks + " chunks, but got " + startPointerDeltas.size());
-      }
-      final PackedInts.Mutable startPointers = PackedInts.getMutable(si.getDocCount(), bitsPerStartPointer, PackedInts.COMPACT);
-      int docID = 0;
-      long startPointer = 0;
-      for (int i = 0; i < numChunks; ++i) {
-        startPointer += startPointerDeltas.next();
-        final int chunkDocCount = (int) chunkDocs.get(i);
-        for (int j = 0; j < chunkDocCount; ++j) {
-          startPointers.set(docID++, startPointer);
-        }
-      }
-      if (docID != si.getDocCount()) {
-        throw new CorruptIndexException("Expected " + si.getDocCount() + " docs, got " + docID);
-      }
-
-      this.startPointers = startPointers;
-    }
-
-    private MemoryDocFieldsIndexReader(PackedInts.Reader startPointers) {
-      super(null);
-      this.startPointers = startPointers;
-    }
-
-    @Override
-    long getStartPointer(int docID) throws IOException {
-      return startPointers.get(docID);
-    }
-
-    @Override
-    public Reader clone() {
-      if (fieldsIndexIn == null) {
-        return this;
-      } else {
-        return new MemoryDocFieldsIndexReader(startPointers);
-      }
-    }
-
-  }
-
   private static class MemoryChunkFieldsIndexReader extends Reader {
 
-    private final PackedInts.Reader docBases;
-    private final PackedInts.Reader startPointers;
+    static long moveLowOrderBitToSign(long n) {
+      return ((n >>> 1) ^ -(n & 1));
+    }
 
-     MemoryChunkFieldsIndexReader(IndexInput fieldsIndexIn, SegmentInfo si) throws IOException {
+    private final int maxDoc;
+    private final int[] docBases;
+    private final long[] startPointers;
+    private final int[] avgChunkDocs;
+    private final long[] avgChunkSizes;
+    private final PackedInts.Reader[] docBasesDeltas; // delta from the avg
+    private final PackedInts.Reader[] startPointersDeltas; // delta from the avg
+
+    MemoryChunkFieldsIndexReader(IndexInput fieldsIndexIn, SegmentInfo si) throws IOException {
       super(fieldsIndexIn);
-      final int numChunks = fieldsIndexIn.readVInt();
-      final int bitsPerStartPointer = fieldsIndexIn.readByte() & 0xFF;
-      if (bitsPerStartPointer > 64) {
-        throw new CorruptIndexException("Corrupted");
+      maxDoc = si.getDocCount();
+      int[] docBases = new int[16];
+      long[] startPointers = new long[16];
+      int[] avgChunkDocs = new int[16];
+      long[] avgChunkSizes = new long[16];
+      PackedInts.Reader[] docBasesDeltas = new PackedInts.Reader[16];
+      PackedInts.Reader[] startPointersDeltas = new PackedInts.Reader[16];
+
+      final int packedIntsVersion = fieldsIndexIn.readVInt();
+
+      int blockCount = 0;
+
+      for (;;) {
+        final int numChunks = fieldsIndexIn.readVInt();
+        if (numChunks == 0) {
+          break;
+        }
+        if (blockCount == docBases.length) {
+          final int newSize = ArrayUtil.oversize(blockCount + 1, 8);
+          docBases = Arrays.copyOf(docBases, newSize);
+          startPointers = Arrays.copyOf(startPointers, newSize);
+          avgChunkDocs = Arrays.copyOf(avgChunkDocs, newSize);
+          avgChunkSizes = Arrays.copyOf(avgChunkSizes, newSize);
+          docBasesDeltas = Arrays.copyOf(docBasesDeltas, newSize);
+          startPointersDeltas = Arrays.copyOf(startPointersDeltas, newSize);
+        }
+
+        // doc bases
+        docBases[blockCount] = fieldsIndexIn.readVInt();
+        avgChunkDocs[blockCount] = fieldsIndexIn.readVInt();
+        final int bitsPerDocBase = fieldsIndexIn.readVInt();
+        if (bitsPerDocBase > 32) {
+          throw new CorruptIndexException("Corrupted");
+        }
+        docBasesDeltas[blockCount] = PackedInts.getReaderNoHeader(fieldsIndexIn, PackedInts.Format.PACKED, packedIntsVersion, numChunks, bitsPerDocBase);
+
+        // start pointers
+        startPointers[blockCount] = fieldsIndexIn.readVLong();
+        avgChunkSizes[blockCount] = fieldsIndexIn.readVLong();
+        final int bitsPerStartPointer = fieldsIndexIn.readVInt();
+        if (bitsPerStartPointer > 64) {
+          throw new CorruptIndexException("Corrupted");
+        }
+        startPointersDeltas[blockCount] = PackedInts.getReaderNoHeader(fieldsIndexIn, PackedInts.Format.PACKED, packedIntsVersion, numChunks, bitsPerStartPointer);
+
+        ++blockCount;
       }
 
-      final PackedInts.ReaderIterator docBaseDeltas = PackedInts.getReaderIterator(fieldsIndexIn, PackedInts.DEFAULT_BUFFER_SIZE);
-      if (docBaseDeltas.size() != numChunks) {
-        throw new CorruptIndexException("Expected " + numChunks + " chunks, but got " + docBaseDeltas.size());
-      }
-      final PackedInts.Mutable docBases = PackedInts.getMutable(numChunks, PackedInts.bitsRequired(Math.max(0, si.getDocCount() - 1)), PackedInts.COMPACT);
-
-      int docBase = 0;
-      for (int i = 0; i < numChunks; ++i) {
-        docBases.set(i, docBase);
-        docBase += docBaseDeltas.next();
-      }
-      if (docBase != si.getDocCount()) {
-        throw new CorruptIndexException("Expected " + si.getDocCount() + " docs, got " + docBase);
-      }
-
-      final PackedInts.ReaderIterator startPointerDeltas = PackedInts.getReaderIterator(fieldsIndexIn, PackedInts.DEFAULT_BUFFER_SIZE);
-      if (startPointerDeltas.size() != numChunks) {
-        throw new CorruptIndexException("Expected " + numChunks + " chunks, but got " + startPointerDeltas.size());
-      }
-      final PackedInts.Mutable startPointers = PackedInts.getMutable(numChunks, bitsPerStartPointer, PackedInts.COMPACT);
-      long startPointer = 0;
-      for (int i = 0; i < numChunks; ++i) {
-        startPointer += startPointerDeltas.next();
-        startPointers.set(i, startPointer);
-      }
-
-      this.docBases = docBases;
-      this.startPointers = startPointers;
+      this.docBases = Arrays.copyOf(docBases, blockCount);
+      this.startPointers = Arrays.copyOf(startPointers, blockCount);
+      this.avgChunkDocs = Arrays.copyOf(avgChunkDocs, blockCount);
+      this.avgChunkSizes = Arrays.copyOf(avgChunkSizes, blockCount);
+      this.docBasesDeltas = Arrays.copyOf(docBasesDeltas, blockCount);
+      this.startPointersDeltas = Arrays.copyOf(startPointersDeltas, blockCount);
     }
 
-    private MemoryChunkFieldsIndexReader(PackedInts.Reader docBases, PackedInts.Reader startPointers) {
+    private MemoryChunkFieldsIndexReader(MemoryChunkFieldsIndexReader other) {
       super(null);
-      this.docBases = docBases;
-      this.startPointers = startPointers;
+      this.maxDoc = other.maxDoc;
+      this.docBases = other.docBases;
+      this.startPointers = other.startPointers;
+      this.avgChunkDocs = other.avgChunkDocs;
+      this.avgChunkSizes = other.avgChunkSizes;
+      this.docBasesDeltas = other.docBasesDeltas;
+      this.startPointersDeltas = other.startPointersDeltas;
     }
 
-    @Override
-    long getStartPointer(int docID) {
-      assert docBases.size() > 0;
-      int lo = 0, hi = docBases.size() - 1;
+    private int block(int docID) {
+      int lo = 0, hi = docBases.length - 1;
       while (lo <= hi) {
         final int mid = (lo + hi) >>> 1;
-        final long midValue = docBases.get(mid);
+        final int midValue = docBases[mid];
         if (midValue == docID) {
-          return startPointers.get(mid);
+          return mid;
         } else if (midValue < docID) {
           lo = mid + 1;
         } else {
           hi = mid - 1;
         }
       }
-      return startPointers.get(hi);
+      return hi;
+    }
+
+    private int relativeDocBase(int block, int relativeChunk) {
+      final int expected = avgChunkDocs[block] * relativeChunk;
+      final long delta = moveLowOrderBitToSign(docBasesDeltas[block].get(relativeChunk));
+      return expected + (int) delta;
+    }
+
+    private long relativeStartPointer(int block, int relativeChunk) {
+      final long expected = avgChunkSizes[block] * relativeChunk;
+      final long delta = moveLowOrderBitToSign(startPointersDeltas[block].get(relativeChunk));
+      return expected + delta;
+    }
+
+    private int relativeChunk(int block, int relativeDoc) {
+      int lo = 0, hi = docBasesDeltas[block].size() - 1;
+      while (lo <= hi) {
+        final int mid = (lo + hi) >>> 1;
+        final int midValue = relativeDocBase(block, mid);
+        if (midValue == relativeDoc) {
+          return mid;
+        } else if (midValue < relativeDoc) {
+          lo = mid + 1;
+        } else {
+          hi = mid - 1;
+        }
+      }
+      return hi;
+    }
+
+    @Override
+    long getStartPointer(int docID) {
+      if (docID < 0 || docID >= maxDoc) {
+        throw new IllegalArgumentException("docID out of range [0-" + maxDoc + "]: " + docID);
+      }
+      final int block = block(docID);
+      final int relativeChunk = relativeChunk(block, docID - docBases[block]);
+      return startPointers[block] + relativeStartPointer(block, relativeChunk);
     }
 
     @Override
@@ -402,7 +486,7 @@ public enum CompressingStoredFieldsIndex {
       if (fieldsIndexIn == null) {
         return this;
       } else {
-        return new MemoryChunkFieldsIndexReader(docBases, startPointers);
+        return new MemoryChunkFieldsIndexReader(this);
       }
     }
 
