@@ -160,8 +160,8 @@ public class ToParentBlockJoinQuery extends Query {
     public Scorer scorer(AtomicReaderContext readerContext, boolean scoreDocsInOrder,
         boolean topScorer, Bits acceptDocs) throws IOException {
 
-      // Pass scoreDocsInOrder true, topScorer false to our sub:
-      final Scorer childScorer = childWeight.scorer(readerContext, true, false, null);
+      // Pass scoreDocsInOrder true, topScorer false to our sub and the live docs:
+      final Scorer childScorer = childWeight.scorer(readerContext, true, false, readerContext.reader().getLiveDocs());
 
       if (childScorer == null) {
         // No matches
