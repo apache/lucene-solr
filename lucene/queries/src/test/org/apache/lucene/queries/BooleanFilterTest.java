@@ -82,10 +82,7 @@ public class BooleanFilterTest extends LuceneTestCase {
   }
 
   private Filter getTermsFilter(String field, String text) {
-    TermsFilter tf = new TermsFilter();
-    tf.addTerm(new Term(field, text));
-
-    return tf;
+    return new TermsFilter(new Term(field, text));
   }
   
   private Filter getWrappedTermQuery(String field, String text) {
