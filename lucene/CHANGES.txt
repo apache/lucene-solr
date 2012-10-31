@@ -110,6 +110,9 @@ Bug Fixes
   happened in the IndexWriter instance.  (Ivan Vasilev via Mike
   McCandless)
 
+* LUCENE-4513: Fixed that deleted nested docs are scored into the
+  parent doc when using ToParentBlockJoinQuery. (Martijn van Groningen)
+
 Optimizations
 
 * LUCENE-4512: Additional memory savings for CompressingStoredFieldsIndex.MEMORY_CHUNK

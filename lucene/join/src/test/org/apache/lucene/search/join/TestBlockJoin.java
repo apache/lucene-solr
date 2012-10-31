@@ -272,6 +272,62 @@ public class TestBlockJoin extends LuceneTestCase {
     dir.close();
   }
 
+  public void testNestedDocScoringWithDeletes() throws Exception {
+    final Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(
+        random(),
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT,
+            new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
+
+    // Cannot assert this since we use NoMergePolicy:
+    w.setDoRandomForceMergeAssert(false);
+
+    List<Document> docs = new ArrayList<Document>();
+    docs.add(makeJob("java", 2007));
+    docs.add(makeJob("python", 2010));
+    docs.add(makeResume("Lisa", "United Kingdom"));
+    w.addDocuments(docs);
+
+    docs.clear();
+    docs.add(makeJob("c", 1999));
+    docs.add(makeJob("ruby", 2005));
+    docs.add(makeJob("java", 2006));
+    docs.add(makeResume("Frank", "United States"));
+    w.addDocuments(docs);
+
+    w.commit();
+    IndexSearcher s = newSearcher(DirectoryReader.open(dir));
+
+    ToParentBlockJoinQuery q = new ToParentBlockJoinQuery(
+        NumericRangeQuery.newIntRange("year", 1990, 2010, true, true),
+        new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("docType", "resume")))),
+        ScoreMode.Total
+    );
+
+    TopDocs topDocs = s.search(q, 10);
+    assertEquals(2, topDocs.totalHits);
+    assertEquals(6, topDocs.scoreDocs[0].doc);
+    assertEquals(3.0f, topDocs.scoreDocs[0].score, 0.0f);
+    assertEquals(2, topDocs.scoreDocs[1].doc);
+    assertEquals(2.0f, topDocs.scoreDocs[1].score, 0.0f);
+
+    s.getIndexReader().close();
+    w.deleteDocuments(new Term("skill", "java"));
+    w.close();
+    s = newSearcher(DirectoryReader.open(dir));
+
+    topDocs = s.search(q, 10);
+    assertEquals(2, topDocs.totalHits);
+    assertEquals(6, topDocs.scoreDocs[0].doc);
+    assertEquals(2.0f, topDocs.scoreDocs[0].score, 0.0f);
+    assertEquals(2, topDocs.scoreDocs[1].doc);
+    assertEquals(1.0f, topDocs.scoreDocs[1].score, 0.0f);
+
+    s.getIndexReader().close();
+    dir.close();
+  }
+
   private String[][] getRandomFields(int maxUniqueValues) {
 
     final String[][] fields = new String[_TestUtil.nextInt(random(), 2, 4)][];
