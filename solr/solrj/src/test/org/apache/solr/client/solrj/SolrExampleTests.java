@@ -174,6 +174,35 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     Assert.assertEquals(0, response.getStatus());
     Assert.assertEquals(2, response.getResults().getNumFound() );
     Assert.assertFalse(query.getFilterQueries() == query2.getFilterQueries());
+
+    // sanity check round tripping of params...
+    query = new SolrQuery("foo");
+    query.addFilterQuery("{!field f=inStock}true");
+    query.addFilterQuery("{!term f=name}hoss");
+    query.addFacetQuery("price:[* TO 2]");
+    query.addFacetQuery("price:[2 TO 4]");
+
+    response = server.query( query );
+    assertTrue("echoed params are not a NamedList: " +
+               response.getResponseHeader().get("params").getClass(),
+               response.getResponseHeader().get("params") instanceof NamedList);
+    NamedList echo = (NamedList) response.getResponseHeader().get("params");
+    List values = null;
+    assertEquals("foo", echo.get("q"));
+    assertTrue("echoed fq is not a List: " + echo.get("fq").getClass(),
+               echo.get("fq") instanceof List);
+    values = (List) echo.get("fq");
+    Assert.assertEquals(2, values.size());
+    Assert.assertEquals("{!field f=inStock}true", values.get(0));
+    Assert.assertEquals("{!term f=name}hoss", values.get(1));
+    assertTrue("echoed facet.query is not a List: " + 
+               echo.get("facet.query").getClass(),
+               echo.get("facet.query") instanceof List);
+    values = (List) echo.get("facet.query");
+    Assert.assertEquals(2, values.size());
+    Assert.assertEquals("price:[* TO 2]", values.get(0));
+    Assert.assertEquals("price:[2 TO 4]", values.get(1));
+    
   }
 
 
