@@ -334,7 +334,7 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
                 && nextDeletedDoc(it.docBase, liveDocs, it.docBase + it.chunkDocs) == it.docBase + it.chunkDocs) { // no deletion in the chunk
               assert docID == it.docBase;
 
-              // no need to uncompress, just copy data
+              // no need to decompress, just copy data
               endWithPreviousDocument();
               if (bufferedDocs.length >= chunkSize) {
                 flush();
@@ -347,8 +347,8 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
               docCount += it.chunkDocs;
               mergeState.checkAbort.work(300 * it.chunkDocs);
             } else {
-              // uncompress
-              it.uncompress();
+              // decompress
+              it.decompress();
               if (startOffsets[it.chunkDocs - 1] + it.lengths[it.chunkDocs - 1] != it.bytes.length) {
                 throw new CorruptIndexException("Corrupted: expected chunk size=" + startOffsets[it.chunkDocs - 1] + it.lengths[it.chunkDocs - 1] + ", got " + it.bytes.length);
               }

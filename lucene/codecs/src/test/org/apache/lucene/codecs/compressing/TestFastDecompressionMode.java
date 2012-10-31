@@ -18,11 +18,11 @@ package org.apache.lucene.codecs.compressing;
  */
 
 
-public class TestFastUncompressionMode extends AbstractTestCompressionMode {
+public class TestFastDecompressionMode extends AbstractTestCompressionMode {
 
   public void setUp() throws Exception {
     super.setUp();
-    mode = CompressionMode.FAST_UNCOMPRESSION;
+    mode = CompressionMode.FAST_DECOMPRESSION;
   }
 
 }

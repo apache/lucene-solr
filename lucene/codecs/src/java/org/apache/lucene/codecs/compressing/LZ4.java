@@ -26,7 +26,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * LZ4 compression and uncompression routines.
+ * LZ4 compression and decompression routines.
  *
  * http://code.google.com/p/lz4/
  * http://fastcompression.blogspot.fr/p/lz4.html
@@ -78,17 +78,17 @@ class LZ4 {
   }
 
   /**
-   * Uncompress at least <code>uncompressedLen</code> bytes into <code>destBytes</code>.
+   * Decompress at least <code>decompressedLen</code> bytes into <code>destBytes</code>.
    * Please note that <code>destBytes</code> must be large enough to be able to hold
-   * <b>all</b> uncompressed data plus 8 bytes (meaning that you need to know the total
-   * uncompressed length).
+   * <b>all</b> decompressed data plus 8 bytes (meaning that you need to know the total
+   * decompressed length).
    */
-  public static void uncompress(DataInput compressed, int uncompressedLen, BytesRef destBytes) throws IOException {
+  public static void decompress(DataInput compressed, int decompressedLen, BytesRef destBytes) throws IOException {
     final byte[] dest = destBytes.bytes;
     final int destEnd = dest.length;
     int dOff = 0;
 
-    while (dOff < uncompressedLen) {
+    while (dOff < decompressedLen) {
       // literals
       final int token = compressed.readByte() & 0xFF;
       int literalLen = token >>> 4;
@@ -105,7 +105,7 @@ class LZ4 {
         dOff += literalLen;
       }
 
-      if (dOff >= uncompressedLen) {
+      if (dOff >= decompressedLen) {
         break;
       }
 
@@ -123,7 +123,7 @@ class LZ4 {
       }
       matchLen += MIN_MATCH;
 
-      // copying a multiple of 8 bytes can make uncompression from 5% to 10% faster
+      // copying a multiple of 8 bytes can make decompression from 5% to 10% faster
       final int fastLen = ((matchLen - 1) & 0xFFFFFFF8) + 8;
       if (matchDec < matchLen || dOff + fastLen > destEnd) {
         // overlap -> naive incremental copy

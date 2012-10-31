@@ -61,7 +61,7 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
   private final IndexInput fieldsStream;
   private final int packedIntsVersion;
   private final CompressionMode compressionMode;
-  private final Uncompressor uncompressor;
+  private final Decompressor decompressor;
   private final BytesRef bytes;
   private final int numDocs;
   private boolean closed;
@@ -73,7 +73,7 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
     this.indexReader = reader.indexReader.clone();
     this.packedIntsVersion = reader.packedIntsVersion;
     this.compressionMode = reader.compressionMode;
-    this.uncompressor = reader.uncompressor.clone();
+    this.decompressor = reader.decompressor.clone();
     this.numDocs = reader.numDocs;
     this.bytes = new BytesRef(reader.bytes.bytes.length);
     this.closed = false;
@@ -103,7 +103,7 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
       packedIntsVersion = fieldsStream.readVInt();
       final int compressionModeId = fieldsStream.readVInt();
       compressionMode = CompressionMode.byId(compressionModeId);
-      uncompressor = compressionMode.newUncompressor();
+      decompressor = compressionMode.newDecompressor();
       this.bytes = new BytesRef();
 
       success = true;
@@ -209,7 +209,7 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
     // skip the last values
     fieldsStream.seek(filePointer + (PackedInts.Format.PACKED.nblocks(bitsPerValue, chunkDocs) << 3));
 
-    uncompressor.uncompress(fieldsStream, offset, length, bytes);
+    decompressor.decompress(fieldsStream, offset, length, bytes);
 
     final ByteArrayDataInput documentInput = new ByteArrayDataInput(bytes.bytes, bytes.offset, bytes.length);
     final int numFields = documentInput.readVInt();
@@ -280,7 +280,7 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
     }
 
     /**
-     * Return the uncompressed size of the chunk
+     * Return the decompressed size of the chunk
      */
     int chunkSize() {
       int sum = 0;
@@ -319,11 +319,11 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
     }
 
     /**
-     * Uncompress the chunk.
+     * Decompress the chunk.
      */
-    void uncompress() throws IOException {
-      // uncompress data
-      uncompressor.uncompress(fieldsStream, bytes);
+    void decompress() throws IOException {
+      // decompress data
+      decompressor.decompress(fieldsStream, bytes);
       if (bytes.length != chunkSize()) {
         throw new CorruptIndexException("Corrupted: expected chunk size = " + chunkSize() + ", got " + bytes.length);
       }
@@ -333,7 +333,7 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
      * Copy compressed data.
      */
     void copyCompressedData(DataOutput out) throws IOException {
-      uncompressor.copyCompressedData(fieldsStream, out);
+      decompressor.copyCompressedData(fieldsStream, out);
     }
 
   }
