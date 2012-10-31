@@ -39,6 +39,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -1115,5 +1116,33 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     s = bos.toString("UTF-8");
     assertFalse(s.contains("has deletions"));
     dir.close();
+  }
+
+  public void testTryDeleteDocument() throws Exception {
+
+    Directory d = newDirectory();
+
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    IndexWriter w = new IndexWriter(d, iwc);
+    Document doc = new Document();
+    w.addDocument(doc);
+    w.addDocument(doc);
+    w.addDocument(doc);
+    w.close();
+
+    iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setOpenMode(IndexWriterConfig.OpenMode.APPEND);
+    w = new IndexWriter(d, iwc);
+    IndexReader r = DirectoryReader.open(w, false);
+    assertTrue(w.tryDeleteDocument(r, 1));
+    assertTrue(w.tryDeleteDocument(r.leaves().get(0).reader(), 0));
+    r.close();
+    w.close();
+
+    r = DirectoryReader.open(d);
+    assertEquals(2, r.numDeletedDocs());
+    assertNotNull(MultiFields.getLiveDocs(r));
+    r.close();
+    d.close();
   }
 }
