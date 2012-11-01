@@ -313,7 +313,7 @@ public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
     onlyStored.setIndexed(false);
 
     final Field smallField = new Field("fld", randomByteArray(random().nextInt(10), 256), onlyStored);
-    final int numFields = atLeast(1000000);
+    final int numFields = RandomInts.randomIntBetween(random(), 500000, 1000000);
     for (int i = 0; i < numFields; ++i) {
       bigDoc1.add(smallField);
     }
