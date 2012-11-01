@@ -232,16 +232,14 @@ public final class Util {
     }    
   }
 
-  private static class FSTPath<T> implements Comparable<FSTPath<T>> {
+  private static class FSTPath<T> {
     public FST.Arc<T> arc;
     public T cost;
     public final IntsRef input;
-    final Comparator<T> comparator;
 
-    public FSTPath(T cost, FST.Arc<T> arc, Comparator<T> comparator, IntsRef input) {
+    public FSTPath(T cost, FST.Arc<T> arc, IntsRef input) {
       this.arc = new FST.Arc<T>().copyFrom(arc);
       this.cost = cost;
-      this.comparator = comparator;
       this.input = input;
     }
 
@@ -249,12 +247,21 @@ public final class Util {
     public String toString() {
       return "input=" + input + " cost=" + cost;
     }
+  }
+
+  /** Compares first by the provided comparator, and then
+   *  tie breaks by path.input. */
+  private static class TieBreakByInputComparator<T> implements Comparator<FSTPath<T>> {
+    private final Comparator<T> comparator;
+    public TieBreakByInputComparator(Comparator<T> comparator) {
+      this.comparator = comparator;
+    }
 
     @Override
-    public int compareTo(FSTPath<T> other) {
-      int cmp = comparator.compare(cost, other.cost);
+    public int compare(FSTPath<T> a, FSTPath<T> b) {
+      int cmp = comparator.compare(a.cost, b.cost);
       if (cmp == 0) {
-        return input.compareTo(other.input);
+        return a.input.compareTo(b.input);
       } else {
         return cmp;
       }
@@ -283,7 +290,7 @@ public final class Util {
       this.maxQueueDepth = maxQueueDepth;
       this.comparator = comparator;
 
-      queue = new TreeSet<FSTPath<T>>();
+      queue = new TreeSet<FSTPath<T>>(new TieBreakByInputComparator<T>(comparator));
     }
 
     // If back plus this arc is competitive then add to queue:
@@ -326,7 +333,7 @@ public final class Util {
       System.arraycopy(path.input.ints, 0, newInput.ints, 0, path.input.length);
       newInput.ints[path.input.length] = path.arc.label;
       newInput.length = path.input.length+1;
-      final FSTPath<T> newPath = new FSTPath<T>(cost, path.arc, comparator, newInput);
+      final FSTPath<T> newPath = new FSTPath<T>(cost, path.arc, newInput);
 
       queue.add(newPath);
 
@@ -344,7 +351,7 @@ public final class Util {
         startOutput = fst.outputs.getNoOutput();
       }
 
-      FSTPath<T> path = new FSTPath<T>(startOutput, node, comparator, input);
+      FSTPath<T> path = new FSTPath<T>(startOutput, node, input);
       fst.readFirstTargetArc(node, path.arc, bytesReader);
 
       //System.out.println("add start paths");
@@ -402,7 +409,7 @@ public final class Util {
           //System.out.println("    empty string!  cost=" + path.cost);
           // Empty string!
           path.input.length--;
-          results.add(new MinResult<T>(path.input, path.cost, comparator));
+          results.add(new MinResult<T>(path.input, path.cost));
           continue;
         }
 
@@ -465,7 +472,7 @@ public final class Util {
             //System.out.println("    done!: " + path);
             T finalOutput = fst.outputs.add(path.cost, path.arc.output);
             if (acceptResult(path.input, finalOutput)) {
-              results.add(new MinResult<T>(path.input, finalOutput, comparator));
+              results.add(new MinResult<T>(path.input, finalOutput));
             } else {
               rejectCount++;
               assert rejectCount + topN <= maxQueueDepth: "maxQueueDepth (" + maxQueueDepth + ") is too small for topN (" + topN + "): rejected " + rejectCount + " paths";
@@ -492,24 +499,12 @@ public final class Util {
 
   /** Holds a single input (IntsRef) + output, returned by
    *  {@link #shortestPaths shortestPaths()}. */
-  public final static class MinResult<T> implements Comparable<MinResult<T>> {
+  public final static class MinResult<T> {
     public final IntsRef input;
     public final T output;
-    final Comparator<T> comparator;
-    public MinResult(IntsRef input, T output, Comparator<T> comparator) {
+    public MinResult(IntsRef input, T output) {
       this.input = input;
       this.output = output;
-      this.comparator = comparator;
-    }
-
-    @Override
-    public int compareTo(MinResult<T> other) {
-      int cmp = comparator.compare(output, other.output);
-      if (cmp == 0) {
-        return input.compareTo(other.input);
-      } else {
-        return cmp;
-      }
     }
   }
 
