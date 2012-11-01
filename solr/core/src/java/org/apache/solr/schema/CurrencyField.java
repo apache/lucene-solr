@@ -16,23 +16,20 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.GeneralField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -247,12 +244,8 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
 
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
-    try {
-      // Convert all values to default currency for sorting.
-      return (new CurrencyValueSource(field, defaultCurrency, null)).getSortField(reverse);
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
+    // Convert all values to default currency for sorting.
+    return (new CurrencyValueSource(field, defaultCurrency, null)).getSortField(reverse);
   }
 
   @Override
