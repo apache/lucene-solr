@@ -38,6 +38,10 @@ public abstract class AbstractTestCompressionMode extends LuceneTestCase {
     final int length = random().nextBoolean()
         ? random().nextInt(20)
         : random().nextInt(192 * 1024);
+    return randomArray(length, max);
+  }
+
+  static byte[] randomArray(int length, int max) {
     final byte[] arr = new byte[length];
     for (int i = 0; i < arr.length; ++i) {
       arr[i] = (byte) RandomInts.randomIntBetween(random(), 0, max);
@@ -147,12 +151,22 @@ public abstract class AbstractTestCompressionMode extends LuceneTestCase {
     test(decompressed);
   }
 
-  public void testLongLiteralsAndMatchs() throws IOException {
-    // literals and matchs length > 16
+  public void testLongMatchs() throws IOException {
+    // match length > 16
     final byte[] decompressed = new byte[RandomInts.randomIntBetween(random(), 300, 1024)];
     for (int i = 0; i < decompressed.length; ++i) {
       decompressed[i] = (byte) i;
     }
+    test(decompressed);
+  }
+
+  public void testLongLiterals() throws IOException {
+    // long literals (length > 16) which are not the last literals
+    final byte[] decompressed = randomArray(RandomInts.randomIntBetween(random(), 400, 1024), 256);
+    final int matchRef = random().nextInt(30);
+    final int matchOff = RandomInts.randomIntBetween(random(), decompressed.length - 40, decompressed.length - 20);
+    final int matchLength = RandomInts.randomIntBetween(random(), 4, 10);
+    System.arraycopy(decompressed, matchRef, decompressed, matchOff, matchLength);
     test(decompressed);
   }
 
