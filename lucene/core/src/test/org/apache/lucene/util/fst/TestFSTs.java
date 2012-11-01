@@ -1341,7 +1341,7 @@ public class TestFSTs extends LuceneTestCase {
       }
 
       assertTrue(matches.size() > 0);
-      Collections.sort(matches, new TieBreakByInputComparator(minLongComparator));
+      Collections.sort(matches, new TieBreakByInputComparator<Long>(minLongComparator));
       if (matches.size() > topN) {
         matches.subList(topN, matches.size()).clear();
       }
@@ -1462,7 +1462,7 @@ public class TestFSTs extends LuceneTestCase {
       }
 
       assertTrue(matches.size() > 0);
-      Collections.sort(matches, new TieBreakByInputComparator(minPairWeightComparator));
+      Collections.sort(matches, new TieBreakByInputComparator<Pair<Long,Long>>(minPairWeightComparator));
       if (matches.size() > topN) {
         matches.subList(topN, matches.size()).clear();
       }
