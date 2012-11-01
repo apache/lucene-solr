@@ -287,7 +287,7 @@ public class TermsFilterTest extends LuceneTestCase {
       TermsFilter right = termsFilter(singleField ? random().nextBoolean() : false, terms);
       assertEquals(right, left);
       assertEquals(right.hashCode(), left.hashCode());
-      if (i > 0) {
+      if (uniqueTerms.size() > 1) {
         List<Term> asList = new ArrayList<Term>(uniqueTerms);
         asList.remove(0);
         TermsFilter notEqual = termsFilter(singleField ? random().nextBoolean() : false, asList);
