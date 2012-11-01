@@ -245,12 +245,8 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
 
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
-    try {
-      // Convert all values to default currency for sorting.
-      return (new CurrencyValueSource(field, defaultCurrency, null)).getSortField(reverse);
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-    }
+    // Convert all values to default currency for sorting.
+    return (new CurrencyValueSource(field, defaultCurrency, null)).getSortField(reverse);
   }
 
   public void write(XMLWriter xmlWriter, String name, IndexableField field) throws IOException {

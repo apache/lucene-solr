@@ -305,8 +305,6 @@ public class QueryParsing {
               }
               continue;
             }
-          } catch (IOException ioe) {
-            throw ioe;
           } catch (Exception e) {
             // hang onto this in case the string isn't a full field name either
             qParserException = e;
@@ -355,8 +353,6 @@ public class QueryParsing {
       }
 
     } catch (ParseException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "error in sort: " + sortSpec, e);
-    } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "error in sort: " + sortSpec, e);
     }
 
