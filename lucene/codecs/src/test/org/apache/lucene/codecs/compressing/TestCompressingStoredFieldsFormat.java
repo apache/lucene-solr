@@ -295,7 +295,13 @@ public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
 
   @Nightly
   public void testBigDocuments() throws IOException {
-    // much bigger than the chunk size
+    // "big" as "much bigger than the chunk size"
+    // for this test we force a FS dir
+    iw.close();
+    dir.close();
+    dir = newFSDirectory(_TestUtil.getTempDir(getClass().getSimpleName()));
+    iw = new RandomIndexWriter(random(), dir, iwConf);
+
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper) dir).setThrottling(Throttling.NEVER);
     }
