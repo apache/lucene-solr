@@ -58,7 +58,6 @@ final class DocFieldProcessor extends DocConsumer {
   int hashMask = 1;
   int totalFieldCount;
 
-  float docBoost;
   int fieldGen;
   final DocumentsWriterPerThread.DocState docState;
 

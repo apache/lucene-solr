@@ -25,9 +25,9 @@ import org.junit.Test;
  */
 
 /**
- * Testcase for {@link RecyclingByteBlockAllocator}
+ * Testcase for {@link RecyclingIntBlockAllocator}
  */
-public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
+public class TestRecyclingIntBlockAllocator extends LuceneTestCase {
 
   /**
    */
@@ -37,37 +37,37 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
     super.setUp();
   }
 
-  private RecyclingByteBlockAllocator newAllocator() {
-    return new RecyclingByteBlockAllocator(1 << (2 + random().nextInt(15)),
+  private RecyclingIntBlockAllocator newAllocator() {
+    return new RecyclingIntBlockAllocator(1 << (2 + random().nextInt(15)),
         random().nextInt(97), Counter.newCounter());
   }
 
   @Test
   public void testAllocate() {
-    RecyclingByteBlockAllocator allocator = newAllocator();
-    HashSet<byte[]> set = new HashSet<byte[]>();
-    byte[] block = allocator.getByteBlock();
+    RecyclingIntBlockAllocator allocator = newAllocator();
+    HashSet<int[]> set = new HashSet<int[]>();
+    int[] block = allocator.getIntBlock();
     set.add(block);
     assertNotNull(block);
     final int size = block.length;
 
     int num = atLeast(97);
     for (int i = 0; i < num; i++) {
-      block = allocator.getByteBlock();
+      block = allocator.getIntBlock();
       assertNotNull(block);
       assertEquals(size, block.length);
       assertTrue("block is returned twice", set.add(block));
-      assertEquals(size * (i + 2), allocator.bytesUsed()); // zero based + 1
+      assertEquals(4 * size * (i + 2), allocator.bytesUsed()); // zero based + 1
       assertEquals(0, allocator.numBufferedBlocks());
     }
   }
 
   @Test
   public void testAllocateAndRecycle() {
-    RecyclingByteBlockAllocator allocator = newAllocator();
-    HashSet<byte[]> allocated = new HashSet<byte[]>();
+    RecyclingIntBlockAllocator allocator = newAllocator();
+    HashSet<int[]> allocated = new HashSet<int[]>();
 
-    byte[] block = allocator.getByteBlock();
+    int[] block = allocator.getIntBlock();
     allocated.add(block);
     assertNotNull(block);
     final int size = block.length;
@@ -76,24 +76,24 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
     for (int i = 0; i < numIters; i++) {
       int num = 1 + random().nextInt(39);
       for (int j = 0; j < num; j++) {
-        block = allocator.getByteBlock();
+        block = allocator.getIntBlock();
         assertNotNull(block);
         assertEquals(size, block.length);
         assertTrue("block is returned twice", allocated.add(block));
-        assertEquals(size * (allocated.size() +  allocator.numBufferedBlocks()), allocator
+        assertEquals(4 * size * (allocated.size() +  allocator.numBufferedBlocks()), allocator
             .bytesUsed());
       }
-      byte[][] array = allocated.toArray(new byte[0][]);
+      int[][] array = allocated.toArray(new int[0][]);
       int begin = random().nextInt(array.length);
       int end = begin + random().nextInt(array.length - begin);
-      List<byte[]> selected = new ArrayList<byte[]>();
+      List<int[]> selected = new ArrayList<int[]>();
       for (int j = begin; j < end; j++) {
         selected.add(array[j]);
       }
-      allocator.recycleByteBlocks(array, begin, end);
+      allocator.recycleIntBlocks(array, begin, end);
       for (int j = begin; j < end; j++) {
         assertNull(array[j]);
-        byte[] b = selected.remove(0);
+        int[] b = selected.remove(0);
         assertTrue(allocated.remove(b));
       }
     }
@@ -101,10 +101,10 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
 
   @Test
   public void testAllocateAndFree() {
-    RecyclingByteBlockAllocator allocator = newAllocator();
-    HashSet<byte[]> allocated = new HashSet<byte[]>();
+    RecyclingIntBlockAllocator allocator = newAllocator();
+    HashSet<int[]> allocated = new HashSet<int[]>();
     int freeButAllocated = 0;
-    byte[] block = allocator.getByteBlock();
+    int[] block = allocator.getIntBlock();
     allocated.add(block);
     assertNotNull(block);
     final int size = block.length;
@@ -113,23 +113,23 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
     for (int i = 0; i < numIters; i++) {
       int num = 1 + random().nextInt(39);
       for (int j = 0; j < num; j++) {
-        block = allocator.getByteBlock();
+        block = allocator.getIntBlock();
         freeButAllocated = Math.max(0, freeButAllocated - 1);
         assertNotNull(block);
         assertEquals(size, block.length);
         assertTrue("block is returned twice", allocated.add(block));
-        assertEquals(size * (allocated.size() + allocator.numBufferedBlocks()),
+        assertEquals("" + (4 * size * (allocated.size() + allocator.numBufferedBlocks()) - allocator.bytesUsed()), 4 * size * (allocated.size() + allocator.numBufferedBlocks()),
             allocator.bytesUsed());
       }
 
-      byte[][] array = allocated.toArray(new byte[0][]);
+      int[][] array = allocated.toArray(new int[0][]);
       int begin = random().nextInt(array.length);
       int end = begin + random().nextInt(array.length - begin);
       for (int j = begin; j < end; j++) {
-        byte[] b = array[j];
+        int[] b = array[j];
         assertTrue(allocated.remove(b));
       }
-      allocator.recycleByteBlocks(array, begin, end);
+      allocator.recycleIntBlocks(array, begin, end);
       for (int j = begin; j < end; j++) {
         assertNull(array[j]);
       }

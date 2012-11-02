@@ -228,7 +228,7 @@ public final class BytesRefHash {
     lastCount = count;
     count = 0;
     if (resetPool) {
-      pool.dropBuffersAndReset();
+      pool.reset(false, false); // we don't need to 0-fill the buffers
     }
     bytesStart = bytesStartArray.clear();
     if (lastCount != -1 && shrink(lastCount)) {

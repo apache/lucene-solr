@@ -188,7 +188,7 @@ class VarStraightBytesImpl {
         } else {
           IOUtils.closeWhileHandlingException(datOut);
         }
-        pool.dropBuffersAndReset();
+        pool.reset(false, false);
       }
 
       success = false;

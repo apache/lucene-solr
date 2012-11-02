@@ -25,6 +25,7 @@ import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.IntBlockPool;
 import org.apache.lucene.util.BytesRefHash.BytesStartArray;
 import org.apache.lucene.util.BytesRefHash.MaxBytesLengthExceededException;
 
@@ -62,8 +63,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     termBytePool = termsHash.termBytePool;
     docState = termsHash.docState;
     this.termsHash = termsHash;
-    bytesUsed = termsHash.trackAllocations ? termsHash.docWriter.bytesUsed
-        : Counter.newCounter();
+    bytesUsed = termsHash.bytesUsed;
     fieldState = docInverterPerField.fieldState;
     this.consumer = termsHash.consumer.addField(this, fieldInfo);
     PostingsBytesStartArray byteStarts = new PostingsBytesStartArray(this, bytesUsed);
@@ -99,8 +99,8 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   public void initReader(ByteSliceReader reader, int termID, int stream) {
     assert stream < streamCount;
     int intStart = postingsArray.intStarts[termID];
-    final int[] ints = intPool.buffers[intStart >> DocumentsWriterPerThread.INT_BLOCK_SHIFT];
-    final int upto = intStart & DocumentsWriterPerThread.INT_BLOCK_MASK;
+    final int[] ints = intPool.buffers[intStart >> IntBlockPool.INT_BLOCK_SHIFT];
+    final int upto = intStart & IntBlockPool.INT_BLOCK_MASK;
     reader.init(bytePool,
                 postingsArray.byteStarts[termID]+stream*ByteBlockPool.FIRST_LEVEL_SIZE,
                 ints[upto+stream]);
@@ -143,7 +143,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       // First time we are seeing this token since we last
       // flushed the hash.
       // Init stream slices
-      if (numPostingInt + intPool.intUpto > DocumentsWriterPerThread.INT_BLOCK_SIZE)
+      if (numPostingInt + intPool.intUpto > IntBlockPool.INT_BLOCK_SIZE)
         intPool.nextBuffer();
 
       if (ByteBlockPool.BYTE_BLOCK_SIZE - bytePool.byteUpto < numPostingInt*ByteBlockPool.FIRST_LEVEL_SIZE) {
@@ -167,8 +167,8 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     } else {
       termID = (-termID)-1;
       int intStart = postingsArray.intStarts[termID];
-      intUptos = intPool.buffers[intStart >> DocumentsWriterPerThread.INT_BLOCK_SHIFT];
-      intUptoStart = intStart & DocumentsWriterPerThread.INT_BLOCK_MASK;
+      intUptos = intPool.buffers[intStart >> IntBlockPool.INT_BLOCK_SHIFT];
+      intUptoStart = intStart & IntBlockPool.INT_BLOCK_MASK;
       consumer.addTerm(termID);
     }
   }
@@ -205,7 +205,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     if (termID >= 0) {// New posting
       bytesHash.byteStart(termID);
       // Init stream slices
-      if (numPostingInt + intPool.intUpto > DocumentsWriterPerThread.INT_BLOCK_SIZE) {
+      if (numPostingInt + intPool.intUpto > IntBlockPool.INT_BLOCK_SIZE) {
         intPool.nextBuffer();
       }
 
@@ -230,8 +230,8 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     } else {
       termID = (-termID)-1;
       final int intStart = postingsArray.intStarts[termID];
-      intUptos = intPool.buffers[intStart >> DocumentsWriterPerThread.INT_BLOCK_SHIFT];
-      intUptoStart = intStart & DocumentsWriterPerThread.INT_BLOCK_MASK;
+      intUptos = intPool.buffers[intStart >> IntBlockPool.INT_BLOCK_SHIFT];
+      intUptoStart = intStart & IntBlockPool.INT_BLOCK_MASK;
       consumer.addTerm(termID);
     }
 
