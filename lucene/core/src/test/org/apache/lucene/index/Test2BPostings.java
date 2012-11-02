@@ -20,10 +20,6 @@ package org.apache.lucene.index;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.codecs.compressing.CompressingCodec;
-import org.apache.lucene.codecs.compressing.CompressingStoredFieldsFormat;
-import org.apache.lucene.codecs.compressing.CompressingStoredFieldsIndex;
-import org.apache.lucene.codecs.compressing.CompressionMode;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -31,19 +27,18 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util._TestUtil;
+
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
-import com.carrotsearch.randomizedtesting.generators.RandomInts;
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 /**
  * Test indexes ~82M docs with 26 terms each, so you get > Integer.MAX_VALUE terms/docs pairs
  * @lucene.experimental
  */
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressCodecs({ "SimpleText", "Memory", "Direct", "Compressing" })
 @TimeoutSuite(millis = 4 * TimeUnits.HOUR)
 public class Test2BPostings extends LuceneTestCase {
 
@@ -60,17 +55,6 @@ public class Test2BPostings extends LuceneTestCase {
         .setMergeScheduler(new ConcurrentMergeScheduler())
         .setMergePolicy(newLogMergePolicy(false, 10))
         .setOpenMode(IndexWriterConfig.OpenMode.CREATE);
-
-    if (iwc.getCodec() instanceof CompressingCodec) {
-      CompressingStoredFieldsFormat fmt = (CompressingStoredFieldsFormat) ((CompressingCodec) iwc.getCodec()).storedFieldsFormat();
-      // NOTE: copied from CompressingCodec.randomInstance(), but fixed to not
-      // use any memory index ... maybe we can instead add
-      // something like CompressingMemory to the
-      // SuppressCodecs list...?:
-      final CompressionMode mode = RandomPicks.randomFrom(random(), CompressionMode.values());
-      final int chunkSize = RandomInts.randomIntBetween(random(), 1, 500);
-      iwc.setCodec(new CompressingCodec(mode, chunkSize, CompressingStoredFieldsIndex.DISK_DOC));
-    }
     
     IndexWriter w = new IndexWriter(dir, iwc);
 

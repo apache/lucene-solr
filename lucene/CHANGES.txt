@@ -121,7 +121,7 @@ Bug Fixes
 
 Optimizations
 
-* LUCENE-4512: Additional memory savings for CompressingStoredFieldsIndex.MEMORY_CHUNK
+* LUCENE-4512: Additional memory savings for CompressingStoredFieldsFormat.
   (Adrien Grand, Robert Muir)
 
 * LUCENE-4443: Lucene41PostingsFormat no longer writes unnecessary offsets 

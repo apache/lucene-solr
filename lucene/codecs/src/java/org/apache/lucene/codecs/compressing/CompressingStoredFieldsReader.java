@@ -57,7 +57,7 @@ import org.apache.lucene.util.packed.PackedInts;
 final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
   private final FieldInfos fieldInfos;
-  private final CompressingStoredFieldsIndex.Reader indexReader;
+  private final CompressingStoredFieldsIndexReader indexReader;
   private final IndexInput fieldsStream;
   private final int packedIntsVersion;
   private final CompressionMode compressionMode;
@@ -95,9 +95,7 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
       assert HEADER_LENGTH_DAT == fieldsStream.getFilePointer();
       assert HEADER_LENGTH_IDX == indexStream.getFilePointer();
 
-      final int storedFieldsIndexId = indexStream.readVInt();
-      final CompressingStoredFieldsIndex storedFieldsIndex = CompressingStoredFieldsIndex.byId(storedFieldsIndexId);
-      indexReader = storedFieldsIndex.newReader(indexStream, si);
+      indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
       indexStream = null;
 
       packedIntsVersion = fieldsStream.readVInt();
