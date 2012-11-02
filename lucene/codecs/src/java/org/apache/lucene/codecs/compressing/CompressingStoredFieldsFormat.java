@@ -45,7 +45,6 @@ import org.apache.lucene.store.IOContext;
  */
 public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
 
-  private final CompressingStoredFieldsIndex storedFieldsIndex;
   private final CompressionMode compressionMode;
   private final int chunkSize;
 
@@ -67,35 +66,17 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
    * ratio but will require more memory at indexing time and might make document
    * loading a little slower (depending on the size of your OS cache compared
    * to the size of your index).
-   * <p>
-   * The <code>storedFieldsIndex</code> parameter allows you to choose between
-   * several fields index implementations that offer various trade-offs between
-   * memory usage and speed.
    *
    * @param compressionMode the {@link CompressionMode} to use
    * @param chunkSize the minimum number of bytes of a single chunk of stored documents
-   * @param storedFieldsIndex the fields index impl to use
    * @see CompressionMode
-   * @see CompressingStoredFieldsIndex
    */
-  public CompressingStoredFieldsFormat(CompressionMode compressionMode, int chunkSize,
-      CompressingStoredFieldsIndex storedFieldsIndex) {
+  public CompressingStoredFieldsFormat(CompressionMode compressionMode, int chunkSize) {
     this.compressionMode = compressionMode;
     if (chunkSize < 1) {
       throw new IllegalArgumentException("chunkSize must be >= 1");
     }
     this.chunkSize = chunkSize;
-    this.storedFieldsIndex = storedFieldsIndex;
-  }
-
-  /**
-   * Create a new {@link CompressingStoredFieldsFormat} with an in-memory
-   * {@link CompressingStoredFieldsIndex}.
-   *
-   * @see CompressingStoredFieldsFormat#CompressingStoredFieldsFormat(CompressionMode, int, CompressingStoredFieldsIndex)
-   */
-  public CompressingStoredFieldsFormat(CompressionMode compressionMode, int chunkSize) {
-    this (compressionMode, chunkSize, CompressingStoredFieldsIndex.MEMORY_CHUNK);
   }
 
   /**
@@ -118,13 +99,13 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si,
       IOContext context) throws IOException {
     return new CompressingStoredFieldsWriter(directory, si, context,
-        compressionMode, chunkSize, storedFieldsIndex);
+        compressionMode, chunkSize);
   }
 
   @Override
   public String toString() {
     return getClass().getSimpleName() + "(compressionMode=" + compressionMode
-        + ", chunkSize=" + chunkSize + ", storedFieldsIndex=" + storedFieldsIndex + ")";
+        + ", chunkSize=" + chunkSize + ")";
   }
 
 }

@@ -38,23 +38,21 @@ public class CompressingCodec extends FilterCodec {
   public static CompressingCodec randomInstance(Random random) {
     final CompressionMode mode = RandomPicks.randomFrom(random, CompressionMode.values());
     final int chunkSize = RandomInts.randomIntBetween(random, 1, 500);
-    final CompressingStoredFieldsIndex index = RandomPicks.randomFrom(random, CompressingStoredFieldsIndex.values());
-    return new CompressingCodec(mode, chunkSize, index);
+    return new CompressingCodec(mode, chunkSize);
   }
 
   private final CompressingStoredFieldsFormat storedFieldsFormat;
 
   /**
-   * @see CompressingStoredFieldsFormat#CompressingStoredFieldsFormat(CompressionMode, int, CompressingStoredFieldsIndex)
+   * @see CompressingStoredFieldsFormat#CompressingStoredFieldsFormat(CompressionMode, int)
    */
-  public CompressingCodec(CompressionMode compressionMode, int chunkSize,
-      CompressingStoredFieldsIndex storedFieldsIndexFormat) {
+  public CompressingCodec(CompressionMode compressionMode, int chunkSize) {
     super("Compressing", new Lucene41Codec());
-    this.storedFieldsFormat = new CompressingStoredFieldsFormat(compressionMode, chunkSize, storedFieldsIndexFormat);
+    this.storedFieldsFormat = new CompressingStoredFieldsFormat(compressionMode, chunkSize);
   }
 
   public CompressingCodec() {
-    this(CompressionMode.FAST, 1 << 14, CompressingStoredFieldsIndex.MEMORY_CHUNK);
+    this(CompressionMode.FAST, 1 << 14);
   }
 
   @Override

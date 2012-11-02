@@ -66,7 +66,7 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   private final Directory directory;
   private final String segment;
-  private CompressingStoredFieldsIndex.Writer indexWriter;
+  private CompressingStoredFieldsIndexWriter indexWriter;
   private IndexOutput fieldsStream;
 
   private final CompressionMode compressionMode;
@@ -79,7 +79,7 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   private int numBufferedDocs; // docBase + numBufferedDocs == current doc ID
 
   public CompressingStoredFieldsWriter(Directory directory, SegmentInfo si,
-      IOContext context, CompressionMode compressionMode, int chunkSize, CompressingStoredFieldsIndex storedFieldsIndex) throws IOException {
+      IOContext context, CompressionMode compressionMode, int chunkSize) throws IOException {
     assert directory != null;
     this.directory = directory;
     this.segment = si.name;
@@ -101,8 +101,7 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       assert HEADER_LENGTH_IDX == indexStream.getFilePointer();
       assert HEADER_LENGTH_DAT == fieldsStream.getFilePointer();
 
-      indexStream.writeVInt(storedFieldsIndex.getId());
-      indexWriter = storedFieldsIndex.newWriter(indexStream);
+      indexWriter = new CompressingStoredFieldsIndexWriter(indexStream);
       indexStream = null;
 
       fieldsStream.writeVInt(PackedInts.VERSION_CURRENT);
