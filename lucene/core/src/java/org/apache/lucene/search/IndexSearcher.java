@@ -501,7 +501,7 @@ public class IndexSearcher {
                                 boolean doDocScores, boolean doMaxScore)
       throws IOException {
 
-    if (sort == null) throw new NullPointerException();
+    if (sort == null) throw new NullPointerException("Sort must not be null");
     
     if (executor == null) {
       // use all leaves here!
@@ -749,7 +749,7 @@ public class IndexSearcher {
     
       @Override
       public int advance(int target) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("FakeScorer doesn't support advance(int)");
       }
 
       @Override
@@ -759,12 +759,12 @@ public class IndexSearcher {
 
       @Override
       public int freq() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("FakeScorer doesn't support freq()");
       }
 
       @Override
       public int nextDoc() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("FakeScorer doesn't support nextDoc()");
       }
     
       @Override
@@ -827,8 +827,8 @@ public class IndexSearcher {
     }
 
     public T next() {
-      if(!this.hasNext())
-        throw new NoSuchElementException();
+      if(!this.hasNext()) 
+        throw new NoSuchElementException("next() is called but hasNext() returned false");
       try {
         return service.take().get();
       } catch (InterruptedException e) {
