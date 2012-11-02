@@ -61,6 +61,9 @@ New Features
   also finds completions allowing for fuzzy edits in the input string.
   (Robert Muir, Simon Willnauer, Mike McCandless)
 
+* LUCENE-4515: MemoryIndex now supports adding the same field multiple
+  times. (Simon Willnauer)
+
 API Changes
 
 * LUCENE-4399: Deprecated AppendingCodec. Lucene's term dictionaries
@@ -147,6 +150,10 @@ Optimizations
 * LUCENE-4498: In Lucene41PostingsFormat, when a term appears in only one document, 
   Instead of writing a file pointer to a VIntBlock containing the doc id, just 
   write the doc id.  (Mike McCandless, Robert Muir)
+
+* LUCENE-4515: MemoryIndex now uses Byte/IntBlockPool internally to hold terms and 
+  posting lists. All index data is represented as consecutive byte/int arrays to 
+  reduce GC cost and memory overhead. (Simon Willnauer) 
 
 Build
 

@@ -54,7 +54,7 @@ final class ByteSliceReader extends DataInput {
     buffer = pool.buffers[bufferUpto];
     upto = startIndex & ByteBlockPool.BYTE_BLOCK_MASK;
 
-    final int firstSize = ByteBlockPool.levelSizeArray[0];
+    final int firstSize = ByteBlockPool.LEVEL_SIZE_ARRAY[0];
 
     if (startIndex+firstSize >= endIndex) {
       // There is only this one slice to read
@@ -100,8 +100,8 @@ final class ByteSliceReader extends DataInput {
     // Skip to our next slice
     final int nextIndex = ((buffer[limit]&0xff)<<24) + ((buffer[1+limit]&0xff)<<16) + ((buffer[2+limit]&0xff)<<8) + (buffer[3+limit]&0xff);
 
-    level = ByteBlockPool.nextLevelArray[level];
-    final int newSize = ByteBlockPool.levelSizeArray[level];
+    level = ByteBlockPool.NEXT_LEVEL_ARRAY[level];
+    final int newSize = ByteBlockPool.LEVEL_SIZE_ARRAY[level];
 
     bufferUpto = nextIndex / ByteBlockPool.BYTE_BLOCK_SIZE;
     bufferOffset = bufferUpto * ByteBlockPool.BYTE_BLOCK_SIZE;

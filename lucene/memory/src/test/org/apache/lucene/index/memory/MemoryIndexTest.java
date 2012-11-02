@@ -34,17 +34,26 @@ import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
@@ -52,8 +61,13 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.ByteBlockPool.Allocator;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.RecyclingByteBlockAllocator;
 import org.apache.lucene.util._TestUtil;
 
 /**
@@ -94,15 +108,18 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
    * runs random tests, up to ITERATIONS times.
    */
   public void testRandomQueries() throws Exception {
-    for (int i = 0; i < ITERATIONS; i++)
-      assertAgainstRAMDirectory();
+    MemoryIndex index =  new MemoryIndex(random().nextBoolean(), random().nextInt(50) * 1024 * 1024);
+    for (int i = 0; i < ITERATIONS; i++) {
+      assertAgainstRAMDirectory(index);
+    }
   }
-
+  
   /**
    * Build a randomish document for both RAMDirectory and MemoryIndex,
    * and run all the queries against it.
    */
-  public void assertAgainstRAMDirectory() throws Exception {
+  public void assertAgainstRAMDirectory(MemoryIndex memory) throws Exception {
+    memory.reset();
     StringBuilder fooField = new StringBuilder();
     StringBuilder termField = new StringBuilder();
  
@@ -132,7 +149,6 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     writer.addDocument(doc);
     writer.close();
     
-    MemoryIndex memory = new MemoryIndex();
     memory.addField("foo", fooField.toString(), analyzer);
     memory.addField("term", termField.toString(), analyzer);
     
@@ -144,9 +160,74 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     } else {
       assertTrue(memory.getMemorySize() > 0L);
     }
-
+    AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
+    DirectoryReader competitor = DirectoryReader.open(ramdir);
+    duellReaders(competitor, reader);
+    IOUtils.close(reader, competitor);
     assertAllQueries(memory, ramdir, analyzer);  
     ramdir.close();    
+  }
+
+  private void duellReaders(CompositeReader other, AtomicReader memIndexReader)
+      throws IOException {
+    AtomicReader competitor = new SlowCompositeReaderWrapper(other);
+    Fields memFields = memIndexReader.fields();
+    for (String field : competitor.fields()) {
+      Terms memTerms = memFields.terms(field);
+      Terms iwTerms = memIndexReader.terms(field);
+      if (iwTerms == null) {
+        assertNull(memTerms);
+      } else {
+        DocValues normValues = competitor.normValues(field);
+        DocValues memNormValues = memIndexReader.normValues(field);
+        if (normValues != null) {
+          // mem idx always computes norms on the fly
+          assertNotNull(memNormValues);
+          assertEquals(normValues.getDirectSource().getInt(0), memNormValues.getDirectSource().getInt(0), 0.01);
+        }
+          
+        assertNotNull(memTerms);
+        assertEquals(iwTerms.getDocCount(), memTerms.getDocCount());
+        assertEquals(iwTerms.getSumDocFreq(), memTerms.getSumDocFreq());
+        assertEquals(iwTerms.getSumTotalTermFreq(), memTerms.getSumTotalTermFreq());
+        TermsEnum iwTermsIter = iwTerms.iterator(null);
+        TermsEnum memTermsIter = memTerms.iterator(null);
+        if (iwTerms.hasPositions()) {
+          final boolean offsets = iwTerms.hasOffsets() && memTerms.hasOffsets();
+         
+          while(iwTermsIter.next() != null) {
+            assertNotNull(memTermsIter.next());
+            assertEquals(iwTermsIter.term(), memTermsIter.term());
+            DocsAndPositionsEnum iwDocsAndPos = iwTermsIter.docsAndPositions(null, null);
+            DocsAndPositionsEnum memDocsAndPos = memTermsIter.docsAndPositions(null, null);
+            while(iwDocsAndPos.nextDoc() != DocsAndPositionsEnum.NO_MORE_DOCS) {
+              assertEquals(iwDocsAndPos.docID(), memDocsAndPos.nextDoc());
+              assertEquals(iwDocsAndPos.freq(), memDocsAndPos.freq());
+              for (int i = 0; i < iwDocsAndPos.freq(); i++) {
+                assertEquals("term: " + iwTermsIter.term().utf8ToString(), iwDocsAndPos.nextPosition(), memDocsAndPos.nextPosition());
+                if (offsets) {
+                  assertEquals(iwDocsAndPos.startOffset(), memDocsAndPos.startOffset());
+                  assertEquals(iwDocsAndPos.endOffset(), memDocsAndPos.endOffset());
+                }
+              }
+              
+            }
+            
+          }
+        } else {
+          while(iwTermsIter.next() != null) {
+            assertEquals(iwTermsIter.term(), memTermsIter.term());
+            DocsEnum iwDocsAndPos = iwTermsIter.docs(null, null);
+            DocsEnum memDocsAndPos = memTermsIter.docs(null, null);
+            while(iwDocsAndPos.nextDoc() != DocsAndPositionsEnum.NO_MORE_DOCS) {
+              assertEquals(iwDocsAndPos.docID(), memDocsAndPos.nextDoc());
+              assertEquals(iwDocsAndPos.freq(), memDocsAndPos.freq());
+            }
+          }
+        }
+      }
+      
+    }
   }
   
   /**
@@ -160,7 +241,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     for (String query : queries) {
       TopDocs ramDocs = ram.search(qp.parse(query), 1);
       TopDocs memDocs = mem.search(qp.parse(query), 1);
-      assertEquals(ramDocs.totalHits, memDocs.totalHits);
+      assertEquals(query, ramDocs.totalHits, memDocs.totalHits);
     }
     reader.close();
   }
@@ -202,7 +283,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   
   public void testDocsEnumStart() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    MemoryIndex memory = new MemoryIndex();
+    MemoryIndex memory = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
     memory.addField("foo", "bar", analyzer);
     AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
     DocsEnum disi = _TestUtil.docs(random(), reader, "foo", new BytesRef("bar"), null, null, 0);
@@ -220,27 +301,40 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     reader.close();
   }
   
+  private Allocator randomByteBlockAllocator() {
+    if (random().nextBoolean()) {
+      return new RecyclingByteBlockAllocator();
+    } else {
+      return new ByteBlockPool.DirectAllocator();
+    }
+  }
+  
   public void testDocsAndPositionsEnumStart() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    MemoryIndex memory = new MemoryIndex(true);
-    memory.addField("foo", "bar", analyzer);
-    AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
-    DocsAndPositionsEnum disi = reader.termPositionsEnum(new Term("foo", "bar"));
-    int docid = disi.docID();
-    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertEquals(0, disi.nextPosition());
-    assertEquals(0, disi.startOffset());
-    assertEquals(3, disi.endOffset());
-    
-    // now reuse and check again
-    TermsEnum te = reader.terms("foo").iterator(null);
-    assertTrue(te.seekExact(new BytesRef("bar"), true));
-    disi = te.docsAndPositions(null, disi);
-    docid = disi.docID();
-    assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    reader.close();
+    int numIters = atLeast(3);
+    MemoryIndex memory = new MemoryIndex(true,  random().nextInt(50) * 1024 * 1024);
+    for (int i = 0; i < numIters; i++) { // check reuse
+      memory.addField("foo", "bar", analyzer);
+      AtomicReader reader = (AtomicReader) memory.createSearcher().getIndexReader();
+      assertEquals(1, reader.terms("foo").getSumTotalTermFreq());
+      DocsAndPositionsEnum disi = reader.termPositionsEnum(new Term("foo", "bar"));
+      int docid = disi.docID();
+      assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+      assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+      assertEquals(0, disi.nextPosition());
+      assertEquals(0, disi.startOffset());
+      assertEquals(3, disi.endOffset());
+      
+      // now reuse and check again
+      TermsEnum te = reader.terms("foo").iterator(null);
+      assertTrue(te.seekExact(new BytesRef("bar"), true));
+      disi = te.docsAndPositions(null, disi);
+      docid = disi.docID();
+      assertTrue(docid == -1 || docid == DocIdSetIterator.NO_MORE_DOCS);
+      assertTrue(disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+      reader.close();
+      memory.reset();
+    }
   }
 
   // LUCENE-3831
@@ -248,7 +342,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     RegexpQuery regex = new RegexpQuery(new Term("field", "worl."));
     SpanQuery wrappedquery = new SpanMultiTermQueryWrapper<RegexpQuery>(regex);
         
-    MemoryIndex mindex = new MemoryIndex();
+    MemoryIndex mindex = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
     mindex.addField("field", new MockAnalyzer(random()).tokenStream("field", new StringReader("hello there")));
 
     // This throws an NPE
@@ -260,10 +354,65 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     RegexpQuery regex = new RegexpQuery(new Term("field", "worl."));
     SpanQuery wrappedquery = new SpanOrQuery(new SpanMultiTermQueryWrapper<RegexpQuery>(regex));
 
-    MemoryIndex mindex = new MemoryIndex();
+    MemoryIndex mindex = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
     mindex.addField("field", new MockAnalyzer(random()).tokenStream("field", new StringReader("hello there")));
 
     // This passes though
     assertEquals(0, mindex.search(wrappedquery), 0.00001f);
+  }
+  
+  public void testSameFieldAddedMultipleTimes() throws IOException {
+    MemoryIndex mindex = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
+    MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
+    mindex.addField("field", "the quick brown fox", mockAnalyzer);
+    mindex.addField("field", "jumps over the", mockAnalyzer);
+    AtomicReader reader = (AtomicReader) mindex.createSearcher().getIndexReader();
+    assertEquals(7, reader.terms("field").getSumTotalTermFreq());
+    PhraseQuery query = new PhraseQuery();
+    query.add(new Term("field", "fox"));
+    query.add(new Term("field", "jumps"));
+    assertTrue(mindex.search(query) > 0.1);
+    mindex.reset();
+    mockAnalyzer.setPositionIncrementGap(1 + random().nextInt(10));
+    mindex.addField("field", "the quick brown fox", mockAnalyzer);
+    mindex.addField("field", "jumps over the", mockAnalyzer);
+    assertEquals(0, mindex.search(query), 0.00001f);
+    query.setSlop(10);
+    assertTrue("posGap" + mockAnalyzer.getPositionIncrementGap("field") , mindex.search(query) > 0.0001);
+  }
+  
+  
+  public void testDuellMemIndex() throws IOException {
+    LineFileDocs lineFileDocs = new LineFileDocs(random());
+    int numDocs = atLeast(10);
+    MemoryIndex memory = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
+    for (int i = 0; i < numDocs; i++) {
+      Directory dir = newDirectory();
+      MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), TEST_VERSION_CURRENT, mockAnalyzer));
+      Document nextDoc = lineFileDocs.nextDoc();
+      Document doc = new Document();
+      for (Field field : nextDoc.getFields()) {
+        if (field.fieldType().indexed()) {
+          doc.add(field);
+          if (random().nextInt(3) == 0) {
+            doc.add(field);  // randomly add the same field twice
+          }
+        }
+      }
+      
+      writer.addDocument(doc);
+      writer.close();
+      for (IndexableField field : doc.indexableFields()) {
+          memory.addField(field.name(), ((Field)field).stringValue(), mockAnalyzer);  
+      }
+      DirectoryReader competitor = DirectoryReader.open(dir);
+      AtomicReader memIndexReader= (AtomicReader) memory.createSearcher().getIndexReader();
+      duellReaders(competitor, memIndexReader);
+      IOUtils.close(competitor, memIndexReader);
+      memory.reset();
+      dir.close();
+    }
+    lineFileDocs.close();
   }
 }

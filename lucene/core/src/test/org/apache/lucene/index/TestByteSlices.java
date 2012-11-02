@@ -21,7 +21,7 @@ import org.apache.lucene.util.RecyclingByteBlockAllocator;
 public class TestByteSlices extends LuceneTestCase {
 
   public void testBasic() throws Throwable {
-    ByteBlockPool pool = new ByteBlockPool(new RecyclingByteBlockAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, Integer.MAX_VALUE));
+    ByteBlockPool pool = new ByteBlockPool(new RecyclingByteBlockAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, random().nextInt(100)));
 
     final int NUM_STREAM = atLeast(100);
 

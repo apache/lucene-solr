@@ -116,7 +116,7 @@ class FixedStraightBytesImpl {
     }
     
     protected void resetPool() {
-      pool.dropBuffersAndReset();
+      pool.reset(false, false);
     }
     
     protected void writeData(IndexOutput out) throws IOException {
