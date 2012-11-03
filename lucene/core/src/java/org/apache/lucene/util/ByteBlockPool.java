@@ -21,8 +21,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.util.IntBlockPool.SliceReader;
-import org.apache.lucene.util.IntBlockPool.SliceWriter;
 
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
 
@@ -183,6 +181,7 @@ public final class ByteBlockPool {
        buffer = buffers[0];
      } else {
        bufferUpto = -1;
+       buffers[0] = null;
        byteUpto = BYTE_BLOCK_SIZE;
        byteOffset = -BYTE_BLOCK_SIZE;
        buffer = null;
