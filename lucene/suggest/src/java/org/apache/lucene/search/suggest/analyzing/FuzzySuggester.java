@@ -208,10 +208,14 @@ public final class FuzzySuggester extends AnalyzingSuggester {
     }
 
     if (subs.length == 0) {
+      // automaton is empty, there is no accepted paths through it
       return BasicAutomata.makeEmpty(); // matches nothing
     } else if (subs.length == 1) {
+      // no synonyms or anything: just a single path through the tokenstream
       return subs[0];
     } else {
+      // multiple paths: this is really scary! is it slow?
+      // maybe we should not do this and throw UOE?
       Automaton a = BasicOperations.union(Arrays.asList(subs));
       // TODO: we could call toLevenshteinAutomata() before det? 
       // this only happens if you have multiple paths anyway (e.g. synonyms)
