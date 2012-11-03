@@ -181,7 +181,6 @@ public final class ByteBlockPool {
        buffer = buffers[0];
      } else {
        bufferUpto = -1;
-       buffers[0] = null;
        byteUpto = BYTE_BLOCK_SIZE;
        byteOffset = -BYTE_BLOCK_SIZE;
        buffer = null;

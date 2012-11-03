@@ -133,7 +133,6 @@ public final class IntBlockPool {
         buffer = buffers[0];
       } else {
         bufferUpto = -1;
-        buffers[0] = null;
         intUpto = INT_BLOCK_SIZE;
         intOffset = -INT_BLOCK_SIZE;
         buffer = null;
