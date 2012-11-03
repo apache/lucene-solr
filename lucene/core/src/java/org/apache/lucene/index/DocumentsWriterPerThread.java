@@ -582,6 +582,9 @@ class DocumentsWriterPerThread {
           infoStream.message("DWPT", "flush: write " + delCount + " deletes gen=" + flushedSegment.segmentInfo.getDelGen());
         }
 
+        // TODO: we should prune the segment if it's 100%
+        // deleted... but merge will also catch it.
+
         // TODO: in the NRT case it'd be better to hand
         // this del vector over to the
         // shortly-to-be-opened SegmentReader and let it

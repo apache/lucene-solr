@@ -121,22 +121,23 @@ public final class IntBlockPool {
      
       if (bufferUpto > 0 || !reuseFirst) {
         final int offset = reuseFirst ? 1 : 0;  
-       // Recycle all but the first buffer
-       allocator.recycleIntBlocks(buffers, offset, 1+bufferUpto);
-       Arrays.fill(buffers, offset, bufferUpto+1, null);
-     }
-     if (reuseFirst) {
-       // Re-use the first buffer
-       bufferUpto = 0;
-       intUpto = 0;
-       intOffset = 0;
-       buffer = buffers[0];
-     } else {
-       bufferUpto = -1;
-       intUpto = INT_BLOCK_SIZE;
-       intOffset = -INT_BLOCK_SIZE;
-       buffer = null;
-     }
+        // Recycle all but the first buffer
+        allocator.recycleIntBlocks(buffers, offset, 1+bufferUpto);
+        Arrays.fill(buffers, offset, bufferUpto+1, null);
+      }
+      if (reuseFirst) {
+        // Re-use the first buffer
+        bufferUpto = 0;
+        intUpto = 0;
+        intOffset = 0;
+        buffer = buffers[0];
+      } else {
+        bufferUpto = -1;
+        buffers[0] = null;
+        intUpto = INT_BLOCK_SIZE;
+        intOffset = -INT_BLOCK_SIZE;
+        buffer = null;
+      }
     }
   }
   
