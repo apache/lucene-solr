@@ -114,6 +114,16 @@ public final class TermsFilter extends Filter {
   
   
   private TermsFilter(FieldAndTermEnum iter, int length) {
+    // TODO: maybe use oal.index.PrefixCodedTerms instead?
+    // If number of terms is more than a few hundred it
+    // should be a win
+
+    // TODO: we also pack terms in FieldCache/DocValues
+    // ... maybe we can refactor to share that code
+
+    // TODO: yet another option is to build the union of the terms in
+    // an automaton an call intersect on the termsenum if the density is high
+
     int hash = 9;
     byte[] serializedTerms = new byte[0];
     this.offsets = new int[length+1];
@@ -199,10 +209,6 @@ public final class TermsFilter extends Filter {
         }
       }
     }
-    /*
-     * TODO: we should explore if it is worth to build the union of the terms in
-     * an automaton an call intersect on the termsenum if the density is high
-     */
     return result;
   }
 
