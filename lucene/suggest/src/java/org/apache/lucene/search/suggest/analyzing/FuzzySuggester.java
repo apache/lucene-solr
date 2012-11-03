@@ -217,9 +217,6 @@ public final class FuzzySuggester extends AnalyzingSuggester {
       // this only happens if you have multiple paths anyway (e.g. synonyms)
       BasicOperations.determinize(a);
 
-      // Does not seem to help (and hurt maybe a bit: 6-9
-      // prefix went from 19 to 18 kQPS):
-      // a.reduce();
       return a;
     }
   }
