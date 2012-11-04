@@ -8,6 +8,9 @@ http://s.apache.org/luceneversions
 
 Changes in backwards compatibility policy
 
+* LUCENE-4535: oal.util.FilterIterator is now an internal API.
+  (Adrien Grand)
+
 * LUCENE-3312: The API of oal.document was restructured to
   differentiate between stored documents and indexed documents.
   IndexReader.document(int) now returns StoredDocument

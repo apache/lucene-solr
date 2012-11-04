@@ -26,6 +26,7 @@ import java.util.NoSuchElementException;
  * @param <T> generic parameter for this iterator instance: this iterator implements {@link Iterator Iterator&lt;T&gt;}
  * @param <InnerT> generic parameter of the wrapped iterator, must be <tt>T</tt> or extend <tt>T</tt>
  * @see #predicateFunction
+ * @lucene.internal
  */
 public abstract class FilterIterator<T, InnerT extends T> implements Iterator<T> {
   
