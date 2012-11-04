@@ -1568,7 +1568,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         List<StorableField> storedList = new ArrayList<StorableField>();
         
         @Override
-        public Iterable<? extends IndexableField> indexableFields() {
+        public Iterable<IndexableField> indexableFields() {
           if (list.size() == 0) {
             list.add(new IndexableField() {
               @Override
@@ -1596,7 +1596,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         }
 
         @Override
-        public Iterable<? extends StorableField> storableFields() {
+        public Iterable<StorableField> storableFields() {
           return storedList;
         }
         

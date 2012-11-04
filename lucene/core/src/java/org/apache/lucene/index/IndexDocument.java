@@ -24,8 +24,8 @@ package org.apache.lucene.index;
 public interface IndexDocument {
 
   /** Obtains all indexable fields in document */
-  public Iterable<? extends IndexableField> indexableFields();
+  public Iterable<IndexableField> indexableFields();
   
   /** Obtains all storable fields in document */
-  public Iterable<? extends StorableField> storableFields();
+  public Iterable<StorableField> storableFields();
 }

@@ -138,9 +138,8 @@ public final class Document implements IndexDocument {
   */
   public final BytesRef[] getBinaryValues(String name) {
     final List<BytesRef> result = new ArrayList<BytesRef>();
-    Iterator<Field> it = storedFieldsIterator();
-    
-    while (it.hasNext()) {
+
+    for (Iterator<StorableField> it = storedFieldsIterator(); it.hasNext(); ) {
       StorableField field = it.next();
       if (field.name().equals(name)) {
         final BytesRef bytes = field.binaryValue();
@@ -163,9 +162,7 @@ public final class Document implements IndexDocument {
   * @return a <code>BytesRef</code> containing the binary field value or <code>null</code>
   */
   public final BytesRef getBinaryValue(String name) {
-    Iterator<Field> it = storedFieldsIterator();
-    
-    while (it.hasNext()) {
+    for (Iterator<StorableField> it = storedFieldsIterator(); it.hasNext(); ) {
       StorableField field = it.next();
       if (field.name().equals(name)) {
         final BytesRef bytes = field.binaryValue();
@@ -235,9 +232,8 @@ public final class Document implements IndexDocument {
    */
   public final String[] getValues(String name) {
     List<String> result = new ArrayList<String>();
-    Iterator<Field> it = storedFieldsIterator();
-    
-    while (it.hasNext()) {
+
+    for (Iterator<StorableField> it = storedFieldsIterator(); it.hasNext(); ) {
       StorableField field = it.next();
       if (field.name().equals(name) && field.stringValue() != null) {
         result.add(field.stringValue());
@@ -260,9 +256,7 @@ public final class Document implements IndexDocument {
    * the actual numeric field instance back, use {@link #getField}.
    */
   public final String get(String name) {
-    Iterator<Field> it = storedFieldsIterator();
-    
-    while (it.hasNext()) {
+    for (Iterator<StorableField> it = storedFieldsIterator(); it.hasNext(); ) {
       StorableField field = it.next();
       if (field.name().equals(name) && field.stringValue() != null) {
         return field.stringValue();
@@ -288,29 +282,28 @@ public final class Document implements IndexDocument {
 
   /** Obtains all indexed fields in document */
   @Override
-  public Iterable<? extends IndexableField> indexableFields() {
-    return new Iterable<Field>() {
+  public Iterable<IndexableField> indexableFields() {
+    return new Iterable<IndexableField>() {
       @Override
-      public Iterator<Field> iterator() {
+      public Iterator<IndexableField> iterator() {
         return Document.this.indexedFieldsIterator();
       }
     };
   }
 
-
   /** Obtains all stored fields in document. */
   @Override
-  public Iterable<? extends StorableField> storableFields() {
-    return new Iterable<Field>() {
+  public Iterable<StorableField> storableFields() {
+    return new Iterable<StorableField>() {
       @Override
-      public Iterator<Field> iterator() {
+      public Iterator<StorableField> iterator() {
         return Document.this.storedFieldsIterator();
       }
     };
   }
 
-  private Iterator<Field> storedFieldsIterator() {
-    return new FilterIterator<Field>(fields.iterator()) {
+  private Iterator<StorableField> storedFieldsIterator() {
+    return new FilterIterator<StorableField, Field>(fields.iterator()) {
       @Override
       protected boolean predicateFunction(Field field) {
         return field.type.stored() || field.type.docValueType() != null;
@@ -318,8 +311,8 @@ public final class Document implements IndexDocument {
     };
   }
   
-  private Iterator<Field> indexedFieldsIterator() {
-    return new FilterIterator<Field>(fields.iterator()) {
+  private Iterator<IndexableField> indexedFieldsIterator() {
+    return new FilterIterator<IndexableField, Field>(fields.iterator()) {
       @Override
       protected boolean predicateFunction(Field field) {
         return field.type.indexed();
