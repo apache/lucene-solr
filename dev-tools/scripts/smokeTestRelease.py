@@ -64,7 +64,7 @@ def javaExe(version):
     raise RuntimeError("unknown Java version '%s'" % version)
   if cygwin:
     path = os.popen('cygpath -u "%s"' % path).read().strip()
-  return 'export JAVA_HOME="%s" PATH="%s/bin:$PATH"' % (path, path)
+  return 'export JAVA_HOME="%s" PATH="%s/bin:$PATH" JAVACMD="%s/bin/java"' % (path, path, path)
 
 def verifyJavaVersion(version):
   s = os.popen('%s; java -version 2>&1' % javaExe(version)).read()
@@ -77,11 +77,13 @@ try:
   JAVA6_HOME = env['JAVA6_HOME']
 except KeyError:
   JAVA6_HOME = '/usr/local/jdk1.6.0_27'
+print('JAVA6_HOME is %s' % JAVA6_HOME)
 
 try:
   JAVA7_HOME = env['JAVA7_HOME']
 except KeyError:
   JAVA7_HOME = '/usr/local/jdk1.7.0_01'
+print('JAVA7_HOME is %s' % JAVA7_HOME)
 
 verifyJavaVersion('1.6')
 verifyJavaVersion('1.7')
