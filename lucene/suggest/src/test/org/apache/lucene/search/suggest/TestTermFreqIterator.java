@@ -80,50 +80,6 @@ public class TestTermFreqIterator extends LuceneTestCase {
     assertEquals(sorted, actual);
   }
   
-  
-  public void testRaw() throws Exception {
-    int num = atLeast(10000);
-    
-    Comparator<BytesRef> comparator = BytesRef.getUTF8SortedAsUnicodeComparator();
-    BytesRefHash sorted = new BytesRefHash();
-    TermFreq[] unsorted = new TermFreq[num];
-    byte[] buffer = new byte[0];
-    ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
-
-    final Random random = new Random(random().nextLong());
-    for (int i = 0; i < num; i++) {
-      BytesRef spare;
-      long weight;
-      do {
-        spare = new BytesRef(_TestUtil.randomUnicodeString(random));
-        if (spare.length + 8 >= buffer.length) {
-          buffer = ArrayUtil.grow(buffer, spare.length + 8);
-        }
-        output.reset(buffer);
-        output.writeBytes(spare.bytes, spare.offset, spare.length);
-        weight = random.nextLong();
-        output.writeLong(weight);
-        
-      } while (sorted.add(new BytesRef(buffer, 0, output.getPosition())) < 0);
-      unsorted[i] = new TermFreq(spare, weight);
-    }
-    
-    // test the sorted iterator wrapper
-    TermFreqIterator wrapper = new SortedTermFreqIteratorWrapper(new TermFreqArrayIterator(unsorted), comparator, true);
-    int[] sort = sorted.sort(comparator);
-    int size = sorted.size();
-    BytesRef spare = new BytesRef();
-    for (int i = 0; i < size; i++) {
-      sorted.get(sort[i], spare);
-      spare.length -= 8; // sub the long value
-      assertEquals(spare, wrapper.next());
-      spare.offset = spare.offset + spare.length;
-      spare.length = 8;
-      assertEquals(asLong(spare), wrapper.weight());
-    }
-    assertNull(wrapper.next());
-  }
-  
   public static long asLong(BytesRef b) {
     return (((long) asIntInternal(b, b.offset) << 32) | asIntInternal(b,
         b.offset + 4) & 0xFFFFFFFFL);
