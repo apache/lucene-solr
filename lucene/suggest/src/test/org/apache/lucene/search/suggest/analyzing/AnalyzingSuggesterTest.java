@@ -1031,4 +1031,17 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           new TermFreq("a b", 50),
         }));
   }
+
+  public void testDupSurfaceFormsMissingResults3() throws Exception {
+    Analyzer a = new MockAnalyzer(random());
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, AnalyzingSuggester.PRESERVE_SEP, 256, -1);
+    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
+          new TermFreq("a a", 7),
+          new TermFreq("a a", 7),
+          new TermFreq("a c", 6),
+          new TermFreq("a c", 3),
+          new TermFreq("a b", 5),
+        }));
+    assertEquals("[a a/7, a c/6, a b/5]", suggester.lookup("a", false, 3).toString());
+  }
 }

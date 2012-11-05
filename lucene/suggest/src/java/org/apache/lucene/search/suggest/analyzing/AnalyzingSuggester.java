@@ -390,6 +390,7 @@ public class AnalyzingSuggester extends Lookup {
     try {
       ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
       BytesRef surfaceForm;
+
       while ((surfaceForm = iterator.next()) != null) {
         Set<IntsRef> paths = toFiniteStrings(surfaceForm, ts2a);
         
@@ -430,6 +431,10 @@ public class AnalyzingSuggester extends Lookup {
 
       // Sort all input/output pairs (required by FST.Builder):
       new Sort(sortComparator).sort(tempInput, tempSorted);
+
+      // Free disk space:
+      tempInput.delete();
+
       reader = new Sort.ByteSequencesReader(tempSorted);
      
       PairOutputs<Long,BytesRef> outputs = new PairOutputs<Long,BytesRef>(PositiveIntOutputs.getSingleton(true), ByteSequenceOutputs.getSingleton());
@@ -441,6 +446,12 @@ public class AnalyzingSuggester extends Lookup {
       BytesRef surface = new BytesRef();
       IntsRef scratchInts = new IntsRef();
       ByteArrayDataInput input = new ByteArrayDataInput();
+
+      // Used to remove duplicate surface forms (but we
+      // still index the hightest-weight one).  We clear
+      // this when we see a new analyzed form, so it cannot
+      // grow unbounded (at most 256 entries):
+      Set<BytesRef> seenSurfaceForms = new HashSet<BytesRef>();
 
       int dedup = 0;
       while (reader.read(scratch)) {
@@ -459,6 +470,7 @@ public class AnalyzingSuggester extends Lookup {
         if (previousAnalyzed == null) {
           previousAnalyzed = new BytesRef();
           previousAnalyzed.copyBytes(analyzed);
+          seenSurfaceForms.add(BytesRef.deepCopyOf(surface));
         } else if (analyzed.equals(previousAnalyzed)) {
           dedup++;
           if (dedup >= maxSurfaceFormsPerAnalyzedForm) {
@@ -466,9 +478,15 @@ public class AnalyzingSuggester extends Lookup {
             // dups: skip the rest:
             continue;
           }
+          if (seenSurfaceForms.contains(surface)) {
+            continue;
+          }
+          seenSurfaceForms.add(BytesRef.deepCopyOf(surface));
         } else {
           dedup = 0;
           previousAnalyzed.copyBytes(analyzed);
+          seenSurfaceForms.clear();
+          seenSurfaceForms.add(BytesRef.deepCopyOf(surface));
         }
 
         // TODO: I think we can avoid the extra 2 bytes when
