@@ -84,7 +84,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     assertEquals("OK", rsp.getValues().get("status")); 
 
   }
-  
+  @Ignore
   public void testEnablingServer() throws Exception {
 
     assertTrue(! healthcheckFile.exists());
@@ -115,7 +115,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue(healthcheckFile.exists());
 
   }
-  
+  @Ignore
   public void testDisablingServer() throws Exception {
 
     assertTrue(! healthcheckFile.exists());
