@@ -41,28 +41,33 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
   private File tempInput;
   private File tempSorted;
   private final ByteSequencesReader reader;
+  private final Comparator<BytesRef> comparator;
   private boolean done = false;
   
   private long weight;
   private final BytesRef scratch = new BytesRef();
-  private final Comparator<BytesRef> comparator;
-  
-  /** 
-   * Calls {@link #SortedTermFreqIteratorWrapper(TermFreqIterator, Comparator, boolean) 
-   * SortedTermFreqIteratorWrapper(source, comparator, false)}
-   */
-  public SortedTermFreqIteratorWrapper(TermFreqIterator source, Comparator<BytesRef> comparator) throws IOException {
-    this(source, comparator, false);
-  }
   
   /**
-   * Creates a new sorted wrapper. if <code>compareRawBytes</code> is true, then
-   * only the bytes (not the weight) will be used for comparison.
+   * Creates a new sorted wrapper, using {@link
+   * BytesRef#getUTF8SortedAsUnicodeComparator} for
+   * sorting. */
+  public SortedTermFreqIteratorWrapper(TermFreqIterator source) throws IOException {
+    this(source, BytesRef.getUTF8SortedAsUnicodeComparator());
+  }
+
+  /**
+   * Creates a new sorted wrapper, sorting by BytesRef
+   * (ascending) then cost (ascending).
    */
-  public SortedTermFreqIteratorWrapper(TermFreqIterator source, Comparator<BytesRef> comparator, boolean compareRawBytes) throws IOException {
+  public SortedTermFreqIteratorWrapper(TermFreqIterator source, Comparator<BytesRef> comparator) throws IOException {
     this.source = source;
     this.comparator = comparator;
-    this.reader = sort(compareRawBytes ? comparator : new BytesOnlyComparator(this.comparator));
+    this.reader = sort();
+  }
+  
+  @Override
+  public Comparator<BytesRef> getComparator() {
+    return comparator;
   }
   
   @Override
@@ -90,16 +95,43 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
   }
   
   @Override
-  public Comparator<BytesRef> getComparator() {
-    return comparator;
-  }
-  
-  @Override
   public long weight() {
     return weight;
   }
+
+  /** Sortes by BytesRef (ascending) then cost (ascending). */
+  private final Comparator<BytesRef> tieBreakByCostComparator = new Comparator<BytesRef>() {
+
+    private final BytesRef leftScratch = new BytesRef();
+    private final BytesRef rightScratch = new BytesRef();
+    private final ByteArrayDataInput input = new ByteArrayDataInput();
+    
+    @Override
+    public int compare(BytesRef left, BytesRef right) {
+      // Make shallow copy in case decode changes the BytesRef:
+      leftScratch.bytes = left.bytes;
+      leftScratch.offset = left.offset;
+      leftScratch.length = left.length;
+      rightScratch.bytes = right.bytes;
+      rightScratch.offset = right.offset;
+      rightScratch.length = right.length;
+      long leftCost = decode(leftScratch, input);
+      long rightCost = decode(rightScratch, input);
+      int cmp = comparator.compare(leftScratch, rightScratch);
+      if (cmp != 0) {
+        return cmp;
+      }
+      if (leftCost < rightCost) {
+        return -1;
+      } else if (rightCost < leftCost) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
+  };
   
-  private Sort.ByteSequencesReader sort(Comparator<BytesRef> comparator) throws IOException {
+  private Sort.ByteSequencesReader sort() throws IOException {
     String prefix = getClass().getSimpleName();
     File directory = Sort.defaultTempDir();
     tempInput = File.createTempFile(prefix, ".input", directory);
@@ -116,7 +148,7 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
         encode(writer, output, buffer, spare, source.weight());
       }
       writer.close();
-      new Sort(comparator).sort(tempInput, tempSorted);
+      new Sort(tieBreakByCostComparator).sort(tempInput, tempSorted);
       ByteSequencesReader reader = new Sort.ByteSequencesReader(tempSorted);
       success = true;
       return reader;
@@ -131,7 +163,6 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
           close();
         }
       }
-      
     }
   }
   
@@ -142,31 +173,6 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
     }
     if (tempSorted != null) {
       tempSorted.delete();
-    }
-  }
-  
-  private final static class BytesOnlyComparator implements Comparator<BytesRef> {
-
-    final Comparator<BytesRef> other;
-    private final BytesRef leftScratch = new BytesRef();
-    private final BytesRef rightScratch = new BytesRef();
-    
-    public BytesOnlyComparator(Comparator<BytesRef> other) {
-      this.other = other;
-    }
-
-    @Override
-    public int compare(BytesRef left, BytesRef right) {
-      wrap(leftScratch, left);
-      wrap(rightScratch, right);
-      return other.compare(leftScratch, rightScratch);
-    }
-    
-    private void wrap(BytesRef wrapper, BytesRef source) {
-      wrapper.bytes = source.bytes;
-      wrapper.offset = source.offset;
-      wrapper.length = source.length - 8;
-      
     }
   }
   
@@ -184,9 +190,8 @@ public class SortedTermFreqIteratorWrapper implements TermFreqIterator {
   /** decodes the weight at the current position */
   protected long decode(BytesRef scratch, ByteArrayDataInput tmpInput) {
     tmpInput.reset(scratch.bytes);
-    tmpInput.skipBytes(scratch.length - 8); // suggestion + separator
-    scratch.length -= 8; // sep + long
+    tmpInput.skipBytes(scratch.length - 8); // suggestion
+    scratch.length -= 8; // long
     return tmpInput.readLong();
   }
-  
 }

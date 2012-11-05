@@ -19,10 +19,10 @@ package org.apache.lucene.search.suggest.analyzing;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.io.FileOutputStream;
-import java.io.OutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -39,6 +39,7 @@ import org.apache.lucene.analysis.CannedBinaryTokenStream.BinaryToken;
 import org.apache.lucene.analysis.CannedBinaryTokenStream;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockBytesAttributeFactory;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
@@ -503,6 +504,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     private int numStopChars;
     private boolean preserveHoles;
 
+    private final MockBytesAttributeFactory factory = new MockBytesAttributeFactory();
+
     public MockTokenEatingAnalyzer(int numStopChars, boolean preserveHoles) {
       this.preserveHoles = preserveHoles;
       this.numStopChars = numStopChars;
@@ -510,7 +513,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
     @Override
     public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-      MockTokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false, MockTokenizer.DEFAULT_MAX_TOKEN_LENGTH);
+      MockTokenizer tokenizer = new MockTokenizer(factory, reader, MockTokenizer.WHITESPACE, false, MockTokenizer.DEFAULT_MAX_TOKEN_LENGTH);
       tokenizer.setEnableChecks(true);
       TokenStream next;
       if (numStopChars != 0) {
@@ -982,5 +985,50 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(6, results.get(0).value);
     assertEquals("b", results.get(1).key);
     assertEquals(5, results.get(1).value);
+  }
+
+  public void test0ByteKeys() throws Exception {
+    final Analyzer a = new Analyzer() {
+        @Override
+        protected TokenStreamComponents createComponents(String fieldName, Reader reader) {
+          Tokenizer tokenizer = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
+        
+          return new TokenStreamComponents(tokenizer) {
+            int tokenStreamCounter = 0;
+            final TokenStream[] tokenStreams = new TokenStream[] {
+              new CannedBinaryTokenStream(new BinaryToken[] {
+                  token(new BytesRef(new byte[] {0x0, 0x0, 0x0})),
+                }),
+              new CannedBinaryTokenStream(new BinaryToken[] {
+                  token(new BytesRef(new byte[] {0x0, 0x0})),
+                }),
+              new CannedBinaryTokenStream(new BinaryToken[] {
+                  token(new BytesRef(new byte[] {0x0, 0x0, 0x0})),
+                }),
+              new CannedBinaryTokenStream(new BinaryToken[] {
+                  token(new BytesRef(new byte[] {0x0, 0x0})),
+                }),
+            };
+
+            @Override
+            public TokenStream getTokenStream() {
+              TokenStream result = tokenStreams[tokenStreamCounter];
+              tokenStreamCounter++;
+              return result;
+            }
+         
+            @Override
+            protected void setReader(final Reader reader) throws IOException {
+            }
+          };
+        }
+      };
+
+    AnalyzingSuggester suggester = new AnalyzingSuggester(a, a, 0, 256, -1);
+
+    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
+          new TermFreq("a a", 50),
+          new TermFreq("a b", 50),
+        }));
   }
 }

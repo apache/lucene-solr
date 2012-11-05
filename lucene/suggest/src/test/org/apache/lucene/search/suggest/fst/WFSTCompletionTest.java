@@ -22,12 +22,13 @@ import java.util.*;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
 import org.apache.lucene.search.suggest.TermFreq;
 import org.apache.lucene.search.suggest.TermFreqArrayIterator;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class WFSTCompletionTest extends LuceneTestCase {
   
-  public void test() throws Exception {
+  public void testBasic() throws Exception {
     TermFreq keys[] = new TermFreq[] {
         new TermFreq("foo", 50),
         new TermFreq("bar", 10),
@@ -193,5 +194,19 @@ public class WFSTCompletionTest extends LuceneTestCase {
         assertEquals(matches.get(hit).value, r.get(hit).value, 0f);
       }
     }
+  }
+
+  public void test0ByteKeys() throws Exception {
+    BytesRef key1 = new BytesRef(4);
+    key1.length = 4;
+    BytesRef key2 = new BytesRef(3);
+    key1.length = 3;
+
+    WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
+
+    suggester.build(new TermFreqArrayIterator(new TermFreq[] {
+          new TermFreq(key1, 50),
+          new TermFreq(key2, 50),
+        }));
   }
 }

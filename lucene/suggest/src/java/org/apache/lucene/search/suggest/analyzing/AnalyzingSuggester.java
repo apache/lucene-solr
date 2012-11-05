@@ -320,6 +320,56 @@ public class AnalyzingSuggester extends Lookup {
       return new TokenStreamToAutomaton();
     }
   }
+
+  private  Comparator<BytesRef> sortComparator = new Comparator<BytesRef>() {
+    private final ByteArrayDataInput readerA = new ByteArrayDataInput();
+    private final ByteArrayDataInput readerB = new ByteArrayDataInput();
+    private final BytesRef scratchA = new BytesRef();
+    private final BytesRef scratchB = new BytesRef();
+
+    @Override
+    public int compare(BytesRef a, BytesRef b) {
+
+      // First by analyzed form:
+      readerA.reset(a.bytes, a.offset, a.length);
+      scratchA.length = readerA.readShort();
+      scratchA.bytes = a.bytes;
+      scratchA.offset = readerA.getPosition();
+
+      readerB.reset(b.bytes, b.offset, b.length);
+      scratchB.bytes = b.bytes;
+      scratchB.length = readerB.readShort();
+      scratchB.offset = readerB.getPosition();
+
+      int cmp = scratchA.compareTo(scratchB);
+      if (cmp != 0) {
+        return cmp;
+      }
+
+      // Next by cost:
+      long aCost = readerA.readInt();
+      long bCost = readerB.readInt();
+
+      if (aCost < bCost) {
+        return -1;
+      } else if (aCost > bCost) {
+        return 1;
+      }
+
+      // Finally by surface form:
+      scratchA.offset = readerA.getPosition();
+      scratchA.length = a.length - scratchA.offset;
+      scratchB.offset = readerB.getPosition();
+      scratchB.length = b.length - scratchB.offset;
+
+      cmp = scratchA.compareTo(scratchB);
+      if (cmp != 0) {
+        return cmp;
+      }
+
+      return 0;
+    }
+  };
   
   @Override
   public void build(TermFreqIterator iterator) throws IOException {
@@ -350,42 +400,43 @@ public class AnalyzingSuggester extends Lookup {
           Util.toBytesRef(path, scratch);
           
           // length of the analyzed text (FST input)
+          if (scratch.length > Short.MAX_VALUE-2) {
+            throw new IllegalArgumentException("cannot handle analyzed forms > " + (Short.MAX_VALUE-2) + " in length (got " + scratch.length + ")");
+          }
           short analyzedLength = (short) scratch.length;
+
           // compute the required length:
-          // analyzed sequence + 12 (separator) + weight (4) + surface + analyzedLength (short)
-          int requiredLength = analyzedLength + 2 + 4 + surfaceForm.length + 2;
+          // analyzed sequence + weight (4) + surface + analyzedLength (short)
+          int requiredLength = analyzedLength + 4 + surfaceForm.length + 2;
           
           buffer = ArrayUtil.grow(buffer, requiredLength);
           
           output.reset(buffer);
-          output.writeBytes(scratch.bytes, scratch.offset, scratch.length);
-          output.writeByte((byte)0); // separator: not used, just for sort order
-          output.writeByte((byte)0); // separator: not used, just for sort order
 
-          // NOTE: important that writeInt is big-endian,
-          // because this means we sort secondarily by
-          // cost ascending (= weight descending) so that
-          // when we discard too many surface forms for a
-          // single analyzed form we are discarding the
-          // least weight ones:
+          output.writeShort(analyzedLength);
+
+          output.writeBytes(scratch.bytes, scratch.offset, scratch.length);
+
           output.writeInt(encodeWeight(iterator.weight()));
 
           output.writeBytes(surfaceForm.bytes, surfaceForm.offset, surfaceForm.length);
-          output.writeShort(analyzedLength);
+
+          assert output.getPosition() == requiredLength: output.getPosition() + " vs " + requiredLength;
+
           writer.write(buffer, 0, output.getPosition());
         }
       }
       writer.close();
 
       // Sort all input/output pairs (required by FST.Builder):
-      new Sort().sort(tempInput, tempSorted);
+      new Sort(sortComparator).sort(tempInput, tempSorted);
       reader = new Sort.ByteSequencesReader(tempSorted);
      
       PairOutputs<Long,BytesRef> outputs = new PairOutputs<Long,BytesRef>(PositiveIntOutputs.getSingleton(true), ByteSequenceOutputs.getSingleton());
       Builder<Pair<Long,BytesRef>> builder = new Builder<Pair<Long,BytesRef>>(FST.INPUT_TYPE.BYTE1, outputs);
 
       // Build FST:
-      BytesRef previous = null;
+      BytesRef previousAnalyzed = null;
       BytesRef analyzed = new BytesRef();
       BytesRef surface = new BytesRef();
       IntsRef scratchInts = new IntsRef();
@@ -394,24 +445,21 @@ public class AnalyzingSuggester extends Lookup {
       int dedup = 0;
       while (reader.read(scratch)) {
         input.reset(scratch.bytes, scratch.offset, scratch.length);
-        input.setPosition(input.length()-2);
         short analyzedLength = input.readShort();
-
-        analyzed.bytes = scratch.bytes;
-        analyzed.offset = scratch.offset;
+        analyzed.grow(analyzedLength+2);
+        input.readBytes(analyzed.bytes, 0, analyzedLength);
         analyzed.length = analyzedLength;
-        
-        input.setPosition(analyzedLength + 2); // analyzed sequence + separator
+
         long cost = input.readInt();
-   
+
         surface.bytes = scratch.bytes;
         surface.offset = input.getPosition();
-        surface.length = input.length() - input.getPosition() - 2;
-
-        if (previous == null) {
-          previous = new BytesRef();
-          previous.copyBytes(analyzed);
-        } else if (analyzed.equals(previous)) {
+        surface.length = scratch.length - surface.offset;
+        
+        if (previousAnalyzed == null) {
+          previousAnalyzed = new BytesRef();
+          previousAnalyzed.copyBytes(analyzed);
+        } else if (analyzed.equals(previousAnalyzed)) {
           dedup++;
           if (dedup >= maxSurfaceFormsPerAnalyzedForm) {
             // More than maxSurfaceFormsPerAnalyzedForm
@@ -420,10 +468,8 @@ public class AnalyzingSuggester extends Lookup {
           }
         } else {
           dedup = 0;
-          previous.copyBytes(analyzed);
+          previousAnalyzed.copyBytes(analyzed);
         }
-
-        analyzed.grow(analyzed.length+2);
 
         // TODO: I think we can avoid the extra 2 bytes when
         // there is no dup (dedup==0), but we'd have to fix
@@ -433,8 +479,8 @@ public class AnalyzingSuggester extends Lookup {
 
         // NOTE: must be byte 0 so we sort before whatever
         // is next
-        analyzed.bytes[analyzed.length] = 0;
-        analyzed.bytes[analyzed.length+1] = (byte) dedup;
+        analyzed.bytes[analyzed.offset+analyzed.length] = 0;
+        analyzed.bytes[analyzed.offset+analyzed.length+1] = (byte) dedup;
         analyzed.length += 2;
 
         Util.toIntsRef(analyzed, scratchInts);

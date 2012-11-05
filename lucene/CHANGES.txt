@@ -122,6 +122,9 @@ Bug Fixes
 * LUCENE-4513: Fixed that deleted nested docs are scored into the
   parent doc when using ToParentBlockJoinQuery. (Martijn van Groningen)
 
+* LUCENE-4534: Fixed WFSTCompletionLookup and Analyzing/FuzzySuggester
+  to allow 0 byte values in the lookup keys.  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-4512: Additional memory savings for CompressingStoredFieldsFormat.

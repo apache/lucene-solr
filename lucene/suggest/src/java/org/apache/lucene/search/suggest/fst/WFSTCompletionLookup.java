@@ -94,8 +94,7 @@ public class WFSTCompletionLookup extends Lookup {
   @Override
   public void build(TermFreqIterator iterator) throws IOException {
     BytesRef scratch = new BytesRef();
-    TermFreqIterator iter = new WFSTTermFreqIteratorWrapper(iterator,
-        BytesRef.getUTF8SortedAsUnicodeComparator());
+    TermFreqIterator iter = new WFSTTermFreqIteratorWrapper(iterator);
     IntsRef scratchInts = new IntsRef();
     BytesRef previous = null;
     PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
@@ -247,28 +246,26 @@ public class WFSTCompletionLookup extends Lookup {
   
   private final class WFSTTermFreqIteratorWrapper extends SortedTermFreqIteratorWrapper {
 
-    WFSTTermFreqIteratorWrapper(TermFreqIterator source,
-        Comparator<BytesRef> comparator) throws IOException {
-      super(source, comparator, true);
+    WFSTTermFreqIteratorWrapper(TermFreqIterator source) throws IOException {
+      super(source);
     }
 
     @Override
     protected void encode(ByteSequencesWriter writer, ByteArrayDataOutput output, byte[] buffer, BytesRef spare, long weight) throws IOException {
-      if (spare.length + 5 >= buffer.length) {
-        buffer = ArrayUtil.grow(buffer, spare.length + 5);
+      if (spare.length + 4 >= buffer.length) {
+        buffer = ArrayUtil.grow(buffer, spare.length + 4);
       }
       output.reset(buffer);
       output.writeBytes(spare.bytes, spare.offset, spare.length);
-      output.writeByte((byte)0); // separator: not used, just for sort order
       output.writeInt(encodeWeight(weight));
       writer.write(buffer, 0, output.getPosition());
     }
     
     @Override
     protected long decode(BytesRef scratch, ByteArrayDataInput tmpInput) {
-      tmpInput.reset(scratch.bytes);
-      tmpInput.skipBytes(scratch.length - 4); // suggestion + separator
-      scratch.length -= 5; // sep + long
+      scratch.length -= 4; // int
+      // skip suggestion:
+      tmpInput.reset(scratch.bytes, scratch.offset+scratch.length, 4);
       return tmpInput.readInt();
     }
   }
