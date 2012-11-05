@@ -139,10 +139,12 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     } else {
       fname = fname.replace('\\', '/'); // normalize slashes
       if (hiddenFiles.contains(fname.toUpperCase(Locale.ROOT))) {
-        throw new SolrException(ErrorCode.FORBIDDEN, "Can not access: " + fname);
+        rsp.setException(new SolrException(ErrorCode.FORBIDDEN, "Can not access: " + fname));
+        return;
       }
       if (fname.indexOf("..") >= 0) {
-        throw new SolrException(ErrorCode.FORBIDDEN, "Invalid path: " + fname);
+        rsp.setException(new SolrException(ErrorCode.FORBIDDEN, "Invalid path: " + fname));
+        return;
       }
       if (fname.startsWith("/")) { // Only files relative to conf are valid
         fname = fname.substring(1);
@@ -218,10 +220,12 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     else {
       fname = fname.replace( '\\', '/' ); // normalize slashes
       if( hiddenFiles.contains( fname.toUpperCase(Locale.ROOT) ) ) {
-        throw new SolrException( ErrorCode.FORBIDDEN, "Can not access: "+fname );
+        rsp.setException(new SolrException( ErrorCode.FORBIDDEN, "Can not access: "+fname ));
+        return;
       }
       if( fname.indexOf( ".." ) >= 0 ) {
-        throw new SolrException( ErrorCode.FORBIDDEN, "Invalid path: "+fname );  
+        rsp.setException(new SolrException( ErrorCode.FORBIDDEN, "Invalid path: "+fname ));
+        return;
       }
       adminFile = new File( configdir, fname );
     }
