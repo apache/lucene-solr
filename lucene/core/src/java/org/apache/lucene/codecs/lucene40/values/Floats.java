@@ -125,7 +125,7 @@ public class Floats {
     }
     
     @Override
-    public Source load() throws IOException {
+    protected Source loadSource() throws IOException {
       final IndexInput indexInput = cloneData();
       try {
         return arrayTemplate.newFromInput(indexInput, maxDoc);

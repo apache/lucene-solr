@@ -280,7 +280,7 @@ class FixedStraightBytesImpl {
     }
 
     @Override
-    public Source load() throws IOException {
+    protected Source loadSource() throws IOException {
       return size == 1 ? new SingleByteSource(cloneData(), maxDoc) : 
         new FixedStraightSource(cloneData(), size, maxDoc, type);
     }
@@ -291,7 +291,7 @@ class FixedStraightBytesImpl {
     }
    
     @Override
-    public Source getDirectSource() throws IOException {
+    protected Source loadDirectSource() throws IOException {
       return new DirectFixedStraightSource(cloneData(), size, getType());
     }
     

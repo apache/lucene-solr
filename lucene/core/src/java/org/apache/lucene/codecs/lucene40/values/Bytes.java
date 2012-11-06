@@ -308,7 +308,7 @@ public final class Bytes {
 
   /**
    * Opens all necessary files, but does not read any data in until you call
-   * {@link #load}.
+   * {@link #loadSource}.
    */
   static abstract class BytesReaderBase extends DocValues {
     protected final IndexInput idxIn;

@@ -99,12 +99,12 @@ class VarDerefBytesImpl {
     }
 
     @Override
-    public Source load() throws IOException {
+    protected Source loadSource() throws IOException {
       return new VarDerefSource(cloneData(), cloneIndex(), totalBytes);
     }
    
     @Override
-    public Source getDirectSource()
+    protected Source loadDirectSource()
         throws IOException {
       return new DirectVarDerefSource(cloneData(), cloneIndex(), getType());
     }

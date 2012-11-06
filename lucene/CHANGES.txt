@@ -161,6 +161,10 @@ Optimizations
   posting lists. All index data is represented as consecutive byte/int arrays to 
   reduce GC cost and memory overhead. (Simon Willnauer) 
 
+* LUCENE-4538: DocValues now caches direct sources in a ThreadLocal exposed via SourceCache. 
+  Users of this API can now simply obtain an instance via DocValues#getDirectSource per thread.
+  (Simon Willnauer)
+
 Build
 
 * Upgrade randomized testing to version 2.0.4: avoid hangs on shutdown
