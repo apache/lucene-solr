@@ -537,6 +537,15 @@
     <echo message="Checking for malformed docs..."/>
     <!-- TODO: add missing package.htmls and bump this to level=package -->
     <check-missing-javadocs dir="${javadoc.dir}" level="none"/>
+    <!-- prevent the modules without problems from getting worse -->
+    <check-missing-javadocs dir="${javadoc.dir}/solr-analysis-extras" level="package"/>
+    <check-missing-javadocs dir="${javadoc.dir}/solr-cell" level="package"/>
+    <check-missing-javadocs dir="${javadoc.dir}/solr-clustering" level="package"/>
+    <!-- solr-core: problems: -->
+    <check-missing-javadocs dir="${javadoc.dir}/solr-dataimporthandler" level="package"/>
+    <check-missing-javadocs dir="${javadoc.dir}/solr-dataimporthandler-extras" level="package"/>
+    <check-missing-javadocs dir="${javadoc.dir}/solr-solrj" level="package"/>
+    <check-missing-javadocs dir="${javadoc.dir}/solr-test-framework" level="package"/>
   </target>
  
   <target name="-ecj-javadoc-lint" depends="documentation,compile-solr-test-framework,-ecj-resolve">
