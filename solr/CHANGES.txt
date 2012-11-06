@@ -144,7 +144,11 @@ Other Changes
   (Markus Jelsma via hossman)
 
 * SOLR-3932: SolrCmdDistributorTest either takes 3 seconds or 3 minutes.
-  (yonik, Mark Miller)  
+  (yonik, Mark Miller) 
+
+  
+* SOLR-3856: New tests for SqlEntityProcessor/CachedSqlEntityProcessor 
+  (James Dyer) 
 
 ==================  4.0.0 ==================
 

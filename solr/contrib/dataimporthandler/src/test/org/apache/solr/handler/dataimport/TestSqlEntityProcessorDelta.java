@@ -1,3 +1,9 @@
+package org.apache.solr.handler.dataimport;
+
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.junit.Before;
+import org.junit.Test;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,330 +20,133 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.dataimport;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
- * <p>
- * Test for SqlEntityProcessor which checks variations in primary key names and deleted ids
- * </p>
- * 
- *
- *
- * @since solr 1.3
+ * Test with various combinations of parameters, child entites, transformers.
  */
-@Ignore("FIXME: I fail so often it makes me ill!")
-public class TestSqlEntityProcessorDelta extends AbstractDataImportHandlerTestCase {
-  private static final String FULLIMPORT_QUERY = "select * from x";
-
-  private static final String DELTA_QUERY = "select id from x where last_modified > NOW";
-
-  private static final String DELETED_PK_QUERY = "select id from x where last_modified > NOW AND deleted='true'";
-
-  private static final String dataConfig_delta =
-    "<dataConfig>" +
-    "  <dataSource  type=\"MockDataSource\"/>\n" +
-    "  <document>\n" +
-    "    <entity name=\"x\" transformer=\"TemplateTransformer\"" +
-    "            query=\"" + FULLIMPORT_QUERY + "\"" +
-    "            deletedPkQuery=\"" + DELETED_PK_QUERY + "\"" +
-    "            deltaImportQuery=\"select * from x where id='${dih.delta.id}'\"" +
-    "            deltaQuery=\"" + DELTA_QUERY + "\">\n" +
-    "      <field column=\"id\" name=\"id\"/>\n" +
-    "      <entity name=\"y\" query=\"select * from y where y.A='${x.id}'\">\n" +
-    "        <field column=\"desc\" />\n" +
-    "      </entity>\n" +
-    "    </entity>\n" +
-    "  </document>\n" +
-    "</dataConfig>\n";
-
-  //TODO: fix this test to not require FSDirectory.
-  static String savedFactory;
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    savedFactory = System.getProperty("solr.DirectoryFactory");
-    System.setProperty("solr.directoryFactory", "solr.MockFSDirectoryFactory");
-    initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
+public class TestSqlEntityProcessorDelta extends AbstractDIHJdbcTestCase {
+  private boolean delta = false;
+  private boolean useParentDeltaQueryParam = false;
+  private IntChanges personChanges = null;
+  private String[] countryChanges = null;
+  
+  @Before
+  public void setupDeltaTest() {
+    delta = false;
+    personChanges = null;
+    countryChanges = null;
+  }
+  @Test
+  public void testSingleEntity() throws Exception {
+    singleEntity(1);
+    changeStuff();
+    int c = calculateDatabaseCalls();
+    singleEntity(c);
+    validateChanges();
+  }
+  @Test
+  public void testWithSimpleTransformer() throws Exception {
+    simpleTransform(1);  
+    changeStuff();
+    simpleTransform(calculateDatabaseCalls());  
+    validateChanges(); 
+  }
+  @Test
+  public void testWithComplexTransformer() throws Exception {
+    complexTransform(1, 0);
+    changeStuff();
+    complexTransform(calculateDatabaseCalls(), personChanges.deletedKeys.length);
+    validateChanges();  
+  }
+  @Test
+  public void testChildEntities() throws Exception {
+    useParentDeltaQueryParam = random().nextBoolean();
+    withChildEntities(false, true);
+    changeStuff();
+    withChildEntities(false, false);
+    validateChanges();
   }
   
-  @AfterClass
-  public static void afterClass() {
-    if (savedFactory == null) {
-      System.clearProperty("solr.directoryFactory");
+  
+  private int calculateDatabaseCalls() {
+    //The main query generates 1
+    //Deletes generate 1
+    //Each add/mod generate 1
+    int c = 1;
+    if (countryChanges != null) {
+      c += countryChanges.length + 1;
+    }
+    if (personChanges != null) {
+      c += personChanges.addedKeys.length + personChanges.changedKeys.length + 1;
+    }
+    return c;    
+  }
+  private void validateChanges() throws Exception
+  {
+    if(personChanges!=null) {
+      for(int id : personChanges.addedKeys) {
+        assertQ(req("id:" + id), "//*[@numFound='1']");
+      }
+      for(int id : personChanges.deletedKeys) {
+        assertQ(req("id:" + id), "//*[@numFound='0']");
+      }
+      for(int id : personChanges.changedKeys) {
+        assertQ(req("id:" + id), "//*[@numFound='1']", "substring(//doc/arr[@name='NAME_mult_s']/str[1], 1, 8)='MODIFIED'");
+      }
+    }
+    if(countryChanges!=null) {      
+      for(String code : countryChanges) {
+        assertQ(req("COUNTRY_CODE_s:" + code), "//*[@numFound='" + numberPeopleByCountryCode(code) + "']", "substring(//doc/str[@name='COUNTRY_NAME_s'], 1, 8)='MODIFIED'");
+      }
+    }
+  }
+  private void changeStuff() throws Exception {
+    if(countryEntity)
+    {
+      int n = random().nextInt(2);
+      switch(n) {
+        case 0:
+          personChanges = modifySomePeople();
+          break;
+        case 1:
+          countryChanges = modifySomeCountries();
+          break;
+        case 2:
+          personChanges = modifySomePeople();
+          countryChanges = modifySomeCountries();
+          break;
+      }
     } else {
-      System.setProperty("solr.directoryFactory", savedFactory);
+      personChanges = modifySomePeople();
     }
+    delta = true;
+  }    
+  protected LocalSolrQueryRequest generateRequest() {
+    return lrf.makeRequest("command", (delta ? "delta-import" : "full-import"), "dataConfig", generateConfig(), 
+        "clean", (delta ? "false" : "true"), "commit", "true", "synchronous", "true", "indent", "true");
   }
-
-  @Before @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    clearIndex();
-    assertU(commit());
-  }
-
-  @SuppressWarnings("unchecked")
-  private void add1document() throws Exception {
-    List parentRow = new ArrayList();
-    parentRow.add(createMap("id", "1"));
-    MockDataSource.setIterator(FULLIMPORT_QUERY, parentRow.iterator());
-
-    List childRow = new ArrayList();
-    childRow.add(createMap("desc", "hello"));
-    MockDataSource.setIterator("select * from y where y.A='1'", childRow
-        .iterator());
-
-    runFullImport(dataConfig_delta);
-
-    assertQ(req("*:* OR add1document"), "//*[@numFound='1']");
-    assertQ(req("id:1"), "//*[@numFound='1']");
-    assertQ(req("desc:hello"), "//*[@numFound='1']");
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testCompositePk_FullImport() throws Exception {
-    add1document();
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testNonWritablePersistFile() throws Exception {
-    // See SOLR-2551
-    String configDir = h.getCore().getResourceLoader().getConfigDir();
-    String filePath = configDir;
-    if (configDir != null && !configDir.endsWith(File.separator))
-      filePath += File.separator;
-    filePath += "dataimport.properties";
-    File f = new File(filePath);
-
-    try {
-      // execute the test only if we are able to set file to read only mode
-      assumeTrue("No dataimport.properties file", f.exists() || f.createNewFile());
-      assumeTrue("dataimport.proprties can't be set read only", f.setReadOnly());
-      assumeFalse("dataimport.proprties is still writable even though " + 
-                  "marked readonly - test running as superuser?", f.canWrite());
-
-      ignoreException("Properties is not writable");
-
-      List parentRow = new ArrayList();
-      parentRow.add(createMap("id", "1"));
-      MockDataSource.setIterator(FULLIMPORT_QUERY, parentRow.iterator());
-      
-      List childRow = new ArrayList();
-      childRow.add(createMap("desc", "hello"));
-      MockDataSource.setIterator("select * from y where y.A='1'",
-                                 childRow.iterator());
-      
-      runFullImport(dataConfig_delta);
-      assertQ(req("id:1"), "//*[@numFound='0']");
-    } finally {
-      f.delete();
-    }
-  }
-
-  // WORKS
-
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testCompositePk_DeltaImport_delete() throws Exception {
-    add1document();
-    List deletedRow = new ArrayList();
-    deletedRow.add(createMap("id", "1"));
-    MockDataSource.setIterator(DELETED_PK_QUERY, deletedRow.iterator());
-
-    MockDataSource.setIterator(DELTA_QUERY, Collections
-        .EMPTY_LIST.iterator());
-
-    List childRow = new ArrayList();
-    childRow.add(createMap("desc", "hello"));
-    MockDataSource.setIterator("select * from y where y.A='1'", childRow
-        .iterator());
-
-    runDeltaImport(dataConfig_delta);
-    assertQ(req("*:* OR testCompositePk_DeltaImport_delete"), "//*[@numFound='0']");
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testCompositePk_DeltaImport_empty() throws Exception {
-    List deltaRow = new ArrayList();
-    deltaRow.add(createMap("id", "1"));
-    MockDataSource.setIterator(DELTA_QUERY, deltaRow.iterator());
-
-    MockDataSource.setIterator(DELETED_PK_QUERY, Collections
-        .EMPTY_LIST.iterator());
-
-    List parentRow = new ArrayList();
-    parentRow.add(createMap("id", "1"));
-    MockDataSource.setIterator("select * from x where id='1'", parentRow
-        .iterator());
-
-    List childRow = new ArrayList();
-    childRow.add(createMap("desc", "hello"));
-    MockDataSource.setIterator("select * from y where y.A='1'",
-        childRow.iterator());
-
-    runDeltaImport(dataConfig_delta);
-
-    assertQ(req("*:* OR testCompositePk_DeltaImport_empty"), "//*[@numFound='1']");
-    assertQ(req("id:1"), "//*[@numFound='1']");
-    assertQ(req("desc:hello"), "//*[@numFound='1']");
-  }
-
-  // WORKS
   
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testCompositePk_DeltaImport_replace_delete() throws Exception {
-    add1document();
-    MockDataSource.clearCache();
-
-    List deltaRow = new ArrayList();
-    deltaRow.add(createMap("id", "1"));
-    MockDataSource.setIterator(DELTA_QUERY,
-        deltaRow.iterator());
-
-    List deletedRow = new ArrayList();
-    deletedRow.add(createMap("id", "1"));
-    MockDataSource.setIterator(DELETED_PK_QUERY,
-        deletedRow.iterator());
-
-    List parentRow = new ArrayList();
-    parentRow.add(createMap("id", "1"));
-    MockDataSource.setIterator("select * from x where id='1'", parentRow
-        .iterator());
-
-    List childRow = new ArrayList();
-    childRow.add(createMap("desc", "goodbye"));
-    MockDataSource.setIterator("select * from y where y.A='1'", childRow
-        .iterator());
-
-    runDeltaImport(dataConfig_delta);
-
-    assertQ(req("*:* OR testCompositePk_DeltaImport_replace_delete"), "//*[@numFound='0']");
+  protected String deltaQueriesPersonTable() {
+    return 
+        "deletedPkQuery=''SELECT ID FROM PEOPLE WHERE DELETED='Y' AND last_modified &gt;='${dih.last_index_time}' '' " +
+        "deltaImportQuery=''SELECT ID, NAME, COUNTRY_CODE FROM PEOPLE where ID=${dih.delta.ID} '' " +
+        "deltaQuery=''" +
+        "SELECT ID FROM PEOPLE WHERE DELETED!='Y' AND last_modified &gt;='${dih.last_index_time}' " +
+        (useParentDeltaQueryParam ? "" : 
+        "UNION DISTINCT " +
+        "SELECT ID FROM PEOPLE WHERE DELETED!='Y' AND COUNTRY_CODE IN (SELECT CODE FROM COUNTRIES WHERE last_modified &gt;='${dih.last_index_time}') "
+        ) + "'' "
+    ;
   }
-
-
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testCompositePk_DeltaImport_replace_nodelete() throws Exception {
-    add1document();
-    MockDataSource.clearCache();
-
-    List deltaRow = new ArrayList();
-    deltaRow.add(createMap("id", "1"));
-    MockDataSource.setIterator(DELTA_QUERY,
-        deltaRow.iterator());
-
-    MockDataSource.setIterator(DELETED_PK_QUERY, Collections
-        .EMPTY_LIST.iterator());
-
-    List parentRow = new ArrayList();
-    parentRow.add(createMap("id", "1"));
-    MockDataSource.setIterator("select * from x where id='1'", parentRow
-        .iterator());
-
-    List childRow = new ArrayList();
-    childRow.add(createMap("desc", "goodbye"));
-    MockDataSource.setIterator("select * from y where y.A='1'", childRow
-        .iterator());
-
-    runDeltaImport(dataConfig_delta);
-
-    assertQ(req("*:* OR XtestCompositePk_DeltaImport_replace_nodelete"), "//*[@numFound='1']");
-    assertQ(req("id:1"), "//*[@numFound='1']");
-    assertQ(req("desc:hello OR XtestCompositePk_DeltaImport_replace_nodelete"), "//*[@numFound='0']");
-    assertQ(req("desc:goodbye"), "//*[@numFound='1']");
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testCompositePk_DeltaImport_add() throws Exception {
-    add1document();
-    MockDataSource.clearCache();
-
-    List deltaRow = new ArrayList();
-    deltaRow.add(createMap("id", "2"));
-    MockDataSource.setIterator(DELTA_QUERY,
-        deltaRow.iterator());
-
-    List parentRow = new ArrayList();
-    parentRow.add(createMap("id", "2"));
-    MockDataSource.setIterator("select * from x where id='2'", parentRow
-        .iterator());
-
-    List childRow = new ArrayList();
-    childRow.add(createMap("desc", "goodbye"));
-    MockDataSource.setIterator("select * from y where y.A='2'", childRow
-        .iterator());
-
-    runDeltaImport(dataConfig_delta);
-
-    assertQ(req("*:* OR testCompositePk_DeltaImport_add"), "//*[@numFound='2']");
-    assertQ(req("id:1"), "//*[@numFound='1']");
-    assertQ(req("id:2"), "//*[@numFound='1']");
-    assertQ(req("desc:hello"), "//*[@numFound='1']");
-    assertQ(req("desc:goodbye"), "//*[@numFound='1']");
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testCompositePk_DeltaImport_nodelta() throws Exception {
-    add1document();
-    MockDataSource.clearCache();
-
-    MockDataSource.setIterator(DELTA_QUERY,
-        Collections.EMPTY_LIST.iterator());
-
-    runDeltaImport(dataConfig_delta);
-
-    assertQ(req("*:* OR testCompositePk_DeltaImport_nodelta"), "//*[@numFound='1']");
-    assertQ(req("id:1 OR testCompositePk_DeltaImport_nodelta"), "//*[@numFound='1']");
-    assertQ(req("desc:hello OR testCompositePk_DeltaImport_nodelta"), "//*[@numFound='1']");
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testCompositePk_DeltaImport_add_delete() throws Exception {
-    add1document();
-    MockDataSource.clearCache();
-
-    List deltaRow = new ArrayList();
-    deltaRow.add(createMap("id", "2"));
-    MockDataSource.setIterator(DELTA_QUERY,
-        deltaRow.iterator());
-
-    List deletedRow = new ArrayList();
-    deletedRow.add(createMap("id", "1"));
-    MockDataSource.setIterator(DELETED_PK_QUERY,
-        deletedRow.iterator());
-
-    List parentRow = new ArrayList();
-    parentRow.add(createMap("id", "2"));
-    MockDataSource.setIterator("select * from x where id='2'", parentRow
-        .iterator());
-
-    List childRow = new ArrayList();
-    childRow.add(createMap("desc", "goodbye"));
-    MockDataSource.setIterator("select * from y where y.A='2'", childRow
-        .iterator());
-
-    runDeltaImport(dataConfig_delta);
-
-    assertQ(req("*:* OR XtestCompositePk_DeltaImport_add_delete"), "//*[@numFound='1']");
-    assertQ(req("id:2"), "//*[@numFound='1']");
-    assertQ(req("desc:hello"), "//*[@numFound='0']");
-    assertQ(req("desc:goodbye"), "//*[@numFound='1']");
+  @Override
+  protected String deltaQueriesCountryTable() {
+    if(useParentDeltaQueryParam) {
+      return 
+          "deltaQuery=''SELECT CODE FROM COUNTRIES WHERE DELETED != 'Y' AND last_modified &gt;='${dih.last_index_time}' ''  " +
+          "parentDeltaQuery=''SELECT ID FROM PEOPLE WHERE DELETED != 'Y' AND COUNTRY_CODE='${Countries.CODE}' '' "
+      ;
+          
+    }
+    return "";
   }
 }
