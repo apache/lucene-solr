@@ -135,13 +135,13 @@ class FixedSortedBytesImpl {
     }
 
     @Override
-    public Source load() throws IOException {
+    protected Source loadSource() throws IOException {
       return new FixedSortedSource(cloneData(), cloneIndex(), size, valueCount,
           comparator);
     }
 
     @Override
-    public Source getDirectSource() throws IOException {
+    protected Source loadDirectSource() throws IOException {
       return new DirectFixedSortedSource(cloneData(), cloneIndex(), size,
           valueCount, comparator, type);
     }

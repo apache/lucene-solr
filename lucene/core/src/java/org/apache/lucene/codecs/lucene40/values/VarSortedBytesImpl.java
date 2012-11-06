@@ -161,13 +161,13 @@ final class VarSortedBytesImpl {
     }
 
     @Override
-    public org.apache.lucene.index.DocValues.Source load()
+    public org.apache.lucene.index.DocValues.Source loadSource()
         throws IOException {
       return new VarSortedSource(cloneData(), cloneIndex(), comparator);
     }
 
     @Override
-    public Source getDirectSource() throws IOException {
+    protected Source loadDirectSource() throws IOException {
       return new DirectSortedSource(cloneData(), cloneIndex(), comparator, getType());
     }
     

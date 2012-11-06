@@ -148,7 +148,7 @@ class PackedIntValues {
 
   /**
    * Opens all necessary files, but does not read any data in until you call
-   * {@link #load}.
+   * {@link #loadSource}.
    */
   static class PackedIntsReader extends DocValues {
     private final IndexInput datIn;
@@ -181,7 +181,7 @@ class PackedIntValues {
      * already previously loaded but then discarded the Source.
      */
     @Override
-    public Source load() throws IOException {
+    protected Source loadSource() throws IOException {
       boolean success = false;
       final Source source;
       IndexInput input = null;
@@ -216,7 +216,7 @@ class PackedIntValues {
 
 
     @Override
-    public Source getDirectSource() throws IOException {
+    protected Source loadDirectSource() throws IOException {
       return values != null ? new FixedStraightBytesImpl.DirectFixedStraightSource(datIn.clone(), 8, Type.FIXED_INTS_64) : new PackedIntsSource(datIn.clone(), true);
     }
   }

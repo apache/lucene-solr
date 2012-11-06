@@ -48,7 +48,9 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.SourceCache;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.DocValues.SourceCache.DirectSourceCache;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -579,15 +581,26 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   private DocValues getDocValues(IndexReader reader, String field) throws IOException {
-    return MultiDocValues.getDocValues(reader, field);
-  }
+    final DocValues docValues = MultiDocValues.getDocValues(reader, field);
+    if (docValues == null) {
+      return docValues;
+    }
+    if (rarely()) {
+      docValues.setCache(new NotCachingSourceCache());
+    } else {
+      if (!(docValues.getCache() instanceof DirectSourceCache))  {
+        docValues.setCache(new DirectSourceCache());
+      }
+    }
+    return docValues;
+    }
 
   @SuppressWarnings("fallthrough")
   private Source getSource(DocValues values) throws IOException {
     // getSource uses cache internally
     switch(random().nextInt(5)) {
     case 3:
-      return values.load();
+      return values.loadSource();
     case 2:
       return values.getDirectSource();
     case 1:
@@ -767,7 +780,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
     w.close();
-    assertEquals(17, getOnlySegmentReader(r).docValues("field").load().getInt(0));
+    assertEquals(17, getOnlySegmentReader(r).docValues("field").loadSource().getInt(0));
     r.close();
     d.close();
   }
@@ -794,7 +807,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
     w.close();
-    assertEquals(17, getOnlySegmentReader(r).docValues("field").load().getInt(0));
+    assertEquals(17, getOnlySegmentReader(r).docValues("field").loadSource().getInt(0));
     r.close();
     d.close();
   }
@@ -1075,4 +1088,24 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     writer.close();
     dir.close();
   }
+  
+  /**
+  *
+  */
+ public static class NotCachingSourceCache extends SourceCache {
+   
+   @Override
+   public Source load(DocValues values) throws IOException {
+     return values.loadSource();
+   }
+   
+   @Override
+   public Source loadDirect(DocValues values) throws IOException {
+     return values.loadDirectSource();
+   }
+   
+   @Override
+   public void invalidate(DocValues values) {}
+ }
+ 
 }

@@ -423,8 +423,6 @@ public class TestDocValues extends LuceneTestCase {
   private Source getSource(DocValues values) throws IOException {
     // getSource uses cache internally
     switch(random().nextInt(5)) {
-    case 3:
-      return values.load();
     case 2:
       return values.getDirectSource();
     case 1:

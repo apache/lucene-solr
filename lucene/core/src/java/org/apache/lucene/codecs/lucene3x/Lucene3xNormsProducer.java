@@ -202,12 +202,12 @@ class Lucene3xNormsProducer extends PerDocProducer {
     }
 
     @Override
-    public Source load() throws IOException {
+    protected Source loadSource() throws IOException {
       return new NormSource(bytes());
     }
 
     @Override
-    public Source getDirectSource() throws IOException {
+    protected Source loadDirectSource() throws IOException {
       return getSource();
     }
 

@@ -185,7 +185,7 @@ class MultiDocValues extends DocValues {
   }
 
   @Override
-  public Source load() throws IOException {
+  protected Source loadSource() throws IOException {
     return new MultiSource(slices, starts, false, type);
   }
 
@@ -199,7 +199,7 @@ class MultiDocValues extends DocValues {
     }
 
     @Override
-    public Source load() throws IOException {
+    protected Source loadSource() throws IOException {
       return emptySource;
     }
 
@@ -209,7 +209,7 @@ class MultiDocValues extends DocValues {
     }
 
     @Override
-    public Source getDirectSource() throws IOException {
+    protected Source loadDirectSource() throws IOException {
       return emptySource;
     }
   }
@@ -226,7 +226,7 @@ class MultiDocValues extends DocValues {
     }
 
     @Override
-    public Source load() throws IOException {
+    protected Source loadSource() throws IOException {
       return emptyFixedSource;
     }
 
@@ -241,7 +241,7 @@ class MultiDocValues extends DocValues {
     }
 
     @Override
-    public Source getDirectSource() throws IOException {
+    protected Source loadDirectSource() throws IOException {
       return emptyFixedSource;
     }
   }
@@ -594,7 +594,7 @@ class MultiDocValues extends DocValues {
   }
 
   @Override
-  public Source getDirectSource() throws IOException {
+  protected Source loadDirectSource() throws IOException {
     return new MultiSource(slices, starts, true, type);
   }
   
