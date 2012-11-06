@@ -19,72 +19,69 @@ package org.apache.solr.handler.dataimport;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import junit.framework.Assert;
 
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 /**
  * This sets up an in-memory Derby Sql database with a little sample data.
- * The schema here is poorly-designed to illustrate DIH's ability to 
- * overcome these kinds of challenges.
  */
 public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerTestCase {
+  //Start with "true" so the first test run will populate the data.
+  protected boolean underlyingDataModified = true;
+  
+  protected boolean useSimpleCaches;  
+  protected boolean countryEntity;
+  protected boolean countryCached;
+  protected boolean sportsEntity;
+  protected boolean sportsCached;
+  protected String rootTransformerName;
+  protected boolean countryTransformer;
+  protected boolean sportsTransformer;
+  
+  private static final Pattern totalRequestsPattern = Pattern
+      .compile(".str name..Total Requests made to DataSource..(\\d+)..str.");
+  
   @BeforeClass
   public static void beforeClassDihJdbcTest() throws Exception {
     try {
       Class.forName("org.hsqldb.jdbcDriver").newInstance();
     } catch (Exception e) {
       throw e;
-    }
+    }  
+    initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
+  }   
+  @Before
+  public void beforeDihJdbcTest() throws Exception {
+    useSimpleCaches = false;  
+    countryEntity = false;
+    countryCached = false;
+    sportsEntity = false;
+    sportsCached = false;
+    rootTransformerName = null;
+    countryTransformer = false;
+    sportsTransformer = false;
     
-    Connection conn = null;
-    Statement s = null;
-    PreparedStatement ps = null;    
-    try {    
-      conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");    
-      s = conn.createStatement();
-      s.executeUpdate("create table countries(code char(2) not null primary key, country_name varchar(50))");
-      s.executeUpdate("create table people(id int not null primary key, name varchar(50), country_codes varchar(100))");
-      s.executeUpdate("create table people_sports(id int not null primary key, person_id int, sport_name varchar(50))");
-      
-      ps = conn.prepareStatement("insert into countries values (?,?)");
-      for(String[] country : countries) {
-        ps.setString(1, country[0]);
-        ps.setString(2, country[1]);
-        Assert.assertEquals(1, ps.executeUpdate());
-      }
-      ps.close();
-            
-      ps = conn.prepareStatement("insert into people values (?,?,?)");
-      for(Object[] person : people) {
-        ps.setInt(1, (Integer) person[0]);
-        ps.setString(2, (String) person[1]);
-        ps.setString(3, (String) person[2]);
-        Assert.assertEquals(1, ps.executeUpdate());
-      }
-      ps.close(); 
-      
-      ps = conn.prepareStatement("insert into people_sports values (?,?,?)");
-      for(Object[] sport : people_sports) {
-        ps.setInt(1, (Integer) sport[0]);
-        ps.setInt(2, (Integer) sport[1]);
-        ps.setString(3, (String) sport[2]);
-        Assert.assertEquals(1, ps.executeUpdate());
-      }
-      ps.close();
-      conn.close();    
-    } catch(Exception e) {
-      throw e;
-    } finally {
-      if(s!=null) { s.close(); }
-      if(ps!=null) { ps.close(); }
-      if(conn!=null) { conn.close(); }
+    clearIndex();
+    assertU(commit());
+    
+    if(underlyingDataModified) {
+      refreshDatabase();
     }
-  }
-  
+  }  
   @AfterClass
   public static void afterClassDihJdbcTest() throws Exception {  
     Connection conn = null;
@@ -96,10 +93,527 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
     } catch (SQLException e) {
       throw e;
     } finally {
-      if(s!=null) { s.close(); }
-      if(conn!=null) { conn.close(); }
+      try { s.close(); } catch(Exception ex) { }
+      try { conn.close(); } catch(Exception ex) { }
     }
   }
+  protected void singleEntity(int numToExpect) throws Exception {
+    h.query("/dataimport", generateRequest());
+    assertQ(req("*:*"), "//*[@numFound='" + totalPeople() + "']");    
+    Assert.assertTrue(totalDatabaseRequests() == numToExpect);
+  }
+  protected void simpleTransform(int numToExpect) throws Exception {
+    rootTransformerName = "AddAColumnTransformer";
+    h.query("/dataimport", generateRequest());
+    assertQ(req("AddAColumn_s:Added"), "//*[@numFound='" + totalPeople() + "']");
+    Assert.assertTrue(totalDatabaseRequests() == numToExpect);
+  }
+  /**
+   * A delta update will not clean up documents added by a transformer
+   * even if the parent document that the transformer used to base the new documents
+   * were deleted   
+   */
+  protected void complexTransform(int numToExpect, int numDeleted) throws Exception {
+    rootTransformerName = "TripleThreatTransformer";
+    h.query("/dataimport", generateRequest());
+    assertQ(req("q", "*:*", "rows", "" + (totalPeople() * 3), "sort", "id asc"), "//*[@numFound='" + ((totalPeople() * 3) + (numDeleted * 2)) + "']");
+    assertQ(req("id:TripleThreat-1-*"), "//*[@numFound='" + (totalPeople() + numDeleted) + "']");
+    assertQ(req("id:TripleThreat-2-*"), "//*[@numFound='" + (totalPeople() + numDeleted) + "']");
+    if(personNameExists("Michael") && countryCodeExists("NR") && countryCodeExists("RN"))
+    {
+      assertQ(
+          req("+id:TripleThreat-1-3 +NAME_mult_s:Michael +NAME_mult_s:leahciM  +COUNTRY_CODES_mult_s:NR +COUNTRY_CODES_mult_s:RN"),
+          "//*[@numFound='1']");
+    }
+    assertQ(req("AddAColumn_s:Added"), "//*[@numFound='" + (totalPeople() + numDeleted) + "']");
+    Assert.assertTrue(totalDatabaseRequests() == numToExpect);
+  }  
+  protected void withChildEntities(boolean cached, boolean checkDatabaseRequests) throws Exception {
+    rootTransformerName = random().nextBoolean() ? null : "AddAColumnTransformer";
+    int numChildren = random().nextInt(1) + 1;
+    int numDatabaseRequests = 1;
+    if(underlyingDataModified) {
+      if (countryEntity) {
+        if (cached) {
+          numDatabaseRequests++;
+        } else {
+          numDatabaseRequests += totalPeople();
+        }
+      }
+      if (sportsEntity) {
+        if (cached) {
+          numDatabaseRequests++;
+        } else {
+          numDatabaseRequests += totalPeople();
+        }
+      }
+    } else {
+      countryEntity = true;
+      sportsEntity = true;
+      if(numChildren==1) {
+        countryEntity = random().nextBoolean();
+        sportsEntity = !countryEntity;      
+      }
+      if(countryEntity) {
+        countryTransformer = random().nextBoolean();
+        if(cached) {
+          numDatabaseRequests++;
+          countryCached = true;
+        } else {
+          numDatabaseRequests += totalPeople();
+        }
+      }
+      if(sportsEntity) {
+        sportsTransformer = random().nextBoolean();
+        if(cached) {
+          numDatabaseRequests++;
+          sportsCached = true;
+        } else {
+          numDatabaseRequests += totalPeople();
+        }
+      }
+    }
+    h.query("/dataimport", generateRequest());
+    
+    assertQ(req("*:*"), "//*[@numFound='" + (totalPeople()) + "']");
+    if(!underlyingDataModified && "AddAColumnTransformer".equals(rootTransformerName)) {
+      assertQ(req("AddAColumn_s:Added"), "//*[@numFound='" + (totalPeople()) + "']");
+    }
+    if(countryEntity) {
+      if(personNameExists("Jayden"))
+      {
+        String nrName = countryNameByCode("NP");
+        if(nrName!=null && nrName.length()>0) {
+          assertQ(req("NAME_mult_s:Jayden"), 
+              "//*[@numFound='1']", "//doc/str[@name='COUNTRY_NAME_s']='" + nrName + "'");
+        }
+      }
+      String nrName = countryNameByCode("NR");
+      int num = numberPeopleByCountryCode("NR");
+      if(nrName!=null && num>0) { 
+        assertQ(req("COUNTRY_CODES_mult_s:NR"), 
+            "//*[@numFound='" + num + "']", "//doc/str[@name='COUNTRY_NAME_s']='" + nrName + "'");        
+      }
+      if(countryTransformer && !underlyingDataModified) {
+        assertQ(req("countryAdded_s:country_added"), "//*[@numFound='" + totalPeople() + "']");
+      }
+    }
+    if(sportsEntity) {
+      if(!underlyingDataModified) {
+        assertQ(req("SPORT_NAME_mult_s:Sailing"), "//*[@numFound='2']");
+      }
+      String michaelsName = personNameById(3);
+      String[] michaelsSports = sportNamesByPersonId(3);
+      if(michaelsName != null && michaelsSports.length>0) { 
+        String[] xpath = new String[michaelsSports.length + 1];
+        xpath[0] = "//*[@numFound='1']";
+        int i=1;
+        for(String ms : michaelsSports) {
+          xpath[i] = "//doc/arr[@name='SPORT_NAME_mult_s']/str[" + i + "]='" + ms + "'";
+          i++;
+        }
+        assertQ(req("NAME_mult_s:" + michaelsName.replaceAll("\\W", "\\\\$0")), xpath);
+      }
+      if (!underlyingDataModified && sportsTransformer) {
+        assertQ(req("sportsAdded_s:sport_added"), "//*[@numFound='" + (totalPeople()) + "']");
+      }
+    }    
+    if(checkDatabaseRequests) {
+      Assert.assertTrue("Expecting " + numDatabaseRequests
+          + " database calls, but DIH reported " + totalDatabaseRequests(),
+          totalDatabaseRequests() == numDatabaseRequests);
+    }
+  } 
+  protected void simpleCacheChildEntities(boolean checkDatabaseRequests) throws Exception {
+    useSimpleCaches = true;
+    countryEntity = true;
+    sportsEntity = true;
+    countryCached=true;
+    sportsCached=true;
+    int dbRequestsMoreThan = 3;
+    int dbRequestsLessThan = totalPeople() * 2 + 1;
+    h.query("/dataimport", generateRequest());    
+    assertQ(req("*:*"), "//*[@numFound='" + (totalPeople()) + "']");
+    if(!underlyingDataModified || (personNameExists("Samantha") && "Nauru".equals(countryNameByCode("NR"))))
+    {
+      assertQ(req("NAME_mult_s:Samantha"), 
+          "//*[@numFound='1']", "//doc/str[@name='COUNTRY_NAME_s']='Nauru'");
+    }
+    if(!underlyingDataModified)
+    {
+      assertQ(req("COUNTRY_CODES_mult_s:NR"), 
+          "//*[@numFound='2']", "//doc/str[@name='COUNTRY_NAME_s']='Nauru'");
+      assertQ(req("SPORT_NAME_mult_s:Sailing"), "//*[@numFound='2']");
+    }
+    String[] michaelsSports = sportNamesByPersonId(3);
+    if(!underlyingDataModified || michaelsSports.length>0) { 
+      String[] xpath = new String[michaelsSports.length + 1];
+      xpath[0] = "//*[@numFound='1']";
+      int i=1;
+      for(String ms : michaelsSports) {
+        xpath[i] = "//doc/arr[@name='SPORT_NAME_mult_s']/str[" + i + "]='" + ms + "'";
+        i++;
+      }
+      assertQ(req("NAME_mult_s:Michael"), xpath);
+    }
+    if(checkDatabaseRequests) {
+      Assert.assertTrue("Expecting more than " + dbRequestsMoreThan
+          + " database calls, but DIH reported " + totalDatabaseRequests(),
+          totalDatabaseRequests() > dbRequestsMoreThan);
+      Assert.assertTrue("Expecting fewer than " + dbRequestsLessThan
+          + " database calls, but DIH reported " + totalDatabaseRequests(),
+          totalDatabaseRequests() < dbRequestsLessThan);
+    }
+  }
+  public void refreshDatabase() throws Exception
+  {    
+    underlyingDataModified = false;
+    Connection conn = null;
+    Statement s = null;
+    PreparedStatement ps = null;
+    Timestamp theTime = new Timestamp(System.currentTimeMillis() - 10000); //10 seconds ago
+    try {    
+      conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");    
+      s = conn.createStatement();
+      try {
+        s.executeUpdate("drop table countries");
+        s.executeUpdate("drop table people");
+        s.executeUpdate("drop table people_sports"); 
+      } catch(Exception e) {
+        //ignore.  dbs complain when tables do no exist.
+      }
+      s.executeUpdate("create table countries(code varchar(3) not null primary key, country_name varchar(50), deleted char(1) default 'N', last_modified timestamp not null)");
+      s.executeUpdate("create table people(id int not null primary key, name varchar(50), country_code char(2), deleted char(1) default 'N', last_modified timestamp not null)");
+      s.executeUpdate("create table people_sports(id int not null primary key, person_id int, sport_name varchar(50), deleted char(1) default 'N', last_modified timestamp not null)");
+      
+      ps = conn.prepareStatement("insert into countries (code, country_name, last_modified) values (?,?,?)");
+      for(String[] country : countries) {
+        ps.setString(1, country[0]);
+        ps.setString(2, country[1]);
+        ps.setTimestamp(3, theTime);
+        Assert.assertEquals(1, ps.executeUpdate());
+      }
+      ps.close();
+            
+      ps = conn.prepareStatement("insert into people (id, name, country_code, last_modified) values (?,?,?,?)");
+      for(Object[] person : people) {
+        ps.setInt(1, (Integer) person[0]);
+        ps.setString(2, (String) person[1]);
+        ps.setString(3, (String) person[2]);
+        ps.setTimestamp(4, theTime);
+        Assert.assertEquals(1, ps.executeUpdate());
+      }
+      ps.close(); 
+      
+      ps = conn.prepareStatement("insert into people_sports (id, person_id, sport_name, last_modified) values (?,?,?,?)");
+      for(Object[] sport : people_sports) {
+        ps.setInt(1, (Integer) sport[0]);
+        ps.setInt(2, (Integer) sport[1]);
+        ps.setString(3, (String) sport[2]);
+        ps.setTimestamp(4, theTime);
+        Assert.assertEquals(1, ps.executeUpdate());
+      }
+      ps.close();
+      conn.commit();
+      conn.close();    
+    } catch(Exception e) {
+      throw e;
+    } finally {
+      try { ps.close(); } catch(Exception ex) { }
+      try { s.close(); } catch(Exception ex) { }
+      try { conn.close(); } catch(Exception ex) { }
+    }
+  }
+  protected abstract String deltaQueriesCountryTable() ;
+  protected abstract String deltaQueriesPersonTable() ;
+  
+  
+  private int getIntFromQuery(String query) throws Exception {
+    Connection conn = null;
+    Statement s = null;
+    ResultSet rs = null;
+    try {      
+      conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");    
+      s = conn.createStatement();
+      rs = s.executeQuery(query);
+      if(rs.next()) {
+        return rs.getInt(1);
+      }
+      return 0;
+    } catch (SQLException e) {
+      throw e;
+    } finally {
+      try { rs.close(); } catch(Exception ex) { }
+      try { s.close(); } catch(Exception ex) { }
+      try { conn.close(); } catch(Exception ex) { }
+    }
+  }
+  private String[] getStringsFromQuery(String query) throws Exception {
+    Connection conn = null;
+    Statement s = null;
+    ResultSet rs = null;
+    try {      
+      conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");    
+      s = conn.createStatement();
+      rs = s.executeQuery(query);
+      List<String> results = new ArrayList<String>();
+      while(rs.next()) {
+        results.add(rs.getString(1));
+      }
+      return results.toArray(new String[results.size()]);
+    } catch (SQLException e) {
+      throw e;
+    } finally {
+      try { rs.close(); } catch(Exception ex) { }
+      try { s.close(); } catch(Exception ex) { }
+      try { conn.close(); } catch(Exception ex) { }
+    }
+  }
+  
+  public int totalCountries() throws Exception {
+    return getIntFromQuery("SELECT COUNT(1) FROM COUNTRIES WHERE DELETED != 'Y' ");
+  }  
+  public int totalPeople() throws Exception {
+    return getIntFromQuery("SELECT COUNT(1) FROM PEOPLE WHERE DELETED != 'Y' ");
+  }
+  public boolean countryCodeExists(String cc) throws Exception {
+    return getIntFromQuery("SELECT COUNT(1) country_name FROM COUNTRIES WHERE DELETED != 'Y' AND CODE='" + cc + "'")>0;
+  }
+  public String countryNameByCode(String cc) throws Exception {
+    String[] s = getStringsFromQuery("SELECT country_name FROM COUNTRIES WHERE DELETED != 'Y' AND CODE='" + cc + "'");
+    return s.length==0 ? null : s[0];
+  }  
+  public int numberPeopleByCountryCode(String cc) throws Exception {
+    return getIntFromQuery(
+        "Select count(1) " +
+        "from people p " +
+        "inner join countries c on p.country_code=c.code " +
+        "where p.deleted!='Y' and c.deleted!='Y' and c.code='" + cc + "'");
+  }
+  public String[] sportNamesByPersonId(int personId) throws Exception {
+    return getStringsFromQuery(
+        "SELECT ps.SPORT_NAME " +
+        "FROM people_sports ps " +
+        "INNER JOIN PEOPLE p ON p.id = ps.person_Id " +
+        "WHERE ps.DELETED != 'Y' AND p.DELETED != 'Y' " +
+        "AND ps.person_id=" + personId + " " +
+        "ORDER BY ps.id"
+     );
+  }
+  public boolean personNameExists(String pn) throws Exception {
+    return getIntFromQuery("SELECT COUNT(1) FROM PEOPLE WHERE DELETED != 'Y' AND NAME='" + pn + "'")>0;
+  }
+  public String personNameById(int id) throws Exception {
+    String[] nameArr= getStringsFromQuery("SELECT NAME FROM PEOPLE WHERE ID=" + id);
+    if(nameArr.length==0) {
+      return null;
+    }
+    return nameArr[0];
+  }
+    
+  public int totalDatabaseRequests(String dihHandlerName) throws Exception {
+    LocalSolrQueryRequest request = lrf.makeRequest("indent", "true");
+    String response = h.query(dihHandlerName, request);
+    Matcher m = totalRequestsPattern.matcher(response);
+    Assert.assertTrue("The handler " + dihHandlerName
+        + " is not reporting any database requests. ", m.find()
+        && m.groupCount() == 1);
+    return Integer.parseInt(m.group(1));
+  }
+  
+  public int totalDatabaseRequests() throws Exception {
+    return totalDatabaseRequests("/dataimport");
+  }
+  public IntChanges modifySomePeople() throws Exception {
+    underlyingDataModified = true;
+    int numberToChange = random().nextInt(people.length + 1);
+    Set<Integer> changeSet = new HashSet<Integer>(); 
+    Set<Integer> deleteSet = new HashSet<Integer>();
+    Set<Integer> addSet = new HashSet<Integer>();
+    Connection conn = null;
+    PreparedStatement change = null; 
+    PreparedStatement delete = null;
+    PreparedStatement add = null;
+    //One second in the future ensures a change time after the last import (DIH uses second precision only)
+    Timestamp theTime = new Timestamp(System.currentTimeMillis() + 1000);
+    try {    
+      conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");    
+      change = conn.prepareStatement("update people set name=?, last_modified=? where id=?");  
+      delete  = conn.prepareStatement("update people set deleted='Y', last_modified=? where id=?");
+      add = conn.prepareStatement("insert into people (id,name,country_code,last_modified) values (?,?,'NEW',?)");
+      for(int i=0 ; i<numberToChange ; i++) {
+        int tryIndex = random().nextInt(people.length);
+        Integer id = (Integer) people[tryIndex][0];
+        if(!changeSet.contains(id) && !deleteSet.contains(id)) {
+            boolean changeDontDelete = random().nextBoolean();
+            if(changeDontDelete) {
+              changeSet.add(id);
+              change.setString(1, "MODIFIED " + people[tryIndex][1]);
+              change.setTimestamp(2, theTime);
+              change.setInt(3, id);
+              Assert.assertEquals(1, change.executeUpdate());
+            } else {
+              deleteSet.add(id);
+              delete.setTimestamp(1, theTime);
+              delete.setInt(2, id);
+              Assert.assertEquals(1, delete.executeUpdate());
+          }
+        }
+      }
+      int numberToAdd = random().nextInt(3);
+      for(int i=0 ; i<numberToAdd ; i++) {
+        int tryIndex = random().nextInt(people.length);
+        Integer id = (Integer) people[tryIndex][0];
+        Integer newId = id+1000;
+        String newDesc = "ADDED " + people[tryIndex][1];
+        if(!addSet.contains(newId)) {
+          addSet.add(newId);
+          add.setInt(1, newId);
+          add.setString(2, newDesc);
+          add.setTimestamp(3, theTime);
+          Assert.assertEquals(1, add.executeUpdate());
+        }
+      }
+      conn.commit();
+    } catch (SQLException e) {
+      throw e;
+    } finally {
+      try { change.close(); } catch(Exception ex) { }
+      try { conn.close(); } catch(Exception ex) { }
+    }
+    IntChanges c = new IntChanges();
+    c.changedKeys=changeSet.toArray(new Integer[changeSet.size()]);
+    c.deletedKeys=deleteSet.toArray(new Integer[deleteSet.size()]);
+    c.addedKeys=addSet.toArray(new Integer[addSet.size()]);
+    return c;
+  }
+  
+  public String[] modifySomeCountries() throws Exception {
+    underlyingDataModified = true;
+    int numberToChange = random().nextInt(countries.length + 1);
+    Set<String> changeSet = new HashSet<String>();
+    Connection conn = null;
+    PreparedStatement change = null;
+    // One second in the future ensures a change time after the last import (DIH
+    // uses second precision only)
+    Timestamp theTime = new Timestamp(System.currentTimeMillis() + 1000);
+    try {
+      conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");
+      change = conn
+          .prepareStatement("update countries set country_name=?, last_modified=? where code=?");
+      for (int i = 0; i < numberToChange; i++) {
+        int tryIndex = random().nextInt(countries.length);
+        String code = countries[tryIndex][0];
+        if (!changeSet.contains(code)) {
+          changeSet.add(code);
+          change.setString(1, "MODIFIED " + countries[tryIndex][1]);
+          change.setTimestamp(2, theTime);
+          change.setString(3, code);
+          Assert.assertEquals(1, change.executeUpdate());
+          
+        }
+      }
+    } catch (SQLException e) {
+      throw e;
+    } finally {
+      try {
+        change.close();
+      } catch (Exception ex) {}
+      try {
+        conn.close();
+      } catch (Exception ex) {}
+    }
+    return changeSet.toArray(new String[changeSet.size()]);
+  }
+  class IntChanges {
+    public Integer[] changedKeys;
+    public Integer[] deletedKeys;
+    public Integer[] addedKeys;
+  }
+  protected LocalSolrQueryRequest generateRequest() {
+    return lrf.makeRequest("command", "full-import", "dataConfig", generateConfig(), 
+        "clean", "true", "commit", "true", "synchronous", "true", "indent", "true");
+  }
+  protected String generateConfig() {
+     StringBuilder sb = new StringBuilder();
+     sb.append("<dataConfig> \n");
+     sb.append("<dataSource name=''hsqldb'' driver=''org.hsqldb.jdbcDriver'' url=''jdbc:hsqldb:mem:.'' /> \n");
+     sb.append("<document name=''TestSqlEntityProcessor''> \n");     
+     sb.append("<entity name=''People'' ");
+     sb.append("pk=''" + (random().nextBoolean() ? "ID" : "People.ID") + "'' ");
+     sb.append("processor=''SqlEntityProcessor'' dataSource=''hsqldb'' ");
+     sb.append(rootTransformerName !=null ? "transformer=''" + rootTransformerName + "'' " : "");
+     sb.append("query=''SELECT ID, NAME, COUNTRY_CODE FROM PEOPLE WHERE DELETED != 'Y' '' ");
+     sb.append(deltaQueriesPersonTable());
+     sb.append("> \n");
+     
+     sb.append("<field column=''NAME'' name=''NAME_mult_s'' /> \n");
+     sb.append("<field column=''COUNTRY_CODE'' name=''COUNTRY_CODES_mult_s'' /> \n");
+     
+     if(countryEntity) {
+       sb.append("<entity name=''Countries'' ");
+       sb.append("pk=''" + (random().nextBoolean() ? "CODE" : "Countries.CODE") + "'' ");
+       sb.append("dataSource=''hsqldb'' ");
+       sb.append(countryTransformer ? "transformer=''AddAColumnTransformer'' " +
+               "newColumnName=''countryAdded_s'' newColumnValue=''country_added'' " : "");
+       if(countryCached) {
+         sb.append(random().nextBoolean() ? 
+             "processor=''SqlEntityProcessor'' cacheImpl=''SortedMapBackedCache'' " : 
+             "processor=''CachedSqlEntityProcessor'' "
+         );
+         if(useSimpleCaches) {
+           sb.append("query=''SELECT CODE, COUNTRY_NAME FROM COUNTRIES WHERE DELETED != 'Y' AND CODE='${People.COUNTRY_CODE}' ''>\n");
+         } else {
+           sb.append(random().nextBoolean() ? 
+               "cacheKey=''CODE'' cacheLookup=''People.COUNTRY_CODE'' " :
+               "where=''CODE=People.COUNTRY_CODE'' "
+           );
+           sb.append("query=''SELECT CODE, COUNTRY_NAME FROM COUNTRIES'' ");
+           sb.append("> \n");
+         }
+       } else {
+         sb.append("processor=''SqlEntityProcessor'' query=''SELECT CODE, COUNTRY_NAME FROM COUNTRIES WHERE DELETED != 'Y' AND CODE='${People.COUNTRY_CODE}' '' ");
+         sb.append(deltaQueriesCountryTable());         
+         sb.append("> \n");
+       }
+       sb.append("<field column=''CODE'' name=''COUNTRY_CODE_s'' /> \n");
+       sb.append("<field column=''COUNTRY_NAME'' name=''COUNTRY_NAME_s'' /> \n");
+       sb.append("</entity> \n");
+     }
+     if(sportsEntity) {
+       sb.append("<entity name=''Sports'' dataSource=''hsqldb'' "
+           + (sportsTransformer ? "transformer=''AddAColumnTransformer'' " +
+               "newColumnName=''sportsAdded_s'' newColumnValue=''sport_added'' " : ""));
+       if(sportsCached) {
+         sb.append(random().nextBoolean() ? 
+             "processor=''SqlEntityProcessor'' cacheImpl=''SortedMapBackedCache'' " : 
+             "processor=''CachedSqlEntityProcessor'' "
+         );
+          if(useSimpleCaches) {
+           sb.append("query=''SELECT ID, SPORT_NAME FROM PEOPLE_SPORTS WHERE DELETED != 'Y' AND PERSON_ID='${People.ID}' ORDER BY ID'' ");
+         } else {
+           sb.append(random().nextBoolean() ? 
+               "cacheKey=''PERSON_ID'' cacheLookup=''People.ID'' " : 
+               "where=''PERSON_ID=People.ID'' " 
+           );
+           sb.append("query=''SELECT ID, PERSON_ID, SPORT_NAME FROM PEOPLE_SPORTS ORDER BY ID'' ");
+         }
+       } else {
+         sb.append("processor=''SqlEntityProcessor'' query=''SELECT ID, SPORT_NAME FROM PEOPLE_SPORTS WHERE DELETED != 'Y' AND PERSON_ID='${People.ID}' ORDER BY ID'' ");
+       }
+       sb.append("> \n");
+       sb.append("<field column=''SPORT_NAME'' name=''SPORT_NAME_mult_s'' /> \n");
+       sb.append("<field column=''id'' name=''SPORT_ID_mult_s'' /> \n");
+       sb.append("</entity> \n");
+     }     
+     
+     sb.append("</entity> \n");
+     sb.append("</document> \n");
+     sb.append("</dataConfig> \n");
+     String config = sb.toString().replaceAll("[']{2}", "\"");
+     log.debug(config);
+     return config;
+   } 
   
   public static final String[][] countries = {
     {"NA",   "Namibia"},
@@ -118,7 +632,7 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
   
   public static final Object[][] people = {
     {1,"Jacob","NZ"},
-    {2,"Ethan","NU,NA,NE"},
+    {2,"Ethan","NU"},
     {3,"Michael","NR"},
     {4,"Jayden","NP"},
     {5,"William","NO"},
@@ -134,7 +648,7 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
     {15,"Lily","NE"},
     {16,"Madison","NC"},
     {17,"Mia","NA"},
-    {18,"Natalie","NP,NR,NU,NZ"},
+    {18,"Natalie","NZ"},
     {19,"Olivia","NU"},
     {20,"Samantha","NR"}
   };
@@ -165,6 +679,5 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
     {1800, 18, "White Water Rafting"},
     {1900, 19, "Water skiing"},
     {2000, 20, "Windsurfing"}
-  };  
-  
+  }; 
 }

@@ -41,8 +41,9 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
   public static void beforeClass() throws Exception {
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
   }
-
-  @Before @Override
+  
+  @Before 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     clearIndex();
@@ -51,140 +52,13 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
   
   @Test
   @SuppressWarnings("unchecked")
-  public void testCompositePk_FullImport() throws Exception {
-    List parentRow = new ArrayList();
-    parentRow.add(createMap("id", "1"));
-    MockDataSource.setIterator("select * from x", parentRow.iterator());
-
-    List childRow = new ArrayList();
-    childRow.add(createMap("desc", "hello"));
-
-    MockDataSource.setIterator("select * from y where y.A=1", childRow
-            .iterator());
-
-    runFullImport(dataConfig);
-
-    assertQ(req("id:1"), "//*[@numFound='1']");
-    assertQ(req("desc:hello"), "//*[@numFound='1']");
-  }
-  
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testCompositePk_FullImportWithoutCommit() throws Exception {
-    List parentRow = new ArrayList();
-    parentRow.add(createMap("id", "10"));
-    MockDataSource.setIterator("select * from x", parentRow.iterator());
-
-    List childRow = new ArrayList();
-    childRow.add(createMap("desc", "hello"));
-
-    MockDataSource.setIterator("select * from y where y.A=10", childRow
-            .iterator());
-
-
-    runFullImport(dataConfig,createMap("commit","false"));
-    assertQ(req("id:10"), "//*[@numFound='0']");
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testCompositePk_DeltaImport() throws Exception {
-    List deltaRow = new ArrayList();
-    deltaRow.add(createMap("id", "5"));
-    MockDataSource.setIterator("select id from x where last_modified > NOW",
-            deltaRow.iterator());
-
-    List parentRow = new ArrayList();
-    parentRow.add(createMap("id", "5"));
-    MockDataSource.setIterator("select * from x where id = '5'", parentRow
-            .iterator());
-
-    List childRow = new ArrayList();
-    childRow.add(createMap("desc", "hello"));
-    MockDataSource.setIterator("select * from y where y.A=5", childRow
-            .iterator());
-
-    runDeltaImport(dataConfig);
-
-    assertQ(req("id:5"), "//*[@numFound='1']");
-    assertQ(req("desc:hello"), "//*[@numFound='1']");
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testCompositePk_DeltaImport_DeletedPkQuery() throws Exception {
-    List parentRow = new ArrayList();
-    parentRow.add(createMap("id", "11"));
-    MockDataSource.setIterator("select * from x", parentRow.iterator());
-
-    List childRow = new ArrayList();
-    childRow.add(createMap("desc", "hello"));
-
-    MockDataSource.setIterator("select * from y where y.A=11", childRow
-            .iterator());
-
-    runFullImport(dataConfig);
-
-    assertQ(req("id:11"), "//*[@numFound='1']");
-
-
-
-    List deltaRow = new ArrayList();
-    deltaRow.add(createMap("id", "15"));
-    deltaRow.add(createMap("id", "17"));
-    MockDataSource.setIterator("select id from x where last_modified > NOW",
-            deltaRow.iterator());
-
-    List deltaDeleteRow = new ArrayList();
-    deltaDeleteRow.add(createMap("id", "11"));
-    deltaDeleteRow.add(createMap("id", "17"));
-    MockDataSource.setIterator("select id from x where last_modified > NOW AND deleted='true'",
-            deltaDeleteRow.iterator());
-
-    parentRow = new ArrayList();
-    parentRow.add(createMap("id", "15"));
-    MockDataSource.setIterator("select * from x where id = '15'", parentRow
-            .iterator());
-
-    parentRow = new ArrayList();
-    parentRow.add(createMap("id", "17"));
-    MockDataSource.setIterator("select * from x where id = '17'", parentRow
-            .iterator());
-
-    runDeltaImport(dataConfig);
-
-    assertQ(req("id:15"), "//*[@numFound='1']");
-    assertQ(req("id:11"), "//*[@numFound='0']");
-    assertQ(req("id:17"), "//*[@numFound='0']");
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
-  public void testCompositePk_DeltaImport_DeltaImportQuery() throws Exception {
-    List deltaRow = new ArrayList();
-    deltaRow.add(createMap("id", "5"));
-    MockDataSource.setIterator("select id from x where last_modified > NOW",
-            deltaRow.iterator());
-
-    List parentRow = new ArrayList();
-    parentRow.add(createMap("id", "5"));
-    MockDataSource.setIterator("select * from x where id=5", parentRow
-            .iterator());
-
-    List childRow = new ArrayList();
-    childRow.add(createMap("desc", "hello"));
-    MockDataSource.setIterator("select * from y where y.A=5", childRow
-            .iterator());
-
-    runDeltaImport(dataConfig_deltaimportquery);
-
-    assertQ(req("id:5"), "//*[@numFound='1']");
-    assertQ(req("desc:hello"), "//*[@numFound='1']");
-  }
-
-  @Test
-  @SuppressWarnings("unchecked")
   @Ignore("Known Locale/TZ problems: see https://issues.apache.org/jira/browse/SOLR-1916")
+  /**
+   * This test is here for historical purposes only.  
+   * When SOLR-1916 is fixed, it would be best to rewrite this test.
+   * 
+   * @throws Exception
+   */
   public void testLastIndexTime() throws Exception  {
     List row = new ArrayList();
     row.add(createMap("id", 5));
@@ -220,22 +94,4 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
           "\t\t<entity name=\"x\" query=\"select * from x where last_modified > ${dih.functions.checkDateFormat(dih.last_index_time)}\" />\n" +
           "\t</document>\n" +
           "</dataConfig>";
-
-  private static String dataConfig = "<dataConfig><dataSource  type=\"MockDataSource\"/>\n"
-          + "       <document>\n"
-          + "               <entity name=\"x\" pk=\"id\" query=\"select * from x\" deletedPkQuery=\"select id from x where last_modified > NOW AND deleted='true'\" deltaQuery=\"select id from x where last_modified > NOW\">\n"
-          + "                       <field column=\"id\" />\n"
-          + "                       <entity name=\"y\" query=\"select * from y where y.A=${x.id}\">\n"
-          + "                               <field column=\"desc\" />\n"
-          + "                       </entity>\n" + "               </entity>\n"
-          + "       </document>\n" + "</dataConfig>\n";
-
-  private static String dataConfig_deltaimportquery = "<dataConfig><dataSource  type=\"MockDataSource\"/>\n"
-          + "       <document>\n"
-          + "               <entity name=\"x\" deltaImportQuery=\"select * from x where id=${dataimporter.delta.id}\" deltaQuery=\"select id from x where last_modified > NOW\">\n"
-          + "                       <field column=\"id\" />\n"
-          + "                       <entity name=\"y\" query=\"select * from y where y.A=${x.id}\">\n"
-          + "                               <field column=\"desc\" />\n"
-          + "                       </entity>\n" + "               </entity>\n"
-          + "       </document>\n" + "</dataConfig>\n";
 }
