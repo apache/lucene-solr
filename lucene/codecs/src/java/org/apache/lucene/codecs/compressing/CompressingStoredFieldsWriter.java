@@ -21,6 +21,7 @@ import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.FIELD
 import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.FIELDS_INDEX_EXTENSION;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
@@ -36,6 +37,7 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -74,6 +76,7 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   private final int chunkSize;
 
   private final GrowableByteArrayDataOutput bufferedDocs;
+  private int[] numStoredFields; // number of stored fields
   private int[] endOffsets; // end offsets in bufferedDocs
   private int docBase; // doc ID at the beginning of the chunk
   private int numBufferedDocs; // docBase + numBufferedDocs == current doc ID
@@ -88,6 +91,7 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     this.chunkSize = chunkSize;
     this.docBase = 0;
     this.bufferedDocs = new GrowableByteArrayDataOutput(chunkSize);
+    this.numStoredFields = new int[16];
     this.endOffsets = new int[16];
     this.numBufferedDocs = 0;
 
@@ -128,50 +132,72 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   private void endWithPreviousDocument() throws IOException {
     if (numBufferedDocs > 0) {
-      assert bufferedDocs.length > 0;
-      if (numBufferedDocs == endOffsets.length) {
-        endOffsets = ArrayUtil.grow(endOffsets);
-      }
       endOffsets[numBufferedDocs - 1] = bufferedDocs.length;
     }
-  }
-
-  private void addRawDocument(byte[] buf, int off, int len) throws IOException {
-    endWithPreviousDocument();
-    if (bufferedDocs.length >= chunkSize) {
-      flush();
-    }
-    bufferedDocs.writeBytes(buf, off, len);
-    ++numBufferedDocs;
   }
 
   @Override
   public void startDocument(int numStoredFields) throws IOException {
     endWithPreviousDocument();
-    if (bufferedDocs.length >= chunkSize) {
+    if (triggerFlush()) {
       flush();
     }
-    bufferedDocs.writeVInt(numStoredFields);
+
+    if (numBufferedDocs == this.numStoredFields.length) {
+      final int newLength = ArrayUtil.oversize(numBufferedDocs + 1, 4);
+      this.numStoredFields = Arrays.copyOf(this.numStoredFields, newLength);
+      endOffsets = Arrays.copyOf(endOffsets, newLength);
+    }
+    this.numStoredFields[numBufferedDocs] = numStoredFields;
     ++numBufferedDocs;
   }
 
-  private void writeHeader(int docBase, int numBufferedDocs, int[] lengths) throws IOException {
+  private static void saveInts(int[] values, int length, DataOutput out) throws IOException {
+    assert length > 0;
+    if (length == 1) {
+      out.writeVInt(values[0]);
+    } else {
+      boolean allEqual = true;
+      for (int i = 1; i < length; ++i) {
+        if (values[i] != values[0]) {
+          allEqual = false;
+          break;
+        }
+      }
+      if (allEqual) {
+        out.writeVInt(0);
+        out.writeVInt(values[0]);
+      } else {
+        long max = 0;
+        for (int i = 0; i < length; ++i) {
+          max |= values[i];
+        }
+        final int bitsRequired = PackedInts.bitsRequired(max);
+        out.writeVInt(bitsRequired);
+        final PackedInts.Writer w = PackedInts.getWriterNoHeader(out, PackedInts.Format.PACKED, length, bitsRequired, 1);
+        for (int i = 0; i < length; ++i) {
+          w.add(values[i]);
+        }
+        w.finish();
+      }
+    }
+  }
+
+  private void writeHeader(int docBase, int numBufferedDocs, int[] numStoredFields, int[] lengths) throws IOException {
     // save docBase and numBufferedDocs
     fieldsStream.writeVInt(docBase);
     fieldsStream.writeVInt(numBufferedDocs);
 
-    // save lengths
-    final int bitsRequired = bitsRequired(lengths, numBufferedDocs);
-    assert bitsRequired <= 31;
-    fieldsStream.writeVInt(bitsRequired);
+    // save numStoredFields
+    saveInts(numStoredFields, numBufferedDocs, fieldsStream);
 
-    final PackedInts.Writer writer = PackedInts.getWriterNoHeader(fieldsStream, PackedInts.Format.PACKED, numBufferedDocs, bitsRequired, 1);
-    for (int i = 0; i < numBufferedDocs; ++i) {
-      assert lengths[i] > 0;
-      writer.add(lengths[i]);
-    }
-    assert writer.ord() + 1 == numBufferedDocs;
-    writer.finish();
+    // save lengths
+    saveInts(lengths, numBufferedDocs, fieldsStream);
+  }
+
+  private boolean triggerFlush() {
+    return bufferedDocs.length >= chunkSize || // chunks of at least chunkSize bytes
+        numBufferedDocs >= chunkSize; // can be necessary if most docs are empty
   }
 
   private void flush() throws IOException {
@@ -181,9 +207,9 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     final int[] lengths = endOffsets;
     for (int i = numBufferedDocs - 1; i > 0; --i) {
       lengths[i] = endOffsets[i] - endOffsets[i - 1];
-      assert lengths[i] > 0;
+      assert lengths[i] >= 0;
     }
-    writeHeader(docBase, numBufferedDocs, lengths);
+    writeHeader(docBase, numBufferedDocs, numStoredFields, lengths);
 
     // compress stored fields to fieldsStream
     compressor.compress(bufferedDocs.bytes, 0, bufferedDocs.length, fieldsStream);
@@ -192,14 +218,6 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     docBase += numBufferedDocs;
     numBufferedDocs = 0;
     bufferedDocs.length = 0;
-  }
-
-  private static int bitsRequired(int[] data, int length) {
-    int or = data[0];
-    for (int i = 1; i < length; ++i) {
-      or |= data[i];
-    }
-    return PackedInts.bitsRequired(or);
   }
 
   @Override
@@ -327,7 +345,7 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
             }
 
             if (compressionMode == matchingFieldsReader.getCompressionMode() // same compression mode
-                && (numBufferedDocs == 0 || bufferedDocs.length >= chunkSize) // starting a new chunk
+                && (numBufferedDocs == 0 || triggerFlush()) // starting a new chunk
                 && startOffsets[it.chunkDocs - 1] < chunkSize // chunk is small enough
                 && startOffsets[it.chunkDocs - 1] + it.lengths[it.chunkDocs - 1] >= chunkSize // chunk is large enough
                 && nextDeletedDoc(it.docBase, liveDocs, it.docBase + it.chunkDocs) == it.docBase + it.chunkDocs) { // no deletion in the chunk
@@ -335,11 +353,11 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
               // no need to decompress, just copy data
               endWithPreviousDocument();
-              if (bufferedDocs.length >= chunkSize) {
+              if (triggerFlush()) {
                 flush();
               }
               indexWriter.writeIndex(it.chunkDocs, fieldsStream.getFilePointer());
-              writeHeader(this.docBase, it.chunkDocs, it.lengths);
+              writeHeader(this.docBase, it.chunkDocs, it.numStoredFields, it.lengths);
               it.copyCompressedData(fieldsStream);
               this.docBase += it.chunkDocs;
               docID = nextLiveDoc(it.docBase + it.chunkDocs, liveDocs, maxDoc);
@@ -354,7 +372,8 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
               // copy non-deleted docs
               for (; docID < it.docBase + it.chunkDocs; docID = nextLiveDoc(docID + 1, liveDocs, maxDoc)) {
                 final int diff = docID - it.docBase;
-                addRawDocument(it.bytes.bytes, it.bytes.offset + startOffsets[diff], it.lengths[diff]);
+                startDocument(it.numStoredFields[diff]);
+                bufferedDocs.writeBytes(it.bytes.bytes, it.bytes.offset + startOffsets[diff], it.lengths[diff]);
                 ++docCount;
                 mergeState.checkAbort.work(300);
               }
