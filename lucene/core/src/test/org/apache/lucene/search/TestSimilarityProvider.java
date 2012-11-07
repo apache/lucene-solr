@@ -115,8 +115,8 @@ public class TestSimilarityProvider extends LuceneTestCase {
     }
 
     @Override
-    public void computeNorm(FieldInvertState state, Norm norm) {
-      norm.setByte(encodeNormValue(1f));
+    public float lengthNorm(FieldInvertState state) {
+      return 1f;
     }
 
     @Override
@@ -151,8 +151,8 @@ public class TestSimilarityProvider extends LuceneTestCase {
     }
     
     @Override
-    public void computeNorm(FieldInvertState state, Norm norm) {
-      norm.setByte(encodeNormValue(10f));
+    public float lengthNorm(FieldInvertState state) {
+      return 10f;
     }
 
     @Override

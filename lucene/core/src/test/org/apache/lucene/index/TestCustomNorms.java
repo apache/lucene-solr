@@ -25,9 +25,14 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.search.CollectionStatistics;
+import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
+import org.apache.lucene.search.similarities.Similarity.SimWeight;
+import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -192,16 +197,31 @@ public class TestCustomNorms extends LuceneTestCase {
     }
   }
 
-  public static class FloatEncodingBoostSimilarity extends DefaultSimilarity {
+  public static class FloatEncodingBoostSimilarity extends Similarity {
 
     @Override
     public void computeNorm(FieldInvertState state, Norm norm) {
       float boost = state.getBoost();
       norm.setFloat(boost);
     }
+    
+    @Override
+    public SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+      throw new UnsupportedOperationException();
+    }
   }
 
-  public static class RandomTypeSimilarity extends DefaultSimilarity {
+  public static class RandomTypeSimilarity extends Similarity {
 
     private final Random random;
     
@@ -237,28 +257,49 @@ public class TestCustomNorms extends LuceneTestCase {
       }
 
     }
+
+    @Override
+    public SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+      throw new UnsupportedOperationException();
+    }
   }
   
-  class IllegalCustomEncodingSimilarity extends DefaultSimilarity {
+  class IllegalCustomEncodingSimilarity extends Similarity {
     
     public boolean useByte = false;
-    @Override
-    public byte encodeNormValue(float f) {
-      return (byte) f;
-    }
-    
-    @Override
-    public float decodeNormValue(byte b) {
-      return (float) b;
-    }
 
     @Override
     public void computeNorm(FieldInvertState state, Norm norm) {
       if (useByte) {
-        norm.setByte(encodeNormValue((float) state.getLength()));
+        norm.setByte((byte)state.getLength());
       } else {
         norm.setFloat((float)state.getLength());
       }
+    }
+
+    @Override
+    public SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
+      throw new UnsupportedOperationException();
     }
   }
 

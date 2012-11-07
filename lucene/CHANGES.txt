@@ -29,6 +29,11 @@ Changes in backwards compatibility policy
   floating point value.  Scorer now extends DocsEnum so it has attributes().
   (Robert Muir)
 
+* LUCENE-4543: TFIDFSimilarity's index-time computeNorm is now final to
+  match the fact that its query-time norm usage requires a FIXED_8 encoding. 
+  Override lengthNorm and/or encode/decodeNormValue to change the specifics,
+  like Lucene 3.x. (Robert Muir)
+
 New Features
 
 * LUCENE-4226: New experimental StoredFieldsFormat (in lucene/codecs) that
