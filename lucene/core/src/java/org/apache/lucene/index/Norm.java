@@ -114,6 +114,15 @@ public final class Norm  {
     setType(Type.FIXED_INTS_64);
     this.field.setLongValue(norm);
   }
+  
+  /**
+   * Sets a packed long norm value.
+   * @lucene.experimental
+   */
+  public void setPackedLong(long norm) {
+    setType(Type.VAR_INTS);
+    this.field.setLongValue(norm);
+  }
 
   /**
    * Sets a byte norm value
