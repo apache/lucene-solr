@@ -35,7 +35,7 @@ import java.util.Map;
 
 /**
  * Query parser for dismax queries
- * <p/>
+ * <p>
  * <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
  *
  *

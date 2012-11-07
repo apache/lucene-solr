@@ -24,7 +24,8 @@ import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * Implementations of <code>BinaryQueryResponseWriter</code> are used to
- * write response in binary format
+ * write response in binary format.
+ * <p>
  * Functionality is exactly same as its parent class <code>QueryResponseWriter</code>
  * But it may not implement the <code>write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)</code>
  * method  
