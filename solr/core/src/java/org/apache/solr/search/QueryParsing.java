@@ -573,7 +573,7 @@ public class QueryParsing {
   }
 
   /**
-   * Simple class to help with parsing a string
+   * Simple class to help with parsing a string.
    * <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
    */
   public static class StrParser {

@@ -30,7 +30,7 @@ import java.util.List;
 /**
  * Basic functionality to upload a File or {@link org.apache.solr.common.util.ContentStream} to a Solr Cell or some
  * other handler that takes ContentStreams (CSV)
- * <p/>
+ * <p>
  * See http://wiki.apache.org/solr/ExtractingRequestHandler<br/>
  * See http://wiki.apache.org/solr/UpdateCSV
  * 

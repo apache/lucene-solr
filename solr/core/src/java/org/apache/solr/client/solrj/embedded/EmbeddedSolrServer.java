@@ -46,8 +46,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
 
 /**
- * SolrServer that connects directly to SolrCore
- * 
+ * SolrServer that connects directly to SolrCore.
+ * <p>
  * TODO -- this implementation sends the response to XML and then parses it.  
  * It *should* be able to convert the response directly into a named list.
  * 

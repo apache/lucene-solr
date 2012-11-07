@@ -63,10 +63,10 @@ import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.util.RefCounted;
 
 /**
- *  TODO: add soft commitWithin support
- * 
  * <code>DirectUpdateHandler2</code> implements an UpdateHandler where documents are added
  * directly to the main Lucene index as opposed to adding to a separate smaller index.
+ * <p>
+ * TODO: add soft commitWithin support
  */
 public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState.IndexWriterCloser {
   protected final SolrCoreState solrCoreState;
