@@ -135,6 +135,11 @@ Bug Fixes
 * LUCENE-4534: Fixed WFSTCompletionLookup and Analyzing/FuzzySuggester
   to allow 0 byte values in the lookup keys.  (Mike McCandless)
 
+* LUCENE-4532: DirectoryTaxonomyWriter use a timestamp to denote taxonomy
+  index re-creation, which could cause a bug in case machine clocks were
+  not synced. Instead, it now tracks an 'epoch' version, which is incremented
+  whenever the taxonomy is re-created, or replaced. (Shai Erera)
+
 Optimizations
 
 * LUCENE-4512: Additional memory savings for CompressingStoredFieldsFormat.
@@ -374,7 +379,7 @@ Bug Fixes
   many cases where IndexWriter could leave leftover files (on
   exception in various places, on reuse of a segment name after crash
   and recovery.  (Uwe Schindler, Robert Muir, Mike McCandless)
-
+  
 Optimizations
 
 * LUCENE-4322: Decrease lucene-core JAR size. The core JAR size had increased a
