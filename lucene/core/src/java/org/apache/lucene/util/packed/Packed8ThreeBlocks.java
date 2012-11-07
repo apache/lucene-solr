@@ -42,16 +42,13 @@ final class Packed8ThreeBlocks extends PackedInts.MutableImpl {
     blocks = new byte[valueCount * 3];
   }
 
-  Packed8ThreeBlocks(DataInput in, int valueCount) throws IOException {
+  Packed8ThreeBlocks(int packedIntsVersion, DataInput in, int valueCount) throws IOException {
     this(valueCount);
-    for (int i = 0; i < 3 * valueCount; ++i) {
-      blocks[i] = in.readByte();
-    }
-    final int mod = blocks.length % 8;
-    if (mod != 0) {
-      for (int i = mod; i < 8; ++i) {
-         in.readByte();
-      }
+    in.readBytes(blocks, 0, 3 * valueCount);
+    // because packed ints have not always been byte-aligned
+    final int remaining = (int) (PackedInts.Format.PACKED.byteCount(packedIntsVersion, valueCount, 24) - 3L * valueCount * 1);
+    for (int i = 0; i < remaining; ++i) {
+       in.readByte();
     }
   }
 
