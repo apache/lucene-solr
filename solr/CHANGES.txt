@@ -149,6 +149,9 @@ Bug Fixes
 * SOLR-3589: Edismax parser does not honor mm parameter if analyzer splits a token.
   (Tom Burton-West, Robert Muir)
 
+* SOLR-4031: Upgrade to Jetty 8.1.7 to fix a bug where in very rare occasions 
+  the content of two concurrent requests get mixed up. (Per Steffensen, yonik)
+
 Other Changes
 ----------------------
 
