@@ -22,12 +22,9 @@ import org.apache.lucene.store.IndexInput;
 import java.io.IOException;
 
 /* Reads directly from disk on each get */
-final class DirectPackedReader extends PackedInts.ReaderImpl {
+class DirectPackedReader extends PackedInts.ReaderImpl {
   private final IndexInput in;
   private final long startPointer;
-
-  private static final int BLOCK_BITS = Packed64.BLOCK_BITS;
-  private static final int MOD_MASK = Packed64.MOD_MASK;
 
   // masks[n-1] masks for bottom n bits
   private final long[] masks;
@@ -49,22 +46,30 @@ final class DirectPackedReader extends PackedInts.ReaderImpl {
   @Override
   public long get(int index) {
     final long majorBitPos = (long)index * bitsPerValue;
-    final int elementPos = (int)(majorBitPos >>> BLOCK_BITS); // / BLOCK_SIZE
-    final int bitPos =     (int)(majorBitPos & MOD_MASK); // % BLOCK_SIZE);
-
-    final long result;
+    final long elementPos = majorBitPos >>> 3;
     try {
-      in.seek(startPointer + (elementPos << 3));
-      final long l1 = in.readLong();
-      final int bits1 = 64 - bitPos;
-      if (bits1 >= bitsPerValue) { // not split
-        result = l1 >> (bits1-bitsPerValue) & masks[bitsPerValue-1];
-      } else {
-        final int bits2 = bitsPerValue - bits1;
-        final long result1 = (l1 & masks[bits1-1]) << bits2;
-        final long l2 = in.readLong();
-        final long result2 = l2 >> (64 - bits2) & masks[bits2-1];
-        result = result1 | result2;
+      in.seek(startPointer + elementPos);
+
+      final byte b0 = in.readByte();
+      final int bitPos = (int) (majorBitPos & 7);
+      if (bitPos + bitsPerValue <= 8) {
+        // special case: all bits are in the first byte
+        return (b0 & ((1L << (8 - bitPos)) - 1)) >>> (8 - bitPos - bitsPerValue);
+      }
+
+      // take bits from the first byte
+      int remainingBits = bitsPerValue - 8 + bitPos;
+      long result = (b0 & ((1L << (8 - bitPos)) - 1)) << remainingBits;
+
+      // add bits from inner bytes
+      while (remainingBits >= 8) {
+        remainingBits -= 8;
+        result |= (in.readByte() & 0xFFL) << remainingBits;
+      }
+
+      // take bits from the last byte
+      if (remainingBits > 0) {
+        result |= (in.readByte() & 0xFFL) >>> (8 - remainingBits);
       }
 
       return result;

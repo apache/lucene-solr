@@ -37,7 +37,7 @@ final class Direct64 extends PackedInts.MutableImpl {
     values = new long[valueCount];
   }
 
-  Direct64(DataInput in, int valueCount) throws IOException {
+  Direct64(int packedIntsVersion, DataInput in, int valueCount) throws IOException {
     this(valueCount);
     for (int i = 0; i < valueCount; ++i) {
       values[i] = in.readLong();

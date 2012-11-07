@@ -142,6 +142,10 @@ Bug Fixes
 
 Optimizations
 
+* LUCENE-4536: PackedInts on-disk format is now byte-aligned (it used to be
+  long-aligned), saving up to 7 bytes per array of values.
+  (Adrien Grand, Mike McCandless)
+
 * LUCENE-4512: Additional memory savings for CompressingStoredFieldsFormat.
   (Adrien Grand, Robert Muir)
 

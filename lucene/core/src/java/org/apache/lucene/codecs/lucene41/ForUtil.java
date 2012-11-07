@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.lucene41;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
@@ -83,8 +82,10 @@ final class ForUtil {
    * Compute the number of bytes required to encode a block of values that require
    * <code>bitsPerValue</code> bits per value with format <code>format</code>.
    */
-  private static int encodedSize(PackedInts.Format format, int bitsPerValue) {
-    return format.nblocks(bitsPerValue, BLOCK_SIZE) << 3;
+  private static int encodedSize(PackedInts.Format format, int packedIntsVersion, int bitsPerValue) {
+    final long byteCount = format.byteCount(packedIntsVersion, BLOCK_SIZE, bitsPerValue);
+    assert byteCount >= 0 && byteCount <= Integer.MAX_VALUE : byteCount;
+    return (int) byteCount;
   }
 
   private final int[] encodedSizes;
@@ -107,7 +108,7 @@ final class ForUtil {
           BLOCK_SIZE, bpv, acceptableOverheadRatio);
       assert formatAndBits.format.isSupported(formatAndBits.bitsPerValue);
       assert formatAndBits.bitsPerValue <= 32;
-      encodedSizes[bpv] = encodedSize(formatAndBits.format, formatAndBits.bitsPerValue);
+      encodedSizes[bpv] = encodedSize(formatAndBits.format, PackedInts.VERSION_CURRENT, formatAndBits.bitsPerValue);
       encoders[bpv] = PackedInts.getEncoder(
           formatAndBits.format, PackedInts.VERSION_CURRENT, formatAndBits.bitsPerValue);
       decoders[bpv] = PackedInts.getDecoder(
@@ -123,9 +124,7 @@ final class ForUtil {
    */
   ForUtil(DataInput in) throws IOException {
     int packedIntsVersion = in.readVInt();
-    if (packedIntsVersion != PackedInts.VERSION_START) {
-      throw new CorruptIndexException("expected version=" + PackedInts.VERSION_START + " but got version=" + packedIntsVersion);
-    }
+    PackedInts.checkVersion(packedIntsVersion);
     encodedSizes = new int[33];
     encoders = new PackedInts.Encoder[33];
     decoders = new PackedInts.Decoder[33];
@@ -138,7 +137,7 @@ final class ForUtil {
 
       final PackedInts.Format format = PackedInts.Format.byId(formatId);
       assert format.isSupported(bitsPerValue);
-      encodedSizes[bpv] = encodedSize(format, bitsPerValue);
+      encodedSizes[bpv] = encodedSize(format, packedIntsVersion, bitsPerValue);
       encoders[bpv] = PackedInts.getEncoder(
           format, packedIntsVersion, bitsPerValue);
       decoders[bpv] = PackedInts.getDecoder(

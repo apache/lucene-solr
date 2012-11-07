@@ -205,7 +205,7 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
     }
     final int length = (int) lengths.next();
     // skip the last values
-    fieldsStream.seek(filePointer + (PackedInts.Format.PACKED.nblocks(bitsPerValue, chunkDocs) << 3));
+    fieldsStream.seek(filePointer + PackedInts.Format.PACKED.byteCount(packedIntsVersion, chunkDocs, bitsPerValue));
 
     decompressor.decompress(fieldsStream, offset, length, bytes);
 

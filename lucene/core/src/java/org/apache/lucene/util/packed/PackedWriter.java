@@ -31,7 +31,7 @@ final class PackedWriter extends PackedInts.Writer {
   boolean finished;
   final PackedInts.Format format;
   final BulkOperation encoder;
-  final long[] nextBlocks;
+  final byte[] nextBlocks;
   final long[] nextValues;
   final int iterations;
   int off;
@@ -42,7 +42,7 @@ final class PackedWriter extends PackedInts.Writer {
     this.format = format;
     encoder = BulkOperation.of(format, bitsPerValue);
     iterations = encoder.computeIterations(valueCount, mem);
-    nextBlocks = new long[iterations * encoder.blockCount()];
+    nextBlocks = new byte[8 * iterations * encoder.blockCount()];
     nextValues = new long[iterations * encoder.valueCount()];
     off = 0;
     written = 0;
@@ -82,10 +82,8 @@ final class PackedWriter extends PackedInts.Writer {
 
   private void flush() throws IOException {
     encoder.encode(nextValues, 0, nextBlocks, 0, iterations);
-    final int blocks = format.nblocks(bitsPerValue, off);
-    for (int i = 0; i < blocks; ++i) {
-      out.writeLong(nextBlocks[i]);
-    }
+    final int blockCount = (int) format.byteCount(PackedInts.VERSION_CURRENT, off, bitsPerValue);
+    out.writeBytes(nextBlocks, blockCount);
     Arrays.fill(nextValues, 0L);
     off = 0;
   }

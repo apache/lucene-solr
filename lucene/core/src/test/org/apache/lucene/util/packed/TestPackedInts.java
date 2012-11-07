@@ -40,8 +40,28 @@ import org.apache.lucene.util.packed.PackedInts.Reader;
 
 import org.junit.Ignore;
 
+import com.carrotsearch.randomizedtesting.generators.RandomInts;
+
 @Slow
 public class TestPackedInts extends LuceneTestCase {
+
+  public void testByteCount() {
+    final int iters = atLeast(3);
+    for (int i = 0; i < iters; ++i) {
+      final int valueCount = RandomInts.randomIntBetween(random(), 1, Integer.MAX_VALUE);
+      for (PackedInts.Format format : PackedInts.Format.values()) {
+        for (int bpv = 1; bpv <= 64; ++bpv) {
+          final long byteCount = format.byteCount(PackedInts.VERSION_CURRENT, valueCount, bpv);
+          String msg = "format=" + format + ", byteCount=" + byteCount + ", valueCount=" + valueCount + ", bpv=" + bpv;
+          assertTrue(msg, byteCount * 8 >= (long) valueCount * bpv);
+          if (format == PackedInts.Format.PACKED) {
+            assertTrue(msg, (byteCount - 1) * 8 < (long) valueCount * bpv);
+          }
+        }
+      }
+    }
+  }
+
   public void testBitsRequired() {
     assertEquals(61, PackedInts.bitsRequired((long)Math.pow(2, 61)-1));
     assertEquals(61, PackedInts.bitsRequired(0x1FFFFFFFFFFFFFFFL));
@@ -88,21 +108,8 @@ public class TestPackedInts extends LuceneTestCase {
         final long fp = out.getFilePointer();
         out.close();
 
-        // packed writers should only write longs
-        assertEquals(0, (fp - startFp) % 8);
         // ensure that finish() added the (valueCount-actualValueCount) missing values
-        final long bytes;
-        switch (w.getFormat()) {
-          case PACKED:
-            bytes = (long) Math.ceil((double) valueCount * w.bitsPerValue / 64) << 3;
-            break;
-          case PACKED_SINGLE_BLOCK:
-            final int valuesPerBlock = 64 / w.bitsPerValue;
-            bytes = (long) Math.ceil((double) valueCount / valuesPerBlock) << 3;
-            break;
-          default:
-            bytes = -1;
-        }
+        final long bytes = w.getFormat().byteCount(PackedInts.VERSION_CURRENT, valueCount, w.bitsPerValue);
         assertEquals(bytes, fp - startFp);
 
         {// test header
@@ -170,13 +177,58 @@ public class TestPackedInts extends LuceneTestCase {
             long value = intsEnum.get(index);
             assertEquals(msg, value, values[index]);
           }
+          intsEnum.get(intsEnum.size() - 1);
+          assertEquals(fp, in.getFilePointer());
           in.close();
         }
         d.close();
       }
     }
   }
-  
+
+  public void testEndPointer() throws IOException {
+    final Directory dir = newDirectory();
+    final int valueCount = RandomInts.randomIntBetween(random(), 1, 1000);
+    final IndexOutput out = dir.createOutput("tests.bin", newIOContext(random()));
+    for (int i = 0; i < valueCount; ++i) {
+      out.writeLong(0);
+    }
+    out.close();
+    final IndexInput in = dir.openInput("tests.bin", newIOContext(random()));
+    for (int version = PackedInts.VERSION_START; version <= PackedInts.VERSION_CURRENT; ++version) {
+      for (int bpv = 1; bpv <= 64; ++bpv) {
+        for (PackedInts.Format format : PackedInts.Format.values()) {
+          if (!format.isSupported(bpv)) {
+            continue;
+          }
+          final long byteCount = format.byteCount(version, valueCount, bpv); 
+          String msg = "format=" + format + ",version=" + version + ",valueCount=" + valueCount + ",bpv=" + bpv;
+
+          // test iterator
+          in.seek(0L);
+          final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(in, format, version, valueCount, bpv, RandomInts.randomIntBetween(random(), 1, 1<<16));
+          for (int i = 0; i < valueCount; ++i) {
+            it.next();
+          }
+          assertEquals(msg, byteCount, in.getFilePointer());
+
+          // test direct reader
+          in.seek(0L);
+          final PackedInts.Reader directReader = PackedInts.getDirectReaderNoHeader(in, format, version, valueCount, bpv);
+          directReader.get(valueCount - 1);
+          assertEquals(msg, byteCount, in.getFilePointer());
+
+          // test reader
+          in.seek(0L);
+          PackedInts.getReaderNoHeader(in, format, version, valueCount, bpv);
+          assertEquals(msg, byteCount, in.getFilePointer());
+         }
+      }
+    }
+    in.close();
+    dir.close();
+  }
+
   public void testControlledEquality() {
     final int VALUE_COUNT = 255;
     final int BITS_PER_VALUE = 8;
@@ -629,6 +681,7 @@ public class TestPackedInts extends LuceneTestCase {
         in.close();
         directory.deleteFile("packed-ints.bin");
       }
+      directory.close();
     }
   }
 

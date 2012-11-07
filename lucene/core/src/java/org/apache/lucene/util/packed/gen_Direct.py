@@ -65,17 +65,19 @@ if __name__ == '__main__':
     f.write("    values = new %s[valueCount];\n" %TYPES[bpv])
     f.write("  }\n\n")
 
-    f.write("  Direct%d(DataInput in, int valueCount) throws IOException {\n" %bpv)
+    f.write("  Direct%d(int packedIntsVersion, DataInput in, int valueCount) throws IOException {\n" %bpv)
     f.write("    this(valueCount);\n")
-    f.write("    for (int i = 0; i < valueCount; ++i) {\n")
-    f.write("      values[i] = in.read%s();\n" %TYPES[bpv].title())
-    f.write("    }\n")
+    if bpv == 8:
+      f.write("    in.readBytes(values, 0, valueCount);\n")
+    else:
+      f.write("    for (int i = 0; i < valueCount; ++i) {\n")
+      f.write("      values[i] = in.read%s();\n" %TYPES[bpv].title())
+      f.write("    }\n")
     if bpv != 64:
-      f.write("    final int mod = valueCount %% %d;\n" %(64 / bpv))
-      f.write("    if (mod != 0) {\n")
-      f.write("      for (int i = mod; i < %d; ++i) {\n" %(64 / bpv))
-      f.write("        in.read%s();\n" %TYPES[bpv].title())
-      f.write("      }\n")
+      f.write("    // because packed ints have not always been byte-aligned\n")
+      f.write("    final int remaining = (int) (PackedInts.Format.PACKED.byteCount(packedIntsVersion, valueCount, %d) - %dL * valueCount);\n" %(bpv, bpv / 8))
+      f.write("    for (int i = 0; i < remaining; ++i) {\n")
+      f.write("      in.readByte();\n")
       f.write("    }\n")
     f.write("  }\n")
 

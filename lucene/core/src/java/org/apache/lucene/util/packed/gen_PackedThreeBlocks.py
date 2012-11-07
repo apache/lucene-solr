@@ -70,16 +70,18 @@ if __name__ == '__main__':
     f.write("    blocks = new %s[valueCount * 3];\n" %TYPES[bpv])
     f.write("  }\n\n")
 
-    f.write("  Packed%dThreeBlocks(DataInput in, int valueCount) throws IOException {\n" %bpv)
+    f.write("  Packed%dThreeBlocks(int packedIntsVersion, DataInput in, int valueCount) throws IOException {\n" %bpv)
     f.write("    this(valueCount);\n")
-    f.write("    for (int i = 0; i < 3 * valueCount; ++i) {\n")
-    f.write("      blocks[i] = in.read%s();\n" %TYPES[bpv].title())
-    f.write("    }\n")
-    f.write("    final int mod = blocks.length %% %d;\n" %(64 / bpv))
-    f.write("    if (mod != 0) {\n")
-    f.write("      for (int i = mod; i < %d; ++i) {\n" %(64 / bpv))
-    f.write("         in.read%s();\n" %TYPES[bpv].title())
-    f.write("      }\n")
+    if bpv == 8:
+      f.write("    in.readBytes(blocks, 0, 3 * valueCount);\n")
+    else:
+      f.write("    for (int i = 0; i < 3 * valueCount; ++i) {\n")
+      f.write("      blocks[i] = in.read%s();\n" %TYPES[bpv].title())
+      f.write("    }\n")
+    f.write("    // because packed ints have not always been byte-aligned\n")
+    f.write("    final int remaining = (int) (PackedInts.Format.PACKED.byteCount(packedIntsVersion, valueCount, %d) - 3L * valueCount * %d);\n" %(3 * bpv, bpv / 8))
+    f.write("    for (int i = 0; i < remaining; ++i) {\n")
+    f.write("       in.readByte();\n")
     f.write("    }\n")
     f.write("  }\n")
 

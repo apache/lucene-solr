@@ -67,26 +67,10 @@ class Packed64 extends PackedInts.MutableImpl {
    * @param bitsPerValue the number of bits available for any given value.
    */
   public Packed64(int valueCount, int bitsPerValue) {
-    // NOTE: block-size was previously calculated as
-    // valueCount * bitsPerValue / BLOCK_SIZE + 1
-    // due to memory layout requirements dictated by non-branching code
-    this(new long[size(valueCount, bitsPerValue)],
-            valueCount, bitsPerValue);
-  }
-
-  /**
-   * Creates an array backed by the given blocks.
-   * </p><p>
-   * Note: The blocks are used directly, so changes to the given block will
-   * affect the Packed64-structure.
-   * @param blocks   used as the internal backing array. Not that the last
-   *                 element cannot be addressed directly.
-   * @param valueCount the number of values.
-   * @param bitsPerValue the number of bits available for any given value.
-   */
-  public Packed64(long[] blocks, int valueCount, int bitsPerValue) {
     super(valueCount, bitsPerValue);
-    this.blocks = blocks;
+    final PackedInts.Format format = PackedInts.Format.PACKED;
+    final int longCount = format.longCount(PackedInts.VERSION_CURRENT, valueCount, bitsPerValue);
+    this.blocks = new long[longCount];
     maskRight = ~0L << (BLOCK_SIZE-bitsPerValue) >>> (BLOCK_SIZE-bitsPerValue);
     bpvMinusBlockSize = bitsPerValue - BLOCK_SIZE;
   }
@@ -99,21 +83,28 @@ class Packed64 extends PackedInts.MutableImpl {
    * @throws java.io.IOException if the values for the backing array could not
    *                             be retrieved.
    */
-  public Packed64(DataInput in, int valueCount, int bitsPerValue)
+  public Packed64(int packedIntsVersion, DataInput in, int valueCount, int bitsPerValue)
                                                             throws IOException {
     super(valueCount, bitsPerValue);
-    int size = size(valueCount, bitsPerValue);
-    blocks = new long[size]; // Previously +1 due to non-conditional tricks
-    for(int i=0;i<size;i++) {
+    final PackedInts.Format format = PackedInts.Format.PACKED;
+    final long byteCount = format.byteCount(packedIntsVersion, valueCount, bitsPerValue); // to know how much to read
+    final int longCount = format.longCount(PackedInts.VERSION_CURRENT, valueCount, bitsPerValue); // to size the array
+    blocks = new long[longCount];
+    // read as many longs as we can
+    for (int i = 0; i < byteCount / 8; ++i) {
       blocks[i] = in.readLong();
+    }
+    final int remaining = (int) (byteCount % 8);
+    if (remaining != 0) {
+      // read the last bytes
+      long lastLong = 0;
+      for (int i = 0; i < remaining; ++i) {
+        lastLong |= (in.readByte() & 0xFFL) << (56 - i * 8);
+      }
+      blocks[blocks.length - 1] = lastLong;
     }
     maskRight = ~0L << (BLOCK_SIZE-bitsPerValue) >>> (BLOCK_SIZE-bitsPerValue);
     bpvMinusBlockSize = bitsPerValue - BLOCK_SIZE;
-  }
-
-  private static int size(int valueCount, int bitsPerValue) {
-    final long totBitCount = (long) valueCount * bitsPerValue;
-    return (int)(totBitCount/64 + ((totBitCount % 64 == 0 ) ? 0:1));
   }
 
   /**

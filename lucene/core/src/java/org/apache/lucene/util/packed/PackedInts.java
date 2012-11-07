@@ -62,10 +62,14 @@ public class PackedInts {
   public static final int DEFAULT_BUFFER_SIZE = 1024; // 1K
 
   public final static String CODEC_NAME = "PackedInts";
-  public final static int VERSION_START = 0;
-  public final static int VERSION_CURRENT = VERSION_START;
+  public final static int VERSION_START = 0; // PackedInts were long-aligned
+  public final static int VERSION_BYTE_ALIGNED = 1;
+  public final static int VERSION_CURRENT = VERSION_BYTE_ALIGNED;
 
-  private static void checkVersion(int version) {
+  /**
+   * Check the validity of a version number.
+   */
+  public static void checkVersion(int version) {
     if (version < VERSION_START) {
       throw new IllegalArgumentException("Version is too old, should be at least " + VERSION_START + " (got " + version + ")");
     } else if (version > VERSION_CURRENT) {
@@ -85,8 +89,12 @@ public class PackedInts {
     PACKED(0) {
 
       @Override
-      public int nblocks(int bitsPerValue, int values) {
-        return (int) Math.ceil((double) values * bitsPerValue / 64);
+      public long byteCount(int packedIntsVersion, int valueCount, int bitsPerValue) {
+        if (packedIntsVersion < VERSION_BYTE_ALIGNED) {
+          return 8L *  (long) Math.ceil((double) valueCount * bitsPerValue / 64);
+        } else {
+          return (long) Math.ceil((double) valueCount * bitsPerValue / 8);
+        }
       }
 
     },
@@ -101,9 +109,9 @@ public class PackedInts {
     PACKED_SINGLE_BLOCK(1) {
 
       @Override
-      public int nblocks(int bitsPerValue, int values) {
+      public int longCount(int packedIntsVersion, int valueCount, int bitsPerValue) {
         final int valuesPerBlock = 64 / bitsPerValue;
-        return (int) Math.ceil((double) values / valuesPerBlock);
+        return (int) Math.ceil((double) valueCount / valuesPerBlock);
       }
 
       @Override
@@ -147,10 +155,29 @@ public class PackedInts {
     }
 
     /**
-     * Computes how many blocks are needed to store <code>values</code> values
-     * of size <code>bitsPerValue</code>.
+     * Computes how many byte blocks are needed to store <code>values</code>
+     * values of size <code>bitsPerValue</code>.
      */
-    public abstract int nblocks(int bitsPerValue, int values);
+    public long byteCount(int packedIntsVersion, int valueCount, int bitsPerValue) {
+      assert bitsPerValue >= 0 && bitsPerValue <= 64 : bitsPerValue;
+      // assume long-aligned
+      return 8L * longCount(packedIntsVersion, valueCount, bitsPerValue);
+    }
+
+    /**
+     * Computes how many long blocks are needed to store <code>values</code>
+     * values of size <code>bitsPerValue</code>.
+     */
+    public int longCount(int packedIntsVersion, int valueCount, int bitsPerValue) {
+      assert bitsPerValue >= 0 && bitsPerValue <= 64 : bitsPerValue;
+      final long byteCount = byteCount(packedIntsVersion, valueCount, bitsPerValue);
+      assert byteCount < 8L * Integer.MAX_VALUE;
+      if ((byteCount % 8) == 0) {
+        return (int) (byteCount / 8);
+      } else {
+        return (int) (byteCount / 8 + 1);
+      }
+    }
 
     /**
      * Tests whether the provided number of bits per value is supported by the
@@ -725,25 +752,25 @@ public class PackedInts {
       case PACKED:
         switch (bitsPerValue) {
           case 8:
-            return new Direct8(in, valueCount);
+            return new Direct8(version, in, valueCount);
           case 16:
-            return new Direct16(in, valueCount);
+            return new Direct16(version, in, valueCount);
           case 32:
-            return new Direct32(in, valueCount);
+            return new Direct32(version, in, valueCount);
           case 64:
-            return new Direct64(in, valueCount);
+            return new Direct64(version, in, valueCount);
           case 24:
             if (valueCount <= Packed8ThreeBlocks.MAX_SIZE) {
-              return new Packed8ThreeBlocks(in, valueCount);
+              return new Packed8ThreeBlocks(version, in, valueCount);
             }
             break;
           case 48:
             if (valueCount <= Packed16ThreeBlocks.MAX_SIZE) {
-              return new Packed16ThreeBlocks(in, valueCount);
+              return new Packed16ThreeBlocks(version, in, valueCount);
             }
             break;
         }
-        return new Packed64(in, valueCount, bitsPerValue);
+        return new Packed64(version, in, valueCount, bitsPerValue);
       default:
         throw new AssertionError("Unknown Writer format: " + format);
     }
@@ -786,7 +813,7 @@ public class PackedInts {
   public static ReaderIterator getReaderIteratorNoHeader(DataInput in, Format format, int version,
       int valueCount, int bitsPerValue, int mem) {
     checkVersion(version);
-    return new PackedReaderIterator(format, valueCount, bitsPerValue, in, mem);
+    return new PackedReaderIterator(format, version, valueCount, bitsPerValue, in, mem);
   }
 
   /**
@@ -823,12 +850,37 @@ public class PackedInts {
    * @return a direct Reader
    * @lucene.internal
    */
-  public static Reader getDirectReaderNoHeader(IndexInput in, Format format,
+  public static Reader getDirectReaderNoHeader(final IndexInput in, Format format,
       int version, int valueCount, int bitsPerValue) {
     checkVersion(version);
     switch (format) {
       case PACKED:
-        return new DirectPackedReader(bitsPerValue, valueCount, in);
+        final long byteCount = format.byteCount(version, valueCount, bitsPerValue);
+        if (byteCount != format.byteCount(VERSION_CURRENT, valueCount, bitsPerValue)) {
+          assert version == VERSION_START;
+          final long endPointer = in.getFilePointer() + byteCount;
+          // Some consumers of direct readers assume that reading the last value
+          // will make the underlying IndexInput go to the end of the packed
+          // stream, but this is not true because packed ints storage used to be
+          // long-aligned and is now byte-aligned, hence this additional
+          // condition when reading the last value
+          return new DirectPackedReader(bitsPerValue, valueCount, in) {
+            @Override
+            public long get(int index) {
+              final long result = super.get(index);
+              if (index == valueCount - 1) {
+                try {
+                  in.seek(endPointer);
+                } catch (IOException e) {
+                  throw new IllegalStateException("failed", e);
+                }
+              }
+              return result;
+            }
+          };
+        } else {
+          return new DirectPackedReader(bitsPerValue, valueCount, in);
+        }
       case PACKED_SINGLE_BLOCK:
         return new DirectPacked64SingleBlockReader(bitsPerValue, valueCount, in);
       default:
