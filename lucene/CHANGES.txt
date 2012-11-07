@@ -175,6 +175,11 @@ Optimizations
   Users of this API can now simply obtain an instance via DocValues#getDirectSource per thread.
   (Simon Willnauer)
 
+Documentation
+
+* LUCENE-4483: Refer to BytesRef.deepCopyOf in Term's constructor that takes BytesRef.
+  (Paul Elschot via Robert Muir)
+
 Build
 
 * Upgrade randomized testing to version 2.0.4: avoid hangs on shutdown
