@@ -126,7 +126,9 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
           "//*[@numFound='1']");
     }
     assertQ(req("AddAColumn_s:Added"), "//*[@numFound='" + (totalPeople() + numDeleted) + "']");
-    Assert.assertTrue(totalDatabaseRequests() == numToExpect);
+    Assert.assertTrue("Expecting " + numToExpect
+        + " database calls, but DIH reported " + totalDatabaseRequests(),
+        totalDatabaseRequests() == numToExpect);
   }  
   protected void withChildEntities(boolean cached, boolean checkDatabaseRequests) throws Exception {
     rootTransformerName = random().nextBoolean() ? null : "AddAColumnTransformer";
