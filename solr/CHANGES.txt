@@ -146,6 +146,9 @@ Bug Fixes
   thrown by PingRequestHandler. Do not log exceptions if a user tries to view a
   hidden file using ShowFileRequestHandler.  (Tomás Fernández Löbbe via James Dyer)
 
+* SOLR-3589: Edismax parser does not honor mm parameter if analyzer splits a token.
+  (Tom Burton-West, Robert Muir)
+
 Other Changes
 ----------------------
 

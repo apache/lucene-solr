@@ -60,6 +60,13 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     assertU(adoc("id", "52", "text_sw", "tekna theou klethomen"));
     assertU(adoc("id", "53", "text_sw", "nun tekna theou esmen"));
     assertU(adoc("id", "54", "text_sw", "phanera estin ta tekna tou theou"));
+    assertU(adoc("id", "55", "standardtok", "大"));
+    assertU(adoc("id", "56", "standardtok", "大亚"));
+    assertU(adoc("id", "57", "standardtok", "大亚湾"));
+    assertU(adoc("id", "58", "HTMLstandardtok", "大"));
+    assertU(adoc("id", "59", "HTMLstandardtok", "大亚"));
+    assertU(adoc("id", "60", "HTMLstandardtok", "大亚湾"));
+    assertU(adoc("id", "61", "text_sw", "bazaaa")); // synonyms in an expansion group
     assertU(commit());
   }
   @Override
@@ -773,5 +780,154 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
             "defType", "edismax")
         , "*[count(//doc)=1]");
     
+  }
+  
+  /**
+   * SOLR-3589: Edismax parser does not honor mm parameter if analyzer splits a token
+   */
+  public void testCJK() throws Exception {
+    assertQ("test cjk (disjunction)",
+        req("q", "大亚湾",
+            "qf", "standardtok",
+            "mm", "0%",
+            "defType", "edismax")
+        , "*[count(//doc)=3]");
+    assertQ("test cjk (minShouldMatch)",
+        req("q", "大亚湾",
+            "qf", "standardtok",
+            "mm", "67%",
+            "defType", "edismax")
+        , "*[count(//doc)=2]");
+    assertQ("test cjk (conjunction)",
+        req("q", "大亚湾",
+            "qf", "standardtok",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=1]");
+  }
+  
+  /** 
+   * test that minShouldMatch works with aliasing
+   * for implicit boolean queries
+   */
+  public void testCJKAliasing() throws Exception {
+    // single field
+    assertQ("test cjk (aliasing+disjunction)",
+        req("q", "myalias:大亚湾",
+            "f.myalias.qf", "standardtok",
+            "mm", "0%",
+            "defType", "edismax")
+        , "*[count(//doc)=3]");
+    assertQ("test cjk (aliasing+minShouldMatch)",
+        req("q", "myalias:大亚湾",
+            "f.myalias.qf", "standardtok",
+            "mm", "67%",
+            "defType", "edismax")
+        , "*[count(//doc)=2]");
+    assertQ("test cjk (aliasing+conjunction)",
+        req("q", "myalias:大亚湾",
+            "f.myalias.qf", "standardtok",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=1]");
+    // multifield
+    assertQ("test cjk (aliasing+disjunction)",
+        req("q", "myalias:大亚湾",
+            "f.myalias.qf", "standardtok HTMLstandardtok",
+            "mm", "0%",
+            "defType", "edismax")
+        , "*[count(//doc)=6]");
+    assertQ("test cjk (aliasing+minShouldMatch)",
+        req("q", "myalias:大亚湾",
+            "f.myalias.qf", "standardtok HTMLstandardtok",
+            "mm", "67%",
+            "defType", "edismax")
+        , "*[count(//doc)=4]");
+    assertQ("test cjk (aliasing+conjunction)",
+        req("q", "myalias:大亚湾",
+            "f.myalias.qf", "standardtok HTMLstandardtok",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=2]");
+  }
+  
+  /** Test that we apply boosts correctly */
+  public void testCJKBoosts() throws Exception {
+    assertQ("test cjk (disjunction)",
+        req("q", "大亚湾",
+            "qf", "standardtok^2 HTMLstandardtok",
+            "mm", "0%",
+            "defType", "edismax")
+        , "*[count(//doc)=6]", "//result/doc[1]/str[@name='id'][.='57']");
+    assertQ("test cjk (minShouldMatch)",
+        req("q", "大亚湾",
+            "qf", "standardtok^2 HTMLstandardtok",
+            "mm", "67%",
+            "defType", "edismax")
+        , "*[count(//doc)=4]", "//result/doc[1]/str[@name='id'][.='57']");
+    assertQ("test cjk (conjunction)",
+        req("q", "大亚湾",
+            "qf", "standardtok^2 HTMLstandardtok",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=2]", "//result/doc[1]/str[@name='id'][.='57']");
+    
+    // now boost the other field
+    assertQ("test cjk (disjunction)",
+        req("q", "大亚湾",
+            "qf", "standardtok HTMLstandardtok^2",
+            "mm", "0%",
+            "defType", "edismax")
+        , "*[count(//doc)=6]", "//result/doc[1]/str[@name='id'][.='60']");
+    assertQ("test cjk (minShouldMatch)",
+        req("q", "大亚湾",
+            "qf", "standardtok HTMLstandardtok^2",
+            "mm", "67%",
+            "defType", "edismax")
+        , "*[count(//doc)=4]", "//result/doc[1]/str[@name='id'][.='60']");
+    assertQ("test cjk (conjunction)",
+        req("q", "大亚湾",
+            "qf", "standardtok HTMLstandardtok^2",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=2]", "//result/doc[1]/str[@name='id'][.='60']");
+  }
+  
+  /** always apply minShouldMatch to the inner booleanqueries
+   *  created from whitespace, as these are never structured lucene queries
+   *  but only come from unstructured text */
+  public void testCJKStructured() throws Exception {
+    assertQ("test cjk (disjunction)",
+        req("q", "大亚湾 OR bogus",
+            "qf", "standardtok",
+            "mm", "0%",
+            "defType", "edismax")
+        , "*[count(//doc)=3]");
+    assertQ("test cjk (minShouldMatch)",
+        req("q", "大亚湾 OR bogus",
+            "qf", "standardtok",
+            "mm", "67%",
+            "defType", "edismax")
+        , "*[count(//doc)=2]");
+    assertQ("test cjk (conjunction)",
+        req("q", "大亚湾 OR bogus",
+            "qf", "standardtok",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=1]");
+  }
+  
+  /**
+   * Test that we don't apply minShouldMatch to the inner boolean queries
+   * when there are synonyms (these are indicated by coordination factor)
+   */
+  public void testSynonyms() throws Exception {
+    // document only contains baraaa, but should still match.
+    assertQ("test synonyms",
+        req("q", "fooaaa",
+            "qf", "text_sw",
+            "mm", "100%",
+            "defType", "edismax")
+        , "*[count(//doc)=1]");
   }
 }
