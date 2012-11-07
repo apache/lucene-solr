@@ -96,10 +96,10 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     Map <String, String> readUserCommitData = r.getIndexCommit().getUserData();
     assertTrue("wrong value extracted from commit data", 
         "1 2 3".equals(readUserCommitData.get("testing")));
-    assertNotNull("index.create.time not found in commitData", readUserCommitData.get(DirectoryTaxonomyWriter.INDEX_CREATE_TIME));
+    assertNotNull(DirectoryTaxonomyWriter.INDEX_EPOCH + " not found in commitData", readUserCommitData.get(DirectoryTaxonomyWriter.INDEX_EPOCH));
     r.close();
     
-    // open DirTaxoWriter again and commit, INDEX_CREATE_TIME should still exist
+    // open DirTaxoWriter again and commit, INDEX_EPOCH should still exist
     // in the commit data, otherwise DirTaxoReader.refresh() might not detect
     // that the taxonomy index has been recreated.
     taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
@@ -111,7 +111,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     
     r = DirectoryReader.open(dir);
     readUserCommitData = r.getIndexCommit().getUserData();
-    assertNotNull("index.create.time not found in commitData", readUserCommitData.get(DirectoryTaxonomyWriter.INDEX_CREATE_TIME));
+    assertNotNull(DirectoryTaxonomyWriter.INDEX_EPOCH + " not found in commitData", readUserCommitData.get(DirectoryTaxonomyWriter.INDEX_EPOCH));
     r.close();
     
     dir.close();
@@ -119,7 +119,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
   
   @Test
   public void testRollback() throws Exception {
-    // Verifies that if callback is called, DTW is closed.
+    // Verifies that if rollback is called, DTW is closed.
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter dtw = new DirectoryTaxonomyWriter(dir);
     dtw.addCategory(new CategoryPath("a"));
@@ -130,6 +130,19 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     } catch (AlreadyClosedException e) {
       // expected
     }
+    
+    dir.close();
+  }
+  
+  @Test
+  public void testRecreateRollback() throws Exception {
+    // Tests rollback with OpenMode.CREATE
+    Directory dir = newDirectory();
+    new DirectoryTaxonomyWriter(dir).close();
+    assertEquals(1, getEpoch(dir));
+    new DirectoryTaxonomyWriter(dir, OpenMode.CREATE).rollback();
+    assertEquals(1, getEpoch(dir));
+    
     dir.close();
   }
   
@@ -157,7 +170,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
   
   @Test
   public void testRecreateAndRefresh() throws Exception {
-    // DirTaxoWriter lost the INDEX_CREATE_TIME property if it was opened in
+    // DirTaxoWriter lost the INDEX_EPOCH property if it was opened in
     // CREATE_OR_APPEND (or commit(userData) called twice), which could lead to
     // DirTaxoReader succeeding to refresh().
     Directory dir = newDirectory();
@@ -172,7 +185,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     // this should not fail
     taxoReader.refresh();
 
-    // now recreate the taxonomy, and check that the timestamp is preserved after opening DirTW again.
+    // now recreate the taxonomy, and check that the epoch is preserved after opening DirTW again.
     taxoWriter.close();
     taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE, NO_OP_CACHE);
     touchTaxo(taxoWriter, new CategoryPath("c"));
@@ -195,19 +208,19 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
   }
 
   @Test
-  public void testUndefinedCreateTime() throws Exception {
-    // tests that if the taxonomy index doesn't have the INDEX_CREATE_TIME
+  public void testBackwardsCompatibility() throws Exception {
+    // tests that if the taxonomy index doesn't have the INDEX_EPOCH
     // property (supports pre-3.6 indexes), all still works.
     Directory dir = newDirectory();
     
-    // create an empty index first, so that DirTaxoWriter initializes createTime to null.
+    // create an empty index first, so that DirTaxoWriter initializes indexEpoch to 1.
     new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null)).close();
     
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
-    // we cannot commit null keys/values, this ensures that if DirTW.createTime is null, we can still commit.
     taxoWriter.close();
     
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
+    assertEquals(1, Integer.parseInt(taxoReader.getCommitUserData().get(DirectoryTaxonomyWriter.INDEX_EPOCH)));
     taxoReader.refresh();
     taxoReader.close();
     
@@ -267,10 +280,10 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     dir.close();
   }
 
-  private String getCreateTime(Directory taxoDir) throws IOException {
+  private long getEpoch(Directory taxoDir) throws IOException {
     SegmentInfos infos = new SegmentInfos();
     infos.read(taxoDir);
-    return infos.getUserData().get(DirectoryTaxonomyWriter.INDEX_CREATE_TIME);
+    return Long.parseLong(infos.getUserData().get(DirectoryTaxonomyWriter.INDEX_EPOCH));
   }
   
   @Test
@@ -286,7 +299,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     taxoWriter.addCategory(new CategoryPath("c"));
     taxoWriter.commit();
     
-    String origCreateTime = getCreateTime(dir);
+    long origEpoch = getEpoch(dir);
     
     // replace the taxonomy with the input one
     taxoWriter.replaceTaxonomy(input);
@@ -298,8 +311,8 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     
     taxoWriter.close();
     
-    String newCreateTime = getCreateTime(dir);
-    assertNotSame("create time should have been changed after replaceTaxonomy", origCreateTime, newCreateTime);
+    long newEpoch = getEpoch(dir);
+    assertTrue("index epoch should have been updated after replaceTaxonomy", origEpoch < newEpoch);
     
     dir.close();
     input.close();

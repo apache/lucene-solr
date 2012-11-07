@@ -174,6 +174,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     this.delimiter = delimiter;
   }
 
+  @Override
   public int getOrdinal(CategoryPath categoryPath) throws IOException {
     ensureOpen();
     if (categoryPath.length()==0) {
@@ -218,6 +219,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     return ret;
   }
 
+  @Override
   public CategoryPath getPath(int ordinal) throws IOException {
     ensureOpen();
     // TODO (Facet): Currently, the LRU cache we use (getCategoryCache) holds
@@ -235,6 +237,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     return new CategoryPath(label, delimiter);
   }
 
+  @Override
   public boolean getPath(int ordinal, CategoryPath result) throws IOException {
     ensureOpen();
     String label = getLabel(ordinal);
@@ -296,6 +299,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     return ret;
   }
 
+  @Override
   public int getParent(int ordinal) {
     ensureOpen();
     // Note how we don't need to hold the read lock to do the following,
@@ -327,6 +331,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
    * so you should always call getParentArray() again after a refresh().
    */
 
+  @Override
   public int[] getParentArray() {
     ensureOpen();
     // Note how we don't need to hold the read lock to do the following,
@@ -339,6 +344,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
   // Note that refresh() is synchronized (it is the only synchronized
   // method in this class) to ensure that it never gets called concurrently
   // with itself.
+  @Override
   public synchronized boolean refresh() throws IOException, InconsistentTaxonomyException {
     ensureOpen();
     /*
@@ -357,67 +363,70 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     DirectoryReader r2 = DirectoryReader.openIfChanged(indexReader);
     if (r2 == null) {
       return false; // no changes, nothing to do
-    } 
+    }
     
     // validate that a refresh is valid at this point, i.e. that the taxonomy 
     // was not recreated since this reader was last opened or refresshed.
-    String t1 = indexReader.getIndexCommit().getUserData().get(DirectoryTaxonomyWriter.INDEX_CREATE_TIME);
-    String t2 = r2.getIndexCommit().getUserData().get(DirectoryTaxonomyWriter.INDEX_CREATE_TIME);
-    if (t1==null) {
-      if (t2!=null) {
+    String t1 = indexReader.getIndexCommit().getUserData().get(DirectoryTaxonomyWriter.INDEX_EPOCH);
+    String t2 = r2.getIndexCommit().getUserData().get(DirectoryTaxonomyWriter.INDEX_EPOCH);
+    if (t1 == null) {
+      if (t2 != null) {
         r2.close();
-        throw new InconsistentTaxonomyException("Taxonomy was recreated at: "+t2);
+        throw new InconsistentTaxonomyException("Taxonomy was recreated, epoch= " + t2);
       }
     } else if (!t1.equals(t2)) {
+      // t1 != null and t2 cannot be null b/c DirTaxoWriter always puts the commit data.
+      // it's ok to use String.equals because we require the two epoch values to be the same.
       r2.close();
-      throw new InconsistentTaxonomyException("Taxonomy was recreated at: "+t2+"  !=  "+t1);
+      throw new InconsistentTaxonomyException("Taxonomy was recreated epoch = " + t2 + "  !=  " + t1);
     }
     
-      IndexReader oldreader = indexReader;
-      // we can close the old searcher, but need to synchronize this
-      // so that we don't close it in the middle that another routine
-      // is reading from it.
-      indexReaderLock.writeLock().lock();
-      indexReader = r2;
-      indexReaderLock.writeLock().unlock();
-      // We can close the old reader, but need to be certain that we
-      // don't close it while another method is reading from it.
-      // Luckily, we can be certain of that even without putting the
-      // oldreader.close() in the locked section. The reason is that
-      // after lock() succeeded above, we know that all existing readers
-      // had finished (this is what a read-write lock ensures). New
-      // readers, starting after the unlock() we just did, already got
-      // the new indexReader we set above. So nobody can be possibly
-      // using the old indexReader, and we can close it:
-      oldreader.close();
-
-      // We prefetch some of the arrays to make requests much faster.
-      // Let's refresh these prefetched arrays; This refresh is much
-      // is made more efficient by assuming that it is enough to read
-      // the values for new categories (old categories could not have been
-      // changed or deleted)
-      // Note that this this done without the write lock being held,
-      // which means that it is possible that during a refresh(), a
-      // reader will have some methods (like getOrdinal and getCategory)
-      // return fresh information, while getParent()
-      // (only to be prefetched now) still return older information.
-      // We consider this to be acceptable. The important thing,
-      // however, is that refreshPrefetchArrays() itself writes to
-      // the arrays in a correct manner (see discussion there)
-      parentArray.refresh(indexReader);
-
-      // Remove any INVALID_ORDINAL values from the ordinal cache,
-      // because it is possible those are now answered by the new data!
-      Iterator<Entry<String, Integer>> i = ordinalCache.entrySet().iterator();
-      while (i.hasNext()) {
-        Entry<String, Integer> e = i.next();
-        if (e.getValue().intValue() == INVALID_ORDINAL) {
-          i.remove();
-        }
+    IndexReader oldreader = indexReader;
+    // we can close the old searcher, but need to synchronize this
+    // so that we don't close it in the middle that another routine
+    // is reading from it.
+    indexReaderLock.writeLock().lock();
+    indexReader = r2;
+    indexReaderLock.writeLock().unlock();
+    // We can close the old reader, but need to be certain that we
+    // don't close it while another method is reading from it.
+    // Luckily, we can be certain of that even without putting the
+    // oldreader.close() in the locked section. The reason is that
+    // after lock() succeeded above, we know that all existing readers
+    // had finished (this is what a read-write lock ensures). New
+    // readers, starting after the unlock() we just did, already got
+    // the new indexReader we set above. So nobody can be possibly
+    // using the old indexReader, and we can close it:
+    oldreader.close();
+    
+    // We prefetch some of the arrays to make requests much faster.
+    // Let's refresh these prefetched arrays; This refresh is much
+    // is made more efficient by assuming that it is enough to read
+    // the values for new categories (old categories could not have been
+    // changed or deleted)
+    // Note that this this done without the write lock being held,
+    // which means that it is possible that during a refresh(), a
+    // reader will have some methods (like getOrdinal and getCategory)
+    // return fresh information, while getParent()
+    // (only to be prefetched now) still return older information.
+    // We consider this to be acceptable. The important thing,
+    // however, is that refreshPrefetchArrays() itself writes to
+    // the arrays in a correct manner (see discussion there)
+    parentArray.refresh(indexReader);
+    
+    // Remove any INVALID_ORDINAL values from the ordinal cache,
+    // because it is possible those are now answered by the new data!
+    Iterator<Entry<String, Integer>> i = ordinalCache.entrySet().iterator();
+    while (i.hasNext()) {
+      Entry<String, Integer> e = i.next();
+      if (e.getValue().intValue() == INVALID_ORDINAL) {
+        i.remove();
       }
-      return true;
     }
+    return true;
+  }
 
+  @Override
   public void close() throws IOException {
     if (!closed) {
       synchronized (this) {
@@ -440,6 +449,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     ordinalCache.clear();
   }
 
+  @Override
   public int getSize() {
     ensureOpen();
     indexReaderLock.readLock().lock();
@@ -450,6 +460,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
     }
   }
 
+  @Override
   public Map<String, String> getCommitUserData() throws IOException {
     ensureOpen();
     return indexReader.getIndexCommit().getUserData();
@@ -458,6 +469,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
   private ChildrenArrays childrenArrays;
   Object childrenArraysRebuild = new Object();
 
+  @Override
   public ChildrenArrays getChildrenArrays() {
     ensureOpen();
     // Check if the taxonomy grew since we built the array, and if it
@@ -543,9 +555,11 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
       this.youngestChildArray = youngestChildArray;
       this.olderSiblingArray = olderSiblingArray;
     }
+    @Override
     public int[] getOlderSiblingArray() {
       return olderSiblingArray;
     }
+    @Override
     public int[] getYoungestChildArray() {
       return youngestChildArray;
     }    
@@ -567,6 +581,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
    * Expert: decreases the refCount of this TaxonomyReader instance. If the
    * refCount drops to 0, then this reader is closed.
    */
+  @Override
   public void decRef() throws IOException {
     ensureOpen();
     final int rc = refCount.decrementAndGet();
@@ -587,6 +602,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
   }
   
   /** Expert: returns the current refCount for this taxonomy reader */
+  @Override
   public int getRefCount() {
     return refCount.get();
   }
@@ -598,6 +614,7 @@ public class DirectoryTaxonomyReader implements TaxonomyReader {
    * Be sure to always call a corresponding decRef(), in a finally clause; 
    * otherwise the reader may never be closed. 
    */
+  @Override
   public void incRef() {
     ensureOpen();
     refCount.incrementAndGet();
