@@ -68,9 +68,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     }
     
     @Override
-    public void computeNorm(FieldInvertState state, Norm norm) {
+    public float lengthNorm(FieldInvertState state) {
       // Disable length norm
-      norm.setByte(encodeNormValue(state.getBoost()));
+      return state.getBoost();
     }
     
     @Override

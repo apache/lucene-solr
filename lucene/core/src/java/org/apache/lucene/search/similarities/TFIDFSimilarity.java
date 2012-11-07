@@ -22,6 +22,8 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.Norm;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
@@ -668,6 +670,23 @@ public abstract class TFIDFSimilarity extends Similarity {
    */
   public abstract float idf(long docFreq, long numDocs);
 
+  /**
+   * Compute an index-time normalization value for this field instance.
+   * <p>
+   * This value will be stored in a single byte lossy representation by 
+   * {@link #encodeNormValue(float)}.
+   * 
+   * @param state statistics of the current field (such as length, boost, etc)
+   * @return an index-time normalization value
+   */
+  public abstract float lengthNorm(FieldInvertState state);
+  
+  @Override
+  public final void computeNorm(FieldInvertState state, Norm norm) {
+    float normValue = lengthNorm(state);
+    norm.setByte(encodeNormValue(normValue));
+  }
+  
   /** Cache of decoded bytes. */
   private static final float[] NORM_TABLE = new float[256];
 

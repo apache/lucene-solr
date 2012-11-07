@@ -314,8 +314,8 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     @Override 
-    public void computeNorm(FieldInvertState state, Norm norm) {
-      norm.setByte(encodeNormValue(state.getBoost()));
+    public float lengthNorm(FieldInvertState state) {
+      return state.getBoost();
     }
 
     @Override
