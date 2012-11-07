@@ -19,7 +19,7 @@ package org.apache.lucene.codecs.compressing;
 
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.BYTE_ARR;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.CODEC_NAME_DAT;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.*;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.CODEC_NAME_IDX;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.HEADER_LENGTH_DAT;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.HEADER_LENGTH_IDX;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_DOUBLE;
@@ -27,6 +27,7 @@ import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_INT;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_LONG;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.STRING;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_BITS;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_MASK;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
@@ -34,6 +35,7 @@ import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.FIELD
 import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.FIELDS_INDEX_EXTENSION;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
@@ -65,7 +67,7 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
   private final BytesRef bytes;
   private final int numDocs;
   private boolean closed;
-  
+
   // used by clone
   private CompressingStoredFieldsReader(CompressingStoredFieldsReader reader) {
     this.fieldInfos = reader.fieldInfos;
@@ -78,7 +80,7 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
     this.bytes = new BytesRef(reader.bytes.bytes.length);
     this.closed = false;
   }
-  
+
   public CompressingStoredFieldsReader(Directory d, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
     final String segment = si.name;
     boolean success = false;
@@ -187,31 +189,63 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
     final int docBase = fieldsStream.readVInt();
     final int chunkDocs = fieldsStream.readVInt();
-    final int bitsPerValue = fieldsStream.readVInt();
     if (docID < docBase
         || docID >= docBase + chunkDocs
-        || docBase + chunkDocs > numDocs
-        || bitsPerValue > 31) {
+        || docBase + chunkDocs > numDocs) {
       throw new CorruptIndexException("Corrupted: docID=" + docID
           + ", docBase=" + docBase + ", chunkDocs=" + chunkDocs
-          + ", numDocs=" + numDocs + ", bitsPerValue=" + bitsPerValue);
+          + ", numDocs=" + numDocs);
     }
 
-    final long filePointer = fieldsStream.getFilePointer();
-    final PackedInts.ReaderIterator lengths = PackedInts.getReaderIteratorNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerValue, 1);
-    int offset = 0;
-    for (int i = docBase; i < docID; ++i) {
-      offset += lengths.next();
+    final int numStoredFields, offset, length;
+    if (chunkDocs == 1) {
+      numStoredFields = fieldsStream.readVInt();
+      offset = 0;
+      length = fieldsStream.readVInt();
+    } else {
+      final int bitsPerStoredFields = fieldsStream.readVInt();
+      if (bitsPerStoredFields == 0) {
+        numStoredFields = fieldsStream.readVInt();
+      } else if (bitsPerStoredFields > 31) {
+        throw new CorruptIndexException("bitsPerStoredFields=" + bitsPerStoredFields);
+      } else {
+        final long filePointer = fieldsStream.getFilePointer();
+        final PackedInts.Reader reader = PackedInts.getDirectReaderNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerStoredFields);
+        numStoredFields = (int) (reader.get(docID - docBase));
+        fieldsStream.seek(filePointer + PackedInts.Format.PACKED.byteCount(packedIntsVersion, chunkDocs, bitsPerStoredFields));
+      }
+
+      final int bitsPerLength = fieldsStream.readVInt();
+      if (bitsPerLength == 0) {
+        length = fieldsStream.readVInt();
+        offset = (docID - docBase) * length;
+      } else if (bitsPerStoredFields > 31) {
+        throw new CorruptIndexException("bitsPerLength=" + bitsPerLength);
+      } else {
+        final long filePointer = fieldsStream.getFilePointer();
+        final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerLength, 1);
+        int off = 0;
+        for (int i = 0; i < docID - docBase; ++i) {
+          off += it.next();
+        }
+        offset = off;
+        length = (int) it.next();
+        fieldsStream.seek(filePointer + PackedInts.Format.PACKED.byteCount(packedIntsVersion, chunkDocs, bitsPerLength));
+      }
     }
-    final int length = (int) lengths.next();
-    // skip the last values
-    fieldsStream.seek(filePointer + PackedInts.Format.PACKED.byteCount(packedIntsVersion, chunkDocs, bitsPerValue));
+
+    if ((length == 0) != (numStoredFields == 0)) {
+      throw new CorruptIndexException("length=" + length + ", numStoredFields=" + numStoredFields);
+    }
+    if (numStoredFields == 0) {
+      // nothing to do
+      return;
+    }
 
     decompressor.decompress(fieldsStream, offset, length, bytes);
 
     final ByteArrayDataInput documentInput = new ByteArrayDataInput(bytes.bytes, bytes.offset, bytes.length);
-    final int numFields = documentInput.readVInt();
-    for (int fieldIDX = 0; fieldIDX < numFields; fieldIDX++) {
+    for (int fieldIDX = 0; fieldIDX < numStoredFields; fieldIDX++) {
       final long infoAndBits = documentInput.readVLong();
       final int fieldNumber = (int) (infoAndBits >>> TYPE_BITS);
       FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
@@ -222,14 +256,17 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
       switch(visitor.needsField(fieldInfo)) {
         case YES:
           readField(documentInput, visitor, fieldInfo, bits);
+          assert documentInput.getPosition() <= bytes.offset + bytes.length : documentInput.getPosition() + " " + bytes.offset + bytes.length;
           break;
-        case NO: 
+        case NO:
           skipField(documentInput, bits);
+          assert documentInput.getPosition() <= bytes.offset + bytes.length : documentInput.getPosition() + " " + bytes.offset + bytes.length;
           break;
-        case STOP: 
+        case STOP:
           return;
       }
     }
+    assert documentInput.getPosition() == bytes.offset + bytes.length : documentInput.getPosition() + " " + bytes.offset + " " + bytes.length;
   }
 
   @Override
@@ -253,28 +290,14 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
     BytesRef bytes;
     int docBase;
     int chunkDocs;
+    int[] numStoredFields;
     int[] lengths;
 
     private ChunkIterator() {
       this.docBase = -1;
       bytes = new BytesRef();
-      lengths = new int[0];
-    }
-
-    private int readHeader() throws IOException {
-      final int docBase = fieldsStream.readVInt();
-      final int chunkDocs = fieldsStream.readVInt();
-      final int bitsPerValue = fieldsStream.readVInt();
-      if (docBase < this.docBase + this.chunkDocs
-          || docBase + chunkDocs > numDocs
-          || bitsPerValue > 31) {
-        throw new CorruptIndexException("Corrupted: current docBase=" + this.docBase
-            + ", current numDocs=" + this.chunkDocs + ", new docBase=" + docBase
-            + ", new numDocs=" + chunkDocs + ", bitsPerValue=" + bitsPerValue);
-      }
-      this.docBase = docBase;
-      this.chunkDocs = chunkDocs;
-      return bitsPerValue;
+      numStoredFields = new int[1];
+      lengths = new int[1];
     }
 
     /**
@@ -293,26 +316,52 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
      */
     void next(int doc) throws IOException {
       assert doc >= docBase + chunkDocs : doc + " " + docBase + " " + chunkDocs;
-      // try next chunk
-      int bitsPerValue = readHeader();
-      if (docBase + chunkDocs <= doc) {
-        // doc is not in the next chunk, use seek to skip to the next document chunk
-        fieldsStream.seek(indexReader.getStartPointer(doc));
-        bitsPerValue = readHeader();
+      fieldsStream.seek(indexReader.getStartPointer(doc));
+
+      final int docBase = fieldsStream.readVInt();
+      final int chunkDocs = fieldsStream.readVInt();
+      if (docBase < this.docBase + this.chunkDocs
+          || docBase + chunkDocs > numDocs) {
+        throw new CorruptIndexException("Corrupted: current docBase=" + this.docBase
+            + ", current numDocs=" + this.chunkDocs + ", new docBase=" + docBase
+            + ", new numDocs=" + chunkDocs);
       }
-      if (doc < docBase
-          || doc >= docBase + chunkDocs) {
-        throw new CorruptIndexException("Corrupted: docID=" + doc
-            + ", docBase=" + docBase + ", chunkDocs=" + chunkDocs);
+      this.docBase = docBase;
+      this.chunkDocs = chunkDocs;
+
+      if (chunkDocs > numStoredFields.length) {
+        final int newLength = ArrayUtil.oversize(chunkDocs, 4);
+        numStoredFields = new int[newLength];
+        lengths = new int[newLength];
       }
 
-      // decode lengths
-      if (lengths.length < chunkDocs) {
-        lengths = new int[ArrayUtil.oversize(chunkDocs, 4)];
-      }
-      final PackedInts.ReaderIterator iterator = PackedInts.getReaderIteratorNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerValue, 0);
-      for (int i = 0; i < chunkDocs; ++i) {
-        lengths[i] = (int) iterator.next();
+      if (chunkDocs == 1) {
+        numStoredFields[0] = fieldsStream.readVInt();
+        lengths[0] = fieldsStream.readVInt();
+      } else {
+        final int bitsPerStoredFields = fieldsStream.readVInt();
+        if (bitsPerStoredFields == 0) {
+          Arrays.fill(numStoredFields, 0, chunkDocs, fieldsStream.readVInt());
+        } else if (bitsPerStoredFields > 31) {
+          throw new CorruptIndexException("bitsPerStoredFields=" + bitsPerStoredFields);
+        } else {
+          final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerStoredFields, 1);
+          for (int i = 0; i < chunkDocs; ++i) {
+            numStoredFields[i] = (int) it.next();
+          }
+        }
+
+        final int bitsPerLength = fieldsStream.readVInt();
+        if (bitsPerLength == 0) {
+          Arrays.fill(lengths, 0, chunkDocs, fieldsStream.readVInt());
+        } else if (bitsPerLength > 31) {
+          throw new CorruptIndexException("bitsPerLength=" + bitsPerLength);
+        } else {
+          final PackedInts.ReaderIterator it = PackedInts.getReaderIteratorNoHeader(fieldsStream, PackedInts.Format.PACKED, packedIntsVersion, chunkDocs, bitsPerLength, 1);
+          for (int i = 0; i < chunkDocs; ++i) {
+            lengths[i] = (int) it.next();
+          }
+        }
       }
     }
 
