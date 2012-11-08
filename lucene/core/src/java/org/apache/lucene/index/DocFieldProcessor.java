@@ -91,7 +91,8 @@ final class DocFieldProcessor extends DocConsumer {
       while(field != null) {
         // nocommit maybe we should sort by .... somethign?
         // field name?  field number?  else this is hash order!!
-        if (field.bytesDVWriter != null) {
+        if (field.bytesDVWriter != null || field.numberDVWriter != null) {
+
           if (dvConsumer == null) {
             SimpleDocValuesFormat fmt =  state.segmentInfo.getCodec().simpleDocValuesFormat();
             // nocommit once we make
@@ -104,10 +105,19 @@ final class DocFieldProcessor extends DocConsumer {
 
             dvConsumer = fmt.fieldsConsumer(state.directory, state.segmentInfo, state.fieldInfos, state.context);
           }
-          field.bytesDVWriter.flush(field.fieldInfo, state,
-                                    dvConsumer.addBinaryField(field.fieldInfo,
-                                                              field.bytesDVWriter.fixedLength >= 0,
-                                                              field.bytesDVWriter.maxLength));
+
+          if (field.bytesDVWriter != null) {
+            field.bytesDVWriter.flush(field.fieldInfo, state,
+                                      dvConsumer.addBinaryField(field.fieldInfo,
+                                                                field.bytesDVWriter.fixedLength >= 0,
+                                                                field.bytesDVWriter.maxLength));
+          }
+          if (field.numberDVWriter != null) {
+            field.numberDVWriter.flush(field.fieldInfo, state,
+                                       dvConsumer.addNumericField(field.fieldInfo,
+                                                                  field.numberDVWriter.minValue,
+                                                                  field.numberDVWriter.maxValue));
+          }
         }
         field = field.next;
       }
@@ -281,6 +291,13 @@ final class DocFieldProcessor extends DocConsumer {
         switch(dvType) {
         case BYTES_VAR_STRAIGHT:
           fp.addBytesDVField(docState.docID, field.binaryValue());
+          break;
+        case VAR_INTS:
+        case FIXED_INTS_8:
+        case FIXED_INTS_16:
+        case FIXED_INTS_32:
+        case FIXED_INTS_64:
+          fp.addNumberDVField(docState.docID, field.numericValue());
           break;
         default:
           break;

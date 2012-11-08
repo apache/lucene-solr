@@ -21,79 +21,73 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.codecs.BinaryDocValuesConsumer;
-import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.codecs.NumericDocValuesConsumer;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
 
+// nocommit pick numeric or number ... then fix all places ...
 
-/** Buffers up pending byte[] per doc, then flushes when
+/** Buffers up pending long per doc, then flushes when
  *  segment flushes. */
 // nocommit name?
 // nocommit make this a consumer in the chain?
-class BytesDVWriter {
+class NumberDVWriter {
+
+  private final static Long MISSING = new Long(0);
 
   // nocommit more ram efficient?
-  private final ArrayList<byte[]> pending = new ArrayList<byte[]>();
+  private final ArrayList<Long> pending = new ArrayList<Long>();
   private final Counter iwBytesUsed;
   private int bytesUsed;
   private final FieldInfo fieldInfo;
 
-  // -2 means not set yet; -1 means length isn't fixed;
-  // -otherwise it's the fixed length seen so far:
-  int fixedLength = -2;
-  int maxLength;
+  long minValue;
+  long maxValue;
+  private boolean anyValues;
 
-  public BytesDVWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+  public NumberDVWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
   }
 
-  public void addValue(int docID, BytesRef value) {
+  public void addValue(int docID, long value) {
     final int oldBytesUsed = bytesUsed;
-    if (value == null) {
-      // nocommit improve message
-      throw new IllegalArgumentException("null binaryValue not allowed (field=" + fieldInfo.name + ")");
-    }
-    mergeLength(value.length);
+    mergeValue(value);
+
     // Fill in any holes:
     while(pending.size() < docID) {
-      pending.add(BytesRef.EMPTY_BYTES);
+      pending.add(MISSING);
       bytesUsed += RamUsageEstimator.NUM_BYTES_OBJECT_REF;
-      mergeLength(0);
+      mergeValue(0);
     }
-    byte[] bytes = new byte[value.length];
-    System.arraycopy(value.bytes, value.offset, bytes, 0, value.length);
-    pending.add(bytes);
+
+    pending.add(value);
 
     // estimate 25% overhead for ArrayList:
-    bytesUsed += (int) (bytes.length + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + (RamUsageEstimator.NUM_BYTES_OBJECT_REF * 1.25));
+    bytesUsed += (int) (RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_LONG + (RamUsageEstimator.NUM_BYTES_OBJECT_REF * 1.25));
     iwBytesUsed.addAndGet(bytesUsed - oldBytesUsed);
     //System.out.println("ADD: " + value);
   }
 
-  private void mergeLength(int length) {
-    if (fixedLength == -2) {
-      fixedLength = length;
-    } else if (fixedLength != length) {
-      fixedLength = -1;
+  private void mergeValue(long value) {
+    if (!anyValues) {
+      anyValues = true;
+      minValue = maxValue = value;
+    } else {
+      maxValue = Math.max(value, maxValue);
+      minValue = Math.min(value, minValue);
     }
-    maxLength = Math.max(maxLength, length);
   }
 
-  public void flush(FieldInfo fieldInfo, SegmentWriteState state, BinaryDocValuesConsumer consumer) throws IOException {
+  public void flush(FieldInfo fieldInfo, SegmentWriteState state, NumericDocValuesConsumer consumer) throws IOException {
     final int bufferedDocCount = pending.size();
-    BytesRef value = new BytesRef();
 
     for(int docID=0;docID<bufferedDocCount;docID++) {
-      value.bytes = pending.get(docID);
-      value.length = value.bytes.length;
-      consumer.add(value);
+      consumer.add(pending.get(docID));
     }
     final int maxDoc = state.segmentInfo.getDocCount();
-    value.length = 0;
     for(int docID=bufferedDocCount;docID<maxDoc;docID++) {
-      consumer.add(value);
+      consumer.add(0);
     }
     reset();
     //System.out.println("FLUSH");
@@ -103,12 +97,14 @@ class BytesDVWriter {
     reset();
   }
 
+  // nocommit do we really need this...?  can't parent alloc
+  // a new instance after flush?
   private void reset() {
     pending.clear();
     pending.trimToSize();
     iwBytesUsed.addAndGet(-bytesUsed);
+    anyValues = false;
+    minValue = maxValue = 0;
     bytesUsed = 0;
-    fixedLength = -2;
-    maxLength = 0;
   }
 }

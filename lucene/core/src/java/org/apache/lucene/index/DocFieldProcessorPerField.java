@@ -31,7 +31,11 @@ final class DocFieldProcessorPerField {
   final DocFieldConsumerPerField consumer;
   final FieldInfo fieldInfo;
   private final Counter bytesUsed;
+
+  // nocommit after flush we should null these out?  then we
+  // don't need reset() impl'd in each...
   BytesDVWriter bytesDVWriter;
+  NumberDVWriter numberDVWriter;
 
   DocFieldProcessorPerField next;
   int lastGen = -1;
@@ -53,6 +57,14 @@ final class DocFieldProcessorPerField {
     bytesDVWriter.addValue(docID, value);
   }
 
+  // nocommit make this generic chain through consumer?
+  public void addNumberDVField(int docID, Number value) {
+    if (numberDVWriter == null) {
+      numberDVWriter = new NumberDVWriter(fieldInfo, bytesUsed);
+    }
+    numberDVWriter.addValue(docID, value.longValue());
+  }
+
   public void addField(IndexableField field) {
     if (fieldCount == fields.length) {
       int newSize = ArrayUtil.oversize(fieldCount + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
@@ -68,6 +80,9 @@ final class DocFieldProcessorPerField {
     consumer.abort();
     if (bytesDVWriter != null) {
       bytesDVWriter.abort();
+    }
+    if (numberDVWriter != null) {
+      numberDVWriter.abort();
     }
   }
 }
