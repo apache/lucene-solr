@@ -98,6 +98,7 @@ final class DocFieldProcessor extends DocConsumer {
             // Codec.simpleDocValuesFormat abstract, change
             // this to assert dvConsumer != null!
             if (fmt == null) {
+              field = field.next;
               continue;
             }
 
