@@ -43,7 +43,7 @@
     <!-- start.jar -->
     <!-- TODO: put this in ivy.xml -->
     <ivy:retrieve inline="true" organisation="org.eclipse.jetty" 
-                  module="jetty-start" revision="8.1.2.v20120308" 
+                  module="jetty-start" revision="8.1.7.v20120910" 
                   transitive="false" type="jar" log="download-only" 
                   pattern="start.jar"/>
     <!-- servlet-api.jar -->
