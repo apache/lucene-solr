@@ -18,6 +18,8 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -28,6 +30,8 @@ final class DocFieldProcessorPerField {
 
   final DocFieldConsumerPerField consumer;
   final FieldInfo fieldInfo;
+  private final Counter bytesUsed;
+  BytesDVWriter bytesDVWriter;
 
   DocFieldProcessorPerField next;
   int lastGen = -1;
@@ -38,6 +42,15 @@ final class DocFieldProcessorPerField {
   public DocFieldProcessorPerField(final DocFieldProcessor docFieldProcessor, final FieldInfo fieldInfo) {
     this.consumer = docFieldProcessor.consumer.addField(fieldInfo);
     this.fieldInfo = fieldInfo;
+    this.bytesUsed = docFieldProcessor.bytesUsed;
+  }
+
+  // nocommit make this generic chain through consumer?
+  public void addBytesDVField(int docID, BytesRef value) {
+    if (bytesDVWriter == null) {
+      bytesDVWriter = new BytesDVWriter(fieldInfo, bytesUsed);
+    }
+    bytesDVWriter.addValue(docID, value);
   }
 
   public void addField(IndexableField field) {
@@ -53,5 +66,8 @@ final class DocFieldProcessorPerField {
 
   public void abort() {
     consumer.abort();
+    if (bytesDVWriter != null) {
+      bytesDVWriter.abort();
+    }
   }
 }

@@ -82,8 +82,8 @@ class DocumentsWriterPerThread {
       final TermsHashConsumer termVectorsWriter = new TermVectorsConsumer(documentsWriterPerThread);
       final TermsHashConsumer freqProxWriter = new FreqProxTermsWriter();
 
-      final InvertedDocConsumer  termsHash = new TermsHash(documentsWriterPerThread, freqProxWriter, true,
-                                                           new TermsHash(documentsWriterPerThread, termVectorsWriter, false, null));
+      final InvertedDocConsumer termsHash = new TermsHash(documentsWriterPerThread, freqProxWriter, true,
+                                                          new TermsHash(documentsWriterPerThread, termVectorsWriter, false, null));
       final NormsConsumer normsWriter = new NormsConsumer(documentsWriterPerThread);
       final DocInverter docInverter = new DocInverter(documentsWriterPerThread.docState, termsHash, normsWriter);
       return new DocFieldProcessor(documentsWriterPerThread, docInverter);

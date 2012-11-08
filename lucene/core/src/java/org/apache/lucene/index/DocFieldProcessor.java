@@ -28,11 +28,14 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.PerDocConsumer;
+import org.apache.lucene.codecs.SimpleDVConsumer;
+import org.apache.lucene.codecs.SimpleDocValuesFormat;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
 import org.apache.lucene.index.TypePromoter.TypeCompatibility;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IOUtils;
 
 
@@ -62,9 +65,12 @@ final class DocFieldProcessor extends DocConsumer {
   int fieldGen;
   final DocumentsWriterPerThread.DocState docState;
 
+  final Counter bytesUsed;
+
   public DocFieldProcessor(DocumentsWriterPerThread docWriter, DocFieldConsumer consumer) {
     this.docState = docWriter.docState;
     this.codec = docWriter.codec;
+    this.bytesUsed = docWriter.bytesUsed;
     this.consumer = consumer;
     fieldsWriter = new StoredFieldsConsumer(docWriter);
   }
@@ -77,6 +83,37 @@ final class DocFieldProcessor extends DocConsumer {
     for (DocFieldConsumerPerField f : fields) {
       childFields.put(f.getFieldInfo().name, f);
     }
+
+    SimpleDVConsumer dvConsumer = null;
+
+    for(int i=0;i<fieldHash.length;i++) {
+      DocFieldProcessorPerField field = fieldHash[i];
+      while(field != null) {
+        // nocommit maybe we should sort by .... somethign?
+        // field name?  field number?  else this is hash order!!
+        if (field.bytesDVWriter != null) {
+          if (dvConsumer == null) {
+            SimpleDocValuesFormat fmt =  state.segmentInfo.getCodec().simpleDocValuesFormat();
+            // nocommit once we make
+            // Codec.simpleDocValuesFormat abstract, change
+            // this to assert dvConsumer != null!
+            if (fmt == null) {
+              continue;
+            }
+
+            dvConsumer = fmt.fieldsConsumer(state.directory, state.segmentInfo, state.fieldInfos, state.context);
+          }
+          field.bytesDVWriter.flush(field.fieldInfo, state,
+                                    dvConsumer.addBinaryField(field.fieldInfo,
+                                                              field.bytesDVWriter.fixedLength >= 0,
+                                                              field.bytesDVWriter.maxLength));
+        }
+        field = field.next;
+      }
+    }
+
+    assert fields.size() == totalFieldCount;
+
 
     fieldsWriter.flush(state);
     consumer.flush(childFields, state);
@@ -235,8 +272,18 @@ final class DocFieldProcessor extends DocConsumer {
         fieldsWriter.addField(field, fp.fieldInfo);
       }
       
+      // nocommit the DV indexing should be just another
+      // consumer in the chain, not stuck inside here?  this
+      // source should just "dispatch"
       final DocValues.Type dvType = ft.docValueType();
       if (dvType != null) {
+        switch(dvType) {
+        case BYTES_VAR_STRAIGHT:
+          fp.addBytesDVField(docState.docID, field.binaryValue());
+          break;
+        default:
+          break;
+        }
         DocValuesConsumerHolder docValuesConsumer = docValuesConsumer(dvType,
             docState, fp.fieldInfo);
         DocValuesConsumer consumer = docValuesConsumer.docValuesConsumer;

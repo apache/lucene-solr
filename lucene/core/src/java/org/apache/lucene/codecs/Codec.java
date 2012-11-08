@@ -67,6 +67,12 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   
   /** Encodes/decodes docvalues */
   public abstract DocValuesFormat docValuesFormat();
+
+  /** Encodes/decodes streaming docvalues */
+  public SimpleDocValuesFormat simpleDocValuesFormat() {
+    // nocommit make this abstract
+    return null;
+  }
   
   /** Encodes/decodes stored fields */
   public abstract StoredFieldsFormat storedFieldsFormat();
