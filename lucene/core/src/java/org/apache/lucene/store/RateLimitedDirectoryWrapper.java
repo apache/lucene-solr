@@ -23,9 +23,9 @@ import org.apache.lucene.store.IOContext.Context;
 /**
  * 
  * A {@link Directory} wrapper that allows {@link IndexOutput} rate limiting using
- * {@link Context IO context} specific {@link RateLimiter rate limiters}.
+ * {@link IOContext.Context IO context} specific {@link RateLimiter rate limiters}.
  * 
- *  @see #setRateLimiter(RateLimiter, Context)
+ *  @see #setRateLimiter(RateLimiter, IOContext.Context)
  * @lucene.experimental
  */
 public final class RateLimitedDirectoryWrapper extends Directory {
@@ -180,12 +180,12 @@ public final class RateLimitedDirectoryWrapper extends Directory {
   
   /**
    * Sets the rate limiter to be used to limit (approx) MB/sec allowed by all IO
-   * performed with the given {@link Context context}. Pass <code>null</code> to
+   * performed with the given {@link IOContext.Context context}. Pass <code>null</code> to
    * have no limit.
    * 
    * <p>
    * Passing an instance of rate limiter compared to setting it using
-   * {@link #setMaxWriteMBPerSec(Double, org.apache.lucene.store.IOContext.Context)}
+   * {@link #setMaxWriteMBPerSec(Double, IOContext.Context)}
    * allows to use the same limiter instance across several directories globally
    * limiting IO across them.
    * 
