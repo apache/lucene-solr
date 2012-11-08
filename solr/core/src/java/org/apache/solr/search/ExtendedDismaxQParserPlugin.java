@@ -121,7 +121,10 @@ class ExtendedDismaxQParser extends QParser {
     SolrParams params = getParams();
     
     solrParams = SolrParams.wrapDefaults(localParams, params);
-
+    // Solr 4.0 sets the default at 0% if q.op=OR and %100 if q.op =AND
+    // just go with the flow and use 3.6 default of 100% here
+    final String minShouldMatch = solrParams.get(DisMaxParams.MM, "100%");
+     
     userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(DMP.UF)));
     
     queryFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.QF));
@@ -235,7 +238,9 @@ class ExtendedDismaxQParser extends QParser {
       // For correct lucene queries, turn off mm processing if there
       // were explicit operators (except for AND).
       boolean doMinMatched = (numOR + numNOT + numPluses + numMinuses) == 0;
-
+      // but always for unstructured implicit bqs created by getFieldQuery
+      up.minShouldMatch = minShouldMatch;
+    
       try {
         up.setRemoveStopFilter(!stopwords);
         up.exceptions = true;
@@ -252,7 +257,6 @@ class ExtendedDismaxQParser extends QParser {
       }
 
       if (parsedUserQuery != null && doMinMatched) {
-        String minShouldMatch = solrParams.get(DisMaxParams.MM, "100%");
         if (parsedUserQuery instanceof BooleanQuery) {
           SolrPluginUtils.setMinShouldMatch((BooleanQuery)parsedUserQuery, minShouldMatch);
         }
@@ -295,8 +299,7 @@ class ExtendedDismaxQParser extends QParser {
         parsedUserQuery = up.parse(escapedUserQuery);
 
         // Only do minimum-match logic
-        String minShouldMatch = solrParams.get(DisMaxParams.MM, "100%");
-
+    
         if (parsedUserQuery instanceof BooleanQuery) {
           BooleanQuery t = new BooleanQuery();
           SolrPluginUtils.flattenBooleanQuery(t, (BooleanQuery)parsedUserQuery);
@@ -874,6 +877,7 @@ class ExtendedDismaxQParser extends QParser {
                               // used when constructing boosting part of query via sloppy phrases
     boolean exceptions;  //  allow exceptions to be thrown (for example on a missing field)
 
+    String minShouldMatch; // for inner boolean queries produced from a single fieldQuery
     ExtendedAnalyzer analyzer;
 
     /**
@@ -1117,6 +1121,18 @@ class ExtendedDismaxQParser extends QParser {
           case FIELD:  // fallthrough
           case PHRASE:
             Query query = super.getFieldQuery(field, val, type == QType.PHRASE);
+            // A BooleanQuery is only possible from getFieldQuery if it came from
+            // a single whitespace separated term. In this case, check the coordination
+            // factor on the query: if its enabled, that means we aren't a set of synonyms
+            // but instead multiple terms from one whitespace-separated term, we must
+            // apply minShouldMatch here so that it works correctly with other things
+            // like aliasing.
+            if (query instanceof BooleanQuery) {
+              BooleanQuery bq = (BooleanQuery) query;
+              if (!bq.isCoordDisabled()) {
+                SolrPluginUtils.setMinShouldMatch(bq, minShouldMatch);
+              }
+            }
             if (query instanceof PhraseQuery) {
               PhraseQuery pq = (PhraseQuery)query;
               if (minClauseSize > 1 && pq.getTerms().length < minClauseSize) return null;
