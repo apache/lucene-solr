@@ -162,7 +162,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       throw new IOException("cannot sync after crash");
     }
     unSyncedFiles.removeAll(names);
-    if (LuceneTestCase.rarely(randomState) || delegate instanceof NRTCachingDirectory) {
+    // TODO: need to improve hack to be OK w/
+    // RateLimitingDirWrapper in between...
+    if (true || LuceneTestCase.rarely(randomState) || delegate instanceof NRTCachingDirectory) {
       // don't wear out our hardware so much in tests.
       delegate.sync(names);
     }
