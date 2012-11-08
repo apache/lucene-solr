@@ -95,7 +95,11 @@ API Changes
 
 * LUCENE-4520: ValueSource.getSortField no longer throws IOExceptions
   (Alan Woodward)
-
+  
+* LUCENE-4537: RateLimiter is now separated from FSDirectory and exposed via
+  RateLimitingDirectoryWrapper. Any Directory can now be rate-limited.
+  (Simon Willnauer)  
+  
 Bug Fixes
 
 * LUCENE-1822: BaseFragListBuilder hard-coded 6 char margin is too naive.
