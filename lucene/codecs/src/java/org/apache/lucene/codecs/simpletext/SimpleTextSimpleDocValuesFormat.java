@@ -76,8 +76,8 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
    *  for bytes this is also a "fixed-width" file, for example:
    *  <pre>
    *  field myField
-   *    pattern 0
    *    maxlength 8
+   *    pattern 0
    *  length 6
    *  foobar[space][space]
    *  length 3
@@ -140,9 +140,50 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     }
 
     @Override
-    public BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, int maxLength) throws IOException {
+    public BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, final int maxLength) throws IOException {
       writeFieldEntry(field);
-      return null; // nocommit
+      // write maxLength
+      SimpleTextUtil.write(data, MAXLENGTH);
+      SimpleTextUtil.write(data, Integer.toString(maxLength), scratch);
+      SimpleTextUtil.writeNewline(data);
+      
+      int maxBytesLength = Long.toString(maxLength).length();
+      StringBuilder sb = new StringBuilder();
+      for (int i = 0; i < maxBytesLength; i++) {
+        sb.append('0');
+      }
+      // write our pattern for encoding lengths
+      SimpleTextUtil.write(data, PATTERN);
+      SimpleTextUtil.write(data, sb.toString(), scratch);
+      SimpleTextUtil.writeNewline(data);
+      final DecimalFormat encoder = new DecimalFormat(sb.toString(), new DecimalFormatSymbols(Locale.ROOT));
+      
+      return new BinaryDocValuesConsumer() {
+        int numDocsWritten = 0;
+        
+        @Override
+        public void add(BytesRef value) throws IOException {
+          // write length
+          SimpleTextUtil.write(data, LENGTH);
+          SimpleTextUtil.write(data, encoder.format(value.length), scratch);
+          SimpleTextUtil.writeNewline(data);
+          
+          // write bytes
+          SimpleTextUtil.write(data, value);
+          // pad to fit
+          for (int i = value.length; i < maxLength; i++) {
+            data.writeByte((byte)' ');
+          }
+          SimpleTextUtil.writeNewline(data);
+          numDocsWritten++;
+        }
+
+        @Override
+        public void finish(FieldInfos fis, int numDocs) throws IOException {
+          assert numDocs == numDocsWritten;
+          // nocommit: hopefully indexwriter is responsible for "filling" like it does stored fields!
+        }
+      };
     }
     
     // nocommit
