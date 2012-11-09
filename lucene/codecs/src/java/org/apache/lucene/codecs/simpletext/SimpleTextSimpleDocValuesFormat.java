@@ -84,7 +84,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
    *  baz[space][space][space][space][space]
    *  ...
    *  </pre>
-   *  so a document's value can be retrieved by seeking to startOffset + (9+2*pattern.length)*docid
+   *  so a document's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength)*docid
    *  the extra 9 is 2 newlines, plus "length " itself.
    *   
    *  the reader can just scan this file when it opens, skipping over the data blocks
