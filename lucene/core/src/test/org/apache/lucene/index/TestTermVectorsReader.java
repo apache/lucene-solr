@@ -328,26 +328,4 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
     reader.close();
   }
-
-  /**
-   * Make sure exceptions and bad params are handled appropriately
-   */
-  public void testBadParams() throws IOException {
-    TermVectorsReader reader = null;
-    try {
-      reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
-      //Bad document number, good field number
-      reader.get(50);
-      fail();
-    } catch (IllegalArgumentException e) {
-      // expected exception
-    } finally {
-      reader.close();
-    }
-    reader = Codec.getDefault().termVectorsFormat().vectorsReader(dir, seg.info, fieldInfos, newIOContext(random()));
-    //good document number, bad field
-    Terms vector = reader.get(0).terms("f50");
-    assertNull(vector);
-    reader.close();
-  }
 }

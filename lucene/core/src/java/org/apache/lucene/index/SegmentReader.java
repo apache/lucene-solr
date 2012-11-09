@@ -136,9 +136,7 @@ public final class SegmentReader extends AtomicReader {
   
   @Override
   public void document(int docID, StoredFieldVisitor visitor) throws IOException {
-    if (docID < 0 || docID >= maxDoc()) {       
-      throw new IllegalArgumentException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + docID + ")");
-    }
+    checkBounds(docID);
     getFieldsReader().visitDocument(docID, visitor);
   }
 
@@ -174,7 +172,14 @@ public final class SegmentReader extends AtomicReader {
     if (termVectorsReader == null) {
       return null;
     }
+    checkBounds(docID);
     return termVectorsReader.get(docID);
+  }
+  
+  private void checkBounds(int docID) {
+    if (docID < 0 || docID >= maxDoc()) {       
+      throw new IndexOutOfBoundsException("docID must be >= 0 and < maxDoc=" + maxDoc() + " (got docID=" + docID + ")");
+    }
   }
 
   @Override

@@ -681,9 +681,6 @@ class Lucene3xTermVectorsReader extends TermVectorsReader {
 
   @Override
   public Fields get(int docID) throws IOException {
-    if (docID < 0 || docID >= numTotalDocs) {
-      throw new IllegalArgumentException("doID=" + docID + " is out of bounds [0.." + (numTotalDocs-1) + "]");
-    }
     if (tvx != null) {
       Fields fields = new TVFields(docID);
       if (fields.size() == 0) {

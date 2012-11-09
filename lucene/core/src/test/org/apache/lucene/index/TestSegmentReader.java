@@ -204,4 +204,28 @@ public class TestSegmentReader extends LuceneTestCase {
     assertTrue(results != null);
     assertEquals("We do not have 3 term freq vectors", 3, results.size());
   }    
+  
+  public void testOutOfBoundsAccess() throws IOException {
+    int numDocs = reader.maxDoc();
+    try {
+      reader.document(-1);
+      fail();
+    } catch (IndexOutOfBoundsException expected) {}
+    
+    try {
+      reader.getTermVectors(-1);
+      fail();
+    } catch (IndexOutOfBoundsException expected) {}
+    
+    try {
+      reader.document(numDocs);
+      fail();
+    } catch (IndexOutOfBoundsException expected) {}
+    
+    try {
+      reader.getTermVectors(numDocs);
+      fail();
+    } catch (IndexOutOfBoundsException expected) {}
+    
+  }
 }
