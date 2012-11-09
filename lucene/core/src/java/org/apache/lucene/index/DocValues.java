@@ -511,6 +511,44 @@ public abstract class DocValues implements Closeable {
       }
     };
   }
+
+  // nocommit nuke
+  public static boolean isSortedBytes(Type type) {
+    switch(type) {
+    case BYTES_VAR_SORTED:
+    case BYTES_FIXED_SORTED:
+    case BYTES_VAR_DEREF:
+    case BYTES_FIXED_DEREF:
+      return true;
+    default:
+      return false;
+    }
+  }
+
+  // nocommit nuke
+  public static boolean isBytes(Type type) {
+    switch(type) {
+    case BYTES_VAR_STRAIGHT:
+    case BYTES_FIXED_STRAIGHT:
+      return true;
+    default:
+      return false;
+    }
+  }
+
+  // nocommit nuke
+  public static boolean isNumber(Type type) {
+    switch(type) {
+    case VAR_INTS:
+    case FIXED_INTS_8:
+    case FIXED_INTS_16:
+    case FIXED_INTS_32:
+    case FIXED_INTS_64:
+      return true;
+    default:
+      return false;
+    }
+  }
   
   /**
    * <code>Type</code> specifies the {@link DocValues} type for a

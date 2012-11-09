@@ -241,7 +241,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       String pattern;
       int maxLength;
       int minValue;
-    }
+    };
 
     final IndexInput data;
     final BytesRef scratch = new BytesRef();
@@ -307,10 +307,63 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       }
     }
 
+    class SimpleTextDocValues extends DocValues {
+      private final OneField field;
+
+      public SimpleTextDocValues(OneField field) {
+        this.field = field;
+      }
+
+      @Override
+      public Source loadSource() throws IOException {
+        // nocommit todo
+        return null;
+      }
+
+      @Override
+      public DocValues.Type getType() {
+        return field.fieldInfo.getDocValuesType();
+      }
+
+      @Override
+      public Source loadDirectSource() throws IOException {
+        DocValues.Type dvType = field.fieldInfo.getDocValuesType();
+        if (DocValues.isNumber(dvType)) {
+          final IndexInput in = data.clone();
+          final BytesRef scratch = new BytesRef();
+          final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
+          final ParsePosition pos = new ParsePosition(0);
+          return new Source(dvType) {
+            @Override
+            public long getInt(int docID) {
+              try {
+                in.seek(field.dataStartFilePointer + (1+field.pattern.length())*docID);
+                SimpleTextUtil.readLine(in, scratch);
+                return decoder.parse(scratch.utf8ToString(), pos).longValue();
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
+              }
+            }
+          };
+        } else if (DocValues.isBytes(dvType)) {
+          // nocommit
+          return null;
+        } else if (DocValues.isSortedBytes(dvType)) {
+          // nocommit
+          return null;
+        }
+        // nocommit
+        return null;
+      }
+    }
+
     @Override
     public DocValues docValues(String fieldName) {
-      // nocommit TODO
-      return null;
+      OneField field = fields.get(fieldName);
+      if (field == null) {
+        return null;
+      }
+      return new SimpleTextDocValues(field);
     }
 
     @Override
