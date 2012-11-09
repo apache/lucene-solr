@@ -69,7 +69,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
 
   @Override
   public PerDocProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new SimpleTextDocValuesReader(state.fieldInfos, state.maxDoc, state.dir, state.segmentInfo, state.context);
+    return new SimpleTextDocValuesReader(state.fieldInfos, state.dir, state.segmentInfo, state.context);
   }
   
   /** the .dat file contains the data.
@@ -230,12 +230,15 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     }
   };
 
+  // nocommit make sure we test "all docs have 0 value",
+  // "all docs have empty BytesREf"
+
   static class SimpleTextDocValuesReader extends PerDocProducer {
 
     static class OneField {
       FieldInfo fieldInfo;
       long dataStartFilePointer;
-      DecimalFormat decoder;
+      String pattern;
       int maxLength;
       int minValue;
     }
@@ -244,9 +247,10 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     final BytesRef scratch = new BytesRef();
     final Map<String,OneField> fields = new HashMap<String,OneField>();
     
-    SimpleTextDocValuesReader(FieldInfos fieldInfos, int maxDoc, Directory dir, SegmentInfo si, IOContext context) throws IOException {
+    SimpleTextDocValuesReader(FieldInfos fieldInfos, Directory dir, SegmentInfo si, IOContext context) throws IOException {
       data = dir.openInput(IndexFileNames.segmentFileName(si.name, "", "dat"), context);
 
+      int maxDoc = si.getDocCount();
       while(true) {
         readLine();
         if (scratch.equals(END)) {
@@ -268,12 +272,12 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         case BYTES_VAR_STRAIGHT:
         case BYTES_FIXED_STRAIGHT:
           readLine();
-          assert startsWith(PATTERN);
-          field.decoder = new DecimalFormat(stripPrefix(PATTERN), new DecimalFormatSymbols(Locale.ROOT));
-          readLine();
           assert startsWith(MAXLENGTH);
-          field.maxLength = field.decoder.parse(stripPrefix(MAXLENGTH), new ParsePosition(0)).intValue();
-          data.seek(data.getFilePointer() + field.maxLength * maxDoc);
+          field.maxLength = Integer.parseInt(stripPrefix(MAXLENGTH));
+          readLine();
+          assert startsWith(PATTERN);
+          field.pattern = stripPrefix(PATTERN);
+          data.seek(data.getFilePointer() + (9+field.pattern.length()+field.maxLength) * maxDoc);
           break;
         case BYTES_VAR_SORTED:
         case BYTES_FIXED_SORTED:
@@ -291,8 +295,8 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           field.minValue = Integer.parseInt(stripPrefix(MINVALUE));
           readLine();
           assert startsWith(PATTERN);
-          field.decoder = new DecimalFormat(stripPrefix(PATTERN), new DecimalFormatSymbols(Locale.ROOT));
-          data.seek(data.getFilePointer() + field.maxLength * maxDoc);
+          field.pattern = stripPrefix(PATTERN);
+          data.seek(data.getFilePointer() + (1+field.pattern.length()) * maxDoc);
           break;
         default:
           break;
