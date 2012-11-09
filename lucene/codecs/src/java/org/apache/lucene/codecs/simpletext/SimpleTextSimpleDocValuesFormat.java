@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.codecs.BinaryDocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesArraySource;
 import org.apache.lucene.codecs.NumericDocValuesConsumer;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.SimpleDVConsumer;
@@ -243,14 +244,14 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       int minValue;
     };
 
+    final int maxDoc;
     final IndexInput data;
     final BytesRef scratch = new BytesRef();
     final Map<String,OneField> fields = new HashMap<String,OneField>();
     
     SimpleTextDocValuesReader(FieldInfos fieldInfos, Directory dir, SegmentInfo si, IOContext context) throws IOException {
       data = dir.openInput(IndexFileNames.segmentFileName(si.name, "", "dat"), context);
-
-      int maxDoc = si.getDocCount();
+      maxDoc = si.getDocCount();
       while(true) {
         readLine();
         if (scratch.equals(END)) {
@@ -317,6 +318,22 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       @Override
       public Source loadSource() throws IOException {
         // nocommit todo
+        DocValues.Type dvType = field.fieldInfo.getDocValuesType();
+        if (DocValues.isNumber(dvType)) {
+          Source source = loadDirectSource();
+          long[] values = new long[maxDoc];
+          for(int docID=0;docID<maxDoc;docID++) {
+            values[docID] = source.getInt(docID);
+          }
+          return DocValuesArraySource.forType(DocValues.Type.FIXED_INTS_64).newFromArray(values);
+        } else if (DocValues.isBytes(dvType)) {
+          // nocommit
+          return null;
+        } else if (DocValues.isSortedBytes(dvType)) {
+          // nocommit
+          return null;
+        }
+        // nocommit
         return null;
       }
 
