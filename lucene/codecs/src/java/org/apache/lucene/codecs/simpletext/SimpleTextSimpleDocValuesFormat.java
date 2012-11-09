@@ -62,6 +62,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   // used for bytes
   final static BytesRef MAXLENGTH = new BytesRef("  maxlength ");
   final static BytesRef LENGTH = new BytesRef("length ");
+  // used for sorted bytes
+  final static BytesRef NUMVALUES = new BytesRef("  numvalues");
+  final static BytesRef ORDPATTERN = new BytesRef("  ordpattern");
 
   @Override
   public SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
@@ -100,6 +103,28 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
    *  </pre>
    *  so a document's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength)*docid
    *  the extra 9 is 2 newlines, plus "length " itself.
+   *  
+   *  for sorted bytes this is a fixed-width file, for example:
+   *  <pre>
+   *  field myField
+   *    numvalues 10
+   *    maxLength 8
+   *    pattern 0
+   *    ordpattern 00
+   *  length 6
+   *  foobar[space][space]
+   *  length 3
+   *  baz[space][space][space][space][space]
+   *  ...
+   *  03
+   *  06
+   *  01
+   *  10
+   *  ...
+   *  </pre>
+   *  so the "ord section" begins at startOffset + (9+pattern.length+maxlength)*numValues.
+   *  a document's ord can be retrieved by seeking to "ord section" + (1+ordpattern.length())*docid
+   *  an ord's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength)*ord
    *   
    *  the reader can just scan this file when it opens, skipping over the data blocks
    *  and saving the offset/etc for each field. 
