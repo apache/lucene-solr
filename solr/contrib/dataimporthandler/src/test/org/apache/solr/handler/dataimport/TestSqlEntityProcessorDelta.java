@@ -1,6 +1,11 @@
 package org.apache.solr.handler.dataimport;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -25,12 +30,19 @@ import org.junit.Test;
 /**
  * Test with various combinations of parameters, child entites, transformers.
  */
-@Ignore("Investigate failures on Policeman Jenkins Linux")
 public class TestSqlEntityProcessorDelta extends AbstractDIHJdbcTestCase {
   private boolean delta = false;
   private boolean useParentDeltaQueryParam = false;
   private IntChanges personChanges = null;
   private String[] countryChanges = null;
+  
+  //TODO:  remove this on fixing SOLR-4051 / SOLR-1916
+  private void assumeIncomaptibleLocale() {
+    Date d = new Date();
+    String badDateFormat = DataImporter.DATE_TIME_FORMAT.get().format(d);
+    String betterDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).format(d);
+    Assume.assumeTrue(badDateFormat.equals(betterDateFormat));    
+  }
   
   @Before
   public void setupDeltaTest() {
@@ -40,6 +52,7 @@ public class TestSqlEntityProcessorDelta extends AbstractDIHJdbcTestCase {
   }
   @Test
   public void testSingleEntity() throws Exception {
+    assumeIncomaptibleLocale();
     singleEntity(1);
     changeStuff();
     int c = calculateDatabaseCalls();
@@ -48,6 +61,7 @@ public class TestSqlEntityProcessorDelta extends AbstractDIHJdbcTestCase {
   }
   @Test
   public void testWithSimpleTransformer() throws Exception {
+    assumeIncomaptibleLocale();
     simpleTransform(1);  
     changeStuff();
     simpleTransform(calculateDatabaseCalls());  
@@ -55,6 +69,7 @@ public class TestSqlEntityProcessorDelta extends AbstractDIHJdbcTestCase {
   }
   @Test
   public void testWithComplexTransformer() throws Exception {
+    assumeIncomaptibleLocale();
     complexTransform(1, 0);
     changeStuff();
     complexTransform(calculateDatabaseCalls(), personChanges.deletedKeys.length);
@@ -62,6 +77,7 @@ public class TestSqlEntityProcessorDelta extends AbstractDIHJdbcTestCase {
   }
   @Test
   public void testChildEntities() throws Exception {
+    assumeIncomaptibleLocale();
     useParentDeltaQueryParam = random().nextBoolean();
     withChildEntities(false, true);
     changeStuff();
