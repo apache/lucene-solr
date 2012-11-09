@@ -244,8 +244,13 @@ public class TestShardSearching extends ShardSearchingTestBase {
               System.out.println("  searcher expired during search: " + see);
               see.printStackTrace(System.out);
             }
-            assert prevSearchState != null;
-            priorSearches.remove(prevSearchState);
+            // We can't do this in general: on a very slow
+            // computer it's possible the local searcher
+            // expires before we can finish our search:
+            // assert prevSearchState != null;
+            if (prevSearchState != null) {
+              priorSearches.remove(prevSearchState);
+            }
           }
         }
       } finally {
