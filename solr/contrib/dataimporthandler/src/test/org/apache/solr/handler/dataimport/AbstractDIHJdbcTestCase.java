@@ -37,7 +37,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 /**
- * This sets up an in-memory Derby Sql database with a little sample data.
+ * This sets up an in-memory Sql database with a little sample data.
  */
 public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerTestCase {
   //Start with "true" so the first test run will populate the data.
@@ -99,14 +99,20 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
   }
   protected void singleEntity(int numToExpect) throws Exception {
     h.query("/dataimport", generateRequest());
-    assertQ(req("*:*"), "//*[@numFound='" + totalPeople() + "']");    
-    Assert.assertTrue(totalDatabaseRequests() == numToExpect);
+    assertQ("There should be 1 document per person in the database: "
+        + totalPeople(), req("*:*"), "//*[@numFound='" + totalPeople() + "']");
+    Assert.assertTrue("Expecting " + numToExpect
+        + " database calls, but DIH reported " + totalDatabaseRequests(),
+        totalDatabaseRequests() == numToExpect);
   }
   protected void simpleTransform(int numToExpect) throws Exception {
     rootTransformerName = "AddAColumnTransformer";
     h.query("/dataimport", generateRequest());
-    assertQ(req("AddAColumn_s:Added"), "//*[@numFound='" + totalPeople() + "']");
-    Assert.assertTrue(totalDatabaseRequests() == numToExpect);
+    assertQ("There should be 1 document with a transformer-added column per person is the database: "
+        + totalPeople(), req("AddAColumn_s:Added"), "//*[@numFound='" + totalPeople() + "']");
+    Assert.assertTrue("Expecting " + numToExpect
+        + " database calls, but DIH reported " + totalDatabaseRequests(),
+        totalDatabaseRequests() == numToExpect);
   }
   /**
    * A delta update will not clean up documents added by a transformer
@@ -116,16 +122,19 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
   protected void complexTransform(int numToExpect, int numDeleted) throws Exception {
     rootTransformerName = "TripleThreatTransformer";
     h.query("/dataimport", generateRequest());
-    assertQ(req("q", "*:*", "rows", "" + (totalPeople() * 3), "sort", "id asc"), "//*[@numFound='" + ((totalPeople() * 3) + (numDeleted * 2)) + "']");
-    assertQ(req("id:TripleThreat-1-*"), "//*[@numFound='" + (totalPeople() + numDeleted) + "']");
-    assertQ(req("id:TripleThreat-2-*"), "//*[@numFound='" + (totalPeople() + numDeleted) + "']");
-    if(personNameExists("Michael") && countryCodeExists("NR") && countryCodeExists("RN"))
+    int totalDocs = ((totalPeople() * 3) + (numDeleted * 2));
+    int totalAddedDocs = (totalPeople() + numDeleted);
+    assertQ(req("q", "*:*", "rows", "" + (totalPeople() * 3), "sort", "id asc"), "//*[@numFound='" + totalDocs + "']");
+    assertQ(req("id:TripleThreat-1-*"), "//*[@numFound='" + totalAddedDocs + "']");
+    assertQ(req("id:TripleThreat-2-*"), "//*[@numFound='" + totalAddedDocs + "']");
+    if(personNameExists("Michael") && countryCodeExists("NR"))
     {
       assertQ(
+          "Michael and NR are assured to be in the database.  Therefore the transformer should have added leahciM and RN on the same document as id:TripleThreat-1-3",
           req("+id:TripleThreat-1-3 +NAME_mult_s:Michael +NAME_mult_s:leahciM  +COUNTRY_CODES_mult_s:NR +COUNTRY_CODES_mult_s:RN"),
           "//*[@numFound='1']");
     }
-    assertQ(req("AddAColumn_s:Added"), "//*[@numFound='" + (totalPeople() + numDeleted) + "']");
+    assertQ(req("AddAColumn_s:Added"), "//*[@numFound='" + totalAddedDocs + "']");
     Assert.assertTrue("Expecting " + numToExpect
         + " database calls, but DIH reported " + totalDatabaseRequests(),
         totalDatabaseRequests() == numToExpect);
@@ -177,9 +186,11 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
     }
     h.query("/dataimport", generateRequest());
     
-    assertQ(req("*:*"), "//*[@numFound='" + (totalPeople()) + "']");
+    assertQ("There should be 1 document per person in the database: "
+        + totalPeople(), req("*:*"), "//*[@numFound='" + (totalPeople()) + "']");
     if(!underlyingDataModified && "AddAColumnTransformer".equals(rootTransformerName)) {
-      assertQ(req("AddAColumn_s:Added"), "//*[@numFound='" + (totalPeople()) + "']");
+      assertQ("There should be 1 document with a transformer-added column per person is the database: "
+          + totalPeople(), req("AddAColumn_s:Added"), "//*[@numFound='" + (totalPeople()) + "']");
     }
     if(countryEntity) {
       if(personNameExists("Jayden"))
