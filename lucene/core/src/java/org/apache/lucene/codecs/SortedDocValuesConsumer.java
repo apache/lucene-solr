@@ -19,5 +19,12 @@ package org.apache.lucene.codecs;
 
 // TODO!
 public class SortedDocValuesConsumer {
-  
+
+  /** This is called, in value sort order, once per unique
+   *  value. */
+  public abstract void addValue(BytesRef value);
+
+  /** This is called once per document after all values are
+   *  added. */
+  public abstract void addDoc(int ord);
 }

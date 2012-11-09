@@ -33,10 +33,11 @@ public abstract class SimpleDVConsumer implements Closeable {
   // TODO: are any of these params too "infringing" on codec?
   // we want codec to get necessary stuff from IW, but trading off against merge complexity.
 
+  // nocommit should we pass SegmentWriteState...?
   public abstract NumericDocValuesConsumer addNumericField(FieldInfo field, long minValue, long maxValue) throws IOException;
   public abstract BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, int maxLength) throws IOException;
   // nocommit: figure out whats fair here.
-  public abstract SortedDocValuesConsumer addSortedField(FieldInfo field) throws IOException;
+  public abstract SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, int maxLength) throws IOException;
   
   public void merge(MergeState mergeState) throws IOException {
     for (FieldInfo field : mergeState.fieldInfos) {
