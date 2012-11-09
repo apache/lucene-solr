@@ -35,6 +35,7 @@ final class DocFieldProcessorPerField {
   // nocommit after flush we should null these out?  then we
   // don't need reset() impl'd in each...
   BytesDVWriter bytesDVWriter;
+  SortedBytesDVWriter sortedBytesDVWriter;
   NumberDVWriter numberDVWriter;
 
   DocFieldProcessorPerField next;
@@ -55,6 +56,14 @@ final class DocFieldProcessorPerField {
       bytesDVWriter = new BytesDVWriter(fieldInfo, bytesUsed);
     }
     bytesDVWriter.addValue(docID, value);
+  }
+
+  // nocommit make this generic chain through consumer?
+  public void addSortedBytesDVField(int docID, BytesRef value) {
+    if (sortedBytesDVWriter == null) {
+      sortedBytesDVWriter = new SortedBytesDVWriter(fieldInfo, bytesUsed);
+    }
+    sortedBytesDVWriter.addValue(docID, value);
   }
 
   // nocommit make this generic chain through consumer?

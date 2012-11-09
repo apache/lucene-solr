@@ -22,29 +22,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.codecs.BinaryDocValuesConsumer;
+import org.apache.lucene.codecs.SortedDocValuesConsumer;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
 
 
-/** Buffers up pending byte[] per doc, then flushes when
- *  segment flushes. */
+/** Buffers up pending byte[] per doc, deref and sorting via
+ *  int ord, then flushes when segment flushes. */
 // nocommit name?
 // nocommit make this a consumer in the chain?
-class BytesDVWriter {
+class SortedBytesDVWriter {
 
   // nocommit more ram efficient?
-  private final ArrayList<byte[]> pending = new ArrayList<byte[]>();
+  // nocommit pass allocator that counts RAM used!
+  final BytesRefHash hash = new BytesRefHash();
+  private final ArrayList<Integer> pending = new ArrayList<Integer>();
   private final Counter iwBytesUsed;
   private int bytesUsed;
   private final FieldInfo fieldInfo;
+
+  private static final BytesRef EMPTY = new BytesRef(BytesRef.EMPTY_BYTES);
 
   // -2 means not set yet; -1 means length isn't fixed;
   // -otherwise it's the fixed length seen so far:
   int fixedLength = -2;
   int maxLength;
 
-  public BytesDVWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+  public SortedBytesDVWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
   }
@@ -53,23 +59,31 @@ class BytesDVWriter {
     final int oldBytesUsed = bytesUsed;
     if (value == null) {
       // nocommit improve message
-      throw new IllegalArgumentException("null binaryValue not allowed (field=" + fieldInfo.name + ")");
+      throw new IllegalArgumentException("null sortedValue not allowed (field=" + fieldInfo.name + ")");
     }
-    mergeLength(value.length);
+
     // Fill in any holes:
     while(pending.size() < docID) {
-      pending.add(BytesRef.EMPTY_BYTES);
-      bytesUsed += (int) (RamUsageEstimator.NUM_BYTES_OBJECT_REF * 1.25);
-      mergeLength(0);
+      addOneValue(EMPTY);
     }
-    byte[] bytes = new byte[value.length];
-    System.arraycopy(value.bytes, value.offset, bytes, 0, value.length);
-    pending.add(bytes);
 
-    // estimate 25% overhead for ArrayList:
-    bytesUsed += (int) (bytes.length + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + (RamUsageEstimator.NUM_BYTES_OBJECT_REF * 1.25));
+    addOneValue(value);
     iwBytesUsed.addAndGet(bytesUsed - oldBytesUsed);
-    //System.out.println("ADD: " + value);
+  }
+
+  private void addOneValue(BytesRef value) {
+    mergeLength(value.length);
+
+    int ord = hash.add(value);
+    if (ord < 0) {
+      ord = -ord-1;
+    } else {
+      // nocommit this is undercounting!
+      bytesUsed += value.length;
+    }
+    pending.add(ord);
+    // estimate 25% overhead for ArrayList:
+    bytesUsed += (int) (RamUsageEstimator.NUM_BYTES_OBJECT_REF * 1.25) + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_INT;
   }
 
   private void mergeLength(int length) {
@@ -81,22 +95,38 @@ class BytesDVWriter {
     maxLength = Math.max(maxLength, length);
   }
 
-  public void flush(FieldInfo fieldInfo, SegmentWriteState state, BinaryDocValuesConsumer consumer) throws IOException {
+  public void flush(FieldInfo fieldInfo, SegmentWriteState state, SortedDocValuesConsumer consumer) throws IOException {
+    int valueCount = hash.size();
+
+    final int maxDoc = state.segmentInfo.getDocCount();
+    int emptyOrd = -1;
+    if (pending.size() < maxDoc) {
+      // Make sure we added EMPTY value before sorting:
+      emptyOrd = hash.add(EMPTY);
+      if (emptyOrd < 0) {
+        emptyOrd = -emptyOrd-1;
+      }
+    }
+
+    int[] sortedValues = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
+    // nocommit must budget this into RAM consumption up front!
+    int[] ordMap = new int[valueCount];
+
+    // Write values, in sorted order:
+    BytesRef scratch = new BytesRef();
+    for(int ord=0;ord<valueCount;ord++) {
+      consumer.addValue(hash.get(sortedValues[ord], scratch));
+      ordMap[sortedValues[ord]] = ord;
+    }
     final int bufferedDocCount = pending.size();
-    BytesRef value = new BytesRef();
 
     for(int docID=0;docID<bufferedDocCount;docID++) {
-      value.bytes = pending.get(docID);
-      value.length = value.bytes.length;
-      consumer.add(value);
+      consumer.addDoc(ordMap[pending.get(docID)]);
     }
-    final int maxDoc = state.segmentInfo.getDocCount();
-    value.length = 0;
     for(int docID=bufferedDocCount;docID<maxDoc;docID++) {
-      consumer.add(value);
+      consumer.addDoc(ordMap[emptyOrd]);
     }
     reset();
-    //System.out.println("FLUSH");
   }
 
   public void abort() {
@@ -106,6 +136,7 @@ class BytesDVWriter {
   private void reset() {
     pending.clear();
     pending.trimToSize();
+    hash.clear();
     iwBytesUsed.addAndGet(-bytesUsed);
     bytesUsed = 0;
     fixedLength = -2;

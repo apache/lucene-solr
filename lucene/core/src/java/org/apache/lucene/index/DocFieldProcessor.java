@@ -91,7 +91,7 @@ final class DocFieldProcessor extends DocConsumer {
       while(field != null) {
         // nocommit maybe we should sort by .... somethign?
         // field name?  field number?  else this is hash order!!
-        if (field.bytesDVWriter != null || field.numberDVWriter != null) {
+        if (field.bytesDVWriter != null || field.numberDVWriter != null || field.sortedBytesDVWriter != null) {
 
           if (dvConsumer == null) {
             SimpleDocValuesFormat fmt =  state.segmentInfo.getCodec().simpleDocValuesFormat();
@@ -111,12 +111,25 @@ final class DocFieldProcessor extends DocConsumer {
                                       dvConsumer.addBinaryField(field.fieldInfo,
                                                                 field.bytesDVWriter.fixedLength >= 0,
                                                                 field.bytesDVWriter.maxLength));
+            // nocommit must null it out now else next seg
+            // will flush even if no docs had DV...?
+          }
+          if (field.sortedBytesDVWriter != null) {
+            field.sortedBytesDVWriter.flush(field.fieldInfo, state,
+                                            dvConsumer.addSortedField(field.fieldInfo,
+                                                                      field.sortedBytesDVWriter.hash.size(),
+                                                                      field.sortedBytesDVWriter.fixedLength >= 0,
+                                                                      field.sortedBytesDVWriter.maxLength));
+            // nocommit must null it out now else next seg
+            // will flush even if no docs had DV...?
           }
           if (field.numberDVWriter != null) {
             field.numberDVWriter.flush(field.fieldInfo, state,
                                        dvConsumer.addNumericField(field.fieldInfo,
                                                                   field.numberDVWriter.minValue,
                                                                   field.numberDVWriter.maxValue));
+            // nocommit must null it out now else next seg
+            // will flush even if no docs had DV...?
           }
         }
         field = field.next;
@@ -290,7 +303,14 @@ final class DocFieldProcessor extends DocConsumer {
       if (dvType != null) {
         switch(dvType) {
         case BYTES_VAR_STRAIGHT:
+        case BYTES_FIXED_STRAIGHT:
           fp.addBytesDVField(docState.docID, field.binaryValue());
+          break;
+        case BYTES_VAR_SORTED:
+        case BYTES_FIXED_SORTED:
+        case BYTES_VAR_DEREF:
+        case BYTES_FIXED_DEREF:
+          fp.addSortedBytesDVField(docState.docID, field.binaryValue());
           break;
         case VAR_INTS:
         case FIXED_INTS_8:

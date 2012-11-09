@@ -131,7 +131,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     // nocommit
     @Override
     public SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, int maxLength) throws IOException {
-      return null;
+      return null; // nocommit
     }
 
     /** write the header for this field */
