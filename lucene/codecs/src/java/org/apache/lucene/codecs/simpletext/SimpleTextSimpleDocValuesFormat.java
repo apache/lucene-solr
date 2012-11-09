@@ -126,12 +126,13 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       writeFieldEntry(field);
       return null; // nocommit
     }
-
-    @Override
-    public SortedDocValuesConsumer addSortedField(FieldInfo field) throws IOException {
-      return null; // nocommit
-    }
     
+    // nocommit
+    @Override
+    public SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, int maxLength) throws IOException {
+      return null;
+    }
+
     /** write the header for this field */
     private void writeFieldEntry(FieldInfo field) throws IOException {
       SimpleTextUtil.write(data, FIELD);

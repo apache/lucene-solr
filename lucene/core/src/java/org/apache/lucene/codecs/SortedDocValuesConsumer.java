@@ -17,8 +17,9 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-// TODO!
-public class SortedDocValuesConsumer {
+import org.apache.lucene.util.BytesRef;
+
+public abstract class SortedDocValuesConsumer {
 
   /** This is called, in value sort order, once per unique
    *  value. */
