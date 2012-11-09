@@ -17,15 +17,17 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.util.BytesRef;
 
 public abstract class SortedDocValuesConsumer {
 
   /** This is called, in value sort order, once per unique
    *  value. */
-  public abstract void addValue(BytesRef value);
+  public abstract void addValue(BytesRef value) throws IOException;
 
   /** This is called once per document after all values are
    *  added. */
-  public abstract void addDoc(int ord);
+  public abstract void addDoc(int ord) throws IOException;
 }

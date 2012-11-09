@@ -227,8 +227,66 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     
     // nocommit
     @Override
-    public SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, int maxLength) throws IOException {
-      return null; // nocommit
+    public SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, final int maxLength) throws IOException {
+      writeFieldEntry(field);
+      // write numValues
+      SimpleTextUtil.write(data, NUMVALUES);
+      SimpleTextUtil.write(data, Integer.toString(valueCount), scratch);
+      SimpleTextUtil.writeNewline(data);
+      
+      // write maxLength
+      SimpleTextUtil.write(data, MAXLENGTH);
+      SimpleTextUtil.write(data, Integer.toString(maxLength), scratch);
+      SimpleTextUtil.writeNewline(data);
+      
+      int maxBytesLength = Integer.toString(maxLength).length();
+      StringBuilder sb = new StringBuilder();
+      for (int i = 0; i < maxBytesLength; i++) {
+        sb.append('0');
+      }
+      
+      // write our pattern for encoding lengths
+      SimpleTextUtil.write(data, PATTERN);
+      SimpleTextUtil.write(data, sb.toString(), scratch);
+      SimpleTextUtil.writeNewline(data);
+      final DecimalFormat encoder = new DecimalFormat(sb.toString(), new DecimalFormatSymbols(Locale.ROOT));
+      
+      int maxOrdBytes = Integer.toString(valueCount).length();
+      sb.setLength(0);
+      for (int i = 0; i < maxOrdBytes; i++) {
+        sb.append('0');
+      }
+      
+      // write our pattern for ords
+      SimpleTextUtil.write(data, ORDPATTERN);
+      SimpleTextUtil.write(data, sb.toString(), scratch);
+      SimpleTextUtil.writeNewline(data);
+      final DecimalFormat ordEncoder = new DecimalFormat(sb.toString(), new DecimalFormatSymbols(Locale.ROOT));
+
+      return new SortedDocValuesConsumer() {
+        
+        @Override
+        public void addValue(BytesRef value) throws IOException {
+          // write length
+          SimpleTextUtil.write(data, LENGTH);
+          SimpleTextUtil.write(data, encoder.format(value.length), scratch);
+          SimpleTextUtil.writeNewline(data);
+          
+          // write bytes
+          SimpleTextUtil.write(data, value);
+          // pad to fit
+          for (int i = value.length; i < maxLength; i++) {
+            data.writeByte((byte)' ');
+          }
+          SimpleTextUtil.writeNewline(data);
+        }
+
+        @Override
+        public void addDoc(int ord) throws IOException {
+          SimpleTextUtil.write(data, encoder.format(ord), scratch);
+          SimpleTextUtil.writeNewline(data);
+        }
+      };
     }
 
     /** write the header for this field */
