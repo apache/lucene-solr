@@ -45,12 +45,28 @@ public abstract class SimpleDVConsumer implements Closeable {
         mergeState.fieldInfo = field;
         // nocommit: switch on 3 types: NUMBER, BYTES, SORTED
         DocValues.Type type = field.getDocValuesType();
-        if (type == DocValues.Type.VAR_INTS) {
-          mergeNumericField(mergeState);
-        } else if (type == DocValues.Type.BYTES_VAR_STRAIGHT) {
-          mergeBinaryField(mergeState);
-        } else if (type == DocValues.Type.BYTES_VAR_SORTED) {
-          mergeSortedField(mergeState);
+        switch(type) {
+          case VAR_INTS:
+          case FIXED_INTS_8:
+          case FIXED_INTS_16:
+          case FIXED_INTS_32:
+          case FIXED_INTS_64:
+          case FLOAT_64:
+          case FLOAT_32:
+            mergeNumericField(mergeState);
+            break;
+          case BYTES_VAR_SORTED:
+          case BYTES_FIXED_SORTED:
+          case BYTES_VAR_DEREF:
+          case BYTES_FIXED_DEREF:
+            mergeSortedField(mergeState);
+            break;
+          case BYTES_VAR_STRAIGHT:
+          case BYTES_FIXED_STRAIGHT:
+            mergeBinaryField(mergeState);
+            break;
+          default:
+            throw new AssertionError();
         }
       }
     }

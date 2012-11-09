@@ -290,6 +290,8 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         case FIXED_INTS_16:
         case FIXED_INTS_32:
         case FIXED_INTS_64:
+        case FLOAT_64:
+        case FLOAT_32:
           readLine();
           assert startsWith(MINVALUE);
           field.minValue = Integer.parseInt(stripPrefix(MINVALUE));
@@ -299,7 +301,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           data.seek(data.getFilePointer() + (1+field.pattern.length()) * maxDoc);
           break;
         default:
-          break;
+          throw new AssertionError();
         }
         field.dataStartFilePointer = data.getFilePointer();
       }
