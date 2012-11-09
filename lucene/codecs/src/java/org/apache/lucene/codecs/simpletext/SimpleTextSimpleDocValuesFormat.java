@@ -50,6 +50,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   // used for numerics
   final static BytesRef MINVALUE = new BytesRef("  minvalue ");
   final static BytesRef PATTERN  = new BytesRef("  pattern ");
+  // used for bytes
+  final static BytesRef MAXLENGTH = new BytesRef("  maxlength ");
+  final static BytesRef LENGTH = new BytesRef("length ");
 
   @Override
   public SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
@@ -69,6 +72,20 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
    *  </pre>
    *  so a document's value (delta encoded from minvalue) can be retrieved by 
    *  seeking to startOffset + (1+pattern.length())*docid. The extra 1 is the newline.
+   *  
+   *  for bytes this is also a "fixed-width" file, for example:
+   *  <pre>
+   *  field myField
+   *    pattern 0
+   *    maxlength 8
+   *  length 6
+   *  foobar[space][space]
+   *  length 3
+   *  baz[space][space][space][space][space]
+   *  ...
+   *  </pre>
+   *  so a document's value can be retrieved by seeking to startOffset + (9+2*pattern.length)*docid
+   *  the extra 9 is 2 newlines, plus "length " itself.
    *   
    *  the reader can just scan this file when it opens, skipping over the data blocks
    *  and saving the offset/etc for each field. 
