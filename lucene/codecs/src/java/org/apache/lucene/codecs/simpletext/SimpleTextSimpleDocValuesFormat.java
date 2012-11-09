@@ -19,23 +19,31 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.text.ParsePosition;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 import org.apache.lucene.codecs.BinaryDocValuesConsumer;
 import org.apache.lucene.codecs.NumericDocValuesConsumer;
+import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
 import org.apache.lucene.codecs.SortedDocValuesConsumer;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.StringHelper;
 
 
 /**
@@ -57,6 +65,11 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   @Override
   public SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     return new SimpleTextDocValuesWriter(state.directory, state.segmentInfo, state.context);
+  }
+
+  @Override
+  public PerDocProducer fieldsProducer(SegmentReadState state) throws IOException {
+    return new SimpleTextDocValuesReader(state.fieldInfos, state.maxDoc, state.dir, state.segmentInfo, state.context);
   }
   
   /** the .dat file contains the data.
@@ -216,5 +229,99 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       }
     }
   };
-  
+
+  static class SimpleTextDocValuesReader extends PerDocProducer {
+
+    static class OneField {
+      FieldInfo fieldInfo;
+      long dataStartFilePointer;
+      DecimalFormat decoder;
+      int maxLength;
+      int minValue;
+    }
+
+    final IndexInput data;
+    final BytesRef scratch = new BytesRef();
+    final Map<String,OneField> fields = new HashMap<String,OneField>();
+    
+    SimpleTextDocValuesReader(FieldInfos fieldInfos, int maxDoc, Directory dir, SegmentInfo si, IOContext context) throws IOException {
+      data = dir.openInput(IndexFileNames.segmentFileName(si.name, "", "dat"), context);
+
+      while(true) {
+        readLine();
+        if (scratch.equals(END)) {
+          break;
+        }
+        assert startsWith(FIELD);
+        String fieldName = stripPrefix(FIELD);
+        FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldName);
+        assert fieldInfo != null;
+
+        OneField field = new OneField();
+        fields.put(fieldName, field);
+
+        field.fieldInfo = fieldInfo;
+        
+        DocValues.Type dvType = fieldInfo.getDocValuesType();
+        assert dvType != null;
+        switch(dvType) {
+        case BYTES_VAR_STRAIGHT:
+        case BYTES_FIXED_STRAIGHT:
+          readLine();
+          assert startsWith(PATTERN);
+          field.decoder = new DecimalFormat(stripPrefix(PATTERN), new DecimalFormatSymbols(Locale.ROOT));
+          readLine();
+          assert startsWith(MAXLENGTH);
+          field.maxLength = field.decoder.parse(stripPrefix(MAXLENGTH), new ParsePosition(0)).intValue();
+          data.seek(data.getFilePointer() + field.maxLength * maxDoc);
+          break;
+        case BYTES_VAR_SORTED:
+        case BYTES_FIXED_SORTED:
+        case BYTES_VAR_DEREF:
+        case BYTES_FIXED_DEREF:
+          // nocommit TODO
+          break;
+        case VAR_INTS:
+        case FIXED_INTS_8:
+        case FIXED_INTS_16:
+        case FIXED_INTS_32:
+        case FIXED_INTS_64:
+          readLine();
+          assert startsWith(MINVALUE);
+          field.minValue = Integer.parseInt(stripPrefix(MINVALUE));
+          readLine();
+          assert startsWith(PATTERN);
+          field.decoder = new DecimalFormat(stripPrefix(PATTERN), new DecimalFormatSymbols(Locale.ROOT));
+          data.seek(data.getFilePointer() + field.maxLength * maxDoc);
+          break;
+        default:
+          break;
+        }
+        field.dataStartFilePointer = data.getFilePointer();
+      }
+    }
+
+    @Override
+    public DocValues docValues(String fieldName) {
+      // nocommit TODO
+      return null;
+    }
+
+    @Override
+    public void close() throws IOException {
+      data.close();
+    }
+
+    private void readLine() throws IOException {
+      SimpleTextUtil.readLine(data, scratch);
+    }
+
+    private boolean startsWith(BytesRef prefix) {
+      return StringHelper.startsWith(scratch, prefix);
+    }
+
+    private String stripPrefix(BytesRef prefix) throws IOException {
+      return new String(scratch.bytes, scratch.offset + prefix.length, scratch.length - prefix.length, "UTF-8");
+    }
+  }
 }
