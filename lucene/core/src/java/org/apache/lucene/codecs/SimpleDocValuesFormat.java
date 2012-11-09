@@ -19,10 +19,7 @@ package org.apache.lucene.codecs;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
+import org.apache.lucene.index.SegmentWriteState;
 
 public abstract class SimpleDocValuesFormat {
 
@@ -31,7 +28,7 @@ public abstract class SimpleDocValuesFormat {
   protected SimpleDocValuesFormat() {
   }
 
-  public abstract SimpleDVConsumer fieldsConsumer(Directory dir, SegmentInfo si, FieldInfos fis, IOContext context) throws IOException;
+  public abstract SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException;
   // nocommit do this:
-  //public abstract SimpleDVProducer fieldsProducer(Directory dir, SegmentInfo si, IOContext context) throws IOException;
+  //public abstract SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException;
 }

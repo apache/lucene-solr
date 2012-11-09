@@ -30,6 +30,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -51,8 +52,8 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   final static BytesRef PATTERN  = new BytesRef("  pattern ");
 
   @Override
-  public SimpleDVConsumer fieldsConsumer(Directory dir, SegmentInfo si, FieldInfos fis, IOContext context) throws IOException {
-    return new SimpleTextDocValuesWriter(dir, si, context);
+  public SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+    return new SimpleTextDocValuesWriter(state.directory, state.segmentInfo, state.context);
   }
   
   /** the .dat file contains the data.

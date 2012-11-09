@@ -103,7 +103,7 @@ final class DocFieldProcessor extends DocConsumer {
               continue;
             }
 
-            dvConsumer = fmt.fieldsConsumer(state.directory, state.segmentInfo, state.fieldInfos, state.context);
+            dvConsumer = fmt.fieldsConsumer(state);
           }
 
           if (field.bytesDVWriter != null) {
