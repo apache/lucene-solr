@@ -31,7 +31,6 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.fst.Sort;
@@ -79,6 +78,11 @@ import org.apache.lucene.util.fst.Util;
  * "wifi router".  Token normalization like stemmers, accent
  * removal, etc., would allow suggestions to ignore such
  * variations.
+ *
+ * <p>
+ * When two matching suggestions have the same weight, they
+ * are tie-broken by the analyzed form.  If their analyzed
+ * form is the same then the order is undefined.
  *
  * <p>
  * There are some limitations:
