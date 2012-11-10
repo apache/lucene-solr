@@ -152,6 +152,10 @@ Bug Fixes
 * SOLR-4031: Upgrade to Jetty 8.1.7 to fix a bug where in very rare occasions 
   the content of two concurrent requests get mixed up. (Per Steffensen, yonik)
 
+* SOLR-4060: ReplicationHandler can try and do a snappull and open a new IndexWriter
+  after shutdown has already occurred, leaving an IndexWriter that is not closed.
+  (Mark Miller)
+
 Other Changes
 ----------------------
 
