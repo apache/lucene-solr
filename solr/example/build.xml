@@ -43,7 +43,7 @@
 
        there is probably a cleaner way: but this ensure we have no garbage if jetty is upgraded -->
   <target name="sync-hack">
-    <delete>
+    <delete failonerror="false">
       <fileset dir="lib" includes="*.jar"/>
     </delete>
   </target>
