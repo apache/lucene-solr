@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.text.ParseException;
 import java.text.ParsePosition;
 import java.util.HashMap;
 import java.util.Locale;
@@ -410,8 +411,22 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           }
           return DocValuesArraySource.forType(DocValues.Type.FIXED_INTS_64).newFromArray(values);
         } else if (DocValues.isBytes(dvType)) {
-          // nocommit
-          return null;
+          Source source = loadDirectSource();
+          final byte[][] values = new byte[maxDoc][];
+          for(int docID=0;docID<maxDoc;docID++) {
+            BytesRef value = source.getBytes(docID, null);
+            byte[] bytes = new byte[value.length];
+            System.arraycopy(value.bytes, value.offset, bytes, 0, value.length);
+            values[docID] = bytes;
+          }
+
+          return new Source(dvType) {
+            @Override
+            public BytesRef getBytes(int docID, BytesRef bytesIn) {
+              return new BytesRef(values[docID]);
+            }
+          };
+
         } else if (DocValues.isSortedBytes(dvType)) {
           // nocommit
           return null;
@@ -428,15 +443,19 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       @Override
       public Source loadDirectSource() throws IOException {
         DocValues.Type dvType = field.fieldInfo.getDocValuesType();
+        final IndexInput in = data.clone();
+        final BytesRef scratch = new BytesRef();
+        final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
+        final ParsePosition pos = new ParsePosition(0);
+
         if (DocValues.isNumber(dvType)) {
-          final IndexInput in = data.clone();
-          final BytesRef scratch = new BytesRef();
-          final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
-          final ParsePosition pos = new ParsePosition(0);
           return new Source(dvType) {
             @Override
             public long getInt(int docID) {
               try {
+                // nocommit bounds check docID?  spooky
+                // because if we don't you can maybe get
+                // value from the wrong field ...
                 in.seek(field.dataStartFilePointer + (1+field.pattern.length())*docID);
                 SimpleTextUtil.readLine(in, scratch);
                 return decoder.parse(scratch.utf8ToString(), pos).longValue();
@@ -446,8 +465,32 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
             }
           };
         } else if (DocValues.isBytes(dvType)) {
-          // nocommit
-          return null;
+          return new Source(dvType) {
+            @Override
+            public BytesRef getBytes(int docID, BytesRef bytesIn) {
+              try {
+                // nocommit bounds check docID?  spooky
+                // because if we don't you can maybe get
+                // value from the wrong field ...
+                in.seek(field.dataStartFilePointer + (9+field.pattern.length() + field.maxLength)*docID);
+                SimpleTextUtil.readLine(in, scratch);
+                assert StringHelper.startsWith(scratch, LENGTH);
+                int len;
+                try {
+                  len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, "UTF-8")).intValue();
+                } catch (ParseException pe) {
+                  throw new RuntimeException(pe);
+                }
+                byte[] bytes = new byte[len];
+                in.readBytes(bytes, 0, bytes.length);
+                // nocommit MUST i reuse the incoming
+                // arg....?  we should clarify semantics
+                return new BytesRef(bytes);
+              } catch (IOException ioe) {
+                throw new RuntimeException(ioe);
+              }
+            }
+          };
         } else if (DocValues.isSortedBytes(dvType)) {
           // nocommit
           return null;
