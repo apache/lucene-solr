@@ -344,6 +344,7 @@ public abstract class DocValues implements Closeable {
     /**
      * Returns the PackedInts.Reader impl that maps document to ord.
      */
+    // nocommit make non-abstract returning null?
     public abstract PackedInts.Reader getDocToOrd();
     
     /**
@@ -544,6 +545,16 @@ public abstract class DocValues implements Closeable {
     case FIXED_INTS_16:
     case FIXED_INTS_32:
     case FIXED_INTS_64:
+      return true;
+    default:
+      return false;
+    }
+  }
+
+  public static boolean isFloat(Type type) {
+    switch(type) {
+    case FLOAT_64:
+    case FLOAT_32:
       return true;
     default:
       return false;

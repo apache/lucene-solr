@@ -46,6 +46,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.packed.PackedInts;
 
 
 /**
@@ -102,7 +103,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
    *  baz[space][space][space][space][space]
    *  ...
    *  </pre>
-   *  so a document's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength)*docid
+   *  so an ord's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength)*ord
    *  the extra 9 is 2 newlines, plus "length " itself.
    *  
    *  for sorted bytes this is a fixed-width file, for example:
@@ -315,6 +316,12 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     }
   };
 
+  // nocommit once we do "in ram cache of direct source"
+  // ... and hopeuflly under SCR control ... then if app
+  // asks for direct soruce but it was already cached in ram
+  // ... we should use the ram cached one!  we don't do this
+  // correctly today ...
+
   // nocommit make sure we test "all docs have 0 value",
   // "all docs have empty BytesREf"
 
@@ -324,8 +331,10 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       FieldInfo fieldInfo;
       long dataStartFilePointer;
       String pattern;
+      String ordPattern;
       int maxLength;
       int minValue;
+      int numValues;
     };
 
     final int maxDoc;
@@ -353,9 +362,15 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         
         DocValues.Type dvType = fieldInfo.getDocValuesType();
         assert dvType != null;
-        switch(dvType) {
-        case BYTES_VAR_STRAIGHT:
-        case BYTES_FIXED_STRAIGHT:
+        if (DocValues.isNumber(dvType)) {
+          readLine();
+          assert startsWith(MINVALUE);
+          field.minValue = Integer.parseInt(stripPrefix(MINVALUE));
+          readLine();
+          assert startsWith(PATTERN);
+          field.pattern = stripPrefix(PATTERN);
+          data.seek(data.getFilePointer() + (1+field.pattern.length()) * maxDoc);
+        } else if (DocValues.isBytes(dvType)) {
           readLine();
           assert startsWith(MAXLENGTH);
           field.maxLength = Integer.parseInt(stripPrefix(MAXLENGTH));
@@ -364,28 +379,22 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           field.pattern = stripPrefix(PATTERN);
           data.seek(data.getFilePointer() + (9+field.pattern.length()+field.maxLength) * maxDoc);
           break;
-        case BYTES_VAR_SORTED:
-        case BYTES_FIXED_SORTED:
-        case BYTES_VAR_DEREF:
-        case BYTES_FIXED_DEREF:
-          // nocommit TODO
-          break;
-        case VAR_INTS:
-        case FIXED_INTS_8:
-        case FIXED_INTS_16:
-        case FIXED_INTS_32:
-        case FIXED_INTS_64:
-        case FLOAT_64:
-        case FLOAT_32:
+        } else if (DocValues.isSortedBytes(dvType)) {
           readLine();
-          assert startsWith(MINVALUE);
-          field.minValue = Integer.parseInt(stripPrefix(MINVALUE));
+          assert startsWith(NUMVALUES);
+          field.numValues = Integer.parseInt(stripPrefix(NUMVALUES));
+          readLine();
+          assert startsWith(MAXLENGTH);
+          field.maxLength = Integer.parseInt(stripPrefix(MAXLENGTH));
           readLine();
           assert startsWith(PATTERN);
           field.pattern = stripPrefix(PATTERN);
-          data.seek(data.getFilePointer() + (1+field.pattern.length()) * maxDoc);
-          break;
-        default:
+          readLine();
+          assert startsWith(ORDPATTERN);
+          field.ordPattern = stripPrefix(ORDPATTERN);
+        } else if (DocValues.isFloat(dvType)) {
+          // nocommit
+        } else {
           throw new AssertionError();
         }
         field.dataStartFilePointer = data.getFilePointer();
@@ -398,6 +407,11 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       public SimpleTextDocValues(OneField field) {
         this.field = field;
       }
+
+      // nocommit provide a simple default Source impl that
+      // loads DirectSource and pulls things into RAM; we
+      // need producer API to provide the min/max value,
+      // fixed/max length, etc.
 
       @Override
       public Source loadSource() throws IOException {
@@ -422,17 +436,60 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
 
           return new Source(dvType) {
             @Override
-            public BytesRef getBytes(int docID, BytesRef bytesIn) {
-              return new BytesRef(values[docID]);
+            public BytesRef getBytes(int docID, BytesRef result) {
+              result.bytes = values[docID];
+              result.offset = 0;
+              result.length = result.bytes.length;
+              return result;
             }
           };
 
         } else if (DocValues.isSortedBytes(dvType)) {
+          SortedSource source = (SortedSource) loadDirectSource();
+          final byte[][] values = new byte[field.numValues][];
+          BytesRef scratch = new BytesRef();
+          for(int ord=0;ord<field.numValues;ord++) {
+            source.getByOrd(ord, scratch);
+            values[ord] = new byte[scratch.length];
+            System.arraycopy(scratch.bytes, scratch.offset, values[ord], 0, scratch.length);
+          }
+
+          final int[] ords = new int[maxDoc];
+          for(int docID=0;docID<maxDoc;docID++) {
+            ords[docID] = source.ord(docID);
+          }
+
+          return new SortedSource(dvType, BytesRef.getUTF8SortedAsUnicodeComparator()) {
+            @Override
+            public int ord(int docID) {
+              return ords[docID];
+            }
+
+            @Override
+            public BytesRef getByOrd(int ord, BytesRef result) {
+              result.bytes = values[ord];
+              result.offset = 0;
+              result.length = result.bytes.length;
+              return result;
+            }
+
+            @Override
+            public int getValueCount() {
+              return field.numValues;
+            }
+
+            @Override
+            public PackedInts.Reader getDocToOrd() {
+              return null;
+            }
+          };
+
+        } else if (DocValues.isFloat(dvType)) {
           // nocommit
           return null;
+        } else {
+          throw new AssertionError();
         }
-        // nocommit
-        return null;
       }
 
       @Override
@@ -467,7 +524,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         } else if (DocValues.isBytes(dvType)) {
           return new Source(dvType) {
             @Override
-            public BytesRef getBytes(int docID, BytesRef bytesIn) {
+            public BytesRef getBytes(int docID, BytesRef result) {
               try {
                 // nocommit bounds check docID?  spooky
                 // because if we don't you can maybe get
@@ -481,22 +538,73 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
                 } catch (ParseException pe) {
                   throw new RuntimeException(pe);
                 }
-                byte[] bytes = new byte[len];
-                in.readBytes(bytes, 0, bytes.length);
-                // nocommit MUST i reuse the incoming
-                // arg....?  we should clarify semantics
-                return new BytesRef(bytes);
+                result.bytes = new byte[len];
+                result.offset = 0;
+                result.length = len;
+                in.readBytes(result.bytes, 0, len);
+                return result;
               } catch (IOException ioe) {
+                // nocommit should .get() just throw IOE...
                 throw new RuntimeException(ioe);
               }
             }
           };
         } else if (DocValues.isSortedBytes(dvType)) {
+
+          final DecimalFormat ordDecoder = new DecimalFormat(field.ordPattern, new DecimalFormatSymbols(Locale.ROOT));
+
+          return new SortedSource(dvType, BytesRef.getUTF8SortedAsUnicodeComparator()) {
+            @Override
+            public int ord(int docID) {
+              try {
+                in.seek(field.dataStartFilePointer + field.numValues * (9 + field.pattern.length() + field.maxLength) + (1 + field.ordPattern.length()) * docID);
+                SimpleTextUtil.readLine(in, scratch);
+                return ordDecoder.parse(scratch.utf8ToString(), pos).intValue();
+              } catch (IOException ioe) {
+                // nocommit should .get() just throw IOE...
+                throw new RuntimeException(ioe);
+              }
+            }
+
+            @Override
+            public BytesRef getByOrd(int ord, BytesRef result) {
+              try {
+                in.seek(field.dataStartFilePointer + ord * (9 + field.pattern.length() + field.maxLength));
+                SimpleTextUtil.readLine(in, scratch);
+                assert StringHelper.startsWith(scratch, LENGTH);
+                int len;
+                try {
+                  len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, "UTF-8")).intValue();
+                } catch (ParseException pe) {
+                  throw new RuntimeException(pe);
+                }
+                result.bytes = new byte[len];
+                result.offset = 0;
+                result.length = len;
+                in.readBytes(result.bytes, 0, len);
+                return result;
+              } catch (IOException ioe) {
+                // nocommit should .get() just throw IOE...
+                throw new RuntimeException(ioe);
+              }
+            }
+
+            @Override
+            public int getValueCount() {
+              return field.numValues;
+            }
+
+            @Override
+            public PackedInts.Reader getDocToOrd() {
+              return null;
+            }
+          };
+        } else if (DocValues.isFloat(dvType)) {
           // nocommit
           return null;
+        } else {
+          throw new AssertionError();
         }
-        // nocommit
-        return null;
       }
     }
 
