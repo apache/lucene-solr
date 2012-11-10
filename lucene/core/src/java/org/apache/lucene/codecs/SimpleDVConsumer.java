@@ -80,7 +80,13 @@ public abstract class SimpleDVConsumer implements Closeable {
     for (AtomicReader reader : mergeState.readers) {
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
-      final Source source = reader.docValues(mergeState.fieldInfo.name).getDirectSource();
+      DocValues docvalues = reader.docValues(mergeState.fieldInfo.name);
+      final Source source;
+      if (docvalues == null) {
+        source = DocValues.getDefaultSource(mergeState.fieldInfo.getDocValuesType());
+      } else {
+        source = docvalues.getDirectSource();
+      }
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {
           long val = source.getInt(i);
@@ -104,7 +110,13 @@ public abstract class SimpleDVConsumer implements Closeable {
     for (AtomicReader reader : mergeState.readers) {
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
-      final Source source = reader.docValues(mergeState.fieldInfo.name).getDirectSource();
+      DocValues docvalues = reader.docValues(mergeState.fieldInfo.name);
+      final Source source;
+      if (docvalues == null) {
+        source = DocValues.getDefaultSource(mergeState.fieldInfo.getDocValuesType());
+      } else {
+        source = docvalues.getDirectSource();
+      }
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {
           source.getBytes(i, bytes);
