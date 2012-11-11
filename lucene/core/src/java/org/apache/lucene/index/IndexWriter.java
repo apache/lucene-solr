@@ -36,7 +36,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene3x.Lucene3xCodec;
 import org.apache.lucene.codecs.lucene3x.Lucene3xSegmentInfoFormat;
-import org.apache.lucene.index.DocumentsWriterPerThread.FlushedSegment;
 import org.apache.lucene.index.FieldInfos.FieldNumbers;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.MergePolicy.MergeTrigger;
@@ -2276,7 +2275,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
             assert !infos.contains(info): "dup info dir=" + info.info.dir + " name=" + info.info.name;
 
             String newSegName = newSegmentName();
-            String dsName = Lucene3xSegmentInfoFormat.getDocStoreSegment(info.info);
 
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "addIndexes: process segment origName=" + info.info.name + " newName=" + newSegName + " info=" + info);
