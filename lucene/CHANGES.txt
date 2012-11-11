@@ -144,6 +144,10 @@ Bug Fixes
   not synced. Instead, it now tracks an 'epoch' version, which is incremented
   whenever the taxonomy is re-created, or replaced. (Shai Erera)
 
+* LUCENE-4544: Fixed off-by-1 in ConcurrentMergeScheduler that would
+  allow 1+maxMergeCount merges threads to be created, instead of just
+  maxMergeCount (Radim Kolar, Mike McCandless)
+
 Optimizations
 
 * LUCENE-4536: PackedInts on-disk format is now byte-aligned (it used to be
