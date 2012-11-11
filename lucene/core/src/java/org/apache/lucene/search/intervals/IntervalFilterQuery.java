@@ -20,17 +20,21 @@ package org.apache.lucene.search.intervals;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Weight.PostingFeatures;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * A Query that filters the results of an inner {@link Query} using an
@@ -81,15 +85,35 @@ public class IntervalFilterQuery extends Query implements Cloneable {
 
   @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
-    return new PositionFilterWeight(inner.createWeight(searcher));
+    return new PositionFilterWeight(inner.createWeight(searcher), searcher);
   }
 
   class PositionFilterWeight extends Weight {
 
     private final Weight other;
+    private final Similarity similarity;
+    private final Similarity.SimWeight stats;
 
-    public PositionFilterWeight(Weight other) {
+    public PositionFilterWeight(Weight other, IndexSearcher searcher) throws IOException {
       this.other = other;
+      this.similarity = searcher.getSimilarity();
+      this.stats = getSimWeight(other.getQuery(), searcher);
+    }
+
+    private Similarity.SimWeight getSimWeight(Query query, IndexSearcher searcher)  throws IOException {
+      TreeSet<Term> terms = new TreeSet<Term>();
+      query.extractTerms(terms);
+      int i = 0;
+      TermStatistics[] termStats = new TermStatistics[terms.size()];
+      for (Term term : terms) {
+        TermContext state = TermContext.build(searcher.getTopReaderContext(), term, true);
+        termStats[i] = searcher.termStatistics(term, state);
+        i++;
+      }
+      final String field = terms.first().field(); // nocommit - should we be checking all filtered terms
+                                                  // are on the same field?
+      return similarity.computeWeight(query.getBoost(), searcher.collectionStatistics(field), termStats);
+
     }
 
     @Override
@@ -97,6 +121,7 @@ public class IntervalFilterQuery extends Query implements Cloneable {
         throws IOException {
       Scorer scorer = scorer(context, true, false, PostingFeatures.POSITIONS,
                               context.reader().getLiveDocs());
+      // nocommit - need to add in IntervalFilter details...
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
@@ -113,7 +138,8 @@ public class IntervalFilterQuery extends Query implements Cloneable {
       flags = flags == PostingFeatures.DOCS_AND_FREQS ? PostingFeatures.POSITIONS : flags;
       ScorerFactory factory = new ScorerFactory(other, context, topScorer, flags, acceptDocs);
       final Scorer scorer = factory.scorer();
-      return scorer == null ? null : new PositionFilterScorer(this, scorer, factory);
+      Similarity.SloppySimScorer docScorer = similarity.sloppySimScorer(stats, context);
+      return scorer == null ? null : new PositionFilterScorer(this, scorer, factory, docScorer);
     }
 
     @Override
@@ -123,12 +149,13 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     
     @Override
     public float getValueForNormalization() throws IOException {
-      return other.getValueForNormalization();
+      return stats == null ? 1.0f : stats.getValueForNormalization();
     }
 
     @Override
     public void normalize(float norm, float topLevelBoost) {
-      other.normalize(norm, topLevelBoost);
+      if (stats != null)
+        stats.normalize(norm, topLevelBoost);
     }
   }
   
@@ -155,20 +182,25 @@ public class IntervalFilterQuery extends Query implements Cloneable {
   }
 
   final class PositionFilterScorer extends Scorer {
+
     private final Scorer other;
     private IntervalIterator filter;
     private Interval current;
     private final ScorerFactory factory;
-    public PositionFilterScorer(Weight weight, Scorer other, ScorerFactory factory) throws IOException {
+    private final Similarity.SloppySimScorer docScorer;
+
+    public PositionFilterScorer(Weight weight, Scorer other, ScorerFactory factory,
+                                  Similarity.SloppySimScorer docScorer) throws IOException {
       super(weight);
       this.other = other;
       this.factory = factory;
       this.filter = IntervalFilterQuery.this.filter.filter(false, other.intervals(false));
+      this.docScorer = docScorer;
     }
 
     @Override
     public float score() throws IOException {
-      return other.score();
+      return docScorer.score(docID(), freq());
     }
 
     @Override
@@ -281,7 +313,13 @@ public class IntervalFilterQuery extends Query implements Cloneable {
 
     @Override
     public float freq() throws IOException {
-      return other.freq();
+      float freq = 0.0f;
+      do {
+        int d = filter.matchDistance();
+        freq += docScorer.computeSlopFactor(d);
+      }
+      while (filter.next() != null);
+      return freq;
     }
 
   }
