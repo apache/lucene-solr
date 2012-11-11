@@ -543,7 +543,6 @@ public class CoreContainer
       
       for (int i = 0; i < nodes.getLength(); i++) {
         Node node = nodes.item(i);
-        SolrCore core = null;
         try {
           String rawName = DOMUtil.getAttr(node, CORE_NAME, null);
           if (null == rawName) {
