@@ -198,7 +198,7 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     CoreAdminRequest.renameCore(name, "renamed_core", coreadmin);
     mcr = CoreAdminRequest.persist(SOLR_PERSIST_XML, getRenamedSolrAdmin());
     
-//    fis = new FileInputStream(new File(solrXml.getParent(), SOLR_PERSIST_XML));
+//    fis = new FileInputStream(new File(tempDir, SOLR_PERSIST_XML));
 //    String solrPersistXml = IOUtils.toString(fis);
 //    System.out.println("xml:" + solrPersistXml);
 //    fis.close();

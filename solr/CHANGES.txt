@@ -77,6 +77,9 @@ Optimizations
   
 * SOLR-3941: The "commitOnLeader" part of distributed recovery can use
   openSearcher=false. (Tomas Fernandez Lobbe via Mark Miller)
+  
+* SOLR-4063: Allow CoreContainer to load multiple SolrCores in parallel rather
+  than just serially. (Mark Miller)
 
 Bug Fixes
 ----------------------
