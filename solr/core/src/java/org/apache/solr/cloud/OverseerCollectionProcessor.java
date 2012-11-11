@@ -262,24 +262,26 @@ public class OverseerCollectionProcessor implements Runnable {
       for (Map.Entry<String,Replica> shardEntry : shardEntries) {
         final ZkNodeProps node = shardEntry.getValue();
         if (clusterState.liveNodesContain(node.getStr(ZkStateReader.NODE_NAME_PROP))) {
-        	//For thread safety, only  simple clone the ModifiableSolrParams
-            ModifiableSolrParams cloneParams = new ModifiableSolrParams();
-            cloneParams.add(params);
-            cloneParams.set(CoreAdminParams.CORE, node.getStr(ZkStateReader.CORE_NAME_PROP));
-            
-            String replica = node.getStr(ZkStateReader.BASE_URL_PROP);
-            ShardRequest sreq = new ShardRequest();
-            
-            // yes, they must use same admin handler path everywhere...
-            cloneParams.set("qt", adminPath);
-            sreq.purpose = 1;
-            // TODO: this sucks
-            if (replica.startsWith("http://")) replica = replica.substring(7);
-            sreq.shards = new String[] {replica};
-            sreq.actualShards = sreq.shards;
-            sreq.params = cloneParams;
-            log.info("Collection Admin sending CoreAdmin cmd to " + replica + " params:" + sreq.params);
-            shardHandler.submit(sreq, replica, sreq.params);
+          // For thread safety, only simple clone the ModifiableSolrParams
+          ModifiableSolrParams cloneParams = new ModifiableSolrParams();
+          cloneParams.add(params);
+          cloneParams.set(CoreAdminParams.CORE,
+              node.getStr(ZkStateReader.CORE_NAME_PROP));
+          
+          String replica = node.getStr(ZkStateReader.BASE_URL_PROP);
+          ShardRequest sreq = new ShardRequest();
+          
+          // yes, they must use same admin handler path everywhere...
+          cloneParams.set("qt", adminPath);
+          sreq.purpose = 1;
+          // TODO: this sucks
+          if (replica.startsWith("http://")) replica = replica.substring(7);
+          sreq.shards = new String[] {replica};
+          sreq.actualShards = sreq.shards;
+          sreq.params = cloneParams;
+          log.info("Collection Admin sending CoreAdmin cmd to " + replica
+              + " params:" + sreq.params);
+          shardHandler.submit(sreq, replica, sreq.params);
         }
       }
     }
