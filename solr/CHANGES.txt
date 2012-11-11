@@ -159,6 +159,10 @@ Bug Fixes
   after shutdown has already occurred, leaving an IndexWriter that is not closed.
   (Mark Miller)
 
+* SOLR-4055: Fix a thread safety issue with the Collections API that could
+  cause actions to be targeted at the wrong SolrCores. 
+  (Raintung Li via Mark Miller)
+
 Other Changes
 ----------------------
 
