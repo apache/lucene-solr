@@ -181,6 +181,9 @@ Other Changes
 * SOLR-3856: New tests for SqlEntityProcessor/CachedSqlEntityProcessor 
   (James Dyer)
 
+* SOLR-4067: ZkStateReader#getLeaderProps should not return props for a leader
+  that it does not think is live. (Mark Miller)
+
 ==================  4.0.0 ==================
 
 Versions of Major Components
