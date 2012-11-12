@@ -29,26 +29,24 @@ import org.apache.lucene.util.BytesRef;
 abstract class Decompressor implements Cloneable {
 
   /**
-   * Decompress bytes. This method is free to resize <code>bytes</code> in case
-   * it is too small to hold all the decompressed data.
+   * Decompress bytes that were stored between offsets <code>offset</code> and
+   * <code>offset+length</code> in the original stream from the compressed
+   * stream <code>in</code> to <code>bytes</code>. After returning, the length
+   * of <code>bytes</code> (<code>bytes.length</code>) must be equal to
+   * <code>length</code>. Implementations of this method are free to resize
+   * <code>bytes</code> depending on their needs.
+   *
+   * @param in the input that stores the compressed stream
+   * @param originalLength the length of the original data (before compression)
+   * @param offset bytes before this offset do not need to be decompressed
+   * @param length bytes after <code>offset+length</code> do not need to be decompressed
+   * @param bytes a {@link BytesRef} where to store the decompressed data
    */
-  public abstract void decompress(DataInput in, BytesRef bytes) throws IOException;
+  public abstract void decompress(DataInput in, int originalLength, int offset, int length, BytesRef bytes) throws IOException;
 
-  /**
-   * Method to use if you are only interested into <code>length</code>
-   * decompressed bytes starting at offset <code>offset</code>. Some compression
-   * codecs might have optimizations for this special case.
-   */
-  public void decompress(DataInput in, int offset, int length, BytesRef bytes) throws IOException {
-    decompress(in, bytes);
-    if (bytes.length < offset + length) {
-      throw new IndexOutOfBoundsException((offset + length) + " > " + bytes.length);
-    }
-    bytes.offset += offset;
-    bytes.length = length;
-  }
-
-  public abstract void copyCompressedData(DataInput in, DataOutput out) throws IOException;
+  /** Copy a compressed stream whose original length is
+   * <code>originalLength</code> from <code>in</code> to <code>out</code>. */
+  public abstract void copyCompressedData(DataInput in, int originalLength, DataOutput out) throws IOException;
 
   @Override
   public abstract Decompressor clone();
