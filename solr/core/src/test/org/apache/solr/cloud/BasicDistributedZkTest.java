@@ -601,8 +601,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     ChaosMonkey.stop(cloudJettys.get(0).jetty);
     printLayout();
-    // nocommit
-    System.out.println("start again");
+
     Thread.sleep(5000);
     ChaosMonkey.start(cloudJettys.get(0).jetty);
     cloudClient.getZkStateReader().updateClusterState(true);
