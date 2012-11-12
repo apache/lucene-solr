@@ -119,6 +119,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   public void setUp() throws Exception {
     super.setUp();
     System.setProperty("numShards", Integer.toString(sliceCount));
+    System.setProperty("solr.xml.persist", "true");
   }
 
   
@@ -334,6 +335,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     testCollectionsAPI();
     testCoreUnloadAndLeaders();
     testUnloadLotsOfCores();
+    testStopAndStartCoresInOneInstance();
     // Thread.sleep(10000000000L);
     if (DEBUG) {
       super.printLayout();
@@ -541,29 +543,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
         new DefaultSolrThreadFactory("testExecutor"));
     int cnt = atLeast(6);
-    for (int i = 0; i < cnt; i++) {
-      final int freezeI = i;
-      executor.execute(new Runnable() {
-        
-        @Override
-        public void run() {
-          Create createCmd = new Create();
-          createCmd.setCoreName("multiunload" + freezeI);
-          createCmd.setCollection("multiunload");
-          String core3dataDir = dataDir.getAbsolutePath() + File.separator
-              + System.currentTimeMillis() + "unloadcollection" + "_3n" + freezeI;
-          createCmd.setDataDir(core3dataDir);
-          try {
-            server.request(createCmd);
-          } catch (SolrServerException e) {
-            throw new RuntimeException(e);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        }
-        
-      });
-    }
+    
+    // create the 6 cores
+    createCores(server, executor, "multiunload", 2, cnt);
+    
     executor.shutdown();
     executor.awaitTermination(120, TimeUnit.SECONDS);
     executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
@@ -589,6 +572,68 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
     executor.shutdown();
     executor.awaitTermination(120, TimeUnit.SECONDS);
+  }
+  
+  private void testStopAndStartCoresInOneInstance() throws Exception {
+    SolrServer client = clients.get(0);
+    String url3 = getBaseUrl(client);
+    final HttpSolrServer server = new HttpSolrServer(url3);
+    
+    ThreadPoolExecutor executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+        5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+        new DefaultSolrThreadFactory("testExecutor"));
+    int cnt = 3;
+    
+    // create the cores
+    createCores(server, executor, "multiunload2", 1, cnt);
+    
+    executor.shutdown();
+    executor.awaitTermination(120, TimeUnit.SECONDS);
+    
+    ChaosMonkey.stop(cloudJettys.get(0).jetty);
+    printLayout();
+    // nocommit
+    System.out.println("start again");
+    Thread.sleep(5000);
+    ChaosMonkey.start(cloudJettys.get(0).jetty);
+    cloudClient.getZkStateReader().updateClusterState(true);
+    try {
+      cloudClient.getZkStateReader().getLeaderProps("multiunload2", "shard1", 30000);
+    } catch (SolrException e) {
+      printLayout();
+      throw e;
+    }
+    
+    printLayout();
+
+  }
+
+  private void createCores(final HttpSolrServer server,
+      ThreadPoolExecutor executor, final String collection, final int numShards, int cnt) {
+    for (int i = 0; i < cnt; i++) {
+      final int freezeI = i;
+      executor.execute(new Runnable() {
+        
+        @Override
+        public void run() {
+          Create createCmd = new Create();
+          createCmd.setCoreName(collection + freezeI);
+          createCmd.setCollection(collection);
+          String core3dataDir = dataDir.getAbsolutePath() + File.separator
+              + System.currentTimeMillis() + collection + "_3n" + freezeI;
+          createCmd.setDataDir(core3dataDir);
+          createCmd.setNumShards(numShards);
+          try {
+            server.request(createCmd);
+          } catch (SolrServerException e) {
+            throw new RuntimeException(e);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+        
+      });
+    }
   }
 
   private String getBaseUrl(SolrServer client) {
@@ -1418,6 +1463,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
     System.clearProperty("numShards");
     System.clearProperty("zkHost");
+    System.clearProperty("solr.xml.persist");
     
     // insurance
     DirectUpdateHandler2.commitOnClose = true;

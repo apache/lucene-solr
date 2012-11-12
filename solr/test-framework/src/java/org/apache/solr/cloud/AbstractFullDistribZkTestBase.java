@@ -340,8 +340,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return jettys;
   }
 
-  protected int getNumShards(String defaultCollection) {
-    Map<String,Slice> slices = this.zkStateReader.getClusterState().getSlices(defaultCollection);
+  protected int getNumShards(String collection) {
+    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    Map<String,Slice> slices = zkStateReader.getClusterState().getSlices(collection);
+    if (slices == null) {
+      throw new IllegalArgumentException("Could not find collection:" + collection);
+    }
     int cnt = 0;
     for (Map.Entry<String,Slice> entry : slices.entrySet()) {
       cnt += entry.getValue().getReplicasMap().size();
