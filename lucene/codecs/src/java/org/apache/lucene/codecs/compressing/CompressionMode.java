@@ -22,6 +22,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
@@ -94,6 +95,7 @@ public enum CompressionMode {
 
   };
 
+  /** Get a {@link CompressionMode} according to its id. */
   public static CompressionMode byId(int id) {
     for (CompressionMode mode : CompressionMode.values()) {
       if (mode.getId() == id) {
@@ -132,85 +134,25 @@ public enum CompressionMode {
   private static final Decompressor LZ4_DECOMPRESSOR = new Decompressor() {
 
     @Override
-    public void decompress(DataInput in, BytesRef bytes) throws IOException {
-      final int decompressedLen = in.readVInt();
-      if (bytes.bytes.length < decompressedLen + 8) {
-        bytes.bytes = ArrayUtil.grow(bytes.bytes, decompressedLen + 8);
+    public void decompress(DataInput in, int originalLength, int offset, int length, BytesRef bytes) throws IOException {
+      assert offset + length <= originalLength;
+      // add 7 padding bytes, this is not necessary but can help decompression run faster
+      if (bytes.bytes.length < originalLength + 7) {
+        bytes.bytes = new byte[ArrayUtil.oversize(originalLength + 7, 1)];
       }
-      LZ4.decompress(in, decompressedLen, bytes);
-      if (bytes.length != decompressedLen) {
-        throw new IOException("Corrupted");
+      final int decompressedLength = LZ4.decompress(in, offset + length, bytes.bytes, 0);
+      if (decompressedLength > originalLength) {
+        throw new CorruptIndexException("Corrupted: lengths mismatch: " + decompressedLength + " > " + originalLength);
       }
+      bytes.offset = offset;
+      bytes.length = length;
     }
 
     @Override
-    public void decompress(DataInput in, int offset, int length, BytesRef bytes) throws IOException {
-      final int decompressedLen = in.readVInt();
-      if (offset > decompressedLen) {
-        bytes.length = 0;
-        return;
-      }
-      if (bytes.bytes.length < decompressedLen) {
-        bytes.bytes = ArrayUtil.grow(bytes.bytes, decompressedLen);
-      }
-      LZ4.decompress(in, offset + length, bytes);
-      bytes.offset = offset;
-      if (offset + length >= decompressedLen) {
-        if (bytes.length != decompressedLen) {
-          throw new IOException("Corrupted");
-        }
-        bytes.length = decompressedLen - offset;
-      } else {
-        bytes.length = length;
-      }
-    }
-
-    public void copyCompressedData(DataInput in, DataOutput out) throws IOException {
-      final int decompressedLen = in.readVInt();
-      out.writeVInt(decompressedLen);
-      if (decompressedLen == 0) {
-        out.writeByte((byte) 0); // the token
-        return;
-      }
-      int n = 0;
-      while (n < decompressedLen) {
-        // literals
-        final byte token = in.readByte();
-        out.writeByte(token);
-        int literalLen = (token & 0xFF) >>> 4;
-        if (literalLen == 0x0F) {
-          byte len;
-          while ((len = in.readByte()) == (byte) 0xFF) {
-            literalLen += 0xFF;
-            out.writeByte(len);
-          }
-          literalLen += len & 0xFF;
-          out.writeByte(len);
-        }
-        out.copyBytes(in, literalLen);
-        n += literalLen;
-        if (n >= decompressedLen) {
-          break;
-        }
-
-        // matchs
-        out.copyBytes(in, 2); // match dec
-        int matchLen = token & 0x0F;
-        if (matchLen == 0x0F) {
-          byte len;
-          while ((len = in.readByte()) == (byte) 0xFF) {
-            matchLen += 0xFF;
-            out.writeByte(len);
-          }
-          matchLen += len & 0xFF;
-          out.writeByte(len);
-        }
-        matchLen += LZ4.MIN_MATCH;
-        n += matchLen;
-      }
-
-      if (n != decompressedLen) {
-        throw new IOException("Currupted compressed stream: expected " + decompressedLen + " bytes, but got at least" + n);
+    public void copyCompressedData(DataInput in, int originalLength, DataOutput out) throws IOException {
+      final int copied = LZ4.copyCompressedData(in, originalLength, out);
+      if (copied != originalLength) {
+        throw new CorruptIndexException("Currupted compressed stream: expected " + originalLength + " bytes, but got at least" + copied);
       }
     }
 
@@ -226,7 +168,6 @@ public enum CompressionMode {
     @Override
     public void compress(byte[] bytes, int off, int len, DataOutput out)
         throws IOException {
-      out.writeVInt(len);
       LZ4.compress(bytes, off, len, out);
     }
 
@@ -237,7 +178,6 @@ public enum CompressionMode {
     @Override
     public void compress(byte[] bytes, int off, int len, DataOutput out)
         throws IOException {
-      out.writeVInt(len);
       LZ4.compressHC(bytes, off, len, out);
     }
 
@@ -254,21 +194,22 @@ public enum CompressionMode {
     }
 
     @Override
-    public void decompress(DataInput in, BytesRef bytes) throws IOException {
-      bytes.offset = bytes.length = 0;
-
+    public void decompress(DataInput in, int originalLength, int offset, int length, BytesRef bytes) throws IOException {
+      assert offset + length <= originalLength;
+      if (length == 0) {
+        bytes.length = 0;
+        return;
+      }
       final int compressedLength = in.readVInt();
       if (compressedLength > compressed.length) {
-        compressed = ArrayUtil.grow(compressed, compressedLength);
+        compressed = new byte[ArrayUtil.oversize(compressedLength, 1)];
       }
       in.readBytes(compressed, 0, compressedLength);
 
       decompressor.reset();
       decompressor.setInput(compressed, 0, compressedLength);
-      if (decompressor.needsInput()) {
-        return;
-      }
 
+      bytes.offset = bytes.length = 0;
       while (true) {
         final int count;
         try {
@@ -284,10 +225,15 @@ public enum CompressionMode {
           bytes.bytes = ArrayUtil.grow(bytes.bytes);
         }
       }
+      if (bytes.length != originalLength) {
+        throw new CorruptIndexException("Lengths mismatch: " + bytes.length + " != " + originalLength);
+      }
+      bytes.offset = offset;
+      bytes.length = length;
     }
 
     @Override
-    public void copyCompressedData(DataInput in, DataOutput out) throws IOException {
+    public void copyCompressedData(DataInput in, int originalLength, DataOutput out) throws IOException {
       final int compressedLength = in.readVInt();
       out.writeVInt(compressedLength);
       out.copyBytes(in, compressedLength);

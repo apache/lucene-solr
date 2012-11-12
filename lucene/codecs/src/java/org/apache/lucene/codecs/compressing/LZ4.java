@@ -22,7 +22,6 @@ import java.util.Arrays;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -78,17 +77,15 @@ class LZ4 {
   }
 
   /**
-   * Decompress at least <code>decompressedLen</code> bytes into <code>destBytes</code>.
-   * Please note that <code>destBytes</code> must be large enough to be able to hold
-   * <b>all</b> decompressed data plus 8 bytes (meaning that you need to know the total
-   * decompressed length).
+   * Decompress at least <code>decompressedLen</code> bytes into
+   * <code>dest[dOff:]</code>. Please note that <code>dest</code> must be large
+   * enough to be able to hold <b>all</b> decompressed data (meaning that you
+   * need to know the total decompressed length).
    */
-  public static void decompress(DataInput compressed, int decompressedLen, BytesRef destBytes) throws IOException {
-    final byte[] dest = destBytes.bytes;
+  public static int decompress(DataInput compressed, int decompressedLen, byte[] dest, int dOff) throws IOException {
     final int destEnd = dest.length;
-    int dOff = 0;
 
-    while (dOff < decompressedLen) {
+    do {
       // literals
       final int token = compressed.readByte() & 0xFF;
       int literalLen = token >>> 4;
@@ -135,9 +132,9 @@ class LZ4 {
         System.arraycopy(dest, dOff - matchDec, dest, dOff, fastLen);
         dOff += matchLen;
       }
-    }
-    destBytes.offset = 0;
-    destBytes.length = dOff;
+    } while (dOff < decompressedLen);
+
+    return dOff;
   }
 
   private static void encodeLen(int l, DataOutput out) throws IOException {
@@ -186,8 +183,7 @@ class LZ4 {
 
   /**
    * Compress <code>bytes[off:off+len]</code> into <code>out</code> using
-   * 2<sup>hashLog</sup> bytes of memory. Higher values of <code>hashLog</code>
-   * improve the compression ratio.
+   * at most 16KB of memory.
    */
   public static void compress(byte[] bytes, int off, int len, DataOutput out) throws IOException {
 
@@ -357,6 +353,13 @@ class LZ4 {
 
   }
 
+  /**
+   * Compress <code>bytes[off:off+len]</code> into <code>out</code>. Compared to
+   * {@link LZ4#compress(byte[], int, int, DataOutput)}, this method is slower,
+   * uses more memory (~ 256KB), but should provide better compression ratios
+   * (especially on large inputs) because it chooses the best match among up to
+   * 256 candidates and then performs trade-offs to fix overlapping matches.
+   */
   public static void compressHC(byte[] src, int srcOff, int srcLen, DataOutput out) throws IOException {
 
     final int srcEnd = srcOff + srcLen;
@@ -501,6 +504,53 @@ class LZ4 {
     }
 
     encodeLastLiterals(src, anchor, srcEnd - anchor, out);
+  }
+
+  /** Copy bytes from <code>in</code> to <code>out</code> where
+   *  <code>in</code> is a LZ4-encoded stream. This method copies enough bytes
+   *  so that <code>out</code> can be used later on to restore the first
+   *  <code>length</code> bytes of the stream. This method always reads at
+   *  least one byte from <code>in</code> so make sure not to call this method
+   *  if <code>in</code> reached the end of the stream, even if
+   *  <code>length=0</code>. */
+  public static int copyCompressedData(DataInput in, int length, DataOutput out) throws IOException {
+    int n = 0;
+    do {
+      // literals
+      final byte token = in.readByte();
+      out.writeByte(token);
+      int literalLen = (token & 0xFF) >>> 4;
+      if (literalLen == 0x0F) {
+        byte len;
+        while ((len = in.readByte()) == (byte) 0xFF) {
+          literalLen += 0xFF;
+          out.writeByte(len);
+        }
+        literalLen += len & 0xFF;
+        out.writeByte(len);
+      }
+      out.copyBytes(in, literalLen);
+      n += literalLen;
+      if (n >= length) {
+        break;
+      }
+
+      // matchs
+      out.copyBytes(in, 2); // match dec
+      int matchLen = token & 0x0F;
+      if (matchLen == 0x0F) {
+        byte len;
+        while ((len = in.readByte()) == (byte) 0xFF) {
+          matchLen += 0xFF;
+          out.writeByte(len);
+        }
+        matchLen += len & 0xFF;
+        out.writeByte(len);
+      }
+      matchLen += MIN_MATCH;
+      n += matchLen;
+    } while (n < length);
+    return n;
   }
 
 }
