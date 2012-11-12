@@ -36,8 +36,8 @@ public class BrouwerianIntervalIterator extends IntervalIterator {
   
   private final IntervalIterator minuend;
   private final IntervalIterator subtracted;
-  private Interval subtractedInterval = new Interval();
-  private Interval currentInterval = new Interval();
+  private Interval subtractedInterval;
+  private Interval currentInterval;
 
   /**
    * Construct a new BrouwerianIntervalIterator over a minuend and a subtrahend
@@ -55,9 +55,9 @@ public class BrouwerianIntervalIterator extends IntervalIterator {
 
   @Override
   public int scorerAdvanced(int docId) throws IOException {
-    subtractedInterval.reset();
     minuend.scorerAdvanced(docId);
     subtracted.scorerAdvanced(docId);
+    subtractedInterval = Interval.INFINITE_INTERVAL;
     return docId;
   }
   
@@ -67,9 +67,9 @@ public class BrouwerianIntervalIterator extends IntervalIterator {
       return currentInterval = minuend.next();
     }
     while ((currentInterval = minuend.next()) != null) {
-      while(subtractedInterval.lessThan(currentInterval) && (subtractedInterval = subtracted.next()) != null) {
+      while(subtractedInterval.lessThanExclusive(currentInterval) && (subtractedInterval = subtracted.next()) != null) {
       }
-      if (subtractedInterval == null || subtractedInterval.greaterThan(currentInterval)) {
+      if (subtractedInterval == null || !currentInterval.overlaps(subtractedInterval)) {
         return currentInterval;
       }
     }

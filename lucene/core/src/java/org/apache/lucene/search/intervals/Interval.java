@@ -120,6 +120,15 @@ public class Interval implements Cloneable {
   }
 
   /**
+   * Compare with another Interval to find overlaps
+   * @param other
+   * @return true if the two intervals overlap
+   */
+  public boolean overlaps(Interval other) {
+    return this.contains(other) || other.contains(this);
+  }
+
+  /**
    * Set all values of this Interval to be equal to another's
    * @param other the Interval to copy
    */
