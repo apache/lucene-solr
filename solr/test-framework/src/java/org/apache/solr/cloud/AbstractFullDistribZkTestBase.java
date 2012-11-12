@@ -341,8 +341,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected int getNumShards(String collection) {
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    Map<String,Slice> slices = zkStateReader.getClusterState().getSlices(collection);
+    Map<String,Slice> slices = this.zkStateReader.getClusterState().getSlices(collection);
     if (slices == null) {
       throw new IllegalArgumentException("Could not find collection:" + collection);
     }
