@@ -7,7 +7,6 @@ import java.util.Locale;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /*
