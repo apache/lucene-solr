@@ -171,7 +171,10 @@ Bug Fixes
   connection on a non-read-only database leak connections.  Also expanded the
   SqlEntityProcessor test to sometimes use Derby as well as HSQLDB (Derby is
   one db affected by this bug).  (Fenlor Sebastia, James Dyer)
-  
+
+* SOLR-4064: When there is an unexpected exception while trying to run the new
+  leader process, the SolrCore will not correctly rejoin the election.
+  (Po Rui Via Mark Miller)
 
 Other Changes
 ----------------------
