@@ -16,6 +16,7 @@ package org.apache.solr.handler.dataimport;
  * the License.
  */
 
+import java.io.OutputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -33,6 +34,7 @@ import java.util.regex.Pattern;
 import junit.framework.Assert;
 
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -40,8 +42,7 @@ import org.junit.BeforeClass;
  * This sets up an in-memory Sql database with a little sample data.
  */
 public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerTestCase {
-  //Start with "true" so the first test run will populate the data.
-  protected boolean underlyingDataModified = true;
+  protected boolean underlyingDataModified;
   
   protected boolean useSimpleCaches;  
   protected boolean countryEntity;
@@ -52,6 +53,11 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
   protected boolean countryTransformer;
   protected boolean sportsTransformer;
   
+  protected Database db = Database.RANDOM;
+  private Database dbToUse;
+  
+  public enum Database { RANDOM , DERBY , HSQLDB }
+  
   private static final Pattern totalRequestsPattern = Pattern
       .compile(".str name..Total Requests made to DataSource..(\\d+)..str.");
   
@@ -59,11 +65,20 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
   public static void beforeClassDihJdbcTest() throws Exception {
     try {
       Class.forName("org.hsqldb.jdbcDriver").newInstance();
+      Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
     } catch (Exception e) {
       throw e;
     }  
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
-  }   
+  } 
+  @AfterClass
+  public static void afterClassDihJdbcTest() throws Exception {
+    try {
+      DriverManager.getConnection("jdbc:derby:;shutdown=true");
+    } catch(SQLException e) {
+      //ignore...we might not even be using derby this time...
+    } 
+  }
   @Before
   public void beforeDihJdbcTest() throws Exception {
     useSimpleCaches = false;  
@@ -75,21 +90,37 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
     countryTransformer = false;
     sportsTransformer = false;
     
-    clearIndex();
-    assertU(commit());
+    dbToUse = db;
+    if(db==Database.RANDOM) {
+      if(random().nextBoolean()) {
+        dbToUse = Database.DERBY;
+      } else {
+        dbToUse = Database.HSQLDB;
+      }
+    } 
     
-    if(underlyingDataModified) {
-      refreshDatabase();
-    }
-  }  
-  @AfterClass
-  public static void afterClassDihJdbcTest() throws Exception {  
+    clearIndex();
+    assertU(commit());    
+    buildDatabase();
+  } 
+  @After
+  public void afterDihJdbcTest() throws Exception {
     Connection conn = null;
     Statement s = null;
-    try {      
-      conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");    
-      s = conn.createStatement();
-      s.executeUpdate("shutdown");
+    try { 
+      if(dbToUse==Database.DERBY) {
+        try {
+          conn = DriverManager.getConnection("jdbc:derby:memory:derbyDB;drop=true");
+        } catch(SQLException e) {
+          if(!"08006".equals(e.getSQLState())) {
+            throw e;
+          }
+        }              
+      } else if(dbToUse==Database.HSQLDB) {
+        conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");    
+        s = conn.createStatement();
+        s.executeUpdate("shutdown");
+      }
     } catch (SQLException e) {
       throw e;
     } finally {
@@ -97,6 +128,15 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
       try { conn.close(); } catch(Exception ex) { }
     }
   }
+  private Connection newConnection() throws Exception {
+    if(dbToUse==Database.DERBY) {
+      return DriverManager.getConnection("jdbc:derby:memory:derbyDB;");
+    } else if(dbToUse==Database.HSQLDB) {
+      return DriverManager.getConnection("jdbc:hsqldb:mem:."); 
+    }
+    throw new AssertionError("Invalid database to use: " + dbToUse); 
+  }
+  
   protected void singleEntity(int numToExpect) throws Exception {
     h.query("/dataimport", generateRequest());
     assertQ("There should be 1 document per person in the database: "
@@ -278,23 +318,27 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
           totalDatabaseRequests() < dbRequestsLessThan);
     }
   }
-  public void refreshDatabase() throws Exception
+  public void buildDatabase() throws Exception
   {    
     underlyingDataModified = false;
     Connection conn = null;
     Statement s = null;
     PreparedStatement ps = null;
     Timestamp theTime = new Timestamp(System.currentTimeMillis() - 10000); //10 seconds ago
-    try {    
-      conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");    
-      s = conn.createStatement();
-      try {
-        s.executeUpdate("drop table countries");
-        s.executeUpdate("drop table people");
-        s.executeUpdate("drop table people_sports"); 
-      } catch(Exception e) {
-        //ignore.  dbs complain when tables do no exist.
+    try { 
+      if(dbToUse==Database.DERBY) {
+        String oldProp = System.getProperty("derby.stream.error.field");
+        System.setProperty("derby.stream.error.field", "DerbyUtil.DEV_NULL");
+        conn = DriverManager.getConnection("jdbc:derby:memory:derbyDB;create=true");
+        if(oldProp!=null) {
+          System.setProperty("derby.stream.error.field", oldProp);    
+        }
+      } else if(dbToUse==Database.HSQLDB) {
+        conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");            
+      } else {
+        throw new AssertionError("Invalid database to use: " + dbToUse);
       }
+      s = conn.createStatement();
       s.executeUpdate("create table countries(code varchar(3) not null primary key, country_name varchar(50), deleted char(1) default 'N', last_modified timestamp not null)");
       s.executeUpdate("create table people(id int not null primary key, name varchar(50), country_code char(2), deleted char(1) default 'N', last_modified timestamp not null)");
       s.executeUpdate("create table people_sports(id int not null primary key, person_id int, sport_name varchar(50), deleted char(1) default 'N', last_modified timestamp not null)");
@@ -346,7 +390,7 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
     Statement s = null;
     ResultSet rs = null;
     try {      
-      conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");    
+      conn = newConnection();  
       s = conn.createStatement();
       rs = s.executeQuery(query);
       if(rs.next()) {
@@ -366,7 +410,7 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
     Statement s = null;
     ResultSet rs = null;
     try {      
-      conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");    
+      conn = newConnection();  
       s = conn.createStatement();
       rs = s.executeQuery(query);
       List<String> results = new ArrayList<String>();
@@ -450,10 +494,10 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
     //One second in the future ensures a change time after the last import (DIH uses second precision only)
     Timestamp theTime = new Timestamp(System.currentTimeMillis() + 1000);
     try {    
-      conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");    
+      conn = newConnection();
       change = conn.prepareStatement("update people set name=?, last_modified=? where id=?");  
       delete  = conn.prepareStatement("update people set deleted='Y', last_modified=? where id=?");
-      add = conn.prepareStatement("insert into people (id,name,country_code,last_modified) values (?,?,'NEW',?)");
+      add = conn.prepareStatement("insert into people (id,name,country_code,last_modified) values (?,?,'ZZ',?)");
       for(int i=0 ; i<numberToChange ; i++) {
         int tryIndex = random().nextInt(people.length);
         Integer id = (Integer) people[tryIndex][0];
@@ -511,7 +555,7 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
     // uses second precision only)
     Timestamp theTime = new Timestamp(System.currentTimeMillis() + 1000);
     try {
-      conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");
+      conn = newConnection();
       change = conn
           .prepareStatement("update countries set country_name=?, last_modified=? where code=?");
       for (int i = 0; i < numberToChange; i++) {
@@ -547,86 +591,93 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
     return lrf.makeRequest("command", "full-import", "dataConfig", generateConfig(), 
         "clean", "true", "commit", "true", "synchronous", "true", "indent", "true");
   }
+  
   protected String generateConfig() {
-     StringBuilder sb = new StringBuilder();
-     sb.append("<dataConfig> \n");
-     sb.append("<dataSource name=''hsqldb'' driver=''org.hsqldb.jdbcDriver'' url=''jdbc:hsqldb:mem:.'' /> \n");
-     sb.append("<document name=''TestSqlEntityProcessor''> \n");     
-     sb.append("<entity name=''People'' ");
-     sb.append("pk=''" + (random().nextBoolean() ? "ID" : "People.ID") + "'' ");
-     sb.append("processor=''SqlEntityProcessor'' dataSource=''hsqldb'' ");
-     sb.append(rootTransformerName !=null ? "transformer=''" + rootTransformerName + "'' " : "");
-     sb.append("query=''SELECT ID, NAME, COUNTRY_CODE FROM PEOPLE WHERE DELETED != 'Y' '' ");
-     sb.append(deltaQueriesPersonTable());
-     sb.append("> \n");
-     
-     sb.append("<field column=''NAME'' name=''NAME_mult_s'' /> \n");
-     sb.append("<field column=''COUNTRY_CODE'' name=''COUNTRY_CODES_mult_s'' /> \n");
-     
-     if(countryEntity) {
-       sb.append("<entity name=''Countries'' ");
-       sb.append("pk=''" + (random().nextBoolean() ? "CODE" : "Countries.CODE") + "'' ");
-       sb.append("dataSource=''hsqldb'' ");
-       sb.append(countryTransformer ? "transformer=''AddAColumnTransformer'' " +
-               "newColumnName=''countryAdded_s'' newColumnValue=''country_added'' " : "");
-       if(countryCached) {
-         sb.append(random().nextBoolean() ? 
-             "processor=''SqlEntityProcessor'' cacheImpl=''SortedMapBackedCache'' " : 
-             "processor=''CachedSqlEntityProcessor'' "
-         );
-         if(useSimpleCaches) {
-           sb.append("query=''SELECT CODE, COUNTRY_NAME FROM COUNTRIES WHERE DELETED != 'Y' AND CODE='${People.COUNTRY_CODE}' ''>\n");
-         } else {
-           sb.append(random().nextBoolean() ? 
-               "cacheKey=''CODE'' cacheLookup=''People.COUNTRY_CODE'' " :
-               "where=''CODE=People.COUNTRY_CODE'' "
-           );
-           sb.append("query=''SELECT CODE, COUNTRY_NAME FROM COUNTRIES'' ");
-           sb.append("> \n");
-         }
-       } else {
-         sb.append("processor=''SqlEntityProcessor'' query=''SELECT CODE, COUNTRY_NAME FROM COUNTRIES WHERE DELETED != 'Y' AND CODE='${People.COUNTRY_CODE}' '' ");
-         sb.append(deltaQueriesCountryTable());         
-         sb.append("> \n");
-       }
-       sb.append("<field column=''CODE'' name=''COUNTRY_CODE_s'' /> \n");
-       sb.append("<field column=''COUNTRY_NAME'' name=''COUNTRY_NAME_s'' /> \n");
-       sb.append("</entity> \n");
-     }
-     if(sportsEntity) {
-       sb.append("<entity name=''Sports'' dataSource=''hsqldb'' "
-           + (sportsTransformer ? "transformer=''AddAColumnTransformer'' " +
-               "newColumnName=''sportsAdded_s'' newColumnValue=''sport_added'' " : ""));
-       if(sportsCached) {
-         sb.append(random().nextBoolean() ? 
-             "processor=''SqlEntityProcessor'' cacheImpl=''SortedMapBackedCache'' " : 
-             "processor=''CachedSqlEntityProcessor'' "
-         );
-          if(useSimpleCaches) {
-           sb.append("query=''SELECT ID, SPORT_NAME FROM PEOPLE_SPORTS WHERE DELETED != 'Y' AND PERSON_ID='${People.ID}' ORDER BY ID'' ");
-         } else {
-           sb.append(random().nextBoolean() ? 
-               "cacheKey=''PERSON_ID'' cacheLookup=''People.ID'' " : 
-               "where=''PERSON_ID=People.ID'' " 
-           );
-           sb.append("query=''SELECT ID, PERSON_ID, SPORT_NAME FROM PEOPLE_SPORTS ORDER BY ID'' ");
-         }
-       } else {
-         sb.append("processor=''SqlEntityProcessor'' query=''SELECT ID, SPORT_NAME FROM PEOPLE_SPORTS WHERE DELETED != 'Y' AND PERSON_ID='${People.ID}' ORDER BY ID'' ");
-       }
-       sb.append("> \n");
-       sb.append("<field column=''SPORT_NAME'' name=''SPORT_NAME_mult_s'' /> \n");
-       sb.append("<field column=''id'' name=''SPORT_ID_mult_s'' /> \n");
-       sb.append("</entity> \n");
-     }     
-     
-     sb.append("</entity> \n");
-     sb.append("</document> \n");
-     sb.append("</dataConfig> \n");
-     String config = sb.toString().replaceAll("[']{2}", "\"");
-     log.debug(config);
-     return config;
-   } 
+    String ds = null;
+    if (dbToUse == Database.DERBY) {
+      ds = "derby";
+    } else if (dbToUse == Database.HSQLDB) {
+      ds = "hsqldb";
+    } else {
+      throw new AssertionError("Invalid database to use: " + dbToUse);
+    }
+    StringBuilder sb = new StringBuilder();
+    sb.append("<dataConfig> \n");
+    sb.append("<dataSource name=''hsqldb'' driver=''org.hsqldb.jdbcDriver'' url=''jdbc:hsqldb:mem:.'' /> \n");
+    sb.append("<dataSource name=''derby'' driver=''org.apache.derby.jdbc.EmbeddedDriver'' url=''jdbc:derby:memory:derbyDB;'' /> \n");
+    sb.append("<document name=''TestSqlEntityProcessor''> \n");
+    sb.append("<entity name=''People'' ");
+    sb.append("pk=''" + (random().nextBoolean() ? "ID" : "People.ID") + "'' ");
+    sb.append("processor=''SqlEntityProcessor'' ");
+    sb.append("dataSource=''" + ds + "'' ");
+    sb.append(rootTransformerName != null ? "transformer=''" + rootTransformerName + "'' " : "");
+    sb.append("query=''SELECT ID, NAME, COUNTRY_CODE FROM PEOPLE WHERE DELETED != 'Y' '' ");
+    sb.append(deltaQueriesPersonTable());
+    sb.append("> \n");
+    
+    sb.append("<field column=''NAME'' name=''NAME_mult_s'' /> \n");
+    sb.append("<field column=''COUNTRY_CODE'' name=''COUNTRY_CODES_mult_s'' /> \n");
+    
+    if (countryEntity) {
+      sb.append("<entity name=''Countries'' ");
+      sb.append("pk=''" + (random().nextBoolean() ? "CODE" : "Countries.CODE")
+          + "'' ");
+      sb.append("dataSource=''" + ds + "'' ");
+      sb.append(countryTransformer ? "transformer=''AddAColumnTransformer'' "
+          + "newColumnName=''countryAdded_s'' newColumnValue=''country_added'' "
+          : "");
+      if (countryCached) {
+        sb.append(random().nextBoolean() ? "processor=''SqlEntityProcessor'' cacheImpl=''SortedMapBackedCache'' "
+            : "processor=''CachedSqlEntityProcessor'' ");
+        if (useSimpleCaches) {
+          sb.append("query=''SELECT CODE, COUNTRY_NAME FROM COUNTRIES WHERE DELETED != 'Y' AND CODE='${People.COUNTRY_CODE}' ''>\n");
+        } else {
+          sb.append(random().nextBoolean() ? "cacheKey=''CODE'' cacheLookup=''People.COUNTRY_CODE'' "
+              : "where=''CODE=People.COUNTRY_CODE'' ");
+          sb.append("query=''SELECT CODE, COUNTRY_NAME FROM COUNTRIES'' ");
+          sb.append("> \n");
+        }
+      } else {
+        sb.append("processor=''SqlEntityProcessor'' query=''SELECT CODE, COUNTRY_NAME FROM COUNTRIES WHERE DELETED != 'Y' AND CODE='${People.COUNTRY_CODE}' '' ");
+        sb.append(deltaQueriesCountryTable());
+        sb.append("> \n");
+      }
+      sb.append("<field column=''CODE'' name=''COUNTRY_CODE_s'' /> \n");
+      sb.append("<field column=''COUNTRY_NAME'' name=''COUNTRY_NAME_s'' /> \n");
+      sb.append("</entity> \n");
+    }
+    if (sportsEntity) {
+      sb.append("<entity name=''Sports'' ");
+      sb.append("dataSource=''" + ds + "'' ");
+      sb.append(sportsTransformer ? "transformer=''AddAColumnTransformer'' "
+              + "newColumnName=''sportsAdded_s'' newColumnValue=''sport_added'' "
+              : "");
+      if (sportsCached) {
+        sb.append(random().nextBoolean() ? "processor=''SqlEntityProcessor'' cacheImpl=''SortedMapBackedCache'' "
+            : "processor=''CachedSqlEntityProcessor'' ");
+        if (useSimpleCaches) {
+          sb.append("query=''SELECT ID, SPORT_NAME FROM PEOPLE_SPORTS WHERE DELETED != 'Y' AND PERSON_ID=${People.ID} ORDER BY ID'' ");
+        } else {
+          sb.append(random().nextBoolean() ? "cacheKey=''PERSON_ID'' cacheLookup=''People.ID'' "
+              : "where=''PERSON_ID=People.ID'' ");
+          sb.append("query=''SELECT ID, PERSON_ID, SPORT_NAME FROM PEOPLE_SPORTS ORDER BY ID'' ");
+        }
+      } else {
+        sb.append("processor=''SqlEntityProcessor'' query=''SELECT ID, SPORT_NAME FROM PEOPLE_SPORTS WHERE DELETED != 'Y' AND PERSON_ID=${People.ID} ORDER BY ID'' ");
+      }
+      sb.append("> \n");
+      sb.append("<field column=''SPORT_NAME'' name=''SPORT_NAME_mult_s'' /> \n");
+      sb.append("<field column=''id'' name=''SPORT_ID_mult_s'' /> \n");
+      sb.append("</entity> \n");
+    }
+    
+    sb.append("</entity> \n");
+    sb.append("</document> \n");
+    sb.append("</dataConfig> \n");
+    String config = sb.toString().replaceAll("[']{2}", "\"");
+    log.debug(config);
+    return config;
+  }
   
   public static final String[][] countries = {
     {"NA",   "Namibia"},
@@ -692,5 +743,10 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
     {1800, 18, "White Water Rafting"},
     {1900, 19, "Water skiing"},
     {2000, 20, "Windsurfing"}
-  }; 
+  };
+  public static class DerbyUtil {
+    public static final OutputStream DEV_NULL = new OutputStream() {
+        public void write(int b) {}
+    };
+}
 }

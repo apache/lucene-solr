@@ -147,6 +147,8 @@
   <classpathentry kind="lib" path="solr/contrib/clustering/lib/simple-xml-2.4.1.jar"/>
   <classpathentry kind="lib" path="solr/contrib/dataimporthandler/lib/activation-1.1.jar"/>
   <classpathentry kind="lib" path="solr/contrib/dataimporthandler/lib/mail-1.4.1.jar"/>
+  <classpathentry kind="lib" path="solr/example/example-DIH/solr/db/lib/derby-10.9.1.0.jar"/>
+  <classpathentry kind="lib" path="solr/example/example-DIH/solr/db/lib/hsqldb-1.8.0.10.jar"/>
   <classpathentry kind="lib" path="solr/contrib/extraction/lib/bcmail-jdk15-1.45.jar"/>
   <classpathentry kind="lib" path="solr/contrib/extraction/lib/bcprov-jdk15-1.45.jar"/>
   <classpathentry kind="lib" path="solr/contrib/extraction/lib/boilerpipe-1.1.0.jar"/>

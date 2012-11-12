@@ -397,6 +397,12 @@ public class JdbcDataSource extends
   private void closeConnection()  {
     try {
       if (conn != null) {
+        try {
+          //SOLR-2045
+          conn.commit();
+        } catch(Exception ex) {
+          //ignore.
+        }
         conn.close();
       }
     } catch (Exception e) {
