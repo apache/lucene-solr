@@ -166,6 +166,12 @@ Bug Fixes
 * SOLR-3993: If multiple SolrCore's for a shard coexist on a node, on cluster
   restart, leader election would stall until timeout, waiting to see all of 
   the replicas come up. (Mark Miller, Alexey Kudinov)
+  
+* SOLR-2045: Databases that require a commit to be issued before closing the 
+  connection on a non-read-only database leak connections.  Also expanded the
+  SqlEntityProcessor test to sometimes use Derby as well as HSQLDB (Derby is
+  one db affected by this bug).  (Fenlor Sebastia, James Dyer)
+  
 
 Other Changes
 ----------------------
