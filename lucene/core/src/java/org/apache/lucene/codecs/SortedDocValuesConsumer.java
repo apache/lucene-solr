@@ -18,8 +18,17 @@ package org.apache.lucene.codecs;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DocValues.SortedSource;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.MergeState;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.PriorityQueue;
 
 public abstract class SortedDocValuesConsumer {
 
@@ -30,4 +39,155 @@ public abstract class SortedDocValuesConsumer {
   /** This is called once per document after all values are
    *  added. */
   public abstract void addDoc(int ord) throws IOException;
+
+  public static class Merger {
+
+    public int fixedLength = -2;
+
+    public int maxLength;
+
+    public int numMergedTerms;
+
+    private final List<BytesRef> mergedTerms = new ArrayList<BytesRef>();
+    private final List<SegmentState> segStates = new ArrayList<SegmentState>();
+
+    private static class SegmentState {
+      AtomicReader reader;
+      FixedBitSet liveTerms;
+      int ord = -1;
+      SortedSource source;
+      BytesRef scratch = new BytesRef();
+      int[] segOrdToMergedOrd;
+
+      public BytesRef nextTerm() {
+        while (ord < source.getValueCount()) {
+          ord++;
+          if (liveTerms == null || liveTerms.get(ord)) {
+            source.getByOrd(ord, scratch);
+            return scratch;
+          } else {
+            // Skip "deleted" terms (ie, terms that were not
+            // referenced by any live docs):
+            ord++;
+          }
+        }
+
+        return null;
+      }
+    }
+
+    private static class TermMergeQueue extends PriorityQueue<SegmentState> {
+      public TermMergeQueue(int maxSize) {
+        super(maxSize);
+      }
+
+      @Override
+      protected boolean lessThan(SegmentState a, SegmentState b) {
+        return a.scratch.compareTo(b.scratch) <= 0;
+      }
+    }
+
+    public void merge(MergeState mergeState) throws IOException {
+
+      // First pass: mark "live" terms
+      for (AtomicReader reader : mergeState.readers) {
+        DocValues docvalues = reader.docValues(mergeState.fieldInfo.name);
+        final SortedSource source;
+        int maxDoc = reader.maxDoc();
+        if (docvalues == null) {
+          source = DocValues.getDefaultSortedSource(mergeState.fieldInfo.getDocValuesType(), maxDoc);
+        } else {
+          source = (SortedSource) docvalues.getDirectSource();
+        }
+
+        SegmentState state = new SegmentState();
+        state.reader = reader;
+        state.source = source;
+        segStates.add(state);
+        assert source.getValueCount() < Integer.MAX_VALUE;
+        if (reader.hasDeletions()) {
+          state.liveTerms = new FixedBitSet(source.getValueCount());
+          Bits liveDocs = reader.getLiveDocs();
+          for(int docID=0;docID<maxDoc;docID++) {
+            if (liveDocs.get(docID)) {
+              state.liveTerms.set(source.ord(docID));
+            }
+          }
+        }
+
+        // nocommit we can unload the bits to disk to reduce
+        // transient ram spike...
+      }
+
+      // Second pass: merge only the live terms
+
+      TermMergeQueue q = new TermMergeQueue(segStates.size());
+      for(SegmentState segState : segStates) {
+        if (segState.nextTerm() != null) {
+
+          // nocommit we could defer this to 3rd pass (and
+          // reduce transient RAM spike) but then
+          // we'd spend more effort computing the mapping...:
+          segState.segOrdToMergedOrd = new int[segState.source.getValueCount()];
+          q.add(segState);
+        }
+      }
+
+      BytesRef lastTerm = null;
+      boolean first = true;
+      int ord = 0;
+      while (q.size() != 0) {
+        SegmentState top = q.top();
+        if (lastTerm == null || !lastTerm.equals(top.scratch)) {
+          lastTerm = BytesRef.deepCopyOf(top.scratch);
+          // nocommit we could spill this to disk instead of
+          // RAM, and replay on finish...
+          mergedTerms.add(lastTerm);
+          if (lastTerm == null) {
+            fixedLength = lastTerm.length;
+          } else {
+            ord++;
+            if (lastTerm.length != fixedLength) {
+              fixedLength = -1;
+            }
+          }
+          maxLength = Math.max(maxLength, lastTerm.length);
+        }
+
+        top.segOrdToMergedOrd[top.ord] = ord;
+        if (top.nextTerm() == null) {
+          q.pop();
+        } else {
+          q.updateTop();
+        }
+      }
+
+      numMergedTerms = ord;
+    }
+
+    public void finish(SortedDocValuesConsumer consumer) throws IOException {
+
+      // Third pass: write merged result
+      for(BytesRef term : mergedTerms) {
+        consumer.addValue(term);
+      }
+
+      for(SegmentState segState : segStates) {
+        Bits liveDocs = segState.reader.getLiveDocs();
+        int maxDoc = segState.reader.maxDoc();
+        for(int docID=0;docID<maxDoc;docID++) {
+          if (liveDocs == null || liveDocs.get(docID)) {
+            int segOrd = segState.source.ord(docID);
+            int mergedOrd = segState.segOrdToMergedOrd[segOrd];
+            consumer.addDoc(mergedOrd);
+          }
+        }
+      }
+    }
+  }
+
+  // nocommit why return int...?
+  public void merge(MergeState mergeState, Merger merger) throws IOException {
+    merger.finish(this);
+  }
 }

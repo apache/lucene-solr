@@ -21,10 +21,11 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DocValues.SortedSource;
+import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -80,12 +81,12 @@ public abstract class SimpleDVConsumer implements Closeable {
     for (AtomicReader reader : mergeState.readers) {
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
-      DocValues docvalues = reader.docValues(mergeState.fieldInfo.name);
+      DocValues docValues = reader.docValues(mergeState.fieldInfo.name);
       final Source source;
-      if (docvalues == null) {
+      if (docValues == null) {
         source = DocValues.getDefaultSource(mergeState.fieldInfo.getDocValuesType());
       } else {
-        source = docvalues.getDirectSource();
+        source = docValues.getDirectSource();
       }
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {
@@ -110,12 +111,12 @@ public abstract class SimpleDVConsumer implements Closeable {
     for (AtomicReader reader : mergeState.readers) {
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
-      DocValues docvalues = reader.docValues(mergeState.fieldInfo.name);
+      DocValues docValues = reader.docValues(mergeState.fieldInfo.name);
       final Source source;
-      if (docvalues == null) {
+      if (docValues == null) {
         source = DocValues.getDefaultSource(mergeState.fieldInfo.getDocValuesType());
       } else {
-        source = docvalues.getDirectSource();
+        source = docValues.getDirectSource();
       }
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {
@@ -135,8 +136,12 @@ public abstract class SimpleDVConsumer implements Closeable {
     BinaryDocValuesConsumer field = addBinaryField(mergeState.fieldInfo, fixedLength, maxLength);
     field.merge(mergeState);
   }
-  
+
   protected void mergeSortedField(MergeState mergeState) throws IOException {
-    
+
+    SortedDocValuesConsumer.Merger merger = new SortedDocValuesConsumer.Merger();
+    merger.merge(mergeState);
+    SortedDocValuesConsumer consumer = addSortedField(mergeState.fieldInfo, merger.numMergedTerms, merger.fixedLength >= 0, merger.maxLength);
+    consumer.merge(mergeState, merger);
   }
 }
