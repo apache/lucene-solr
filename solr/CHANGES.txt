@@ -163,6 +163,10 @@ Bug Fixes
   cause actions to be targeted at the wrong SolrCores. 
   (Raintung Li via Mark Miller)
 
+* SOLR-3993: If multiple SolrCore's for a shard coexist on a node, on cluster
+  restart, leader election would stall until timeout, waiting to see all of 
+  the replicas come up. (Mark Miller, Alexey Kudinov)
+
 Other Changes
 ----------------------
 
