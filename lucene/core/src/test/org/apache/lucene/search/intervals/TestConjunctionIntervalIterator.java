@@ -15,27 +15,19 @@ package org.apache.lucene.search.intervals;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.apache.lucene.analysis.MockAnalyzer;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.*;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.Weight.PostingFeatures;
-import org.apache.lucene.search.intervals.Interval;
-import org.apache.lucene.search.intervals.IntervalFilterQuery;
-import org.apache.lucene.search.intervals.IntervalIterator;
-import org.apache.lucene.search.intervals.RangeIntervalFilter;
-import org.apache.lucene.search.intervals.WithinIntervalFilter;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
 
 import java.io.IOException;
-import java.util.List;
 
-public class TestConjunctionIntervalIterator extends LuceneTestCase {
+public class TestConjunctionIntervalIterator extends IntervalTestBase {
   
-  private static final void addDocs(RandomIndexWriter writer) throws CorruptIndexException, IOException {
+  protected void addDocs(RandomIndexWriter writer) throws IOException {
     {
       Document doc = new Document();
       doc.add(newField(
@@ -56,98 +48,34 @@ public class TestConjunctionIntervalIterator extends LuceneTestCase {
       writer.addDocument(doc);
     }
   }
-  public void testConjunctionPositionsBooleanQuery() throws IOException {
-    Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    addDocs(writer);
-    
-    IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
-    writer.close();
-    BooleanQuery query = new BooleanQuery();
-    query.add(new BooleanClause(new TermQuery(new Term("field", "porridge")), Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term("field", "pease")), Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term("field", "hot!")), Occur.MUST));
-    {
-      IntervalFilterQuery filter = new IntervalFilterQuery(query, new RangeIntervalFilter(0,3));
-      TopDocs search = searcher.search(filter, 10);
-      ScoreDoc[] scoreDocs = search.scoreDocs;
-      assertEquals(1, search.totalHits);
-      assertEquals(0, scoreDocs[0].doc);
-    }
-    {
-      IntervalFilterQuery filter = new IntervalFilterQuery(query, new WithinIntervalFilter(3));
-      TopDocs search = searcher.search(filter, 10);
-      ScoreDoc[] scoreDocs = search.scoreDocs;
-      assertEquals(2, search.totalHits);
-      assertEquals(0, scoreDocs[0].doc);
-      assertEquals(1, scoreDocs[1].doc);
-    }
-    
-    reader.close();
-    directory.close();
+
+  public void testConjunctionRangeIntervalQuery() throws IOException {
+    BooleanQuery q = new BooleanQuery();
+    q.add(makeTermQuery("porridge"), Occur.MUST);
+    q.add(makeTermQuery("pease"), Occur.MUST);
+    q.add(makeTermQuery("hot!"), Occur.MUST);
+    Query rangeQuery = new IntervalFilterQuery(q, new RangeIntervalFilter(0, 2));
+    checkIntervals(rangeQuery, searcher, new int[][]{
+        { 0, 0, 2, 0, 0, 1, 1, 2, 2 }
+    });
   }
-  
-  public void testConjuctionPositionIterator() throws IOException {
-    Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    addDocs(writer);
-    
-    IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
-    writer.close();
-    BooleanQuery query = new BooleanQuery();
-    query.add(new BooleanClause(new TermQuery(new Term("field", "porridge")), Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term("field", "pease")), Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term("field", "hot!")), Occur.MUST));
-    Weight weight = query.createWeight(searcher);
-    IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    List<AtomicReaderContext> leaves = topReaderContext.leaves();
-    assertEquals(1, leaves.size());
-    for (AtomicReaderContext atomicReaderContext : leaves) {
-      Scorer scorer = weight.scorer(atomicReaderContext, true, true, PostingFeatures.POSITIONS, atomicReaderContext.reader().getLiveDocs());
-      {
-        int nextDoc = scorer.nextDoc();
-        assertEquals(0, nextDoc);
-        IntervalIterator positions = scorer.intervals(false);
-        assertEquals(0, positions.scorerAdvanced(nextDoc));
-        Interval interval = null;
-        int[] start = new int[] {0, 1, 2, 31, 32, 33};
-        int[] end = new int[] {2, 3, 4, 33, 34, 35};
-        // {start}term{end} - end is pos+1 
-        // {0}Pease {1}porridge {2}hot!{0} Pease{1} porridge{2} cold! Pease porridge in the pot nine days old! Some like it hot, some"
-        // like it cold, Some like it in the pot nine days old! {3}Pease {4}porridge {5}hot!{3} Pease{4} porridge{5} cold!",
-        for (int j = 0; j < end.length; j++) {
-          interval = positions.next();
-          assertNotNull("" + j, interval);
-          assertEquals(start[j], interval.begin);
-          assertEquals(end[j], interval.end);
-        }
-        assertNull(positions.next());
-      }
-      {
-        int nextDoc = scorer.nextDoc();
-        assertEquals(1, nextDoc);
-        IntervalIterator positions = scorer.intervals(false);
-        assertEquals(1, positions.scorerAdvanced(nextDoc));
-        Interval interval = null;
-        int[] start = new int[] {3, 4, 5, 34 };
-        int[] end = new int[] {5, 6, 7, 36 };
-        // {start}term{end} - end is pos+1
-        // {0}Pease {1}porridge cold! {0}Pease {1}porridge {2}hot!{0} Pease{1} porridge{2} in the pot nine days old! Some like it cold, some
-        // like it hot, Some like it in the pot nine days old! Pease porridge cold! {4}Pease porridge hot{4}!
-        for (int j = 0; j < end.length; j++) {
-          interval = positions.next();
-          assertNotNull(interval);
-          assertEquals(j + "", start[j], interval.begin);
-          assertEquals(j+ "", end[j], interval.end);
-        }
-        assertNull(positions.next());
-      }
-    }
-    reader.close();
-    directory.close();
+
+  public void testConjunctionOrderedQuery() throws IOException {
+    Query q = new OrderedNearQuery(0, false, makeTermQuery("pease"),
+                                    makeTermQuery("porridge"), makeTermQuery("hot!"));
+    checkIntervals(q, searcher, new int[][]{
+        { 0, 0, 2, 31, 33 },
+        { 1, 3, 5, 34, 36 }
+    });
   }
+
+  public void testConjunctionUnorderedQuery() throws IOException {
+    Query q = new UnorderedNearQuery(0, false, makeTermQuery("pease"),
+                                      makeTermQuery("porridge"), makeTermQuery("hot!"));
+    checkIntervals(q, searcher, new int[][]{
+        { 0, 0, 2, 1, 3, 2, 4, 31, 33, 32, 24, 33, 35 },
+        { 1, 3, 5, 4, 6, 5, 7, 34, 36 }
+    });
+  }
+
 }

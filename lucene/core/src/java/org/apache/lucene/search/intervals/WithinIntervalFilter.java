@@ -27,6 +27,7 @@ import java.io.IOException;
 public class WithinIntervalFilter implements IntervalFilter {
 
   private final int slop;
+  private boolean collectLeaves = true;
 
   /**
    * Construct a new WithinIntervalFilter
@@ -34,6 +35,15 @@ public class WithinIntervalFilter implements IntervalFilter {
    */
   public WithinIntervalFilter(int slop) {
     this.slop = slop;
+  }
+
+  /**
+   * Construct a new WithinIntervalFilter
+   * @param slop the maximum slop allowed for subintervals
+   */
+  public WithinIntervalFilter(int slop, boolean collectLeaves) {
+    this.slop = slop;
+    this.collectLeaves = collectLeaves;
   }
 
   /**
@@ -78,7 +88,8 @@ public class WithinIntervalFilter implements IntervalFilter {
     public void collect(IntervalCollector collector) {
       assert collectIntervals;
       collector.collectComposite(null, interval, iterator.docID());
-      iterator.collect(collector);
+      if (collectLeaves)
+        iterator.collect(collector);
     }
 
     @Override

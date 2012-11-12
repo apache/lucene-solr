@@ -42,6 +42,12 @@ public final class BlockIntervalIterator extends IntervalIterator {
   private final int[] gaps;
 
   private final int lastIter;
+  private boolean collectLeaves = true;
+
+  public BlockIntervalIterator(boolean collectIntervals, boolean collectLeaves, IntervalIterator other) {
+    this(collectIntervals, other);
+    this.collectLeaves = collectLeaves;
+  }
 
   /**
    * Construct a BlockIntervalIterator over a compound IntervalIterator.  The
@@ -151,8 +157,10 @@ public final class BlockIntervalIterator extends IntervalIterator {
   public void collect(IntervalCollector collector) {
     assert collectIntervals;
     collector.collectComposite(scorer, interval, docID());
-    for (IntervalIterator iter : iterators) {
-      iter.collect(collector);
+    if (collectLeaves) {
+      for (IntervalIterator iter : iterators) {
+        iter.collect(collector);
+      }
     }
   }
 

@@ -17,51 +17,24 @@ package org.apache.lucene.search.intervals;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.intervals.OrderedNearQuery;
-import org.apache.lucene.search.intervals.UnorderedNearQuery;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
 
 import java.io.IOException;
 
-public class TestIntervalFilterQueries extends LuceneTestCase {
-
-  private IndexSearcher searcher;
-  private IndexReader reader;
-  private Directory directory;
-
-  public static final String field = "field";
+public class TestNestedIntervalFilterQueries extends IntervalTestBase {
 
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-            .setMergePolicy(newLogMergePolicy()));
+  protected void addDocs(RandomIndexWriter writer) throws IOException {
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(newField(field, docFields[i], TextField.TYPE_STORED));
+      doc.add(newField("field", docFields[i], TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
-    writer.forceMerge(1);
-    reader = writer.getReader();
-    writer.close();
-    searcher = newSearcher(reader);
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    reader.close();
-    directory.close();
-    super.tearDown();
   }
 
   private String[] docFields = {
@@ -71,23 +44,29 @@ public class TestIntervalFilterQueries extends LuceneTestCase {
     "w1 w3 w2 w4 w5 w6 w7 w8", //3
   };
 
-  public TermQuery makeTermQuery(String text) {
-    return new TermQuery(new Term(field, text));
-  }
-
-  private void checkHits(Query query, int[] results) throws IOException {
-    CheckHits.checkHits(random(), query, field, searcher, results);
+  public void testOrderedDisjunctionQueries() throws IOException {
+    // Two phrases whose subparts appear in a document, but that do not fulfil the slop
+    // requirements of the parent IntervalFilterQuery
+    Query sentence1 = new OrderedNearQuery(0, makeTermQuery("w1"), makeTermQuery("w8"), makeTermQuery("w4"));
+    Query sentence2 = new OrderedNearQuery(0, makeTermQuery("w3"), makeTermQuery("w7"), makeTermQuery("w6"));
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(sentence1, BooleanClause.Occur.SHOULD);
+    bq.add(sentence2, BooleanClause.Occur.SHOULD);
+    checkIntervals(bq, searcher, new int[][]{});
   }
 
   // or(w1 pre/2 w2, w1 pre/3 w10)
   public void testOrNearNearQuery() throws IOException {
-    Query near1 = new OrderedNearQuery(2, makeTermQuery("w1"), makeTermQuery("w2"));
-    Query near2 = new OrderedNearQuery(3, makeTermQuery("w1"), makeTermQuery("w10"));
+    Query near1 = new OrderedNearQuery(2, false, makeTermQuery("w1"), makeTermQuery("w2"));
+    Query near2 = new OrderedNearQuery(3, false, makeTermQuery("w1"), makeTermQuery("w10"));
     BooleanQuery bq = new BooleanQuery();
     bq.add(near1, BooleanClause.Occur.SHOULD);
     bq.add(near2, BooleanClause.Occur.SHOULD);
-
-    checkHits(bq, new int[] { 0, 2, 3 });
+    checkIntervals(bq, searcher, new int[][]{
+        { 0, 0, 1, 0, 9 },
+        { 2, 0, 2 },
+        { 3, 0, 2 }
+    });
   }
 
   // or(w2 within/2 w1, w10 within/3 w1)
@@ -97,15 +76,20 @@ public class TestIntervalFilterQueries extends LuceneTestCase {
     BooleanQuery bq = new BooleanQuery();
     bq.add(near1, BooleanClause.Occur.SHOULD);
     bq.add(near2, BooleanClause.Occur.SHOULD);
-
-    checkHits(bq, new int[] { 0, 2, 3 });
+    checkIntervals(bq, searcher, new int[][]{
+        {0, 0, 1},
+        {2, 0, 2},
+        {3, 0, 2}
+    });
   }
 
   // (a pre/2 b) pre/6 (c pre/2 d)
   public void testNearNearNearQuery() throws IOException {
-    Query near1 = new OrderedNearQuery(2, makeTermQuery("w1"), makeTermQuery("w4"));
-    Query near2 = new OrderedNearQuery(2, makeTermQuery("w10"), makeTermQuery("w12"));
+    Query near1 = new OrderedNearQuery(2, false, makeTermQuery("w1"), makeTermQuery("w4"));
+    Query near2 = new OrderedNearQuery(2, false, makeTermQuery("w10"), makeTermQuery("w12"));
     Query near3 = new OrderedNearQuery(6, near1, near2);
-    checkHits(near3, new int[] { 0 });
+    checkIntervals(near3, searcher, new int[][]{
+        { 0, 0, 11, 0, 3, 9, 11 }
+    });
   }
 }

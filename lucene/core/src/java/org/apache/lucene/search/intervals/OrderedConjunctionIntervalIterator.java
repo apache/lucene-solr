@@ -42,14 +42,20 @@ public final class OrderedConjunctionIntervalIterator extends
   private int matchDistance = 0;
 
   private SnapshotPositionCollector snapshot = null;
+  private boolean collectLeaves = true;
 
   /**
    * Create an OrderedConjunctionIntervalIterator over a composite IntervalIterator
    * @param collectIntervals true if intervals will be collected
    * @param other a composite IntervalIterator to wrap
    */
-  public OrderedConjunctionIntervalIterator(boolean collectIntervals, IntervalIterator other) {
+  public OrderedConjunctionIntervalIterator(boolean collectIntervals, boolean collectLeaves, IntervalIterator other) {
     this(other.scorer, collectIntervals, other.subs(true));
+    this.collectLeaves = collectLeaves;
+  }
+
+  public OrderedConjunctionIntervalIterator(boolean collectIntervals, IntervalIterator other) {
+    this(collectIntervals, true, other);
   }
 
   /**
@@ -132,10 +138,11 @@ public final class OrderedConjunctionIntervalIterator extends
   private void collectInternal(IntervalCollector collector) {
     assert collectIntervals;
     collector.collectComposite(scorer, interval, docID());
-    for (IntervalIterator iter : iterators) {
-      iter.collect(collector);
+    if (collectLeaves) {
+      for (IntervalIterator iter : iterators) {
+        iter.collect(collector);
+      }
     }
-
   }
 
   @Override

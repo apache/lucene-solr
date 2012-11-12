@@ -15,37 +15,17 @@ package org.apache.lucene.search.intervals;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
-import java.util.List;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.Weight.PostingFeatures;
-import org.apache.lucene.search.intervals.Interval;
-import org.apache.lucene.search.intervals.IntervalIterator;
-import org.apache.lucene.search.intervals.NonOverlappingQuery;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.search.Query;
 
-public class TestBrouwerianQuery extends LuceneTestCase {
+import java.io.IOException;
+
+public class TestBrouwerianQuery extends IntervalTestBase {
   
-  private static final void addDocs(RandomIndexWriter writer) throws CorruptIndexException, IOException {
+  protected void addDocs(RandomIndexWriter writer) throws IOException {
     {
       Document doc = new Document();
       doc.add(newField(
@@ -59,106 +39,35 @@ public class TestBrouwerianQuery extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newField(
           "field",
-          "The quick brown duck jumps over the lazy dog with the quick brown fox",
+          "The quick brown duck jumps over the lazy dog with the quick brown fox jumps",
               TextField.TYPE_STORED));
       writer.addDocument(doc);
     }
   }
   
   public void testBrouwerianBooleanQuery() throws IOException {
-    Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    addDocs(writer);
-    
-    IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
-    writer.close();
-    BooleanQuery query = new BooleanQuery();
-    query.add(new BooleanClause(new TermQuery(new Term("field", "the")), Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term("field", "quick")), Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term("field", "jumps")), Occur.MUST));
-    BooleanQuery sub = new BooleanQuery();
-    sub.add(new BooleanClause(new TermQuery(new Term("field", "fox")), Occur.MUST));
+
+    Query query = new OrderedNearQuery(2, false, makeTermQuery("the"),
+                                        makeTermQuery("quick"), makeTermQuery("jumps"));
+    Query sub = makeTermQuery("fox");
     NonOverlappingQuery q = new NonOverlappingQuery(query, sub);
-    TopDocs search = searcher.search(q, 10);
-    ScoreDoc[] scoreDocs = search.scoreDocs;
-    assertEquals(1, search.totalHits);
-    assertEquals(1, scoreDocs[0].doc);
-    
-    reader.close();
-    directory.close();
+
+    checkIntervals(query, searcher, new int[][]{
+        { 1, 0, 4 }
+    });
   }
-  
+
   public void testBrouwerianBooleanQueryExcludedDoesNotExist() throws IOException {
-    Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    addDocs(writer);
-    
-    IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
-    writer.close();
-    BooleanQuery query = new BooleanQuery();
-    query.add(new BooleanClause(new TermQuery(new Term("field", "the")), Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term("field", "quick")), Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term("field", "jumps")), Occur.MUST));
-    BooleanQuery sub = new BooleanQuery();
-    sub.add(new BooleanClause(new TermQuery(new Term("field", "blox")), Occur.MUST));
-    NonOverlappingQuery q = new NonOverlappingQuery(query, sub);
-    TopDocs search = searcher.search(q, 10);
-    ScoreDoc[] scoreDocs = search.scoreDocs;
-    assertEquals(2, search.totalHits);
-    assertEquals(0, scoreDocs[0].doc);
-    assertEquals(1, scoreDocs[1].doc);
 
-    
-    reader.close();
-    directory.close();
-  }
-  
-  public void testPositions() throws IOException {
-    Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    addDocs(writer);
-    
-    IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
-    writer.close();
-    BooleanQuery query = new BooleanQuery();
-    query.add(new BooleanClause(new TermQuery(new Term("field", "the")), Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term("field", "quick")), Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term("field", "jumps")), Occur.MUST));
-    BooleanQuery sub = new BooleanQuery();
-    sub.add(new BooleanClause(new TermQuery(new Term("field", "fox")), Occur.MUST));
+    Query query = new OrderedNearQuery(2, false, makeTermQuery("the"),
+        makeTermQuery("quick"), makeTermQuery("jumps"));
+    Query sub = makeTermQuery("blox");
     NonOverlappingQuery q = new NonOverlappingQuery(query, sub);
-    Weight weight = q.createWeight(searcher);
-    IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    List<AtomicReaderContext> leaves = topReaderContext.leaves();
-    assertEquals(1, leaves.size());
-    for (AtomicReaderContext atomicReaderContext : leaves) {
-      Scorer scorer = weight.scorer(atomicReaderContext, true, true, PostingFeatures.POSITIONS, atomicReaderContext.reader().getLiveDocs());
-        IntervalIterator positions = scorer.intervals(false);
-        int nextDoc = scorer.nextDoc();
-        assertEquals(1, positions.scorerAdvanced(nextDoc));
 
-        
-        assertEquals(1, nextDoc);
-        Interval interval = null;
-        int[] start = new int[] {0, 1, 4};
-        int[] end = new int[] {4, 6, 11};
-        for (int j = 0; j < end.length; j++) {
-          interval = positions.next();
-          assertNotNull("" + j, interval);
-          assertEquals(start[j], interval.begin);
-          assertEquals(end[j], interval.end);
-        }
-        assertNull(positions.next());
-        assertEquals(Scorer.NO_MORE_DOCS, scorer.nextDoc());
-    reader.close();
-    directory.close();
+    checkIntervals(query, searcher, new int[][]{
+        { 0, 0, 4 },
+        { 1, 0, 4, 10, 14 }
+    });
   }
-  
-  }
+
 }

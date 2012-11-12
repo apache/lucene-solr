@@ -40,10 +40,20 @@ public class OrderedNearQuery extends IntervalFilterQuery {
   /**
    * Constructs an OrderedNearQuery
    * @param slop the maximum distance between the subquery matches
+   * @param collectLeaves false if only the master interval should be collected
+   * @param subqueries the subqueries to match.
+   */
+  public OrderedNearQuery(int slop, boolean collectLeaves, Query... subqueries) {
+    super(buildBooleanQuery(subqueries), new WithinOrderedFilter(slop, collectLeaves));
+  }
+
+  /**
+   * Constructs an OrderedNearQuery
+   * @param slop the maximum distance between the subquery matches
    * @param subqueries the subqueries to match.
    */
   public OrderedNearQuery(int slop, Query... subqueries) {
-    super(buildBooleanQuery(subqueries), new WithinOrderedFilter(slop + subqueries.length - 1));
+    super(buildBooleanQuery(subqueries), new WithinOrderedFilter(slop, true));
   }
 
   private static BooleanQuery buildBooleanQuery(Query... queries) {

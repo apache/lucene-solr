@@ -26,19 +26,26 @@ package org.apache.lucene.search.intervals;
 public class WithinOrderedFilter implements IntervalFilter {
 
   private final WithinIntervalFilter innerFilter;
+  private final boolean collectLeaves;
 
   /**
    * Constructs a new WithinOrderedFilter with a given slop
    * @param slop The maximum distance allowed between subintervals
+   * @param collectLeaves false if only the parent interval should be collected
    */
-  public WithinOrderedFilter(int slop) {
+  public WithinOrderedFilter(int slop, boolean collectLeaves) {
     this.innerFilter = new WithinIntervalFilter(slop);
+    this.collectLeaves = collectLeaves;
+  }
+
+  public WithinOrderedFilter(int slop) {
+    this(slop, true);
   }
 
   @Override
   public IntervalIterator filter(boolean collectIntervals, IntervalIterator iter) {
     return innerFilter.filter(collectIntervals,
-                              new OrderedConjunctionIntervalIterator(collectIntervals, iter));
+                              new OrderedConjunctionIntervalIterator(collectIntervals, collectLeaves, iter));
   }
 
   @Override

@@ -15,27 +15,20 @@ package org.apache.lucene.search.intervals;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.*;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.search.Weight.PostingFeatures;
-import org.apache.lucene.search.intervals.BlockIntervalIterator;
-import org.apache.lucene.search.intervals.Interval;
-import org.apache.lucene.search.intervals.IntervalFilter;
-import org.apache.lucene.search.intervals.IntervalFilterQuery;
-import org.apache.lucene.search.intervals.IntervalIterator;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.TermQuery;
 
 import java.io.IOException;
-import java.util.List;
 
-public class TestBlockIntervalIterator extends LuceneTestCase {
+public class TestBlockIntervalIterator extends IntervalTestBase {
   
-  private static final void addDocs(RandomIndexWriter writer) throws CorruptIndexException, IOException {
+  protected void addDocs(RandomIndexWriter writer) throws IOException {
     {
       Document doc = new Document();
       doc.add(newField(
@@ -56,121 +49,50 @@ public class TestBlockIntervalIterator extends LuceneTestCase {
       writer.addDocument(doc);
     }
   }
-  public void testExactPhraseBooleanConjunction() throws IOException {
-    Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    addDocs(writer);
-    IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
-    writer.close();
+
+  public void testMatchingBlockIntervalFilter() throws IOException {
+
     BooleanQuery query = new BooleanQuery();
     query.add(new BooleanClause(new TermQuery(new Term("field", "pease")), Occur.MUST));
     query.add(new BooleanClause(new TermQuery(new Term("field", "porridge")), Occur.MUST));
     query.add(new BooleanClause(new TermQuery(new Term("field", "hot!")), Occur.MUST));
-    {
-      IntervalFilterQuery filter = new IntervalFilterQuery(query, new BlockPositionIteratorFilter());
-      TopDocs search = searcher.search(filter, 10);
-      ScoreDoc[] scoreDocs = search.scoreDocs;
-      assertEquals(2, search.totalHits);
-      assertEquals(0, scoreDocs[0].doc);
-      assertEquals(1, scoreDocs[1].doc);
-    }
+    IntervalFilterQuery filterQuery = new IntervalFilterQuery(query, new BlockIntervalFilter(false));
+
+    checkIntervals(filterQuery, searcher, new int[][]{
+        { 0, 0, 2, 31, 33 },
+        { 1, 3, 5, 34, 36 }
+    });
+
+  }
+
+  public void testPartialMatchingBlockIntervalFilter() throws IOException {
+
+    BooleanQuery query = new BooleanQuery();
+    query.add(new BooleanClause(new TermQuery(new Term("field", "pease")), Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term("field", "porridge")), Occur.MUST));
+    query.add(new BooleanClause(new TermQuery(new Term("field", "hot!")), Occur.MUST));
     query.add(new BooleanClause(new TermQuery(new Term("field", "pease")), Occur.MUST));
     query.add(new BooleanClause(new TermQuery(new Term("field", "porridge")), Occur.MUST));
     query.add(new BooleanClause(new TermQuery(new Term("field", "cold!")), Occur.MUST));
-    
-    {
-      IntervalFilterQuery filter = new IntervalFilterQuery(query, new BlockPositionIteratorFilter());
-      TopDocs search = searcher.search(filter, 10);
-      ScoreDoc[] scoreDocs = search.scoreDocs;
-      assertEquals(1, search.totalHits);
-      assertEquals(0, scoreDocs[0].doc);
-    }
-    
-    query = new BooleanQuery();
-    query.add(new BooleanClause(new TermQuery(new Term("field", "pease")), Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term("field", "hot!")), Occur.MUST));
-    {
-      IntervalFilterQuery filter = new IntervalFilterQuery(query, new BlockPositionIteratorFilter());
-      TopDocs search = searcher.search(filter, 10);
-      assertEquals(0, search.totalHits);
-    }
-    reader.close();
-    directory.close();
+    IntervalFilterQuery filterQuery = new IntervalFilterQuery(query, new BlockIntervalFilter(false));
+
+    checkIntervals(filterQuery, searcher, new int[][]{
+        { 0, 0, 5, 31, 36 },
+    });
+
+
   }
-  
-  public void testBlockPositionIterator() throws IOException {
-    Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    addDocs(writer);
-    IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
-    writer.close();
+
+  public void testNonMatchingBlockIntervalFilter() throws IOException {
+
     BooleanQuery query = new BooleanQuery();
     query.add(new BooleanClause(new TermQuery(new Term("field", "pease")), Occur.MUST));
-    query.add(new BooleanClause(new TermQuery(new Term("field", "porridge")), Occur.MUST));
     query.add(new BooleanClause(new TermQuery(new Term("field", "hot!")), Occur.MUST));
-    
-    Weight weight = query.createWeight(searcher);
-    IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    List<AtomicReaderContext> leaves = topReaderContext.leaves();
-    assertEquals(1, leaves.size());
-    for (AtomicReaderContext atomicReaderContext : leaves) {
-      Scorer scorer = weight.scorer(atomicReaderContext, true, true, PostingFeatures.POSITIONS, atomicReaderContext.reader().getLiveDocs());
-      {
-        int nextDoc = scorer.nextDoc();
-        assertEquals(0, nextDoc);
-        IntervalIterator positions = new BlockIntervalIterator(false, scorer.intervals(false));
-        assertEquals(0, positions.scorerAdvanced(0));
-        Interval interval = null;
-        int[] start = new int[] {0, 31};
-        int[] end = new int[] {2, 33};
-        // {start}term{end} - end is pos+1 
-        // {0}Pease porridge hot!{0} Pease porridge cold! Pease porridge in the pot nine days old! Some like it hot, some"
-        // like it cold, Some like it in the pot nine days old! {1}Pease porridge hot!{1} Pease porridge cold!",
-        for (int j = 0; j < end.length; j++) {
-          interval = positions.next();
-          assertNotNull(interval);
-          assertEquals(start[j], interval.begin);
-          assertEquals(end[j], interval.end);
-        }
-        assertNull(positions.next());
-      }
-      {
-        int nextDoc = scorer.nextDoc();
-        assertEquals(1, nextDoc);
-        IntervalIterator positions =  new BlockIntervalIterator(false, scorer.intervals(false));
-        assertEquals(1, positions.scorerAdvanced(1));
-        Interval interval = null;
-        int[] start = new int[] {3, 34};
-        int[] end = new int[] {5, 36};
-        // {start}term{end} - end is pos+1
-        // Pease porridge cold! {0}Pease porridge hot!{0} Pease porridge in the pot nine days old! Some like it cold, some
-        // like it hot, Some like it in the pot nine days old! Pease porridge cold! {1}Pease porridge hot{1}!
-        for (int j = 0; j < end.length; j++) {
-          interval = positions.next();
-          assertNotNull(interval);
-          assertEquals(j + "", start[j], interval.begin);
-          assertEquals(j+ "", end[j], interval.end);
-        }
-        assertNull(positions.next());
-      }
-    }
-    
+    IntervalFilterQuery filterQuery = new IntervalFilterQuery(query, new BlockIntervalFilter());
 
-    reader.close();
-    directory.close();
-  }
-  
-  
-  public static class BlockPositionIteratorFilter implements IntervalFilter {
+    checkIntervals(filterQuery, searcher, new int[][]{});
 
-    @Override
-    public IntervalIterator filter(boolean collectIntervals, IntervalIterator iter) {
-      return new BlockIntervalIterator(collectIntervals, iter);
-    }
-    
   }
+
+
 }

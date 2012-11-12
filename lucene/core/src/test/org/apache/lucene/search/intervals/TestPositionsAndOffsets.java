@@ -16,57 +16,28 @@ package org.apache.lucene.search.intervals;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.List;
-
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
-import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
-import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
-import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MultiPhraseQuery;
-import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Weight.PostingFeatures;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.intervals.Interval;
-import org.apache.lucene.search.intervals.IntervalIterator;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
+import java.io.IOException;
+
+// We need to store offsets here, so don't use the following Codecs, which don't
+// support them.
 @SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
-public class TestPositionsAndOffsets extends LuceneTestCase {
+public class TestPositionsAndOffsets extends IntervalTestBase {
 
-  // What am I testing here?
-  // - can get offsets out of a basic TermQuery, and a more complex BooleanQuery
-  // - if offsets are not stored, then we get -1 returned
-
-
-
-  private static void addDocs(RandomIndexWriter writer, boolean withOffsets) throws IOException {
-    FieldType fieldType = TextField.TYPE_STORED;
-    if (withOffsets) {
-      fieldType = new FieldType(fieldType);
-      fieldType.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    }
+  protected void addDocs(RandomIndexWriter writer) throws IOException {
+    FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
+    fieldType.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
     Document doc = new Document();
     doc.add(newField(
         "field",
@@ -76,103 +47,22 @@ public class TestPositionsAndOffsets extends LuceneTestCase {
     writer.addDocument(doc);
   }
 
-  private void testQuery(Query query, int[][] expectedOffsets) throws IOException {
-    testQuery(query, expectedOffsets, true);
-  }
-
-  private void testQuery(Query query, int[][] expectedOffsets, boolean needsOffsets) throws IOException {
-    Directory directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    addDocs(writer, needsOffsets);
-
-    IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
-    writer.close();
-
-    Weight weight = query.createWeight(searcher);
-    IndexReaderContext topReaderContext = searcher.getTopReaderContext();
-    List<AtomicReaderContext> leaves = topReaderContext.leaves();
-    assertEquals(1, leaves.size());
-    Scorer scorer = weight.scorer(leaves.get(0),
-        true, true, PostingFeatures.OFFSETS, leaves.get(0).reader().getLiveDocs());
-
-    int nextDoc = scorer.nextDoc();
-    assertEquals(0, nextDoc);
-    IntervalIterator positions = scorer.intervals(false);
-    int startOffsets[] = expectedOffsets[0];
-    int endOffsets[] = expectedOffsets[1];
-
-    assertEquals(0, positions.scorerAdvanced(nextDoc));
-    for (int i = 0; i < startOffsets.length; i++) {
-      Interval interval = positions.next();
-      assertEquals("i: " + i, startOffsets[i], interval.offsetBegin);
-      assertEquals("i: " + i, endOffsets[i], interval.offsetEnd);
-    }
-
-    assertNull(positions.next());
-
-    reader.close();
-    directory.close();
-  }
-
-  public void testTermQueryWithoutOffsets() throws IOException {
+  public void testTermQueryOffsets() throws IOException {
     Query query = new TermQuery(new Term("field", "porridge"));
-       int[] startOffsets = new int[] { 6, 26, 47, 164, 184 };
-        int[] endOffsets = new int[] { 14, 34, 55, 172, 192 };
-        testQuery(query, new int[][] { startOffsets, endOffsets });
+    checkIntervalOffsets(query, searcher, new int[][]{
+        { 0, 6, 14, 26, 34, 47, 55, 164, 172, 184, 192 }
+    });
   }
 
-  public void testBooleanQueryWithOffsets() throws IOException {
-    
+  public void testBooleanQueryOffsets() throws IOException {
     BooleanQuery query = new BooleanQuery();
     query.add(new BooleanClause(new TermQuery(new Term("field", "porridge")),
         BooleanClause.Occur.MUST));
     query.add(new BooleanClause(new TermQuery(new Term("field", "nine")),
         BooleanClause.Occur.MUST));
-    int[] startOffsetsConj = new int[] {47,143};
-    int[] endOffsetsConj = new int[] {71, 172};
-    testQuery(query, new int[][] {startOffsetsConj, endOffsetsConj});
+    checkIntervalOffsets(query,  searcher, new int[][]{
+        { 0, 47, 71, 143, 172 }
+    });
   }
-   
-  public void testExactPhraseQuery() throws IOException {
-    PhraseQuery query = new PhraseQuery();
-    query.add(new Term("field", "pease"));
-    query.add(new Term("field", "porridge"));
-    query.add(new Term("field", "hot!"));
-    int[] startOffsetsBlock = new int[] {0, 158};
-    int[] endOffsetsBlock = new int[] {19, 177};
-    testQuery(query, new int[][] {startOffsetsBlock, endOffsetsBlock});
-  }
-  
-  public void testSloppyPhraseQuery() throws IOException {
-    PhraseQuery query = new PhraseQuery();
-    query.add(new Term("field", "pease"));
-    query.add(new Term("field", "hot!"));
-    query.setSlop(1);
-    int[] startOffsetsBlock = new int[] {0, 158};
-    int[] endOffsetsBlock = new int[] {19, 177};
-    testQuery(query, new int[][] {startOffsetsBlock, endOffsetsBlock});
-  }
-  
-  public void testManyTermSloppyPhraseQuery() throws IOException {
-    PhraseQuery query = new PhraseQuery();
-    query.add(new Term("field", "pease"));
-    query.add(new Term("field", "porridge"));
-    query.add(new Term("field", "pot"));
-    query.setSlop(2);
-    int[] startOffsetsBlock = new int[] {41};
-    int[] endOffsetsBlock = new int[] {66};
-    testQuery(query, new int[][] {startOffsetsBlock, endOffsetsBlock});
-  }
-  
-  public void testMultiTermPhraseQuery() throws IOException {
-    MultiPhraseQuery query = new MultiPhraseQuery();
-    query.add(new Term("field", "pease"));
-    query.add(new Term("field", "porridge"));
-    query
-        .add(new Term[] {new Term("field", "hot!"), new Term("field", "cold!")});
-    int[] startOffsetsBlock = new int[] {0, 20, 158, 178};
-    int[] endOffsetsBlock = new int[] {19, 40, 177, 198};
-    testQuery(query, new int[][] {startOffsetsBlock, endOffsetsBlock});
-  }
+
 }
