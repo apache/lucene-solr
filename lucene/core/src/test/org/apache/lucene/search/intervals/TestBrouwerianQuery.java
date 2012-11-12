@@ -52,7 +52,7 @@ public class TestBrouwerianQuery extends IntervalTestBase {
     Query sub = makeTermQuery("fox");
     NonOverlappingQuery q = new NonOverlappingQuery(query, sub);
 
-    checkIntervals(query, searcher, new int[][]{
+    checkIntervals(q, searcher, new int[][]{
         { 1, 0, 4 }
     });
   }
@@ -64,9 +64,20 @@ public class TestBrouwerianQuery extends IntervalTestBase {
     Query sub = makeTermQuery("blox");
     NonOverlappingQuery q = new NonOverlappingQuery(query, sub);
 
-    checkIntervals(query, searcher, new int[][]{
+    checkIntervals(q, searcher, new int[][]{
         { 0, 0, 4 },
         { 1, 0, 4, 10, 14 }
+    });
+  }
+
+  public void testBrouwerianOverlapQuery() throws IOException {
+    // We want to find 'jumps NOT WITHIN 2 positions of fox'
+    Query sub = new UnorderedNearQuery(2, false, makeTermQuery("jumps"), makeTermQuery("fox"));
+    Query query = makeTermQuery("jumps");
+    NonOverlappingQuery q = new NonOverlappingQuery(query, sub);
+
+    checkIntervals(q, searcher, new int[][]{
+        { 1, 4, 4 }
     });
   }
 
