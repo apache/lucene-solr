@@ -65,7 +65,12 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
   public static void beforeClassDihJdbcTest() throws Exception {
     try {
       Class.forName("org.hsqldb.jdbcDriver").newInstance();
+      String oldProp = System.getProperty("derby.stream.error.field");
+      System.setProperty("derby.stream.error.field", "DerbyUtil.DEV_NULL");
       Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
+      if(oldProp!=null) {
+        System.setProperty("derby.stream.error.field", oldProp);    
+      }
     } catch (Exception e) {
       throw e;
     }  
@@ -326,13 +331,8 @@ public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerT
     PreparedStatement ps = null;
     Timestamp theTime = new Timestamp(System.currentTimeMillis() - 10000); //10 seconds ago
     try { 
-      if(dbToUse==Database.DERBY) {
-        String oldProp = System.getProperty("derby.stream.error.field");
-        System.setProperty("derby.stream.error.field", "DerbyUtil.DEV_NULL");
+      if(dbToUse==Database.DERBY) {        
         conn = DriverManager.getConnection("jdbc:derby:memory:derbyDB;create=true");
-        if(oldProp!=null) {
-          System.setProperty("derby.stream.error.field", oldProp);    
-        }
       } else if(dbToUse==Database.HSQLDB) {
         conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");            
       } else {
