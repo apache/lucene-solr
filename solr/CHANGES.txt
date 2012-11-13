@@ -176,6 +176,10 @@ Bug Fixes
   leader process, the SolrCore will not correctly rejoin the election.
   (Po Rui Via Mark Miller)
 
+* SOLR-3989: SolrZkClient constructor dropped exception cause when throwing
+  a new RuntimeException. (Colin Bartolome, yonik)
+
+
 Other Changes
 ----------------------
 
