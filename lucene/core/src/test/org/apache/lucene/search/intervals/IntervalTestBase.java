@@ -14,6 +14,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
@@ -228,6 +229,11 @@ public abstract class IntervalTestBase extends LuceneTestCase {
     @Override
     public void collectComposite(Scorer scorer, Interval interval, int docID) {
       matches.add(new Match(docID, interval, true));
+    }
+
+    @Override
+    public Weight.PostingFeatures postingFeatures() {
+      return Weight.PostingFeatures.OFFSETS;
     }
 
     public Set<Match> getMatches() {

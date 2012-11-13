@@ -61,7 +61,7 @@ public class TestPositionsAndOffsets extends IntervalTestBase {
     query.add(new BooleanClause(new TermQuery(new Term("field", "nine")),
         BooleanClause.Occur.MUST));
     checkIntervalOffsets(query,  searcher, new int[][]{
-        { 0, 47, 71, 143, 172 }
+        { 0, 47, 71, 47, 55, 67, 71, 143, 172, 143, 147, 164, 172 }
     });
   }
 
