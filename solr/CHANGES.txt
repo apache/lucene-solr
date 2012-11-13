@@ -158,6 +158,10 @@ Bug Fixes
   one db affected by this bug).  (Fenlor Sebastia, James Dyer)
   
 
+* SOLR-3989: SolrZkClient constructor dropped exception cause when throwing
+  a new RuntimeException. (Colin Bartolome, yonik)
+
+
 Other Changes
 ----------------------
 
