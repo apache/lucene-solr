@@ -300,6 +300,9 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         }
       }
       };
+    if (maxMergeThreads > cms.getMaxMergeCount()) {
+      cms.setMaxMergeCount(maxMergeCount);
+    }
     cms.setMaxThreadCount(maxMergeThreads);
     cms.setMaxMergeCount(maxMergeCount);
     iwc.setMergeScheduler(cms);
