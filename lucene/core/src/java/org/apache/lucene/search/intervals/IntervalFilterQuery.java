@@ -103,6 +103,8 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     private Similarity.SimWeight getSimWeight(Query query, IndexSearcher searcher)  throws IOException {
       TreeSet<Term> terms = new TreeSet<Term>();
       query.extractTerms(terms);
+      if (terms.size() == 0)
+        return null;
       int i = 0;
       TermStatistics[] termStats = new TermStatistics[terms.size()];
       for (Term term : terms) {
@@ -135,6 +137,8 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     @Override
     public Scorer scorer(AtomicReaderContext context, boolean scoreDocsInOrder,
         boolean topScorer, PostingFeatures flags, Bits acceptDocs) throws IOException {
+      if (stats == null)
+        return null;
       flags = flags == PostingFeatures.DOCS_AND_FREQS ? PostingFeatures.POSITIONS : flags;
       ScorerFactory factory = new ScorerFactory(other, context, topScorer, flags, acceptDocs);
       final Scorer scorer = factory.scorer();
