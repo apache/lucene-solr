@@ -220,10 +220,14 @@ public class TestBasicIntervals extends IntervalTestBase {
     });
   }
 
+  // "t1 t2 t1 t3 t2 t3"
+  //  -----------
+  //     --------
+  //        --------
   public void testOrSingleDocument() throws Exception {
     Query q = makeOrQuery(makeTermQuery("t1"), makeTermQuery("t2"), makeTermQuery("t3"));
     checkIntervals(q, searcher, new int[][]{
-        { 11, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6 }
+        { 11, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5 }
     });
   }
   
