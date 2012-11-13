@@ -68,16 +68,16 @@ public class DocBuilder {
 
   static final ThreadLocal<DocBuilder> INSTANCE = new ThreadLocal<DocBuilder>();
   private Map<String, Object> functionsNamespace;
-  private Properties persistedProperties;
+  private Map<String, Object> persistedProperties;
   
-  private DIHPropertiesWriter propWriter;
+  private DIHProperties propWriter;
   private static final String PARAM_WRITER_IMPL = "writerImpl";
   private static final String DEFAULT_WRITER_NAME = "SolrWriter";
   private DebugLogger debugLogger;
   private final RequestInfo reqParams;
   
   @SuppressWarnings("unchecked")
-  public DocBuilder(DataImporter dataImporter, SolrWriter solrWriter, DIHPropertiesWriter propWriter, RequestInfo reqParams) {
+  public DocBuilder(DataImporter dataImporter, SolrWriter solrWriter, DIHProperties propWriter, RequestInfo reqParams) {
     INSTANCE.set(this);
     this.dataImporter = dataImporter;
     this.reqParams = reqParams;
@@ -121,22 +121,22 @@ public class DocBuilder {
         resolver =  new VariableResolverImpl(dataImporter.getCore().getResourceLoader().getCoreProperties());
       } else resolver = new VariableResolverImpl();
       Map<String, Object> indexerNamespace = new HashMap<String, Object>();
-      if (persistedProperties.getProperty(LAST_INDEX_TIME) != null) {
-        indexerNamespace.put(LAST_INDEX_TIME, persistedProperties.getProperty(LAST_INDEX_TIME));
+      if (persistedProperties.get(LAST_INDEX_TIME) != null) {
+        indexerNamespace.put(LAST_INDEX_TIME, persistedProperties.get(LAST_INDEX_TIME));
       } else  {
         // set epoch
-        indexerNamespace.put(LAST_INDEX_TIME, DataImporter.DATE_TIME_FORMAT.get().format(EPOCH));
+        indexerNamespace.put(LAST_INDEX_TIME, EPOCH);
       }
       indexerNamespace.put(INDEX_START_TIME, dataImporter.getIndexStartTime());
       indexerNamespace.put("request", reqParams.getRawParams());
       indexerNamespace.put("functions", functionsNamespace);
       for (Entity entity : dataImporter.getConfig().getEntities()) {
         String key = entity.getName() + "." + SolrWriter.LAST_INDEX_KEY;
-        String lastIndex = persistedProperties.getProperty(key);
-        if (lastIndex != null) {
+        Object lastIndex = persistedProperties.get(key);
+        if (lastIndex != null && lastIndex instanceof Date) {
           indexerNamespace.put(key, lastIndex);
         } else  {
-          indexerNamespace.put(key, DataImporter.DATE_TIME_FORMAT.get().format(EPOCH));
+          indexerNamespace.put(key, EPOCH);
         }
       }
       resolver.addNamespace(ConfigNameConstants.IMPORTER_NS_SHORT, indexerNamespace);
@@ -206,9 +206,8 @@ public class DocBuilder {
       }
       AtomicBoolean fullCleanDone = new AtomicBoolean(false);
       //we must not do a delete of *:* multiple times if there are multiple root entities to be run
-      Properties lastIndexTimeProps = new Properties();
-      lastIndexTimeProps.setProperty(LAST_INDEX_KEY,
-              DataImporter.DATE_TIME_FORMAT.get().format(dataImporter.getIndexStartTime()));
+      Map<String,Object> lastIndexTimeProps = new HashMap<String,Object>();
+      lastIndexTimeProps.put(LAST_INDEX_KEY, dataImporter.getIndexStartTime());
 
       epwList = new ArrayList<EntityProcessorWrapper>(config.getEntities().size());
       for (Entity e : config.getEntities()) {
@@ -217,8 +216,7 @@ public class DocBuilder {
       for (EntityProcessorWrapper epw : epwList) {
         if (entities != null && !entities.contains(epw.getEntity().getName()))
           continue;
-        lastIndexTimeProps.setProperty(epw.getEntity().getName() + "." + LAST_INDEX_KEY,
-                DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
+        lastIndexTimeProps.put(epw.getEntity().getName() + "." + LAST_INDEX_KEY, propWriter.getCurrentTimestamp());
         currentEntityProcessorWrapper = epw;
         String delQuery = epw.getEntity().getAllAttributes().get("preImportDeleteQuery");
         if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP) {
@@ -295,7 +293,7 @@ public class DocBuilder {
   }
 
   @SuppressWarnings("unchecked")
-  private void finish(Properties lastIndexTimeProps) {
+  private void finish(Map<String,Object> lastIndexTimeProps) {
     LOG.info("Import completed successfully");
     statusMessages.put("", "Indexing completed. Added/Updated: "
             + importStatistics.docCount + " documents. Deleted "

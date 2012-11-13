@@ -79,7 +79,7 @@ public class TemplateString {
     String[] s = new String[variables.size()];
     for (int i = 0; i < variables.size(); i++) {
       Object val = resolver.resolve(variables.get(i));
-      s[i] = val == null ? "" : getObjectAsString(val);
+      s[i] = val == null ? "" : val.toString();
     }
 
     StringBuilder sb = new StringBuilder();
@@ -91,14 +91,6 @@ public class TemplateString {
     }
 
     return sb.toString();
-  }
-
-  private String getObjectAsString(Object val) {
-    if (val instanceof Date) {
-      Date d = (Date) val;
-      return DataImporter.DATE_TIME_FORMAT.get().format(d);
-    }
-    return val.toString();
   }
 
   /**
