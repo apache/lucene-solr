@@ -48,6 +48,14 @@ New Features
 * SOLR-3985: ExternalFileField caches can be reloaded on firstSearcher/
   newSearcher events using the ExternalFileFieldReloader (Alan Woodward)
 
+* SOLR-4051: Add <propertyWriter /> element to DIH's data-config.xml file,  
+  allowing the user to specify the location, filename and Locale for
+  the "data-config.properties" file.  Alternatively, users can specify their
+  own property writer implementation for greater control. This new configuration 
+  element is optional, and defaults mimic prior behavior.  The one exception is 
+  that the "root" locale is default. Previously it was the machine' default locale.  
+  (James Dyer)
+
 Optimizations
 ----------------------
 
