@@ -64,7 +64,7 @@ New Features
   the "data-config.properties" file.  Alternatively, users can specify their
   own property writer implementation for greater control. This new configuration 
   element is optional, and defaults mimic prior behavior.  The one exception is 
-  that the "root" locale is default. Previously it was the machine' default locale.  
+  that the "root" locale is default. Previously it was the machine's default locale.  
   (James Dyer)
 
 Optimizations
