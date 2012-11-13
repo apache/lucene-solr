@@ -164,6 +164,9 @@ Bug Fixes
 * SOLR-4036: field aliases in fl should not cause properties of target field
   to be used. (Martin Koch, yonik)
 
+* SOLR-4003: The SolrZKClient clean method should not try and clear zk paths
+  that start with /zookeeper, as this can fail and stop the removal of
+  further nodes. (Mark Miller)
 
 Other Changes
 ----------------------
