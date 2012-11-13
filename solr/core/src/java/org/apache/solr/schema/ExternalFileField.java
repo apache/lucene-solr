@@ -87,7 +87,8 @@ public class ExternalFileField extends FieldType {
 
   @Override
   public SortField getSortField(SchemaField field,boolean reverse) {
-    throw new UnsupportedOperationException();
+    FileFloatSource source = getFileFloatSource(field);
+    return source.getSortField(reverse);
   }
 
   @Override
@@ -96,7 +97,19 @@ public class ExternalFileField extends FieldType {
   }
 
   /**
-   * Get a FileFloatSource for the given field, looking in datadir for the relevant file
+   * Get a FileFloatSource for the given field, using the datadir from the
+   * IndexSchema
+   * @param field the field to get a source for
+   * @return a FileFloatSource
+   */
+  public FileFloatSource getFileFloatSource(SchemaField field) {
+    return getFileFloatSource(field, schema.getResourceLoader().getDataDir());
+  }
+
+  /**
+   * Get a FileFloatSource for the given field.  Call this in preference to
+   * getFileFloatSource(SchemaField) if this may be called before the Core is
+   * fully initialised (eg in SolrEventListener calls).
    * @param field the field to get a source for
    * @param datadir the data directory in which to look for the external file
    * @return a FileFloatSource
