@@ -71,6 +71,32 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
     zkClient.close();
     server.shutdown();
   }
+  
+  public void testClean() throws Exception {
+    String zkDir = dataDir.getAbsolutePath() + File.separator
+        + "zookeeper/server1/data";
+    ZkTestServer server = null;
+
+    server = new ZkTestServer(zkDir);
+    server.run();
+    AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+    
+
+    SolrZkClient zkClient = new SolrZkClient(server.getZkHost(),
+        AbstractZkTestCase.TIMEOUT);
+
+    zkClient.makePath("/test/path/here", true);
+    
+    zkClient.makePath("/zz/path/here", true);
+    
+    zkClient.clean("/");
+    
+    assertFalse(zkClient.exists("/test", true));
+    assertFalse(zkClient.exists("/zz", true));
+
+    zkClient.close();
+    server.shutdown();
+  }
 
   public void testReconnect() throws Exception {
     String zkDir = dataDir.getAbsolutePath() + File.separator
