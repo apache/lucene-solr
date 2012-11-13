@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -342,18 +343,13 @@ class JSONWriter extends TextResponseWriter {
       writeKey(fname, true);
       Object val = doc.getFieldValue(fname);
 
-      if (val instanceof Collection) {
-        writeVal(fname, val);
+      // SolrDocument will now have multiValued fields represented as a Collection,
+      // even if only a single value is returned for this document.
+      if (val instanceof List) {
+        // shortcut this common case instead of going through writeVal again
+        writeArray(name,((Iterable)val).iterator());
       } else {
-        // if multivalued field, write single value as an array
-        SchemaField sf = schema.getFieldOrNull(fname);
-        if (sf != null && sf.multiValued()) {
-          writeArrayOpener(-1); // no trivial way to determine array size
-          writeVal(fname, val);
-          writeArrayCloser();
-        } else {
-          writeVal(fname, val);
-        }
+        writeVal(fname, val);
       }
     }
     
