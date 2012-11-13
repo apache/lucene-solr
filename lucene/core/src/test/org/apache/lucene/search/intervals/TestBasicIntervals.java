@@ -177,21 +177,34 @@ public class TestBasicIntervals extends IntervalTestBase {
         { 10, 0, 1 }
     });
   }
+  /*
+        "w1 w2 w3 w4 w5", //0
+      "w1 w3 w2 w3",//1
+      "w1 xx w2 yy w3",//2
+      "w1 w3 xx w2 yy w3",//3
+      "u2 u2 u1", //4
+      "u2 xx u2 u1",//5
+      "u2 u2 xx u1", //6
+      "u2 xx u2 yy u1", //7
+      "u2 xx u1 u2",//8
+      "u1 u2 xx u2",//9
+      "u2 u1 xx u2",//10
+      "t1 t2 t1 t3 t2 t3"};//11
+   */
 
-  // ((u1 near u2) near u2)
+  // ((u1 near u2) near xx)
   public void testNestedNear() throws Exception {
 
-    Query q = new OrderedNearQuery(0, false, makeTermQuery("u1"), makeTermQuery("u2"));
+    Query q = new UnorderedNearQuery(0, false, makeTermQuery("u1"), makeTermQuery("u2"));
     BooleanQuery topq = new BooleanQuery();
     topq.add(q, Occur.MUST);
-    topq.add(makeTermQuery("u2"), Occur.MUST);
+    topq.add(makeTermQuery("xx"), Occur.MUST);
 
     checkIntervals(topq, searcher, new int[][]{
-        { 4, 1, 2 },
-        { 5, 2, 3 },
-        { 8, 2, 3 },
-        { 9, 0, 1 },
-        { 10, 0, 1 }
+        { 5, 1, 3, 1, 1, 2, 3 },
+        { 8, 1, 3, 1, 1, 2, 3 },
+        { 9, 0, 2, 0, 1, 2, 2 },
+        { 10, 0, 2, 0, 1, 2, 2 }
     });
 
   }
@@ -199,24 +212,32 @@ public class TestBasicIntervals extends IntervalTestBase {
   public void testOrSingle() throws Exception {
     Query q = makeOrQuery(makeTermQuery("w5"));
     checkIntervals(q, searcher, new int[][]{
-        { 0, 4, 5 }
+        { 0, 4, 4 }
     });
   }
-  
+
   public void testOrPartialMatch() throws Exception {
     Query q = makeOrQuery(makeTermQuery("w5"), makeTermQuery("xx"));
     checkIntervals(q, searcher, new int[][]{
-        { 0, 4, 5 }
+        { 0, 4, 4 },
+        { 2, 1, 1 },
+        { 3, 2, 2 },
+        { 5, 1, 1 },
+        { 6, 2, 2 },
+        { 7, 1, 1 },
+        { 8, 1, 1 },
+        { 9, 2, 2 },
+        { 10, 2, 2 },
     });
   }
 
   public void testOrDisjunctionMatch() throws Exception {
     Query q = makeOrQuery(makeTermQuery("w5"), makeTermQuery("yy"));
     checkIntervals(q, searcher, new int[][]{
-        { 0, 4, 5 },
-        { 2, 3, 4 },
-        { 3, 4, 5 },
-        { 7, 3, 4 }
+        { 0, 4, 4 },
+        { 2, 3, 3 },
+        { 3, 4, 4 },
+        { 7, 3, 3 }
     });
   }
 

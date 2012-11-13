@@ -43,7 +43,7 @@ public class UnorderedNearQuery extends IntervalFilterQuery {
    * @param subqueries the subqueries to match.
    */
   public UnorderedNearQuery(int slop, boolean collectLeaves, Query... subqueries) {
-    super(buildBooleanQuery(subqueries), new WithinIntervalFilter(slop, collectLeaves));
+    super(buildBooleanQuery(subqueries), new WithinIntervalFilter(slop + subqueries.length - 2, collectLeaves));
   }
 
   /**
@@ -52,7 +52,7 @@ public class UnorderedNearQuery extends IntervalFilterQuery {
    * @param subqueries the subqueries to match.
    */
   public UnorderedNearQuery(int slop, Query... subqueries) {
-    super(buildBooleanQuery(subqueries), new WithinIntervalFilter(slop, true));
+    this(slop, true, subqueries);
   }
 
   private static BooleanQuery buildBooleanQuery(Query... queries) {

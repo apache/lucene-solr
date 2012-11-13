@@ -73,7 +73,7 @@ public class TestConjunctionIntervalIterator extends IntervalTestBase {
     Query q = new UnorderedNearQuery(0, false, makeTermQuery("pease"),
                                       makeTermQuery("porridge"), makeTermQuery("hot!"));
     checkIntervals(q, searcher, new int[][]{
-        { 0, 0, 2, 1, 3, 2, 4, 31, 33, 32, 24, 33, 35 },
+        { 0, 0, 2, 1, 3, 2, 4, 31, 33, 32, 34, 33, 35 },
         { 1, 3, 5, 4, 6, 5, 7, 34, 36 }
     });
   }
