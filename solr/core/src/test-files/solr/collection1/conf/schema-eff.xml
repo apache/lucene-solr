@@ -22,7 +22,7 @@
  <fields>
         
    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false" />
-   <field name="eff" type="flax-eff"/>
+   <field name="eff" type="eff"/>
 
  </fields>
 
@@ -38,7 +38,7 @@
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
 
     <!-- Our external file field type -->
-    <fieldType name="flax-eff" class="solr.ExternalFileField"/>
+    <fieldType name="eff" class="solr.ExternalFileField"/>
 
  </types>
 
