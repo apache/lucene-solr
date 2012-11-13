@@ -58,6 +58,30 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     assertU(adoc("id", "46", "val_i", "3", "ssto", "X", "subject", "ggg"));
     assertU(commit());
   }
+
+  @Test
+  public void testMultiValued() throws Exception {
+    // the response writers used to consult isMultiValued on the field
+    // but this doesn't work when you alias a single valued field to
+    // a multi valued field (the field value is copied first, then
+    // if the type lookup is done again later, we get the wrong thing). SOLR-4036
+
+    assertJQ(req("q","id:42", "fl","val_ss:val_i, val2_ss:10")
+        ,"/response/docs==[{'val2_ss':10,'val_ss':1}]"
+    );
+
+    assertJQ(req("qt","/get", "id","42", "fl","val_ss:val_i, val2_ss:10")
+        ,"/doc=={'val2_ss':10,'val_ss':1}"
+    );
+
+    // also check real-time-get from transaction log
+    assertU(adoc("id", "42", "val_i", "1", "ssto", "X", "subject", "aaa"));
+
+    assertJQ(req("qt","/get", "id","42", "fl","val_ss:val_i, val2_ss:10")
+        ,"/doc=={'val2_ss':10,'val_ss':1}"
+    );
+
+  }
   
   @Test
   public void testAllRealFields() throws Exception {

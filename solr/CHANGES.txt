@@ -161,6 +161,9 @@ Bug Fixes
 * SOLR-3989: SolrZkClient constructor dropped exception cause when throwing
   a new RuntimeException. (Colin Bartolome, yonik)
 
+* SOLR-4036: field aliases in fl should not cause properties of target field
+  to be used. (Martin Koch, yonik)
+
 
 Other Changes
 ----------------------
