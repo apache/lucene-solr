@@ -36,9 +36,8 @@ Changes in backwards compatibility policy
 
 New Features
 
-* LUCENE-4226: New experimental StoredFieldsFormat (in lucene/codecs) that
-  compresses chunks of documents together in order to improve the compression
-  ratio. (Adrien Grand)
+* LUCENE-4226: New experimental StoredFieldsFormat that compresses chunks of
+  documents together in order to improve the compression ratio. (Adrien Grand)
 
 * LUCENE-4426: New ValueSource implementations (in lucene/queries) for
   DocValues fields. (Adrien Grand)
@@ -149,6 +148,9 @@ Bug Fixes
   maxMergeCount (Radim Kolar, Mike McCandless)
 
 Optimizations
+
+* LUCENE-4509: Enable stored fields compression by default in the Lucene 4.1
+  default codec. (Adrien Grand)
 
 * LUCENE-4536: PackedInts on-disk format is now byte-aligned (it used to be
   long-aligned), saving up to 7 bytes per array of values.
