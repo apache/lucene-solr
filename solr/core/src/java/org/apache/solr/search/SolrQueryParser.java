@@ -246,4 +246,12 @@ public class SolrQueryParser extends QueryParser {
     termStr = analyzeIfMultitermTermText(field, termStr, schema.getFieldType(field));
     return newRegexpQuery(new Term(field, termStr));
   }
+
+  @Override
+  protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException {
+    termStr = analyzeIfMultitermTermText(field, termStr, schema.getFieldType(field));
+    Term t = new Term(field, termStr);
+    return newFuzzyQuery(t, minSimilarity, getFuzzyPrefixLength());
+  }
+
 }
