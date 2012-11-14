@@ -194,6 +194,12 @@ Bug Fixes
   that start with /zookeeper, as this can fail and stop the removal of
   further nodes. (Mark Miller)
 
+* SOLR-4076: SolrQueryParser should run fuzzy terms through
+  MultiTermAwareComponents to ensure that (for example) a fuzzy query of
+  foobar~2 is equivalent to FooBar~2 on a field that includes lowercasing.
+  (yonik)
+
+
 Other Changes
 ----------------------
 
