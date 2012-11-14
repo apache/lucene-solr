@@ -371,24 +371,14 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
       }
     }
 
-    // total length of the chunk
-    private int totalLength() {
-      int totalLength = 0;
-      for (int i = 0; i < chunkDocs; ++i) {
-        totalLength += lengths[i];
-      }
-      return totalLength;
-    }
-
     /**
      * Decompress the chunk.
      */
     void decompress() throws IOException {
       // decompress data
-      final int totalLength = totalLength();
-      decompressor.decompress(fieldsStream, totalLength, 0, totalLength, bytes);
-      assert bytes.length == totalLength;
-      if (bytes.length != chunkSize()) {
+      final int chunkSize = chunkSize();
+      decompressor.decompress(fieldsStream, chunkSize, 0, chunkSize, bytes);
+      if (bytes.length != chunkSize) {
         throw new CorruptIndexException("Corrupted: expected chunk size = " + chunkSize() + ", got " + bytes.length);
       }
     }
@@ -397,8 +387,8 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
      * Copy compressed data.
      */
     void copyCompressedData(DataOutput out) throws IOException {
-      final int totalLength = totalLength();
-      decompressor.copyCompressedData(fieldsStream, totalLength, out);
+      final int chunkSize = chunkSize();
+      decompressor.copyCompressedData(fieldsStream, chunkSize, out);
     }
 
   }
