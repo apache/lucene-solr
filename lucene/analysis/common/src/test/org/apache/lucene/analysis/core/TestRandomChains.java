@@ -59,6 +59,7 @@ import org.apache.lucene.analysis.ValidatingTokenFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.cjk.CJKBigramFilter;
 import org.apache.lucene.analysis.commongrams.CommonGramsFilter;
+import org.apache.lucene.analysis.commongrams.CommonGramsQueryFilter;
 import org.apache.lucene.analysis.compound.DictionaryCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.TestCompoundWordTokenFilter;
@@ -160,7 +161,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       // TODO: doesn't handle graph inputs (or even look at positionIncrement)
       HyphenatedWordsFilter.class,
       // LUCENE-4065: only if you pass 'false' to enablePositionIncrements!
-      TypeTokenFilter.class
+      TypeTokenFilter.class,
+      // TODO: doesn't handle graph inputs
+      CommonGramsQueryFilter.class
     );
   }
   
