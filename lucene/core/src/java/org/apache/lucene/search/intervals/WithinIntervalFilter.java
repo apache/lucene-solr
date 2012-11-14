@@ -102,6 +102,16 @@ public class WithinIntervalFilter implements IntervalFilter {
       return iterator.matchDistance();
     }
 
+    @Override
+    public String toString() {
+      return "WithinIntervalIterator[" + iterator.docID() + ":" + interval + "]";
+    }
+
+    @Override
+    public int docID() {
+      return iterator.docID();
+    }
+
   }
 
 }

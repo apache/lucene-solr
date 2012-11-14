@@ -65,7 +65,7 @@ public class TestExoticQueries extends IntervalTestBase {
     query.add(new Term("field", "pot"));
     query.setSlop(2);
     checkIntervals(query, searcher, new int[][]{
-        { 0, 0, 2, 31, 33 }
+        { 0, 6, 10, 6, 6, 7, 7, 10, 10 }
     });
   }
 

@@ -240,6 +240,16 @@ public class IntervalFilterQuery extends Query implements Cloneable {
           public int matchDistance() {
             return filter.matchDistance();
           }
+
+          @Override
+          public int docID() {
+            return filter.docID();
+          }
+
+          @Override
+          public String toString() {
+            return IntervalFilterQuery.this.toString(null) + "[" + filter + "]";
+          }
           
         };
       }
@@ -330,7 +340,7 @@ public class IntervalFilterQuery extends Query implements Cloneable {
 
   @Override
   public String toString(String field) {
-    return filter.toString() + "(" + inner.toString() + ")";
+    return "Filtered(" + inner.toString() + ")";
   }
   
   @Override

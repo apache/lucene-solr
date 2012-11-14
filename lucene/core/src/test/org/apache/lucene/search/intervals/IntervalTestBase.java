@@ -195,6 +195,7 @@ public abstract class IntervalTestBase extends LuceneTestCase {
   public static class MatchCollector extends Collector implements IntervalCollector {
 
     private IntervalIterator intervals;
+    private Interval current;
     private Set<Match> matches = new TreeSet<Match>();
     private int hitCount;
 
@@ -207,7 +208,8 @@ public abstract class IntervalTestBase extends LuceneTestCase {
     public void collect(int doc) throws IOException {
       hitCount++;
       intervals.scorerAdvanced(doc);
-      while (intervals.next() != null) {
+      while ((current = intervals.next()) != null) {
+        System.out.println(doc + ":" + current);
         intervals.collect(this);
       }
     }

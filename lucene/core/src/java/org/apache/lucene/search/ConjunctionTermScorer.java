@@ -17,17 +17,17 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.intervals.ConjunctionIntervalIterator;
 import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.search.intervals.TermIntervalIterator;
 import org.apache.lucene.util.ArrayUtil;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 
 
 /** Scorer for conjunctions, sets of terms, all of which are required. */
@@ -80,6 +80,8 @@ class ConjunctionTermScorer extends Scorer {
 
   @Override
   public int advance(int target) throws IOException {
+    if (lead.doc >= target)
+      return lead.doc;
     lead.doc = lead.docs.advance(target);
     return lastDoc = doNext(lead.doc);
   }
