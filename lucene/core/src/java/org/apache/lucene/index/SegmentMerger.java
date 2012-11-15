@@ -27,6 +27,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PerDocConsumer;
+import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.store.Directory;
@@ -109,6 +110,12 @@ final class SegmentMerger {
     
     if (mergeState.fieldInfos.hasNorms()) {
       mergeNorms(segmentWriteState);
+    }
+
+    if (mergeState.fieldInfos.hasDocValues()) {
+      SimpleDVConsumer consumer = codec.simpleDocValuesFormat().fieldsConsumer(segmentWriteState);
+      consumer.merge(mergeState);
+      consumer.close();
     }
 
     if (mergeState.fieldInfos.hasVectors()) {

@@ -65,7 +65,7 @@ public abstract class SortedDocValuesConsumer {
       int[] segOrdToMergedOrd;
 
       public BytesRef nextTerm() {
-        while (ord < source.getValueCount()) {
+        while (ord < source.getValueCount()-1) {
           ord++;
           if (liveTerms == null || liveTerms.get(ord)) {
             source.getByOrd(ord, scratch);
@@ -159,7 +159,7 @@ public abstract class SortedDocValuesConsumer {
           maxLength = Math.max(maxLength, lastTerm.length);
         }
 
-        top.segOrdToMergedOrd[top.ord] = ord;
+        top.segOrdToMergedOrd[top.ord] = ord-1;
         if (top.nextTerm() == null) {
           q.pop();
         } else {

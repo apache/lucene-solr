@@ -44,7 +44,6 @@ public abstract class SimpleDVConsumer implements Closeable {
     for (FieldInfo field : mergeState.fieldInfos) {
       if (field.hasDocValues()) {
         mergeState.fieldInfo = field;
-        // nocommit: switch on 3 types: NUMBER, BYTES, SORTED
         DocValues.Type type = field.getDocValuesType();
         switch(type) {
           case VAR_INTS:
@@ -138,7 +137,6 @@ public abstract class SimpleDVConsumer implements Closeable {
   }
 
   protected void mergeSortedField(MergeState mergeState) throws IOException {
-
     SortedDocValuesConsumer.Merger merger = new SortedDocValuesConsumer.Merger();
     merger.merge(mergeState);
     SortedDocValuesConsumer consumer = addSortedField(mergeState.fieldInfo, merger.numMergedTerms, merger.fixedLength >= 0, merger.maxLength);
