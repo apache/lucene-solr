@@ -431,7 +431,8 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           Source source = loadDirectSource();
           final byte[][] values = new byte[maxDoc][];
           for(int docID=0;docID<maxDoc;docID++) {
-            BytesRef value = source.getBytes(docID, null);
+            // nocommit: who passes null!!!
+            BytesRef value = source.getBytes(docID, new BytesRef());
             byte[] bytes = new byte[value.length];
             System.arraycopy(value.bytes, value.offset, bytes, 0, value.length);
             values[docID] = bytes;
@@ -518,14 +519,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
                 // value from the wrong field ...
                 in.seek(field.dataStartFilePointer + (1+field.pattern.length())*docID);
                 SimpleTextUtil.readLine(in, scratch);
-                System.out.println("trying to parse number: " + scratch.utf8ToString());
-                // nocommit
-                long seekPos = field.dataStartFilePointer;
-                byte wholeFile[] = new byte[(int)(in.length()-seekPos)];
-                IndexInput foo = in.clone();
-                foo.seek(seekPos);
-                foo.readBytes(wholeFile, 0, wholeFile.length);
-                System.out.println("rest: " + new String(wholeFile, 0, wholeFile.length, "UTF-8"));
                 return field.minValue + decoder.parse(scratch.utf8ToString(), pos).longValue();
               } catch (IOException ioe) {
                 throw new RuntimeException(ioe);
