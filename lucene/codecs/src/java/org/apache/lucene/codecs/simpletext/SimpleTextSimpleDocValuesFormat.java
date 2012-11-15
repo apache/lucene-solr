@@ -22,7 +22,6 @@ import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
-import java.text.ParsePosition;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -34,6 +33,7 @@ import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
 import org.apache.lucene.codecs.SortedDocValuesConsumer;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -523,7 +523,14 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
                 in.seek(field.dataStartFilePointer + (1+field.pattern.length())*docID);
                 SimpleTextUtil.readLine(in, scratch);
                 //System.out.println("parsing delta: " + scratch.utf8ToString());
-                BigDecimal bd = (BigDecimal) decoder.parse(scratch.utf8ToString(), new ParsePosition(0));
+                BigDecimal bd;
+                try {
+                  bd = (BigDecimal) decoder.parse(scratch.utf8ToString());
+                } catch (ParseException pe) {
+                  CorruptIndexException e = new CorruptIndexException("failed to parse BigDecimal value");
+                  e.initCause(pe);
+                  throw e;
+                }
                 return BigInteger.valueOf(field.minValue).add(bd.toBigIntegerExact()).longValue();
               } catch (IOException ioe) {
                 throw new RuntimeException(ioe);
@@ -545,7 +552,10 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
                 try {
                   len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, "UTF-8")).intValue();
                 } catch (ParseException pe) {
-                  throw new RuntimeException(pe);
+                  // nocommit add message
+                  CorruptIndexException e = new CorruptIndexException("failed to parse int length");
+                  e.initCause(pe);
+                  throw e;
                 }
                 result.bytes = new byte[len];
                 result.offset = 0;
@@ -568,7 +578,13 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
               try {
                 in.seek(field.dataStartFilePointer + field.numValues * (9 + field.pattern.length() + field.maxLength) + (1 + field.ordPattern.length()) * docID);
                 SimpleTextUtil.readLine(in, scratch);
-                return ordDecoder.parse(scratch.utf8ToString(), new ParsePosition(0)).intValue();
+                try {
+                  return ordDecoder.parse(scratch.utf8ToString()).intValue();
+                } catch (ParseException pe) {
+                  CorruptIndexException e = new CorruptIndexException("failed to parse ord");
+                  e.initCause(pe);
+                  throw e;
+                }
               } catch (IOException ioe) {
                 // nocommit should .get() just throw IOE...
                 throw new RuntimeException(ioe);
@@ -585,7 +601,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
                 try {
                   len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, "UTF-8")).intValue();
                 } catch (ParseException pe) {
-                  throw new RuntimeException(pe);
+                  CorruptIndexException e = new CorruptIndexException("failed to parse int length");
+                  e.initCause(pe);
+                  throw e;
                 }
                 result.bytes = new byte[len];
                 result.offset = 0;
