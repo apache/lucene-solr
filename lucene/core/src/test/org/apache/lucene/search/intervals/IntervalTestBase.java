@@ -1,8 +1,10 @@
 package org.apache.lucene.search.intervals;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -131,8 +133,10 @@ public abstract class IntervalTestBase extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    //config.setCodec(Codec.forName("SimpleText"));
+    config.setCodec(Codec.forName("Lucene41"));
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, config);
     addDocs(writer);
     reader = writer.getReader();
     writer.close();
@@ -209,7 +213,7 @@ public abstract class IntervalTestBase extends LuceneTestCase {
       hitCount++;
       intervals.scorerAdvanced(doc);
       while ((current = intervals.next()) != null) {
-        System.out.println(doc + ":" + current);
+        //System.out.println(doc + ":" + current);
         intervals.collect(this);
       }
     }

@@ -122,20 +122,22 @@ class ConjunctionTermScorer extends Scorer {
   }
 
   static final class DocsAndFreqs {
+
     final DocsEnum docs;
     final int docFreq;
-    final Scorer scorer;
+    final TermScorer scorer;
     int doc = -1;
 
     DocsAndFreqs(TermScorer termScorer) {
       this(termScorer, termScorer.getDocsEnum(), termScorer.getDocFreq());
     }
-    
-    DocsAndFreqs(Scorer scorer, DocsEnum docs, int docFreq) {
+
+    DocsAndFreqs(TermScorer scorer, DocsEnum docs, int docFreq) {
       this.docs = docs;
       this.docFreq = docFreq;
       this.scorer = scorer;
     }
+
   }
 
   @Override

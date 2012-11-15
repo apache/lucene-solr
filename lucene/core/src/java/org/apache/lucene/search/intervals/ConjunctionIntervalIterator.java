@@ -119,6 +119,8 @@ public final class ConjunctionIntervalIterator extends IntervalIterator {
     queue.reset();
     for (int i = 0; i < iterators.length; i++) {
       int scorerAdvanced = iterators[i].scorerAdvanced(docId);
+      if (scorerAdvanced != docId)
+        return scorerAdvanced;
       assert scorerAdvanced == docId;
       final Interval interval = iterators[i].next();
       if (interval != null) {

@@ -58,6 +58,27 @@ public class TestDisjunctionIntervalIterator extends IntervalTestBase {
     }
   }
 
+  public void testDisjunctionOverConjunctions() throws IOException {
+
+    BooleanQuery conj1 = new BooleanQuery();
+    conj1.add(makeTermQuery("hot!"), Occur.MUST);
+    conj1.add(makeTermQuery("porridge"), Occur.MUST);
+
+    BooleanQuery conj2 = new BooleanQuery();
+    conj2.add(makeTermQuery("fox"), Occur.MUST);
+    conj2.add(makeTermQuery("porridge"), Occur.MUST);
+
+    BooleanQuery disj = new BooleanQuery();
+    disj.add(conj1, Occur.SHOULD);
+    disj.add(conj2, Occur.SHOULD);
+
+    checkIntervals(disj, searcher, new int[][]{
+        { 0, 1, 2, 1, 1, 2, 4, 2, 2, 4, 4, 32, 33, 32, 32, 33, 35, 33, 33, 35, 35 },
+        { 1, 4, 5, 4, 4, 5, 7, 5, 5, 7, 7, 35, 36, 35, 35, 36, 36 },
+        { 2, 3, 8, 3, 3, 8, 8 },
+    });
+
+  }
 
   public void testDisjunctionRangePositionsBooleanQuery() throws IOException {
 

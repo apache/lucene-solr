@@ -217,8 +217,10 @@ public class IntervalFilterQuery extends Query implements Cloneable {
           @Override
           public int scorerAdvanced(int docId) throws IOException {
             docId = collectingScorer.advance(docId);
-            filter.scorerAdvanced(docId);
-            return docId;
+            if (filter.docID() == NO_MORE_DOCS) {
+              return NO_MORE_DOCS;
+            }
+            return filter.scorerAdvanced(docId);
           }
 
           @Override

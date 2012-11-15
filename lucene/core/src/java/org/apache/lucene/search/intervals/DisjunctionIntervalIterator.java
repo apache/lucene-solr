@@ -89,8 +89,10 @@ public final class DisjunctionIntervalIterator extends IntervalIterator {
   public int scorerAdvanced(int docId) throws IOException {
     queue.reset();
     for (int i = 0; i < iterators.length; i++) {
-      int scorerAdvanced = iterators[i].scorerAdvanced(docId);
-      assert iterators[i].docID() == scorerAdvanced : " " + iterators[i];
+      if (iterators[i].docID() <= docId) {
+        int scorerAdvanced = iterators[i].scorerAdvanced(docId);
+        //assert iterators[i].docID() == scorerAdvanced : " " + iterators[i];
+      }
       if (iterators[i].docID() == docId) {
         Interval interval = iterators[i].next();
         if (interval != null)
