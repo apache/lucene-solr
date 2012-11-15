@@ -46,7 +46,7 @@ public class TestBagOfPostings extends LuceneTestCase {
 
     boolean isSimpleText = "SimpleText".equals(_TestUtil.getPostingsFormat("field"));
 
-    if (isSimpleText && TEST_NIGHTLY) {
+    if (isSimpleText && (TEST_NIGHTLY || RANDOM_MULTIPLIER > 1)) {
       // Otherwise test can take way too long (> 2 hours)
       numTerms /= 2;
     }
