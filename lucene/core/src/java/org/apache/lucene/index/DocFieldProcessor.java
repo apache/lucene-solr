@@ -147,7 +147,8 @@ final class DocFieldProcessor extends DocConsumer {
     }
     
     // close perDocConsumer during flush to ensure all files are flushed due to PerCodec CFS
-    IOUtils.close(perDocConsumer);
+    // nocommit
+    IOUtils.close(perDocConsumer, dvConsumer);
 
     // Important to save after asking consumer to flush so
     // consumer can alter the FieldInfo* if necessary.  EG,

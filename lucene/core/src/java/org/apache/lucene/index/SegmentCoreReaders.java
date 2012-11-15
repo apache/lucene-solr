@@ -110,7 +110,8 @@ final class SegmentCoreReaders {
       // TODO: since we don't write any norms file if there are no norms,
       // kinda jaky to assume the codec handles the case of no norms file at all gracefully?!
       norms = codec.normsFormat().docsProducer(segmentReadState);
-      perDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
+      // nocommit
+      perDocProducer = codec.simpleDocValuesFormat().fieldsProducer(segmentReadState);
   
       fieldsReaderOrig = si.info.getCodec().storedFieldsFormat().fieldsReader(cfsDir, si.info, fieldInfos, context);
 

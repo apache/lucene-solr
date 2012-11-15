@@ -369,6 +369,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           readLine();
           assert startsWith(PATTERN);
           field.pattern = stripPrefix(PATTERN);
+          field.dataStartFilePointer = data.getFilePointer();
           data.seek(data.getFilePointer() + (1+field.pattern.length()) * maxDoc);
         } else if (DocValues.isBytes(dvType)) {
           readLine();
@@ -377,6 +378,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           readLine();
           assert startsWith(PATTERN);
           field.pattern = stripPrefix(PATTERN);
+          field.dataStartFilePointer = data.getFilePointer();
           data.seek(data.getFilePointer() + (9+field.pattern.length()+field.maxLength) * maxDoc);
           break;
         } else if (DocValues.isSortedBytes(dvType)) {
@@ -392,12 +394,13 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           readLine();
           assert startsWith(ORDPATTERN);
           field.ordPattern = stripPrefix(ORDPATTERN);
+          field.dataStartFilePointer = data.getFilePointer();
+          // nocommit: we need to seek past the data section!!!!
         } else if (DocValues.isFloat(dvType)) {
           // nocommit
         } else {
           throw new AssertionError();
         }
-        field.dataStartFilePointer = data.getFilePointer();
       }
     }
 
@@ -515,7 +518,15 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
                 // value from the wrong field ...
                 in.seek(field.dataStartFilePointer + (1+field.pattern.length())*docID);
                 SimpleTextUtil.readLine(in, scratch);
-                return decoder.parse(scratch.utf8ToString(), pos).longValue();
+                System.out.println("trying to parse number: " + scratch.utf8ToString());
+                // nocommit
+                long seekPos = field.dataStartFilePointer;
+                byte wholeFile[] = new byte[(int)(in.length()-seekPos)];
+                IndexInput foo = in.clone();
+                foo.seek(seekPos);
+                foo.readBytes(wholeFile, 0, wholeFile.length);
+                System.out.println("rest: " + new String(wholeFile, 0, wholeFile.length, "UTF-8"));
+                return field.minValue + decoder.parse(scratch.utf8ToString(), pos).longValue();
               } catch (IOException ioe) {
                 throw new RuntimeException(ioe);
               }
