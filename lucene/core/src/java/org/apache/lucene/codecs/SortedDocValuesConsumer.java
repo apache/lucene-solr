@@ -57,6 +57,11 @@ public abstract class SortedDocValuesConsumer {
       int ord = -1;
       SortedSource source;
       BytesRef scratch = new BytesRef();
+
+      // nocommit can we factor out the compressed fields
+      // compression?  ie we have a good idea "roughly" what
+      // the ord should be (linear projection) so we only
+      // need to encode the delta from that ...:        
       int[] segOrdToMergedOrd;
 
       public BytesRef nextTerm() {

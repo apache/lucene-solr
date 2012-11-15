@@ -24,15 +24,16 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.PackedLongDocValuesField;
+import org.apache.lucene.document.SortedBytesDocValuesField;
 import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -167,6 +168,50 @@ public class TestDemoDocValue extends LuceneTestCase {
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
     doc.add(new StraightBytesDocValuesField("dv", new BytesRef("hello world")));
+    iwriter.addDocument(doc);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    IndexSearcher isearcher = new IndexSearcher(ireader);
+
+    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    Query query = new TermQuery(new Term("fieldname", "text"));
+    TopDocs hits = isearcher.search(query, null, 1);
+    assertEquals(1, hits.totalHits);
+    // Iterate through the results:
+    for (int i = 0; i < hits.scoreDocs.length; i++) {
+      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      assertEquals(text, hitDoc.get("fieldname"));
+      assert ireader.leaves().size() == 1;
+      DocValues dv = ireader.leaves().get(0).reader().docValues("dv");
+      assertEquals(new BytesRef("hello world"), dv.getSource().getBytes(hits.scoreDocs[i].doc, new BytesRef()));
+    }
+
+    // Test simple phrase query
+    PhraseQuery phraseQuery = new PhraseQuery();
+    phraseQuery.add(new Term("fieldname", "to"));
+    phraseQuery.add(new Term("fieldname", "be"));
+    assertEquals(1, isearcher.search(phraseQuery, null, 1).totalHits);
+
+    ireader.close();
+    directory.close();
+  }
+
+  public void testDemoSortedBytes() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    // Store the index in memory:
+    Directory directory = newDirectory();
+    // To store an index on disk, use this instead:
+    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    Document doc = new Document();
+    String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
+    String text = "This is the text to be indexed. " + longTerm;
+    doc.add(newTextField("fieldname", text, Field.Store.YES));
+    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world")));
     iwriter.addDocument(doc);
     iwriter.close();
     

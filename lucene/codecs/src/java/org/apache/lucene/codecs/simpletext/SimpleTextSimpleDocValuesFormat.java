@@ -67,8 +67,8 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   final static BytesRef MAXLENGTH = new BytesRef("  maxlength ");
   final static BytesRef LENGTH = new BytesRef("length ");
   // used for sorted bytes
-  final static BytesRef NUMVALUES = new BytesRef("  numvalues");
-  final static BytesRef ORDPATTERN = new BytesRef("  ordpattern");
+  final static BytesRef NUMVALUES = new BytesRef("  numvalues ");
+  final static BytesRef ORDPATTERN = new BytesRef("  ordpattern ");
 
   @Override
   public SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
@@ -287,7 +287,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
 
         @Override
         public void addDoc(int ord) throws IOException {
-          SimpleTextUtil.write(data, encoder.format(ord), scratch);
+          SimpleTextUtil.write(data, ordEncoder.format(ord), scratch);
           SimpleTextUtil.writeNewline(data);
         }
       };
@@ -397,6 +397,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           assert startsWith(ORDPATTERN);
           field.ordPattern = stripPrefix(ORDPATTERN);
           field.dataStartFilePointer = data.getFilePointer();
+          data.seek(data.getFilePointer() + (9+field.pattern.length()+field.maxLength) * field.numValues + (1+field.ordPattern.length())*maxDoc);
           // nocommit: we need to seek past the data section!!!!
         } else if (DocValues.isFloat(dvType)) {
           // nocommit
@@ -424,7 +425,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         DocValues.Type dvType = field.fieldInfo.getDocValuesType();
         if (DocValues.isNumber(dvType)) {
           Source source = loadDirectSource();
-          System.out.println(maxDoc);
           long[] values = new long[maxDoc];
           for(int docID=0;docID<maxDoc;docID++) {
             values[docID] = source.getInt(docID);
@@ -522,7 +522,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
                 // value from the wrong field ...
                 in.seek(field.dataStartFilePointer + (1+field.pattern.length())*docID);
                 SimpleTextUtil.readLine(in, scratch);
-                System.out.println("parsing delta: " + scratch.utf8ToString());
+                //System.out.println("parsing delta: " + scratch.utf8ToString());
                 BigDecimal bd = (BigDecimal) decoder.parse(scratch.utf8ToString(), new ParsePosition(0));
                 return BigInteger.valueOf(field.minValue).add(bd.toBigIntegerExact()).longValue();
               } catch (IOException ioe) {
