@@ -18,12 +18,11 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.lucene.codecs.NumericDocValuesConsumer;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.packed.AppendingLongBuffer;
+import org.apache.lucene.util.packed.PackedInts;
 
 // nocommit pick numeric or number ... then fix all places ...
 
@@ -33,12 +32,11 @@ import org.apache.lucene.util.RamUsageEstimator;
 // nocommit make this a consumer in the chain?
 class NumberDVWriter {
 
-  private final static Long MISSING = new Long(0);
+  private final static long MISSING = 0L;
 
-  // nocommit more ram efficient?
-  private final ArrayList<Long> pending = new ArrayList<Long>();
+  private AppendingLongBuffer pending;
   private final Counter iwBytesUsed;
-  private int bytesUsed;
+  private long bytesUsed;
   private final FieldInfo fieldInfo;
 
   long minValue;
@@ -46,27 +44,31 @@ class NumberDVWriter {
   private boolean anyValues;
 
   public NumberDVWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+    pending = new AppendingLongBuffer();
+    bytesUsed = pending.ramBytesUsed();
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
   }
 
   public void addValue(int docID, long value) {
-    final int oldBytesUsed = bytesUsed;
     mergeValue(value);
 
     // Fill in any holes:
-    while(pending.size() < docID) {
+    for (int i = pending.size(); i < docID; ++i) {
       pending.add(MISSING);
-      bytesUsed += RamUsageEstimator.NUM_BYTES_OBJECT_REF;
       mergeValue(0);
     }
 
     pending.add(value);
 
-    // estimate 25% overhead for ArrayList:
-    bytesUsed += (int) (RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_LONG + (RamUsageEstimator.NUM_BYTES_OBJECT_REF * 1.25));
-    iwBytesUsed.addAndGet(bytesUsed - oldBytesUsed);
+    updateBytesUsed();
     //System.out.println("ADD: " + value);
+  }
+
+  private void updateBytesUsed() {
+    final long newBytesUsed = pending.ramBytesUsed();
+    iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
+    bytesUsed = newBytesUsed;
   }
 
   private void mergeValue(long value) {
@@ -82,9 +84,12 @@ class NumberDVWriter {
   public void flush(FieldInfo fieldInfo, SegmentWriteState state, NumericDocValuesConsumer consumer) throws IOException {
     final int bufferedDocCount = pending.size();
 
+    AppendingLongBuffer.Iterator it = pending.iterator();
     for(int docID=0;docID<bufferedDocCount;docID++) {
-      consumer.add(pending.get(docID));
+      assert it.hasNext();
+      consumer.add(it.next());
     }
+    assert !it.hasNext();
     final int maxDoc = state.segmentInfo.getDocCount();
     for(int docID=bufferedDocCount;docID<maxDoc;docID++) {
       consumer.add(0);
@@ -100,11 +105,10 @@ class NumberDVWriter {
   // nocommit do we really need this...?  can't parent alloc
   // a new instance after flush?
   private void reset() {
-    pending.clear();
-    pending.trimToSize();
-    iwBytesUsed.addAndGet(-bytesUsed);
+    pending = new AppendingLongBuffer();
+    updateBytesUsed();
     anyValues = false;
     minValue = maxValue = 0;
-    bytesUsed = 0;
   }
+
 }

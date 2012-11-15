@@ -34,6 +34,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.packed.PackedInts.Reader;
@@ -133,6 +134,11 @@ public class TestPackedInts extends LuceneTestCase {
                     + r.getClass().getSimpleName(), values[i], r.get(i));
           }
           in.close();
+
+          final long expectedBytesUsed = RamUsageEstimator.sizeOf(r);
+          final long computedBytesUsed = r.ramBytesUsed();
+          assertEquals(r.getClass() + "expected " + expectedBytesUsed + ", got: " + computedBytesUsed,
+              expectedBytesUsed, computedBytesUsed);
         }
 
         { // test reader iterator next
@@ -785,6 +791,42 @@ public class TestPackedInts extends LuceneTestCase {
       }
     }
     return true;
+  }
+
+  public void testAppendingLongBuffer() {
+    final long[] arr = new long[RandomInts.randomIntBetween(random(), 1, 2000000)];
+    for (int bpv : new int[] {0, 1, 63, 64, RandomInts.randomIntBetween(random(), 2, 61)}) {
+      if (bpv == 0) {
+        Arrays.fill(arr, random().nextLong());
+      } else if (bpv == 64) {
+        for (int i = 0; i < arr.length; ++i) {
+          arr[i] = random().nextLong();
+        }
+      } else {
+        final long minValue = _TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE - PackedInts.maxValue(bpv));
+        for (int i = 0; i < arr.length; ++i) {
+          arr[i] = minValue + random().nextLong() & PackedInts.maxValue(bpv);
+        }
+      }
+      AppendingLongBuffer buf = new AppendingLongBuffer();
+      for (int i = 0; i < arr.length; ++i) {
+        buf.add(arr[i]);
+      }
+      assertEquals(arr.length, buf.size());
+      final AppendingLongBuffer.Iterator it = buf.iterator();
+      for (int i = 0; i < arr.length; ++i) {
+        if (random().nextBoolean()) {
+          assertTrue(it.hasNext());
+        }
+        assertEquals(arr[i], it.next());
+      }
+      assertFalse(it.hasNext());
+
+      final long expectedBytesUsed = RamUsageEstimator.sizeOf(buf);
+      final long computedBytesUsed = buf.ramBytesUsed();
+      assertEquals("got " + computedBytesUsed + ", expected: " + expectedBytesUsed,
+          expectedBytesUsed, computedBytesUsed);
+    }
   }
 
 }

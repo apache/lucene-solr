@@ -53,8 +53,13 @@ final class Direct64 extends PackedInts.MutableImpl {
     values[index] = (value);
   }
 
+  @Override
   public long ramBytesUsed() {
-    return RamUsageEstimator.sizeOf(values);
+    return RamUsageEstimator.alignObjectSize(
+        RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
+        + 2 * RamUsageEstimator.NUM_BYTES_INT     // valueCount,bitsPerValue
+        + RamUsageEstimator.NUM_BYTES_OBJECT_REF) // values ref
+        + RamUsageEstimator.sizeOf(values);
   }
 
   public void clear() {
