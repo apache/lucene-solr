@@ -199,6 +199,11 @@ Bug Fixes
   foobar~2 is equivalent to FooBar~2 on a field that includes lowercasing.
   (yonik)
 
+* SOLR-4081: QueryParsing.toString, used during debugQuery=true, did not
+  correctly handle ExtendedQueries such as WrappedQuery
+  (used when cache=false), spatial queries, and frange queires.
+  (Eirik Lygre, yonik)
+
 
 Other Changes
 ----------------------
