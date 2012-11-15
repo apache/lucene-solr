@@ -29,6 +29,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -36,6 +37,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Ignore;
 
 /**
  * A very simple demo used in the API documentation (src/java/overview.html).
@@ -84,6 +86,69 @@ public class TestDemoDocValue extends LuceneTestCase {
     phraseQuery.add(new Term("fieldname", "to"));
     phraseQuery.add(new Term("fieldname", "be"));
     assertEquals(1, isearcher.search(phraseQuery, null, 1).totalHits);
+
+    ireader.close();
+    directory.close();
+  }
+  
+  public void testTwoDocuments() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    // Store the index in memory:
+    Directory directory = newDirectory();
+    // To store an index on disk, use this instead:
+    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    doc.add(new PackedLongDocValuesField("dv", 1));
+    iwriter.addDocument(doc);
+    doc = new Document();
+    doc.add(new PackedLongDocValuesField("dv", 2));
+    iwriter.addDocument(doc);
+    iwriter.forceMerge(1);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    assert ireader.leaves().size() == 1;
+    DocValues dv = ireader.leaves().get(0).reader().docValues("dv");
+    assertEquals(1, dv.getSource().getInt(0));
+    assertEquals(2, dv.getSource().getInt(1));
+
+    ireader.close();
+    directory.close();
+  }
+
+  @Ignore("get ST to use bigdecimal, also negatives are maybe not working yet!")
+  public void testBigRange() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    // Store the index in memory:
+    Directory directory = newDirectory();
+    // To store an index on disk, use this instead:
+    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    doc.add(new PackedLongDocValuesField("dv", Long.MIN_VALUE));
+    iwriter.addDocument(doc);
+    doc = new Document();
+    doc.add(new PackedLongDocValuesField("dv", Long.MAX_VALUE));
+    iwriter.addDocument(doc);
+    iwriter.forceMerge(1);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    assert ireader.leaves().size() == 1;
+    DocValues dv = ireader.leaves().get(0).reader().docValues("dv");
+    assertEquals(Long.MIN_VALUE, dv.getSource().getInt(0));
+    assertEquals(Long.MAX_VALUE, dv.getSource().getInt(1));
 
     ireader.close();
     directory.close();

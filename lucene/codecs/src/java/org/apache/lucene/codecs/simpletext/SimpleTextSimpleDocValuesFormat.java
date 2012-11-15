@@ -333,7 +333,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       String pattern;
       String ordPattern;
       int maxLength;
-      int minValue;
+      long minValue;
       int numValues;
     };
 
@@ -350,7 +350,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         if (scratch.equals(END)) {
           break;
         }
-        assert startsWith(FIELD);
+        assert startsWith(FIELD) : scratch.utf8ToString();
         String fieldName = stripPrefix(FIELD);
         FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldName);
         assert fieldInfo != null;
@@ -365,7 +365,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         if (DocValues.isNumber(dvType)) {
           readLine();
           assert startsWith(MINVALUE);
-          field.minValue = Integer.parseInt(stripPrefix(MINVALUE));
+          field.minValue = Long.parseLong(stripPrefix(MINVALUE));
           readLine();
           assert startsWith(PATTERN);
           field.pattern = stripPrefix(PATTERN);
@@ -422,6 +422,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         DocValues.Type dvType = field.fieldInfo.getDocValuesType();
         if (DocValues.isNumber(dvType)) {
           Source source = loadDirectSource();
+          System.out.println(maxDoc);
           long[] values = new long[maxDoc];
           for(int docID=0;docID<maxDoc;docID++) {
             values[docID] = source.getInt(docID);
@@ -507,7 +508,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         final IndexInput in = data.clone();
         final BytesRef scratch = new BytesRef();
         final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
-        final ParsePosition pos = new ParsePosition(0);
 
         if (DocValues.isNumber(dvType)) {
           return new Source(dvType) {
@@ -519,7 +519,8 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
                 // value from the wrong field ...
                 in.seek(field.dataStartFilePointer + (1+field.pattern.length())*docID);
                 SimpleTextUtil.readLine(in, scratch);
-                return field.minValue + decoder.parse(scratch.utf8ToString(), pos).longValue();
+                System.out.println("parsing delta: " + scratch.utf8ToString());
+                return field.minValue + decoder.parse(scratch.utf8ToString(), new ParsePosition(0)).longValue();
               } catch (IOException ioe) {
                 throw new RuntimeException(ioe);
               }
@@ -563,7 +564,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
               try {
                 in.seek(field.dataStartFilePointer + field.numValues * (9 + field.pattern.length() + field.maxLength) + (1 + field.ordPattern.length()) * docID);
                 SimpleTextUtil.readLine(in, scratch);
-                return ordDecoder.parse(scratch.utf8ToString(), pos).intValue();
+                return ordDecoder.parse(scratch.utf8ToString(), new ParsePosition(0)).intValue();
               } catch (IOException ioe) {
                 // nocommit should .get() just throw IOE...
                 throw new RuntimeException(ioe);
