@@ -17,6 +17,8 @@ package org.apache.lucene.codecs.simpletext;
  * limitations under the License.
  */
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
@@ -149,7 +151,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       SimpleTextUtil.writeNewline(data);
 
       // build up our fixed-width "simple text packed ints" format
-      int maxBytesPerValue = Long.toString(maxValue - minValue).length();
+      int maxBytesPerValue = BigInteger.valueOf(maxValue).subtract(BigInteger.valueOf(minValue)).toString().length();
       StringBuilder sb = new StringBuilder();
       for (int i = 0; i < maxBytesPerValue; i++) {
         sb.append('0');
@@ -166,7 +168,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
 
         @Override
         public void add(long value) throws IOException {
-          long delta = value - minValue;
+          Number delta = BigInteger.valueOf(value).subtract(BigInteger.valueOf(minValue));
           SimpleTextUtil.write(data, encoder.format(delta), scratch);
           SimpleTextUtil.writeNewline(data);
           numDocsWritten++;
@@ -510,6 +512,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
 
         if (DocValues.isNumber(dvType)) {
+          decoder.setParseBigDecimal(true);
           return new Source(dvType) {
             @Override
             public long getInt(int docID) {
@@ -520,7 +523,8 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
                 in.seek(field.dataStartFilePointer + (1+field.pattern.length())*docID);
                 SimpleTextUtil.readLine(in, scratch);
                 System.out.println("parsing delta: " + scratch.utf8ToString());
-                return field.minValue + decoder.parse(scratch.utf8ToString(), new ParsePosition(0)).longValue();
+                BigDecimal bd = (BigDecimal) decoder.parse(scratch.utf8ToString(), new ParsePosition(0));
+                return BigInteger.valueOf(field.minValue).add(bd.toBigIntegerExact()).longValue();
               } catch (IOException ioe) {
                 throw new RuntimeException(ioe);
               }

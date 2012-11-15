@@ -122,7 +122,6 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
 
-  @Ignore("get ST to use bigdecimal, also negatives are maybe not working yet!")
   public void testBigRange() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
