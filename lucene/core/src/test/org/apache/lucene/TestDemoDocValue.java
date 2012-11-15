@@ -241,4 +241,36 @@ public class TestDemoDocValue extends LuceneTestCase {
     ireader.close();
     directory.close();
   }
+
+  public void testSortedBytesTwoDocuments() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    // Store the index in memory:
+    Directory directory = newDirectory();
+    // To store an index on disk, use this instead:
+    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world 1")));
+    iwriter.addDocument(doc);
+    doc = new Document();
+    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world 2")));
+    iwriter.addDocument(doc);
+    iwriter.forceMerge(1);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    assert ireader.leaves().size() == 1;
+    DocValues dv = ireader.leaves().get(0).reader().docValues("dv");
+    assertEquals("hello world 1", dv.getSource().getBytes(0, new BytesRef()).utf8ToString());
+    assertEquals("hello world 2", dv.getSource().getBytes(1, new BytesRef()).utf8ToString());
+
+    ireader.close();
+    directory.close();
+  }
+
 }

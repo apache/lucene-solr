@@ -421,7 +421,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
 
       @Override
       public Source loadSource() throws IOException {
-        // nocommit todo
         DocValues.Type dvType = field.fieldInfo.getDocValuesType();
         if (DocValues.isNumber(dvType)) {
           Source source = loadDirectSource();
@@ -576,7 +575,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
             @Override
             public int ord(int docID) {
               try {
-                in.seek(field.dataStartFilePointer + field.numValues * (9 + field.pattern.length() + field.maxLength) + (1 + field.ordPattern.length()) * docID);
+                in.seek(field.dataStartFilePointer + field.numValues * (9 + field.pattern.length() + field.maxLength) + docID * (1 + field.ordPattern.length()));
                 SimpleTextUtil.readLine(in, scratch);
                 try {
                   return ordDecoder.parse(scratch.utf8ToString()).intValue();
