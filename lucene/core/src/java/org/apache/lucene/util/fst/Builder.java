@@ -136,9 +136,9 @@ public class Builder<T> {
    *    singleton output object.
    *
    * @param willPackFST Pass true if you will pack the FST before saving.  This
-   *    causes the FST to create additional data structures internally to facilitate packing, but
-   *    it means the resulting FST cannot be saved: it must
-   *    first be packed using {@link FST#pack(int, int, float)}
+   *    causes the FST to create additional data structures internally to enable packing, but
+   *    it means the resulting FST cannot be saved until it
+   *    is packed using {@link FST#pack(int, int, float)}
    *
    * @param acceptableOverheadRatio How to trade speed for space when building the FST. This option
    *    is only relevant when willPackFST is true. @see PackedInts#getMutable(int, int, float)
