@@ -805,7 +805,7 @@ public class TestPackedInts extends LuceneTestCase {
       } else {
         final long minValue = _TestUtil.nextLong(random(), Long.MIN_VALUE, Long.MAX_VALUE - PackedInts.maxValue(bpv));
         for (int i = 0; i < arr.length; ++i) {
-          arr[i] = minValue + random().nextLong() & PackedInts.maxValue(bpv);
+          arr[i] = minValue + random().nextLong() & PackedInts.maxValue(bpv); // _TestUtil.nextLong is too slow
         }
       }
       AppendingLongBuffer buf = new AppendingLongBuffer();

@@ -73,25 +73,26 @@ public class AppendingLongBuffer {
     }
     final long delta = maxValue - minValue;
 
-    // build a new packed reader
-    final int bitsRequired = delta < 0 ? 64 : PackedInts.bitsRequired(delta);
-    for (int i = 0; i < pendingOff; ++i) {
-      pending[i] -= minValue;
-    }
-    final PackedInts.Mutable mutable = PackedInts.getMutable(pendingOff, bitsRequired, PackedInts.COMPACT);
-    for (int i = 0; i < pendingOff; ) {
-      i += mutable.set(i, pending, i, pendingOff - i);
-    }
-
-    // store it
     minValues[valuesOff] = minValue;
-    values[valuesOff] = mutable;
+    if (delta != 0) {
+      // build a new packed reader
+      final int bitsRequired = delta < 0 ? 64 : PackedInts.bitsRequired(delta);
+      for (int i = 0; i < pendingOff; ++i) {
+        pending[i] -= minValue;
+      }
+      final PackedInts.Mutable mutable = PackedInts.getMutable(pendingOff, bitsRequired, PackedInts.COMPACT);
+      for (int i = 0; i < pendingOff; ) {
+        i += mutable.set(i, pending, i, pendingOff - i);
+      }
+      values[valuesOff] = mutable;
+    }
     ++valuesOff;
 
     // reset pending buffer
     pendingOff = 0;
   }
 
+  /** Get the number of values that have been added to the buffer. */
   public int size() {
     return valuesOff * MAX_PENDING_COUNT + pendingOff;
   }
@@ -120,6 +121,8 @@ public class AppendingLongBuffer {
     private void fillValues() {
       if (vOff == valuesOff) {
         currentValues = pending;
+      } else if (values[vOff] == null) {
+        Arrays.fill(currentValues, minValues[vOff]);
       } else {
         for (int k = 0; k < MAX_PENDING_COUNT; ++k) {
           k += values[vOff].get(k, currentValues, k, MAX_PENDING_COUNT - k);
@@ -164,7 +167,9 @@ public class AppendingLongBuffer {
         + RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + (long) RamUsageEstimator.NUM_BYTES_OBJECT_REF * values.length); // values
 
     for (int i = 0; i < valuesOff; ++i) {
-      bytesUsed += values[i].ramBytesUsed();
+      if (values[i] != null) {
+        bytesUsed += values[i].ramBytesUsed();
+      }
     }
     return bytesUsed;
   }
