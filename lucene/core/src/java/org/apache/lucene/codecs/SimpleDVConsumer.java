@@ -35,10 +35,10 @@ public abstract class SimpleDVConsumer implements Closeable {
   // we want codec to get necessary stuff from IW, but trading off against merge complexity.
 
   // nocommit should we pass SegmentWriteState...?
-  public abstract NumericDocValuesConsumer addNumericField(FieldInfo field, long minValue, long maxValue) throws IOException;
-  public abstract BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, int maxLength) throws IOException;
+  public abstract NumericDocValuesConsumer addNumericField(FieldInfo field, long minValue, long maxValue, int numDocs) throws IOException;
+  public abstract BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, int maxLength, int numDocs) throws IOException;
   // nocommit: figure out whats fair here.
-  public abstract SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, int maxLength) throws IOException;
+  public abstract SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, int maxLength, int numDocs) throws IOException;
   
   public void merge(MergeState mergeState) throws IOException {
     for (FieldInfo field : mergeState.fieldInfos) {
@@ -97,7 +97,7 @@ public abstract class SimpleDVConsumer implements Closeable {
       }
     }
     // now we can merge
-    NumericDocValuesConsumer field = addNumericField(mergeState.fieldInfo, minValue, maxValue);
+    NumericDocValuesConsumer field = addNumericField(mergeState.fieldInfo, minValue, maxValue, mergeState.segmentInfo.getDocCount());
     field.merge(mergeState);
   }
   
@@ -132,14 +132,14 @@ public abstract class SimpleDVConsumer implements Closeable {
     }
     // now we can merge
     assert maxLength >= 0; // could this happen (nothing to do?)
-    BinaryDocValuesConsumer field = addBinaryField(mergeState.fieldInfo, fixedLength, maxLength);
+    BinaryDocValuesConsumer field = addBinaryField(mergeState.fieldInfo, fixedLength, maxLength, mergeState.segmentInfo.getDocCount());
     field.merge(mergeState);
   }
 
   protected void mergeSortedField(MergeState mergeState) throws IOException {
     SortedDocValuesConsumer.Merger merger = new SortedDocValuesConsumer.Merger();
     merger.merge(mergeState);
-    SortedDocValuesConsumer consumer = addSortedField(mergeState.fieldInfo, merger.numMergedTerms, merger.fixedLength >= 0, merger.maxLength);
+    SortedDocValuesConsumer consumer = addSortedField(mergeState.fieldInfo, merger.numMergedTerms, merger.fixedLength >= 0, merger.maxLength, mergeState.segmentInfo.getDocCount());
     consumer.merge(mergeState, merger);
   }
 }

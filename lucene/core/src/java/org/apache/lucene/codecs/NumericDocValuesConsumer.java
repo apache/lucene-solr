@@ -20,6 +20,7 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.DocValues.Source;
@@ -27,7 +28,7 @@ import org.apache.lucene.util.Bits;
 
 public abstract class NumericDocValuesConsumer {
   public abstract void add(long value) throws IOException;
-  public abstract void finish(FieldInfos fieldInfos, int numDocs) throws IOException;
+  public abstract void finish() throws IOException;
   
   public int merge(MergeState mergeState) throws IOException {
     int docCount = 0;
@@ -43,7 +44,7 @@ public abstract class NumericDocValuesConsumer {
         mergeState.checkAbort.work(300);
       }
     }
-    finish(mergeState.fieldInfos, docCount);
+    finish();
     return docCount;
   }
 }

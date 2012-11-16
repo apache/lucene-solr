@@ -39,6 +39,8 @@ public abstract class SortedDocValuesConsumer {
   /** This is called once per document after all values are
    *  added. */
   public abstract void addDoc(int ord) throws IOException;
+  
+  public abstract void finish() throws IOException;
 
   public static class Merger {
 
@@ -194,5 +196,6 @@ public abstract class SortedDocValuesConsumer {
   // nocommit why return int...?
   public void merge(MergeState mergeState, Merger merger) throws IOException {
     merger.finish(this);
+    this.finish();
   }
 }

@@ -110,7 +110,7 @@ final class DocFieldProcessor extends DocConsumer {
             field.bytesDVWriter.flush(field.fieldInfo, state,
                                       dvConsumer.addBinaryField(field.fieldInfo,
                                                                 field.bytesDVWriter.fixedLength >= 0,
-                                                                field.bytesDVWriter.maxLength));
+                                                                field.bytesDVWriter.maxLength, state.segmentInfo.getDocCount()));
             // nocommit must null it out now else next seg
             // will flush even if no docs had DV...?
           }
@@ -119,7 +119,7 @@ final class DocFieldProcessor extends DocConsumer {
                                             dvConsumer.addSortedField(field.fieldInfo,
                                                                       field.sortedBytesDVWriter.hash.size(),
                                                                       field.sortedBytesDVWriter.fixedLength >= 0,
-                                                                      field.sortedBytesDVWriter.maxLength));
+                                                                      field.sortedBytesDVWriter.maxLength, state.segmentInfo.getDocCount()));
             // nocommit must null it out now else next seg
             // will flush even if no docs had DV...?
           }
@@ -127,7 +127,7 @@ final class DocFieldProcessor extends DocConsumer {
             field.numberDVWriter.flush(field.fieldInfo, state,
                                        dvConsumer.addNumericField(field.fieldInfo,
                                                                   field.numberDVWriter.minValue,
-                                                                  field.numberDVWriter.maxValue));
+                                                                  field.numberDVWriter.maxValue, state.segmentInfo.getDocCount()));
             // nocommit must null it out now else next seg
             // will flush even if no docs had DV...?
           }

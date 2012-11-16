@@ -69,7 +69,7 @@ public final class BytesRefHash {
   public BytesRefHash() { 
     this(new ByteBlockPool(new DirectAllocator()));
   }
-
+  
   /**
    * Creates a new {@link BytesRefHash}
    */
@@ -590,9 +590,13 @@ public final class BytesRefHash {
     private int[] bytesStart;
     private final Counter bytesUsed;
     
+    public DirectBytesStartArray(int initSize, Counter counter) {
+      this.bytesUsed = counter;
+      this.initSize = initSize;      
+    }
+    
     public DirectBytesStartArray(int initSize) {
-      this.bytesUsed = Counter.newCounter();
-      this.initSize = initSize;
+      this(initSize, Counter.newCounter());
     }
 
     @Override

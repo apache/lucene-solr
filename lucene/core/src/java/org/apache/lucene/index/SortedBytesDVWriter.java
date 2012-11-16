@@ -21,12 +21,18 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter.DEFAULT;
+
 import org.apache.lucene.codecs.BinaryDocValuesConsumer;
 import org.apache.lucene.codecs.SortedDocValuesConsumer;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.BytesRefHash.BytesStartArray;
+import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 
 
 /** Buffers up pending byte[] per doc, deref and sorting via
@@ -34,16 +40,14 @@ import org.apache.lucene.util.RamUsageEstimator;
 // nocommit name?
 // nocommit make this a consumer in the chain?
 class SortedBytesDVWriter {
-
-  // nocommit more ram efficient?
-  // nocommit pass allocator that counts RAM used!
-  final BytesRefHash hash = new BytesRefHash();
-  private final ArrayList<Integer> pending = new ArrayList<Integer>();
+  final BytesRefHash hash;
+  private int[] pending = new int[DEFAULT_PENDING_SIZE];
+  private int pendingIndex = 0;
   private final Counter iwBytesUsed;
-  private int bytesUsed;
   private final FieldInfo fieldInfo;
 
   private static final BytesRef EMPTY = new BytesRef(BytesRef.EMPTY_BYTES);
+  private static final int DEFAULT_PENDING_SIZE = 16;
 
   // -2 means not set yet; -1 means length isn't fixed;
   // -otherwise it's the fixed length seen so far:
@@ -53,37 +57,41 @@ class SortedBytesDVWriter {
   public SortedBytesDVWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
+    hash = new BytesRefHash(
+        new ByteBlockPool(
+            new ByteBlockPool.DirectTrackingAllocator(iwBytesUsed)),
+            BytesRefHash.DEFAULT_CAPACITY,
+            new DirectBytesStartArray(BytesRefHash.DEFAULT_CAPACITY, iwBytesUsed));
+    iwBytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + RamUsageEstimator.NUM_BYTES_INT * DEFAULT_PENDING_SIZE);
   }
 
   public void addValue(int docID, BytesRef value) {
-    final int oldBytesUsed = bytesUsed;
     if (value == null) {
       // nocommit improve message
       throw new IllegalArgumentException("null sortedValue not allowed (field=" + fieldInfo.name + ")");
     }
 
     // Fill in any holes:
-    while(pending.size() < docID) {
+    while(pendingIndex < docID) {
       addOneValue(EMPTY);
     }
 
     addOneValue(value);
-    iwBytesUsed.addAndGet(bytesUsed - oldBytesUsed);
   }
 
   private void addOneValue(BytesRef value) {
     mergeLength(value.length);
-
     int ord = hash.add(value);
     if (ord < 0) {
       ord = -ord-1;
-    } else {
-      // nocommit this is undercounting!
-      bytesUsed += value.length;
+    } 
+    
+    if (pendingIndex <= pending.length) {
+      int pendingLen = pending.length;
+      pending = ArrayUtil.grow(pending, pendingIndex+1);
+      iwBytesUsed.addAndGet((pending.length - pendingLen) * RamUsageEstimator.NUM_BYTES_INT);
     }
-    pending.add(ord);
-    // estimate 25% overhead for ArrayList:
-    bytesUsed += (int) (RamUsageEstimator.NUM_BYTES_OBJECT_REF * 1.25) + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_INT;
+    pending[pendingIndex++] = ord;
   }
 
   private void mergeLength(int length) {
@@ -100,7 +108,7 @@ class SortedBytesDVWriter {
 
     final int maxDoc = state.segmentInfo.getDocCount();
     int emptyOrd = -1;
-    if (pending.size() < maxDoc) {
+    if (pendingIndex < maxDoc) {
       // Make sure we added EMPTY value before sorting:
       emptyOrd = hash.add(EMPTY);
       if (emptyOrd < 0) {
@@ -109,23 +117,24 @@ class SortedBytesDVWriter {
     }
 
     int[] sortedValues = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
-    // nocommit must budget this into RAM consumption up front!
-    int[] ordMap = new int[valueCount];
-
+    final int sortedValueRamUsage = RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + RamUsageEstimator.NUM_BYTES_INT*valueCount;
+    iwBytesUsed.addAndGet(sortedValueRamUsage);
+    final int[] ordMap = new int[valueCount];
     // Write values, in sorted order:
     BytesRef scratch = new BytesRef();
     for(int ord=0;ord<valueCount;ord++) {
       consumer.addValue(hash.get(sortedValues[ord], scratch));
       ordMap[sortedValues[ord]] = ord;
     }
-    final int bufferedDocCount = pending.size();
+    final int bufferedDocCount = pendingIndex;
 
     for(int docID=0;docID<bufferedDocCount;docID++) {
-      consumer.addDoc(ordMap[pending.get(docID)]);
+      consumer.addDoc(ordMap[pending[docID]]);
     }
     for(int docID=bufferedDocCount;docID<maxDoc;docID++) {
       consumer.addDoc(ordMap[emptyOrd]);
     }
+    iwBytesUsed.addAndGet(-sortedValueRamUsage);
     reset();
   }
 
@@ -134,11 +143,10 @@ class SortedBytesDVWriter {
   }
 
   private void reset() {
-    pending.clear();
-    pending.trimToSize();
+    iwBytesUsed.addAndGet((pending.length - DEFAULT_PENDING_SIZE) * RamUsageEstimator.NUM_BYTES_INT);
+    pending = ArrayUtil.shrink(pending, DEFAULT_PENDING_SIZE);
+    pendingIndex = 0;
     hash.clear();
-    iwBytesUsed.addAndGet(-bytesUsed);
-    bytesUsed = 0;
     fixedLength = -2;
     maxLength = 0;
   }

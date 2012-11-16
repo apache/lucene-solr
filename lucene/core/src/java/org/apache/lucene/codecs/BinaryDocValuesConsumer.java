@@ -28,7 +28,7 @@ import org.apache.lucene.util.BytesRef;
 
 public abstract class BinaryDocValuesConsumer {
   public abstract void add(BytesRef value) throws IOException;
-  public abstract void finish(FieldInfos fis, int numDocs) throws IOException;
+  public abstract void finish() throws IOException;
   
   public int merge(MergeState mergeState) throws IOException {
     int docCount = 0;
@@ -45,7 +45,7 @@ public abstract class BinaryDocValuesConsumer {
         mergeState.checkAbort.work(300);
       }
     }
-    finish(mergeState.fieldInfos, docCount);
+    finish();
     return docCount;
   }
 }

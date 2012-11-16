@@ -18,13 +18,11 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.lucene.codecs.BinaryDocValuesConsumer;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefArray;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.RamUsageEstimator;
 
 
 /** Buffers up pending byte[] per doc, then flushes when
@@ -33,43 +31,38 @@ import org.apache.lucene.util.RamUsageEstimator;
 // nocommit make this a consumer in the chain?
 class BytesDVWriter {
 
-  // nocommit more ram efficient?
-  private final ArrayList<byte[]> pending = new ArrayList<byte[]>();
-  private final Counter iwBytesUsed;
-  private int bytesUsed;
+  private final BytesRefArray bytesRefArray;
   private final FieldInfo fieldInfo;
+  private int addeValues = 0;
+  private final BytesRef emptyBytesRef = new BytesRef();
 
   // -2 means not set yet; -1 means length isn't fixed;
   // -otherwise it's the fixed length seen so far:
   int fixedLength = -2;
   int maxLength;
+  int totalSize;
 
-  public BytesDVWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+  public BytesDVWriter(FieldInfo fieldInfo, Counter counter) {
     this.fieldInfo = fieldInfo;
-    this.iwBytesUsed = iwBytesUsed;
+    this.bytesRefArray = new BytesRefArray(counter);
+    this.totalSize = 0;
   }
 
   public void addValue(int docID, BytesRef value) {
-    final int oldBytesUsed = bytesUsed;
     if (value == null) {
       // nocommit improve message
       throw new IllegalArgumentException("null binaryValue not allowed (field=" + fieldInfo.name + ")");
     }
     mergeLength(value.length);
+    
     // Fill in any holes:
-    while(pending.size() < docID) {
-      pending.add(BytesRef.EMPTY_BYTES);
-      bytesUsed += (int) (RamUsageEstimator.NUM_BYTES_OBJECT_REF * 1.25);
+    while(addeValues < docID) {
+      addeValues++;
+      bytesRefArray.append(emptyBytesRef);
       mergeLength(0);
     }
-    byte[] bytes = new byte[value.length];
-    System.arraycopy(value.bytes, value.offset, bytes, 0, value.length);
-    pending.add(bytes);
-
-    // estimate 25% overhead for ArrayList:
-    bytesUsed += (int) (bytes.length + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + (RamUsageEstimator.NUM_BYTES_OBJECT_REF * 1.25));
-    iwBytesUsed.addAndGet(bytesUsed - oldBytesUsed);
-    //System.out.println("ADD: " + value);
+    addeValues++;
+    bytesRefArray.append(value);
   }
 
   private void mergeLength(int length) {
@@ -79,15 +72,14 @@ class BytesDVWriter {
       fixedLength = -1;
     }
     maxLength = Math.max(maxLength, length);
+    totalSize += length;
   }
 
   public void flush(FieldInfo fieldInfo, SegmentWriteState state, BinaryDocValuesConsumer consumer) throws IOException {
-    final int bufferedDocCount = pending.size();
+    final int bufferedDocCount = addeValues;
     BytesRef value = new BytesRef();
-
     for(int docID=0;docID<bufferedDocCount;docID++) {
-      value.bytes = pending.get(docID);
-      value.length = value.bytes.length;
+      bytesRefArray.get(value, docID);
       consumer.add(value);
     }
     final int maxDoc = state.segmentInfo.getDocCount();
@@ -95,6 +87,7 @@ class BytesDVWriter {
     for(int docID=bufferedDocCount;docID<maxDoc;docID++) {
       consumer.add(value);
     }
+    consumer.finish();
     reset();
     //System.out.println("FLUSH");
   }
@@ -104,10 +97,7 @@ class BytesDVWriter {
   }
 
   private void reset() {
-    pending.clear();
-    pending.trimToSize();
-    iwBytesUsed.addAndGet(-bytesUsed);
-    bytesUsed = 0;
+    bytesRefArray.clear();
     fixedLength = -2;
     maxLength = 0;
   }

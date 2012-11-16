@@ -239,6 +239,8 @@ public class TestDemoDocValue extends LuceneTestCase {
 
     ireader.close();
     directory.close();
+    
+    //nocommit fails with Lucene41 Codec since "dv" is created with var len but is in fact fixed len
   }
   
   public void testBytesTwoDocumentsMerged() throws IOException {

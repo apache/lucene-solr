@@ -1,4 +1,4 @@
-package org.apache.lucene.search.suggest;
+package org.apache.lucene.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,17 +20,17 @@ package org.apache.lucene.search.suggest;
 import java.io.IOException;
 import java.util.*;
 
-import org.apache.lucene.search.suggest.BytesRefList;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
+import org.apache.lucene.util.BytesRefArray;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
-public class TestBytesRefList extends LuceneTestCase {
+public class TestBytesRefArray extends LuceneTestCase {
 
   public void testAppend() throws IOException {
     Random random = random();
-    BytesRefList list = new BytesRefList();
+    BytesRefArray list = new BytesRefArray();
     List<String> stringList = new ArrayList<String>();
     for (int j = 0; j < 2; j++) {
       if (j > 0 && random.nextBoolean()) {
@@ -71,7 +71,7 @@ public class TestBytesRefList extends LuceneTestCase {
 
   public void testSort() throws IOException {
     Random random = random();
-    BytesRefList list = new BytesRefList();
+    BytesRefArray list = new BytesRefArray();
     List<String> stringList = new ArrayList<String>();
 
     for (int j = 0; j < 2; j++) {

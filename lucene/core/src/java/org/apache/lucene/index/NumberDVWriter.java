@@ -94,6 +94,7 @@ class NumberDVWriter {
     for(int docID=bufferedDocCount;docID<maxDoc;docID++) {
       consumer.add(0);
     }
+    consumer.finish();
     reset();
     //System.out.println("FLUSH");
   }

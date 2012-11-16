@@ -1,4 +1,4 @@
-package org.apache.lucene.search.suggest;
+package org.apache.lucene.util;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,13 +20,6 @@ package org.apache.lucene.search.suggest;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.ByteBlockPool;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefIterator;
-import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.SorterTemplate;
 
 /**
  * A simple append only random-access {@link BytesRef} array that stores full
@@ -38,27 +31,34 @@ import org.apache.lucene.util.SorterTemplate;
  * @lucene.internal
  * @lucene.experimental
  */
-public final class BytesRefList {
-  // TODO rename to BytesRefArray
+public final class BytesRefArray {
   private final ByteBlockPool pool;
   private int[] offsets = new int[1];
   private int lastElement = 0;
   private int currentOffset = 0;
-  private final Counter bytesUsed = Counter.newCounter(false);
+  private final Counter bytesUsed;
   
   /**
-   * Creates a new {@link BytesRefList}
+   * Creates a new {@link BytesRefArray}
    */
-  public BytesRefList() {
+  public BytesRefArray() {
+    this(Counter.newCounter(false));
+  }  
+  
+  /**
+   * Creates a new {@link BytesRefArray} with a counter to track allocated bytes
+   */
+  public BytesRefArray(Counter bytesUsed) {
     this.pool = new ByteBlockPool(new ByteBlockPool.DirectTrackingAllocator(
         bytesUsed));
     pool.nextBuffer();
     bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
         + RamUsageEstimator.NUM_BYTES_INT);
+    this.bytesUsed = bytesUsed;
   }
  
   /**
-   * Clears this {@link BytesRefList}
+   * Clears this {@link BytesRefArray}
    */
   public void clear() {
     lastElement = 0;
@@ -68,7 +68,7 @@ public final class BytesRefList {
   }
   
   /**
-   * Appends a copy of the given {@link BytesRef} to this {@link BytesRefList}.
+   * Appends a copy of the given {@link BytesRef} to this {@link BytesRefArray}.
    * @param bytes the bytes to append
    * @return the ordinal of the appended bytes
    */
@@ -86,18 +86,18 @@ public final class BytesRefList {
   }
   
   /**
-   * Returns the current size of this {@link BytesRefList}
-   * @return the current size of this {@link BytesRefList}
+   * Returns the current size of this {@link BytesRefArray}
+   * @return the current size of this {@link BytesRefArray}
    */
   public int size() {
     return lastElement;
   }
   
   /**
-   * Returns the <i>n'th</i> element of this {@link BytesRefList}
+   * Returns the <i>n'th</i> element of this {@link BytesRefArray}
    * @param spare a spare {@link BytesRef} instance
    * @param ord the elements ordinal to retrieve 
-   * @return the <i>n'th</i> element of this {@link BytesRefList}
+   * @return the <i>n'th</i> element of this {@link BytesRefArray}
    */
   public BytesRef get(BytesRef spare, int ord) {
     if (lastElement > ord) {

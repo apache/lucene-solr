@@ -19,9 +19,9 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.util.Comparator;
 
-import org.apache.lucene.search.suggest.BytesRefList;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
+import org.apache.lucene.util.BytesRefArray;
 
 /**
  * An {@link BytesRefSorter} that keeps all the entries in memory.
@@ -29,7 +29,7 @@ import org.apache.lucene.util.BytesRefIterator;
  * @lucene.internal
  */
 public final class InMemorySorter implements BytesRefSorter {
-  private final BytesRefList buffer = new BytesRefList();
+  private final BytesRefArray buffer = new BytesRefArray();
   private boolean closed = false;
   private final Comparator<BytesRef> comparator;
 

@@ -142,7 +142,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     }
 
     @Override
-    public NumericDocValuesConsumer addNumericField(FieldInfo field, final long minValue, long maxValue) throws IOException {
+    public NumericDocValuesConsumer addNumericField(FieldInfo field, final long minValue, long maxValue, final int numDocs) throws IOException {
       writeFieldEntry(field);
       
       // write our minimum value to the .dat, all entries are deltas from that
@@ -175,15 +175,14 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         }
 
         @Override
-        public void finish(FieldInfos fieldInfos, int numDocs) throws IOException {
+        public void finish() throws IOException {
           assert numDocs == numDocsWritten;
-          // nocommit: hopefully indexwriter is responsible for "filling" like it does stored fields!
         }
       };
     }
 
     @Override
-    public BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, final int maxLength) throws IOException {
+    public BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, final int maxLength, final int numDocs) throws IOException {
       writeFieldEntry(field);
       // write maxLength
       SimpleTextUtil.write(data, MAXLENGTH);
@@ -222,16 +221,15 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         }
 
         @Override
-        public void finish(FieldInfos fis, int numDocs) throws IOException {
+        public void finish() throws IOException {
           assert numDocs == numDocsWritten;
-          // nocommit: hopefully indexwriter is responsible for "filling" like it does stored fields!
         }
       };
     }
     
     // nocommit
     @Override
-    public SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, final int maxLength) throws IOException {
+    public SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, final int maxLength, final int numDocs) throws IOException {
       writeFieldEntry(field);
       // write numValues
       SimpleTextUtil.write(data, NUMVALUES);
@@ -290,6 +288,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           SimpleTextUtil.write(data, ordEncoder.format(ord), scratch);
           SimpleTextUtil.writeNewline(data);
         }
+
+        @Override
+        public void finish() throws IOException {}
       };
     }
 

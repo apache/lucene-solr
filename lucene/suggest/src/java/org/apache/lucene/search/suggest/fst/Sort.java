@@ -20,7 +20,6 @@ package org.apache.lucene.search.suggest.fst;
 import java.io.*;
 import java.util.*;
 
-import org.apache.lucene.search.suggest.BytesRefList;
 import org.apache.lucene.util.*;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -156,7 +155,7 @@ public final class Sort {
   private final BufferSize ramBufferSize;
   private final File tempDirectory;
   
-  private final BytesRefList buffer = new BytesRefList();
+  private final BytesRefArray buffer = new BytesRefArray();
   private SortInfo sortInfo;
   private int maxTempFiles;
   private final Comparator<BytesRef> comparator;
@@ -312,7 +311,7 @@ public final class Sort {
 
   /** Sort a single partition in-memory. */
   protected File sortPartition(int len) throws IOException {
-    BytesRefList data = this.buffer;
+    BytesRefArray data = this.buffer;
     File tempFile = File.createTempFile("sort", "partition", tempDirectory);
 
     long start = System.currentTimeMillis();
