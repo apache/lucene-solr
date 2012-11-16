@@ -25,6 +25,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 /**
  * Utility class to buffer a list of signed longs in memory. This class only
  * supports appending.
+ * @lucene.internal
  */
 public class AppendingLongBuffer {
 
