@@ -74,7 +74,7 @@ public class SolrIndexConfig {
     maxMergeDocs = -1;
     maxIndexingThreads = IndexWriterConfig.DEFAULT_MAX_THREAD_STATES;
     mergeFactor = -1;
-    ramBufferSizeMB = luceneVersion.onOrAfter(Version.LUCENE_36) ? 32 : 16;
+    ramBufferSizeMB = 100;
     writeLockTimeout = -1;
     lockType = luceneVersion.onOrAfter(Version.LUCENE_36) ? 
                LOCK_TYPE_NATIVE : 
