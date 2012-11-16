@@ -102,7 +102,11 @@ public class TestPackedInts extends LuceneTestCase {
         final int actualValueCount = random().nextBoolean() ? valueCount : _TestUtil.nextInt(random(), 0, valueCount);
         final long[] values = new long[valueCount];
         for(int i=0;i<actualValueCount;i++) {
-          values[i] = _TestUtil.nextLong(random(), 0, maxValue);
+          if (nbits == 64) {
+            values[i] = random().nextLong();
+          } else {
+            values[i] = _TestUtil.nextLong(random(), 0, maxValue);
+          }
           w.add(values[i]);
         }
         w.finish();
