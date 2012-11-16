@@ -553,7 +553,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
   public String toString(String field)
   {
     float boost = getBoost();
-    return (boost!=1.0?"(":"") +
+    return super.getOptions() + (boost!=1.0?"(":"") +
             (calcDist ? "geofilt" : "bbox") + "(latlonSource="+origField +"(" + latSource + "," + lonSource + ")"
             +",latCenter="+latCenter+",lonCenter="+lonCenter
             +",dist=" + dist

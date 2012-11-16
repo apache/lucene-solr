@@ -536,6 +536,11 @@ public class QueryParsing {
     } else if (query instanceof ConstantScoreQuery) {
       out.append(query.toString());
       writeBoost = false;
+    } else if (query instanceof WrappedQuery) {
+      WrappedQuery q = (WrappedQuery)query;
+      out.append(q.getOptions());
+      toString(q.getWrappedQuery(), schema, out, flags);
+      writeBoost = false; // we don't use the boost on wrapped queries
     } else {
       out.append(query.getClass().getSimpleName()
               + '(' + query.toString() + ')');
