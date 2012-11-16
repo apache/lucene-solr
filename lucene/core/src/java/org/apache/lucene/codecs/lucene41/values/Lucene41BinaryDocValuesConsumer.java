@@ -1,17 +1,5 @@
 package org.apache.lucene.codecs.lucene41.values;
 
-import java.io.IOException;
-
-import org.apache.lucene.codecs.BinaryDocValuesConsumer;
-import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.packed.AppendingLongBuffer;
-import org.apache.lucene.util.packed.AppendingLongBuffer.Iterator;
-import org.apache.lucene.util.packed.PackedInts;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -28,6 +16,18 @@ import org.apache.lucene.util.packed.PackedInts;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.IOException;
+
+import org.apache.lucene.codecs.BinaryDocValuesConsumer;
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.packed.AppendingLongBuffer;
+import org.apache.lucene.util.packed.AppendingLongBuffer.Iterator;
+import org.apache.lucene.util.packed.PackedInts;
 
 public class Lucene41BinaryDocValuesConsumer extends BinaryDocValuesConsumer {
   
