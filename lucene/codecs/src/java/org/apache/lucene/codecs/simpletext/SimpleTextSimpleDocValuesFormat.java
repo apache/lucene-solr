@@ -31,16 +31,20 @@ import org.apache.lucene.codecs.DocValuesArraySource;
 import org.apache.lucene.codecs.NumericDocValuesConsumer;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.SimpleDVConsumer;
+import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
 import org.apache.lucene.codecs.SortedDocValuesConsumer;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -76,7 +80,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   }
 
   @Override
-  public PerDocProducer fieldsProducer(SegmentReadState state) throws IOException {
+  public SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException {
     return new SimpleTextDocValuesReader(state.fieldInfos, state.dir, state.segmentInfo, state.context);
   }
   
@@ -328,7 +332,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   // nocommit make sure we test "all docs have 0 value",
   // "all docs have empty BytesREf"
 
-  static class SimpleTextDocValuesReader extends PerDocProducer {
+  static class SimpleTextDocValuesReader extends SimpleDVProducer {
 
     static class OneField {
       FieldInfo fieldInfo;
@@ -346,6 +350,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     final Map<String,OneField> fields = new HashMap<String,OneField>();
     
     SimpleTextDocValuesReader(FieldInfos fieldInfos, Directory dir, SegmentInfo si, IOContext context) throws IOException {
+      super(si.getDocCount());
       data = dir.openInput(IndexFileNames.segmentFileName(si.name, "", "dat"), context);
       maxDoc = si.getDocCount();
       while(true) {
@@ -408,240 +413,150 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       }
     }
 
-    class SimpleTextDocValues extends DocValues {
-      private final OneField field;
+    @Override
+    public NumericDocValues getDirectNumeric(FieldInfo fieldInfo) throws IOException {
+      final OneField field = fields.get(fieldInfo.name);
 
-      public SimpleTextDocValues(OneField field) {
-        this.field = field;
-      }
+      // SegmentCoreReaders already verifies this field is
+      // valid:
+      assert field != null;
 
-      // nocommit provide a simple default Source impl that
-      // loads DirectSource and pulls things into RAM; we
-      // need producer API to provide the min/max value,
-      // fixed/max length, etc.
+      final IndexInput in = data.clone();
+      final BytesRef scratch = new BytesRef();
+      final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
 
-      @Override
-      public Source loadSource() throws IOException {
-        DocValues.Type dvType = field.fieldInfo.getDocValuesType();
-        if (DocValues.isNumber(dvType)) {
-          Source source = loadDirectSource();
-          long[] values = new long[maxDoc];
-          for(int docID=0;docID<maxDoc;docID++) {
-            values[docID] = source.getInt(docID);
+      decoder.setParseBigDecimal(true);
+
+      return new NumericDocValues() {
+        @Override
+        public long get(int docID) {
+          try {
+            // nocommit bounds check docID?  spooky
+            // because if we don't you can maybe get
+            // value from the wrong field ...
+            in.seek(field.dataStartFilePointer + (1+field.pattern.length())*docID);
+            SimpleTextUtil.readLine(in, scratch);
+            //System.out.println("parsing delta: " + scratch.utf8ToString());
+            BigDecimal bd;
+            try {
+              bd = (BigDecimal) decoder.parse(scratch.utf8ToString());
+            } catch (ParseException pe) {
+              CorruptIndexException e = new CorruptIndexException("failed to parse BigDecimal value");
+              e.initCause(pe);
+              throw e;
+            }
+            return BigInteger.valueOf(field.minValue).add(bd.toBigIntegerExact()).longValue();
+          } catch (IOException ioe) {
+            throw new RuntimeException(ioe);
           }
-          return DocValuesArraySource.forType(DocValues.Type.FIXED_INTS_64).newFromArray(values);
-        } else if (DocValues.isBytes(dvType)) {
-          Source source = loadDirectSource();
-          final byte[][] values = new byte[maxDoc][];
-          for(int docID=0;docID<maxDoc;docID++) {
-            // nocommit: who passes null!!!
-            BytesRef value = source.getBytes(docID, new BytesRef());
-            byte[] bytes = new byte[value.length];
-            System.arraycopy(value.bytes, value.offset, bytes, 0, value.length);
-            values[docID] = bytes;
-          }
-
-          return new Source(dvType) {
-            @Override
-            public BytesRef getBytes(int docID, BytesRef result) {
-              result.bytes = values[docID];
-              result.offset = 0;
-              result.length = result.bytes.length;
-              return result;
-            }
-          };
-
-        } else if (DocValues.isSortedBytes(dvType)) {
-          SortedSource source = (SortedSource) loadDirectSource();
-          final byte[][] values = new byte[field.numValues][];
-          BytesRef scratch = new BytesRef();
-          for(int ord=0;ord<field.numValues;ord++) {
-            source.getByOrd(ord, scratch);
-            values[ord] = new byte[scratch.length];
-            System.arraycopy(scratch.bytes, scratch.offset, values[ord], 0, scratch.length);
-          }
-
-          final int[] ords = new int[maxDoc];
-          for(int docID=0;docID<maxDoc;docID++) {
-            ords[docID] = source.ord(docID);
-          }
-
-          return new SortedSource(dvType, BytesRef.getUTF8SortedAsUnicodeComparator()) {
-            @Override
-            public int ord(int docID) {
-              return ords[docID];
-            }
-
-            @Override
-            public BytesRef getByOrd(int ord, BytesRef result) {
-              result.bytes = values[ord];
-              result.offset = 0;
-              result.length = result.bytes.length;
-              return result;
-            }
-
-            @Override
-            public int getValueCount() {
-              return field.numValues;
-            }
-
-            @Override
-            public PackedInts.Reader getDocToOrd() {
-              return null;
-            }
-          };
-
-        } else if (DocValues.isFloat(dvType)) {
-          // nocommit
-          return null;
-        } else {
-          throw new AssertionError();
         }
-      }
-
-      @Override
-      public DocValues.Type getType() {
-        return field.fieldInfo.getDocValuesType();
-      }
-
-      @Override
-      public Source loadDirectSource() throws IOException {
-        DocValues.Type dvType = field.fieldInfo.getDocValuesType();
-        final IndexInput in = data.clone();
-        final BytesRef scratch = new BytesRef();
-        final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
-
-        if (DocValues.isNumber(dvType)) {
-          decoder.setParseBigDecimal(true);
-          return new Source(dvType) {
-            @Override
-            public long getInt(int docID) {
-              try {
-                // nocommit bounds check docID?  spooky
-                // because if we don't you can maybe get
-                // value from the wrong field ...
-                in.seek(field.dataStartFilePointer + (1+field.pattern.length())*docID);
-                SimpleTextUtil.readLine(in, scratch);
-                //System.out.println("parsing delta: " + scratch.utf8ToString());
-                BigDecimal bd;
-                try {
-                  bd = (BigDecimal) decoder.parse(scratch.utf8ToString());
-                } catch (ParseException pe) {
-                  CorruptIndexException e = new CorruptIndexException("failed to parse BigDecimal value");
-                  e.initCause(pe);
-                  throw e;
-                }
-                return BigInteger.valueOf(field.minValue).add(bd.toBigIntegerExact()).longValue();
-              } catch (IOException ioe) {
-                throw new RuntimeException(ioe);
-              }
-            }
-          };
-        } else if (DocValues.isBytes(dvType)) {
-          return new Source(dvType) {
-            @Override
-            public BytesRef getBytes(int docID, BytesRef result) {
-              try {
-                // nocommit bounds check docID?  spooky
-                // because if we don't you can maybe get
-                // value from the wrong field ...
-                in.seek(field.dataStartFilePointer + (9+field.pattern.length() + field.maxLength)*docID);
-                SimpleTextUtil.readLine(in, scratch);
-                assert StringHelper.startsWith(scratch, LENGTH);
-                int len;
-                try {
-                  len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, "UTF-8")).intValue();
-                } catch (ParseException pe) {
-                  // nocommit add message
-                  CorruptIndexException e = new CorruptIndexException("failed to parse int length");
-                  e.initCause(pe);
-                  throw e;
-                }
-                result.bytes = new byte[len];
-                result.offset = 0;
-                result.length = len;
-                in.readBytes(result.bytes, 0, len);
-                return result;
-              } catch (IOException ioe) {
-                // nocommit should .get() just throw IOE...
-                throw new RuntimeException(ioe);
-              }
-            }
-          };
-        } else if (DocValues.isSortedBytes(dvType)) {
-
-          final DecimalFormat ordDecoder = new DecimalFormat(field.ordPattern, new DecimalFormatSymbols(Locale.ROOT));
-
-          return new SortedSource(dvType, BytesRef.getUTF8SortedAsUnicodeComparator()) {
-            @Override
-            public int ord(int docID) {
-              try {
-                in.seek(field.dataStartFilePointer + field.numValues * (9 + field.pattern.length() + field.maxLength) + docID * (1 + field.ordPattern.length()));
-                SimpleTextUtil.readLine(in, scratch);
-                try {
-                  return ordDecoder.parse(scratch.utf8ToString()).intValue();
-                } catch (ParseException pe) {
-                  CorruptIndexException e = new CorruptIndexException("failed to parse ord");
-                  e.initCause(pe);
-                  throw e;
-                }
-              } catch (IOException ioe) {
-                // nocommit should .get() just throw IOE...
-                throw new RuntimeException(ioe);
-              }
-            }
-
-            @Override
-            public BytesRef getByOrd(int ord, BytesRef result) {
-              try {
-                in.seek(field.dataStartFilePointer + ord * (9 + field.pattern.length() + field.maxLength));
-                SimpleTextUtil.readLine(in, scratch);
-                assert StringHelper.startsWith(scratch, LENGTH);
-                int len;
-                try {
-                  len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, "UTF-8")).intValue();
-                } catch (ParseException pe) {
-                  CorruptIndexException e = new CorruptIndexException("failed to parse int length");
-                  e.initCause(pe);
-                  throw e;
-                }
-                result.bytes = new byte[len];
-                result.offset = 0;
-                result.length = len;
-                in.readBytes(result.bytes, 0, len);
-                return result;
-              } catch (IOException ioe) {
-                // nocommit should .get() just throw IOE...
-                throw new RuntimeException(ioe);
-              }
-            }
-
-            @Override
-            public int getValueCount() {
-              return field.numValues;
-            }
-
-            @Override
-            public PackedInts.Reader getDocToOrd() {
-              return null;
-            }
-          };
-        } else if (DocValues.isFloat(dvType)) {
-          // nocommit
-          return null;
-        } else {
-          throw new AssertionError();
-        }
-      }
+      };
     }
 
     @Override
-    public DocValues docValues(String fieldName) {
-      OneField field = fields.get(fieldName);
-      if (field == null) {
-        return null;
-      }
-      return new SimpleTextDocValues(field);
+    public BinaryDocValues getDirectBinary(FieldInfo fieldInfo) throws IOException {
+      final OneField field = fields.get(fieldInfo.name);
+
+      // SegmentCoreReaders already verifies this field is
+      // valid:
+      assert field != null;
+
+      final IndexInput in = data.clone();
+      final BytesRef scratch = new BytesRef();
+      final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
+
+      return new BinaryDocValues() {
+        @Override
+        public void get(int docID, BytesRef result) {
+          try {
+            // nocommit bounds check docID?  spooky
+            // because if we don't you can maybe get
+            // value from the wrong field ...
+            in.seek(field.dataStartFilePointer + (9+field.pattern.length() + field.maxLength)*docID);
+            SimpleTextUtil.readLine(in, scratch);
+            assert StringHelper.startsWith(scratch, LENGTH);
+            int len;
+            try {
+              len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, "UTF-8")).intValue();
+            } catch (ParseException pe) {
+              // nocommit add message
+              CorruptIndexException e = new CorruptIndexException("failed to parse int length");
+              e.initCause(pe);
+              throw e;
+            }
+            result.bytes = new byte[len];
+            result.offset = 0;
+            result.length = len;
+            in.readBytes(result.bytes, 0, len);
+          } catch (IOException ioe) {
+            // nocommit should .get() just throw IOE...
+            throw new RuntimeException(ioe);
+          }
+        }
+      };
+    }
+
+    @Override
+    public SortedDocValues getDirectSorted(FieldInfo fieldInfo) throws IOException {
+      final OneField field = fields.get(fieldInfo.name);
+
+      // SegmentCoreReaders already verifies this field is
+      // valid:
+      assert field != null;
+
+      final IndexInput in = data.clone();
+      final BytesRef scratch = new BytesRef();
+      final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
+      final DecimalFormat ordDecoder = new DecimalFormat(field.ordPattern, new DecimalFormatSymbols(Locale.ROOT));
+
+      return new SortedDocValues() {
+        @Override
+        public int getOrd(int docID) {
+          try {
+            in.seek(field.dataStartFilePointer + field.numValues * (9 + field.pattern.length() + field.maxLength) + docID * (1 + field.ordPattern.length()));
+            SimpleTextUtil.readLine(in, scratch);
+            try {
+              return ordDecoder.parse(scratch.utf8ToString()).intValue();
+            } catch (ParseException pe) {
+              CorruptIndexException e = new CorruptIndexException("failed to parse ord");
+              e.initCause(pe);
+              throw e;
+            }
+          } catch (IOException ioe) {
+            // nocommit should .get() just throw IOE...
+            throw new RuntimeException(ioe);
+          }
+        }
+
+        @Override
+        public void lookupOrd(int ord, BytesRef result) {
+          try {
+            in.seek(field.dataStartFilePointer + ord * (9 + field.pattern.length() + field.maxLength));
+            SimpleTextUtil.readLine(in, scratch);
+            assert StringHelper.startsWith(scratch, LENGTH);
+            int len;
+            try {
+              len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, "UTF-8")).intValue();
+            } catch (ParseException pe) {
+              CorruptIndexException e = new CorruptIndexException("failed to parse int length");
+              e.initCause(pe);
+              throw e;
+            }
+            result.bytes = new byte[len];
+            result.offset = 0;
+            result.length = len;
+            in.readBytes(result.bytes, 0, len);
+          } catch (IOException ioe) {
+            // nocommit should .get() just throw IOE...
+            throw new RuntimeException(ioe);
+          }
+        }
+
+        @Override
+        public int getValueCount() {
+          return field.numValues;
+        }
+      };
     }
 
     @Override
@@ -649,14 +564,17 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       data.close();
     }
 
+    /** Used only in ctor: */
     private void readLine() throws IOException {
       SimpleTextUtil.readLine(data, scratch);
     }
 
+    /** Used only in ctor: */
     private boolean startsWith(BytesRef prefix) {
       return StringHelper.startsWith(scratch, prefix);
     }
 
+    /** Used only in ctor: */
     private String stripPrefix(BytesRef prefix) throws IOException {
       return new String(scratch.bytes, scratch.offset + prefix.length, scratch.length - prefix.length, "UTF-8");
     }

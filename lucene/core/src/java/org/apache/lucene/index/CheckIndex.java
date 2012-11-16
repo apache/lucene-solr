@@ -605,7 +605,8 @@ public class CheckIndex {
 
         // Test Term Vectors
         segInfoStat.termVectorStatus = testTermVectors(fieldInfos, info, reader, nf);
-        
+
+        // nocommit re-enable
         segInfoStat.docValuesStatus = testDocValues(info, fieldInfos, reader);
 
         // Rethrow the first exception we encountered

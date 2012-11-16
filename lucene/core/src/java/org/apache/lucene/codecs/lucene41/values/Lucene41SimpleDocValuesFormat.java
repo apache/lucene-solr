@@ -25,9 +25,10 @@ import java.util.TreeMap;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.PerDocProducerBase;
 import org.apache.lucene.codecs.SimpleDVConsumer;
+import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -46,10 +47,13 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
   }
   
   @Override
-  public PerDocProducer fieldsProducer(SegmentReadState state)
+  public SimpleDVProducer fieldsProducer(SegmentReadState state)
       throws IOException {
-    return new Lucene41PerDocProducer(state);
+    // nocommit fixme
+    //return new Lucene41PerDocProducer(state);
+    return null;
   }
+
   //nocommit this is equivalent to sep - we should pack in CFS
   private static final class Lucene41PerDocProducer extends PerDocProducerBase {
     private final TreeMap<String, DocValues> docValues;

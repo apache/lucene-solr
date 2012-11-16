@@ -162,7 +162,16 @@ public abstract class AtomicReader extends IndexReader {
    * values stored.
    */
   public abstract DocValues docValues(String field) throws IOException;
-  
+
+  // nocommit javadocs
+  public abstract NumericDocValues getNumericDocValues(String field, boolean direct) throws IOException;
+
+  // nocommit javadocs
+  public abstract BinaryDocValues getBinaryDocValues(String field, boolean direct) throws IOException;
+
+  // nocommit javadocs
+  public abstract SortedDocValues getSortedDocValues(String field, boolean direct) throws IOException;
+
   /**
    * Returns {@link DocValues} for this field's normalization values.
    * This method may return null if the field has no norms.

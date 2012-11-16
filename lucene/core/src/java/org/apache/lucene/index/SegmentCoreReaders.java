@@ -19,7 +19,9 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -27,6 +29,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.SegmentReader.CoreClosedListener;
@@ -51,6 +54,7 @@ final class SegmentCoreReaders {
   final FieldInfos fieldInfos;
   
   final FieldsProducer fields;
+  final SimpleDVProducer simpleDVProducer;
   final PerDocProducer perDocProducer;
   final PerDocProducer norms;
 
@@ -61,6 +65,8 @@ final class SegmentCoreReaders {
   final StoredFieldsReader fieldsReaderOrig;
   final TermVectorsReader termVectorsReaderOrig;
   final CompoundFileDirectory cfsReader;
+
+  private final Map<FieldInfo,Object> docValuesCache = new HashMap<FieldInfo,Object>();
 
   final CloseableThreadLocal<StoredFieldsReader> fieldsReaderLocal = new CloseableThreadLocal<StoredFieldsReader>() {
     @Override
@@ -110,8 +116,9 @@ final class SegmentCoreReaders {
       // TODO: since we don't write any norms file if there are no norms,
       // kinda jaky to assume the codec handles the case of no norms file at all gracefully?!
       norms = codec.normsFormat().docsProducer(segmentReadState);
+      perDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
       // nocommit
-      perDocProducer = codec.simpleDocValuesFormat().fieldsProducer(segmentReadState);
+      simpleDVProducer = codec.simpleDocValuesFormat().fieldsProducer(segmentReadState);
   
       fieldsReaderOrig = si.info.getCodec().storedFieldsFormat().fieldsReader(cfsDir, si.info, fieldInfos, context);
 
@@ -138,12 +145,83 @@ final class SegmentCoreReaders {
   void incRef() {
     ref.incrementAndGet();
   }
+
+  // nocommit shrink the sync'd part to a cache miss
+  synchronized NumericDocValues getNumericDocValues(String field, boolean direct) throws IOException {
+    FieldInfo fi = fieldInfos.fieldInfo(field);
+    if (fi == null) {
+      return null;
+    }
+    if (!DocValues.isNumber(fi.getDocValuesType())) {
+      throw new IllegalArgumentException("field \"" + field + "\" was not indexed as a numeric doc values field");
+    }
+
+    if (direct) {
+      return simpleDVProducer.getDirectNumeric(fi);
+    } else {
+      if (!docValuesCache.containsKey(fi)) {
+        NumericDocValues dv = simpleDVProducer.getNumeric(fi);
+        if (dv != null) {
+          docValuesCache.put(fi, dv);
+        }
+      }
+      return (NumericDocValues) docValuesCache.get(fi);
+    }
+  }
+
+  // nocommit shrink the sync'd part to a cache miss
+  synchronized BinaryDocValues getBinaryDocValues(String field, boolean direct) throws IOException {
+    FieldInfo fi = fieldInfos.fieldInfo(field);
+    if (fi == null) {
+      return null;
+    }
+    if (!DocValues.isBytes(fi.getDocValuesType())) {
+      throw new IllegalArgumentException("field \"" + field + "\" was not indexed as a binary doc values field");
+    }
+
+    if (direct) {
+      return simpleDVProducer.getDirectBinary(fi);
+    } else {
+      if (!docValuesCache.containsKey(fi)) {
+        BinaryDocValues dv = simpleDVProducer.getBinary(fi);
+        if (dv != null) {
+          docValuesCache.put(fi, dv);
+        }
+      }
+      return (BinaryDocValues) docValuesCache.get(fi);
+    }
+  }
+
+  // nocommit shrink the sync'd part to a cache miss
+  synchronized SortedDocValues getSortedDocValues(String field, boolean direct) throws IOException {
+    FieldInfo fi = fieldInfos.fieldInfo(field);
+    if (fi == null) {
+      return null;
+    }
+    if (!DocValues.isSortedBytes(fi.getDocValuesType())) {
+      throw new IllegalArgumentException("field \"" + field + "\" was not indexed as a sorted doc values field");
+    }
+
+    if (direct) {
+      return simpleDVProducer.getDirectSorted(fi);
+    } else {
+      if (!docValuesCache.containsKey(fi)) {
+        SortedDocValues dv = simpleDVProducer.getSorted(fi);
+        if (dv != null) {
+          docValuesCache.put(fi, dv);
+        }
+      }
+      return (SortedDocValues) docValuesCache.get(fi);
+    }
+  }
+
+  // nocommit binary, sorted too
   
   void decRef() throws IOException {
     //System.out.println("core.decRef seg=" + owner.getSegmentInfo() + " rc=" + ref);
     if (ref.decrementAndGet() == 0) {
-      IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, perDocProducer,
-        termVectorsReaderOrig, fieldsReaderOrig, cfsReader, norms);
+      IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, simpleDVProducer,
+                    perDocProducer, termVectorsReaderOrig, fieldsReaderOrig, cfsReader, norms);
       notifyCoreClosedListeners();
     }
   }

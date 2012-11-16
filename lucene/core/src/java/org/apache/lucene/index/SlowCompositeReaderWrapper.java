@@ -87,6 +87,24 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
     ensureOpen();
     return MultiDocValues.getDocValues(in, field);
   }
+
+  @Override
+  public NumericDocValues getNumericDocValues(String field, boolean direct) throws IOException {
+    // nocommit todo
+    return null;
+  }
+
+  @Override
+  public BinaryDocValues getBinaryDocValues(String field, boolean direct) throws IOException {
+    // nocommit todo
+    return null;
+  }
+
+  @Override
+  public SortedDocValues getSortedDocValues(String field, boolean direct) throws IOException {
+    // nocommit todo
+    return null;
+  }
   
   @Override
   public synchronized DocValues normValues(String field) throws IOException {

@@ -224,6 +224,21 @@ public final class SegmentReader extends AtomicReader {
   public int getTermInfosIndexDivisor() {
     return core.termsIndexDivisor;
   }
+
+  @Override
+  public NumericDocValues getNumericDocValues(String field, boolean direct) throws IOException {
+    return core.getNumericDocValues(field, direct);
+  }
+
+  @Override
+  public BinaryDocValues getBinaryDocValues(String field, boolean direct) throws IOException {
+    return core.getBinaryDocValues(field, direct);
+  }
+
+  @Override
+  public SortedDocValues getSortedDocValues(String field, boolean direct) throws IOException {
+    return core.getSortedDocValues(field, direct);
+  }
   
   @Override
   public DocValues docValues(String field) throws IOException {

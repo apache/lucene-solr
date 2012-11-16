@@ -269,6 +269,27 @@ public final class ParallelAtomicReader extends AtomicReader {
     AtomicReader reader = fieldToReader.get(field);
     return reader == null ? null : reader.docValues(field);
   }
+
+  @Override
+  public NumericDocValues getNumericDocValues(String field, boolean direct) throws IOException {
+    ensureOpen();
+    AtomicReader reader = fieldToReader.get(field);
+    return reader == null ? null : reader.getNumericDocValues(field, direct);
+  }
+  
+  @Override
+  public BinaryDocValues getBinaryDocValues(String field, boolean direct) throws IOException {
+    ensureOpen();
+    AtomicReader reader = fieldToReader.get(field);
+    return reader == null ? null : reader.getBinaryDocValues(field, direct);
+  }
+  
+  @Override
+  public SortedDocValues getSortedDocValues(String field, boolean direct) throws IOException {
+    ensureOpen();
+    AtomicReader reader = fieldToReader.get(field);
+    return reader == null ? null : reader.getSortedDocValues(field, direct);
+  }
   
   @Override
   public DocValues normValues(String field) throws IOException {

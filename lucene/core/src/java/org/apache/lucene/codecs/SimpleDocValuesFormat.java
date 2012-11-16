@@ -31,5 +31,5 @@ public abstract class SimpleDocValuesFormat {
 
   public abstract SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException;
   // nocommit do this:
-  public abstract PerDocProducer fieldsProducer(SegmentReadState state) throws IOException;
+  public abstract SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException;
 }
