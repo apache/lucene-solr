@@ -49,18 +49,20 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
   @Override
   public SimpleDVProducer fieldsProducer(SegmentReadState state)
       throws IOException {
-    return new Lucene41DocValuesReader(state);
+    // nocommit fixme
+    // return new Lucene41PerdocProducer(state);
+    return null;
   }
 
   //nocommit this is equivalent to sep - we should pack in CFS
-  private static final class Lucene41DocValuesReader extends SimpleDVProducer {
+  private static final class Lucene41DocValuesReader extends PerDocProducerBase {
     private final TreeMap<String, DocValues> docValues;
 
     /**
      * Creates a new {@link Lucene41PerDocProducer} instance and loads all
      * {@link DocValues} instances for this segment and codec.
      */
-    public Lucene41PerDocProducer(SegmentReadState state) throws IOException {
+    public Lucene41DocValuesReader(SegmentReadState state) throws IOException {
       docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.getDocCount(), state.dir, state.context);
     }
     

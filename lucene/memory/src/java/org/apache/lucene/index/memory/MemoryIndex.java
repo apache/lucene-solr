@@ -736,6 +736,21 @@ public class MemoryIndex {
       return new FieldInfos(fieldInfos.values().toArray(new FieldInfo[fieldInfos.size()]));
     }
 
+    // nocommit todo
+    public NumericDocValues getNumericDocValues(String field, boolean direct) {
+      return null;
+    }
+
+    // nocommit todo
+    public BinaryDocValues getBinaryDocValues(String field, boolean direct) {
+      return null;
+    }
+
+    // nocommit todo
+    public SortedDocValues getSortedDocValues(String field, boolean direct) {
+      return null;
+    }
+
     private class MemoryFields extends Fields {
       @Override
       public Iterator<String> iterator() {
