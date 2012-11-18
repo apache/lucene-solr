@@ -356,7 +356,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     final Map<String,OneField> fields = new HashMap<String,OneField>();
     
     SimpleTextDocValuesReader(FieldInfos fieldInfos, Directory dir, SegmentInfo si, IOContext context) throws IOException {
-      super(si.getDocCount());
       System.out.println("dir=" + dir + " seg=" + si.name);
       data = dir.openInput(IndexFileNames.segmentFileName(si.name, "", "dat"), context);
       maxDoc = si.getDocCount();

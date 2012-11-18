@@ -24,16 +24,8 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.util.BytesRef;
 
 public abstract class SimpleDVProducer implements Closeable {
-
-  private final int maxDoc;
-
-  protected SimpleDVProducer(int maxDoc) {
-    // nocommit kinda messy?
-    this.maxDoc = maxDoc;
-  }
 
   public abstract NumericDocValues getNumeric(FieldInfo field) throws IOException;
 
