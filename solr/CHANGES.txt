@@ -67,6 +67,9 @@ New Features
   that the "root" locale is default. Previously it was the machine's default locale.  
   (James Dyer)
 
+* SOLR-4084: Add FuzzyLookupFactory, which is like AnalyzingSuggester except that 
+  it can tolerate typos in the input.  (Areek Zillur via Robert Muir)
+
 Optimizations
 ----------------------
 
