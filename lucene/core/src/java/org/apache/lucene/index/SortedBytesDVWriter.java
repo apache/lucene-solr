@@ -60,6 +60,9 @@ class SortedBytesDVWriter {
   }
 
   public void addValue(int docID, BytesRef value) {
+    if (docID < pendingIndex) {
+      throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
+    }
     if (value == null) {
       // nocommit improve message
       throw new IllegalArgumentException("null sortedValue not allowed (field=" + fieldInfo.name + ")");

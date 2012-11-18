@@ -51,6 +51,9 @@ class NumberDVWriter {
   }
 
   public void addValue(int docID, long value) {
+    if (docID < pending.size()) {
+      throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
+    }
     mergeValue(value);
 
     // Fill in any holes:

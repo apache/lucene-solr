@@ -49,6 +49,9 @@ class BytesDVWriter {
   }
 
   public void addValue(int docID, BytesRef value) {
+    if (docID < addedValues) {
+      throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
+    }
     if (value == null) {
       // nocommit improve message
       throw new IllegalArgumentException("null binaryValue not allowed (field=" + fieldInfo.name + ")");
