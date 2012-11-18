@@ -91,7 +91,7 @@ public abstract class SimpleDVConsumer implements Closeable {
         if (liveDocs == null || liveDocs.get(i)) {
           long val = docValues.get(i);
           minValue = Math.min(val, minValue);
-          maxValue = Math.min(val, maxValue);
+          maxValue = Math.max(val, maxValue);
         }
         mergeState.checkAbort.work(300);
       }

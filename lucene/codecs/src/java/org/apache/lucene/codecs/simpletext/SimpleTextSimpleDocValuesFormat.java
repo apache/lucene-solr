@@ -156,8 +156,14 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       SimpleTextUtil.write(data, Long.toString(minValue), scratch);
       SimpleTextUtil.writeNewline(data);
 
-      // build up our fixed-width "simple text packed ints" format
-      int maxBytesPerValue = BigInteger.valueOf(maxValue).subtract(BigInteger.valueOf(minValue)).toString().length();
+      assert maxValue >= minValue;
+
+      // build up our fixed-width "simple text packed ints"
+      // format
+      BigInteger maxBig = BigInteger.valueOf(maxValue);
+      BigInteger minBig = BigInteger.valueOf(minValue);
+      BigInteger diffBig = maxBig.subtract(minBig);
+      int maxBytesPerValue = diffBig.toString().length();
       StringBuilder sb = new StringBuilder();
       for (int i = 0; i < maxBytesPerValue; i++) {
         sb.append('0');
@@ -167,8 +173,10 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       SimpleTextUtil.write(data, PATTERN);
       SimpleTextUtil.write(data, sb.toString(), scratch);
       SimpleTextUtil.writeNewline(data);
+
+      final String patternString = sb.toString();
       
-      final DecimalFormat encoder = new DecimalFormat(sb.toString(), new DecimalFormatSymbols(Locale.ROOT));
+      final DecimalFormat encoder = new DecimalFormat(patternString, new DecimalFormatSymbols(Locale.ROOT));
       return new NumericDocValuesConsumer() {
         int numDocsWritten = 0;
 
@@ -176,7 +184,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         public void add(long value) throws IOException {
           assert value >= minValue;
           Number delta = BigInteger.valueOf(value).subtract(BigInteger.valueOf(minValue));
-          SimpleTextUtil.write(data, encoder.format(delta), scratch);
+          String s = encoder.format(delta);
+          assert s.length() == patternString.length();
+          SimpleTextUtil.write(data, s, scratch);
           SimpleTextUtil.writeNewline(data);
           numDocsWritten++;
         }

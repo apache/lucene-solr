@@ -329,12 +329,12 @@ public class TestDemoDocValue extends LuceneTestCase {
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
     doc.add(newField("id", "0", StringField.TYPE_STORED));
-    doc.add(new PackedLongDocValuesField("dv", 1));
+    doc.add(new PackedLongDocValuesField("dv", -10));
     iwriter.addDocument(doc);
     iwriter.commit();
     doc = new Document();
     doc.add(newField("id", "1", StringField.TYPE_STORED));
-    doc.add(new PackedLongDocValuesField("dv", 3));
+    doc.add(new PackedLongDocValuesField("dv", 99));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     iwriter.close();
@@ -347,9 +347,9 @@ public class TestDemoDocValue extends LuceneTestCase {
       StoredDocument doc2 = ireader.leaves().get(0).reader().document(i);
       long expected;
       if (doc2.get("id").equals("0")) {
-        expected = 1;
+        expected = -10;
       } else {
-        expected = 3;
+        expected = 99;
       }
       assertEquals(expected, dv.get(i));
     }
@@ -381,6 +381,34 @@ public class TestDemoDocValue extends LuceneTestCase {
     NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
     assertEquals(Long.MIN_VALUE, dv.get(0));
     assertEquals(Long.MAX_VALUE, dv.get(1));
+
+    ireader.close();
+    directory.close();
+  }
+  
+  public void testRange2() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    Directory directory = newDirectory();
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    doc.add(new PackedLongDocValuesField("dv", -8841491950446638677L));
+    iwriter.addDocument(doc);
+    doc = new Document();
+    doc.add(new PackedLongDocValuesField("dv", 9062230939892376225L));
+    iwriter.addDocument(doc);
+    iwriter.forceMerge(1);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    assert ireader.leaves().size() == 1;
+    NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
+    assertEquals(-8841491950446638677L, dv.get(0));
+    assertEquals(9062230939892376225L, dv.get(1));
 
     ireader.close();
     directory.close();
