@@ -213,6 +213,102 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
+  public void testDemoThreeFieldsMixed() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    // Store the index in memory:
+    Directory directory = newDirectory();
+    // To store an index on disk, use this instead:
+    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    Document doc = new Document();
+    String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
+    String text = "This is the text to be indexed. " + longTerm;
+    doc.add(newTextField("fieldname", text, Field.Store.YES));
+    doc.add(new SortedBytesDocValuesField("dv1", new BytesRef("hello hello")));
+    doc.add(new PackedLongDocValuesField("dv2", 5));
+    doc.add(new StraightBytesDocValuesField("dv3", new BytesRef("hello world")));
+    iwriter.addDocument(doc);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    IndexSearcher isearcher = new IndexSearcher(ireader);
+
+    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    Query query = new TermQuery(new Term("fieldname", "text"));
+    TopDocs hits = isearcher.search(query, null, 1);
+    assertEquals(1, hits.totalHits);
+    BytesRef scratch = new BytesRef();
+    // Iterate through the results:
+    for (int i = 0; i < hits.scoreDocs.length; i++) {
+      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      assertEquals(text, hitDoc.get("fieldname"));
+      assert ireader.leaves().size() == 1;
+      SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv1");
+      int ord = dv.getOrd(0);
+      dv.lookupOrd(ord, scratch);
+      assertEquals(new BytesRef("hello hello"), scratch);
+      NumericDocValues dv2 = ireader.leaves().get(0).reader().getNumericDocValues("dv2");
+      assertEquals(5, dv2.get(hits.scoreDocs[i].doc));
+      BinaryDocValues dv3 = ireader.leaves().get(0).reader().getBinaryDocValues("dv3");
+      dv3.get(hits.scoreDocs[i].doc, scratch);
+      assertEquals(new BytesRef("hello world"), scratch);
+    }
+
+    ireader.close();
+    directory.close();
+  }
+  
+  public void testDemoThreeFieldsMixed2() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    // Store the index in memory:
+    Directory directory = newDirectory();
+    // To store an index on disk, use this instead:
+    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    Document doc = new Document();
+    String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
+    String text = "This is the text to be indexed. " + longTerm;
+    doc.add(newTextField("fieldname", text, Field.Store.YES));
+    doc.add(new StraightBytesDocValuesField("dv1", new BytesRef("hello world")));
+    doc.add(new SortedBytesDocValuesField("dv2", new BytesRef("hello hello")));
+    doc.add(new PackedLongDocValuesField("dv3", 5));
+    iwriter.addDocument(doc);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    IndexSearcher isearcher = new IndexSearcher(ireader);
+
+    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    Query query = new TermQuery(new Term("fieldname", "text"));
+    TopDocs hits = isearcher.search(query, null, 1);
+    assertEquals(1, hits.totalHits);
+    BytesRef scratch = new BytesRef();
+    // Iterate through the results:
+    for (int i = 0; i < hits.scoreDocs.length; i++) {
+      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      assertEquals(text, hitDoc.get("fieldname"));
+      assert ireader.leaves().size() == 1;
+      SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv2");
+      int ord = dv.getOrd(0);
+      dv.lookupOrd(ord, scratch);
+      assertEquals(new BytesRef("hello hello"), scratch);
+      NumericDocValues dv2 = ireader.leaves().get(0).reader().getNumericDocValues("dv3");
+      assertEquals(5, dv2.get(hits.scoreDocs[i].doc));
+      BinaryDocValues dv3 = ireader.leaves().get(0).reader().getBinaryDocValues("dv1");
+      dv3.get(hits.scoreDocs[i].doc, scratch);
+      assertEquals(new BytesRef("hello world"), scratch);
+    }
+
+    ireader.close();
+    directory.close();
+  }
+  
   public void testTwoDocumentsNumeric() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 

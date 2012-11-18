@@ -61,6 +61,8 @@ public class RandomIndexWriter implements Closeable {
   private boolean getReaderCalled;
   private final int fixedBytesLength;
   private final long docValuesFieldPrefix;
+  // nocommit: remove this test coverage hack once we have a 
+  // good set of real tests.
   private volatile boolean doDocValues;
   private final Codec codec; // sugar
 
