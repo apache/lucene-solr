@@ -808,6 +808,33 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     r.close();
     d.close();
   }
+
+  public void testDifferentTypedDocValuesField2() throws Exception {
+    Directory d = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), d);
+    Document doc = new Document();
+    // Index doc values are single-valued so we should not
+    // be able to add same field more than once:
+    Field f;
+    doc.add(f = new PackedLongDocValuesField("field", 17));
+    doc.add(new SortedBytesDocValuesField("field", new BytesRef("hello")));
+    try {
+      w.addDocument(doc);
+      fail("didn't hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+
+    doc = new Document();
+    doc.add(f);
+    w.addDocument(doc);
+    w.forceMerge(1);
+    DirectoryReader r = w.getReader();
+    w.close();
+    assertEquals(17, getOnlySegmentReader(r).docValues("field").loadSource().getInt(0));
+    r.close();
+    d.close();
+  }
   
   public void testSortedBytes() throws IOException {
     Type[] types = new Type[] { Type.BYTES_FIXED_SORTED, Type.BYTES_VAR_SORTED };

@@ -17,6 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
@@ -43,6 +46,7 @@ final class DocFieldProcessorPerField {
 
   int fieldCount;
   IndexableField[] fields = new IndexableField[1];
+  private final Map<FieldInfo,String> dvFields = new HashMap<FieldInfo,String>();
 
   public DocFieldProcessorPerField(final DocFieldProcessor docFieldProcessor, final FieldInfo fieldInfo) {
     this.consumer = docFieldProcessor.consumer.addField(fieldInfo);
@@ -53,6 +57,7 @@ final class DocFieldProcessorPerField {
   // nocommit make this generic chain through consumer?
   public void addBytesDVField(int docID, BytesRef value) {
     if (bytesDVWriter == null) {
+      verifyField(fieldInfo, "binary");
       bytesDVWriter = new BytesDVWriter(fieldInfo, bytesUsed);
     }
     bytesDVWriter.addValue(docID, value);
@@ -61,6 +66,7 @@ final class DocFieldProcessorPerField {
   // nocommit make this generic chain through consumer?
   public void addSortedBytesDVField(int docID, BytesRef value) {
     if (sortedBytesDVWriter == null) {
+      verifyField(fieldInfo, "sorted");
       sortedBytesDVWriter = new SortedBytesDVWriter(fieldInfo, bytesUsed);
     }
     sortedBytesDVWriter.addValue(docID, value);
@@ -69,6 +75,7 @@ final class DocFieldProcessorPerField {
   // nocommit make this generic chain through consumer?
   public void addNumberDVField(int docID, Number value) {
     if (numberDVWriter == null) {
+      verifyField(fieldInfo, "numeric");
       numberDVWriter = new NumberDVWriter(fieldInfo, bytesUsed);
     }
     numberDVWriter.addValue(docID, value.longValue());
@@ -77,6 +84,7 @@ final class DocFieldProcessorPerField {
   // nocommit make this generic chain through consumer?
   public void addFloatDVField(int docID, Number value) {
     if (numberDVWriter == null) {
+      verifyField(fieldInfo, "numeric");
       numberDVWriter = new NumberDVWriter(fieldInfo, bytesUsed);
     }
     numberDVWriter.addValue(docID, Float.floatToRawIntBits(value.floatValue()));
@@ -85,9 +93,17 @@ final class DocFieldProcessorPerField {
   // nocommit make this generic chain through consumer?
   public void addDoubleDVField(int docID, Number value) {
     if (numberDVWriter == null) {
+      verifyField(fieldInfo, "numeric");
       numberDVWriter = new NumberDVWriter(fieldInfo, bytesUsed);
     }
     numberDVWriter.addValue(docID, Double.doubleToRawLongBits(value.doubleValue()));
+  }
+
+  private void verifyField(FieldInfo field, String type) {
+    if (dvFields.containsKey(field)) {
+      throw new IllegalArgumentException("Incompatible DocValues type: field \"" + field.name + "\" changed from " + dvFields.get(field) + " to " + type);
+    }
+    dvFields.put(field, type);
   }
 
   public void addField(IndexableField field) {
@@ -105,6 +121,9 @@ final class DocFieldProcessorPerField {
     consumer.abort();
     if (bytesDVWriter != null) {
       bytesDVWriter.abort();
+    }
+    if (sortedBytesDVWriter != null) {
+      sortedBytesDVWriter.abort();
     }
     if (numberDVWriter != null) {
       numberDVWriter.abort();

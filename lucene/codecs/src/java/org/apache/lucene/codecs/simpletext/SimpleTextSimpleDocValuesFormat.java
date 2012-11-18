@@ -23,8 +23,10 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.codecs.BinaryDocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesArraySource;
@@ -140,15 +142,25 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   static class SimpleTextDocValuesWriter extends SimpleDVConsumer {
     final IndexOutput data;
     final BytesRef scratch = new BytesRef();
+
     final int numDocs; // for asserting
+    private final Set<String> fieldsSeen = new HashSet<String>(); // for asserting
     
     SimpleTextDocValuesWriter(Directory dir, SegmentInfo si, IOContext context) throws IOException {
       data = dir.createOutput(IndexFileNames.segmentFileName(si.name, "", "dat"), context);
       numDocs = si.getDocCount();
     }
 
+    // for asserting
+    private boolean fieldSeen(String field) {
+      assert !fieldsSeen.contains(field): "field \"" + field + "\" was added more than once during flush";
+      fieldsSeen.add(field);
+      return true;
+    }
+
     @Override
     public NumericDocValuesConsumer addNumericField(FieldInfo field, final long minValue, long maxValue) throws IOException {
+      assert fieldSeen(field.name);
       writeFieldEntry(field);
       
       // write our minimum value to the .dat, all entries are deltas from that
@@ -189,17 +201,19 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           SimpleTextUtil.write(data, s, scratch);
           SimpleTextUtil.writeNewline(data);
           numDocsWritten++;
+          assert numDocsWritten <= numDocs;
         }
 
         @Override
         public void finish() throws IOException {
-          assert numDocs == numDocsWritten;
+          assert numDocs == numDocsWritten: "numDocs=" + numDocs + " numDocsWritten=" + numDocsWritten;
         }
       };
     }
 
     @Override
     public BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, final int maxLength) throws IOException {
+      assert fieldSeen(field.name);
       writeFieldEntry(field);
       // write maxLength
       SimpleTextUtil.write(data, MAXLENGTH);
@@ -249,6 +263,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     // nocommit
     @Override
     public SortedDocValuesConsumer addSortedField(FieldInfo field, final int valueCount, boolean fixedLength, final int maxLength) throws IOException {
+      assert fieldSeen(field.name);
       writeFieldEntry(field);
       // write numValues
       SimpleTextUtil.write(data, NUMVALUES);

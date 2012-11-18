@@ -184,6 +184,13 @@ public abstract class SortedDocValuesConsumer {
         for(int docID=0;docID<maxDoc;docID++) {
           if (liveDocs == null || liveDocs.get(docID)) {
             int segOrd = segState.values.getOrd(docID);
+            /*
+            if (segState.segOrdToMergedOrd == null) {
+              BytesRef scratch = new BytesRef();
+              segState.values.lookupOrd(segOrd, scratch);
+              System.out.println("docID=" + docID + " segOrd=" + segOrd + " segValue=" + scratch.utf8ToString());
+            }
+            */
             int mergedOrd = segState.segOrdToMergedOrd[segOrd];
             consumer.addDoc(mergedOrd);
           }
