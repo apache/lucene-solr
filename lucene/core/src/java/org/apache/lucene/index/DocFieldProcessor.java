@@ -325,6 +325,12 @@ final class DocFieldProcessor extends DocConsumer {
         case FIXED_INTS_64:
           fp.addNumberDVField(docState.docID, field.numericValue());
           break;
+        case FLOAT_32:
+          fp.addFloatDVField(docState.docID, field.numericValue());
+          break;
+        case FLOAT_64:
+          fp.addDoubleDVField(docState.docID, field.numericValue());
+          break;
         default:
           break;
         }

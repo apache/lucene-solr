@@ -105,6 +105,10 @@ public abstract class SortedDocValuesConsumer {
         SegmentState state = new SegmentState();
         state.reader = reader;
         state.values = reader.getSortedDocValues(mergeState.fieldInfo.name);
+        if (state.values == null) {
+          state.values = SortedDocValues.DEFAULT;
+        }
+
         segStates.add(state);
         assert state.values.getValueCount() < Integer.MAX_VALUE;
         if (reader.hasDeletions()) {

@@ -163,8 +163,13 @@ final class SegmentCoreReaders {
       // Field was not indexed with doc values
       return null;
     }
-    if (!DocValues.isNumber(fi.getDocValuesType())) {
+    if (!DocValues.isNumber(fi.getDocValuesType()) && !DocValues.isFloat(fi.getDocValuesType())) {
       // DocValues were not numeric
+      return null;
+    }
+
+    // nocommit change to assert != null!!
+    if (simpleDVProducer == null) {
       return null;
     }
 
@@ -187,6 +192,11 @@ final class SegmentCoreReaders {
       return null;
     }
 
+    // nocommit change to assert != null!!
+    if (simpleDVProducer == null) {
+      return null;
+    }
+
     return simpleDVProducer.getBinary(fi);
   }
 
@@ -203,6 +213,11 @@ final class SegmentCoreReaders {
     }
     if (!DocValues.isSortedBytes(fi.getDocValuesType())) {
       // DocValues were not sorted
+      return null;
+    }
+
+    // nocommit change to assert != null!!
+    if (simpleDVProducer == null) {
       return null;
     }
 

@@ -38,8 +38,10 @@ public abstract class BinaryDocValuesConsumer {
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
 
-      // nocommit what if this is null...?  need default source?
-      final BinaryDocValues source = reader.getBinaryDocValues(mergeState.fieldInfo.name);
+      BinaryDocValues source = reader.getBinaryDocValues(mergeState.fieldInfo.name);
+      if (source == null) {
+        source = BinaryDocValues.DEFAULT;
+      }
 
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {

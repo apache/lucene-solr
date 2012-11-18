@@ -36,8 +36,10 @@ public abstract class NumericDocValuesConsumer {
     for (AtomicReader reader : mergeState.readers) {
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
-      // nocommit what if this is null...?  need default source?
-      final NumericDocValues source = reader.getNumericDocValues(mergeState.fieldInfo.name);
+      NumericDocValues source = reader.getNumericDocValues(mergeState.fieldInfo.name);
+      if (source == null) {
+        source = NumericDocValues.DEFAULT;
+      }
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {
           add(source.get(i));

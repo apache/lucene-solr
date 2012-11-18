@@ -74,6 +74,22 @@ final class DocFieldProcessorPerField {
     numberDVWriter.addValue(docID, value.longValue());
   }
 
+  // nocommit make this generic chain through consumer?
+  public void addFloatDVField(int docID, Number value) {
+    if (numberDVWriter == null) {
+      numberDVWriter = new NumberDVWriter(fieldInfo, bytesUsed);
+    }
+    numberDVWriter.addValue(docID, Float.floatToRawIntBits(value.floatValue()));
+  }
+
+  // nocommit make this generic chain through consumer?
+  public void addDoubleDVField(int docID, Number value) {
+    if (numberDVWriter == null) {
+      numberDVWriter = new NumberDVWriter(fieldInfo, bytesUsed);
+    }
+    numberDVWriter.addValue(docID, Double.doubleToRawLongBits(value.doubleValue()));
+  }
+
   public void addField(IndexableField field) {
     if (fieldCount == fields.length) {
       int newSize = ArrayUtil.oversize(fieldCount + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF);

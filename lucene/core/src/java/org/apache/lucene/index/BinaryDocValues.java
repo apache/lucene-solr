@@ -23,4 +23,11 @@ import org.apache.lucene.util.BytesRef;
 public abstract class BinaryDocValues {
   // nocommit throws IOE or not?
   public abstract void get(int docID, BytesRef result);
+
+  public static final BinaryDocValues DEFAULT = new BinaryDocValues() {
+      @Override
+      public void get(int docID, BytesRef ret) {
+        ret.length = 0;
+      }
+    };
 }

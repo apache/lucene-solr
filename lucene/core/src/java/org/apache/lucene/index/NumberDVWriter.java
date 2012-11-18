@@ -62,7 +62,6 @@ class NumberDVWriter {
     pending.add(value);
 
     updateBytesUsed();
-    //System.out.println("ADD: " + value);
   }
 
   private void updateBytesUsed() {
@@ -87,7 +86,8 @@ class NumberDVWriter {
     AppendingLongBuffer.Iterator it = pending.iterator();
     for(int docID=0;docID<bufferedDocCount;docID++) {
       assert it.hasNext();
-      consumer.add(it.next());
+      long v = it.next();
+      consumer.add(v);
     }
     assert !it.hasNext();
     final int maxDoc = state.segmentInfo.getDocCount();

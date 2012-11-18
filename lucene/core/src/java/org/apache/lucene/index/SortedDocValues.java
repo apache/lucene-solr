@@ -31,4 +31,25 @@ public abstract class SortedDocValues {
   public abstract int getValueCount();
 
   // nocommit binary search lookup?
+  public static final SortedDocValues DEFAULT = new SortedDocValues() {
+      
+      @Override
+      public int getOrd(int docID) {
+        return 0;
+      }
+
+      @Override
+      public void lookupOrd(int ord, BytesRef ret) {
+        if (ord != 0) {
+          throw new IllegalArgumentException("ord should be 0");
+        }
+        ret.length = 0;
+      }
+
+      @Override
+      public int getValueCount() {
+        return 1;
+      }
+    };
+
 }

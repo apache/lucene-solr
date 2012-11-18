@@ -21,11 +21,13 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -80,16 +82,14 @@ public abstract class SimpleDVConsumer implements Closeable {
     for (AtomicReader reader : mergeState.readers) {
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
-      DocValues docValues = reader.docValues(mergeState.fieldInfo.name);
-      final Source source;
+      //System.out.println("merge field=" + mergeState.fieldInfo.name);
+      NumericDocValues docValues = reader.getNumericDocValues(mergeState.fieldInfo.name);
       if (docValues == null) {
-        source = DocValues.getDefaultSource(mergeState.fieldInfo.getDocValuesType());
-      } else {
-        source = docValues.getDirectSource();
+        docValues = NumericDocValues.DEFAULT;
       }
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {
-          long val = source.getInt(i);
+          long val = docValues.get(i);
           minValue = Math.min(val, minValue);
           maxValue = Math.min(val, maxValue);
         }
@@ -110,16 +110,13 @@ public abstract class SimpleDVConsumer implements Closeable {
     for (AtomicReader reader : mergeState.readers) {
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
-      DocValues docValues = reader.docValues(mergeState.fieldInfo.name);
-      final Source source;
+      BinaryDocValues docValues = reader.getBinaryDocValues(mergeState.fieldInfo.name);
       if (docValues == null) {
-        source = DocValues.getDefaultSource(mergeState.fieldInfo.getDocValuesType());
-      } else {
-        source = docValues.getDirectSource();
+        docValues = BinaryDocValues.DEFAULT;
       }
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {
-          source.getBytes(i, bytes);
+          docValues.get(i, bytes);
           if (maxLength == -1) {
             maxLength = bytes.length;
           } else {

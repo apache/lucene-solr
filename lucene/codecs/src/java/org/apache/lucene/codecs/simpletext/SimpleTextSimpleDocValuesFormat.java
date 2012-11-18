@@ -109,7 +109,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
    *  baz[space][space][space][space][space]
    *  ...
    *  </pre>
-   *  so an ord's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength)*ord
+   *  so a doc's value can be retrieved by seeking to startOffset + (9+pattern.length+maxlength)*doc
    *  the extra 9 is 2 newlines, plus "length " itself.
    *  
    *  for sorted bytes this is a fixed-width file, for example:
@@ -214,8 +214,10 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           SimpleTextUtil.write(data, encoder.format(value.length), scratch);
           SimpleTextUtil.writeNewline(data);
           
-          // write bytes
-          SimpleTextUtil.write(data, value);
+          // write bytes -- don't use SimpleText.write
+          // because it escapes:
+          data.writeBytes(value.bytes, value.offset, value.length);
+
           // pad to fit
           for (int i = value.length; i < maxLength; i++) {
             data.writeByte((byte)' ');
@@ -278,8 +280,10 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           SimpleTextUtil.write(data, encoder.format(value.length), scratch);
           SimpleTextUtil.writeNewline(data);
           
-          // write bytes
-          SimpleTextUtil.write(data, value);
+          // write bytes -- don't use SimpleText.write
+          // because it escapes:
+          data.writeBytes(value.bytes, value.offset, value.length);
+
           // pad to fit
           for (int i = value.length; i < maxLength; i++) {
             data.writeByte((byte)' ');
@@ -351,6 +355,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     
     SimpleTextDocValuesReader(FieldInfos fieldInfos, Directory dir, SegmentInfo si, IOContext context) throws IOException {
       super(si.getDocCount());
+      System.out.println("dir=" + dir + " seg=" + si.name);
       data = dir.openInput(IndexFileNames.segmentFileName(si.name, "", "dat"), context);
       maxDoc = si.getDocCount();
       while(true) {
@@ -360,6 +365,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         }
         assert startsWith(FIELD) : scratch.utf8ToString();
         String fieldName = stripPrefix(FIELD);
+        //System.out.println("  field=" + fieldName);
         FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldName);
         assert fieldInfo != null;
 
@@ -370,7 +376,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         
         DocValues.Type dvType = fieldInfo.getDocValuesType();
         assert dvType != null;
-        if (DocValues.isNumber(dvType)) {
+        if (DocValues.isNumber(dvType) || DocValues.isFloat(dvType)) {
           readLine();
           assert startsWith(MINVALUE);
           field.minValue = Long.parseLong(stripPrefix(MINVALUE));
@@ -388,7 +394,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           field.pattern = stripPrefix(PATTERN);
           field.dataStartFilePointer = data.getFilePointer();
           data.seek(data.getFilePointer() + (9+field.pattern.length()+field.maxLength) * maxDoc);
-          break;
         } else if (DocValues.isSortedBytes(dvType)) {
           readLine();
           assert startsWith(NUMVALUES);
@@ -405,8 +410,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           field.dataStartFilePointer = data.getFilePointer();
           data.seek(data.getFilePointer() + (9+field.pattern.length()+field.maxLength) * field.numValues + (1+field.ordPattern.length())*maxDoc);
           // nocommit: we need to seek past the data section!!!!
-        } else if (DocValues.isFloat(dvType)) {
-          // nocommit
         } else {
           throw new AssertionError();
         }
