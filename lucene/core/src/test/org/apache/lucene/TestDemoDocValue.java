@@ -56,10 +56,7 @@ public class TestDemoDocValue extends LuceneTestCase {
   public void testDemoNumber() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
@@ -94,10 +91,7 @@ public class TestDemoDocValue extends LuceneTestCase {
   public void testDemoFloat() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
@@ -132,10 +126,7 @@ public class TestDemoDocValue extends LuceneTestCase {
   public void testDemoTwoFieldsNumber() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
@@ -173,10 +164,7 @@ public class TestDemoDocValue extends LuceneTestCase {
   public void testDemoTwoFieldsMixed() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
@@ -216,10 +204,7 @@ public class TestDemoDocValue extends LuceneTestCase {
   public void testDemoThreeFieldsMixed() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
@@ -264,10 +249,7 @@ public class TestDemoDocValue extends LuceneTestCase {
   public void testDemoThreeFieldsMixed2() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
@@ -312,10 +294,7 @@ public class TestDemoDocValue extends LuceneTestCase {
   public void testTwoDocumentsNumeric() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
@@ -343,10 +322,7 @@ public class TestDemoDocValue extends LuceneTestCase {
   public void testTwoDocumentsMerged() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
@@ -385,10 +361,7 @@ public class TestDemoDocValue extends LuceneTestCase {
   public void testBigRange() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
@@ -416,10 +389,7 @@ public class TestDemoDocValue extends LuceneTestCase {
   public void testDemoBytes() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
@@ -458,10 +428,7 @@ public class TestDemoDocValue extends LuceneTestCase {
   public void testBytesTwoDocumentsMerged() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
@@ -502,10 +469,7 @@ public class TestDemoDocValue extends LuceneTestCase {
   public void testDemoSortedBytes() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
@@ -542,10 +506,7 @@ public class TestDemoDocValue extends LuceneTestCase {
   public void testSortedBytesTwoDocuments() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
@@ -576,10 +537,7 @@ public class TestDemoDocValue extends LuceneTestCase {
   public void testSortedBytesTwoDocumentsMerged() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
@@ -620,10 +578,7 @@ public class TestDemoDocValue extends LuceneTestCase {
   public void testBytesWithNewline() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
-    // Store the index in memory:
     Directory directory = newDirectory();
-    // To store an index on disk, use this instead:
-    // Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     iwc.setMergePolicy(newLogMergePolicy());
@@ -641,6 +596,34 @@ public class TestDemoDocValue extends LuceneTestCase {
     dv.get(0, scratch);
     assertEquals(new BytesRef("hello\nworld\r1"), scratch);
 
+    ireader.close();
+    directory.close();
+  }
+
+  public void testMissingSortedBytes() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    Directory directory = newDirectory();
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world 2")));
+    iwriter.addDocument(doc);
+    // 2nd doc missing the DV field
+    iwriter.addDocument(new Document());
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    assert ireader.leaves().size() == 1;
+    SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
+    BytesRef scratch = new BytesRef();
+    dv.lookupOrd(dv.getOrd(0), scratch);
+    assertEquals(new BytesRef("hello world 2"), scratch);
+    dv.lookupOrd(dv.getOrd(1), scratch);
+    assertEquals(new BytesRef(""), scratch);
     ireader.close();
     directory.close();
   }

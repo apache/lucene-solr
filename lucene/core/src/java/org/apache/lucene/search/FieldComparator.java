@@ -1358,12 +1358,12 @@ public abstract class FieldComparator<T> {
 
     // Used per-segment when bit width is not a native array
     // size (8, 16, 32):
-    private final class AnyOrdComparator extends PerSegmentComparator {
+    private final class AnyDocToOrdComparator extends PerSegmentComparator {
       private final PackedInts.Reader readerOrds;
       private final DocTermsIndex termsIndex;
       private final int docBase;
 
-      public AnyOrdComparator(PackedInts.Reader readerOrds, DocTermsIndex termsIndex, int docBase) {
+      public AnyDocToOrdComparator(PackedInts.Reader readerOrds, DocTermsIndex termsIndex, int docBase) {
         this.readerOrds = readerOrds;
         this.termsIndex = termsIndex;
         this.docBase = docBase;
@@ -1403,13 +1403,57 @@ public abstract class FieldComparator<T> {
       }
     }
 
+    // Used per-segment when docToOrd is null:
+    private final class AnyOrdComparator extends PerSegmentComparator {
+      private final DocTermsIndex termsIndex;
+      private final int docBase;
+
+      public AnyOrdComparator(DocTermsIndex termsIndex, int docBase) {
+        this.termsIndex = termsIndex;
+        this.docBase = docBase;
+      }
+
+      @Override
+      public int compareBottom(int doc) {
+        assert bottomSlot != -1;
+        final int docOrd = (int) termsIndex.getOrd(doc);
+        if (bottomSameReader) {
+          // ord is precisely comparable, even in the equal case
+          return bottomOrd - docOrd;
+        } else if (bottomOrd >= docOrd) {
+          // the equals case always means bottom is > doc
+          // (because we set bottomOrd to the lower bound in
+          // setBottom):
+          return 1;
+        } else {
+          return -1;
+        }
+      }
+
+      @Override
+      public void copy(int slot, int doc) {
+        final int ord = (int) termsIndex.getOrd(doc);
+        ords[slot] = ord;
+        if (ord == 0) {
+          values[slot] = null;
+        } else {
+          assert ord > 0;
+          if (values[slot] == null) {
+            values[slot] = new BytesRef();
+          }
+          termsIndex.lookup(ord, values[slot]);
+        }
+        readerGen[slot] = currentReaderGen;
+      }
+    }
+
     @Override
     public FieldComparator<BytesRef> setNextReader(AtomicReaderContext context) throws IOException {
       final int docBase = context.docBase;
       termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
       final PackedInts.Reader docToOrd = termsIndex.getDocToOrd();
       FieldComparator<BytesRef> perSegComp = null;
-      if (docToOrd.hasArray()) {
+      if (docToOrd != null && docToOrd.hasArray()) {
         final Object arr = docToOrd.getArray();
         if (arr instanceof byte[]) {
           perSegComp = new ByteOrdComparator((byte[]) arr, termsIndex, docBase);
@@ -1423,7 +1467,11 @@ public abstract class FieldComparator<T> {
         // every one having a unique value.
       }
       if (perSegComp == null) {
-        perSegComp = new AnyOrdComparator(docToOrd, termsIndex, docBase);
+        if (docToOrd != null) {
+          perSegComp = new AnyDocToOrdComparator(docToOrd, termsIndex, docBase);
+        } else {
+          perSegComp = new AnyOrdComparator(termsIndex, docBase);
+        }
       }
 
       currentReaderGen++;

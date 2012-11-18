@@ -110,6 +110,7 @@ final class DocFieldProcessor extends DocConsumer {
           }
 
           if (field.bytesDVWriter != null) {
+            field.bytesDVWriter.finish(state.segmentInfo.getDocCount());
             field.bytesDVWriter.flush(field.fieldInfo, state,
                                       dvConsumer.addBinaryField(field.fieldInfo,
                                                                 field.bytesDVWriter.fixedLength >= 0,
@@ -119,6 +120,7 @@ final class DocFieldProcessor extends DocConsumer {
           }
 
           if (field.sortedBytesDVWriter != null) {
+            field.sortedBytesDVWriter.finish(state.segmentInfo.getDocCount());
             field.sortedBytesDVWriter.flush(field.fieldInfo, state,
                                             dvConsumer.addSortedField(field.fieldInfo,
                                                                       field.sortedBytesDVWriter.hash.size(),
@@ -129,6 +131,7 @@ final class DocFieldProcessor extends DocConsumer {
           }
 
           if (field.numberDVWriter != null) {
+            field.numberDVWriter.finish(state.segmentInfo.getDocCount());
             field.numberDVWriter.flush(field.fieldInfo, state,
                                        dvConsumer.addNumericField(field.fieldInfo,
                                                                   field.numberDVWriter.minValue,

@@ -80,6 +80,12 @@ class NumberDVWriter {
     }
   }
 
+  public void finish(int maxDoc) {
+    if (pending.size() < maxDoc) {
+      mergeValue(0);
+    }
+  }
+
   public void flush(FieldInfo fieldInfo, SegmentWriteState state, NumericDocValuesConsumer consumer) throws IOException {
     final int bufferedDocCount = pending.size();
 

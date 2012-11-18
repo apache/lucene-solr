@@ -33,7 +33,7 @@ class BytesDVWriter {
 
   private final BytesRefArray bytesRefArray;
   private final FieldInfo fieldInfo;
-  private int addeValues = 0;
+  private int addedValues = 0;
   private final BytesRef emptyBytesRef = new BytesRef();
 
   // -2 means not set yet; -1 means length isn't fixed;
@@ -56,12 +56,12 @@ class BytesDVWriter {
     mergeLength(value.length);
     
     // Fill in any holes:
-    while(addeValues < docID) {
-      addeValues++;
+    while(addedValues < docID) {
+      addedValues++;
       bytesRefArray.append(emptyBytesRef);
       mergeLength(0);
     }
-    addeValues++;
+    addedValues++;
     bytesRefArray.append(value);
   }
 
@@ -75,8 +75,14 @@ class BytesDVWriter {
     totalSize += length;
   }
 
+  public void finish(int maxDoc) {
+    if (addedValues < maxDoc) {
+      mergeLength(0);
+    }
+  }
+
   public void flush(FieldInfo fieldInfo, SegmentWriteState state, BinaryDocValuesConsumer consumer) throws IOException {
-    final int bufferedDocCount = addeValues;
+    final int bufferedDocCount = addedValues;
     BytesRef value = new BytesRef();
     for(int docID=0;docID<bufferedDocCount;docID++) {
       bytesRefArray.get(value, docID);

@@ -174,6 +174,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
 
         @Override
         public void add(long value) throws IOException {
+          assert value >= minValue;
           Number delta = BigInteger.valueOf(value).subtract(BigInteger.valueOf(minValue));
           SimpleTextUtil.write(data, encoder.format(delta), scratch);
           SimpleTextUtil.writeNewline(data);
@@ -237,7 +238,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     
     // nocommit
     @Override
-    public SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, final int maxLength) throws IOException {
+    public SortedDocValuesConsumer addSortedField(FieldInfo field, final int valueCount, boolean fixedLength, final int maxLength) throws IOException {
       writeFieldEntry(field);
       // write numValues
       SimpleTextUtil.write(data, NUMVALUES);
@@ -274,6 +275,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       final DecimalFormat ordEncoder = new DecimalFormat(sb.toString(), new DecimalFormatSymbols(Locale.ROOT));
 
       return new SortedDocValuesConsumer() {
+
+        // for asserts:
+        private int valuesSeen;
         
         @Override
         public void addValue(BytesRef value) throws IOException {
@@ -291,6 +295,8 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
             data.writeByte((byte)' ');
           }
           SimpleTextUtil.writeNewline(data);
+          valuesSeen++;
+          assert valuesSeen <= valueCount;
         }
 
         @Override
@@ -356,11 +362,12 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     final Map<String,OneField> fields = new HashMap<String,OneField>();
     
     SimpleTextDocValuesReader(FieldInfos fieldInfos, Directory dir, SegmentInfo si, IOContext context) throws IOException {
-      System.out.println("dir=" + dir + " seg=" + si.name);
+      //System.out.println("dir=" + dir + " seg=" + si.name);
       data = dir.openInput(IndexFileNames.segmentFileName(si.name, "", "dat"), context);
       maxDoc = si.getDocCount();
       while(true) {
         readLine();
+        //System.out.println("READ field=" + scratch.utf8ToString());
         if (scratch.equals(END)) {
           break;
         }
@@ -571,6 +578,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     /** Used only in ctor: */
     private void readLine() throws IOException {
       SimpleTextUtil.readLine(data, scratch);
+      //System.out.println("line: " + scratch.utf8ToString());
     }
 
     /** Used only in ctor: */

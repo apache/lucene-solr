@@ -48,6 +48,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.StorableField;
@@ -129,6 +130,9 @@ public class TestSort extends LuceneTestCase {
     Directory indexStore = newDirectory();
     dirs.add(indexStore);
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+
+    // nocommit remove:
+    ((LogMergePolicy) writer.w.getConfig().getMergePolicy()).setUseCompoundFile(false);
 
     final DocValues.Type stringDVType;
     if (dvStringSorted) {

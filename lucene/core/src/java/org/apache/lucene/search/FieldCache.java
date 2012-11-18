@@ -557,7 +557,8 @@ public interface FieldCache {
     public abstract int getOrd(int docID);
 
     /** Returns total unique ord count; this includes +1 for
-     *  the null ord (always 0). */
+     *  the null ord (always 0) unless the field was
+     *  indexed with doc values. */
     public abstract int numOrd();
 
     /** Number of documents */

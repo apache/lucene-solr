@@ -73,6 +73,13 @@ class SortedBytesDVWriter {
     addOneValue(value);
   }
 
+  public void finish(int maxDoc) {
+    if (pendingIndex < maxDoc) {
+      addOneValue(EMPTY);
+      mergeLength(0);
+    }
+  }
+
   private void addOneValue(BytesRef value) {
     mergeLength(value.length);
     int ord = hash.add(value);
