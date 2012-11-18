@@ -189,6 +189,8 @@ Bug Fixes
   (used when cache=false), spatial queries, and frange queires.
   (Eirik Lygre, yonik)
 
+* SOLR-3959: Ensure the internal comma separator of poly fields is escaped
+  for CSVResponseWriter.  (Areek Zillur via Robert Muir)
 
 Other Changes
 ----------------------
