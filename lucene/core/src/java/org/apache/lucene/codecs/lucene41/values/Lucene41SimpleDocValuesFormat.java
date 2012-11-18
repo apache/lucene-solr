@@ -59,7 +59,7 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
     private final TreeMap<String, DocValues> docValues;
 
     /**
-     * Creates a new {@link Lucene41PerDocProducer} instance and loads all
+     * Creates a new {@link Lucene41DocValuesReader} instance and loads all
      * {@link DocValues} instances for this segment and codec.
      */
     public Lucene41DocValuesReader(SegmentReadState state) throws IOException {
