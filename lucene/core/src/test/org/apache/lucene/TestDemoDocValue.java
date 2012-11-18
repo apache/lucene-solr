@@ -29,20 +29,18 @@ import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Ignore;
 
 /**
  * A very simple demo used in the API documentation (src/java/overview.html).
@@ -50,6 +48,8 @@ import org.junit.Ignore;
  * Please try to keep src/java/overview.html up-to-date when making changes
  * to this class.
  */
+// nocommit don't suppress any:
+@SuppressCodecs({"Direct", "Memory", "Lucene41", "MockRandom"})
 public class TestDemoDocValue extends LuceneTestCase {
 
   public void testDemoNumber() throws IOException {

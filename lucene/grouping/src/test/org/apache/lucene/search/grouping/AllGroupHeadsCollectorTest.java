@@ -288,10 +288,10 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       w.close();
 
       // NOTE: intentional but temporary field cache insanity!
-      final int[] docIdToFieldId = FieldCache.DEFAULT.getInts(new SlowCompositeReaderWrapper(r), "id", false);
+      final FieldCache.Ints docIdToFieldId = FieldCache.DEFAULT.getInts(new SlowCompositeReaderWrapper(r), "id", false);
       final int[] fieldIdToDocID = new int[numDocs];
-      for (int i = 0; i < docIdToFieldId.length; i++) {
-        int fieldId = docIdToFieldId[i];
+      for (int i = 0; i < numDocs; i++) {
+        int fieldId = docIdToFieldId.get(i);
         fieldIdToDocID[fieldId] = i;
       }
 
@@ -306,11 +306,11 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         for (int contentID = 0; contentID < 3; contentID++) {
           final ScoreDoc[] hits = s.search(new TermQuery(new Term("content", "real" + contentID)), numDocs).scoreDocs;
           for (ScoreDoc hit : hits) {
-            final GroupDoc gd = groupDocs[docIdToFieldId[hit.doc]];
+            final GroupDoc gd = groupDocs[docIdToFieldId.get(hit.doc)];
             assertTrue(gd.score == 0.0);
             gd.score = hit.score;
             int docId = gd.id;
-            assertEquals(docId, docIdToFieldId[hit.doc]);
+            assertEquals(docId, docIdToFieldId.get(hit.doc));
           }
         }
 
@@ -333,7 +333,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
           int[] actualGroupHeads = allGroupHeadsCollector.retrieveGroupHeads();
           // The actual group heads contains Lucene ids. Need to change them into our id value.
           for (int i = 0; i < actualGroupHeads.length; i++) {
-            actualGroupHeads[i] = docIdToFieldId[actualGroupHeads[i]];
+            actualGroupHeads[i] = docIdToFieldId.get(actualGroupHeads[i]);
           }
           // Allows us the easily iterate and assert the actual and expected results.
           Arrays.sort(expectedGroupHeads);

@@ -19,9 +19,7 @@ package org.apache.lucene.search.grouping;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.CompositeReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -761,7 +759,7 @@ public class TestGrouping extends LuceneTestCase {
       w.close();
 
       // NOTE: intentional but temporary field cache insanity!
-      final int[] docIDToID = FieldCache.DEFAULT.getInts(new SlowCompositeReaderWrapper(r), "id", false);
+      final FieldCache.Ints docIDToID = FieldCache.DEFAULT.getInts(new SlowCompositeReaderWrapper(r), "id", false);
       DirectoryReader rBlocks = null;
       Directory dirBlocks = null;
 
@@ -777,11 +775,11 @@ public class TestGrouping extends LuceneTestCase {
         for(int contentID=0;contentID<3;contentID++) {
           final ScoreDoc[] hits = s.search(new TermQuery(new Term("content", "real"+contentID)), numDocs).scoreDocs;
           for(ScoreDoc hit : hits) {
-            final GroupDoc gd = groupDocs[docIDToID[hit.doc]];
+            final GroupDoc gd = groupDocs[docIDToID.get(hit.doc)];
             assertTrue(gd.score == 0.0);
             gd.score = hit.score;
-            assertEquals(gd.id, docIDToID[hit.doc]);
-            //System.out.println("  score=" + hit.score + " id=" + docIDToID[hit.doc]);
+            assertEquals(gd.id, docIDToID.get(hit.doc));
+            //System.out.println("  score=" + hit.score + " id=" + docIDToID.get(hit.doc));
           }
         }
 
@@ -794,7 +792,7 @@ public class TestGrouping extends LuceneTestCase {
         dirBlocks = newDirectory();
         rBlocks = getDocBlockReader(dirBlocks, groupDocs);
         final Filter lastDocInBlock = new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("groupend", "x"))));
-        final int[] docIDToIDBlocks = FieldCache.DEFAULT.getInts(new SlowCompositeReaderWrapper(rBlocks), "id", false);
+        final FieldCache.Ints docIDToIDBlocks = FieldCache.DEFAULT.getInts(new SlowCompositeReaderWrapper(rBlocks), "id", false);
 
         final IndexSearcher sBlocks = newSearcher(rBlocks);
         final ShardState shardsBlocks = new ShardState(sBlocks);
@@ -815,11 +813,11 @@ public class TestGrouping extends LuceneTestCase {
           //" dfnew=" + sBlocks.docFreq(new Term("content", "real"+contentID)));
           final ScoreDoc[] hits = sBlocks.search(new TermQuery(new Term("content", "real"+contentID)), numDocs).scoreDocs;
           for(ScoreDoc hit : hits) {
-            final GroupDoc gd = groupDocsByID[docIDToIDBlocks[hit.doc]];
+            final GroupDoc gd = groupDocsByID[docIDToIDBlocks.get(hit.doc)];
             assertTrue(gd.score2 == 0.0);
             gd.score2 = hit.score;
-            assertEquals(gd.id, docIDToIDBlocks[hit.doc]);
-            //System.out.println("    score=" + gd.score + " score2=" + hit.score + " id=" + docIDToIDBlocks[hit.doc]);
+            assertEquals(gd.id, docIDToIDBlocks.get(hit.doc));
+            //System.out.println("    score=" + gd.score + " score2=" + hit.score + " id=" + docIDToIDBlocks.get(hit.doc));
             termScoreMap.put(gd.score, gd.score2);
           }
         }
@@ -1009,13 +1007,13 @@ public class TestGrouping extends LuceneTestCase {
               for(GroupDocs<BytesRef> gd : groupsResult.groups) {
                 System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue) + " totalHits=" + gd.totalHits);
                 for(ScoreDoc sd : gd.scoreDocs) {
-                  System.out.println("    id=" + docIDToID[sd.doc] + " score=" + sd.score);
+                  System.out.println("    id=" + docIDToID.get(sd.doc) + " score=" + sd.score);
                 }
               }
 
               if (searchIter == 14) {
                 for(int docIDX=0;docIDX<s.getIndexReader().maxDoc();docIDX++) {
-                  System.out.println("ID=" + docIDToID[docIDX] + " explain=" + s.explain(query, docIDX));
+                  System.out.println("ID=" + docIDToID.get(docIDX) + " explain=" + s.explain(query, docIDX));
                 }
               }
             }
@@ -1027,7 +1025,7 @@ public class TestGrouping extends LuceneTestCase {
               for(GroupDocs<BytesRef> gd : topGroupsShards.groups) {
                 System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue) + " totalHits=" + gd.totalHits);
                 for(ScoreDoc sd : gd.scoreDocs) {
-                  System.out.println("    id=" + docIDToID[sd.doc] + " score=" + sd.score);
+                  System.out.println("    id=" + docIDToID.get(sd.doc) + " score=" + sd.score);
                 }
               }
             }
@@ -1074,7 +1072,7 @@ public class TestGrouping extends LuceneTestCase {
               for(GroupDocs<BytesRef> gd : groupsResultBlocks.groups) {
                 System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue.utf8ToString()) + " totalHits=" + gd.totalHits);
                 for(ScoreDoc sd : gd.scoreDocs) {
-                  System.out.println("    id=" + docIDToIDBlocks[sd.doc] + " score=" + sd.score);
+                  System.out.println("    id=" + docIDToIDBlocks.get(sd.doc) + " score=" + sd.score);
                   if (first) {
                     System.out.println("explain: " + sBlocks.explain(query, sd.doc));
                     first = false;
@@ -1243,7 +1241,7 @@ public class TestGrouping extends LuceneTestCase {
     }
   }
 
-  private void assertEquals(int[] docIDtoID, TopGroups<BytesRef> expected, TopGroups<BytesRef> actual, boolean verifyGroupValues, boolean verifyTotalGroupCount, boolean verifySortValues, boolean testScores, boolean idvBasedImplsUsed) {
+  private void assertEquals(FieldCache.Ints docIDtoID, TopGroups<BytesRef> expected, TopGroups<BytesRef> actual, boolean verifyGroupValues, boolean verifyTotalGroupCount, boolean verifySortValues, boolean testScores, boolean idvBasedImplsUsed) {
     if (expected == null) {
       assertNull(actual);
       return;
@@ -1290,8 +1288,8 @@ public class TestGrouping extends LuceneTestCase {
       for(int docIDX=0;docIDX<expectedFDs.length;docIDX++) {
         final FieldDoc expectedFD = (FieldDoc) expectedFDs[docIDX];
         final FieldDoc actualFD = (FieldDoc) actualFDs[docIDX];
-        //System.out.println("  actual doc=" + docIDtoID[actualFD.doc] + " score=" + actualFD.score);
-        assertEquals(expectedFD.doc, docIDtoID[actualFD.doc]);
+        //System.out.println("  actual doc=" + docIDtoID.get(actualFD.doc) + " score=" + actualFD.score);
+        assertEquals(expectedFD.doc, docIDtoID.get(actualFD.doc));
         if (testScores) {
           assertEquals(expectedFD.score, actualFD.score, 0.1);
         } else {

@@ -32,7 +32,6 @@ import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
@@ -113,9 +112,12 @@ final class SegmentMerger {
     }
 
     if (mergeState.fieldInfos.hasDocValues()) {
-      SimpleDVConsumer consumer = codec.simpleDocValuesFormat().fieldsConsumer(segmentWriteState);
-      consumer.merge(mergeState);
-      consumer.close();
+      // nocommit shouldn't need null check:
+      if (codec.simpleDocValuesFormat() != null) {
+        SimpleDVConsumer consumer = codec.simpleDocValuesFormat().fieldsConsumer(segmentWriteState);
+        consumer.merge(mergeState);
+        consumer.close();
+      }
     }
 
     if (mergeState.fieldInfos.hasVectors()) {

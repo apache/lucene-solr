@@ -94,8 +94,7 @@ public final class SimpleTextCodec extends Codec {
   private final SimpleDocValuesFormat nocommit = new SimpleTextSimpleDocValuesFormat();
   @Override
   public SimpleDocValuesFormat simpleDocValuesFormat() {
+    // nocommit
     return nocommit;
   }
-  
-  
 }

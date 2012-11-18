@@ -55,18 +55,18 @@ public class FloatFieldSource extends FieldCacheSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final float[] arr = cache.getFloats(readerContext.reader(), field, parser, true);
+    final FieldCache.Floats arr = cache.getFloats(readerContext.reader(), field, parser, true);
     final Bits valid = cache.getDocsWithField(readerContext.reader(), field);
 
     return new FloatDocValues(this) {
       @Override
       public float floatVal(int doc) {
-        return arr[doc];
+        return arr.get(doc);
       }
 
       @Override
       public Object objectVal(int doc) {
-        return valid.get(doc) ? arr[doc] : null;
+        return valid.get(doc) ? arr.get(doc) : null;
       }
 
       @Override
@@ -77,7 +77,6 @@ public class FloatFieldSource extends FieldCacheSource {
       @Override
       public ValueFiller getValueFiller() {
         return new ValueFiller() {
-          private final float[] floatArr = arr;
           private final MutableValueFloat mval = new MutableValueFloat();
 
           @Override
@@ -87,7 +86,7 @@ public class FloatFieldSource extends FieldCacheSource {
 
           @Override
           public void fillValue(int doc) {
-            mval.value = floatArr[doc];
+            mval.value = arr.get(doc);
             mval.exists = valid.get(doc);
           }
         };

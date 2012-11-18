@@ -177,11 +177,12 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (inclusiveLowerPoint > inclusiveUpperPoint)
           return DocIdSet.EMPTY_DOCIDSET;
         
-        final byte[] values = FieldCache.DEFAULT.getBytes(context.reader(), field, (FieldCache.ByteParser) parser, false);
+        final FieldCache.Bytes values = FieldCache.DEFAULT.getBytes(context.reader(), field, (FieldCache.ByteParser) parser, false);
         return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
           @Override
           protected boolean matchDoc(int doc) {
-            return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
+            final byte value = values.get(doc);
+            return value >= inclusiveLowerPoint && value <= inclusiveUpperPoint;
           }
         };
       }
@@ -227,11 +228,12 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (inclusiveLowerPoint > inclusiveUpperPoint)
           return DocIdSet.EMPTY_DOCIDSET;
         
-        final short[] values = FieldCache.DEFAULT.getShorts(context.reader(), field, (FieldCache.ShortParser) parser, false);
+        final FieldCache.Shorts values = FieldCache.DEFAULT.getShorts(context.reader(), field, (FieldCache.ShortParser) parser, false);
         return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
           @Override
           protected boolean matchDoc(int doc) {
-            return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
+            final short value = values.get(doc);
+            return value >= inclusiveLowerPoint && value <= inclusiveUpperPoint;
           }
         };
       }
@@ -277,11 +279,12 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (inclusiveLowerPoint > inclusiveUpperPoint)
           return DocIdSet.EMPTY_DOCIDSET;
         
-        final int[] values = FieldCache.DEFAULT.getInts(context.reader(), field, (FieldCache.IntParser) parser, false);
+        final FieldCache.Ints values = FieldCache.DEFAULT.getInts(context.reader(), field, (FieldCache.IntParser) parser, false);
         return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
           @Override
           protected boolean matchDoc(int doc) {
-            return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
+            final int value = values.get(doc);
+            return value >= inclusiveLowerPoint && value <= inclusiveUpperPoint;
           }
         };
       }
@@ -327,11 +330,12 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (inclusiveLowerPoint > inclusiveUpperPoint)
           return DocIdSet.EMPTY_DOCIDSET;
         
-        final long[] values = FieldCache.DEFAULT.getLongs(context.reader(), field, (FieldCache.LongParser) parser, false);
+        final FieldCache.Longs values = FieldCache.DEFAULT.getLongs(context.reader(), field, (FieldCache.LongParser) parser, false);
         return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
           @Override
           protected boolean matchDoc(int doc) {
-            return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
+            final long value = values.get(doc);
+            return value >= inclusiveLowerPoint && value <= inclusiveUpperPoint;
           }
         };
       }
@@ -381,11 +385,12 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (inclusiveLowerPoint > inclusiveUpperPoint)
           return DocIdSet.EMPTY_DOCIDSET;
         
-        final float[] values = FieldCache.DEFAULT.getFloats(context.reader(), field, (FieldCache.FloatParser) parser, false);
+        final FieldCache.Floats values = FieldCache.DEFAULT.getFloats(context.reader(), field, (FieldCache.FloatParser) parser, false);
         return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
           @Override
           protected boolean matchDoc(int doc) {
-            return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
+            final float value = values.get(doc);
+            return value >= inclusiveLowerPoint && value <= inclusiveUpperPoint;
           }
         };
       }
@@ -435,12 +440,13 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         if (inclusiveLowerPoint > inclusiveUpperPoint)
           return DocIdSet.EMPTY_DOCIDSET;
         
-        final double[] values = FieldCache.DEFAULT.getDoubles(context.reader(), field, (FieldCache.DoubleParser) parser, false);
+        final FieldCache.Doubles values = FieldCache.DEFAULT.getDoubles(context.reader(), field, (FieldCache.DoubleParser) parser, false);
         // ignore deleted docs if range doesn't contain 0
         return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
           @Override
           protected boolean matchDoc(int doc) {
-            return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
+            final double value = values.get(doc);
+            return value >= inclusiveLowerPoint && value <= inclusiveUpperPoint;
           }
         };
       }

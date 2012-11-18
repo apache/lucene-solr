@@ -18,12 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter.DEFAULT;
-
-import org.apache.lucene.codecs.BinaryDocValuesConsumer;
 import org.apache.lucene.codecs.SortedDocValuesConsumer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
@@ -31,7 +26,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.BytesRefHash.BytesStartArray;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 
 
@@ -104,7 +98,6 @@ class SortedBytesDVWriter {
   }
 
   public void flush(FieldInfo fieldInfo, SegmentWriteState state, SortedDocValuesConsumer consumer) throws IOException {
-    int valueCount = hash.size();
 
     final int maxDoc = state.segmentInfo.getDocCount();
     int emptyOrd = -1;
@@ -115,6 +108,8 @@ class SortedBytesDVWriter {
         emptyOrd = -emptyOrd-1;
       }
     }
+
+    int valueCount = hash.size();
 
     int[] sortedValues = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
     final int sortedValueRamUsage = RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + RamUsageEstimator.NUM_BYTES_INT*valueCount;

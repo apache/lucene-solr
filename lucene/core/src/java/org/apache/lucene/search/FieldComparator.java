@@ -227,7 +227,7 @@ public abstract class FieldComparator<T> {
   public static final class ByteComparator extends NumericComparator<Byte> {
     private final byte[] values;
     private final ByteParser parser;
-    private byte[] currentReaderValues;
+    private FieldCache.Bytes currentReaderValues;
     private byte bottom;
 
     ByteComparator(int numHits, String field, FieldCache.Parser parser, Byte missingValue) {
@@ -243,7 +243,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compareBottom(int doc) {
-      byte v2 = currentReaderValues[doc];
+      byte v2 = currentReaderValues.get(doc);
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -255,7 +255,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void copy(int slot, int doc) {
-      byte v2 = currentReaderValues[doc];
+      byte v2 = currentReaderValues.get(doc);
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -284,7 +284,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compareDocToValue(int doc, Byte value) {
-      byte docValue = currentReaderValues[doc];
+      byte docValue = currentReaderValues.get(doc);
       // Test for docValue == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
@@ -299,7 +299,7 @@ public abstract class FieldComparator<T> {
   public static final class DoubleComparator extends NumericComparator<Double> {
     private final double[] values;
     private final DoubleParser parser;
-    private double[] currentReaderValues;
+    private FieldCache.Doubles currentReaderValues;
     private double bottom;
 
     DoubleComparator(int numHits, String field, FieldCache.Parser parser, Double missingValue) {
@@ -323,7 +323,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compareBottom(int doc) {
-      double v2 = currentReaderValues[doc];
+      double v2 = currentReaderValues.get(doc);
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -341,7 +341,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void copy(int slot, int doc) {
-      double v2 = currentReaderValues[doc];
+      double v2 = currentReaderValues.get(doc);
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -372,7 +372,7 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareDocToValue(int doc, Double valueObj) {
       final double value = valueObj.doubleValue();
-      double docValue = currentReaderValues[doc];
+      double docValue = currentReaderValues.get(doc);
       // Test for docValue == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
@@ -470,7 +470,7 @@ public abstract class FieldComparator<T> {
   public static final class FloatComparator extends NumericComparator<Float> {
     private final float[] values;
     private final FloatParser parser;
-    private float[] currentReaderValues;
+    private FieldCache.Floats currentReaderValues;
     private float bottom;
 
     FloatComparator(int numHits, String field, FieldCache.Parser parser, Float missingValue) {
@@ -497,7 +497,7 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareBottom(int doc) {
       // TODO: are there sneaky non-branch ways to compute sign of float?
-      float v2 = currentReaderValues[doc];
+      float v2 = currentReaderValues.get(doc);
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -515,7 +515,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void copy(int slot, int doc) {
-      float v2 = currentReaderValues[doc];
+      float v2 = currentReaderValues.get(doc);
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -546,7 +546,7 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareDocToValue(int doc, Float valueObj) {
       final float value = valueObj.floatValue();
-      float docValue = currentReaderValues[doc];
+      float docValue = currentReaderValues.get(doc);
       // Test for docValue == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
@@ -567,7 +567,7 @@ public abstract class FieldComparator<T> {
   public static final class ShortComparator extends NumericComparator<Short> {
     private final short[] values;
     private final ShortParser parser;
-    private short[] currentReaderValues;
+    private FieldCache.Shorts currentReaderValues;
     private short bottom;
 
     ShortComparator(int numHits, String field, FieldCache.Parser parser, Short missingValue) {
@@ -583,7 +583,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compareBottom(int doc) {
-      short v2 = currentReaderValues[doc];
+      short v2 = currentReaderValues.get(doc);
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -595,7 +595,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void copy(int slot, int doc) {
-      short v2 = currentReaderValues[doc];
+      short v2 = currentReaderValues.get(doc);
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -626,7 +626,7 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareDocToValue(int doc, Short valueObj) {
       final short value = valueObj.shortValue();
-      short docValue = currentReaderValues[doc];
+      short docValue = currentReaderValues.get(doc);
       // Test for docValue == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
@@ -641,7 +641,7 @@ public abstract class FieldComparator<T> {
   public static final class IntComparator extends NumericComparator<Integer> {
     private final int[] values;
     private final IntParser parser;
-    private int[] currentReaderValues;
+    private FieldCache.Ints currentReaderValues;
     private int bottom;                           // Value of bottom of queue
 
     IntComparator(int numHits, String field, FieldCache.Parser parser, Integer missingValue) {
@@ -673,7 +673,7 @@ public abstract class FieldComparator<T> {
       // -1/+1/0 sign
       // Cannot return bottom - values[slot2] because that
       // may overflow
-      int v2 = currentReaderValues[doc];
+      int v2 = currentReaderValues.get(doc);
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -691,7 +691,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void copy(int slot, int doc) {
-      int v2 = currentReaderValues[doc];
+      int v2 = currentReaderValues.get(doc);
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -722,7 +722,7 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareDocToValue(int doc, Integer valueObj) {
       final int value = valueObj.intValue();
-      int docValue = currentReaderValues[doc];
+      int docValue = currentReaderValues.get(doc);
       // Test for docValue == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {
@@ -824,7 +824,7 @@ public abstract class FieldComparator<T> {
   public static final class LongComparator extends NumericComparator<Long> {
     private final long[] values;
     private final LongParser parser;
-    private long[] currentReaderValues;
+    private FieldCache.Longs currentReaderValues;
     private long bottom;
 
     LongComparator(int numHits, String field, FieldCache.Parser parser, Long missingValue) {
@@ -852,7 +852,7 @@ public abstract class FieldComparator<T> {
     public int compareBottom(int doc) {
       // TODO: there are sneaky non-branch ways to compute
       // -1/+1/0 sign
-      long v2 = currentReaderValues[doc];
+      long v2 = currentReaderValues.get(doc);
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -870,7 +870,7 @@ public abstract class FieldComparator<T> {
 
     @Override
     public void copy(int slot, int doc) {
-      long v2 = currentReaderValues[doc];
+      long v2 = currentReaderValues.get(doc);
       // Test for v2 == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && v2 == 0 && !docsWithField.get(doc)) {
@@ -901,7 +901,7 @@ public abstract class FieldComparator<T> {
     @Override
     public int compareDocToValue(int doc, Long valueObj) {
       final long value = valueObj.longValue();
-      long docValue = currentReaderValues[doc];
+      long docValue = currentReaderValues.get(doc);
       // Test for docValue == 0 to save Bits.get method call for
       // the common case (doc has value and value is non-zero):
       if (docsWithField != null && docValue == 0 && !docsWithField.get(doc)) {

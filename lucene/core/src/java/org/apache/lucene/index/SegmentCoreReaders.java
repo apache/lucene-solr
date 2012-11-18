@@ -117,8 +117,16 @@ final class SegmentCoreReaders {
       // kinda jaky to assume the codec handles the case of no norms file at all gracefully?!
       norms = codec.normsFormat().docsProducer(segmentReadState);
       perDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
-      // nocommit
-      simpleDVProducer = codec.simpleDocValuesFormat().fieldsProducer(segmentReadState);
+      // nocommit shouldn't need null check:
+      if (codec.simpleDocValuesFormat() != null) {
+        if (fieldInfos.hasDocValues()) {
+          simpleDVProducer = codec.simpleDocValuesFormat().fieldsProducer(segmentReadState);
+        } else {
+          simpleDVProducer = null;
+        }
+      } else {
+        simpleDVProducer = null;
+      }
   
       fieldsReaderOrig = si.info.getCodec().storedFieldsFormat().fieldsReader(cfsDir, si.info, fieldInfos, context);
 

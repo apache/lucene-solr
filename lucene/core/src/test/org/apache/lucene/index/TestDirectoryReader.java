@@ -39,7 +39,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -774,9 +773,8 @@ public void testFilesOpenClose() throws IOException {
     // Open reader1
     DirectoryReader r = DirectoryReader.open(dir);
     AtomicReader r1 = getOnlySegmentReader(r);
-    final int[] ints = FieldCache.DEFAULT.getInts(r1, "number", false);
-    assertEquals(1, ints.length);
-    assertEquals(17, ints[0]);
+    final FieldCache.Ints ints = FieldCache.DEFAULT.getInts(r1, "number", false);
+    assertEquals(17, ints.get(0));
   
     // Add new segment
     writer.addDocument(doc);
@@ -787,7 +785,7 @@ public void testFilesOpenClose() throws IOException {
     assertNotNull(r2);
     r.close();
     AtomicReader sub0 = r2.leaves().get(0).reader();
-    final int[] ints2 = FieldCache.DEFAULT.getInts(sub0, "number", false);
+    final FieldCache.Ints ints2 = FieldCache.DEFAULT.getInts(sub0, "number", false);
     r2.close();
     assertTrue(ints == ints2);
   

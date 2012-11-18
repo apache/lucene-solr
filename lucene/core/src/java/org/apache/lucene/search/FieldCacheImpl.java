@@ -45,6 +45,8 @@ import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
+// nocommit rename to UninvertFieldCache or something ...
+
 /**
  * Expert: The default cache implementation, storing all values in memory.
  * A WeakHashMap is used for storage.
@@ -137,14 +139,6 @@ class FieldCacheImpl implements FieldCache {
     public Object getValue() { return value; }
   }
 
-  /**
-   * Hack: When thrown from a Parser (NUMERIC_UTILS_* ones), this stops
-   * processing terms and returns the current FieldCache
-   * array.
-   */
-  static final class StopFillCacheException extends RuntimeException {
-  }
-  
   // per-segment fieldcaches don't purge until the shared core closes.
   final SegmentReader.CoreClosedListener purgeCore = new SegmentReader.CoreClosedListener() {
     @Override
@@ -181,6 +175,7 @@ class FieldCacheImpl implements FieldCache {
   /** Expert: Internal cache. */
   abstract static class Cache {
 
+    // nocommit why wrapper vs non-static class...?
     Cache(FieldCacheImpl wrapper) {
       this.wrapper = wrapper;
     }
@@ -319,86 +314,153 @@ class FieldCacheImpl implements FieldCache {
   }
 
   // inherit javadocs
-  public byte[] getBytes (AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
+  public Bytes getBytes (AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
     return getBytes(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
-  public byte[] getBytes(AtomicReader reader, String field, ByteParser parser, boolean setDocsWithField)
+  public Bytes getBytes(AtomicReader reader, String field, ByteParser parser, boolean setDocsWithField)
       throws IOException {
-    return (byte[]) caches.get(Byte.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
+    return (Bytes) caches.get(Byte.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
-  static final class ByteCache extends Cache {
-    ByteCache(FieldCacheImpl wrapper) {
-      super(wrapper);
-    }
-    @Override
-    protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField)
-        throws IOException {
-      String field = entryKey.field;
-      ByteParser parser = (ByteParser) entryKey.custom;
-      if (parser == null) {
-        return wrapper.getBytes(reader, field, FieldCache.DEFAULT_BYTE_PARSER, setDocsWithField);
-      }
+  private static abstract class Uninvert {
+
+    public Bits docsWithField;
+
+    public void uninvert(AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
       final int maxDoc = reader.maxDoc();
-      final byte[] retArray = new byte[maxDoc];
       Terms terms = reader.terms(field);
-      FixedBitSet docsWithField = null;
       if (terms != null) {
         if (setDocsWithField) {
           final int termsDocCount = terms.getDocCount();
           assert termsDocCount <= maxDoc;
           if (termsDocCount == maxDoc) {
             // Fast case: all docs have this field:
-            wrapper.setDocsWithField(reader, field, new Bits.MatchAllBits(maxDoc));
+            docsWithField = new Bits.MatchAllBits(maxDoc);
             setDocsWithField = false;
           }
         }
+
         final TermsEnum termsEnum = terms.iterator(null);
+
         DocsEnum docs = null;
-        try {
-          while(true) {
-            final BytesRef term = termsEnum.next();
-            if (term == null) {
+        FixedBitSet docsWithField = null;
+        while(true) {
+          final BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          try {
+            visitTerm(term);
+          } catch (StopFillCacheException stop) {
+            break;
+          }
+          docs = termsEnum.docs(null, docs, 0);
+          while (true) {
+            final int docID = docs.nextDoc();
+            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
-            final byte termval = parser.parseByte(term);
-            docs = termsEnum.docs(null, docs, 0);
-            while (true) {
-              final int docID = docs.nextDoc();
-              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-                break;
+            visitDoc(docID);
+            if (setDocsWithField) {
+              if (docsWithField == null) {
+                // Lazy init
+                this.docsWithField = docsWithField = new FixedBitSet(maxDoc);
               }
-              retArray[docID] = termval;
-              if (setDocsWithField) {
-                if (docsWithField == null) {
-                  // Lazy init
-                  docsWithField = new FixedBitSet(maxDoc);
-                }
-                docsWithField.set(docID);
-              }
+              docsWithField.set(docID);
             }
           }
-        } catch (FieldCache.StopFillCacheException stop) {
         }
+      } else {
+        // nocommit is this right ...
+        docsWithField = new Bits.MatchNoBits(maxDoc);
       }
+    }
+
+    protected abstract void visitTerm(BytesRef term);
+    protected abstract void visitDoc(int docID);
+  }
+
+  private static class BytesFromArray extends Bytes {
+    private final byte[] values;
+
+    public BytesFromArray(byte[] values) {
+      this.values = values;
+    }
+    
+    @Override
+    public byte get(int docID) {
+      return values[docID];
+    }
+  }
+
+  static final class ByteCache extends Cache {
+    ByteCache(FieldCacheImpl wrapper) {
+      super(wrapper);
+    }
+
+    @Override
+    protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField)
+        throws IOException {
+
+      ByteParser parser = (ByteParser) entryKey.custom;
+      if (parser == null) {
+        // Confusing: must delegate to wrapper (vs simply
+        // setting parser = DEFAULT_SHORT_PARSER) so cache
+        // key includes DEFAULT_SHORT_PARSER:
+        return wrapper.getBytes(reader, entryKey.field, DEFAULT_BYTE_PARSER, setDocsWithField);
+      }
+
+      final ByteParser finalParser = parser;
+
+      final byte[] values = new byte[reader.maxDoc()];
+      Uninvert u = new Uninvert() {
+        private byte currentValue;
+
+        @Override
+        public void visitTerm(BytesRef term) {
+          currentValue = finalParser.parseByte(term);
+        }
+
+        @Override
+        public void visitDoc(int docID) {
+          values[docID] = currentValue;
+        }
+      };
+
+      u.uninvert(reader, entryKey.field, setDocsWithField);
+
       if (setDocsWithField) {
-        wrapper.setDocsWithField(reader, field, docsWithField);
+        wrapper.setDocsWithField(reader, entryKey.field, u.docsWithField);
       }
-      return retArray;
+
+      return new BytesFromArray(values);
     }
   }
   
   // inherit javadocs
-  public short[] getShorts (AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
+  public Shorts getShorts (AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
     return getShorts(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
-  public short[] getShorts(AtomicReader reader, String field, ShortParser parser, boolean setDocsWithField)
+  public Shorts getShorts(AtomicReader reader, String field, ShortParser parser, boolean setDocsWithField)
       throws IOException {
-    return (short[]) caches.get(Short.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
+    return (Shorts) caches.get(Short.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
+  }
+
+  private static class ShortsFromArray extends Shorts {
+    private final short[] values;
+
+    public ShortsFromArray(short[] values) {
+      this.values = values;
+    }
+    
+    @Override
+    public short get(int docID) {
+      return values[docID];
+    }
   }
 
   static final class ShortCache extends Cache {
@@ -409,57 +471,39 @@ class FieldCacheImpl implements FieldCache {
     @Override
     protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
-      String field = entryKey.field;
+
       ShortParser parser = (ShortParser) entryKey.custom;
       if (parser == null) {
-        return wrapper.getShorts(reader, field, FieldCache.DEFAULT_SHORT_PARSER, setDocsWithField);
+        // Confusing: must delegate to wrapper (vs simply
+        // setting parser = DEFAULT_SHORT_PARSER) so cache
+        // key includes DEFAULT_SHORT_PARSER:
+        return wrapper.getShorts(reader, entryKey.field, DEFAULT_SHORT_PARSER, setDocsWithField);
       }
-      final int maxDoc = reader.maxDoc();
-      final short[] retArray = new short[maxDoc];
-      Terms terms = reader.terms(field);
-      FixedBitSet docsWithField = null;
-      if (terms != null) {
-        if (setDocsWithField) {
-          final int termsDocCount = terms.getDocCount();
-          assert termsDocCount <= maxDoc;
-          if (termsDocCount == maxDoc) {
-            // Fast case: all docs have this field:
-            wrapper.setDocsWithField(reader, field, new Bits.MatchAllBits(maxDoc));
-            setDocsWithField = false;
-          }
+
+      final ShortParser finalParser = parser;
+
+      final short[] values = new short[reader.maxDoc()];
+      Uninvert u = new Uninvert() {
+        private short currentValue;
+
+        @Override
+        public void visitTerm(BytesRef term) {
+          currentValue = finalParser.parseShort(term);
         }
-        final TermsEnum termsEnum = terms.iterator(null);
-        DocsEnum docs = null;
-        try {
-          while(true) {
-            final BytesRef term = termsEnum.next();
-            if (term == null) {
-              break;
-            }
-            final short termval = parser.parseShort(term);
-            docs = termsEnum.docs(null, docs, 0);
-            while (true) {
-              final int docID = docs.nextDoc();
-              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-                break;
-              }
-              retArray[docID] = termval;
-              if (setDocsWithField) {
-                if (docsWithField == null) {
-                  // Lazy init
-                  docsWithField = new FixedBitSet(maxDoc);
-                }
-                docsWithField.set(docID);
-              }
-            }
-          }
-        } catch (FieldCache.StopFillCacheException stop) {
+
+        @Override
+        public void visitDoc(int docID) {
+          values[docID] = currentValue;
         }
-      }
+      };
+
+      u.uninvert(reader, entryKey.field, setDocsWithField);
+
       if (setDocsWithField) {
-        wrapper.setDocsWithField(reader, field, docsWithField);
+        wrapper.setDocsWithField(reader, entryKey.field, u.docsWithField);
       }
-      return retArray;
+
+      return new ShortsFromArray(values);
     }
   }
 
@@ -485,14 +529,27 @@ class FieldCacheImpl implements FieldCache {
   }
   
   // inherit javadocs
-  public int[] getInts (AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
+  public Ints getInts (AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
     return getInts(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
-  public int[] getInts(AtomicReader reader, String field, IntParser parser, boolean setDocsWithField)
+  public Ints getInts(AtomicReader reader, String field, IntParser parser, boolean setDocsWithField)
       throws IOException {
-    return (int[]) caches.get(Integer.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
+    return (Ints) caches.get(Integer.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
+  }
+
+  private static class IntsFromArray extends Ints {
+    private final int[] values;
+
+    public IntsFromArray(int[] values) {
+      this.values = values;
+    }
+    
+    @Override
+    public int get(int docID) {
+      return values[docID];
+    }
   }
 
   static final class IntCache extends Cache {
@@ -501,74 +558,48 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField)
+    protected Object createValue(final AtomicReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
-      String field = entryKey.field;
       IntParser parser = (IntParser) entryKey.custom;
       if (parser == null) {
+        // Confusing: must delegate to wrapper (vs simply
+        // setting parser =
+        // DEFAULT_INT_PARSER/NUMERIC_UTILS_INT_PARSER) so
+        // cache key includes
+        // DEFAULT_INT_PARSER/NUMERIC_UTILS_INT_PARSER:
         try {
-          return wrapper.getInts(reader, field, DEFAULT_INT_PARSER, setDocsWithField);
+          return wrapper.getInts(reader, entryKey.field, DEFAULT_INT_PARSER, setDocsWithField);
         } catch (NumberFormatException ne) {
-          return wrapper.getInts(reader, field, NUMERIC_UTILS_INT_PARSER, setDocsWithField);
-        }
-      }
-      final int maxDoc = reader.maxDoc();
-      int[] retArray = null;
-
-      Terms terms = reader.terms(field);
-      FixedBitSet docsWithField = null;
-      if (terms != null) {
-        if (setDocsWithField) {
-          final int termsDocCount = terms.getDocCount();
-          assert termsDocCount <= maxDoc;
-          if (termsDocCount == maxDoc) {
-            // Fast case: all docs have this field:
-            wrapper.setDocsWithField(reader, field, new Bits.MatchAllBits(maxDoc));
-            setDocsWithField = false;
-          }
-        }
-        final TermsEnum termsEnum = terms.iterator(null);
-        DocsEnum docs = null;
-        try {
-          while(true) {
-            final BytesRef term = termsEnum.next();
-            if (term == null) {
-              break;
-            }
-            final int termval = parser.parseInt(term);
-            if (retArray == null) {
-              // late init so numeric fields don't double allocate
-              retArray = new int[maxDoc];
-            }
-
-            docs = termsEnum.docs(null, docs, 0);
-            while (true) {
-              final int docID = docs.nextDoc();
-              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-                break;
-              }
-              retArray[docID] = termval;
-              if (setDocsWithField) {
-                if (docsWithField == null) {
-                  // Lazy init
-                  docsWithField = new FixedBitSet(maxDoc);
-                }
-                docsWithField.set(docID);
-              }
-            }
-          }
-        } catch (FieldCache.StopFillCacheException stop) {
+          return wrapper.getInts(reader, entryKey.field, NUMERIC_UTILS_INT_PARSER, setDocsWithField);
         }
       }
 
-      if (retArray == null) {
-        // no values
-        retArray = new int[maxDoc];
-      }
+      final IntParser finalParser = parser;
+      // nocommit how to avoid double alloc in numeric field
+      // case ...
+      final int[] values = new int[reader.maxDoc()];
+
+      Uninvert u = new Uninvert() {
+        private int currentValue;
+
+        @Override
+        public void visitTerm(BytesRef term) {
+          currentValue = finalParser.parseInt(term);
+        }
+
+        @Override
+        public void visitDoc(int docID) {
+          values[docID] = currentValue;
+        }
+      };
+
+      u.uninvert(reader, entryKey.field, setDocsWithField);
+
       if (setDocsWithField) {
-        wrapper.setDocsWithField(reader, field, docsWithField);
+        wrapper.setDocsWithField(reader, entryKey.field, u.docsWithField);
       }
-      return retArray;
+
+      return new IntsFromArray(values);
     }
   }
   
@@ -583,7 +614,7 @@ class FieldCacheImpl implements FieldCache {
     }
     
     @Override
-      protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
+    protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField /* ignored */)
     throws IOException {
       final String field = entryKey.field;      
       FixedBitSet res = null;
@@ -633,16 +664,28 @@ class FieldCacheImpl implements FieldCache {
   }
 
   // inherit javadocs
-  public float[] getFloats (AtomicReader reader, String field, boolean setDocsWithField)
+  public Floats getFloats (AtomicReader reader, String field, boolean setDocsWithField)
     throws IOException {
     return getFloats(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
-  public float[] getFloats(AtomicReader reader, String field, FloatParser parser, boolean setDocsWithField)
+  public Floats getFloats(AtomicReader reader, String field, FloatParser parser, boolean setDocsWithField)
     throws IOException {
+    return (Floats) caches.get(Float.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
+  }
 
-    return (float[]) caches.get(Float.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
+  private static class FloatsFromArray extends Floats {
+    private final float[] values;
+
+    public FloatsFromArray(float[] values) {
+      this.values = values;
+    }
+    
+    @Override
+    public float get(int docID) {
+      return values[docID];
+    }
   }
 
   static final class FloatCache extends Cache {
@@ -653,84 +696,71 @@ class FieldCacheImpl implements FieldCache {
     @Override
     protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
-      String field = entryKey.field;
       FloatParser parser = (FloatParser) entryKey.custom;
       if (parser == null) {
+        // Confusing: must delegate to wrapper (vs simply
+        // setting parser =
+        // DEFAULT_FLOAT_PARSER/NUMERIC_UTILS_FLOAT_PARSER) so
+        // cache key includes
+        // DEFAULT_FLOAT_PARSER/NUMERIC_UTILS_FLOAT_PARSER:
         try {
-          return wrapper.getFloats(reader, field, DEFAULT_FLOAT_PARSER, setDocsWithField);
+          return wrapper.getFloats(reader, entryKey.field, DEFAULT_FLOAT_PARSER, setDocsWithField);
         } catch (NumberFormatException ne) {
-          return wrapper.getFloats(reader, field, NUMERIC_UTILS_FLOAT_PARSER, setDocsWithField);
-        }
-      }
-      final int maxDoc = reader.maxDoc();
-      float[] retArray = null;
-
-      Terms terms = reader.terms(field);
-      FixedBitSet docsWithField = null;
-      if (terms != null) {
-        if (setDocsWithField) {
-          final int termsDocCount = terms.getDocCount();
-          assert termsDocCount <= maxDoc;
-          if (termsDocCount == maxDoc) {
-            // Fast case: all docs have this field:
-            wrapper.setDocsWithField(reader, field, new Bits.MatchAllBits(maxDoc));
-            setDocsWithField = false;
-          }
-        }
-        final TermsEnum termsEnum = terms.iterator(null);
-        DocsEnum docs = null;
-        try {
-          while(true) {
-            final BytesRef term = termsEnum.next();
-            if (term == null) {
-              break;
-            }
-            final float termval = parser.parseFloat(term);
-            if (retArray == null) {
-              // late init so numeric fields don't double allocate
-              retArray = new float[maxDoc];
-            }
-            
-            docs = termsEnum.docs(null, docs, 0);
-            while (true) {
-              final int docID = docs.nextDoc();
-              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-                break;
-              }
-              retArray[docID] = termval;
-              if (setDocsWithField) {
-                if (docsWithField == null) {
-                  // Lazy init
-                  docsWithField = new FixedBitSet(maxDoc);
-                }
-                docsWithField.set(docID);
-              }
-            }
-          }
-        } catch (FieldCache.StopFillCacheException stop) {
+          return wrapper.getFloats(reader, entryKey.field, NUMERIC_UTILS_FLOAT_PARSER, setDocsWithField);
         }
       }
 
-      if (retArray == null) {
-        // no values
-        retArray = new float[maxDoc];
-      }
+      final FloatParser finalParser = parser;
+      // nocommit how to avoid double alloc in numeric field
+      // case ...
+      final float[] values = new float[reader.maxDoc()];
+
+      Uninvert u = new Uninvert() {
+        private float currentValue;
+
+        @Override
+        public void visitTerm(BytesRef term) {
+          currentValue = finalParser.parseFloat(term);
+        }
+
+        @Override
+        public void visitDoc(int docID) {
+          values[docID] = currentValue;
+        }
+      };
+
+      u.uninvert(reader, entryKey.field, setDocsWithField);
+
       if (setDocsWithField) {
-        wrapper.setDocsWithField(reader, field, docsWithField);
+        wrapper.setDocsWithField(reader, entryKey.field, u.docsWithField);
       }
-      return retArray;
+
+      return new FloatsFromArray(values);
     }
   }
 
-
-  public long[] getLongs(AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
+  // inherit javadocs
+  public Longs getLongs(AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
     return getLongs(reader, field, null, setDocsWithField);
   }
   
   // inherit javadocs
-  public long[] getLongs(AtomicReader reader, String field, FieldCache.LongParser parser, boolean setDocsWithField)
+  public Longs getLongs(AtomicReader reader, String field, FieldCache.LongParser parser, boolean setDocsWithField)
       throws IOException {
-    return (long[]) caches.get(Long.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
+    return (Longs) caches.get(Long.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
+  }
+
+  private static class LongsFromArray extends Longs {
+    private final long[] values;
+
+    public LongsFromArray(long[] values) {
+      this.values = values;
+    }
+    
+    @Override
+    public long get(int docID) {
+      return values[docID];
+    }
   }
 
   static final class LongCache extends Cache {
@@ -741,85 +771,72 @@ class FieldCacheImpl implements FieldCache {
     @Override
     protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
-      String field = entryKey.field;
-      FieldCache.LongParser parser = (FieldCache.LongParser) entryKey.custom;
+      LongParser parser = (LongParser) entryKey.custom;
       if (parser == null) {
+        // Confusing: must delegate to wrapper (vs simply
+        // setting parser =
+        // DEFAULT_LONG_PARSER/NUMERIC_UTILS_LONG_PARSER) so
+        // cache key includes
+        // DEFAULT_LONG_PARSER/NUMERIC_UTILS_LONG_PARSER:
         try {
-          return wrapper.getLongs(reader, field, DEFAULT_LONG_PARSER, setDocsWithField);
+          return wrapper.getLongs(reader, entryKey.field, DEFAULT_LONG_PARSER, setDocsWithField);
         } catch (NumberFormatException ne) {
-          return wrapper.getLongs(reader, field, NUMERIC_UTILS_LONG_PARSER, setDocsWithField);
-        }
-      }
-      final int maxDoc = reader.maxDoc();
-      long[] retArray = null;
-
-      Terms terms = reader.terms(field);
-      FixedBitSet docsWithField = null;
-      if (terms != null) {
-        if (setDocsWithField) {
-          final int termsDocCount = terms.getDocCount();
-          assert termsDocCount <= maxDoc;
-          if (termsDocCount == maxDoc) {
-            // Fast case: all docs have this field:
-            wrapper.setDocsWithField(reader, field, new Bits.MatchAllBits(maxDoc));
-            setDocsWithField = false;
-          }
-        }
-        final TermsEnum termsEnum = terms.iterator(null);
-        DocsEnum docs = null;
-        try {
-          while(true) {
-            final BytesRef term = termsEnum.next();
-            if (term == null) {
-              break;
-            }
-            final long termval = parser.parseLong(term);
-            if (retArray == null) {
-              // late init so numeric fields don't double allocate
-              retArray = new long[maxDoc];
-            }
-
-            docs = termsEnum.docs(null, docs, 0);
-            while (true) {
-              final int docID = docs.nextDoc();
-              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-                break;
-              }
-              retArray[docID] = termval;
-              if (setDocsWithField) {
-                if (docsWithField == null) {
-                  // Lazy init
-                  docsWithField = new FixedBitSet(maxDoc);
-                }
-                docsWithField.set(docID);
-              }
-            }
-          }
-        } catch (FieldCache.StopFillCacheException stop) {
+          return wrapper.getLongs(reader, entryKey.field, NUMERIC_UTILS_LONG_PARSER, setDocsWithField);
         }
       }
 
-      if (retArray == null) {
-        // no values
-        retArray = new long[maxDoc];
-      }
+      final LongParser finalParser = parser;
+      // nocommit how to avoid double alloc in numeric field
+      // case ...
+      final long[] values = new long[reader.maxDoc()];
+
+      Uninvert u = new Uninvert() {
+        private long currentValue;
+
+        @Override
+        public void visitTerm(BytesRef term) {
+          currentValue = finalParser.parseLong(term);
+        }
+
+        @Override
+        public void visitDoc(int docID) {
+          values[docID] = currentValue;
+        }
+      };
+
+      u.uninvert(reader, entryKey.field, setDocsWithField);
+
       if (setDocsWithField) {
-        wrapper.setDocsWithField(reader, field, docsWithField);
+        wrapper.setDocsWithField(reader, entryKey.field, u.docsWithField);
       }
-      return retArray;
+
+      return new LongsFromArray(values);
     }
   }
 
   // inherit javadocs
-  public double[] getDoubles(AtomicReader reader, String field, boolean setDocsWithField)
+  public Doubles getDoubles(AtomicReader reader, String field, boolean setDocsWithField)
     throws IOException {
     return getDoubles(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
-  public double[] getDoubles(AtomicReader reader, String field, FieldCache.DoubleParser parser, boolean setDocsWithField)
+  public Doubles getDoubles(AtomicReader reader, String field, FieldCache.DoubleParser parser, boolean setDocsWithField)
       throws IOException {
-    return (double[]) caches.get(Double.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
+    return (Doubles) caches.get(Double.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
+  }
+
+  private static class DoublesFromArray extends Doubles {
+    private final double[] values;
+
+    public DoublesFromArray(double[] values) {
+      this.values = values;
+    }
+    
+    @Override
+    public double get(int docID) {
+      return values[docID];
+    }
   }
 
   static final class DoubleCache extends Cache {
@@ -830,70 +847,46 @@ class FieldCacheImpl implements FieldCache {
     @Override
     protected Object createValue(AtomicReader reader, Entry entryKey, boolean setDocsWithField)
         throws IOException {
-      String field = entryKey.field;
-      FieldCache.DoubleParser parser = (FieldCache.DoubleParser) entryKey.custom;
+      DoubleParser parser = (DoubleParser) entryKey.custom;
       if (parser == null) {
+        // Confusing: must delegate to wrapper (vs simply
+        // setting parser =
+        // DEFAULT_DOUBLE_PARSER/NUMERIC_UTILS_DOUBLE_PARSER) so
+        // cache key includes
+        // DEFAULT_DOUBLE_PARSER/NUMERIC_UTILS_DOUBLE_PARSER:
         try {
-          return wrapper.getDoubles(reader, field, DEFAULT_DOUBLE_PARSER, setDocsWithField);
+          return wrapper.getDoubles(reader, entryKey.field, DEFAULT_DOUBLE_PARSER, setDocsWithField);
         } catch (NumberFormatException ne) {
-          return wrapper.getDoubles(reader, field, NUMERIC_UTILS_DOUBLE_PARSER, setDocsWithField);
+          return wrapper.getDoubles(reader, entryKey.field, NUMERIC_UTILS_DOUBLE_PARSER, setDocsWithField);
         }
       }
-      final int maxDoc = reader.maxDoc();
-      double[] retArray = null;
 
-      Terms terms = reader.terms(field);
-      FixedBitSet docsWithField = null;
-      if (terms != null) {
-        if (setDocsWithField) {
-          final int termsDocCount = terms.getDocCount();
-          assert termsDocCount <= maxDoc;
-          if (termsDocCount == maxDoc) {
-            // Fast case: all docs have this field:
-            wrapper.setDocsWithField(reader, field, new Bits.MatchAllBits(maxDoc));
-            setDocsWithField = false;
-          }
-        }
-        final TermsEnum termsEnum = terms.iterator(null);
-        DocsEnum docs = null;
-        try {
-          while(true) {
-            final BytesRef term = termsEnum.next();
-            if (term == null) {
-              break;
-            }
-            final double termval = parser.parseDouble(term);
-            if (retArray == null) {
-              // late init so numeric fields don't double allocate
-              retArray = new double[maxDoc];
-            }
+      final DoubleParser finalParser = parser;
+      // nocommit how to avoid double alloc in numeric field
+      // case ...
+      final double[] values = new double[reader.maxDoc()];
 
-            docs = termsEnum.docs(null, docs, 0);
-            while (true) {
-              final int docID = docs.nextDoc();
-              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-                break;
-              }
-              retArray[docID] = termval;
-              if (setDocsWithField) {
-                if (docsWithField == null) {
-                  // Lazy init
-                  docsWithField = new FixedBitSet(maxDoc);
-                }
-                docsWithField.set(docID);
-              }
-            }
-          }
-        } catch (FieldCache.StopFillCacheException stop) {
+      Uninvert u = new Uninvert() {
+        private double currentValue;
+
+        @Override
+        public void visitTerm(BytesRef term) {
+          currentValue = finalParser.parseDouble(term);
         }
-      }
-      if (retArray == null) { // no values
-        retArray = new double[maxDoc];
-      }
+
+        @Override
+        public void visitDoc(int docID) {
+          values[docID] = currentValue;
+        }
+      };
+
+      u.uninvert(reader, entryKey.field, setDocsWithField);
+
       if (setDocsWithField) {
-        wrapper.setDocsWithField(reader, field, docsWithField);
+        wrapper.setDocsWithField(reader, entryKey.field, u.docsWithField);
       }
-      return retArray;
+
+      return new DoublesFromArray(values);
     }
   }
 

@@ -124,7 +124,9 @@ public class Lucene41Codec extends Codec {
   
   @Override
   public SimpleDocValuesFormat simpleDocValuesFormat() {
-    return simpleDocValuesFormat;
+    // nocommit fixme
+    //return simpleDocValuesFormat;
+    return null;
   }
 
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");

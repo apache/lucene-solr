@@ -30,7 +30,6 @@ import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
 import org.apache.lucene.index.TypePromoter.TypeCompatibility;
 import org.apache.lucene.store.IOContext;
@@ -104,6 +103,10 @@ final class DocFieldProcessor extends DocConsumer {
             }
 
             dvConsumer = fmt.fieldsConsumer(state);
+            // nocommit shouldn't need null check:
+            if (dvConsumer == null) {
+              continue;
+            }
           }
 
           if (field.bytesDVWriter != null) {
@@ -114,6 +117,7 @@ final class DocFieldProcessor extends DocConsumer {
             // nocommit must null it out now else next seg
             // will flush even if no docs had DV...?
           }
+
           if (field.sortedBytesDVWriter != null) {
             field.sortedBytesDVWriter.flush(field.fieldInfo, state,
                                             dvConsumer.addSortedField(field.fieldInfo,
@@ -123,6 +127,7 @@ final class DocFieldProcessor extends DocConsumer {
             // nocommit must null it out now else next seg
             // will flush even if no docs had DV...?
           }
+
           if (field.numberDVWriter != null) {
             field.numberDVWriter.flush(field.fieldInfo, state,
                                        dvConsumer.addNumericField(field.fieldInfo,

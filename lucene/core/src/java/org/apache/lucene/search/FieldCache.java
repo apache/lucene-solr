@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.text.DecimalFormat;
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
 import org.apache.lucene.document.IntField; // for javadocs
@@ -44,6 +43,30 @@ import org.apache.lucene.util.packed.PackedInts;
  * @see org.apache.lucene.util.FieldCacheSanityChecker
  */
 public interface FieldCache {
+
+  public static abstract class Bytes {
+    public abstract byte get(int docID);
+  }
+
+  public static abstract class Shorts {
+    public abstract short get(int docID);
+  }
+
+  public static abstract class Ints {
+    public abstract int get(int docID);
+  }
+
+  public static abstract class Longs {
+    public abstract long get(int docID);
+  }
+
+  public static abstract class Floats {
+    public abstract float get(int docID);
+  }
+
+  public static abstract class Doubles {
+    public abstract double get(int docID);
+  }
 
   /**
    * Placeholder indicating creation of this cache is currently in-progress.
@@ -294,8 +317,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public byte[] getBytes (AtomicReader reader, String field, boolean setDocsWithField)
-  throws IOException;
+  public Bytes getBytes(AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none is found,
    * reads the terms in <code>field</code> as bytes and returns an array of
@@ -309,8 +331,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public byte[] getBytes (AtomicReader reader, String field, ByteParser parser, boolean setDocsWithField)
-  throws IOException;
+  public Bytes getBytes(AtomicReader reader, String field, ByteParser parser, boolean setDocsWithField) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none is
    * found, reads the terms in <code>field</code> as shorts and returns an array
@@ -323,8 +344,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public short[] getShorts (AtomicReader reader, String field, boolean setDocsWithField)
-  throws IOException;
+  public Shorts getShorts (AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none is found,
    * reads the terms in <code>field</code> as shorts and returns an array of
@@ -338,8 +358,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public short[] getShorts (AtomicReader reader, String field, ShortParser parser, boolean setDocsWithField)
-  throws IOException;
+  public Shorts getShorts (AtomicReader reader, String field, ShortParser parser, boolean setDocsWithField) throws IOException;
   
   /** Checks the internal cache for an appropriate entry, and if none is
    * found, reads the terms in <code>field</code> as integers and returns an array
@@ -352,8 +371,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public int[] getInts (AtomicReader reader, String field, boolean setDocsWithField)
-  throws IOException;
+  public Ints getInts (AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none is found,
    * reads the terms in <code>field</code> as integers and returns an array of
@@ -367,8 +385,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public int[] getInts (AtomicReader reader, String field, IntParser parser, boolean setDocsWithField)
-  throws IOException;
+  public Ints getInts (AtomicReader reader, String field, IntParser parser, boolean setDocsWithField) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if
    * none is found, reads the terms in <code>field</code> as floats and returns an array
@@ -381,8 +398,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public float[] getFloats (AtomicReader reader, String field, boolean setDocsWithField)
-  throws IOException;
+  public Floats getFloats (AtomicReader reader, String field, boolean setDocsWithField) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if
    * none is found, reads the terms in <code>field</code> as floats and returns an array
@@ -396,8 +412,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public float[] getFloats (AtomicReader reader, String field,
-                            FloatParser parser, boolean setDocsWithField) throws IOException;
+  public Floats getFloats (AtomicReader reader, String field, FloatParser parser, boolean setDocsWithField) throws IOException;
 
   /**
    * Checks the internal cache for an appropriate entry, and if none is
@@ -412,7 +427,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws java.io.IOException If any error occurs.
    */
-  public long[] getLongs(AtomicReader reader, String field, boolean setDocsWithField)
+  public Longs getLongs(AtomicReader reader, String field, boolean setDocsWithField)
           throws IOException;
 
   /**
@@ -429,7 +444,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException If any error occurs.
    */
-  public long[] getLongs(AtomicReader reader, String field, LongParser parser, boolean setDocsWithField)
+  public Longs getLongs(AtomicReader reader, String field, LongParser parser, boolean setDocsWithField)
           throws IOException;
 
   /**
@@ -445,7 +460,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException If any error occurs.
    */
-  public double[] getDoubles(AtomicReader reader, String field, boolean setDocsWithField)
+  public Doubles getDoubles(AtomicReader reader, String field, boolean setDocsWithField)
           throws IOException;
 
   /**
@@ -462,7 +477,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException If any error occurs.
    */
-  public double[] getDoubles(AtomicReader reader, String field, DoubleParser parser, boolean setDocsWithField)
+  public Doubles getDoubles(AtomicReader reader, String field, DoubleParser parser, boolean setDocsWithField)
           throws IOException;
 
   /** Returned by {@link #getTerms} */

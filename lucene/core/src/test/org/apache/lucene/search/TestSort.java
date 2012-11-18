@@ -668,7 +668,7 @@ public class TestSort extends LuceneTestCase {
   }
 
   static class MyFieldComparator extends FieldComparator<Integer> {
-    int[] docValues;
+    FieldCache.Ints docValues;
     int[] slotValues;
     int bottomValue;
 
@@ -678,7 +678,7 @@ public class TestSort extends LuceneTestCase {
 
     @Override
     public void copy(int slot, int doc) {
-      slotValues[slot] = docValues[doc];
+      slotValues[slot] = docValues.get(doc);
     }
 
     @Override
@@ -689,7 +689,7 @@ public class TestSort extends LuceneTestCase {
 
     @Override
     public int compareBottom(int doc) {
-      return bottomValue - docValues[doc];
+      return bottomValue - docValues.get(doc);
     }
 
     @Override
@@ -717,7 +717,7 @@ public class TestSort extends LuceneTestCase {
     @Override
     public int compareDocToValue(int doc, Integer valueObj) {
       final int value = valueObj.intValue();
-      final int docValue = docValues[doc];
+      final int docValue = docValues.get(doc);
 
       // values are small enough that overflow won't happen
       return docValue - value;

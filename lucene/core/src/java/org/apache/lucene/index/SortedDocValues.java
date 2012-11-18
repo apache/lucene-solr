@@ -29,4 +29,6 @@ public abstract class SortedDocValues {
 
   // nocommit throws IOE or not?
   public abstract int getValueCount();
+
+  // nocommit binary search lookup?
 }

@@ -49,42 +49,42 @@ public class ShortFieldSource extends FieldCacheSource {
 
   @Override
   public FunctionValues getValues(Map context, AtomicReaderContext readerContext) throws IOException {
-    final short[] arr = cache.getShorts(readerContext.reader(), field, parser, false);
+    final FieldCache.Shorts arr = cache.getShorts(readerContext.reader(), field, parser, false);
     
     return new FunctionValues() {
       @Override
       public byte byteVal(int doc) {
-        return (byte) arr[doc];
+        return (byte) arr.get(doc);
       }
 
       @Override
       public short shortVal(int doc) {
-        return arr[doc];
+        return arr.get(doc);
       }
 
       @Override
       public float floatVal(int doc) {
-        return (float) arr[doc];
+        return (float) arr.get(doc);
       }
 
       @Override
       public int intVal(int doc) {
-        return (int) arr[doc];
+        return (int) arr.get(doc);
       }
 
       @Override
       public long longVal(int doc) {
-        return (long) arr[doc];
+        return (long) arr.get(doc);
       }
 
       @Override
       public double doubleVal(int doc) {
-        return (double) arr[doc];
+        return (double) arr.get(doc);
       }
 
       @Override
       public String strVal(int doc) {
-        return Short.toString(arr[doc]);
+        return Short.toString(arr.get(doc));
       }
 
       @Override
