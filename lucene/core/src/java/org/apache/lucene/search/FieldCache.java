@@ -42,6 +42,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * @since   lucene 1.4
  * @see org.apache.lucene.util.FieldCacheSanityChecker
  */
+// nocommit abstract class...?
 public interface FieldCache {
 
   public static abstract class Bytes {
@@ -303,8 +304,7 @@ public interface FieldCache {
    * <code>reader.maxDoc()</code>, with turned on bits for each docid that 
    * does have a value for this field.
    */
-  public Bits getDocsWithField(AtomicReader reader, String field) 
-  throws IOException;
+  public Bits getDocsWithField(AtomicReader reader, String field) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none is
    * found, reads the terms in <code>field</code> as a single byte and returns an array
@@ -477,8 +477,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException If any error occurs.
    */
-  public Doubles getDoubles(AtomicReader reader, String field, DoubleParser parser, boolean setDocsWithField)
-          throws IOException;
+  public Doubles getDoubles(AtomicReader reader, String field, DoubleParser parser, boolean setDocsWithField) throws IOException;
 
   /** Returned by {@link #getTerms} */
   public abstract static class DocTerms {
@@ -513,8 +512,7 @@ public interface FieldCache {
    *  faster lookups (default is "true").  Note that the
    *  first call for a given reader and field "wins",
    *  subsequent calls will share the same cache entry. */
-  public DocTerms getTerms (AtomicReader reader, String field, float acceptableOverheadRatio)
-  throws IOException;
+  public DocTerms getTerms (AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException;
 
   /** Returned by {@link #getTermsIndex} */
   public abstract static class DocTermsIndex {
@@ -581,8 +579,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public DocTermsIndex getTermsIndex (AtomicReader reader, String field)
-  throws IOException;
+  public DocTermsIndex getTermsIndex (AtomicReader reader, String field) throws IOException;
 
   /** Expert: just like {@link
    *  #getTermsIndex(AtomicReader,String)}, but you can specify
@@ -590,8 +587,7 @@ public interface FieldCache {
    *  faster lookups (default is "true").  Note that the
    *  first call for a given reader and field "wins",
    *  subsequent calls will share the same cache entry. */
-  public DocTermsIndex getTermsIndex (AtomicReader reader, String field, float acceptableOverheadRatio)
-  throws IOException;
+  public DocTermsIndex getTermsIndex (AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException;
 
   /**
    * Checks the internal cache for an appropriate entry, and if none is found, reads the term values
@@ -610,15 +606,44 @@ public interface FieldCache {
    * Can be useful for logging/debugging.
    * @lucene.experimental
    */
-  public static abstract class CacheEntry {
-    public abstract Object getReaderKey();
-    public abstract String getFieldName();
-    public abstract Class<?> getCacheType();
-    public abstract Object getCustom();
-    public abstract Object getValue();
-    private String size = null;
-    protected final void setEstimatedSize(String size) {
-      this.size = size;
+  public final class CacheEntry {
+
+    private final Object readerKey;
+    private final String fieldName;
+    private final Class<?> cacheType;
+    private final Object custom;
+    private final Object value;
+    private String size;
+
+    public CacheEntry(Object readerKey, String fieldName,
+                      Class<?> cacheType,
+                      Object custom,
+                      Object value) {
+      this.readerKey = readerKey;
+      this.fieldName = fieldName;
+      this.cacheType = cacheType;
+      this.custom = custom;
+      this.value = value;
+    }
+
+    public Object getReaderKey() {
+      return readerKey;
+    }
+
+    public String getFieldName() {
+      return fieldName;
+    }
+
+    public Class<?> getCacheType() {
+      return cacheType;
+    }
+
+    public Object getCustom() {
+      return custom;
+    }
+
+    public Object getValue() {
+      return value;
     }
 
     /** 
@@ -626,8 +651,8 @@ public interface FieldCache {
      * @see #getEstimatedSize
      */
     public void estimateSize() {
-      long size = RamUsageEstimator.sizeOf(getValue());
-      setEstimatedSize(RamUsageEstimator.humanReadableUnits(size));
+      long bytesUsed = RamUsageEstimator.sizeOf(getValue());
+      size = RamUsageEstimator.humanReadableUnits(bytesUsed);
     }
 
     /**
@@ -637,7 +662,6 @@ public interface FieldCache {
     public final String getEstimatedSize() {
       return size;
     }
-    
     
     @Override
     public String toString() {
@@ -655,7 +679,6 @@ public interface FieldCache {
 
       return b.toString();
     }
-  
   }
 
   /**

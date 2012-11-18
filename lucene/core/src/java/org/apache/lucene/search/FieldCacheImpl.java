@@ -45,7 +45,7 @@ import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
-// nocommit rename to UninvertFieldCache or something ...
+// nocommit rename to UninvertFieldCacheImpl or something ...
 
 /**
  * Expert: The default cache implementation, storing all values in memory.
@@ -59,6 +59,7 @@ class FieldCacheImpl implements FieldCache {
   FieldCacheImpl() {
     init();
   }
+
   private synchronized void init() {
     caches = new HashMap<Class<?>,Cache>(9);
     caches.put(Byte.TYPE, new ByteCache(this));
@@ -73,16 +74,19 @@ class FieldCacheImpl implements FieldCache {
     caches.put(DocsWithFieldCache.class, new DocsWithFieldCache(this));
   }
 
+  @Override
   public synchronized void purgeAllCaches() {
     init();
   }
 
+  @Override
   public synchronized void purge(AtomicReader r) {
     for(Cache c : caches.values()) {
       c.purge(r);
     }
   }
-  
+
+  @Override
   public synchronized CacheEntry[] getCacheEntries() {
     List<CacheEntry> result = new ArrayList<CacheEntry>(17);
     for(final Map.Entry<Class<?>,Cache> cacheEntry: caches.entrySet()) {
@@ -95,48 +99,14 @@ class FieldCacheImpl implements FieldCache {
           final Map<Entry, Object> innerCache = readerCacheEntry.getValue();
           for (final Map.Entry<Entry, Object> mapEntry : innerCache.entrySet()) {
             Entry entry = mapEntry.getKey();
-            result.add(new CacheEntryImpl(readerKey, entry.field,
-                                          cacheType, entry.custom,
-                                          mapEntry.getValue()));
+            result.add(new CacheEntry(readerKey, entry.field,
+                                      cacheType, entry.custom,
+                                      mapEntry.getValue()));
           }
         }
       }
     }
     return result.toArray(new CacheEntry[result.size()]);
-  }
-  
-  private static final class CacheEntryImpl extends CacheEntry {
-    private final Object readerKey;
-    private final String fieldName;
-    private final Class<?> cacheType;
-    private final Object custom;
-    private final Object value;
-    CacheEntryImpl(Object readerKey, String fieldName,
-                   Class<?> cacheType,
-                   Object custom,
-                   Object value) {
-        this.readerKey = readerKey;
-        this.fieldName = fieldName;
-        this.cacheType = cacheType;
-        this.custom = custom;
-        this.value = value;
-
-        // :HACK: for testing.
-//         if (null != locale || SortField.CUSTOM != sortFieldType) {
-//           throw new RuntimeException("Locale/sortFieldType: " + this);
-//         }
-
-    }
-    @Override
-    public Object getReaderKey() { return readerKey; }
-    @Override
-    public String getFieldName() { return fieldName; }
-    @Override
-    public Class<?> getCacheType() { return cacheType; }
-    @Override
-    public Object getCustom() { return custom; }
-    @Override
-    public Object getValue() { return value; }
   }
 
   // per-segment fieldcaches don't purge until the shared core closes.
@@ -382,7 +352,8 @@ class FieldCacheImpl implements FieldCache {
     protected abstract void visitDoc(int docID);
   }
 
-  private static class BytesFromArray extends Bytes {
+  // nocommit move up?
+  static class BytesFromArray extends Bytes {
     private final byte[] values;
 
     public BytesFromArray(byte[] values) {
@@ -450,7 +421,8 @@ class FieldCacheImpl implements FieldCache {
     return (Shorts) caches.get(Short.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
-  private static class ShortsFromArray extends Shorts {
+  // nocommit move up?
+  static class ShortsFromArray extends Shorts {
     private final short[] values;
 
     public ShortsFromArray(short[] values) {
@@ -539,7 +511,8 @@ class FieldCacheImpl implements FieldCache {
     return (Ints) caches.get(Integer.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
-  private static class IntsFromArray extends Ints {
+  // nocommit move up?
+  static class IntsFromArray extends Ints {
     private final int[] values;
 
     public IntsFromArray(int[] values) {
@@ -608,6 +581,7 @@ class FieldCacheImpl implements FieldCache {
     return (Bits) caches.get(DocsWithFieldCache.class).get(reader, new Entry(field, null), false);
   }
 
+  // nocommit move up?
   static final class DocsWithFieldCache extends Cache {
     DocsWithFieldCache(FieldCacheImpl wrapper) {
       super(wrapper);
@@ -675,7 +649,8 @@ class FieldCacheImpl implements FieldCache {
     return (Floats) caches.get(Float.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
-  private static class FloatsFromArray extends Floats {
+  // nocommit move up?
+  static class FloatsFromArray extends Floats {
     private final float[] values;
 
     public FloatsFromArray(float[] values) {
@@ -750,7 +725,8 @@ class FieldCacheImpl implements FieldCache {
     return (Longs) caches.get(Long.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
-  private static class LongsFromArray extends Longs {
+  // nocommit move up?
+  static class LongsFromArray extends Longs {
     private final long[] values;
 
     public LongsFromArray(long[] values) {
@@ -826,7 +802,8 @@ class FieldCacheImpl implements FieldCache {
     return (Doubles) caches.get(Double.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
   }
 
-  private static class DoublesFromArray extends Doubles {
+  // nocommit move up?
+  static class DoublesFromArray extends Doubles {
     private final double[] values;
 
     public DoublesFromArray(double[] values) {
