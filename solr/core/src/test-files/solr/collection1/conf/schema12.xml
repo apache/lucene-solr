@@ -428,6 +428,7 @@
     <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multivalued. -->
     <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
 
+  <fieldType name="currency" class="solr.CurrencyField" currencyConfig="currency.xml" multiValued="false" />
  </types>
 
 
@@ -524,6 +525,8 @@
    <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
    <field name="store" type="location" indexed="true" stored="true"/>
    
+   <!-- Test currency field -->
+   <field name="amount_c" type="currency" indexed="true" stored="true" multiValued="false"/>
    <!-- to test uniq fields -->   
    <field name="uniq" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="uniq2" type="string" indexed="true" stored="true" multiValued="true"/>

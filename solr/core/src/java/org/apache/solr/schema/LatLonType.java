@@ -241,7 +241,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
 
   @Override
   public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
-    writer.writeStr(name, f.stringValue(), false);
+    writer.writeStr(name, f.stringValue(), true);
   }
 
   @Override
