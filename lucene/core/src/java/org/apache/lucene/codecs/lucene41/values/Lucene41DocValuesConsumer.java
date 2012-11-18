@@ -59,7 +59,7 @@ public class Lucene41DocValuesConsumer extends SimpleDVConsumer {
   
   @Override
   public NumericDocValuesConsumer addNumericField(FieldInfo field,
-      long minValue, long maxValue, int numDocs) throws IOException {
+      long minValue, long maxValue) throws IOException {
     String name = IndexFileNames.segmentFileName(this.info.name + "_"
         + field.number, DV_SEGMENT_SUFFIX, DATA_EXTENSION);
     IndexOutput dataOut = null;
@@ -67,7 +67,7 @@ public class Lucene41DocValuesConsumer extends SimpleDVConsumer {
     try {
       dataOut = dir.createOutput(name, context);
       Lucene41NumericDocValuesConsumer consumer = new Lucene41NumericDocValuesConsumer(
-          dataOut, minValue, maxValue, numDocs);
+          dataOut, minValue, maxValue, info.getDocCount());
       success = true;
       return consumer;
     } finally {
@@ -79,7 +79,7 @@ public class Lucene41DocValuesConsumer extends SimpleDVConsumer {
   
   @Override
   public BinaryDocValuesConsumer addBinaryField(FieldInfo field,
-      boolean fixedLength, int maxLength, int numDocs) throws IOException {
+      boolean fixedLength, int maxLength) throws IOException {
     String nameData = IndexFileNames.segmentFileName(this.info.name + "_"
         + field.number, DV_SEGMENT_SUFFIX, DATA_EXTENSION);
     String idxOut = IndexFileNames.segmentFileName(this.info.name + "_"
@@ -103,7 +103,7 @@ public class Lucene41DocValuesConsumer extends SimpleDVConsumer {
   
   @Override
   public SortedDocValuesConsumer addSortedField(FieldInfo field,
-      int valueCount, boolean fixedLength, int maxLength, int numDocs)
+      int valueCount, boolean fixedLength, int maxLength)
       throws IOException {
     return null;
   }

@@ -140,13 +140,15 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   static class SimpleTextDocValuesWriter extends SimpleDVConsumer {
     final IndexOutput data;
     final BytesRef scratch = new BytesRef();
+    final int numDocs; // for asserting
     
     SimpleTextDocValuesWriter(Directory dir, SegmentInfo si, IOContext context) throws IOException {
       data = dir.createOutput(IndexFileNames.segmentFileName(si.name, "", "dat"), context);
+      numDocs = si.getDocCount();
     }
 
     @Override
-    public NumericDocValuesConsumer addNumericField(FieldInfo field, final long minValue, long maxValue, final int numDocs) throws IOException {
+    public NumericDocValuesConsumer addNumericField(FieldInfo field, final long minValue, long maxValue) throws IOException {
       writeFieldEntry(field);
       
       // write our minimum value to the .dat, all entries are deltas from that
@@ -186,7 +188,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     }
 
     @Override
-    public BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, final int maxLength, final int numDocs) throws IOException {
+    public BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, final int maxLength) throws IOException {
       writeFieldEntry(field);
       // write maxLength
       SimpleTextUtil.write(data, MAXLENGTH);
@@ -235,7 +237,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     
     // nocommit
     @Override
-    public SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, final int maxLength, final int numDocs) throws IOException {
+    public SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, final int maxLength) throws IOException {
       writeFieldEntry(field);
       // write numValues
       SimpleTextUtil.write(data, NUMVALUES);
