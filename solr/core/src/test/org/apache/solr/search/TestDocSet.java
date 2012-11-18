@@ -399,17 +399,17 @@ public class TestDocSet extends LuceneTestCase {
       }
 
       @Override
-      public NumericDocValues getNumericDocValues(String field, boolean direct) {
+      public NumericDocValues getNumericDocValues(String field) {
         return null;
       }
 
       @Override
-      public BinaryDocValues getBinaryDocValues(String field, boolean direct) {
+      public BinaryDocValues getBinaryDocValues(String field) {
         return null;
       }
 
       @Override
-      public SortedDocValues getSortedDocValues(String field, boolean direct) {
+      public SortedDocValues getSortedDocValues(String field) {
         return null;
       }
 

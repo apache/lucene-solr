@@ -740,17 +740,17 @@ public class MemoryIndex {
     }
 
     // nocommit todo
-    public NumericDocValues getNumericDocValues(String field, boolean direct) {
+    public NumericDocValues getNumericDocValues(String field) {
       return null;
     }
 
     // nocommit todo
-    public BinaryDocValues getBinaryDocValues(String field, boolean direct) {
+    public BinaryDocValues getBinaryDocValues(String field) {
       return null;
     }
 
     // nocommit todo
-    public SortedDocValues getSortedDocValues(String field, boolean direct) {
+    public SortedDocValues getSortedDocValues(String field) {
       return null;
     }
 

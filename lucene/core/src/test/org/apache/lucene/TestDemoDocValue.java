@@ -49,7 +49,7 @@ import org.apache.lucene.util.LuceneTestCase;
  * to this class.
  */
 // nocommit don't suppress any:
-@SuppressCodecs({"Direct", "Memory", "Lucene41", "MockRandom", "Lucene40", "Compressing"})
+@SuppressCodecs({"Asserting", "Direct", "Memory", "Lucene41", "MockRandom", "Lucene40", "Compressing"})
 public class TestDemoDocValue extends LuceneTestCase {
 
   public void testDemoNumber() throws IOException {
@@ -82,7 +82,7 @@ public class TestDemoDocValue extends LuceneTestCase {
       StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
-      NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv", random().nextBoolean());
+      NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
       assertEquals(5, dv.get(hits.scoreDocs[i].doc));
     }
 
@@ -113,7 +113,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
-    NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv", random().nextBoolean());
+    NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
     assertEquals(1, dv.get(0));
     assertEquals(2, dv.get(1));
 
@@ -147,7 +147,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
-    NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv", random().nextBoolean());
+    NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
     for(int i=0;i<2;i++) {
       StoredDocument doc2 = ireader.leaves().get(0).reader().document(i);
       long expected;
@@ -186,7 +186,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
-    NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv", random().nextBoolean());
+    NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
     assertEquals(Long.MIN_VALUE, dv.get(0));
     assertEquals(Long.MAX_VALUE, dv.get(1));
 
@@ -225,7 +225,7 @@ public class TestDemoDocValue extends LuceneTestCase {
       StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
-      BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv", random().nextBoolean());
+      BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv");
       dv.get(hits.scoreDocs[i].doc, scratch);
       assertEquals(new BytesRef("hello world"), scratch);
     }
@@ -262,7 +262,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
-    BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv", random().nextBoolean());
+    BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv");
     BytesRef scratch = new BytesRef();
     for(int i=0;i<2;i++) {
       StoredDocument doc2 = ireader.leaves().get(0).reader().document(i);
@@ -311,7 +311,7 @@ public class TestDemoDocValue extends LuceneTestCase {
       StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
-      SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv", random().nextBoolean());
+      SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
       dv.lookupOrd(dv.getOrd(hits.scoreDocs[i].doc), scratch);
       assertEquals(new BytesRef("hello world"), scratch);
     }
@@ -343,7 +343,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
-    SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv", random().nextBoolean());
+    SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
     BytesRef scratch = new BytesRef();
     dv.lookupOrd(dv.getOrd(0), scratch);
     assertEquals("hello world 1", scratch.utf8ToString());
@@ -380,7 +380,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
-    SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv", random().nextBoolean());
+    SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
     BytesRef scratch = new BytesRef();
     for(int i=0;i<2;i++) {
       StoredDocument doc2 = ireader.leaves().get(0).reader().document(i);

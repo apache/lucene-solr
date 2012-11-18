@@ -20,6 +20,7 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.MergeState;
@@ -36,10 +37,14 @@ public abstract class BinaryDocValuesConsumer {
     for (AtomicReader reader : mergeState.readers) {
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
-      final Source source = reader.docValues(mergeState.fieldInfo.name).getDirectSource();
+
+      // nocommit what if this is null...?  need default source?
+      final BinaryDocValues source = reader.getBinaryDocValues(mergeState.fieldInfo.name);
+
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {
-          add(source.getBytes(i, bytes));
+          source.get(i, bytes);
+          add(bytes);
         }
         docCount++;
         mergeState.checkAbort.work(300);

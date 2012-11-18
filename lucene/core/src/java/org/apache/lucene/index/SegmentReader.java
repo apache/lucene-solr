@@ -226,18 +226,18 @@ public final class SegmentReader extends AtomicReader {
   }
 
   @Override
-  public NumericDocValues getNumericDocValues(String field, boolean direct) throws IOException {
-    return core.getNumericDocValues(field, direct);
+  public NumericDocValues getNumericDocValues(String field) throws IOException {
+    return core.getNumericDocValues(field);
   }
 
   @Override
-  public BinaryDocValues getBinaryDocValues(String field, boolean direct) throws IOException {
-    return core.getBinaryDocValues(field, direct);
+  public BinaryDocValues getBinaryDocValues(String field) throws IOException {
+    return core.getBinaryDocValues(field);
   }
 
   @Override
-  public SortedDocValues getSortedDocValues(String field, boolean direct) throws IOException {
-    return core.getSortedDocValues(field, direct);
+  public SortedDocValues getSortedDocValues(String field) throws IOException {
+    return core.getSortedDocValues(field);
   }
   
   @Override

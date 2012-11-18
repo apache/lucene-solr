@@ -20,10 +20,11 @@ package org.apache.lucene.codecs;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.util.Bits;
 
 public abstract class NumericDocValuesConsumer {
@@ -35,10 +36,11 @@ public abstract class NumericDocValuesConsumer {
     for (AtomicReader reader : mergeState.readers) {
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
-      final Source source = reader.docValues(mergeState.fieldInfo.name).getDirectSource();
+      // nocommit what if this is null...?  need default source?
+      final NumericDocValues source = reader.getNumericDocValues(mergeState.fieldInfo.name);
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {
-          add(source.getInt(i));
+          add(source.get(i));
         }
         docCount++;
         mergeState.checkAbort.work(300);

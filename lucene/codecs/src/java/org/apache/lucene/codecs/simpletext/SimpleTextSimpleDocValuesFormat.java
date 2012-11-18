@@ -414,7 +414,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     }
 
     @Override
-    public NumericDocValues getDirectNumeric(FieldInfo fieldInfo) throws IOException {
+    public NumericDocValues getNumeric(FieldInfo fieldInfo) throws IOException {
       final OneField field = fields.get(fieldInfo.name);
 
       // SegmentCoreReaders already verifies this field is
@@ -454,7 +454,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     }
 
     @Override
-    public BinaryDocValues getDirectBinary(FieldInfo fieldInfo) throws IOException {
+    public BinaryDocValues getBinary(FieldInfo fieldInfo) throws IOException {
       final OneField field = fields.get(fieldInfo.name);
 
       // SegmentCoreReaders already verifies this field is
@@ -497,7 +497,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     }
 
     @Override
-    public SortedDocValues getDirectSorted(FieldInfo fieldInfo) throws IOException {
+    public SortedDocValues getSorted(FieldInfo fieldInfo) throws IOException {
       final OneField field = fields.get(fieldInfo.name);
 
       // SegmentCoreReaders already verifies this field is

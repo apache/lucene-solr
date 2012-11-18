@@ -164,13 +164,13 @@ public abstract class AtomicReader extends IndexReader {
   public abstract DocValues docValues(String field) throws IOException;
 
   // nocommit javadocs
-  public abstract NumericDocValues getNumericDocValues(String field, boolean direct) throws IOException;
+  public abstract NumericDocValues getNumericDocValues(String field) throws IOException;
 
   // nocommit javadocs
-  public abstract BinaryDocValues getBinaryDocValues(String field, boolean direct) throws IOException;
+  public abstract BinaryDocValues getBinaryDocValues(String field) throws IOException;
 
   // nocommit javadocs
-  public abstract SortedDocValues getSortedDocValues(String field, boolean direct) throws IOException;
+  public abstract SortedDocValues getSortedDocValues(String field) throws IOException;
 
   /**
    * Returns {@link DocValues} for this field's normalization values.

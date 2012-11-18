@@ -25,6 +25,7 @@ import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -57,7 +58,7 @@ public abstract class SortedDocValuesConsumer {
       AtomicReader reader;
       FixedBitSet liveTerms;
       int ord = -1;
-      SortedSource source;
+      SortedDocValues values;
       BytesRef scratch = new BytesRef();
 
       // nocommit can we factor out the compressed fields
@@ -67,10 +68,10 @@ public abstract class SortedDocValuesConsumer {
       int[] segOrdToMergedOrd;
 
       public BytesRef nextTerm() {
-        while (ord < source.getValueCount()-1) {
+        while (ord < values.getValueCount()-1) {
           ord++;
           if (liveTerms == null || liveTerms.get(ord)) {
-            source.getByOrd(ord, scratch);
+            values.lookupOrd(ord, scratch);
             return scratch;
           } else {
             // Skip "deleted" terms (ie, terms that were not
@@ -98,26 +99,20 @@ public abstract class SortedDocValuesConsumer {
 
       // First pass: mark "live" terms
       for (AtomicReader reader : mergeState.readers) {
-        DocValues docvalues = reader.docValues(mergeState.fieldInfo.name);
-        final SortedSource source;
+        // nocommit what if this is null...?  need default source?
         int maxDoc = reader.maxDoc();
-        if (docvalues == null) {
-          source = DocValues.getDefaultSortedSource(mergeState.fieldInfo.getDocValuesType(), maxDoc);
-        } else {
-          source = (SortedSource) docvalues.getDirectSource();
-        }
 
         SegmentState state = new SegmentState();
         state.reader = reader;
-        state.source = source;
+        state.values = reader.getSortedDocValues(mergeState.fieldInfo.name);
         segStates.add(state);
-        assert source.getValueCount() < Integer.MAX_VALUE;
+        assert state.values.getValueCount() < Integer.MAX_VALUE;
         if (reader.hasDeletions()) {
-          state.liveTerms = new FixedBitSet(source.getValueCount());
+          state.liveTerms = new FixedBitSet(state.values.getValueCount());
           Bits liveDocs = reader.getLiveDocs();
           for(int docID=0;docID<maxDoc;docID++) {
             if (liveDocs.get(docID)) {
-              state.liveTerms.set(source.ord(docID));
+              state.liveTerms.set(state.values.getOrd(docID));
             }
           }
         }
@@ -135,7 +130,7 @@ public abstract class SortedDocValuesConsumer {
           // nocommit we could defer this to 3rd pass (and
           // reduce transient RAM spike) but then
           // we'd spend more effort computing the mapping...:
-          segState.segOrdToMergedOrd = new int[segState.source.getValueCount()];
+          segState.segOrdToMergedOrd = new int[segState.values.getValueCount()];
           q.add(segState);
         }
       }
@@ -184,7 +179,7 @@ public abstract class SortedDocValuesConsumer {
         int maxDoc = segState.reader.maxDoc();
         for(int docID=0;docID<maxDoc;docID++) {
           if (liveDocs == null || liveDocs.get(docID)) {
-            int segOrd = segState.source.ord(docID);
+            int segOrd = segState.values.getOrd(docID);
             int mergedOrd = segState.segOrdToMergedOrd[segOrd];
             consumer.addDoc(mergedOrd);
           }

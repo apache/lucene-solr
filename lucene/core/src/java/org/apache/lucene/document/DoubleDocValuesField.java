@@ -42,7 +42,9 @@ public class DoubleDocValuesField extends StoredField {
    */
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDocValueType(DocValues.Type.FLOAT_64);
+    // nocommit kinda messy ... if user calls .numericValue
+    // they get back strange int ... hmmm
+    TYPE.setDocValueType(DocValues.Type.FIXED_INTS_64);
     TYPE.freeze();
   }
 
@@ -54,6 +56,8 @@ public class DoubleDocValuesField extends StoredField {
    */
   public DoubleDocValuesField(String name, double value) {
     super(name, TYPE);
-    fieldsData = Double.valueOf(value);
+    // nocommit kinda messy ... if user calls .numericValue
+    // they get back strange int ... hmmm
+    fieldsData = Double.doubleToRawLongBits(value);
   }
 }

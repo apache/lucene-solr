@@ -66,8 +66,6 @@ final class SegmentCoreReaders {
   final TermVectorsReader termVectorsReaderOrig;
   final CompoundFileDirectory cfsReader;
 
-  private final Map<FieldInfo,Object> docValuesCache = new HashMap<FieldInfo,Object>();
-
   final CloseableThreadLocal<StoredFieldsReader> fieldsReaderLocal = new CloseableThreadLocal<StoredFieldsReader>() {
     @Override
     protected StoredFieldsReader initialValue() {
@@ -155,72 +153,60 @@ final class SegmentCoreReaders {
   }
 
   // nocommit shrink the sync'd part to a cache miss
-  synchronized NumericDocValues getNumericDocValues(String field, boolean direct) throws IOException {
+  synchronized NumericDocValues getNumericDocValues(String field) throws IOException {
     FieldInfo fi = fieldInfos.fieldInfo(field);
     if (fi == null) {
+      // Field does not exist
+      return null;
+    }
+    if (fi.getDocValuesType() == null) {
+      // Field was not indexed with doc values
       return null;
     }
     if (!DocValues.isNumber(fi.getDocValuesType())) {
-      throw new IllegalArgumentException("field \"" + field + "\" was not indexed as a numeric doc values field");
+      // DocValues were not numeric
+      return null;
     }
 
-    if (direct) {
-      return simpleDVProducer.getDirectNumeric(fi);
-    } else {
-      if (!docValuesCache.containsKey(fi)) {
-        NumericDocValues dv = simpleDVProducer.getNumeric(fi);
-        if (dv != null) {
-          docValuesCache.put(fi, dv);
-        }
-      }
-      return (NumericDocValues) docValuesCache.get(fi);
-    }
+    return simpleDVProducer.getNumeric(fi);
   }
 
   // nocommit shrink the sync'd part to a cache miss
-  synchronized BinaryDocValues getBinaryDocValues(String field, boolean direct) throws IOException {
+  synchronized BinaryDocValues getBinaryDocValues(String field) throws IOException {
     FieldInfo fi = fieldInfos.fieldInfo(field);
     if (fi == null) {
+      // Field does not exist
+      return null;
+    }
+    if (fi.getDocValuesType() == null) {
+      // Field was not indexed with doc values
       return null;
     }
     if (!DocValues.isBytes(fi.getDocValuesType())) {
-      throw new IllegalArgumentException("field \"" + field + "\" was not indexed as a binary doc values field");
+      // DocValues were not binary
+      return null;
     }
 
-    if (direct) {
-      return simpleDVProducer.getDirectBinary(fi);
-    } else {
-      if (!docValuesCache.containsKey(fi)) {
-        BinaryDocValues dv = simpleDVProducer.getBinary(fi);
-        if (dv != null) {
-          docValuesCache.put(fi, dv);
-        }
-      }
-      return (BinaryDocValues) docValuesCache.get(fi);
-    }
+    return simpleDVProducer.getBinary(fi);
   }
 
   // nocommit shrink the sync'd part to a cache miss
-  synchronized SortedDocValues getSortedDocValues(String field, boolean direct) throws IOException {
+  synchronized SortedDocValues getSortedDocValues(String field) throws IOException {
     FieldInfo fi = fieldInfos.fieldInfo(field);
     if (fi == null) {
+      // Field does not exist
+      return null;
+    }
+    if (fi.getDocValuesType() == null) {
+      // Field was not indexed with doc values
       return null;
     }
     if (!DocValues.isSortedBytes(fi.getDocValuesType())) {
-      throw new IllegalArgumentException("field \"" + field + "\" was not indexed as a sorted doc values field");
+      // DocValues were not sorted
+      return null;
     }
 
-    if (direct) {
-      return simpleDVProducer.getDirectSorted(fi);
-    } else {
-      if (!docValuesCache.containsKey(fi)) {
-        SortedDocValues dv = simpleDVProducer.getSorted(fi);
-        if (dv != null) {
-          docValuesCache.put(fi, dv);
-        }
-      }
-      return (SortedDocValues) docValuesCache.get(fi);
-    }
+    return simpleDVProducer.getSorted(fi);
   }
 
   // nocommit binary, sorted too

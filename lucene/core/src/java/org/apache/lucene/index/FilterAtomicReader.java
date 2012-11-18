@@ -412,21 +412,21 @@ public class FilterAtomicReader extends AtomicReader {
   }
 
   @Override
-  public NumericDocValues getNumericDocValues(String field, boolean direct) throws IOException {
+  public NumericDocValues getNumericDocValues(String field) throws IOException {
     ensureOpen();
-    return in.getNumericDocValues(field, direct);
+    return in.getNumericDocValues(field);
   }
   
   @Override
-  public BinaryDocValues getBinaryDocValues(String field, boolean direct) throws IOException {
+  public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     ensureOpen();
-    return in.getBinaryDocValues(field, direct);
+    return in.getBinaryDocValues(field);
   }
 
   @Override
-  public SortedDocValues getSortedDocValues(String field, boolean direct) throws IOException {
+  public SortedDocValues getSortedDocValues(String field) throws IOException {
     ensureOpen();
-    return in.getSortedDocValues(field, direct);
+    return in.getSortedDocValues(field);
   }
   
   @Override

@@ -41,7 +41,9 @@ public class FloatDocValuesField extends StoredField {
    */
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDocValueType(DocValues.Type.FLOAT_32);
+    // nocommit kinda messy ... if user calls .numericValue
+    // they get back strange int ... hmmm
+    TYPE.setDocValueType(DocValues.Type.FIXED_INTS_32);
     TYPE.freeze();
   }
 
@@ -53,6 +55,8 @@ public class FloatDocValuesField extends StoredField {
    */
   public FloatDocValuesField(String name, float value) {
     super(name, TYPE);
-    fieldsData = Float.valueOf(value);
+    // nocommit kinda messy ... if user calls .numericValue
+    // they get back strange int ... hmmm
+    fieldsData = Float.floatToRawIntBits(value);
   }
 }

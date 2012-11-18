@@ -35,86 +35,9 @@ public abstract class SimpleDVProducer implements Closeable {
     this.maxDoc = maxDoc;
   }
 
-  public abstract NumericDocValues getDirectNumeric(FieldInfo field) throws IOException;
+  public abstract NumericDocValues getNumeric(FieldInfo field) throws IOException;
 
-  /** Loads all values into RAM. */
-  public NumericDocValues getNumeric(FieldInfo field) throws IOException {
-    NumericDocValues source = getDirectNumeric(field);
-    // nocommit more ram efficient?
-    final long[] values = new long[maxDoc];
-    for(int docID=0;docID<maxDoc;docID++) {
-      values[docID] = source.get(docID);
-    }
-    return new NumericDocValues() {
-      @Override
-      public long get(int docID) {
-        return values[docID];
-      }
-    };
-  }
+  public abstract BinaryDocValues getBinary(FieldInfo field) throws IOException;
 
-  public abstract BinaryDocValues getDirectBinary(FieldInfo field) throws IOException;
-
-  /** Loads all values into RAM. */
-  public BinaryDocValues getBinary(FieldInfo field) throws IOException {
-    
-    BinaryDocValues source = getDirectBinary(field);
-
-    // nocommit more ram efficient
-    final byte[][] values = new byte[maxDoc][];
-    BytesRef scratch = new BytesRef();
-    for(int docID=0;docID<maxDoc;docID++) {
-      source.get(docID, scratch);
-      values[docID] = new byte[scratch.length];
-      System.arraycopy(scratch.bytes, scratch.offset, values[docID], 0, scratch.length);
-    }
-
-    return new BinaryDocValues() {
-      @Override
-      public void get(int docID, BytesRef result) {
-        result.bytes = values[docID];
-        result.offset = 0;
-        result.length = result.bytes.length;
-      }
-    };
-  }
-
-  public abstract SortedDocValues getDirectSorted(FieldInfo field) throws IOException;
-
-  /** Loads all values into RAM. */
-  public SortedDocValues getSorted(FieldInfo field) throws IOException {
-    SortedDocValues source = getDirectSorted(field);
-    final int valueCount = source.getValueCount();
-    final byte[][] values = new byte[valueCount][];
-    BytesRef scratch = new BytesRef();
-    for(int ord=0;ord<valueCount;ord++) {
-      source.lookupOrd(ord, scratch);
-      values[ord] = new byte[scratch.length];
-      System.arraycopy(scratch.bytes, scratch.offset, values[ord], 0, scratch.length);
-    }
-
-    final int[] ords = new int[maxDoc];
-    for(int docID=0;docID<maxDoc;docID++) {
-      ords[docID] = source.getOrd(docID);
-    }
-
-    return new SortedDocValues() {
-      @Override
-      public int getOrd(int docID) {
-        return ords[docID];
-      }
-
-      @Override
-      public void lookupOrd(int ord, BytesRef result) {
-        result.bytes = values[ord];
-        result.offset = 0;
-        result.length = result.bytes.length;
-      }
-
-      @Override
-      public int getValueCount() {
-        return valueCount;
-      }
-    };
-  }
+  public abstract SortedDocValues getSorted(FieldInfo field) throws IOException;
 }
