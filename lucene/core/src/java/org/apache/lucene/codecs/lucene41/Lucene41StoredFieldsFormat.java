@@ -53,7 +53,6 @@ import org.apache.lucene.util.packed.PackedInts;
  * <li>FieldData (.fdt) --&gt; &lt;Header&gt;, PackedIntsVersion, CompressionFormat, &lt;Chunk&gt;<sup>ChunkCount</sup></li>
  * <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
  * <li>PackedIntsVersion --&gt; {@link PackedInts#VERSION_CURRENT} as a {@link DataOutput#writeVInt VInt}</li>
- * <li>CompressionFormat --&gt; always <tt>0</tt> as a {@link DataOutput#writeVInt VInt}, this may allow for different compression formats in the future</li>
  * <li>ChunkCount is not known in advance and is the number of chunks necessary to store all document of the segment</li>
  * <li>Chunk --&gt; DocBase, ChunkDocs, DocFieldCounts, DocLengths, &lt;CompressedDocs&gt;</li>
  * <li>DocBase --&gt; the ID of the first document of the chunk as a {@link DataOutput#writeVInt VInt}</li>
@@ -147,7 +146,7 @@ public final class Lucene41StoredFieldsFormat extends CompressingStoredFieldsFor
 
   /** Sole constructor. */
   public Lucene41StoredFieldsFormat() {
-    super(CompressionMode.FAST, 1 << 14);
+    super("Lucene41StoredFields", CompressionMode.FAST, 1 << 14);
   }
 
 }

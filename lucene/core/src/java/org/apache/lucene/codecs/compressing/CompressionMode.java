@@ -33,7 +33,7 @@ import org.apache.lucene.util.BytesRef;
  * decompression of stored fields.
  * @lucene.experimental
  */
-public enum CompressionMode {
+public abstract class CompressionMode {
 
   /**
    * A compression mode that trades compression ratio for speed. Although the
@@ -41,19 +41,24 @@ public enum CompressionMode {
    * very fast. Use this mode with indices that have a high update rate but
    * should be able to load documents from disk quickly.
    */
-  FAST(0) {
+  public static final CompressionMode FAST = new CompressionMode() {
 
     @Override
-    Compressor newCompressor() {
+    public Compressor newCompressor() {
       return LZ4_FAST_COMPRESSOR;
     }
 
     @Override
-    Decompressor newDecompressor() {
+    public Decompressor newDecompressor() {
       return LZ4_DECOMPRESSOR;
     }
 
-  },
+    @Override
+    public String toString() {
+      return "FAST";
+    }
+
+  };
 
   /**
    * A compression mode that trades speed for compression ratio. Although
@@ -61,19 +66,24 @@ public enum CompressionMode {
    * provide a good compression ratio. This mode might be interesting if/when
    * your index size is much bigger than your OS cache.
    */
-  HIGH_COMPRESSION(1) {
+  public static final CompressionMode HIGH_COMPRESSION = new CompressionMode() {
 
     @Override
-    Compressor newCompressor() {
+    public Compressor newCompressor() {
       return new DeflateCompressor(Deflater.BEST_COMPRESSION);
     }
 
     @Override
-    Decompressor newDecompressor() {
+    public Decompressor newDecompressor() {
       return new DeflateDecompressor();
     }
 
-  },
+    @Override
+    public String toString() {
+      return "HIGH_COMPRESSION";
+    }
+
+  };
 
   /**
    * This compression mode is similar to {@link #FAST} but it spends more time
@@ -81,55 +91,37 @@ public enum CompressionMode {
    * mode is best used with indices that have a low update rate but should be
    * able to load documents from disk quickly.
    */
-  FAST_DECOMPRESSION(2) {
+  public static final CompressionMode FAST_DECOMPRESSION = new CompressionMode() {
 
     @Override
-    Compressor newCompressor() {
+    public Compressor newCompressor() {
       return LZ4_HIGH_COMPRESSOR;
     }
 
     @Override
-    Decompressor newDecompressor() {
+    public Decompressor newDecompressor() {
       return LZ4_DECOMPRESSOR;
+    }
+
+    @Override
+    public String toString() {
+      return "FAST_DECOMPRESSION";
     }
 
   };
 
-  /** Get a {@link CompressionMode} according to its id. */
-  public static CompressionMode byId(int id) {
-    for (CompressionMode mode : CompressionMode.values()) {
-      if (mode.getId() == id) {
-        return mode;
-      }
-    }
-    throw new IllegalArgumentException("Unknown id: " + id);
-  }
-
-  private final int id;
-
-  private CompressionMode(int id) {
-    this.id = id;
-  }
-
-  /**
-   * Returns an ID for this compression mode. Should be unique across
-   * {@link CompressionMode}s as it is used for serialization and
-   * unserialization.
-   */
-  public final int getId() {
-    return id;
-  }
+  /** Sole constructor. */
+  protected CompressionMode() {}
 
   /**
    * Create a new {@link Compressor} instance.
    */
-  abstract Compressor newCompressor();
+  public abstract Compressor newCompressor();
 
   /**
    * Create a new {@link Decompressor} instance.
    */
-  abstract Decompressor newDecompressor();
-
+  public abstract Decompressor newDecompressor();
 
   private static final Decompressor LZ4_DECOMPRESSOR = new Decompressor() {
 
@@ -264,6 +256,7 @@ public enum CompressionMode {
 
       if (compressor.needsInput()) {
         // no output
+        assert len == 0 : len;
         out.writeVInt(0);
         return;
       }
