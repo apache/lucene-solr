@@ -97,35 +97,34 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         final int inclusiveLowerPoint, inclusiveUpperPoint;
 
         // Hints:
-        // * binarySearchLookup returns 0, if value was null.
+        // * binarySearchLookup returns -1, if value was null.
         // * the value is <0 if no exact hit was found, the returned value
         //   is (-(insertion point) - 1)
-        if (lowerPoint == 0) {
-          assert lowerVal == null;
-          inclusiveLowerPoint = 1;
-        } else if (includeLower && lowerPoint > 0) {
+        if (lowerPoint == -1 && lowerVal == null) {
+          inclusiveLowerPoint = 0;
+        } else if (includeLower && lowerPoint >= 0) {
           inclusiveLowerPoint = lowerPoint;
-        } else if (lowerPoint > 0) {
+        } else if (lowerPoint >= 0) {
           inclusiveLowerPoint = lowerPoint + 1;
         } else {
-          inclusiveLowerPoint = Math.max(1, -lowerPoint - 1);
+          inclusiveLowerPoint = Math.max(0, -lowerPoint - 1);
         }
         
-        if (upperPoint == 0) {
-          assert upperVal == null;
+        if (upperPoint == -1 && upperVal == null) {
           inclusiveUpperPoint = Integer.MAX_VALUE;  
-        } else if (includeUpper && upperPoint > 0) {
+        } else if (includeUpper && upperPoint >= 0) {
           inclusiveUpperPoint = upperPoint;
-        } else if (upperPoint > 0) {
+        } else if (upperPoint >= 0) {
           inclusiveUpperPoint = upperPoint - 1;
         } else {
           inclusiveUpperPoint = -upperPoint - 2;
         }      
 
-        if (inclusiveUpperPoint <= 0 || inclusiveLowerPoint > inclusiveUpperPoint)
+        if (inclusiveUpperPoint < 0 || inclusiveLowerPoint > inclusiveUpperPoint) {
           return DocIdSet.EMPTY_DOCIDSET;
+        }
         
-        assert inclusiveLowerPoint > 0 && inclusiveUpperPoint > 0;
+        assert inclusiveLowerPoint >= 0 && inclusiveUpperPoint >= 0;
         
         return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
           @Override

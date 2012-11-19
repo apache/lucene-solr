@@ -1628,9 +1628,9 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(1, reader.docFreq(new Term("content", bigTerm)));
 
     FieldCache.DocTermsIndex dti = FieldCache.DEFAULT.getTermsIndex(SlowCompositeReaderWrapper.wrap(reader), "content", random().nextFloat() * PackedInts.FAST);
-    assertEquals(5, dti.numOrd());                // +1 for null ord
+    assertEquals(4, dti.numOrd());
     assertEquals(4, dti.size());
-    assertEquals(bigTermBytesRef, dti.lookup(3, new BytesRef()));
+    assertEquals(bigTermBytesRef, dti.lookup(2, new BytesRef()));
     reader.close();
     dir.close();
   }

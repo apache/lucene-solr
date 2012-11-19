@@ -25,6 +25,11 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 
+// nocommit add javadocs stating that this must open all
+// necessary files "on init", not later eg in .getXXX, else
+// an IW that deletes a commit will cause an SR to hit
+// exceptions....
+
 public abstract class SimpleDVProducer implements Closeable {
 
   public abstract NumericDocValues getNumeric(FieldInfo field) throws IOException;

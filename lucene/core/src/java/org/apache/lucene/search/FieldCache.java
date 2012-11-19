@@ -519,12 +519,14 @@ public interface FieldCache {
   // nocommit: can we merge this api with the SortedDocValues api?
   public abstract static class DocTermsIndex {
 
+    // nocommit remove this?
     public int binarySearchLookup(BytesRef key, BytesRef spare) {
       // this special case is the reason that Arrays.binarySearch() isn't useful.
-      if (key == null)
-        return 0;
-  
-      int low = 1;
+      if (key == null) {
+        return -1;
+      }
+
+      int low = 0;
       int high = numOrd()-1;
 
       while (low <= high) {
@@ -543,24 +545,26 @@ public interface FieldCache {
 
     /** The BytesRef argument must not be null; the method
      *  returns the same BytesRef, or an empty (length=0)
-     *  BytesRef if this ord is the null ord (0). */
+     *  BytesRef if this ord is the null ord (-1). */
     public abstract BytesRef lookup(int ord, BytesRef reuse);
 
     /** Convenience method, to lookup the Term for a doc.
      *  If this doc is deleted or did not have this field,
      *  this will return an empty (length=0) BytesRef. */
     public BytesRef getTerm(int docID, BytesRef reuse) {
-      return lookup(getOrd(docID), reuse);
+      int ord = getOrd(docID);
+      if (ord == -1) {
+        return null;
+      }
+      return lookup(ord, reuse);
     }
 
-    /** Returns sort ord for this document.  Ord 0 is
-     *  reserved for docs that are deleted or did not have
+    /** Returns sort ord for this document.  Ord -1 is
+     *  is returend for docs that are deleted or did not have
      *  this field.  */
     public abstract int getOrd(int docID);
 
-    /** Returns total unique ord count; this includes +1 for
-     *  the null ord (always 0) unless the field was
-     *  indexed with doc values. */
+    /** Returns total unique ord count. */
     public abstract int numOrd();
 
     /** Number of documents */
@@ -568,9 +572,6 @@ public interface FieldCache {
 
     /** Returns a TermsEnum that can iterate over the values in this index entry */
     public abstract TermsEnum getTermsEnum();
-
-    /** @lucene.internal */
-    public abstract PackedInts.Reader getDocToOrd();
   }
 
   /** Checks the internal cache for an appropriate entry, and if none

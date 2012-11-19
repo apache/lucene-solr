@@ -159,7 +159,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
 
      private int docVal(int doc) {
        int ord = idIndex.getOrd(doc);
-       if (ord == 0) {
+       if (ord == -1) {
          return 0;
        } else {
          BytesRef id = idIndex.lookup(ord, tempBR);

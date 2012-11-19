@@ -335,9 +335,6 @@ class FieldCacheImpl implements FieldCache {
             }
           }
         }
-      } else {
-        // nocommit is this right ...
-        docsWithField = new Bits.MatchNoBits(maxDoc);
       }
     }
 
@@ -971,18 +968,13 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    public PackedInts.Reader getDocToOrd() {
-      return docToTermOrd;
-    }
-
-    @Override
     public int numOrd() {
       return numOrd;
     }
 
     @Override
     public int getOrd(int docID) {
-      return (int) docToTermOrd.get(docID);
+      return (int) docToTermOrd.get(docID)-1;
     }
 
     @Override
@@ -1010,17 +1002,17 @@ class FieldCacheImpl implements FieldCache {
       final BytesRef term = new BytesRef();
 
       public DocTermsIndexEnum() {
-        currentOrd = 0;
+        currentOrd = -1;
         currentBlockNumber = 0;
         blocks = bytes.getBlocks();
         blockEnds = bytes.getBlockEnds();
-        currentBlockNumber = bytes.fillAndGetIndex(term, termOrdToBytesOffset.get(0));
+        term.bytes = blocks[0];
         end = blockEnds[currentBlockNumber];
       }
 
       @Override
       public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
-        int low = 1;
+        int low = 0;
         int high = numOrd-1;
         
         while (low <= high) {
@@ -1032,8 +1024,9 @@ class FieldCacheImpl implements FieldCache {
             low = mid + 1;
           else if (cmp > 0)
             high = mid - 1;
-          else
+          else {
             return SeekStatus.FOUND; // key found
+          }
         }
         
         if (low == numOrd) {
@@ -1045,7 +1038,7 @@ class FieldCacheImpl implements FieldCache {
       }
 
       public void seekExact(long ord) throws IOException {
-        assert(ord >= 0 && ord <= numOrd);
+        assert ord >= 0 && ord <= numOrd;
         // TODO: if gap is small, could iterate from current position?  Or let user decide that?
         currentBlockNumber = bytes.fillAndGetIndex(term, termOrdToBytesOffset.get((int)ord));
         end = blockEnds[currentBlockNumber];
@@ -1057,14 +1050,18 @@ class FieldCacheImpl implements FieldCache {
         int start = term.offset + term.length;
         if (start >= end) {
           // switch byte blocks
-          if (currentBlockNumber +1 >= blocks.length) {
+          if (currentBlockNumber+1 >= blocks.length) {
+            assert currentOrd+1 == numOrd: "currentOrd=" + currentOrd + " numOrd=" + numOrd;
             return null;
           }
           currentBlockNumber++;
           term.bytes = blocks[currentBlockNumber];
           end = blockEnds[currentBlockNumber];
           start = 0;
-          if (end<=0) return null;  // special case of empty last array
+          if (end<=0) {
+            assert currentOrd+1 == numOrd;
+            return null;  // special case of empty last array
+          }
         }
 
         currentOrd++;
@@ -1131,6 +1128,12 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
+  // nocommit for DV if you ask for sorted or binary we
+  // should check sorted first?
+
+  // nocommit woudl be nice if .getTErms would return a
+  // DocTermsIndex if one already existed
+
   public DocTermsIndex getTermsIndex(AtomicReader reader, String field) throws IOException {
     return getTermsIndex(reader, field, PackedInts.FAST);
   }
@@ -1180,12 +1183,6 @@ class FieldCacheImpl implements FieldCache {
             // nocommit: to the codec api? or can that termsenum just use this thing?
             return null;
           }
-
-          @Override
-          public Reader getDocToOrd() {
-            // nocommit: add this to the codec api!
-            return null;
-          }
         };
       } else {
 
@@ -1206,6 +1203,7 @@ class FieldCacheImpl implements FieldCache {
           termCountHardLimit = maxDoc+1;
         }
 
+        // nocommit use Uninvert?
         if (terms != null) {
           // Try for coarse estimate for number of bits; this
           // should be an underestimate most of the time, which
@@ -1238,8 +1236,9 @@ class FieldCacheImpl implements FieldCache {
         final GrowableWriter docToTermOrd = new GrowableWriter(startTermsBPV, maxDoc, acceptableOverheadRatio);
 
         // 0 is reserved for "unset"
-        bytes.copyUsingLengthPrefix(new BytesRef());
-        int termOrd = 1;
+        int termOrd = 0;
+
+        // nocommit use Uninvert?
 
         if (terms != null) {
           final TermsEnum termsEnum = terms.iterator(null);
@@ -1267,7 +1266,7 @@ class FieldCacheImpl implements FieldCache {
               if (docID == DocIdSetIterator.NO_MORE_DOCS) {
                 break;
               }
-              docToTermOrd.set(docID, termOrd);
+              docToTermOrd.set(docID, 1+termOrd);
             }
             termOrd++;
           }

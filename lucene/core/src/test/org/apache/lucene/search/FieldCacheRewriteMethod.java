@@ -144,7 +144,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         // fill into a OpenBitSet
         do {
           long ord = termsEnum.ord();
-          if (ord > 0) {
+          if (ord >= 0) {
             termSet.set(ord);
           }
         } while (termsEnum.next() != null);
@@ -155,7 +155,11 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
       return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
         @Override
         protected final boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException {
-          return termSet.get(fcsi.getOrd(doc));
+          int ord = fcsi.getOrd(doc);
+          if (ord == -1) {
+            return false;
+          }
+          return termSet.get(ord);
         }
       };
     }

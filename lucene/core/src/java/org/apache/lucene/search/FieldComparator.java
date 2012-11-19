@@ -1171,6 +1171,9 @@ public abstract class FieldComparator<T> {
       return docValue.compareTo(value);
     }
 
+    // nocommit remove null from FC DocTerms/Index as an
+    // allowed value
+
     /** Base class for specialized (per bit width of the
      * ords) per-segment comparator.  NOTE: this is messy;
      * we do this only because hotspot can't reliably inline
@@ -1218,191 +1221,6 @@ public abstract class FieldComparator<T> {
       }
     }
 
-    // Used per-segment when bit width of doc->ord is 8:
-    private final class ByteOrdComparator extends PerSegmentComparator {
-      private final byte[] readerOrds;
-      private final DocTermsIndex termsIndex;
-      private final int docBase;
-
-      public ByteOrdComparator(byte[] readerOrds, DocTermsIndex termsIndex, int docBase) {
-        this.readerOrds = readerOrds;
-        this.termsIndex = termsIndex;
-        this.docBase = docBase;
-      }
-
-      @Override
-      public int compareBottom(int doc) {
-        assert bottomSlot != -1;
-        final int docOrd = (readerOrds[doc]&0xFF);
-        if (bottomSameReader) {
-          // ord is precisely comparable, even in the equal case
-          return bottomOrd - docOrd;
-        } else if (bottomOrd >= docOrd) {
-          // the equals case always means bottom is > doc
-          // (because we set bottomOrd to the lower bound in
-          // setBottom):
-          return 1;
-        } else {
-          return -1;
-        }
-      }
-
-      @Override
-      public void copy(int slot, int doc) {
-        final int ord = readerOrds[doc]&0xFF;
-        ords[slot] = ord;
-        if (ord == 0) {
-          values[slot] = null;
-        } else {
-          assert ord > 0;
-          if (values[slot] == null) {
-            values[slot] = new BytesRef();
-          }
-          termsIndex.lookup(ord, values[slot]);
-        }
-        readerGen[slot] = currentReaderGen;
-      }
-    }
-
-    // Used per-segment when bit width of doc->ord is 16:
-    private final class ShortOrdComparator extends PerSegmentComparator {
-      private final short[] readerOrds;
-      private final DocTermsIndex termsIndex;
-      private final int docBase;
-
-      public ShortOrdComparator(short[] readerOrds, DocTermsIndex termsIndex, int docBase) {
-        this.readerOrds = readerOrds;
-        this.termsIndex = termsIndex;
-        this.docBase = docBase;
-      }
-
-      @Override
-      public int compareBottom(int doc) {
-        assert bottomSlot != -1;
-        final int docOrd = (readerOrds[doc]&0xFFFF);
-        if (bottomSameReader) {
-          // ord is precisely comparable, even in the equal case
-          return bottomOrd - docOrd;
-        } else if (bottomOrd >= docOrd) {
-          // the equals case always means bottom is > doc
-          // (because we set bottomOrd to the lower bound in
-          // setBottom):
-          return 1;
-        } else {
-          return -1;
-        }
-      }
-
-      @Override
-      public void copy(int slot, int doc) {
-        final int ord = readerOrds[doc]&0xFFFF;
-        ords[slot] = ord;
-        if (ord == 0) {
-          values[slot] = null;
-        } else {
-          assert ord > 0;
-          if (values[slot] == null) {
-            values[slot] = new BytesRef();
-          }
-          termsIndex.lookup(ord, values[slot]);
-        }
-        readerGen[slot] = currentReaderGen;
-      }
-    }
-
-    // Used per-segment when bit width of doc->ord is 32:
-    private final class IntOrdComparator extends PerSegmentComparator {
-      private final int[] readerOrds;
-      private final DocTermsIndex termsIndex;
-      private final int docBase;
-
-      public IntOrdComparator(int[] readerOrds, DocTermsIndex termsIndex, int docBase) {
-        this.readerOrds = readerOrds;
-        this.termsIndex = termsIndex;
-        this.docBase = docBase;
-      }
-
-      @Override
-      public int compareBottom(int doc) {
-        assert bottomSlot != -1;
-        final int docOrd = readerOrds[doc];
-        if (bottomSameReader) {
-          // ord is precisely comparable, even in the equal case
-          return bottomOrd - docOrd;
-        } else if (bottomOrd >= docOrd) {
-          // the equals case always means bottom is > doc
-          // (because we set bottomOrd to the lower bound in
-          // setBottom):
-          return 1;
-        } else {
-          return -1;
-        }
-      }
-
-      @Override
-      public void copy(int slot, int doc) {
-        final int ord = readerOrds[doc];
-        ords[slot] = ord;
-        if (ord == 0) {
-          values[slot] = null;
-        } else {
-          assert ord > 0;
-          if (values[slot] == null) {
-            values[slot] = new BytesRef();
-          }
-          termsIndex.lookup(ord, values[slot]);
-        }
-        readerGen[slot] = currentReaderGen;
-      }
-    }
-
-    // Used per-segment when bit width is not a native array
-    // size (8, 16, 32):
-    private final class AnyDocToOrdComparator extends PerSegmentComparator {
-      private final PackedInts.Reader readerOrds;
-      private final DocTermsIndex termsIndex;
-      private final int docBase;
-
-      public AnyDocToOrdComparator(PackedInts.Reader readerOrds, DocTermsIndex termsIndex, int docBase) {
-        this.readerOrds = readerOrds;
-        this.termsIndex = termsIndex;
-        this.docBase = docBase;
-      }
-
-      @Override
-      public int compareBottom(int doc) {
-        assert bottomSlot != -1;
-        final int docOrd = (int) readerOrds.get(doc);
-        if (bottomSameReader) {
-          // ord is precisely comparable, even in the equal case
-          return bottomOrd - docOrd;
-        } else if (bottomOrd >= docOrd) {
-          // the equals case always means bottom is > doc
-          // (because we set bottomOrd to the lower bound in
-          // setBottom):
-          return 1;
-        } else {
-          return -1;
-        }
-      }
-
-      @Override
-      public void copy(int slot, int doc) {
-        final int ord = (int) readerOrds.get(doc);
-        ords[slot] = ord;
-        if (ord == 0) {
-          values[slot] = null;
-        } else {
-          assert ord > 0;
-          if (values[slot] == null) {
-            values[slot] = new BytesRef();
-          }
-          termsIndex.lookup(ord, values[slot]);
-        }
-        readerGen[slot] = currentReaderGen;
-      }
-    }
-
     // Used per-segment when docToOrd is null:
     private final class AnyOrdComparator extends PerSegmentComparator {
       private final DocTermsIndex termsIndex;
@@ -1416,7 +1234,7 @@ public abstract class FieldComparator<T> {
       @Override
       public int compareBottom(int doc) {
         assert bottomSlot != -1;
-        final int docOrd = (int) termsIndex.getOrd(doc);
+        final int docOrd = termsIndex.getOrd(doc);
         if (bottomSameReader) {
           // ord is precisely comparable, even in the equal case
           return bottomOrd - docOrd;
@@ -1432,12 +1250,12 @@ public abstract class FieldComparator<T> {
 
       @Override
       public void copy(int slot, int doc) {
-        final int ord = (int) termsIndex.getOrd(doc);
+        final int ord = termsIndex.getOrd(doc);
         ords[slot] = ord;
-        if (ord == 0) {
+        if (ord == -1) {
           values[slot] = null;
         } else {
-          assert ord > 0;
+          assert ord >= 0;
           if (values[slot] == null) {
             values[slot] = new BytesRef();
           }
@@ -1451,29 +1269,7 @@ public abstract class FieldComparator<T> {
     public FieldComparator<BytesRef> setNextReader(AtomicReaderContext context) throws IOException {
       final int docBase = context.docBase;
       termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
-      final PackedInts.Reader docToOrd = termsIndex.getDocToOrd();
-      FieldComparator<BytesRef> perSegComp = null;
-      if (docToOrd != null && docToOrd.hasArray()) {
-        final Object arr = docToOrd.getArray();
-        if (arr instanceof byte[]) {
-          perSegComp = new ByteOrdComparator((byte[]) arr, termsIndex, docBase);
-        } else if (arr instanceof short[]) {
-          perSegComp = new ShortOrdComparator((short[]) arr, termsIndex, docBase);
-        } else if (arr instanceof int[]) {
-          perSegComp = new IntOrdComparator((int[]) arr, termsIndex, docBase);
-        }
-        // Don't specialize the long[] case since it's not
-        // possible, ie, worse case is MAX_INT-1 docs with
-        // every one having a unique value.
-      }
-      if (perSegComp == null) {
-        if (docToOrd != null) {
-          perSegComp = new AnyDocToOrdComparator(docToOrd, termsIndex, docBase);
-        } else {
-          perSegComp = new AnyOrdComparator(termsIndex, docBase);
-        }
-      }
-
+      FieldComparator<BytesRef> perSegComp = new AnyOrdComparator(termsIndex, docBase);
       currentReaderGen++;
       if (bottomSlot != -1) {
         perSegComp.setBottom(bottomSlot);
@@ -1492,9 +1288,9 @@ public abstract class FieldComparator<T> {
         bottomSameReader = true;
       } else {
         if (bottomValue == null) {
-          // 0 ord is null for all segments
-          assert ords[bottomSlot] == 0;
-          bottomOrd = 0;
+          // -1 ord is null for all segments
+          assert ords[bottomSlot] == -1;
+          bottomOrd = -1;
           bottomSameReader = true;
           readerGen[bottomSlot] = currentReaderGen;
         } else {
@@ -2118,7 +1914,7 @@ public abstract class FieldComparator<T> {
   }
 
   final protected static int binarySearch(BytesRef br, DocTermsIndex a, BytesRef key) {
-    return binarySearch(br, a, key, 1, a.numOrd()-1);
+    return binarySearch(br, a, key, 0, a.numOrd()-1);
   }
 
   final protected static int binarySearch(BytesRef br, DocTermsIndex a, BytesRef key, int low, int high) {

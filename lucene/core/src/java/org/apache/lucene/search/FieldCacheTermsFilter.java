@@ -122,15 +122,21 @@ public class FieldCacheTermsFilter extends Filter {
     final FixedBitSet bits = new FixedBitSet(fcsi.numOrd());
     final BytesRef spare = new BytesRef();
     for (int i=0;i<terms.length;i++) {
-      int termNumber = fcsi.binarySearchLookup(terms[i], spare);
-      if (termNumber > 0) {
-        bits.set(termNumber);
+      int ord = fcsi.binarySearchLookup(terms[i], spare);
+      if (ord >= 0) {
+        bits.set(ord);
       }
     }
     return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
       @Override
       protected final boolean matchDoc(int doc) {
-        return bits.get(fcsi.getOrd(doc));
+        int ord = fcsi.getOrd(doc);
+        if (ord == -1) {
+          // missing
+          return false;
+        } else {
+          return bits.get(ord);
+        }
       }
     };
   }

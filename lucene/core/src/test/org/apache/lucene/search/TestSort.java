@@ -211,6 +211,7 @@ public class TestSort extends LuceneTestCase {
         writer.addDocument (doc);
       }
     }
+
     IndexReader reader = writer.getReader();
     writer.close ();
     IndexSearcher s = newSearcher(reader);
@@ -252,6 +253,8 @@ public class TestSort extends LuceneTestCase {
       }
 
       String numFixed = getRandomCharString(fixedLen, 48, 52);
+      // nocommit shouldn't this be tracer_fixed?  how is
+      // this passing?
       doc.add (new Field ("fixed_tracer", numFixed, onlyStored));
       //doc.add (new Field ("contents", Integer.toString(i), Field.Store.NO, Field.Index.ANALYZED));
       doc.add(new StringField("string_fixed", numFixed, Field.Store.NO));
@@ -269,11 +272,42 @@ public class TestSort extends LuceneTestCase {
 
       writer.addDocument (doc);
     }
+    // nocommit
     //writer.forceMerge(1);
     //System.out.println(writer.getSegmentCount());
     writer.close();
     IndexReader reader = DirectoryReader.open(indexStore);
-    return newSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
+
+    /*
+    for(int docID=0;docID<reader.maxDoc();docID++) {
+      StoredDocument doc = reader.document(docID);
+      String s = doc.get("tracer");
+      TopDocs hits = searcher.search(new TermQuery(new Term("string", s)), NUM_STRINGS);
+      System.out.println("string=" + s + " has " + hits.totalHits + " docs");
+      boolean found = false;
+      for(int hit=0;!found && hit<hits.totalHits;hit++) {
+        if (hits.scoreDocs[hit].doc == docID) {
+          found = true;
+          break;
+        }
+      }
+      assertTrue(found);
+      s = doc.get("tracer2");
+      hits = searcher.search(new TermQuery(new Term("string2", s)), NUM_STRINGS);
+      System.out.println("string2=" + s + " has " + hits.totalHits + " docs");
+      found = false;
+      for(int hit=0;!found && hit<hits.totalHits;hit++) {
+        if (hits.scoreDocs[hit].doc == docID) {
+          found = true;
+          break;
+        }
+      }
+      assertTrue(found);
+    }
+    */
+
+    return searcher;
   }
   
   public String getRandomNumberString(int num, int low, int high) {
@@ -533,7 +567,7 @@ public class TestSort extends LuceneTestCase {
       StorableField[] v = doc2.getFields("tracer" + fieldSuffix);
       StorableField[] v2 = doc2.getFields("tracer2" + fieldSuffix);
       for (int j = 0; j < v.length; ++j) {
-        buff.append(v[j] + "(" + v2[j] + ")(" + result[x].doc+")\n");
+        buff.append(v[j].stringValue() + "(" + v2[j].stringValue() + ")(" + result[x].doc+")\n");
         if (last != null) {
           int cmp = v[j].stringValue().compareTo(last);
           if (!(cmp >= 0)) { // ensure first field is in order
