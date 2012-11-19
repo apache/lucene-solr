@@ -139,7 +139,6 @@ public abstract class SortedDocValuesConsumer {
       }
 
       BytesRef lastTerm = null;
-      boolean first = true;
       int ord = 0;
       while (q.size() != 0) {
         SegmentState top = q.top();
@@ -148,10 +147,10 @@ public abstract class SortedDocValuesConsumer {
           // nocommit we could spill this to disk instead of
           // RAM, and replay on finish...
           mergedTerms.add(lastTerm);
-          if (lastTerm == null) {
+          ord++;
+          if (fixedLength == -2) {
             fixedLength = lastTerm.length;
           } else {
-            ord++;
             if (lastTerm.length != fixedLength) {
               fixedLength = -1;
             }
