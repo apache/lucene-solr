@@ -480,6 +480,7 @@ public interface FieldCache {
   public Doubles getDoubles(AtomicReader reader, String field, DoubleParser parser, boolean setDocsWithField) throws IOException;
 
   /** Returned by {@link #getTerms} */
+  // nocommit: can we merge this api with the BinaryDocValues api?
   public abstract static class DocTerms {
     /** The BytesRef argument must not be null; the method
      *  returns the same BytesRef, or an empty (length=0)
@@ -515,6 +516,7 @@ public interface FieldCache {
   public DocTerms getTerms (AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException;
 
   /** Returned by {@link #getTermsIndex} */
+  // nocommit: can we merge this api with the SortedDocValues api?
   public abstract static class DocTermsIndex {
 
     public int binarySearchLookup(BytesRef key, BytesRef spare) {
