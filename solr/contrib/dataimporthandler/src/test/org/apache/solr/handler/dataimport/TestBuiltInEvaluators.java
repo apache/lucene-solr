@@ -112,30 +112,38 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
   @Test
   public void testDateFormatEvaluator() {
     Evaluator dateFormatEval = new DateFormatEvaluator();
-    ContextImpl context = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.<String, Object>emptyMap(), null, null);
-    
-    Calendar calendar = new GregorianCalendar();
-    calendar.add(Calendar.DAY_OF_YEAR, -2);
-    
+    ContextImpl context = new ContextImpl(null, resolver, null,
+        Context.FULL_DUMP, Collections.<String,Object> emptyMap(), null, null);
     String currentLocale = Locale.getDefault().toString();
-
-    assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT).format(calendar.getTime()),
-            dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm'", context));    
-    assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(calendar.getTime()),
-        dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm','" + currentLocale + "'", context));
+    {
+      Calendar calendar = new GregorianCalendar(TimeZone.getTimeZone("GMT"),
+          Locale.ROOT);
+      calendar.add(Calendar.DAY_OF_YEAR, -2);
+      Date d = calendar.getTime();
+      
+      assertEquals(
+          new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT).format(d),
+          dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm'", context));
+      assertEquals(
+          new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+              .format(d),
+          dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm','"
+              + currentLocale + "'", context));
+    }
+    Date d = new Date();
     
-    calendar = new GregorianCalendar();
-    Date date = calendar.getTime();
-    
-    Map<String, Object> map = new HashMap<String, Object>();
-    map.put("key", date);
+    Map<String,Object> map = new HashMap<String,Object>();
+    map.put("key", d);
     resolver.addNamespace("A", map);
-
-    assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT).format(date),
-            dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm'", context));
-    assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(date),
-       dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm','" + currentLocale + "'", context));
-   
+    
+    assertEquals(
+        new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT).format(d),
+        dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm'", context));
+    assertEquals(
+        new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(d),
+        dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm','" + currentLocale
+            + "'", context));
+    
   }
 
   private void runTests(Map<String, String> tests, Evaluator evaluator) {
