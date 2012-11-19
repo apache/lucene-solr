@@ -21,10 +21,8 @@ import java.io.IOException;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.lucene41.values.Lucene41DocValuesProducer.DocValuesFactory;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -35,21 +33,23 @@ import org.apache.lucene.util.packed.PackedInts;
 
 import static org.apache.lucene.codecs.lucene41.values.Lucene41BinaryDocValuesConsumer.*;
 
-public class Lucene41BinaryDocValues extends BinaryDocValues {
+public final class Lucene41BinaryDocValues extends BinaryDocValues {
   private final PackedInts.Reader index;
   private final IndexInput data;
   private final long baseOffset;
   private final int size;
   private int maxLength;
+  private final DocValuesFactory<BinaryDocValues> factory;
   
   public Lucene41BinaryDocValues(IndexInput dataIn, long dataOffset, int size,
-      int maxLength, PackedInts.Reader index) throws IOException {
+      int maxLength, PackedInts.Reader index, DocValuesFactory<BinaryDocValues> factory) throws IOException {
     this.data = dataIn;
     
     this.size = size;
     this.maxLength = maxLength;
     this.baseOffset = dataOffset;
     this.index = index;
+    this.factory = factory;
   }
   
   public void get(int docId, BytesRef result) {
@@ -91,6 +91,19 @@ public class Lucene41BinaryDocValues extends BinaryDocValues {
     return maxLength;
   }
   
+  
+  
+  @Override
+  public BinaryDocValues newRAMInstance() {
+    try {
+    return factory == null ? this : factory.getInMemory();
+    } catch (IOException e) {
+      return this; // nocommit ?? now IOException
+    }
+  }
+
+
+
   public static final class Factory extends DocValuesFactory<BinaryDocValues> {
     private final IndexInput datIn;
     private final IndexInput indexIn;
@@ -142,7 +155,7 @@ public class Lucene41BinaryDocValues extends BinaryDocValues {
       return new Lucene41BinaryDocValues(datIn.clone(), this.baseOffset, size,
           maxLength,
           indexHeader == null ? null : PackedInts.getDirectReaderNoHeader(
-              indexIn.clone(), indexHeader));
+              indexIn.clone(), indexHeader), this);
     }
     
     public BinaryDocValues getInMemory() throws IOException {
@@ -154,7 +167,7 @@ public class Lucene41BinaryDocValues extends BinaryDocValues {
           : indexReader.get(indexReader.size() - 1));
       bytes.freeze(true);
       return new Lucene41BinaryDocValues(bytes.getDataInput(), 0, size,
-          maxLength, indexReader);
+          maxLength, indexReader, null);
     }
     
     @Override

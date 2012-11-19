@@ -40,7 +40,7 @@ public class Lucene41SortedDocValuesConsumer extends SortedDocValuesConsumer {
   private final int valueCount;
   
   public Lucene41SortedDocValuesConsumer(IndexOutput dataOut,
-      IndexOutput indexOut, IndexOutput offsetOut, int valueCount, int maxLength)
+      IndexOutput indexOut, IndexOutput offsetOut, int valueCount, int maxLength, int docCount)
       throws IOException {
     int size;
     if (offsetOut != null) {
@@ -56,11 +56,12 @@ public class Lucene41SortedDocValuesConsumer extends SortedDocValuesConsumer {
     CodecUtil.writeHeader(dataOut, CODEC_NAME, VERSION_START);
     dataOut.writeInt(size);
     dataOut.writeInt(maxLength);
+    dataOut.writeInt(valueCount);
     CodecUtil.writeHeader(indexOut, CODEC_NAME, VERSION_START);
     this.data = dataOut;
     this.index = indexOut;
     this.valueCount = valueCount;
-    ords = PackedInts.getWriter(index, valueCount,
+    ords = PackedInts.getWriter(index, docCount,
         PackedInts.bitsRequired(valueCount-1), PackedInts.DEFAULT);
   }
   

@@ -138,7 +138,7 @@ public class Lucene41DocValuesConsumer extends SimpleDVConsumer {
         offsetOut = getDirectory().createOutput(offOut, context);
       }
       Lucene41SortedDocValuesConsumer consumer = new Lucene41SortedDocValuesConsumer(
-          dataOut, indexOut, offsetOut, valueCount, maxLength);
+          dataOut, indexOut, offsetOut, valueCount, maxLength, this.info.getDocCount());
       success = true;
       return consumer;
     } finally {

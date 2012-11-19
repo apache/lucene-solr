@@ -1,4 +1,5 @@
 package org.apache.lucene.codecs.lucene41.values;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -29,18 +30,19 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedInts.Reader;
 
-
-
 public class Lucene41NumericDocValues extends NumericDocValues {
   
   private final long minValue;
   private final Reader values;
   private final long maxValue;
+  private final DocValuesFactory<NumericDocValues> factory;
   
-  public Lucene41NumericDocValues(PackedInts.Reader reader, long minValue, long maxValue) {
+  public Lucene41NumericDocValues(PackedInts.Reader reader, long minValue,
+      long maxValue, DocValuesFactory<NumericDocValues> factory) {
     this.values = reader;
     this.minValue = minValue;
     this.maxValue = maxValue;
+    this.factory = factory;
   }
   
   @Override
@@ -49,18 +51,30 @@ public class Lucene41NumericDocValues extends NumericDocValues {
     return values.get(docID) + minValue;
   }
   
+  @Override
+  public NumericDocValues newRAMInstance() {
+    try {
+      return factory == null ? this : factory.getInMemory();
+    } catch (IOException e) {
+      return this; // nocommit ?? now IOException
+    }
+  }
+  
   public static final class Factory extends DocValuesFactory<NumericDocValues> {
     private final IndexInput datIn;
     private final PackedInts.Header header;
     private final long minValue;
     private final long maxValue;
-
-    public Factory(Directory dir, SegmentInfo segmentInfo, FieldInfo field, IOContext context) throws IOException {
-      this.datIn = dir.openInput(Lucene41DocValuesConsumer.getDocValuesFileName(segmentInfo, field,
-          Lucene41DocValuesConsumer.DATA_EXTENSION), context);
+    
+    public Factory(Directory dir, SegmentInfo segmentInfo, FieldInfo field,
+        IOContext context) throws IOException {
+      this.datIn = dir.openInput(Lucene41DocValuesConsumer
+          .getDocValuesFileName(segmentInfo, field,
+              Lucene41DocValuesConsumer.DATA_EXTENSION), context);
       boolean success = false;
       try {
-        CodecUtil.checkHeader(datIn, Lucene41NumericDocValuesConsumer.CODEC_NAME,
+        CodecUtil.checkHeader(datIn,
+            Lucene41NumericDocValuesConsumer.CODEC_NAME,
             Lucene41NumericDocValuesConsumer.VERSION_START,
             Lucene41NumericDocValuesConsumer.VERSION_START);
         minValue = datIn.readLong();
@@ -76,30 +90,32 @@ public class Lucene41NumericDocValues extends NumericDocValues {
     
     public NumericDocValues getDirect() throws IOException {
       IndexInput input = datIn.clone();
-      return new Lucene41NumericDocValues(PackedInts.getDirectReaderNoHeader(input, header), minValue, maxValue);
+      return new Lucene41NumericDocValues(PackedInts.getDirectReaderNoHeader(
+          input, header), minValue, maxValue, this);
     }
     
     public NumericDocValues getInMemory() throws IOException {
       IndexInput input = datIn.clone();
-      return new Lucene41NumericDocValues(PackedInts.getReaderNoHeader(input, header), minValue, maxValue);
+      return new Lucene41NumericDocValues(PackedInts.getReaderNoHeader(input,
+          header), minValue, maxValue, null);
     }
-
+    
     @Override
     public void close() throws IOException {
       IOUtils.close(datIn);
     }
   }
-
+  
   @Override
   public long minValue() {
     return minValue;
   }
-
+  
   @Override
   public long maxValue() {
     return maxValue;
   }
-
+  
   @Override
   public int size() {
     return values.size();

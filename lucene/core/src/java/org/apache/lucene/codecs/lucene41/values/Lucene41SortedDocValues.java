@@ -43,17 +43,20 @@ public class Lucene41SortedDocValues extends SortedDocValues {
   private final int valueCount;
   private int size;
   private int maxLength;
+  private final DocValuesFactory<SortedDocValues> factory;
   
   public Lucene41SortedDocValues(IndexInput dataIn, long dataOffset, int size,
-      int maxLength, PackedInts.Reader index, PackedInts.Reader offsets)
+      int maxLength, int valueCount, PackedInts.Reader index, PackedInts.Reader offsets, DocValuesFactory<SortedDocValues> factory)
       throws IOException {
     this.data = dataIn;
     this.size = size;
     this.maxLength = maxLength;
     this.baseOffset = dataOffset;
+    this.valueCount = valueCount;
     this.docToOrdIndex = index;
-    this.valueCount = docToOrdIndex.size();
     ordToOffsetIndex = offsets;
+    this.factory = factory;
+    
   }
   
   @Override
@@ -64,12 +67,15 @@ public class Lucene41SortedDocValues extends SortedDocValues {
   @Override
   public void lookupOrd(int ord, BytesRef result) {
     try {
+      assert ord < valueCount;
       final long offset;
       final int length;
       if (ordToOffsetIndex != null) {
         offset = ordToOffsetIndex.get(ord);
+        
         // 1+ord is safe because we write a sentinel at the end
         final long nextOffset = ordToOffsetIndex.get(1 + ord);
+        assert offset <= nextOffset : "offset: " + offset + " nextOffset: " + nextOffset + " ord: " + ord + " numValues: " + valueCount;
         length = (int) (nextOffset - offset);
       } else {
         length = size;
@@ -105,6 +111,15 @@ public class Lucene41SortedDocValues extends SortedDocValues {
     return maxLength;
   }
   
+  @Override
+  public SortedDocValues newRAMInstance() {
+    try {
+      return factory == null ? this : factory.getInMemory();
+    } catch (IOException e) {
+      return this; // nocommit ?? now IOException
+    }
+  }
+
   public static final class Factory extends
       DocValuesFactory<SortedDocValues> {
     private final IndexInput datIn;
@@ -112,9 +127,10 @@ public class Lucene41SortedDocValues extends SortedDocValues {
     private final PackedInts.Header offsetHeader;
     private final IndexInput indexIn;
     private final PackedInts.Header indexHeader;
-    private int size;
-    private int maxLength;
-    private long baseOffset;
+    private final int size;
+    private final int maxLength;
+    private final long baseOffset;
+    private final int valueCount;
     
     public Factory(Directory dir,
         SegmentInfo segmentInfo, FieldInfo field, IOContext context)
@@ -136,6 +152,7 @@ public class Lucene41SortedDocValues extends SortedDocValues {
         indexHeader = PackedInts.readHeader(indexIn);
         this.size = datIn.readInt();
         this.maxLength = datIn.readInt();
+        this.valueCount = datIn.readInt();
         this.baseOffset = datIn.getFilePointer();
         
         if (size == Lucene41BinaryDocValuesConsumer.VALUE_SIZE_VAR) {
@@ -162,10 +179,10 @@ public class Lucene41SortedDocValues extends SortedDocValues {
     
     public SortedDocValues getDirect() throws IOException {
       return new Lucene41SortedDocValues(datIn.clone(), this.baseOffset, size,
-          maxLength, PackedInts.getDirectReaderNoHeader(indexIn.clone(),
+          maxLength, valueCount, PackedInts.getDirectReaderNoHeader(indexIn.clone(),
               indexHeader), offsetHeader == null ? null
               : PackedInts.getDirectReaderNoHeader(offsetIn.clone(),
-                  offsetHeader));
+                  offsetHeader), this);
     }
     
     public Lucene41SortedDocValues getInMemory() throws IOException {
@@ -181,7 +198,7 @@ public class Lucene41SortedDocValues extends SortedDocValues {
               .get(offsetReader.size() - 1));
       bytes.freeze(true);
       return new Lucene41SortedDocValues(bytes.getDataInput(), 0, size,
-          maxLength, indexReader, offsetReader);
+          maxLength, valueCount, indexReader, offsetReader, this);
     }
     
     @Override
