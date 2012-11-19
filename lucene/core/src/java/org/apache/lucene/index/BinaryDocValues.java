@@ -23,11 +23,77 @@ import org.apache.lucene.util.BytesRef;
 public abstract class BinaryDocValues {
   // nocommit throws IOE or not?
   public abstract void get(int docID, BytesRef result);
+  
+  public abstract int size();
+  
+  public abstract boolean isFixedLength();
+  public abstract int maxLength();
+  
+  public BinaryDocValues newRAMInstance() {
+    // TODO: optimize this default impl with e.g. isFixedLength/maxLength and so on
+    // nocommit used packed ints/pagedbytes and so on
+    final int maxDoc = size();
+    final int maxLength = maxLength();
+    final boolean fixedLength = isFixedLength();
+    final byte[][] values = new byte[maxDoc][];
+    BytesRef scratch = new BytesRef();
+    for(int docID=0;docID<maxDoc;docID++) {
+      get(docID, scratch);
+      values[docID] = new byte[scratch.length];
+      System.arraycopy(scratch.bytes, scratch.offset, values[docID], 0, scratch.length);
+    }
+    
+    return new BinaryDocValues() {
 
-  public static final BinaryDocValues DEFAULT = new BinaryDocValues() {
       @Override
-      public void get(int docID, BytesRef ret) {
-        ret.length = 0;
+      public void get(int docID, BytesRef result) {
+        result.bytes = values[docID];
+        result.offset = 0;
+        result.length = result.bytes.length;
+      }
+
+      @Override
+      public int size() {
+        return maxDoc;
+      }
+
+      @Override
+      public boolean isFixedLength() {
+        return fixedLength;
+      }
+
+      @Override
+      public int maxLength() {
+        return maxLength;
       }
     };
+  }
+  
+  public static class EMPTY extends BinaryDocValues {
+    private final int size;
+    
+    public EMPTY(int size) {
+      this.size = size;
+    }
+    
+    @Override
+    public void get(int docID, BytesRef result) {
+      result.length = 0;
+    }
+
+    @Override
+    public int size() {
+      return size;
+    }
+
+    @Override
+    public boolean isFixedLength() {
+      return true;
+    }
+
+    @Override
+    public int maxLength() {
+      return 0;
+    }
+  };
 }

@@ -29,9 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.BinaryDocValuesConsumer;
-import org.apache.lucene.codecs.DocValuesArraySource;
 import org.apache.lucene.codecs.NumericDocValuesConsumer;
-import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
@@ -54,7 +52,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.packed.PackedInts;
 
 
 /**
@@ -70,6 +67,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   final static BytesRef MINVALUE = new BytesRef("  minvalue ");
   final static BytesRef PATTERN  = new BytesRef("  pattern ");
   // used for bytes
+  final static BytesRef FIXEDLENGTH = new BytesRef("  fixedlength ");
   final static BytesRef MAXLENGTH = new BytesRef("  maxlength ");
   final static BytesRef LENGTH = new BytesRef("length ");
   // used for sorted bytes
@@ -103,6 +101,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
    *  for bytes this is also a "fixed-width" file, for example:
    *  <pre>
    *  field myField
+   *    fixedlength false
    *    maxlength 8
    *    pattern 0
    *  length 6
@@ -142,8 +141,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   static class SimpleTextDocValuesWriter extends SimpleDVConsumer {
     final IndexOutput data;
     final BytesRef scratch = new BytesRef();
-
-    final int numDocs; // for asserting
+    final int numDocs;
     private final Set<String> fieldsSeen = new HashSet<String>(); // for asserting
     
     SimpleTextDocValuesWriter(Directory dir, SegmentInfo si, IOContext context) throws IOException {
@@ -215,6 +213,10 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     public BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, final int maxLength) throws IOException {
       assert fieldSeen(field.name);
       writeFieldEntry(field);
+      // write fixedlength
+      SimpleTextUtil.write(data, FIXEDLENGTH);
+      SimpleTextUtil.write(data, Boolean.toString(fixedLength), scratch);
+      SimpleTextUtil.writeNewline(data);
       // write maxLength
       SimpleTextUtil.write(data, MAXLENGTH);
       SimpleTextUtil.write(data, Integer.toString(maxLength), scratch);
@@ -377,6 +379,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       String pattern;
       String ordPattern;
       int maxLength;
+      boolean fixedLength;
       long minValue;
       int numValues;
     };
@@ -419,6 +422,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           field.dataStartFilePointer = data.getFilePointer();
           data.seek(data.getFilePointer() + (1+field.pattern.length()) * maxDoc);
         } else if (DocValues.isBytes(dvType)) {
+          readLine();
+          assert startsWith(FIXEDLENGTH);
+          field.fixedLength = Boolean.parseBoolean(stripPrefix(FIXEDLENGTH));
           readLine();
           assert startsWith(MAXLENGTH);
           field.maxLength = Integer.parseInt(stripPrefix(MAXLENGTH));
@@ -528,6 +534,21 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
             // nocommit should .get() just throw IOE...
             throw new RuntimeException(ioe);
           }
+        }
+
+        @Override
+        public int size() {
+          return maxDoc;
+        }
+
+        @Override
+        public boolean isFixedLength() {
+          return field.fixedLength;
+        }
+
+        @Override
+        public int maxLength() {
+          return field.maxLength;
         }
       };
     }

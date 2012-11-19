@@ -1334,22 +1334,15 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
         throws IOException {
 
-      final int maxDoc = reader.maxDoc();
       BinaryDocValues valuesIn = reader.getBinaryDocValues(key.field);
       if (valuesIn != null) {
-        // nocommit used packed ints like below!
-        final byte[][] values = new byte[maxDoc][];
-        BytesRef scratch = new BytesRef();
-        for(int docID=0;docID<maxDoc;docID++) {
-          valuesIn.get(docID, scratch);
-          values[docID] = new byte[scratch.length];
-          System.arraycopy(scratch.bytes, scratch.offset, values[docID], 0, scratch.length);
-        }
-
+        final BinaryDocValues ramInstance = valuesIn.newRAMInstance();
         return new DocTerms() {
+
           @Override
-          public int size() {
-            return maxDoc;
+          public BytesRef getTerm(int docID, BytesRef ret) {
+            ramInstance.get(docID, ret);
+            return ret;
           }
 
           @Override
@@ -1359,15 +1352,12 @@ class FieldCacheImpl implements FieldCache {
           }
 
           @Override
-          public BytesRef getTerm(int docID, BytesRef ret) {
-            ret.bytes = values[docID];
-            ret.length = ret.bytes.length;
-            ret.offset = 0;
-            return ret;
-          }      
+          public int size() {
+            return ramInstance.size();
+          }     
         };
       } else {
-
+        final int maxDoc = reader.maxDoc();
         Terms terms = reader.terms(key.field);
 
         final float acceptableOverheadRatio = ((Float) key.custom).floatValue();

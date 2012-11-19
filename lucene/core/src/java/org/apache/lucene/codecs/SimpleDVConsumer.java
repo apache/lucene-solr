@@ -104,6 +104,7 @@ public abstract class SimpleDVConsumer implements Closeable {
   // dead simple impl: codec can optimize
   protected void mergeBinaryField(MergeState mergeState) throws IOException {
     // first compute fixedLength and maxLength of live ones to be merged.
+    // nocommit: messy, and can be simplified by using docValues.maxLength/fixedLength in many cases.
     boolean fixedLength = true;
     int maxLength = -1;
     BytesRef bytes = new BytesRef();
@@ -112,7 +113,7 @@ public abstract class SimpleDVConsumer implements Closeable {
       final Bits liveDocs = reader.getLiveDocs();
       BinaryDocValues docValues = reader.getBinaryDocValues(mergeState.fieldInfo.name);
       if (docValues == null) {
-        docValues = BinaryDocValues.DEFAULT;
+        docValues = new BinaryDocValues.EMPTY(maxDoc);
       }
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {

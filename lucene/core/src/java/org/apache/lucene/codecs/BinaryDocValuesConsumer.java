@@ -21,8 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DocValues.Source;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -40,7 +38,7 @@ public abstract class BinaryDocValuesConsumer {
 
       BinaryDocValues source = reader.getBinaryDocValues(mergeState.fieldInfo.name);
       if (source == null) {
-        source = BinaryDocValues.DEFAULT;
+        source = new BinaryDocValues.EMPTY(maxDoc);
       }
 
       for (int i = 0; i < maxDoc; i++) {
