@@ -85,7 +85,7 @@ public abstract class SimpleDVConsumer implements Closeable {
       //System.out.println("merge field=" + mergeState.fieldInfo.name);
       NumericDocValues docValues = reader.getNumericDocValues(mergeState.fieldInfo.name);
       if (docValues == null) {
-        docValues = new NumericDocValues.EMPTY(1);
+        docValues = new NumericDocValues.EMPTY(maxDoc);
       }
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {

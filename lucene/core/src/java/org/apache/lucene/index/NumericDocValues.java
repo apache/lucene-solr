@@ -25,6 +25,48 @@ public abstract class NumericDocValues {
   public abstract long minValue();
   public abstract long maxValue();
   public abstract int size();
+  
+  public NumericDocValues newRAMInstance() {
+    // TODO: optimize this default impl with e.g. isFixedLength/maxLength and so on
+    // nocommit used packed ints/pagedbytes and so on
+    final int maxDoc = size();
+    final long minValue = minValue();
+    final long maxValue = maxValue();
+
+    final long[] values = new long[maxDoc];
+    for(int docID=0;docID<maxDoc;docID++) {
+      values[docID] = get(docID);
+    }
+    
+    return new NumericDocValues() {
+
+      @Override
+      public long get(int docID) {
+        return values[docID];
+      }
+
+      @Override
+      public int size() {
+        return maxDoc;
+      }
+
+      @Override
+      public long minValue() {
+        return minValue;
+      }
+
+      @Override
+      public long maxValue() {
+        return maxValue;
+      }
+
+      @Override
+      public NumericDocValues newRAMInstance() {
+        // nocommit: ugly, maybe throw exception instead?
+        return this; 
+      }
+    };
+  }
 
   public static final class EMPTY extends NumericDocValues {
     private final int size;
