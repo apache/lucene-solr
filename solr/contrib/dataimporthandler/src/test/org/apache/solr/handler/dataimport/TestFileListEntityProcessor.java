@@ -21,6 +21,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -47,7 +48,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
             FileListEntityProcessor.FILE_NAME, "xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath());
     Context c = getContext(null,
-            new VariableResolverImpl(), null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
+            new VariableResolver(), null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
     FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
     fileListEntityProcessor.init(c);
     List<String> fList = new ArrayList<String>();
@@ -108,14 +109,14 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
             FileListEntityProcessor.FILE_NAME, ".*",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.SMALLER_THAN, "${a.x}");
-    VariableResolverImpl resolver = new VariableResolverImpl();
+    VariableResolver resolver = new VariableResolver();
     resolver.addNamespace("a", createMap("x", "4"));
     fList = getFiles(resolver, attrs);
     assertEquals(l, new HashSet<String>(fList));
   }
 
   @SuppressWarnings("unchecked")
-  static List<String> getFiles(VariableResolverImpl resolver, Map attrs) {
+  static List<String> getFiles(VariableResolver resolver, Map attrs) {
     Context c = getContext(null,
             resolver, null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
     FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
@@ -158,8 +159,8 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
             FileListEntityProcessor.FILE_NAME, ".xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.NEWER_THAN, "${a.x}");
-    VariableResolverImpl resolver = new VariableResolverImpl();
-    String lastMod = DataImporter.DATE_TIME_FORMAT.get().format(new Date(System.currentTimeMillis() - 50000));
+    VariableResolver resolver = new VariableResolver();
+    String lastMod = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).format(new Date(System.currentTimeMillis() - 50000));
     resolver.addNamespace("a", createMap("x", lastMod));
     createFile(tmpdir, "t.xml", "t.xml".getBytes(), false);
     fList = getFiles(resolver, attrs);

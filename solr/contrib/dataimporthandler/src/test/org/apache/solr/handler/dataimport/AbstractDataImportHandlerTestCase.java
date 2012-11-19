@@ -133,10 +133,10 @@ public abstract class AbstractDataImportHandlerTestCase extends
    */
   @SuppressWarnings("unchecked")
   public static TestContext getContext(EntityProcessorWrapper parent,
-                                   VariableResolverImpl resolver, DataSource parentDataSource,
+                                   VariableResolver resolver, DataSource parentDataSource,
                                    String currProcess, final List<Map<String, String>> entityFields,
                                    final Map<String, String> entityAttrs) {
-    if (resolver == null) resolver = new VariableResolverImpl();
+    if (resolver == null) resolver = new VariableResolver();
     final Context delegate = new ContextImpl(parent, resolver,
             parentDataSource, currProcess,
             new HashMap<String, Object>(), null, null);

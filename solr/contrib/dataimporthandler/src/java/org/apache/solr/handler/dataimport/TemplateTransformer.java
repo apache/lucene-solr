@@ -55,7 +55,7 @@ public class TemplateTransformer extends Transformer {
   @SuppressWarnings("unchecked")
   public Object transformRow(Map<String, Object> row, Context context) {
 
-    VariableResolverImpl resolver = (VariableResolverImpl) context
+    VariableResolver resolver = (VariableResolver) context
             .getVariableResolver();
     // Add current row to the copy of resolver map
 //    for (Map.Entry<String, Object> entry : row.entrySet())
@@ -69,7 +69,11 @@ public class TemplateTransformer extends Transformer {
 
       // Verify if all variables can be resolved or not
       boolean resolvable = true;
-      List<String> variables = getVars(expr);
+      List<String> variables = this.templateVsVars.get(expr);
+      if(variables == null){
+        variables = resolver.getVariables(expr);
+        this.templateVsVars.put(expr, variables);
+      }
       for (String v : variables) {
         if (resolver.resolve(v) == null) {
           LOG.warn("Unable to resolve variable: " + v
@@ -91,15 +95,5 @@ public class TemplateTransformer extends Transformer {
 
     return row;
   }
-
-  private List<String> getVars(String expr) {
-    List<String> result = this.templateVsVars.get(expr);
-    if(result == null){
-      result = TemplateString.getVariables(expr);
-      this.templateVsVars.put(expr, result);
-    }
-    return result;
-  }
-
   public static final String TEMPLATE = "template";
 }

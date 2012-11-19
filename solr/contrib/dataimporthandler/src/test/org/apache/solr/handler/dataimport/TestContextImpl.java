@@ -25,7 +25,7 @@ public class TestContextImpl extends AbstractDataImportHandlerTestCase {
   
   @Test
   public void testEntityScope() {
-    ContextImpl ctx = new ContextImpl(null, new VariableResolverImpl(), null, "something", new HashMap<String,Object>(), null, null);
+    ContextImpl ctx = new ContextImpl(null, new VariableResolver(), null, "something", new HashMap<String,Object>(), null, null);
     String lala = new String("lala");
     ctx.setSessionAttribute("huhu", lala, Context.SCOPE_ENTITY);
     Object got = ctx.getSessionAttribute("huhu", Context.SCOPE_ENTITY);
@@ -38,7 +38,7 @@ public class TestContextImpl extends AbstractDataImportHandlerTestCase {
     DataImporter di = new DataImporter();
     di.loadAndInit("<dataConfig><document /></dataConfig>");
     DocBuilder db = new DocBuilder(di, new SolrWriter(null, null),new SimplePropertiesWriter(), new RequestInfo(new HashMap<String,Object>(), null));
-    ContextImpl ctx = new ContextImpl(null, new VariableResolverImpl(), null, "something", new HashMap<String,Object>(), null, db);
+    ContextImpl ctx = new ContextImpl(null, new VariableResolver(), null, "something", new HashMap<String,Object>(), null, db);
     String lala = new String("lala");
     ctx.setSessionAttribute("huhu", lala, Context.SCOPE_SOLR_CORE);
     Object got = ctx.getSessionAttribute("huhu", Context.SCOPE_SOLR_CORE);
@@ -47,7 +47,7 @@ public class TestContextImpl extends AbstractDataImportHandlerTestCase {
   }
   @Test
   public void testDocumentScope() {
-    ContextImpl ctx = new ContextImpl(null, new VariableResolverImpl(), null, "something", new HashMap<String,Object>(), null, null);
+    ContextImpl ctx = new ContextImpl(null, new VariableResolver(), null, "something", new HashMap<String,Object>(), null, null);
     ctx.setDoc(new DocBuilder.DocWrapper());
     String lala = new String("lala");
     ctx.setSessionAttribute("huhu", lala, Context.SCOPE_DOC);
@@ -58,7 +58,7 @@ public class TestContextImpl extends AbstractDataImportHandlerTestCase {
   }
   @Test
   public void testGlobalScope() {
-    ContextImpl ctx = new ContextImpl(null, new VariableResolverImpl(), null, "something", new HashMap<String,Object>(), null, null);
+    ContextImpl ctx = new ContextImpl(null, new VariableResolver(), null, "something", new HashMap<String,Object>(), null, null);
     String lala = new String("lala");
     ctx.setSessionAttribute("huhu", lala, Context.SCOPE_GLOBAL);
     Object got = ctx.getSessionAttribute("huhu", Context.SCOPE_GLOBAL);

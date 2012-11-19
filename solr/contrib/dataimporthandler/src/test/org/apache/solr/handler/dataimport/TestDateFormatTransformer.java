@@ -45,7 +45,7 @@ public class TestDateFormatTransformer extends AbstractDataImportHandlerTestCase
 
     Map row = createMap("lastModified", format.format(now));
 
-    VariableResolverImpl resolver = new VariableResolverImpl();
+    VariableResolver resolver = new VariableResolver();
     resolver.addNamespace("e", row);
 
     Context context = getContext(null, resolver,
@@ -73,7 +73,7 @@ public class TestDateFormatTransformer extends AbstractDataImportHandlerTestCase
     list.add(format.format(now2));
     row.put("lastModified", list);
 
-    VariableResolverImpl resolver = new VariableResolverImpl();
+    VariableResolver resolver = new VariableResolver();
     resolver.addNamespace("e", row);
 
     Context context = getContext(null, resolver,

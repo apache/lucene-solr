@@ -58,7 +58,7 @@ public class TestTemplateTransformer extends AbstractDataImportHandlerTestCase {
             "lastName", "Mangar",
             "mail", mails);
 
-    VariableResolverImpl resolver = new VariableResolverImpl();
+    VariableResolver resolver = new VariableResolver();
     resolver.addNamespace("e", row);
     Map<String, String> entityAttrs = createMap("name", "e");
 
