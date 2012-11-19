@@ -1391,6 +1391,29 @@ public class CheckIndex {
     }
   }
   
+  private void checkSortedDocValues(FieldInfo fi, SegmentReader reader, SortedDocValues dv) {
+    checkBinaryDocValues(fi, reader, dv);
+    final int maxOrd = dv.getValueCount()-1;
+    int maxOrd2 = -1;
+    for (int i = 0; i < reader.maxDoc(); i++) {
+      maxOrd2 = Math.max(maxOrd2, dv.getOrd(i));
+    }
+    if (maxOrd != maxOrd2) {
+      throw new RuntimeException("dv for field: " + fi.name + " reports wrong maxOrd=" + maxOrd + " but this is not the case: " + maxOrd2);
+    }
+    BytesRef lastValue = null;
+    BytesRef scratch = new BytesRef();
+    for (int i = 0; i <= maxOrd; i++) {
+      dv.lookupOrd(i, scratch);
+      if (lastValue != null) {
+        if (scratch.compareTo(lastValue) <= 0) {
+          throw new RuntimeException("dv for field: " + fi.name + " has ords out of order: " + lastValue + " >=" + scratch);
+        }
+      }
+      lastValue = BytesRef.deepCopyOf(scratch);
+    }
+  }
+  
   private void checkNumericDocValues(FieldInfo fi, SegmentReader reader, NumericDocValues ndv) {
     final long minValue = ndv.minValue();
     final long maxValue = ndv.maxValue();
@@ -1416,7 +1439,7 @@ public class CheckIndex {
       case BYTES_VAR_SORTED:
       case BYTES_FIXED_DEREF:
       case BYTES_VAR_DEREF:
-        checkBinaryDocValues(fi, reader, reader.getSortedDocValues(fi.name));
+        checkSortedDocValues(fi, reader, reader.getSortedDocValues(fi.name));
         break;
       case BYTES_FIXED_STRAIGHT:
       case BYTES_VAR_STRAIGHT:
