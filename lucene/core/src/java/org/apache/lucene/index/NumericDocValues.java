@@ -21,11 +21,36 @@ package org.apache.lucene.index;
 public abstract class NumericDocValues {
   // nocommit throws IOE or not?
   public abstract long get(int docID);
+  
+  public abstract long minValue();
+  public abstract long maxValue();
+  public abstract int size();
 
-  public static final NumericDocValues DEFAULT = new NumericDocValues() {
-      @Override
-      public long get(int docID) {
-        return 0;
-      }
-    };
+  public static final class EMPTY extends NumericDocValues {
+    private final int size;
+    
+    public EMPTY(int size) {
+      this.size = size;
+    }
+
+    @Override
+    public long get(int docID) {
+      return 0;
+    }
+
+    @Override
+    public long minValue() {
+      return 0;
+    }
+
+    @Override
+    public long maxValue() {
+      return 0;
+    }
+
+    @Override
+    public int size() {
+      return size;
+    }
+  };
 }

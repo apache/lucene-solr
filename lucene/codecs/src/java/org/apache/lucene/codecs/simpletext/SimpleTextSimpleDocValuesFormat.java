@@ -65,6 +65,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   final static BytesRef FIELD   = new BytesRef("field ");
   // used for numerics
   final static BytesRef MINVALUE = new BytesRef("  minvalue ");
+  final static BytesRef MAXVALUE = new BytesRef("  maxvalue ");
   final static BytesRef PATTERN  = new BytesRef("  pattern ");
   // used for bytes
   final static BytesRef FIXEDLENGTH = new BytesRef("  fixedlength ");
@@ -89,6 +90,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
    *  <pre>
    *  field myField
    *    minvalue 0
+   *    maxvalue 234
    *    pattern 000
    *  005
    *  234
@@ -164,6 +166,10 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       // write our minimum value to the .dat, all entries are deltas from that
       SimpleTextUtil.write(data, MINVALUE);
       SimpleTextUtil.write(data, Long.toString(minValue), scratch);
+      SimpleTextUtil.writeNewline(data);
+      
+      SimpleTextUtil.write(data, MAXVALUE);
+      SimpleTextUtil.write(data, Long.toString(maxValue), scratch);
       SimpleTextUtil.writeNewline(data);
 
       assert maxValue >= minValue;
@@ -386,6 +392,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       int maxLength;
       boolean fixedLength;
       long minValue;
+      long maxValue;
       int numValues;
     };
 
@@ -421,6 +428,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           readLine();
           assert startsWith(MINVALUE);
           field.minValue = Long.parseLong(stripPrefix(MINVALUE));
+          readLine();
+          assert startsWith(MAXVALUE);
+          field.maxValue = Long.parseLong(stripPrefix(MAXVALUE));
           readLine();
           assert startsWith(PATTERN);
           field.pattern = stripPrefix(PATTERN);
@@ -499,6 +509,21 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           } catch (IOException ioe) {
             throw new RuntimeException(ioe);
           }
+        }
+
+        @Override
+        public long minValue() {
+          return field.minValue;
+        }
+
+        @Override
+        public long maxValue() {
+          return field.maxValue;
+        }
+
+        @Override
+        public int size() {
+          return maxDoc;
         }
       };
     }

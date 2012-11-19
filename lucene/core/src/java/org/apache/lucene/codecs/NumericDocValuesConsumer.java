@@ -38,7 +38,7 @@ public abstract class NumericDocValuesConsumer {
       final Bits liveDocs = reader.getLiveDocs();
       NumericDocValues source = reader.getNumericDocValues(mergeState.fieldInfo.name);
       if (source == null) {
-        source = NumericDocValues.DEFAULT;
+        source = new NumericDocValues.EMPTY(maxDoc);
       }
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {
