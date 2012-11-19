@@ -230,6 +230,11 @@ Other Changes
 
 * SOLR-4067: ZkStateReader#getLeaderProps should not return props for a leader
   that it does not think is live. (Mark Miller)
+  
+* SOLR-4086: DIH refactor of VariableResolver and Evaluator.  VariableResolver
+  and each built-in Evaluator are separate concrete classes.  DateFormatEvaluator
+  now defaults with the ROOT Locale. However, users may specify a different 
+  Locale using an optional new third parameter. (James Dyer) 
 
 ==================  4.0.0 ==================
 

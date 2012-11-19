@@ -31,6 +31,7 @@ import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -67,7 +68,7 @@ public class DocBuilder {
   Map<String, Object> session = new HashMap<String, Object>();
 
   static final ThreadLocal<DocBuilder> INSTANCE = new ThreadLocal<DocBuilder>();
-  private Map<String, Object> functionsNamespace;
+  //private Map<String, Object> functionsNamespace;
   private Map<String, Object> persistedProperties;
   
   private DIHProperties propWriter;
@@ -85,8 +86,7 @@ public class DocBuilder {
     DataImporter.QUERY_COUNT.set(importStatistics.queryCount);
     verboseDebug = reqParams.isDebug() && reqParams.getDebugInfo().verbose;
     persistedProperties = propWriter.readIndexerProperties();
-    functionsNamespace = EvaluatorBag.getFunctionsNamespace(this.dataImporter.getConfig().getFunctions(), this, getVariableResolver());
-    
+     
     String writerClassStr = null;
     if(reqParams!=null && reqParams.getRawParams() != null) {
       writerClassStr = (String) reqParams.getRawParams().get(PARAM_WRITER_IMPL);
@@ -113,13 +113,16 @@ public class DocBuilder {
     return debugLogger;
   }
 
-  public VariableResolverImpl getVariableResolver() {
+  private VariableResolver getVariableResolver() {
     try {
-      VariableResolverImpl resolver = null;
+      VariableResolver resolver = null;
       if(dataImporter != null && dataImporter.getCore() != null
           && dataImporter.getCore().getResourceLoader().getCoreProperties() != null){
-        resolver =  new VariableResolverImpl(dataImporter.getCore().getResourceLoader().getCoreProperties());
-      } else resolver = new VariableResolverImpl();
+        resolver =  new VariableResolver(dataImporter.getCore().getResourceLoader().getCoreProperties());
+      } else {
+        resolver = new VariableResolver();
+      }
+      resolver.setEvaluators(dataImporter.getEvaluators());
       Map<String, Object> indexerNamespace = new HashMap<String, Object>();
       if (persistedProperties.get(LAST_INDEX_TIME) != null) {
         indexerNamespace.put(LAST_INDEX_TIME, persistedProperties.get(LAST_INDEX_TIME));
@@ -129,7 +132,6 @@ public class DocBuilder {
       }
       indexerNamespace.put(INDEX_START_TIME, dataImporter.getIndexStartTime());
       indexerNamespace.put("request", reqParams.getRawParams());
-      indexerNamespace.put("functions", functionsNamespace);
       for (Entity entity : dataImporter.getConfig().getEntities()) {
         String key = entity.getName() + "." + SolrWriter.LAST_INDEX_KEY;
         Object lastIndex = persistedProperties.get(key);
@@ -149,12 +151,6 @@ public class DocBuilder {
     }
   }
   
-  private Map<String,Object> getFunctionsNamespace() {
-    if(functionsNamespace==null) {
-      
-    }
-    return functionsNamespace;
-  }
 
   private void invokeEventListener(String className) {
     try {
@@ -241,7 +237,7 @@ public class DocBuilder {
 
       if (stop.get()) {
         // Dont commit if aborted using command=abort
-        statusMessages.put("Aborted", DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
+        statusMessages.put("Aborted", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).format(new Date()));
         rollback();
       } else {
         // Do not commit unnecessarily if this is a delta-import and no documents were created or deleted
@@ -327,7 +323,7 @@ public class DocBuilder {
   @SuppressWarnings("unchecked")
   private void doDelta() {
     addStatusMessage("Delta Dump started");
-    VariableResolverImpl resolver = getVariableResolver();
+    VariableResolver resolver = getVariableResolver();
 
     if (config.getDeleteQuery() != null) {
       writer.deleteByQuery(config.getDeleteQuery());
@@ -350,7 +346,7 @@ public class DocBuilder {
     writer.setDeltaKeys(allPks);
 
     statusMessages.put("Total Changed Documents", allPks.size());
-    VariableResolverImpl vri = getVariableResolver();
+    VariableResolver vri = getVariableResolver();
     Iterator<Map<String, Object>> pkIter = allPks.iterator();
     while (pkIter.hasNext()) {
       Map<String, Object> map = pkIter.next();
@@ -390,7 +386,7 @@ public class DocBuilder {
   
   @SuppressWarnings("unchecked")
   public void addStatusMessage(String msg) {
-    statusMessages.put(msg, DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
+    statusMessages.put(msg, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).format(new Date()));
   }
 
   private void resetEntity(EntityProcessorWrapper epw) {
@@ -401,7 +397,7 @@ public class DocBuilder {
     
   }
   
-  private void buildDocument(VariableResolverImpl vr, DocWrapper doc,
+  private void buildDocument(VariableResolver vr, DocWrapper doc,
       Map<String,Object> pk, EntityProcessorWrapper epw, boolean isRoot,
       ContextImpl parentCtx) {
     List<EntityProcessorWrapper> entitiesToDestroy = new ArrayList<EntityProcessorWrapper>();
@@ -418,7 +414,7 @@ public class DocBuilder {
   }
 
   @SuppressWarnings("unchecked")
-  private void buildDocument(VariableResolverImpl vr, DocWrapper doc,
+  private void buildDocument(VariableResolver vr, DocWrapper doc,
                              Map<String, Object> pk, EntityProcessorWrapper epw, boolean isRoot,
                              ContextImpl parentCtx, List<EntityProcessorWrapper> entitiesToDestroy) {
 
@@ -734,7 +730,7 @@ public class DocBuilder {
    * @return an iterator to the list of keys for which Solr documents should be updated.
    */
   @SuppressWarnings("unchecked")
-  public Set<Map<String, Object>> collectDelta(EntityProcessorWrapper epw, VariableResolverImpl resolver,
+  public Set<Map<String, Object>> collectDelta(EntityProcessorWrapper epw, VariableResolver resolver,
                                                Set<Map<String, Object>> deletedRows) {
     //someone called abort
     if (stop.get())
@@ -816,14 +812,16 @@ public class DocBuilder {
       // identifying deleted rows with deltas
 
       for (Map<String, Object> row : myModifiedPks) {
-        getModifiedParentRows(resolver.addNamespace(epw.getEntity().getName(), row), epw.getEntity().getName(), epw, parentKeyList);
+        resolver.addNamespace(epw.getEntity().getName(), row);
+        getModifiedParentRows(resolver, epw.getEntity().getName(), epw, parentKeyList);
         // check for abort
         if (stop.get())
           return new HashSet();
       }
       // running the same for deletedrows
       for (Map<String, Object> row : deletedSet) {
-        getModifiedParentRows(resolver.addNamespace(epw.getEntity().getName(), row), epw.getEntity().getName(), epw, parentKeyList);
+        resolver.addNamespace(epw.getEntity().getName(), row);
+        getModifiedParentRows(resolver, epw.getEntity().getName(), epw, parentKeyList);
         // check for abort
         if (stop.get())
           return new HashSet();
@@ -838,7 +836,7 @@ public class DocBuilder {
         myModifiedPks : new HashSet<Map<String, Object>>(parentKeyList);
   }
 
-  private void getModifiedParentRows(VariableResolverImpl resolver,
+  private void getModifiedParentRows(VariableResolver resolver,
                                      String entity, EntityProcessor entityProcessor,
                                      Set<Map<String, Object>> parentKeyList) {
     try {

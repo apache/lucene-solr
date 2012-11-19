@@ -27,7 +27,7 @@ import org.junit.Test;
 public class TestURLDataSource extends AbstractDataImportHandlerTestCase {
   private List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
   private URLDataSource dataSource = new URLDataSource();
-  private VariableResolverImpl variableResolver = new VariableResolverImpl();
+  private VariableResolver variableResolver = new VariableResolver();
   private Context context = AbstractDataImportHandlerTestCase.getContext(null, variableResolver,
       dataSource, Context.FULL_DUMP, fields, null);
   private Properties initProps = new Properties();

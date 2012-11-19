@@ -34,6 +34,10 @@ import org.apache.solr.handler.dataimport.config.Script;
 
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
+import static org.apache.solr.handler.dataimport.DocBuilder.loadClass;
+import static org.apache.solr.handler.dataimport.config.ConfigNameConstants.CLASS;
+import static org.apache.solr.handler.dataimport.config.ConfigNameConstants.NAME;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -511,6 +515,30 @@ public class DataImporter {
   DocBuilder getDocBuilder() {
     return docBuilder;
   }
+  
+  Map<String, Evaluator> getEvaluators() {
+    return getEvaluators(config.getFunctions());
+  }
+  
+  /**
+   * used by tests.
+   */
+  Map<String, Evaluator> getEvaluators(List<Map<String,String>> fn) {
+    Map<String, Evaluator> evaluators = new HashMap<String, Evaluator>();
+    evaluators.put(Evaluator.DATE_FORMAT_EVALUATOR, new DateFormatEvaluator());
+    evaluators.put(Evaluator.SQL_ESCAPE_EVALUATOR, new SqlEscapingEvaluator());
+    evaluators.put(Evaluator.URL_ENCODE_EVALUATOR, new UrlEvaluator());
+    evaluators.put(Evaluator.ESCAPE_SOLR_QUERY_CHARS, new SolrQueryEscapingEvaluator());
+    SolrCore core = docBuilder == null ? null : docBuilder.dataImporter.getCore();
+    for (Map<String, String> map : fn) {
+      try {
+        evaluators.put(map.get(NAME), (Evaluator) loadClass(map.get(CLASS), core).newInstance());
+      } catch (Exception e) {
+        wrapAndThrow(SEVERE, e, "Unable to instantiate evaluator: " + map.get(CLASS));
+      }
+    }
+    return evaluators;    
+  }
 
   static final ThreadLocal<AtomicLong> QUERY_COUNT = new ThreadLocal<AtomicLong>() {
     @Override
@@ -519,12 +547,7 @@ public class DataImporter {
     }
   };
 
-  static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT = new ThreadLocal<SimpleDateFormat>() {
-    @Override
-    protected SimpleDateFormat initialValue() {
-      return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    }
-  };
+  
 
   static final class MSG {
     public static final String NO_CONFIG_FOUND = "Configuration not found";
@@ -598,4 +621,5 @@ public class DataImporter {
   public static final String RELOAD_CONF_CMD = "reload-config";
 
   public static final String SHOW_CONF_CMD = "show-config";
+  
 }

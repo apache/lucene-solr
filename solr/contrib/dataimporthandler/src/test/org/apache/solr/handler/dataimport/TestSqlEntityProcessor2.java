@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.text.SimpleDateFormat;
 import java.text.ParseException;
 
@@ -70,15 +71,15 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
   static class DateFormatValidatingEvaluator extends Evaluator {
     @Override
     public String evaluate(String expression, Context context) {
-      List l = EvaluatorBag.parseParams(expression, context.getVariableResolver());
+      List l = new DateFormatEvaluator().parseParams(expression, context.getVariableResolver());
       Object o = l.get(0);
       String dateStr = null;
-      if (o instanceof EvaluatorBag.VariableWrapper) {
-        EvaluatorBag.VariableWrapper wrapper = (EvaluatorBag.VariableWrapper) o;
+      if (o instanceof Evaluator.VariableWrapper) {
+        Evaluator.VariableWrapper wrapper = (Evaluator.VariableWrapper) o;
         o = wrapper.resolve();
         dateStr = o.toString();
       }
-      SimpleDateFormat formatter = DataImporter.DATE_TIME_FORMAT.get();
+      SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
       try {
         formatter.parse(dateStr);
       } catch (ParseException e) {
