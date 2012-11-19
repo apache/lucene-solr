@@ -1341,6 +1341,15 @@ public class CheckIndex {
           status.totalValueFields++;
           final DocValues docValues = reader.docValues(fieldInfo.name);
           checkDocValues(docValues, fieldInfo.name, fieldInfo.getDocValuesType(), reader.maxDoc());
+          // nocommit hack hack hack
+          if (reader.core.simpleDVProducer != null) {
+            checkSimpleDocValues(fieldInfo, reader);
+          } else {
+            // hack hack hack
+            if (info.info.getCodec().getName().equals("SimpleText")) {
+              throw new RuntimeException("docvalues lost for field: " + fieldInfo + "!!!!");
+            }
+          }
         } else {
           if (reader.docValues(fieldInfo.name) != null) {
             throw new RuntimeException("field: " + fieldInfo.name + " has docvalues but should omit them!");
@@ -1357,6 +1366,74 @@ public class CheckIndex {
       }
     }
     return status;
+  }
+  
+  private void checkBinaryDocValues(FieldInfo fi, SegmentReader reader, BinaryDocValues dv) {
+    final boolean fixed = dv.isFixedLength();
+    final int maxLength = dv.maxLength();
+    boolean fixed2 = true;
+    int maxLength2 = -1;
+    BytesRef scratch = new BytesRef();
+    for (int i = 0; i < reader.maxDoc(); i++) {
+      dv.get(i, scratch);
+      if (maxLength2 == -1) {
+        maxLength2 = scratch.length;
+      } else {
+        fixed2 &= scratch.length == maxLength2;
+        maxLength2 = Math.max(maxLength2, scratch.length);
+      }
+    }
+    if (fixed != fixed2) {
+      throw new RuntimeException("dv for field: " + fi.name + " reports fixed=" + fixed + " but this is not the case!");
+    }
+    if (maxLength != maxLength2) {
+      throw new RuntimeException("dv for field: " + fi.name + " reports maxLength=" + maxLength + " but this is not the case: " + maxLength2);
+    }
+  }
+  
+  private void checkNumericDocValues(FieldInfo fi, SegmentReader reader, NumericDocValues ndv) {
+    final long minValue = ndv.minValue();
+    final long maxValue = ndv.maxValue();
+    long minValue2 = Long.MAX_VALUE;
+    long maxValue2 = Long.MIN_VALUE;
+    for (int i = 0; i < reader.maxDoc(); i++) {
+      long value = ndv.get(i);
+      minValue2 = Math.min(minValue2, value);
+      maxValue2 = Math.max(maxValue2, value);
+    }
+    if (minValue != minValue2) {
+      throw new RuntimeException("dv for field: " + fi.name + " reports minValue=" + minValue + " but this is not the case: " + minValue2);
+    }
+    if (maxValue != maxValue2) {
+      throw new RuntimeException("dv for field: " + fi.name + " reports maxValue=" + maxValue + " but this is not the case: " + maxValue2);
+    }
+  }
+  
+  // nocommit
+  private void checkSimpleDocValues(FieldInfo fi, SegmentReader reader) throws Exception {
+    switch(fi.getDocValuesType()) {
+      case BYTES_FIXED_SORTED:
+      case BYTES_VAR_SORTED:
+      case BYTES_FIXED_DEREF:
+      case BYTES_VAR_DEREF:
+        checkBinaryDocValues(fi, reader, reader.getSortedDocValues(fi.name));
+        break;
+      case BYTES_FIXED_STRAIGHT:
+      case BYTES_VAR_STRAIGHT:
+        checkBinaryDocValues(fi, reader, reader.getBinaryDocValues(fi.name));
+        break;
+      case FLOAT_32:
+      case FLOAT_64:
+      case VAR_INTS:
+      case FIXED_INTS_16:
+      case FIXED_INTS_32:
+      case FIXED_INTS_64:
+      case FIXED_INTS_8:
+        checkNumericDocValues(fi, reader, reader.getNumericDocValues(fi.name));
+        break;
+      default:
+        throw new AssertionError();
+    }
   }
 
   /**
