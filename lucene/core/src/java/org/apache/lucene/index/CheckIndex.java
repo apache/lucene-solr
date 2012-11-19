@@ -1394,12 +1394,21 @@ public class CheckIndex {
   private void checkSortedDocValues(FieldInfo fi, SegmentReader reader, SortedDocValues dv) {
     checkBinaryDocValues(fi, reader, dv);
     final int maxOrd = dv.getValueCount()-1;
+    FixedBitSet seenOrds = new FixedBitSet(dv.getValueCount());
     int maxOrd2 = -1;
     for (int i = 0; i < reader.maxDoc(); i++) {
-      maxOrd2 = Math.max(maxOrd2, dv.getOrd(i));
+      int ord = dv.getOrd(i);
+      if (ord < 0 || ord > maxOrd) {
+        throw new RuntimeException("ord out of bounds: " + ord);
+      }
+      maxOrd2 = Math.max(maxOrd2, ord);
+      seenOrds.set(ord);
     }
     if (maxOrd != maxOrd2) {
       throw new RuntimeException("dv for field: " + fi.name + " reports wrong maxOrd=" + maxOrd + " but this is not the case: " + maxOrd2);
+    }
+    if (seenOrds.cardinality() != dv.getValueCount()) {
+      throw new RuntimeException("dv for field: " + fi.name + " has holes in its ords, valueCount=" + dv.getValueCount() + " but only used: " + seenOrds.cardinality());
     }
     BytesRef lastValue = null;
     BytesRef scratch = new BytesRef();
