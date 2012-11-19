@@ -144,8 +144,7 @@ public class TestVariableResolver extends AbstractDataImportHandlerTestCase {
     
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT);
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
-    DateMathParser dmp = new DateMathParser(TimeZone.getDefault(),
-        Locale.getDefault());
+    DateMathParser dmp = new DateMathParser(TimeZone.getDefault(), Locale.ROOT);
     
     String s = resolver
         .replaceTokens("${dataimporter.functions.formatDate('NOW/DAY','yyyy-MM-dd HH:mm')}");
