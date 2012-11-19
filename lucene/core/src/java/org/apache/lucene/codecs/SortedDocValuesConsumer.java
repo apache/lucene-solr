@@ -106,7 +106,7 @@ public abstract class SortedDocValuesConsumer {
         state.reader = reader;
         state.values = reader.getSortedDocValues(mergeState.fieldInfo.name);
         if (state.values == null) {
-          state.values = SortedDocValues.DEFAULT;
+          state.values = new SortedDocValues.EMPTY(maxDoc);
         }
 
         segStates.add(state);

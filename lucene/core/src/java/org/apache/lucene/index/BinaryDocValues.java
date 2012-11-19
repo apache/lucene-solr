@@ -29,6 +29,8 @@ public abstract class BinaryDocValues {
   public abstract boolean isFixedLength();
   public abstract int maxLength();
   
+  // nocommit: rethink this api? alternative is boolean on atomicreader...?
+  // doc that the thing returned here must be thread safe...
   public BinaryDocValues newRAMInstance() {
     // TODO: optimize this default impl with e.g. isFixedLength/maxLength and so on
     // nocommit used packed ints/pagedbytes and so on
@@ -65,6 +67,12 @@ public abstract class BinaryDocValues {
       @Override
       public int maxLength() {
         return maxLength;
+      }
+
+      @Override
+      public BinaryDocValues newRAMInstance() {
+        // nocommit: ugly, maybe throw exception instead?
+        return this; 
       }
     };
   }

@@ -272,6 +272,11 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       SimpleTextUtil.write(data, Integer.toString(valueCount), scratch);
       SimpleTextUtil.writeNewline(data);
       
+      // write fixedlength
+      SimpleTextUtil.write(data, FIXEDLENGTH);
+      SimpleTextUtil.write(data, Boolean.toString(fixedLength), scratch);
+      SimpleTextUtil.writeNewline(data);
+      
       // write maxLength
       SimpleTextUtil.write(data, MAXLENGTH);
       SimpleTextUtil.write(data, Integer.toString(maxLength), scratch);
@@ -437,6 +442,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           readLine();
           assert startsWith(NUMVALUES);
           field.numValues = Integer.parseInt(stripPrefix(NUMVALUES));
+          readLine();
+          assert startsWith(FIXEDLENGTH);
+          field.fixedLength = Boolean.parseBoolean(stripPrefix(FIXEDLENGTH));
           readLine();
           assert startsWith(MAXLENGTH);
           field.maxLength = Integer.parseInt(stripPrefix(MAXLENGTH));
@@ -612,6 +620,21 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         @Override
         public int getValueCount() {
           return field.numValues;
+        }
+
+        @Override
+        public int size() {
+          return maxDoc;
+        }
+
+        @Override
+        public boolean isFixedLength() {
+          return field.fixedLength;
+        }
+
+        @Override
+        public int maxLength() {
+          return field.maxLength;
         }
       };
     }

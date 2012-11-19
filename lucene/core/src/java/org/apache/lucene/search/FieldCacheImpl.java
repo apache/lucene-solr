@@ -47,6 +47,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedInts.Reader;
 
 // nocommit rename to UninvertFieldCacheImpl or something ...
 
@@ -1141,58 +1142,42 @@ class FieldCacheImpl implements FieldCache {
       final int maxDoc = reader.maxDoc();
       SortedDocValues valuesIn = reader.getSortedDocValues(key.field);
       if (valuesIn != null) {
-        // nocommit used packed ints like below!
-        final byte[][] values = new byte[valuesIn.getValueCount()][];
-        BytesRef scratch = new BytesRef();
-        for(int ord=0;ord<values.length;ord++) {
-          valuesIn.lookupOrd(ord, scratch);
-          values[ord] = new byte[scratch.length];
-          System.arraycopy(scratch.bytes, scratch.offset, values[ord], 0, scratch.length);
-        }
-
-        final int[] docToOrd = new int[maxDoc];
-        for(int docID=0;docID<maxDoc;docID++) {
-          docToOrd[docID] = valuesIn.getOrd(docID);
-        }
-
+        final SortedDocValues ramInstance = valuesIn.newRAMInstance();
         return new DocTermsIndex() {
 
           @Override
-          public PackedInts.Reader getDocToOrd() {
-            // nocommit
-            return null;
-          }
-
-          @Override
-          public int numOrd() {
-            return values.length;
+          public BytesRef lookup(int ord, BytesRef reuse) {
+            ramInstance.lookupOrd(ord, reuse);
+            return reuse;
           }
 
           @Override
           public int getOrd(int docID) {
-            return docToOrd[docID];
+            return ramInstance.getOrd(docID);
+          }
+
+          @Override
+          public int numOrd() {
+            return ramInstance.getValueCount();
           }
 
           @Override
           public int size() {
-            return docToOrd.length;
-          }
-
-          @Override
-          public BytesRef lookup(int ord, BytesRef ret) {
-            ret.bytes = values[ord];
-            ret.length = ret.bytes.length;
-            ret.offset = 0;
-            return ret;
+            return ramInstance.size();
           }
 
           @Override
           public TermsEnum getTermsEnum() {
-            // nocommit
+            // nocommit: to the codec api? or can that termsenum just use this thing?
+            return null;
+          }
+
+          @Override
+          public Reader getDocToOrd() {
+            // nocommit: add this to the codec api!
             return null;
           }
         };
-
       } else {
 
         Terms terms = reader.terms(key.field);
