@@ -586,6 +586,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
     SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
+    assertTrue(dv.isFixedLength()); // "hello world 1" length == "hello world 2" length
     BytesRef scratch = new BytesRef();
     for(int i=0;i<2;i++) {
       StoredDocument doc2 = ireader.leaves().get(0).reader().document(i);
