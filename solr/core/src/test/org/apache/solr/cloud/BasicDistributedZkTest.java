@@ -343,10 +343,80 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     testCoreUnloadAndLeaders();
     testUnloadLotsOfCores();
     testStopAndStartCoresInOneInstance();
+    testUnloadShardAndCollection();
     // Thread.sleep(10000000000L);
     if (DEBUG) {
       super.printLayout();
     }
+  }
+
+  private void testUnloadShardAndCollection() throws Exception{
+    // create one leader and one replica
+    
+    Create createCmd = new Create();
+    createCmd.setCoreName("test_unload_shard_and_collection_1");
+    String collection = "test_unload_shard_and_collection";
+    createCmd.setCollection(collection);
+    String coreDataDir = dataDir.getAbsolutePath() + File.separator
+        + System.currentTimeMillis() + collection + "1";
+    createCmd.setDataDir(coreDataDir);
+    createCmd.setNumShards(2);
+    
+    SolrServer client = clients.get(0);
+    String url1 = getBaseUrl(client);
+    HttpSolrServer server = new HttpSolrServer(url1);
+    
+    server.request(createCmd);
+    
+    createCmd = new Create();
+    createCmd.setCoreName("test_unload_shard_and_collection_2");
+    collection = "test_unload_shard_and_collection";
+    createCmd.setCollection(collection);
+    coreDataDir = dataDir.getAbsolutePath() + File.separator
+        + System.currentTimeMillis() + collection + "2";
+    createCmd.setDataDir(coreDataDir);
+    
+    server.request(createCmd);
+
+    // now unload one of the two
+    Unload unloadCmd = new Unload(false);
+    unloadCmd.setCoreName("test_unload_shard_and_collection_2");
+    server.request(unloadCmd);
+    
+    // there should be only one shard
+    Slice shard2 = solrj.getZkStateReader().getClusterState().getSlice(collection, "shard2");
+    long timeoutAt = System.currentTimeMillis() + 30000;
+    while (shard2 != null) {
+      if (System.currentTimeMillis() > timeoutAt) {
+        printLayout();
+        fail("Still found shard");
+      }
+      
+      Thread.sleep(50);
+      shard2 = solrj.getZkStateReader().getClusterState().getSlice(collection, "shard2");
+    }
+
+    Slice shard1 = solrj.getZkStateReader().getClusterState().getSlice(collection, "shard1");
+    assertNotNull(shard1);
+    assertTrue(solrj.getZkStateReader().getClusterState().getCollections().contains(collection));
+    
+    // now unload one of the other
+    unloadCmd = new Unload(false);
+    unloadCmd.setCoreName("test_unload_shard_and_collection_1");
+    server.request(unloadCmd);
+    
+    //printLayout();
+    // the collection should be gone
+    timeoutAt = System.currentTimeMillis() + 30000;
+    while (solrj.getZkStateReader().getClusterState().getCollections().contains(collection)) {
+      if (System.currentTimeMillis() > timeoutAt) {
+        printLayout();
+        fail("Still found collection");
+      }
+      
+      Thread.sleep(50);
+    }
+    
   }
 
   /**
