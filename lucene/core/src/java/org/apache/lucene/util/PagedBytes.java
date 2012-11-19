@@ -405,12 +405,13 @@ public final class PagedBytes {
     return pointer;
   }
 
-  public final class PagedBytesDataInput extends DataInput {
+  public final class PagedBytesDataInput extends IndexInput {
     private int currentBlockIndex;
     private int currentBlockUpto;
     private byte[] currentBlock;
 
     PagedBytesDataInput() {
+      super("PagedBytesIndexInput");
       currentBlock = blocks.get(0);
     }
 
@@ -470,6 +471,28 @@ public final class PagedBytes {
       currentBlockIndex++;
       currentBlockUpto = 0;
       currentBlock = blocks.get(currentBlockIndex);
+    }
+
+    @Override
+    public void close() throws IOException {
+      //
+    }
+
+    @Override
+    public long getFilePointer() {
+      return currentBlockIndex * blockSize + currentBlockUpto;
+    }
+
+    @Override
+    public void seek(long pos) throws IOException {
+      currentBlockIndex = (int) (pos >> blockBits);
+      currentBlock = blocks.get(currentBlockIndex);
+      currentBlockUpto = (int) (pos & blockMask);
+    }
+
+    @Override
+    public long length() {
+      return upto;
     }
   }
 

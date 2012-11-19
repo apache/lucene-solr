@@ -22,8 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.DocValues.SortedSource;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.Bits;
@@ -31,6 +29,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PriorityQueue;
 
+//nocommit - this needs an abort() method? to free opened files?
 public abstract class SortedDocValuesConsumer {
 
   /** This is called, in value sort order, once per unique

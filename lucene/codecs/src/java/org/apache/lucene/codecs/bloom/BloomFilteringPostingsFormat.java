@@ -161,7 +161,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       IndexInput bloomIn = null;
       boolean success = false;
       try {
-        bloomIn = state.dir.openInput(bloomFileName, state.context);
+        bloomIn = state.directory.openInput(bloomFileName, state.context);
         CodecUtil.checkHeader(bloomIn, BLOOM_CODEC_NAME, BLOOM_CODEC_VERSION,
             BLOOM_CODEC_VERSION);
         // // Load the hash function used in the BloomFilter

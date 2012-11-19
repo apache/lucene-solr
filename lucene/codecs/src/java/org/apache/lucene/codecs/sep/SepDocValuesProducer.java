@@ -45,7 +45,7 @@ public class SepDocValuesProducer extends PerDocProducerBase {
    * {@link DocValues} instances for this segment and codec.
    */
   public SepDocValuesProducer(SegmentReadState state) throws IOException {
-    docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.getDocCount(), state.dir, state.context);
+    docValues = load(state.fieldInfos, state.segmentInfo.name, state.segmentInfo.getDocCount(), state.directory, state.context);
   }
   
   @Override

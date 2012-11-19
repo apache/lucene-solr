@@ -141,6 +141,7 @@ class SortedBytesDVWriter {
     }
     iwBytesUsed.addAndGet(-sortedValueRamUsage);
     reset();
+    consumer.finish();
   }
 
   public void abort() {

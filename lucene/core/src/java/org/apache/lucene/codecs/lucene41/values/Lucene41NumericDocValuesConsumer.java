@@ -22,11 +22,10 @@ public class Lucene41NumericDocValuesConsumer extends NumericDocValuesConsumer {
     final int bitsRequired = delta < 0 ? 64 : PackedInts.bitsRequired(delta);
     CodecUtil.writeHeader(output, CODEC_NAME, VERSION_START);
     output.writeLong(minValue);
+    output.writeLong(maxValue);
     this.minValue = minValue;
-    // nocommit write without header?
     this.writer = PackedInts.getWriter(output, valueCount, bitsRequired, PackedInts.FASTEST);
   }
-  
   
   @Override
   public void add(long value) throws IOException {

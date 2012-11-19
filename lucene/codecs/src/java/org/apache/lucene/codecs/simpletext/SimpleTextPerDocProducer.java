@@ -68,7 +68,7 @@ public class SimpleTextPerDocProducer extends PerDocProducerBase {
     this.segmentSuffix = segmentSuffix;
     if (anyDocValuesFields(state.fieldInfos)) {
       docValues = load(state.fieldInfos, state.segmentInfo.name,
-                       state.segmentInfo.getDocCount(), state.dir, state.context);
+                       state.segmentInfo.getDocCount(), state.directory, state.context);
     } else {
       docValues = new TreeMap<String, DocValues>();
     }

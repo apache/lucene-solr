@@ -91,12 +91,12 @@ public final class Lucene41WithOrds extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postings = new Lucene41PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
+    PostingsReaderBase postings = new Lucene41PostingsReader(state.directory, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
     TermsIndexReaderBase indexReader;
 
     boolean success = false;
     try {
-      indexReader = new FixedGapTermsIndexReader(state.dir,
+      indexReader = new FixedGapTermsIndexReader(state.directory,
                                                  state.fieldInfos,
                                                  state.segmentInfo.name,
                                                  state.termsIndexDivisor,
@@ -112,7 +112,7 @@ public final class Lucene41WithOrds extends PostingsFormat {
     success = false;
     try {
       FieldsProducer ret = new BlockTermsReader(indexReader,
-                                                state.dir,
+                                                state.directory,
                                                 state.fieldInfos,
                                                 state.segmentInfo,
                                                 postings,

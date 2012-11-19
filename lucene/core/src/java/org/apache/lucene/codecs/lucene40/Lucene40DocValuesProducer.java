@@ -53,7 +53,7 @@ public class Lucene40DocValuesProducer extends PerDocProducerBase {
    */
   public Lucene40DocValuesProducer(SegmentReadState state, String segmentSuffix) throws IOException {
     if (anyDocValuesFields(state.fieldInfos)) {
-      cfs = new CompoundFileDirectory(state.dir, 
+      cfs = new CompoundFileDirectory(state.directory, 
                                       IndexFileNames.segmentFileName(state.segmentInfo.name,
                                                                      segmentSuffix, IndexFileNames.COMPOUND_FILE_EXTENSION), 
                                       state.context, false);

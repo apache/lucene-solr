@@ -25,6 +25,7 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.LongsRef;
+import org.apache.lucene.util.packed.PackedInts.Format;
 
 /**
  * Simplistic compression for array of unsigned long values.
@@ -775,6 +776,11 @@ public class PackedInts {
         throw new AssertionError("Unknown Writer format: " + format);
     }
   }
+  
+  //nocommit javadoc
+  public static Reader getReaderNoHeader(DataInput in, Header header) throws IOException {
+    return getReaderNoHeader(in, header.format, header.version, header.valueCount, header.bitsPerValue);
+  }
 
   /**
    * Restore a {@link Reader} from a stream.
@@ -886,6 +892,11 @@ public class PackedInts {
       default:
         throw new AssertionError("Unknwown format: " + format);
     }
+  }
+  
+  //nocommit javadoc
+  public static Reader getDirectReaderNoHeader(IndexInput in, Header header) throws IOException {
+    return getDirectReaderNoHeader(in, header.format, header.version, header.valueCount, header.bitsPerValue);
   }
 
   /**
@@ -1116,6 +1127,32 @@ public class PackedInts {
         remaining -= written;
       }
     }
+  }
+  
+  //nocommit javadoc
+  public static Header readHeader(IndexInput in) throws IOException {
+    final int version = CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_CURRENT);
+    final int bitsPerValue = in.readVInt();
+    assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
+    final int valueCount = in.readVInt();
+    final Format format = Format.byId(in.readVInt());
+    return new Header(format, valueCount, bitsPerValue, version);
+  }
+  
+  public static class Header {
+
+    private final Format format;
+    private final int valueCount;
+    private final int bitsPerValue;
+    private final int version;
+
+    public Header(Format format, int valueCount, int bitsPerValue, int version) {
+      this.format = format;
+      this.valueCount = valueCount;
+      this.bitsPerValue = bitsPerValue;
+      this.version = version;
+    }
+    
   }
 
 }

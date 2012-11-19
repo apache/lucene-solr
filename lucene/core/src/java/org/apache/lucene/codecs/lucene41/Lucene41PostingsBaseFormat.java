@@ -41,7 +41,7 @@ public final class Lucene41PostingsBaseFormat extends PostingsBaseFormat {
 
   @Override
   public PostingsReaderBase postingsReaderBase(SegmentReadState state) throws IOException {
-    return new Lucene41PostingsReader(state.dir, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
+    return new Lucene41PostingsReader(state.directory, state.fieldInfos, state.segmentInfo, state.context, state.segmentSuffix);
   }
 
   @Override

@@ -82,7 +82,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
 
   @Override
   public SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new SimpleTextDocValuesReader(state.fieldInfos, state.dir, state.segmentInfo, state.context);
+    return new SimpleTextDocValuesReader(state.fieldInfos, state.directory, state.segmentInfo, state.context);
   }
   
   /** the .dat file contains the data.

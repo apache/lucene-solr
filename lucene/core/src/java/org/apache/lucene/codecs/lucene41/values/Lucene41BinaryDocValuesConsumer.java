@@ -45,14 +45,15 @@ public class Lucene41BinaryDocValuesConsumer extends BinaryDocValuesConsumer {
     this.indexOut = indexOut;
     CodecUtil.writeHeader(dataOut, CODEC_NAME, VERSION_START);
     dataOut.writeInt(fixedLength ? maxLength: VALUE_SIZE_VAR);
+    dataOut.writeInt(maxLength);
     CodecUtil.writeHeader(indexOut, CODEC_NAME, VERSION_START);
     buffer = fixedLength ? null : new AppendingLongBuffer();
+    
   }
   
   @Override
   public void finish() throws IOException {
     try {
-      indexOut.writeLong(offset);
       if (buffer != null) {
         Iterator iterator = buffer.iterator();
         PackedInts.Writer writer = PackedInts.getWriter(indexOut,

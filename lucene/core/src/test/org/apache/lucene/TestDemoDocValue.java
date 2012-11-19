@@ -50,7 +50,7 @@ import org.apache.lucene.util.LuceneTestCase;
  * to this class.
  */
 // nocommit don't suppress any:
-@SuppressCodecs({"Asserting", "Direct", "Memory", "Lucene41", "MockRandom", "Lucene40", "Compressing"})
+@SuppressCodecs({"Asserting", "Direct", "Memory", "MockRandom", "Lucene40", "Compressing"})
 public class TestDemoDocValue extends LuceneTestCase {
 
   public void testDemoNumber() throws IOException {

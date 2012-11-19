@@ -35,7 +35,7 @@ import org.apache.lucene.codecs.lucene40.Lucene40NormsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
-import org.apache.lucene.codecs.lucene41.values.Lucene41SimpleDocValuesFormat;
+import org.apache.lucene.codecs.lucene41.values.Lucene41DocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /**
@@ -120,13 +120,11 @@ public class Lucene41Codec extends Codec {
     return defaultFormat;
   }
   
-  private final SimpleDocValuesFormat simpleDocValuesFormat = new Lucene41SimpleDocValuesFormat();
+  private final SimpleDocValuesFormat simpleDocValuesFormat = new Lucene41DocValuesFormat();
   
   @Override
   public SimpleDocValuesFormat simpleDocValuesFormat() {
-    // nocommit fixme
-    //return simpleDocValuesFormat;
-    return null;
+    return simpleDocValuesFormat ;
   }
 
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");

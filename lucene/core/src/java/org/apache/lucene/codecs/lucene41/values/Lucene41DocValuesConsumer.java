@@ -25,6 +25,7 @@ import org.apache.lucene.codecs.SortedDocValuesConsumer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -36,15 +37,18 @@ public class Lucene41DocValuesConsumer extends SimpleDVConsumer {
    */
   static final String INDEX_EXTENSION = "idx";
   
+  static final String OFFSET_EXTENSION = "off";
+  
   /**
    * Filename extension for data files.
    */
   static final String DATA_EXTENSION = "dat";
   
-  static final String DV_SEGMENT_SUFFIX = "dv";
+  static final String DV_SEGMENT_SUFFIX = "sdv"; // nocommit change to dv
   
   private final SegmentInfo info;
   private final Directory dir;
+  private Directory cfs;
   private final IOContext context;
   
   Lucene41DocValuesConsumer(Directory dir, SegmentInfo si, IOContext context)
@@ -54,18 +58,28 @@ public class Lucene41DocValuesConsumer extends SimpleDVConsumer {
     this.context = context;
   }
   
+  private synchronized Directory getDirectory() throws IOException {
+    if (cfs == null) {
+      cfs = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(info.name, DV_SEGMENT_SUFFIX,
+          IndexFileNames.COMPOUND_FILE_EXTENSION), context, true);
+      
+    }
+    return cfs;
+  }
+  
   @Override
-  public void close() throws IOException {}
+  public void close() throws IOException {
+    IOUtils.close(cfs);
+  }
   
   @Override
   public NumericDocValuesConsumer addNumericField(FieldInfo field,
       long minValue, long maxValue) throws IOException {
-    String name = IndexFileNames.segmentFileName(this.info.name + "_"
-        + field.number, DV_SEGMENT_SUFFIX, DATA_EXTENSION);
+    String name = getDocValuesFileName(info, field, DATA_EXTENSION);
     IndexOutput dataOut = null;
     boolean success = false;
     try {
-      dataOut = dir.createOutput(name, context);
+      dataOut = getDirectory().createOutput(name, context);
       Lucene41NumericDocValuesConsumer consumer = new Lucene41NumericDocValuesConsumer(
           dataOut, minValue, maxValue, info.getDocCount());
       success = true;
@@ -80,16 +94,14 @@ public class Lucene41DocValuesConsumer extends SimpleDVConsumer {
   @Override
   public BinaryDocValuesConsumer addBinaryField(FieldInfo field,
       boolean fixedLength, int maxLength) throws IOException {
-    String nameData = IndexFileNames.segmentFileName(this.info.name + "_"
-        + field.number, DV_SEGMENT_SUFFIX, DATA_EXTENSION);
-    String idxOut = IndexFileNames.segmentFileName(this.info.name + "_"
-        + field.number, DV_SEGMENT_SUFFIX, INDEX_EXTENSION);
+    String nameData = getDocValuesFileName(info, field, DATA_EXTENSION);
+    String idxOut = getDocValuesFileName(info, field, INDEX_EXTENSION);
     boolean success = false;
     IndexOutput dataOut = null;
     IndexOutput indexOut = null;
     try {
-      dataOut = dir.createOutput(nameData, context);
-      indexOut = dir.createOutput(idxOut, context);
+      dataOut = getDirectory().createOutput(nameData, context);
+      indexOut = getDirectory().createOutput(idxOut, context);
       Lucene41BinaryDocValuesConsumer consumer = new Lucene41BinaryDocValuesConsumer(
           dataOut, indexOut, fixedLength, maxLength);
       success = true;
@@ -101,11 +113,39 @@ public class Lucene41DocValuesConsumer extends SimpleDVConsumer {
     }
   }
   
+  static String getDocValuesFileName(SegmentInfo info, FieldInfo field, String extension) {
+    return IndexFileNames.segmentFileName(info.name + "_"
+        + field.number, DV_SEGMENT_SUFFIX, extension);
+  }
+  
   @Override
   public SortedDocValuesConsumer addSortedField(FieldInfo field,
       int valueCount, boolean fixedLength, int maxLength)
       throws IOException {
-    return null;
+    String nameData = getDocValuesFileName(info, field, DATA_EXTENSION);
+    String idxOut = getDocValuesFileName(info, field, INDEX_EXTENSION);
+    String offOut = getDocValuesFileName(info, field, OFFSET_EXTENSION);
+    boolean success = false;
+    IndexOutput dataOut = null;
+    IndexOutput indexOut = null;
+    IndexOutput offsetOut = null;
+    try {
+      dataOut = getDirectory().createOutput(nameData, context);
+      indexOut = getDirectory().createOutput(idxOut, context);
+      if (fixedLength) {
+        offsetOut = null;
+      } else {
+        offsetOut = getDirectory().createOutput(offOut, context);
+      }
+      Lucene41SortedDocValuesConsumer consumer = new Lucene41SortedDocValuesConsumer(
+          dataOut, indexOut, offsetOut, valueCount, maxLength);
+      success = true;
+      return consumer;
+    } finally {
+      if (!success) {
+        IOUtils.close(dataOut, indexOut);
+      }
+    }
   }
   
 }

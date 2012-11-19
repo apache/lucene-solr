@@ -842,7 +842,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, EXTENSION);
-    final IndexInput in = state.dir.openInput(fileName, IOContext.READONCE);
+    final IndexInput in = state.directory.openInput(fileName, IOContext.READONCE);
 
     final SortedMap<String,TermsReader> fields = new TreeMap<String,TermsReader>();
 
