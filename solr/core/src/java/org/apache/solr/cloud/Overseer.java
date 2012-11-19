@@ -398,8 +398,11 @@ public class Overseer {
               if(slice.getReplicasMap().containsKey(coreNodeName)) {
                 Map<String, Replica> newReplicas = slice.getReplicasCopy();
                 newReplicas.remove(coreNodeName);
-                Slice newSlice = new Slice(slice.getName(), newReplicas, slice.getProperties());
-                newSlices.put(slice.getName(), newSlice);
+                if (newReplicas.size() != 0) {
+                  Slice newSlice = new Slice(slice.getName(), newReplicas,
+                      slice.getProperties());
+                  newSlices.put(slice.getName(), newSlice);
+                }
               } else {
                 newSlices.put(slice.getName(), slice);
               }

@@ -191,6 +191,9 @@ Bug Fixes
 
 * SOLR-3959: Ensure the internal comma separator of poly fields is escaped
   for CSVResponseWriter.  (Areek Zillur via Robert Muir)
+  
+* SOLR-4075: A logical shard that has had all of it's SolrCores unloaded should 
+  be removed from the cluster state. (Mark Miller, Gilles Comeau)
 
 Other Changes
 ----------------------
