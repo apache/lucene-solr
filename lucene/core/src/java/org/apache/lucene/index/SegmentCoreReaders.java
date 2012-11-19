@@ -152,8 +152,7 @@ final class SegmentCoreReaders {
     ref.incrementAndGet();
   }
 
-  // nocommit shrink the sync'd part to a cache miss
-  synchronized NumericDocValues getNumericDocValues(String field) throws IOException {
+  NumericDocValues getNumericDocValues(String field) throws IOException {
     FieldInfo fi = fieldInfos.fieldInfo(field);
     if (fi == null) {
       // Field does not exist
@@ -176,8 +175,7 @@ final class SegmentCoreReaders {
     return simpleDVProducer.getNumeric(fi);
   }
 
-  // nocommit shrink the sync'd part to a cache miss
-  synchronized BinaryDocValues getBinaryDocValues(String field) throws IOException {
+  BinaryDocValues getBinaryDocValues(String field) throws IOException {
     FieldInfo fi = fieldInfos.fieldInfo(field);
     if (fi == null) {
       // Field does not exist
@@ -200,8 +198,7 @@ final class SegmentCoreReaders {
     return simpleDVProducer.getBinary(fi);
   }
 
-  // nocommit shrink the sync'd part to a cache miss
-  synchronized SortedDocValues getSortedDocValues(String field) throws IOException {
+  SortedDocValues getSortedDocValues(String field) throws IOException {
     FieldInfo fi = fieldInfos.fieldInfo(field);
     if (fi == null) {
       // Field does not exist
