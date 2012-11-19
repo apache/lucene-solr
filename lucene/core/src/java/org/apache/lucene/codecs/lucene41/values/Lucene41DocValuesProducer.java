@@ -25,7 +25,9 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentInfo;
@@ -39,20 +41,33 @@ import org.apache.lucene.util.IOUtils;
 public class Lucene41DocValuesProducer extends SimpleDVProducer {
   
   private final CompoundFileDirectory cfs;
-  private IOContext context;
   private final SegmentInfo info;
   private final Map<String,DocValuesFactory<NumericDocValues>> numeric = new HashMap<String,DocValuesFactory<NumericDocValues>>();
   private final Map<String,DocValuesFactory<BinaryDocValues>> binary = new HashMap<String,DocValuesFactory<BinaryDocValues>>();
-  
   private final Map<String,DocValuesFactory<SortedDocValues>> sorted = new HashMap<String,DocValuesFactory<SortedDocValues>>();
   
   public Lucene41DocValuesProducer(Directory dir, SegmentInfo segmentInfo,
-      IOContext context) throws IOException {
+      FieldInfos fieldInfos, IOContext context) throws IOException {
     this.cfs = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(
         segmentInfo.name, Lucene41DocValuesConsumer.DV_SEGMENT_SUFFIX,
         IndexFileNames.COMPOUND_FILE_EXTENSION), context, false);
-    this.context = context;
     this.info = segmentInfo;
+    for (FieldInfo fieldInfo : fieldInfos) {
+      if (fieldInfo.hasDocValues()) {
+        if (DocValues.isNumber(fieldInfo.getDocValuesType())
+            || DocValues.isFloat(fieldInfo.getDocValuesType())) {
+          numeric.put(fieldInfo.name, new Lucene41NumericDocValues.Factory(
+              this.cfs, this.info, fieldInfo, context));
+        } else if (DocValues.isBytes(fieldInfo.getDocValuesType())) {
+          binary.put(fieldInfo.name, new Lucene41BinaryDocValues.Factory(
+              this.cfs, this.info, fieldInfo, context));
+        } else {
+          assert DocValues.isSortedBytes(fieldInfo.getDocValuesType());
+          sorted.put(fieldInfo.name, new Lucene41SortedDocValues.Factory(
+              this.cfs, this.info, fieldInfo, context));
+        }
+      }
+    }
   }
   
   @Override
@@ -69,39 +84,27 @@ public class Lucene41DocValuesProducer extends SimpleDVProducer {
   
   @Override
   public NumericDocValues getNumeric(FieldInfo field) throws IOException {
-    //nocommit do we need to sync that?
-    DocValuesFactory<NumericDocValues> docValuesFactory = numeric
-        .get(field.name);
-    if (docValuesFactory == null) {
-      numeric.put(field.name,
-          docValuesFactory = new Lucene41NumericDocValues.Factory(this.cfs,
-              this.info, field, context));
-    }
-    return docValuesFactory.getDirect();
+    return valueOrNull(numeric, field);
   }
   
   @Override
   public BinaryDocValues getBinary(FieldInfo field) throws IOException {
-    //nocommit do we need to sync that?
-    DocValuesFactory<BinaryDocValues> docValuesFactory = binary.get(field.name);
-    if (docValuesFactory == null) {
-      binary.put(field.name,
-          docValuesFactory = new Lucene41BinaryDocValues.Factory(this.cfs,
-              this.info, field, context));
-    }
-    return docValuesFactory.getDirect();
+    return valueOrNull(binary, field);
+    
   }
   
   @Override
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
-    //nocommit do we need to sync that?
-    DocValuesFactory<SortedDocValues> docValuesFactory = sorted.get(field.name);
-    if (docValuesFactory == null) {
-      sorted.put(field.name,
-          docValuesFactory = new Lucene41SortedDocValues.Factory(this.cfs,
-              this.info, field, context));
+    return valueOrNull(sorted, field);
+  }
+  
+  private static <T> T valueOrNull(Map<String,DocValuesFactory<T>> map,
+      FieldInfo field) throws IOException {
+    final DocValuesFactory<T> docValuesFactory = map.get(field.name);
+    if (docValuesFactory != null) {
+      return docValuesFactory.getDirect();
     }
-    return docValuesFactory.getDirect();
+    return null;
   }
   
   public static abstract class DocValuesFactory<T> implements Closeable {

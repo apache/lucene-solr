@@ -69,7 +69,7 @@ import org.apache.lucene.util._TestUtil;
  * Tests DocValues integration into IndexWriter & Codecs
  * 
  */
-public class TestDocValuesIndexing extends LuceneTestCase {
+public class TestSimpleDocValuesIndexing extends LuceneTestCase {
   /*
    * - add test for multi segment case with deletes
    * - add multithreaded tests / integrate into stress indexing?
@@ -94,7 +94,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     DirectoryReader reader = DirectoryReader.open(dir, 1);
     assertEquals(1, reader.leaves().size());
-  
+
     IndexSearcher searcher = new IndexSearcher(reader);
 
     BooleanQuery query = new BooleanQuery();
@@ -107,10 +107,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     TopDocs search = searcher.search(query, 10);
     assertEquals(5, search.totalHits);
     ScoreDoc[] scoreDocs = search.scoreDocs;
-    NumericDocValues docValues = numeric(reader, "docId");
+    DocValues docValues = MultiDocValues.getDocValues(reader, "docId");
+    Source source = docValues.getSource();
     for (int i = 0; i < scoreDocs.length; i++) {
       assertEquals(i, scoreDocs[i].doc);
-      assertEquals(i, docValues.get(scoreDocs[i].doc));
+      assertEquals(i, source.getInt(scoreDocs[i].doc));
     }
     reader.close();
     dir.close();
@@ -164,14 +165,13 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.close();
     AtomicReader sr = getOnlySegmentReader(r3);
     assertEquals(2, sr.numDocs());
-    NumericDocValues docValues = sr.getNumericDocValues("dv");
+    DocValues docValues = sr.docValues("dv");
     assertNotNull(docValues);
     r3.close();
     d3.close();
   }
 
   public void testAddIndexesRandom() throws IOException {
-    //nocommit convert
     int valuesPerIndex = 10;
     List<Type> values = Arrays.asList(Type.values());
     Collections.shuffle(values, random());
@@ -296,7 +296,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   @SuppressWarnings("fallthrough")
   public void runTestNumerics(IndexWriterConfig cfg, boolean withDeletions)
       throws IOException {
-    //nocommit convert
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, cfg);
     final int numValues = 50 + atLeast(10);
@@ -832,7 +831,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
     w.close();
-    assertEquals(17, getOnlySegmentReader(r).getNumericDocValues("field").get(0));
+    assertEquals(17, getOnlySegmentReader(r).docValues("field").loadSource().getInt(0));
     r.close();
     d.close();
   }
@@ -980,12 +979,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     writer.close();
     
     final AtomicReader sr = getOnlySegmentReader(r);
-    final SortedDocValues dv = sorted(sr, "stringdv").newRAMInstance();
+    final DocValues dv = sr.docValues("stringdv");
     assertNotNull(dv);
 
     final long END_TIME = System.currentTimeMillis() + (TEST_NIGHTLY ? 30 : 1);
 
-    final NumericDocValues docIDToID = numeric(sr, "id").newRAMInstance();
+    final DocValues.Source docIDToID = sr.docValues("id").getSource();
 
     final int NUM_THREADS = _TestUtil.nextInt(random(), 1, 10);
     Thread[] threads = new Thread[NUM_THREADS];
@@ -994,29 +993,33 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           @Override
           public void run() {
             Random random = random();            
-            final SortedDocValues stringDV = dv;
-            final SortedDocValues stringDVDirect;
+            final DocValues.Source stringDVSource;
+            final DocValues.Source stringDVDirectSource;
             try {
-              
-              assertNotNull(stringDV);
-              stringDVDirect = sr.getSortedDocValues("stringdv");
-              assertNotNull(stringDVDirect);
+              stringDVSource = dv.getSource();
+              assertNotNull(stringDVSource);
+              stringDVDirectSource = dv.getDirectSource();
+              assertNotNull(stringDVDirectSource);
             } catch (IOException ioe) {
               throw new RuntimeException(ioe);
             }
             while(System.currentTimeMillis() < END_TIME) {
-              final SortedDocValues source;
+              final DocValues.Source source;
               if (random.nextBoolean()) {
-                source = stringDV;
+                source = stringDVSource;
               } else {
-                source = stringDVDirect;
+                source = stringDVDirectSource;
               }
+
+              final DocValues.SortedSource sortedSource = source.asSortedSource();
+              assertNotNull(sortedSource);
+
               final BytesRef scratch = new BytesRef();
 
               for(int iter=0;iter<100;iter++) {
                 final int docID = random.nextInt(sr.maxDoc());
-                source.get(docID, scratch);
-                assertEquals(docValues.get((int) docIDToID.get(docID)), scratch);
+                final BytesRef br = sortedSource.getBytes(docID, scratch);
+                assertEquals(docValues.get((int) docIDToID.getInt(docID)), br);
               }
             }
           }
@@ -1081,7 +1084,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
   
   public void testDocValuesUnstored() throws IOException {
-    //nocommit convert!
     Directory dir = newDirectory();
     IndexWriterConfig iwconfig = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     iwconfig.setMergePolicy(newLogMergePolicy());
@@ -1128,39 +1130,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
    
    @Override
    public void invalidate(DocValues values) {}
- }
- 
- public NumericDocValues numeric(AtomicReader reader, String field) throws IOException {
-   NumericDocValues docValues = reader.getNumericDocValues(field);
-   if(random().nextBoolean()) {
-     return docValues.newRAMInstance();
-   }
-   return docValues;
- }
- 
- public NumericDocValues numeric(DirectoryReader reader, String field) throws IOException {
-   return numeric(getOnlySegmentReader(reader), field);
- }
- public BinaryDocValues binary(DirectoryReader reader, String field) throws IOException {
-   return binary(getOnlySegmentReader(reader), field);
- }
- public SortedDocValues sorted(DirectoryReader reader, String field) throws IOException {
-   return sorted(getOnlySegmentReader(reader), field);
- }
- 
- public BinaryDocValues binary(AtomicReader reader, String field) throws IOException {
-   BinaryDocValues docValues = reader.getBinaryDocValues(field);
-   if(random().nextBoolean()) {
-     return docValues.newRAMInstance();
-   }
-   return docValues;
- }
- public SortedDocValues sorted(AtomicReader reader, String field) throws IOException {
-   SortedDocValues docValues = reader.getSortedDocValues(field);
-   if(random().nextBoolean()) {
-     return docValues.newRAMInstance();
-   }
-   return docValues;
  }
  
 }

@@ -36,7 +36,7 @@ public class Lucene41DocValuesFormat extends SimpleDocValuesFormat {
   @Override
   public SimpleDVProducer fieldsProducer(SegmentReadState state)
       throws IOException {
-    return new Lucene41DocValuesProducer(state.directory, state.segmentInfo, state.context);
+    return new Lucene41DocValuesProducer(state.directory, state.segmentInfo, state.fieldInfos, state.context);
   }
   
 }
