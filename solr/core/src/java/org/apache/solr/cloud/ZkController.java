@@ -20,7 +20,9 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -358,7 +360,27 @@ public final class ZkController {
   private String getHostAddress(String host) throws IOException {
 
     if (host == null) {
-      host = "http://" + InetAddress.getLocalHost().getHostName();
+    	String hostaddress = InetAddress.getLocalHost().getHostAddress();
+    	//Re-get the IP again for "127.0.0.1", the other case we trust the hosts file is right.
+    	if("127.0.0.1".equals(hostaddress)){
+    		Enumeration<NetworkInterface> netInterfaces = null;
+            try {
+                netInterfaces = NetworkInterface.getNetworkInterfaces();
+                while (netInterfaces.hasMoreElements()) {
+                    NetworkInterface ni = netInterfaces.nextElement();
+                    Enumeration<InetAddress> ips = ni.getInetAddresses();
+                    while (ips.hasMoreElements()) {
+                        InetAddress ip = ips.nextElement();
+                        if (ip.isSiteLocalAddress()) {
+                        	hostaddress = ip.getHostAddress();
+                        }
+                    }
+                }
+            } catch (Throwable e) {
+            	SolrException.log(log, "Error while looking for a better host name than 127.0.0.1", e);
+            }
+    	}
+    	host = "http://" + hostaddress;
     } else {
       Matcher m = URL_PREFIX.matcher(host);
       if (m.matches()) {

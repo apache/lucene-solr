@@ -70,6 +70,9 @@ New Features
 * SOLR-4084: Add FuzzyLookupFactory, which is like AnalyzingSuggester except that 
   it can tolerate typos in the input.  (Areek Zillur via Robert Muir)
 
+* SOLR-4088: New and improved auto host detection strategy for SolrCloud.
+  (Raintung Li via Mark Miller)
+
 Optimizations
 ----------------------
 
