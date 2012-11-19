@@ -129,15 +129,15 @@ public class DateFormatEvaluator extends Evaluator {
       String datemathfmt = o.toString();
       datemathfmt = datemathfmt.replaceAll("NOW", "");
       try {
-        date = getDateMathParser().parseMath(datemathfmt);
+        date = getDateMathParser(locale).parseMath(datemathfmt);
       } catch (ParseException e) {
         wrapAndThrow(SEVERE, e, "Invalid expression for date");
       }
     }
     return sdf.format(date);
   }
-  static DateMathParser getDateMathParser() {
-    return new DateMathParser(TimeZone.getDefault(), Locale.getDefault()) {
+  static DateMathParser getDateMathParser(Locale l) {
+    return new DateMathParser(TimeZone.getDefault(), l) {
       @Override
       public Date getNow() {
         return new Date();

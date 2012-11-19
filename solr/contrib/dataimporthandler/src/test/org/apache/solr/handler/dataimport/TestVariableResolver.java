@@ -96,26 +96,20 @@ public class TestVariableResolver extends AbstractDataImportHandlerTestCase {
         vri.replaceTokens("${dataimporter.functions.formatDate(A.dt,'yyyy-MM-dd HH:mm:ss')}"));
   }
   
-  @Ignore
   @Test
   public void dateNamespaceWithExpr() throws Exception {
     VariableResolver vri = new VariableResolver();
-    vri.setEvaluators(new DataImporter().getEvaluators(Collections.<Map<String,String>> emptyList()));
+    vri.setEvaluators(new DataImporter().getEvaluators(Collections
+        .<Map<String,String>> emptyList()));
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT);
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
-    DateMathParser dmp = new DateMathParser(TimeZone.getTimeZone("UTC"), Locale.ROOT);
+    DateMathParser dmp = new DateMathParser(TimeZone.getDefault(), Locale.ROOT);
     
-   /* Calendar cal = new GregorianCalendar(TimeZone.getTimeZone("UTC"), Locale.ROOT);
-    cal.set(Calendar.HOUR, 0);
-    cal.set(Calendar.MINUTE, 0);
-    cal.set(Calendar.SECOND, 0);
-    cal.set(Calendar.MILLISECOND, 0);*/
-    
-    SimpleDateFormat format1 = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT);
-    format.setTimeZone(TimeZone.getTimeZone("UTC"));
-    
-    String s = vri.replaceTokens("${dataimporter.functions.formatDate('NOW/DAY','yyyy-MM-dd HH:mm')}");
-    assertEquals(format1.format(dmp.parseMath("/DAY")), s);
+    String s = vri
+        .replaceTokens("${dataimporter.functions.formatDate('NOW/DAY','yyyy-MM-dd HH:mm')}");
+    assertEquals(
+        new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT).format(dmp.parseMath("/DAY")),
+        s);
   }
   
   @Test
