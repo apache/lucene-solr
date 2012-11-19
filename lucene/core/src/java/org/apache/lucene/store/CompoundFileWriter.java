@@ -221,7 +221,6 @@ final class CompoundFileWriter implements Closeable{
       final DirectCFSIndexOutput out;
 
       if ((outputLocked = outputTaken.compareAndSet(false, true))) {
-//        System.out.println(entry.file);
         out = new DirectCFSIndexOutput(getOutput(), entry, false);
       } else {
         entry.dir = this.directory;
