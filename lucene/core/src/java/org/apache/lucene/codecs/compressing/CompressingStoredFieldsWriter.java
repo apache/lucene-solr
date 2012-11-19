@@ -59,12 +59,10 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   static final int TYPE_BITS = PackedInts.bitsRequired(NUMERIC_DOUBLE);
   static final int TYPE_MASK = (int) PackedInts.maxValue(TYPE_BITS);
 
-  static final String CODEC_NAME_IDX = "CompressingStoredFieldsIndex";
-  static final String CODEC_NAME_DAT = "CompressingStoredFieldsData";
+  static final String CODEC_SFX_IDX = "Index";
+  static final String CODEC_SFX_DAT = "Data";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
-  static final long HEADER_LENGTH_IDX = CodecUtil.headerLength(CODEC_NAME_IDX);
-  static final long HEADER_LENGTH_DAT = CodecUtil.headerLength(CODEC_NAME_DAT);
 
   private final Directory directory;
   private final String segment;
@@ -81,8 +79,8 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   private int docBase; // doc ID at the beginning of the chunk
   private int numBufferedDocs; // docBase + numBufferedDocs == current doc ID
 
-  public CompressingStoredFieldsWriter(Directory directory, SegmentInfo si,
-      IOContext context, CompressionMode compressionMode, int chunkSize) throws IOException {
+  public CompressingStoredFieldsWriter(Directory directory, SegmentInfo si, IOContext context,
+      String formatName, CompressionMode compressionMode, int chunkSize) throws IOException {
     assert directory != null;
     this.directory = directory;
     this.segment = si.name;
@@ -100,16 +98,17 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     try {
       fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION), context);
 
-      CodecUtil.writeHeader(indexStream, CODEC_NAME_IDX, VERSION_CURRENT);
-      CodecUtil.writeHeader(fieldsStream, CODEC_NAME_DAT, VERSION_CURRENT);
-      assert HEADER_LENGTH_IDX == indexStream.getFilePointer();
-      assert HEADER_LENGTH_DAT == fieldsStream.getFilePointer();
+      final String codecNameIdx = formatName + CODEC_SFX_IDX;
+      final String codecNameDat = formatName + CODEC_SFX_DAT;
+      CodecUtil.writeHeader(indexStream, codecNameIdx, VERSION_CURRENT);
+      CodecUtil.writeHeader(fieldsStream, codecNameDat, VERSION_CURRENT);
+      assert CodecUtil.headerLength(codecNameDat) == fieldsStream.getFilePointer();
+      assert CodecUtil.headerLength(codecNameIdx) == indexStream.getFilePointer();
 
       indexWriter = new CompressingStoredFieldsIndexWriter(indexStream);
       indexStream = null;
 
       fieldsStream.writeVInt(PackedInts.VERSION_CURRENT);
-      fieldsStream.writeVInt(compressionMode.getId());
 
       success = true;
     } finally {

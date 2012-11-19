@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.compressing;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
@@ -28,6 +29,7 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+
 
 /**
  * A {@link StoredFieldsFormat} that is very similar to
@@ -45,16 +47,23 @@ import org.apache.lucene.store.IOContext;
  */
 public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
 
+  private final String formatName;
   private final CompressionMode compressionMode;
   private final int chunkSize;
 
   /**
    * Create a new {@link CompressingStoredFieldsFormat}.
    * <p>
+   * <code>formatName</code> is the name of the format. This name will be used
+   * in the file formats to perform
+   * {@link CodecUtil#checkHeader(org.apache.lucene.store.DataInput, String, int, int) codec header checks}.
+   * <p>
    * The <code>compressionMode</code> parameter allows you to choose between
    * compression algorithms that have various compression and decompression
    * speeds so that you can pick the one that best fits your indexing and
-   * searching throughput.
+   * searching throughput. You should never instantiate two
+   * {@link CompressingStoredFieldsFormat}s that have the same name but
+   * different {@link CompressionMode}s.
    * <p>
    * <code>chunkSize</code> is the minimum byte size of a chunk of documents.
    * A value of <code>1</code> can make sense if there is redundancy across
@@ -67,11 +76,13 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
    * loading a little slower (depending on the size of your OS cache compared
    * to the size of your index).
    *
+   * @param formatName the name of the {@link StoredFieldsFormat}
    * @param compressionMode the {@link CompressionMode} to use
    * @param chunkSize the minimum number of bytes of a single chunk of stored documents
    * @see CompressionMode
    */
-  public CompressingStoredFieldsFormat(CompressionMode compressionMode, int chunkSize) {
+  public CompressingStoredFieldsFormat(String formatName, CompressionMode compressionMode, int chunkSize) {
+    this.formatName = formatName;
     this.compressionMode = compressionMode;
     if (chunkSize < 1) {
       throw new IllegalArgumentException("chunkSize must be >= 1");
@@ -79,27 +90,17 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
     this.chunkSize = chunkSize;
   }
 
-  /**
-   * Create a new {@link CompressingStoredFieldsFormat} with
-   * {@link CompressionMode#FAST} compression and chunks of <tt>16 KB</tt>.
-   *
-   * @see CompressingStoredFieldsFormat#CompressingStoredFieldsFormat(CompressionMode, int)
-   */
-  public CompressingStoredFieldsFormat() {
-    this(CompressionMode.FAST, 1 << 14);
-  }
-
   @Override
   public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si,
       FieldInfos fn, IOContext context) throws IOException {
-    return new CompressingStoredFieldsReader(directory, si, fn, context);
+    return new CompressingStoredFieldsReader(directory, si, fn, context, formatName, compressionMode);
   }
 
   @Override
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si,
       IOContext context) throws IOException {
     return new CompressingStoredFieldsWriter(directory, si, context,
-        compressionMode, chunkSize);
+        formatName, compressionMode, chunkSize);
   }
 
   @Override

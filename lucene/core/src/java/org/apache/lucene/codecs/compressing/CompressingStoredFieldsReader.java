@@ -18,10 +18,8 @@ package org.apache.lucene.codecs.compressing;
  */
 
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.BYTE_ARR;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.CODEC_NAME_DAT;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.CODEC_NAME_IDX;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.HEADER_LENGTH_DAT;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.HEADER_LENGTH_IDX;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.CODEC_SFX_DAT;
+import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.CODEC_SFX_IDX;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_DOUBLE;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_FLOAT;
 import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_INT;
@@ -81,7 +79,9 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
     this.closed = false;
   }
 
-  public CompressingStoredFieldsReader(Directory d, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
+  public CompressingStoredFieldsReader( Directory d, SegmentInfo si, FieldInfos fn,
+      IOContext context, String formatName, CompressionMode compressionMode) throws IOException {
+    this.compressionMode = compressionMode;
     final String segment = si.name;
     boolean success = false;
     fieldInfos = fn;
@@ -92,17 +92,17 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
       final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION);
       indexStream = d.openInput(indexStreamFN, context);
 
-      CodecUtil.checkHeader(indexStream, CODEC_NAME_IDX, VERSION_START, VERSION_CURRENT);
-      CodecUtil.checkHeader(fieldsStream, CODEC_NAME_DAT, VERSION_START, VERSION_CURRENT);
-      assert HEADER_LENGTH_DAT == fieldsStream.getFilePointer();
-      assert HEADER_LENGTH_IDX == indexStream.getFilePointer();
+      final String codecNameIdx = formatName + CODEC_SFX_IDX;
+      final String codecNameDat = formatName + CODEC_SFX_DAT;
+      CodecUtil.checkHeader(indexStream, codecNameIdx, VERSION_START, VERSION_CURRENT);
+      CodecUtil.checkHeader(fieldsStream, codecNameDat, VERSION_START, VERSION_CURRENT);
+      assert CodecUtil.headerLength(codecNameDat) == fieldsStream.getFilePointer();
+      assert CodecUtil.headerLength(codecNameIdx) == indexStream.getFilePointer();
 
       indexReader = new CompressingStoredFieldsIndexReader(indexStream, si);
       indexStream = null;
 
       packedIntsVersion = fieldsStream.readVInt();
-      final int compressionModeId = fieldsStream.readVInt();
-      compressionMode = CompressionMode.byId(compressionModeId);
       decompressor = compressionMode.newDecompressor();
       this.bytes = new BytesRef();
 
