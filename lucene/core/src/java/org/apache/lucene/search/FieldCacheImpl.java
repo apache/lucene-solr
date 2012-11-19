@@ -400,19 +400,21 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      int maxDoc = reader.maxDoc();
-      final byte[] values;
-
       NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
       if (valuesIn != null) {
+        final NumericDocValues ramInstance = valuesIn.newRAMInstance();
+        return new Bytes() {
+          @Override
+          public byte get(int docID) {
+            return (byte) ramInstance.get(docID);
+          }
+        };
         // nocommit should we throw exc if parser isn't
         // null?  if setDocsWithField is true?
-        values = new byte[maxDoc];
-        for(int docID=0;docID<maxDoc;docID++) {
-          values[docID] = (byte) valuesIn.get(docID);
-        }
       } else {
 
+        int maxDoc = reader.maxDoc();
+        final byte[] values;
         final ByteParser parser = (ByteParser) key.custom;
         if (parser == null) {
           // Confusing: must delegate to wrapper (vs simply
@@ -442,9 +444,9 @@ class FieldCacheImpl implements FieldCache {
         if (setDocsWithField) {
           wrapper.setDocsWithField(reader, key.field, u.docsWithField);
         }
-      }
 
-      return new BytesFromArray(values);
+        return new BytesFromArray(values);
+      }
     }
   }
   
@@ -482,18 +484,20 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      int maxDoc = reader.maxDoc();
-      final short[] values;
-
       NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
       if (valuesIn != null) {
+        final NumericDocValues ramInstance = valuesIn.newRAMInstance();
+        return new Shorts() {
+          @Override
+          public short get(int docID) {
+            return (short) ramInstance.get(docID);
+          }
+        };
         // nocommit should we throw exc if parser isn't
         // null?  if setDocsWithField is true?
-        values = new short[maxDoc];
-        for(int docID=0;docID<maxDoc;docID++) {
-          values[docID] = (short) valuesIn.get(docID);
-        }
       } else {
+        int maxDoc = reader.maxDoc();
+        final short[] values;
         final ShortParser parser = (ShortParser) key.custom;
         if (parser == null) {
           // Confusing: must delegate to wrapper (vs simply
@@ -522,8 +526,8 @@ class FieldCacheImpl implements FieldCache {
         if (setDocsWithField) {
           wrapper.setDocsWithField(reader, key.field, u.docsWithField);
         }
+        return new ShortsFromArray(values);
       }
-      return new ShortsFromArray(values);
     }
   }
 
@@ -561,18 +565,20 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      int maxDoc = reader.maxDoc();      
-      final int[] values;
       NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
       if (valuesIn != null) {
+        final NumericDocValues ramInstance = valuesIn.newRAMInstance();
+        return new Ints() {
+          @Override
+          public int get(int docID) {
+            return (int) ramInstance.get(docID);
+          }
+        };
         // nocommit should we throw exc if parser isn't
         // null?  if setDocsWithField is true?
-        values = new int[maxDoc];
-        for(int docID=0;docID<maxDoc;docID++) {
-          values[docID] = (int) valuesIn.get(docID);
-        }
       } else {
-
+        int maxDoc = reader.maxDoc();      
+        final int[] values;
         final IntParser parser = (IntParser) key.custom;
         if (parser == null) {
           // Confusing: must delegate to wrapper (vs simply
@@ -610,8 +616,8 @@ class FieldCacheImpl implements FieldCache {
         if (setDocsWithField) {
           wrapper.setDocsWithField(reader, key.field, u.docsWithField);
         }
+        return new IntsFromArray(values);
       }
-      return new IntsFromArray(values);
     }
   }
 
@@ -713,21 +719,20 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      int maxDoc = reader.maxDoc();
-      final float[] values;
-
       NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
       if (valuesIn != null) {
+        final NumericDocValues ramInstance = valuesIn.newRAMInstance();
+        return new Floats() {
+          @Override
+          public float get(int docID) {
+            return Float.intBitsToFloat((int) ramInstance.get(docID));
+          }
+        };
         // nocommit should we throw exc if parser isn't
         // null?  if setDocsWithField is true?
-        values = new float[maxDoc];
-        for(int docID=0;docID<maxDoc;docID++) {
-          // nocommit somewhat dangerous ... eg if user had
-          // indexed as DV.BYTE ...
-          values[docID] = Float.intBitsToFloat((int) valuesIn.get(docID));
-        }
       } else {
-
+        int maxDoc = reader.maxDoc();
+        final float[] values;
         final FloatParser parser = (FloatParser) key.custom;
         if (parser == null) {
           // Confusing: must delegate to wrapper (vs simply
@@ -765,9 +770,9 @@ class FieldCacheImpl implements FieldCache {
         if (setDocsWithField) {
           wrapper.setDocsWithField(reader, key.field, u.docsWithField);
         }
-      }
 
-      return new FloatsFromArray(values);
+        return new FloatsFromArray(values);
+      }
     }
   }
 
@@ -805,17 +810,20 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      int maxDoc = reader.maxDoc();
-      final long[] values;
       NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
       if (valuesIn != null) {
+        final NumericDocValues ramInstance = valuesIn.newRAMInstance();
+        return new Longs() {
+          @Override
+          public long get(int docID) {
+            return ramInstance.get(docID);
+          }
+        };
         // nocommit should we throw exc if parser isn't
         // null?  if setDocsWithField is true?
-        values = new long[maxDoc];
-        for(int docID=0;docID<maxDoc;docID++) {
-          values[docID] = valuesIn.get(docID);
-        }
       } else {
+        int maxDoc = reader.maxDoc();
+        final long[] values;
         final LongParser parser = (LongParser) key.custom;
         if (parser == null) {
           // Confusing: must delegate to wrapper (vs simply
@@ -853,8 +861,8 @@ class FieldCacheImpl implements FieldCache {
         if (setDocsWithField) {
           wrapper.setDocsWithField(reader, key.field, u.docsWithField);
         }
+        return new LongsFromArray(values);
       }
-      return new LongsFromArray(values);
     }
   }
 
@@ -892,20 +900,21 @@ class FieldCacheImpl implements FieldCache {
     @Override
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
-      int maxDoc = reader.maxDoc();
-      final double[] values;
 
       NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
       if (valuesIn != null) {
+        final NumericDocValues ramInstance = valuesIn.newRAMInstance();
+        return new Doubles() {
+          @Override
+          public double get(int docID) {
+            return Double.longBitsToDouble(ramInstance.get(docID));
+          }
+        };
         // nocommit should we throw exc if parser isn't
         // null?  if setDocsWithField is true?
-        values = new double[maxDoc];
-        for(int docID=0;docID<maxDoc;docID++) {
-          // nocommit somewhat dangerous ... eg if user had
-          // indexed as DV.BYTE ...
-          values[docID] = Double.longBitsToDouble(valuesIn.get(docID));
-        }
       } else {
+        int maxDoc = reader.maxDoc();
+        final double[] values;
         final DoubleParser parser = (DoubleParser) key.custom;
         if (parser == null) {
           // Confusing: must delegate to wrapper (vs simply
@@ -943,8 +952,8 @@ class FieldCacheImpl implements FieldCache {
         if (setDocsWithField) {
           wrapper.setDocsWithField(reader, key.field, u.docsWithField);
         }
+        return new DoublesFromArray(values);
       }
-      return new DoublesFromArray(values);
     }
   }
 
