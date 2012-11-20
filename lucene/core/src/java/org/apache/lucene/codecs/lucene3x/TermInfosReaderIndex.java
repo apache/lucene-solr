@@ -23,7 +23,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MathUtil;
 import org.apache.lucene.util.PagedBytes.PagedBytesDataInput;
@@ -115,7 +114,7 @@ class TermInfosReaderIndex {
   }
 
   private static int estimatePageBits(long estSize) {
-    return Math.max(Math.min(64 - BitUtil.nlz(estSize), MAX_PAGE_BITS), 4);
+    return Math.max(Math.min(64 - Long.numberOfLeadingZeros(estSize), MAX_PAGE_BITS), 4);
   }
 
   void seekEnum(SegmentTermEnum enumerator, int indexOffset) throws IOException {
