@@ -36,6 +36,8 @@ import org.apache.lucene.search.Query;
 
 public class UnorderedNearQuery extends IntervalFilterQuery {
 
+  private final int slop;
+
   /**
    * Constructs an OrderedNearQuery
    * @param slop the maximum distance between the subquery matches
@@ -44,6 +46,7 @@ public class UnorderedNearQuery extends IntervalFilterQuery {
    */
   public UnorderedNearQuery(int slop, boolean collectLeaves, Query... subqueries) {
     super(buildBooleanQuery(subqueries), new WithinIntervalFilter(slop + subqueries.length - 2, collectLeaves));
+    this.slop = slop;
   }
 
   /**
@@ -61,6 +64,11 @@ public class UnorderedNearQuery extends IntervalFilterQuery {
       bq.add(q, BooleanClause.Occur.MUST);
     }
     return bq;
+  }
+
+  @Override
+  public String toString() {
+    return "UnorderedNear/" + slop + ":" + super.toString("");
   }
 
 }

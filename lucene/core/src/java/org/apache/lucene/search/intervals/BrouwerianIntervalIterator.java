@@ -56,7 +56,8 @@ public class BrouwerianIntervalIterator extends IntervalIterator {
   @Override
   public int scorerAdvanced(int docId) throws IOException {
     minuend.scorerAdvanced(docId);
-    subtracted.scorerAdvanced(docId);
+    if (subtracted.docID() <= docId)
+      subtracted.scorerAdvanced(docId);
     subtractedInterval = Interval.INFINITE_INTERVAL;
     return docId;
   }
@@ -93,6 +94,11 @@ public class BrouwerianIntervalIterator extends IntervalIterator {
   @Override
   public int matchDistance() {
     return minuend.matchDistance();
+  }
+
+  @Override
+  public int docID() {
+    return minuend.docID();
   }
   
 }

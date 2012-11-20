@@ -81,4 +81,23 @@ public class TestBrouwerianQuery extends IntervalTestBase {
     });
   }
 
+  public void testBrouwerianNonExistentOverlapQuery() throws IOException {
+    Query sub = new UnorderedNearQuery(2, false, makeTermQuery("dog"), makeTermQuery("over"));
+    Query query = makeTermQuery("dog");
+    NonOverlappingQuery q = new NonOverlappingQuery(query, sub);
+
+    checkIntervals(q, searcher, new int[][]{});
+  }
+
+  public void testBrouwerianExistentOverlapQuery() throws IOException {
+    Query sub = new UnorderedNearQuery(1, false, makeTermQuery("dog"), makeTermQuery("over"));
+    Query query = makeTermQuery("dog");
+    NonOverlappingQuery q = new NonOverlappingQuery(query, sub);
+
+    checkIntervals(q, searcher, new int[][]{
+        { 0, 8, 8 },
+        { 1, 8, 8 }
+    });
+  }
+
 }

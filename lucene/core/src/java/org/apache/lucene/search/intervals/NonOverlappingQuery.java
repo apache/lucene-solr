@@ -134,7 +134,7 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
       if (subScorer == null) {
         return scorer;
       }
-      return scorer == null ? null : new PositionFilterScorer(this, scorer, subScorer, factory);
+      return scorer == null ? null : new BrouwerianScorer(this, scorer, subScorer, factory);
     }
     
     @Override
@@ -181,25 +181,25 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
     
   }
   
-  final class PositionFilterScorer extends Scorer {
+  final class BrouwerianScorer extends Scorer {
 
-    private final Scorer other;
+    private final Scorer minuend;
     private IntervalIterator filter;
     private final Scorer subtracted;
     Interval current;
     private final ScorerFactory factory;
 
-    public PositionFilterScorer(Weight weight, Scorer other, Scorer subtracted, ScorerFactory factory) throws IOException {
+    public BrouwerianScorer(Weight weight, Scorer minuend, Scorer subtracted, ScorerFactory factory) throws IOException {
       super(weight);
-      this.other = other;
+      this.minuend = minuend;
       this.subtracted = subtracted;
-      this.filter = new BrouwerianIntervalIterator(other, false, other.intervals(false), subtracted.intervals(false));
+      this.filter = new BrouwerianIntervalIterator(minuend, false, minuend.intervals(false), subtracted.intervals(false));
       this.factory = factory;
     }
 
     @Override
     public float score() throws IOException {
-      return other.score();
+      return minuend.score();
     }
 
     @Override
@@ -212,10 +212,11 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
 
           @Override
           public int scorerAdvanced(int docId) throws IOException {
-            docId = minuted.advance(docId);
+            int mId = minuted.advance(docId);
             subtracted.advance(docId);
-            brouwerianIntervalIterator.scorerAdvanced(docId);
-            return docId;
+            if (mId <= docId)
+              return brouwerianIntervalIterator.scorerAdvanced(docId);
+            return mId;
           }
 
           @Override
@@ -284,17 +285,17 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
 
     @Override
     public int docID() {
-      return other.docID();
+      return minuend.docID();
     }
 
     @Override
     public int nextDoc() throws IOException {
       int docId = -1;
-      while ((docId = other.nextDoc()) != Scorer.NO_MORE_DOCS) {
+      while ((docId = minuend.nextDoc()) != Scorer.NO_MORE_DOCS) {
         subtracted.advance(docId);
         filter.scorerAdvanced(docId);
         if ((current = filter.next()) != null) { // just check if there is a position that matches!
-          return other.docID();
+          return minuend.docID();
         }
       }
       return Scorer.NO_MORE_DOCS;
@@ -302,7 +303,7 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
 
     @Override
     public int advance(int target) throws IOException {
-      int docId = other.advance(target);
+      int docId = minuend.advance(target);
       subtracted.advance(docId);
       if (docId == Scorer.NO_MORE_DOCS) {
         return NO_MORE_DOCS;
@@ -310,15 +311,15 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
       do {
         filter.scorerAdvanced(docId);
         if ((current = filter.next()) != null) {
-          return other.docID();
+          return minuend.docID();
         }
-      } while ((docId = other.nextDoc()) != Scorer.NO_MORE_DOCS);
+      } while ((docId = minuend.nextDoc()) != Scorer.NO_MORE_DOCS);
       return NO_MORE_DOCS;
     }
 
     @Override
     public float freq() throws IOException {
-      return other.freq();
+      return minuend.freq();
     }
 
   }
