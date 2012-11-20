@@ -701,24 +701,32 @@ public class DocBuilder {
   }
 
   private String findMatchingPkColumn(String pk, Map<String, Object> row) {
-    if (row.containsKey(pk))
-      throw new IllegalArgumentException(
-        String.format("deltaQuery returned a row with null for primary key %s", pk));
+    if (row.containsKey(pk)) {
+      throw new IllegalArgumentException(String.format(Locale.ROOT,
+          "deltaQuery returned a row with null for primary key %s", pk));
+    }
     String resolvedPk = null;
     for (String columnName : row.keySet()) {
       if (columnName.endsWith("." + pk) || pk.endsWith("." + columnName)) {
         if (resolvedPk != null)
           throw new IllegalArgumentException(
-            String.format(
+            String.format(Locale.ROOT, 
               "deltaQuery has more than one column (%s and %s) that might resolve to declared primary key pk='%s'",
               resolvedPk, columnName, pk));
         resolvedPk = columnName;
       }
     }
-    if (resolvedPk == null)
+    if (resolvedPk == null) {
       throw new IllegalArgumentException(
-        String.format("deltaQuery has no column to resolve to declared primary key pk='%s'", pk));
-    LOG.info(String.format("Resolving deltaQuery column '%s' to match entity's declared pk '%s'", resolvedPk, pk));
+          String
+              .format(
+                  Locale.ROOT,
+                  "deltaQuery has no column to resolve to declared primary key pk='%s'",
+                  pk));
+    }
+    LOG.info(String.format(Locale.ROOT,
+        "Resolving deltaQuery column '%s' to match entity's declared pk '%s'",
+        resolvedPk, pk));
     return resolvedPk;
   }
 

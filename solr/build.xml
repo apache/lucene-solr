@@ -249,9 +249,7 @@
         <include name="executors.txt" />
       </apiFileSet>
       <fileset dir="${basedir}/build">
-        <include name="**/*.class" />
-        <!-- exclude DIH for now as it is broken with Locales and Encodings: SOLR-1916 -->
-        <exclude name="contrib/solr-dataimporthandler*/**" />
+        <include name="**/*.class" />        
       </fileset>
     </forbidden-apis>
   </target>

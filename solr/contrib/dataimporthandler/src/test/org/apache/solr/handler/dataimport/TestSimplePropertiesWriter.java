@@ -56,7 +56,7 @@ public class TestSimplePropertiesWriter extends AbstractDIHJdbcTestCase {
   @Test
   public void testSimplePropertiesWriter() throws Exception { 
     
-    SimpleDateFormat errMsgFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSSS");
+    SimpleDateFormat errMsgFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSSS", Locale.ROOT);
     
     String[] d = { 
         "{'ts' ''yyyy-MM-dd HH:mm:ss.SSSSSS''}",

@@ -85,7 +85,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
     String s = getStringFromContext("fetchMailsSince", null);
     if (s != null)
       try {
-        fetchMailsSince = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(s);
+        fetchMailsSince = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).parse(s);
       } catch (ParseException e) {
         throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Invalid value for fetchMailSince: " + s, e);
       }
