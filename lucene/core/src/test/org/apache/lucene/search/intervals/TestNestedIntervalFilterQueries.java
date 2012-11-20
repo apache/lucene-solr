@@ -55,6 +55,20 @@ public class TestNestedIntervalFilterQueries extends IntervalTestBase {
     checkIntervals(bq, searcher, new int[][]{});
   }
 
+  public void testFilterDisjunctionQuery() throws IOException {
+    Query near1 = makeTermQuery("w4");
+    Query near2 = new OrderedNearQuery(3, false, makeTermQuery("w1"), makeTermQuery("w10"));
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(near1, BooleanClause.Occur.SHOULD);
+    bq.add(near2, BooleanClause.Occur.SHOULD);
+    checkIntervals(bq, searcher, new int[][]{
+        { 0, 3, 3 },
+        { 1, 2, 2 },
+        { 2, 0, 2, 3, 3 },
+        { 3, 3, 3 }
+    });
+  }
+
   // or(w1 pre/2 w2, w1 pre/3 w10)
   public void testOrNearNearQuery() throws IOException {
     Query near1 = new OrderedNearQuery(2, false, makeTermQuery("w1"), makeTermQuery("w2"));

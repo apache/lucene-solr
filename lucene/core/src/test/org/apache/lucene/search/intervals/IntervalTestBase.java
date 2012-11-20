@@ -135,7 +135,7 @@ public abstract class IntervalTestBase extends LuceneTestCase {
     directory = newDirectory();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     //config.setCodec(Codec.forName("SimpleText"));
-    config.setCodec(Codec.forName("Lucene41"));
+    config.setCodec(Codec.forName("Asserting"));
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory, config);
     addDocs(writer);
     reader = writer.getReader();
