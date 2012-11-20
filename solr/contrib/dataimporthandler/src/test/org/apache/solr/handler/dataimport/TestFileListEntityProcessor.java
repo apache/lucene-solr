@@ -41,9 +41,9 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
     tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
-    createFile(tmpdir, "a.xml", "a.xml".getBytes(), false);
-    createFile(tmpdir, "b.xml", "b.xml".getBytes(), false);
-    createFile(tmpdir, "c.props", "c.props".getBytes(), false);
+    createFile(tmpdir, "a.xml", "a.xml".getBytes("UTF-8"), false);
+    createFile(tmpdir, "b.xml", "b.xml".getBytes("UTF-8"), false);
+    createFile(tmpdir, "c.props", "c.props".getBytes("UTF-8"), false);
     Map attrs = createMap(
             FileListEntityProcessor.FILE_NAME, "xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath());
@@ -138,9 +138,9 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
     tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
-    createFile(tmpdir, "a.xml", "a.xml".getBytes(), true);
-    createFile(tmpdir, "b.xml", "b.xml".getBytes(), true);
-    createFile(tmpdir, "c.props", "c.props".getBytes(), true);
+    createFile(tmpdir, "a.xml", "a.xml".getBytes("UTF-8"), true);
+    createFile(tmpdir, "b.xml", "b.xml".getBytes("UTF-8"), true);
+    createFile(tmpdir, "c.props", "c.props".getBytes("UTF-8"), true);
     Map attrs = createMap(
             FileListEntityProcessor.FILE_NAME, "xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
@@ -162,7 +162,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
     VariableResolver resolver = new VariableResolver();
     String lastMod = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).format(new Date(System.currentTimeMillis() - 50000));
     resolver.addNamespace("a", createMap("x", lastMod));
-    createFile(tmpdir, "t.xml", "t.xml".getBytes(), false);
+    createFile(tmpdir, "t.xml", "t.xml".getBytes("UTF-8"), false);
     fList = getFiles(resolver, attrs);
     assertEquals(1, fList.size());
     assertEquals("File name must be t.xml", new File(tmpdir, "t.xml").getAbsolutePath(), fList.get(0));
@@ -177,9 +177,9 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
     File childdir = new File(tmpdir + "/child" );
     childdir.mkdirs();
     childdir.deleteOnExit();
-    createFile(childdir, "a.xml", "a.xml".getBytes(), true);
-    createFile(childdir, "b.xml", "b.xml".getBytes(), true);
-    createFile(childdir, "c.props", "c.props".getBytes(), true);
+    createFile(childdir, "a.xml", "a.xml".getBytes("UTF-8"), true);
+    createFile(childdir, "b.xml", "b.xml".getBytes("UTF-8"), true);
+    createFile(childdir, "c.props", "c.props".getBytes("UTF-8"), true);
     Map attrs = createMap(
             FileListEntityProcessor.FILE_NAME, "^.*\\.xml$",
             FileListEntityProcessor.BASE_DIR, childdir.getAbsolutePath(),
