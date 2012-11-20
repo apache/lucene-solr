@@ -120,15 +120,16 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
           Locale.ROOT);
       calendar.add(Calendar.DAY_OF_YEAR, -2);
       Date d = calendar.getTime();
-      
-      assertEquals(
-          new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT).format(d),
-          dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm'", context));
-      assertEquals(
-          new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-              .format(d),
-          dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm','"
-              + currentLocale + "'", context));
+      {
+        String sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT).format(d);
+        String dfe = dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm'", context);
+        assertEquals(sdf,dfe);
+      }
+      {
+        String sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(d);
+        String dfe = dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm','"+ currentLocale + "'", context);
+        assertEquals(sdf,dfe);
+      }
     }
     Date d = new Date();
     

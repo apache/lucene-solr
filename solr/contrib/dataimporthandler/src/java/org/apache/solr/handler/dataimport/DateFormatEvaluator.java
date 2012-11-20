@@ -93,7 +93,7 @@ public class DateFormatEvaluator extends Evaluator {
       } else {
         localeStr = localeObj.toString();
       }
-      availableLocales.get(localeStr);
+      locale = availableLocales.get(localeStr);
       if(locale==null) {
         throw new DataImportHandlerException(SEVERE, "Unsupported locale: " + localeStr);
       }
