@@ -22,6 +22,14 @@ $Id$
 
 ==================  4.1.0 ==================
 
+Versions of Major Components
+---------------------
+Apache Tika 1.2
+Carrot2 3.5.0
+Velocity 1.6.4 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
 Detailed Change List
 ----------------------
 
@@ -226,7 +234,9 @@ Other Changes
 * SOLR-4086: DIH refactor of VariableResolver and Evaluator.  VariableResolver
   and each built-in Evaluator are separate concrete classes.  DateFormatEvaluator
   now defaults with the ROOT Locale. However, users may specify a different 
-  Locale using an optional new third parameter. (James Dyer) 
+  Locale using an optional new third parameter. (James Dyer)
+
+* SOLR-3602: Update ZooKeeper to 3.4.5 (Mark Miller)
 
 ==================  4.0.0 ==================
 
