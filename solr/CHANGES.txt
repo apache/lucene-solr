@@ -167,8 +167,8 @@ Bug Fixes
 * SOLR-4005: If CoreContainer fails to register a created core, it should close it.
   (Mark Miller)
 
-* SOLR-4009: OverseerCollectionProcessor is not resiliant to many error conditions
-  and can stop running on errors. (milesli, Mark Miller)
+* SOLR-4009: OverseerCollectionProcessor is not resilient to many error conditions
+  and can stop running on errors. (Raintung Li, milesli, Mark Miller)
 
 * SOLR-4019: Log stack traces for 503/Service Unavailable SolrException if not
   thrown by PingRequestHandler. Do not log exceptions if a user tries to view a
