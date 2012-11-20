@@ -264,7 +264,10 @@ Other Changes
   
 * SOLR-4096: DIH FileDataSource & FieldReaderDataSource default to UTF-8 encoding
   if none is specified.  These previously used the machine's default.
-  (James Dyer) 
+  (James Dyer)
+  
+* SOLR-1916: DIH to not use Lucene-forbidden Java APIs 
+  (default encoding, locale, etc.) (James Dyer, Robert Muir)
 
 ==================  4.0.0 ==================
 
