@@ -85,16 +85,16 @@ public class IntervalFilterQuery extends Query implements Cloneable {
 
   @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
-    return new PositionFilterWeight(inner.createWeight(searcher), searcher);
+    return new IntervalFilterWeight(inner.createWeight(searcher), searcher);
   }
 
-  class PositionFilterWeight extends Weight {
+  class IntervalFilterWeight extends Weight {
 
     private final Weight other;
     private final Similarity similarity;
     private final Similarity.SimWeight stats;
 
-    public PositionFilterWeight(Weight other, IndexSearcher searcher) throws IOException {
+    public IntervalFilterWeight(Weight other, IndexSearcher searcher) throws IOException {
       this.other = other;
       this.similarity = searcher.getSimilarity();
       this.stats = getSimWeight(other.getQuery(), searcher);
@@ -150,7 +150,7 @@ public class IntervalFilterQuery extends Query implements Cloneable {
       ScorerFactory factory = new ScorerFactory(other, context, topScorer, flags, acceptDocs);
       final Scorer scorer = factory.scorer();
       Similarity.SloppySimScorer docScorer = similarity.sloppySimScorer(stats, context);
-      return scorer == null ? null : new PositionFilterScorer(this, scorer, factory, docScorer);
+      return scorer == null ? null : new IntervalFilterScorer(this, scorer, factory, docScorer);
     }
 
     @Override
@@ -192,7 +192,7 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     
   }
 
-  final class PositionFilterScorer extends Scorer {
+  final class IntervalFilterScorer extends Scorer {
 
     private final Scorer other;
     private IntervalIterator filter;
@@ -200,8 +200,8 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     private final ScorerFactory factory;
     private final Similarity.SloppySimScorer docScorer;
 
-    public PositionFilterScorer(Weight weight, Scorer other, ScorerFactory factory,
-                                  Similarity.SloppySimScorer docScorer) throws IOException {
+    public IntervalFilterScorer(Weight weight, Scorer other, ScorerFactory factory,
+                                Similarity.SloppySimScorer docScorer) throws IOException {
       super(weight);
       this.other = other;
       this.factory = factory;
