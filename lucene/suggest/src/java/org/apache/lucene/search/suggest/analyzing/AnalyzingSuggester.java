@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -530,6 +531,10 @@ public class AnalyzingSuggester extends Lookup {
   public boolean store(OutputStream output) throws IOException {
     DataOutput dataOut = new OutputStreamDataOutput(output);
     try {
+      if (fst == null) {
+        return false;
+      }
+
       fst.save(dataOut);
       dataOut.writeVInt(maxAnalyzedPathsForOneInput);
     } finally {
@@ -556,6 +561,9 @@ public class AnalyzingSuggester extends Lookup {
 
     if (onlyMorePopular) {
       throw new IllegalArgumentException("this suggester only works with onlyMorePopular=false");
+    }
+    if (fst == null) {
+      return Collections.emptyList();
     }
 
     //System.out.println("lookup key=" + key + " num=" + num);

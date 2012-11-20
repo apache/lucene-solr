@@ -147,6 +147,10 @@ Bug Fixes
   allow 1+maxMergeCount merges threads to be created, instead of just
   maxMergeCount (Radim Kolar, Mike McCandless)
 
+* LUCENE-4567: Fixed NullPointerException in analzying, fuzzy, and
+  WFST suggesters when no suggestions were added (selckin via Mike
+  McCandless)
+
 Optimizations
 
 * LUCENE-2221: oal.util.BitUtil was modified to use Long.bitCount and

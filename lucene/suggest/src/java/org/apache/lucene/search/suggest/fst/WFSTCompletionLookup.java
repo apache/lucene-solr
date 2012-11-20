@@ -147,6 +147,10 @@ public class WFSTCompletionLookup extends Lookup {
       throw new IllegalArgumentException("this suggester only works with onlyMorePopular=false");
     }
 
+    if (fst == null) {
+      return Collections.emptyList();
+    }
+
     BytesRef scratch = new BytesRef(key);
     int prefixLength = scratch.length;
     Arc<Long> arc = new Arc<Long>();
@@ -219,6 +223,9 @@ public class WFSTCompletionLookup extends Lookup {
    * or null if it does not exist.
    */
   public Object get(CharSequence key) {
+    if (fst == null) {
+      return null;
+    }
     Arc<Long> arc = new Arc<Long>();
     Long result = null;
     try {
