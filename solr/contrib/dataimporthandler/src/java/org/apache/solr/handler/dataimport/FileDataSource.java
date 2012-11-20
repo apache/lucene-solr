@@ -125,7 +125,7 @@ public class FileDataSource extends DataSource<Reader> {
   protected Reader openStream(File file) throws FileNotFoundException,
           UnsupportedEncodingException {
     if (encoding == null) {
-      return new InputStreamReader(new FileInputStream(file));
+      return new InputStreamReader(new FileInputStream(file), "UTF-8");
     } else {
       return new InputStreamReader(new FileInputStream(file), encoding);
     }

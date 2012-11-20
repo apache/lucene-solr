@@ -106,7 +106,7 @@ public class FieldReaderDataSource extends DataSource<Reader> {
   private Reader getReader(Blob blob)
           throws SQLException, UnsupportedEncodingException {
     if (encoding == null) {
-      return (new InputStreamReader(blob.getBinaryStream()));
+      return (new InputStreamReader(blob.getBinaryStream(), "UTF-8"));
     } else {
       return (new InputStreamReader(blob.getBinaryStream(), encoding));
     }
