@@ -155,13 +155,13 @@ public final class FixedBitSet extends DocIdSet implements Bits {
     long word = bits[i] >> subIndex;  // skip all the bits to the right of index
 
     if (word!=0) {
-      return (i<<6) + subIndex + BitUtil.ntz(word);
+      return (i<<6) + subIndex + Long.numberOfTrailingZeros(word);
     }
 
     while(++i < bits.length) {
       word = bits[i];
       if (word != 0) {
-        return (i<<6) + BitUtil.ntz(word);
+        return (i<<6) + Long.numberOfTrailingZeros(word);
       }
     }
 
