@@ -739,7 +739,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     for (int i = 0; i < cnt; i++) {
       createCollection(collectionInfos, i,
           _TestUtil.nextInt(random(), 0, shardCount) + 1,
-          _TestUtil.nextInt(random(), 0, 5) + 1);
+          _TestUtil.nextInt(random(), 0, 3) + 1);
     }
     
     Set<Entry<String,List<Integer>>> collectionInfosEntrySet = collectionInfos.entrySet();

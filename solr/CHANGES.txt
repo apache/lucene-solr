@@ -226,6 +226,9 @@ Bug Fixes
   
 * SOLR-4075: A logical shard that has had all of it's SolrCores unloaded should 
   be removed from the cluster state. (Mark Miller, Gilles Comeau)
+  
+* SOLR-4034: Check if a collection already exists before trying to create a
+  new one. (Po Rui, Mark Miller)
 
 Other Changes
 ----------------------

@@ -158,7 +158,12 @@ public class OverseerCollectionProcessor implements Runnable {
   }
 
   private boolean createCollection(ClusterState clusterState, ZkNodeProps message) {
-    
+	  String collectionName = message.getStr("name");
+	  if(clusterState.getCollections().contains(collectionName)) {
+	    SolrException.log(log, "collection already exists: " + collectionName);
+		  return false;
+	  }
+	  
     // look at the replication factor and see if it matches reality
     // if it does not, find best nodes to create more cores
     
@@ -179,6 +184,17 @@ public class OverseerCollectionProcessor implements Runnable {
       return false;
     }
     
+    if (numReplicas < 0) {
+      SolrException.log(log, REPLICATION_FACTOR + " must be > 0");
+      return false;
+    }
+    
+    if (numShards < 0) {
+      SolrException.log(log, "numShards must be > 0");
+      return false;
+    }
+    
+    
     String name = message.getStr("name");
     String configName = message.getStr("collection.configName");
     
@@ -198,6 +214,14 @@ public class OverseerCollectionProcessor implements Runnable {
     Collections.shuffle(nodeList);
     
     int numNodes = numShards * (numReplicas + 1);
+    if (nodeList.size() < numNodes) {
+      log.warn("Not enough nodes available to satisfy create collection request for collection:"
+                  + collectionName
+                  + " nodes needed:"
+                  + numNodes
+                  + " nodes available:" + nodeList.size() + " - using nodes available");
+    }
+
     List<String> createOnNodes = nodeList.subList(0, Math.min(nodeList.size(), numNodes));
     
     log.info("Create collection " + name + " on " + createOnNodes);
