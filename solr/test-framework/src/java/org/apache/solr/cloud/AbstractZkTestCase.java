@@ -149,7 +149,6 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
     zkServer.shutdown();
 
-    SOLRHOME = null;
     zkServer = null;
     zkDir = null;
     
