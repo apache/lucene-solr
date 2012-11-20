@@ -1020,7 +1020,7 @@ public final class ZkController {
     }
     
     throw new SolrException(ErrorCode.SERVER_ERROR,
-        "Could not get shard_id for core: " + coreName);
+        "Could not get shard_id for core: " + coreName + " coreNodeName:" + shardZkNodeName);
   }
   
   public static void uploadToZK(SolrZkClient zkClient, File dir, String zkPath) throws IOException, KeeperException, InterruptedException {
