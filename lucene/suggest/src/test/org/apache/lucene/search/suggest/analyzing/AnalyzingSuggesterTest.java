@@ -134,6 +134,15 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(50, results.get(0).value, 0.01F);
   }
 
+  public void testEmpty() throws Exception {
+    Analyzer standard = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET, false);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(standard);
+    suggester.build(new TermFreqArrayIterator(new TermFreq[0]));
+
+    List<LookupResult> result = suggester.lookup("a", false, 20);
+    assertTrue(result.isEmpty());
+  }
+
   public void testNoSeps() throws Exception {
     TermFreq[] keys = new TermFreq[] {
       new TermFreq("ab cd", 0),
