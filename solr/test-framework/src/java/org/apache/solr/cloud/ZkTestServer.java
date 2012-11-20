@@ -32,7 +32,7 @@ import java.util.List;
 import javax.management.JMException;
 
 import org.apache.zookeeper.jmx.ManagedUtil;
-import org.apache.zookeeper.server.NIOServerCnxn;
+import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.SessionTracker.Session;
 import org.apache.zookeeper.server.ZKDatabase;
@@ -59,7 +59,7 @@ public class ZkTestServer {
 
   class ZKServerMain {
 
-    private NIOServerCnxn.Factory cnxnFactory;
+    private ServerCnxnFactory cnxnFactory;
     private ZooKeeperServer zooKeeperServer;
     
     protected void initializeAndRun(String[] args) throws ConfigException,
@@ -67,16 +67,16 @@ public class ZkTestServer {
       try {
         ManagedUtil.registerLog4jMBeans();
       } catch (JMException e) {
-
+        log.warn("Unable to register log4j JMX control", e);
       }
-
+      
       ServerConfig config = new ServerConfig();
       if (args.length == 1) {
         config.parse(args[0]);
       } else {
         config.parse(args);
       }
-
+      
       runFromConfig(config);
     }
 
@@ -86,25 +86,31 @@ public class ZkTestServer {
      * @throws IOException If there is a low-level I/O error.
      */
     public void runFromConfig(ServerConfig config) throws IOException {
+      log.info("Starting server");
       try {
         // Note that this thread isn't going to be doing anything else,
         // so rather than spawning another thread, we will just call
         // run() in this thread.
         // create a file logger url from the command line args
         zooKeeperServer = new ZooKeeperServer();
-
-        FileTxnSnapLog ftxn = new FileTxnSnapLog(new File(config
-            .getDataLogDir()), new File(config.getDataDir()));
+        
+        FileTxnSnapLog ftxn = new FileTxnSnapLog(new File(
+            config.getDataLogDir()), new File(config.getDataDir()));
         zooKeeperServer.setTxnLogFactory(ftxn);
         zooKeeperServer.setTickTime(config.getTickTime());
-        cnxnFactory = new NIOServerCnxn.Factory(config.getClientPortAddress(), config
-            .getMaxClientCnxns());
+        zooKeeperServer.setMinSessionTimeout(config.getMinSessionTimeout());
+        zooKeeperServer.setMaxSessionTimeout(config.getMaxSessionTimeout());
+        cnxnFactory = ServerCnxnFactory.createFactory();
+        cnxnFactory.configure(config.getClientPortAddress(),
+            config.getMaxClientCnxns());
         cnxnFactory.startup(zooKeeperServer);
         cnxnFactory.join();
         if (zooKeeperServer.isRunning()) {
-          zooKeeperServer.shutdown();
+          zkServer.shutdown();
         }
       } catch (InterruptedException e) {
+        // warn, but generally this is ok
+        log.warn("Server interrupted", e);
       }
     }
 
@@ -207,6 +213,7 @@ public class ZkTestServer {
             } else {
               this.clientPortAddress = new InetSocketAddress(clientPort);
             }
+            System.out.println("client port:" + this.clientPortAddress);
           }
         };
 
@@ -287,12 +294,13 @@ public class ZkTestServer {
    * @param host the destination host
    * @param port the destination port
    * @param cmd the 4letterword
-   * @throws IOException If there is a low-level I/O error.
+   * @return server response
+
    */
   public static String send4LetterWord(String host, int port, String cmd)
-      throws IOException
+          throws IOException
   {
-
+      log.info("connecting to " + host + " " + port);
       Socket sock = new Socket(host, port);
       BufferedReader reader = null;
       try {
@@ -303,8 +311,8 @@ public class ZkTestServer {
           sock.shutdownOutput();
 
           reader =
-              new BufferedReader(
-                      new InputStreamReader(sock.getInputStream(), "US-ASCII"));
+                  new BufferedReader(
+                          new InputStreamReader(sock.getInputStream(), "US-ASCII"));
           StringBuilder sb = new StringBuilder();
           String line;
           while((line = reader.readLine()) != null) {
