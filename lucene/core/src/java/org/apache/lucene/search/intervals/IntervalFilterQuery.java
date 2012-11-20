@@ -123,11 +123,18 @@ public class IntervalFilterQuery extends Query implements Cloneable {
         throws IOException {
       Scorer scorer = scorer(context, true, false, PostingFeatures.POSITIONS,
                               context.reader().getLiveDocs());
-      // nocommit - need to add in IntervalFilter details...
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
-          return other.explain(context, doc);
+          float freq = scorer.freq();
+          Similarity.SloppySimScorer docScorer = similarity.sloppySimScorer(stats, context);
+          ComplexExplanation result = new ComplexExplanation();
+          result.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");
+          Explanation scoreExplanation = docScorer.explain(doc, new Explanation(freq, "phraseFreq=" + freq));
+          result.addDetail(scoreExplanation);
+          result.setValue(scoreExplanation.getValue());
+          result.setMatch(true);
+          return result;
         }
       }
       return new ComplexExplanation(false, 0.0f,
