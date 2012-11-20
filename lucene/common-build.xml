@@ -1084,7 +1084,7 @@ ant test -Dtests.dups=N ...
 ant -Dtests.nightly=[false]   - nightly test group (@Nightly)
 ant -Dtests.weekly=[false]    - weekly tests (@Weekly)
 ant -Dtests.awaitsfix=[false] - known issue (@AwaitsFix)
-ant -Dtests.slow=[false]      - slow tests (@Slow)
+ant -Dtests.slow=[true]       - slow tests (@Slow)
 
 #
 # Load balancing and caches. --------------------------------------
