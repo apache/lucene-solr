@@ -221,14 +221,19 @@ public class Overseer {
           String nodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
           //get shardId from ClusterState
           sliceName = getAssignedId(state, nodeName, message);
+          if (sliceName != null) {
+            log.info("shard=" + sliceName + " is already registered");
+          }
         }
         if(sliceName == null) {
           //request new shardId 
           if (collectionExists) {
             // use existing numShards
             numShards = state.getCollectionStates().get(collection).size();
+            log.info("Collection already exists with " + ZkStateReader.NUM_SHARDS_PROP + "=" + numShards);
           }
           sliceName = AssignShard.assignShard(collection, state, numShards);
+          log.info("Assigning new node to shard shard=" + sliceName);
         }
 
         Slice slice = state.getSlice(collection, sliceName);
