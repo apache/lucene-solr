@@ -241,6 +241,10 @@ Other Changes
 
 * SOLR-3602: Update ZooKeeper to 3.4.5 (Mark Miller)
 
+* SOLR-4095 DIH NumberFormatTransformer & DateFormatTransformer default to the
+  ROOT Locale if none is specified.  These previously used the machine's default.
+  (James Dyer)
+
 ==================  4.0.0 ==================
 
 Versions of Major Components

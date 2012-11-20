@@ -49,7 +49,7 @@ public class DateFormatTransformer extends Transformer {
   public Object transformRow(Map<String, Object> aRow, Context context) {
 
     for (Map<String, String> map : context.getAllEntityFields()) {
-      Locale locale = Locale.getDefault();
+      Locale locale = Locale.ROOT;
       String customLocale = map.get("locale");
       if(customLocale != null){
         locale = new Locale(customLocale);

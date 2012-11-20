@@ -68,7 +68,7 @@ public class NumberFormatTransformer extends Transformer {
             throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Invalid Locale specified for field: " + fld);
           }
         } else {
-          locale = Locale.getDefault();
+          locale = Locale.ROOT;
         }
 
         Object val = row.get(srcCol);
