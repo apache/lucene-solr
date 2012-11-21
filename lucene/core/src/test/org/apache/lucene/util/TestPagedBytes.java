@@ -17,10 +17,14 @@
 
 package org.apache.lucene.util;
 
+import java.io.IOException;
 import java.util.*;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.PagedBytes.PagedBytesDataInput;
+import org.apache.lucene.util.PagedBytes.PagedBytesDataOutput;
+import org.junit.Ignore;
 
 public class TestPagedBytes extends LuceneTestCase {
 
@@ -129,6 +133,36 @@ public class TestPagedBytes extends LuceneTestCase {
     assertEquals(40, answer.length);
     for(int i=0;i<40;i++) {
       assertEquals(bytes2[i], answer.bytes[answer.offset + i]);
+    }
+  }
+
+  @Ignore // memory hole
+  public void testOverflow() throws IOException {
+    final int blockBits = _TestUtil.nextInt(random(), 14, 28);
+    final int blockSize = 1 << blockBits;
+    byte[] arr = new byte[_TestUtil.nextInt(random(), blockSize / 2, blockSize * 2)];
+    for (int i = 0; i < arr.length; ++i) {
+      arr[i] = (byte) i;
+    }
+    final long numBytes = (1L << 31) + _TestUtil.nextInt(random(), 1, blockSize * 3);
+    final PagedBytes p = new PagedBytes(blockBits);
+    final PagedBytesDataOutput out = p.getDataOutput();
+    for (long i = 0; i < numBytes; ) {
+      assertEquals(i, out.getPosition());
+      final int len = (int) Math.min(arr.length, numBytes - i);
+      out.writeBytes(arr, len);
+      i += len;
+    }
+    assertEquals(numBytes, out.getPosition());
+    p.freeze(random().nextBoolean());
+    final PagedBytesDataInput in = p.getDataInput();
+
+    for (long offset : new long[] {0L, Integer.MAX_VALUE, numBytes - 1,
+        _TestUtil.nextLong(random(), 1, numBytes - 2)}) {
+      in.setPosition(offset);
+      assertEquals(offset, in.getPosition());
+      assertEquals(arr[(int) (offset % arr.length)], in.readByte());
+      assertEquals(offset+1, in.getPosition());
     }
   }
 }
