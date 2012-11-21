@@ -294,6 +294,9 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * @param openMode see {@link OpenMode}
    */
   protected IndexWriterConfig createIndexWriterConfig(OpenMode openMode) {
+    // TODO: should we use a more optimized Codec, e.g. Pulsing (or write custom)?
+    // The taxonomy has a unique structure, where each term is associated with one document
+ 
     // Make sure we use a MergePolicy which always merges adjacent segments and thus
     // keeps the doc IDs ordered as well (this is crucial for the taxonomy index).
     return new IndexWriterConfig(Version.LUCENE_50,
@@ -583,7 +586,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     addToCache(categoryPath, length, id);
     
     // also add to the parent array
-    getParentArray().add(id, parent);
+    parentArray = getParentArray().add(id, parent);
 
     return id;
   }
@@ -811,10 +814,9 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
       synchronized (this) {
         if (parentArray == null) {
           initReaderManager();
-          parentArray = new ParentArray();
           DirectoryReader reader = readerManager.acquire();
           try {
-            parentArray.refresh(reader);
+            parentArray = new ParentArray(reader);
           } finally {
             readerManager.release(reader);
           }
@@ -1035,5 +1037,21 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   public Directory getDirectory() {
     return dir;
   }
-
+  
+  /**
+   * Used by {@link DirectoryTaxonomyReader} to support NRT.
+   * <p>
+   * <b>NOTE:</b> you should not use the obtained {@link IndexWriter} in any
+   * way, other than opening an IndexReader on it, or otherwise, the taxonomy
+   * index may become corrupt!
+   */
+  final IndexWriter getInternalIndexWriter() {
+    return indexWriter;
+  }
+  
+  /** Used by {@link DirectoryTaxonomyReader} to support NRT. */
+  final long getTaxonomyEpoch() {
+    return indexEpoch;
+  }
+  
 }

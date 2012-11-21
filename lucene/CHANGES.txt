@@ -34,6 +34,26 @@ Changes in backwards compatibility policy
   Override lengthNorm and/or encode/decodeNormValue to change the specifics,
   like Lucene 3.x. (Robert Muir)
 
+* LUCENE-3441: The facet module now supports NRT. As a result, the following
+  changes were made:
+  - DirectoryTaxonomyReader has a new constructor which takes a 
+    DirectoryTaxonomyWriter. You should use that constructor in order to get
+    the NRT support (or the old one for non-NRT).
+  - TaxonomyReader.refresh() removed in exchange for TaxonomyReader.openIfChanged
+    static method. Similar to DirectoryReader, the method either returns null
+    if no changes were made to the taxonomy, or a new TR instance otherwise.
+    Instead of calling refresh(), you should write similar code to how you reopen
+    a regular DirectoryReader.
+  - TaxonomyReader.openIfChanged (previously refresh()) no longer throws
+    IncosistentTaxonomyException, and supports recreate. InconsistentTaxoEx
+    was removed.
+  - ChildrenArrays was pulled out of TaxonomyReader into a top-level class.
+  - TaxonomyReader was made an abstract class (instead of an interface), with
+    methods such as close() and reference counting management pulled from
+    DirectoryTaxonomyReader, and made final. The rest of the methods, remained
+    abstract.
+    (Shai Erera, Gilad Barkai)
+
 New Features
 
 * LUCENE-4226: New experimental StoredFieldsFormat that compresses chunks of

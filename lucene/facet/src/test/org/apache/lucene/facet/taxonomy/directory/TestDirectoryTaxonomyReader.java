@@ -3,12 +3,11 @@ package org.apache.lucene.facet.taxonomy.directory;
 import java.util.Random;
 
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.InconsistentTaxonomyException;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -67,11 +66,8 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
     dir.close();
   }
   
-  /**
-   * Test the boolean returned by TR.refresh
-   */
   @Test
-  public void testReaderRefreshResult() throws Exception {
+  public void testOpenIfChangedResult() throws Exception {
     Directory dir = null;
     DirectoryTaxonomyWriter ltw = null;
     DirectoryTaxonomyReader ltr = null;
@@ -84,13 +80,15 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
       ltw.commit();
       
       ltr = new DirectoryTaxonomyReader(dir);
-      assertFalse("Nothing has changed",ltr.refresh());
+      assertNull("Nothing has changed", TaxonomyReader.openIfChanged(ltr));
       
       ltw.addCategory(new CategoryPath("b"));
       ltw.commit();
       
-      assertTrue("changes were committed",ltr.refresh());
-      assertFalse("Nothing has changed",ltr.refresh());
+      DirectoryTaxonomyReader newtr = TaxonomyReader.openIfChanged(ltr);
+      assertNotNull("changes were committed", newtr);
+      assertNull("Nothing has changed", TaxonomyReader.openIfChanged(newtr));
+      newtr.close();
     } finally {
       IOUtils.close(ltw, ltr, dir);
     }
@@ -119,18 +117,15 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
    */
   @Test
   public void testFreshReadRecreatedTaxonomy() throws Exception {
-    doTestReadRecreatedTaxono(random(), true);
+    doTestReadRecreatedTaxonomy(random(), true);
   }
   
-  /**
-   * recreating a taxonomy should work well with a refreshed taxonomy reader 
-   */
   @Test
-  public void testRefreshReadRecreatedTaxonomy() throws Exception {
-    doTestReadRecreatedTaxono(random(), false);
+  public void testOpenIfChangedReadRecreatedTaxonomy() throws Exception {
+    doTestReadRecreatedTaxonomy(random(), false);
   }
   
-  private void doTestReadRecreatedTaxono(Random random, boolean closeReader) throws Exception {
+  private void doTestReadRecreatedTaxonomy(Random random, boolean closeReader) throws Exception {
     Directory dir = null;
     TaxonomyWriter tw = null;
     TaxonomyReader tr = null;
@@ -163,13 +158,10 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
           tr.close();
           tr = new DirectoryTaxonomyReader(dir);
         } else {
-          try {
-            tr.refresh();
-            fail("Expected InconsistentTaxonomyException");
-          } catch (InconsistentTaxonomyException e) {
-            tr.close();
-            tr = new DirectoryTaxonomyReader(dir);
-          }
+          TaxonomyReader newtr = TaxonomyReader.openIfChanged(tr);
+          assertNotNull(newtr);
+          tr.close();
+          tr = newtr;
         }
         assertEquals("Wrong #categories in taxonomy (i="+i+", k="+k+")", baseNumCategories + 1 + k, tr.getSize());
       }
@@ -179,14 +171,14 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
   }
   
   @Test
-  public void testRefreshAndRefCount() throws Exception {
+  public void testOpenIfChangedAndRefCount() throws Exception {
     Directory dir = new RAMDirectory(); // no need for random directories here
 
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir);
     taxoWriter.addCategory(new CategoryPath("a"));
     taxoWriter.commit();
 
-    DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
     assertEquals("wrong refCount", 1, taxoReader.getRefCount());
 
     taxoReader.incRef();
@@ -194,12 +186,189 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
 
     taxoWriter.addCategory(new CategoryPath("a", "b"));
     taxoWriter.commit();
-    taxoReader.refresh();
-    assertEquals("wrong refCount", 2, taxoReader.getRefCount());
+    TaxonomyReader newtr = TaxonomyReader.openIfChanged(taxoReader);
+    assertNotNull(newtr);
+    taxoReader.close();
+    taxoReader = newtr;
+    assertEquals("wrong refCount", 1, taxoReader.getRefCount());
 
     taxoWriter.close();
     taxoReader.close();
     dir.close();
   }
 
+  @Test
+  public void testOpenIfChangedManySegments() throws Exception {
+    // test openIfChanged() when the taxonomy contains many segments
+    Directory dir = newDirectory();
+    
+    DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir) {
+      @Override
+      protected IndexWriterConfig createIndexWriterConfig(OpenMode openMode) {
+        IndexWriterConfig conf = super.createIndexWriterConfig(openMode);
+        LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
+        lmp.setMergeFactor(2);
+        return conf;
+      }
+    };
+    TaxonomyReader reader = new DirectoryTaxonomyReader(writer);
+    
+    int numRounds = random().nextInt(10) + 10;
+    int numCategories = 1; // one for root
+    for (int i = 0; i < numRounds; i++) {
+      int numCats = random().nextInt(4) + 1;
+      for (int j = 0; j < numCats; j++) {
+        writer.addCategory(new CategoryPath(Integer.toString(i), Integer.toString(j)));
+      }
+      numCategories += numCats + 1 /* one for round-parent */;
+      TaxonomyReader newtr = TaxonomyReader.openIfChanged(reader);
+      assertNotNull(newtr);
+      reader.close();
+      reader = newtr;
+      
+      // assert categories
+      assertEquals(numCategories, reader.getSize());
+      int roundOrdinal = reader.getOrdinal(new CategoryPath(Integer.toString(i)));
+      int[] parents = reader.getParentArray();
+      assertEquals(0, parents[roundOrdinal]); // round's parent is root
+      for (int j = 0; j < numCats; j++) {
+        int ord = reader.getOrdinal(new CategoryPath(Integer.toString(i), Integer.toString(j)));
+        assertEquals(roundOrdinal, parents[ord]); // round's parent is root
+      }
+    }
+    
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+  
+  @Test
+  public void testOpenIfChangedReuseAfterRecreate() throws Exception {
+    // tests that if the taxonomy is recreated, no data is reused from the previous taxonomy
+    Directory dir = newDirectory();
+    DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir);
+    CategoryPath cp_a = new CategoryPath("a");
+    writer.addCategory(cp_a);
+    writer.close();
+    
+    DirectoryTaxonomyReader r1 = new DirectoryTaxonomyReader(dir);
+    // fill r1's caches
+    assertEquals(1, r1.getOrdinal(cp_a));
+    assertEquals(cp_a, r1.getPath(1));
+    
+    // now recreate, add a different category
+    writer = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE);
+    CategoryPath cp_b = new CategoryPath("b");
+    writer.addCategory(cp_b);
+    writer.close();
+    
+    DirectoryTaxonomyReader r2 = TaxonomyReader.openIfChanged(r1);
+    assertNotNull(r2);
+    
+    // fill r2's caches
+    assertEquals(1, r2.getOrdinal(cp_b));
+    assertEquals(cp_b, r2.getPath(1));
+    
+    // check that r1 doesn't see cp_b
+    assertEquals(TaxonomyReader.INVALID_ORDINAL, r1.getOrdinal(cp_b));
+    assertEquals(cp_a, r1.getPath(1));
+
+    // check that r2 doesn't see cp_a
+    assertEquals(TaxonomyReader.INVALID_ORDINAL, r2.getOrdinal(cp_a));
+    assertEquals(cp_b, r2.getPath(1));
+
+    r2.close();
+    r1.close();
+    dir.close();
+  }
+  
+  @Test
+  public void testOpenIfChangedReuse() throws Exception {
+    // test the reuse of data from the old DTR instance
+    for (boolean nrt : new boolean[] {false, true}) {
+      Directory dir = newDirectory();
+      DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir);
+      
+      CategoryPath cp_a = new CategoryPath("a");
+      writer.addCategory(cp_a);
+      if (!nrt) writer.commit();
+      
+      DirectoryTaxonomyReader r1 = nrt ? new DirectoryTaxonomyReader(writer) : new DirectoryTaxonomyReader(dir);
+      // fill r1's caches
+      assertEquals(1, r1.getOrdinal(cp_a));
+      assertEquals(cp_a, r1.getPath(1));
+      
+      CategoryPath cp_b = new CategoryPath("b");
+      writer.addCategory(cp_b);
+      if (!nrt) writer.commit();
+      
+      DirectoryTaxonomyReader r2 = TaxonomyReader.openIfChanged(r1);
+      assertNotNull(r2);
+      
+      // add r2's categories to the caches
+      assertEquals(2, r2.getOrdinal(cp_b));
+      assertEquals(cp_b, r2.getPath(2));
+      
+      // check that r1 doesn't see cp_b
+      assertEquals(TaxonomyReader.INVALID_ORDINAL, r1.getOrdinal(cp_b));
+      assertNull(r1.getPath(2));
+      
+      r1.close();
+      r2.close();
+      writer.close();
+      dir.close();
+    }
+  }
+  
+  @Test
+  public void testOpenIfChangedReplaceTaxonomy() throws Exception {
+    // test openIfChanged when replaceTaxonomy is called, which is equivalent to recreate
+    // only can work with NRT as well
+    Directory src = newDirectory();
+    DirectoryTaxonomyWriter w = new DirectoryTaxonomyWriter(src);
+    CategoryPath cp_b = new CategoryPath("b");
+    w.addCategory(cp_b);
+    w.close();
+    
+    for (boolean nrt : new boolean[] {false, true}) {
+      Directory dir = newDirectory();
+      DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir);
+      
+      CategoryPath cp_a = new CategoryPath("a");
+      writer.addCategory(cp_a);
+      if (!nrt) writer.commit();
+      
+      DirectoryTaxonomyReader r1 = nrt ? new DirectoryTaxonomyReader(writer) : new DirectoryTaxonomyReader(dir);
+      // fill r1's caches
+      assertEquals(1, r1.getOrdinal(cp_a));
+      assertEquals(cp_a, r1.getPath(1));
+
+      // now replace taxonomy
+      writer.replaceTaxonomy(src);
+      if (!nrt) writer.commit();
+      
+      DirectoryTaxonomyReader r2 = TaxonomyReader.openIfChanged(r1);
+      assertNotNull(r2);
+      
+      // fill r2's caches
+      assertEquals(1, r2.getOrdinal(cp_b));
+      assertEquals(cp_b, r2.getPath(1));
+      
+      // check that r1 doesn't see cp_b
+      assertEquals(TaxonomyReader.INVALID_ORDINAL, r1.getOrdinal(cp_b));
+      assertEquals(cp_a, r1.getPath(1));
+
+      // check that r2 doesn't see cp_a
+      assertEquals(TaxonomyReader.INVALID_ORDINAL, r2.getOrdinal(cp_a));
+      assertEquals(cp_b, r2.getPath(1));
+
+      r2.close();
+      r1.close();
+      writer.close();
+      dir.close();
+    }
+    
+    src.close();
+  }
+  
 }
