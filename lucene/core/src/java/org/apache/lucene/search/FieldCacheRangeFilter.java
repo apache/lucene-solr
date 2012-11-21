@@ -91,8 +91,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
       public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
         final FieldCache.DocTermsIndex fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
         final BytesRef spare = new BytesRef();
-        final int lowerPoint = fcsi.binarySearchLookup(lowerVal == null ? null : new BytesRef(lowerVal), spare);
-        final int upperPoint = fcsi.binarySearchLookup(upperVal == null ? null : new BytesRef(upperVal), spare);
+        final int lowerPoint = lowerVal == null ? -1 : fcsi.binarySearchLookup(new BytesRef(lowerVal), spare);
+        final int upperPoint = upperVal == null ? -1 : fcsi.binarySearchLookup(new BytesRef(upperVal), spare);
 
         final int inclusiveLowerPoint, inclusiveUpperPoint;
 
