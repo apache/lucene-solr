@@ -76,6 +76,9 @@ New Features
   you only need a few bits per-document, or where you might want exact
   document length, and so on.  (Robert Muir)
 
+* LUCENE-4489: Added consumeAllTokens option to LimitTokenCountFilter
+  (hossman, Robert Muir)
+
 API Changes
 
 * LUCENE-4399: Deprecated AppendingCodec. Lucene's term dictionaries
