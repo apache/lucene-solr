@@ -21,7 +21,6 @@ package org.apache.solr.cloud;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.TreeMap;
-import java.util.concurrent.CountDownLatch;
 
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.CreateMode;
@@ -39,6 +38,8 @@ import org.slf4j.LoggerFactory;
 public class DistributedQueue {
   private static final Logger LOG = LoggerFactory
       .getLogger(DistributedQueue.class);
+  
+  private static long DEFAULT_TIMEOUT = 5*60*1000;
   
   private final String dir;
   
@@ -163,20 +164,22 @@ public class DistributedQueue {
   
   private class LatchChildWatcher implements Watcher {
     
-    CountDownLatch latch;
+    Object lock = new Object();
     
-    public LatchChildWatcher() {
-      latch = new CountDownLatch(1);
-    }
+    public LatchChildWatcher() {}
     
     public void process(WatchedEvent event) {
-      LOG.debug("Watcher fired on path: " + event.getPath() + " state: "
+      LOG.info("Watcher fired on path: " + event.getPath() + " state: "
           + event.getState() + " type " + event.getType());
-      latch.countDown();
+      synchronized (lock) {
+        lock.notifyAll();
+      }
     }
     
-    public void await() throws InterruptedException {
-      latch.await();
+    public void await(long timeout) throws InterruptedException {
+      synchronized (lock) {
+        lock.wait(timeout);
+      }
     }
   }
   
@@ -197,7 +200,7 @@ public class DistributedQueue {
         continue;
       }
       if (orderedChildren.size() == 0) {
-        childWatcher.await();
+        childWatcher.await(DEFAULT_TIMEOUT);
         continue;
       }
       
@@ -274,7 +277,7 @@ public class DistributedQueue {
         continue;
       }
       if (orderedChildren.size() == 0) {
-        childWatcher.await();
+        childWatcher.await(DEFAULT_TIMEOUT);
         continue;
       }
       
