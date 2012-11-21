@@ -297,22 +297,16 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     writers[0].indexWriter.close();
     writers[0].taxWriter.close();
 
-    readers[0].taxReader.refresh();
+    DirectoryTaxonomyReader newTaxoReader = TaxonomyReader.openIfChanged(readers[0].taxReader);
+    assertNotNull(newTaxoReader);
+    assertTrue("should have received more cagtegories in updated taxonomy", newTaxoReader.getSize() > readers[0].taxReader.getSize());
+    readers[0].taxReader.close();
+    readers[0].taxReader = newTaxoReader;
+    
     DirectoryReader r2 = DirectoryReader.openIfChanged(readers[0].indexReader);
     assertNotNull(r2);
-    // Hold on to the 'original' reader so we can do some checks with it
-    IndexReader origReader = null;
-
-    assertTrue("Reader must be updated!", readers[0].indexReader != r2);
-    
-    // Set the 'original' reader
-    origReader = readers[0].indexReader;
-    // Set the new master index Reader
+    readers[0].indexReader.close();
     readers[0].indexReader = r2;
-
-    // Try to get total-counts the originalReader AGAIN, just for sanity. Should pull from the cache - not recomputed. 
-    assertTrue("Should be obtained from cache at 6th attempt",totalCounts == 
-      TFC.getTotalCounts(origReader, readers[0].taxReader, iParams, null));
 
     // now use the new reader - should recompute
     totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
@@ -322,9 +316,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     assertTrue("Should be obtained from cache at 8th attempt",totalCounts == 
       TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null));
     
-    origReader.close();
     readers[0].close();
-    r2.close();
     outputFile.delete();
     IOUtils.close(dirs[0]);
   }
@@ -380,7 +372,10 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
       writers[0].taxWriter.addCategory(new CategoryPath("foo", Integer.toString(i)));
     }
     writers[0].taxWriter.commit();
-    readers[0].taxReader.refresh();
+    DirectoryTaxonomyReader newTaxoReader = TaxonomyReader.openIfChanged(readers[0].taxReader);
+    assertNotNull(newTaxoReader);
+    readers[0].taxReader.close();
+    readers[0].taxReader = newTaxoReader;
 
     initCache();
 

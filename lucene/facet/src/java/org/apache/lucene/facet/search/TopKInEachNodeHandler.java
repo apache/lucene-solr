@@ -12,8 +12,8 @@ import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.search.results.MutableFacetResultNode;
 import org.apache.lucene.facet.search.results.IntermediateFacetResult;
+import org.apache.lucene.facet.taxonomy.ChildrenArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader.ChildrenArrays;
 import org.apache.lucene.util.collections.IntIterator;
 import org.apache.lucene.util.collections.IntToObjectMap;
 

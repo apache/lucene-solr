@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.InconsistentTaxonomyException;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.cl2o.Cl2oTaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.lru.LruTaxonomyWriterCache;
@@ -178,12 +178,14 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
     touchTaxo(taxoWriter, new CategoryPath("a"));
     
-    DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
+    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
 
     touchTaxo(taxoWriter, new CategoryPath("b"));
     
-    // this should not fail
-    taxoReader.refresh();
+    TaxonomyReader newtr = TaxonomyReader.openIfChanged(taxoReader);
+    taxoReader.close();
+    taxoReader = newtr;
+    assertEquals(1, Integer.parseInt(taxoReader.getCommitUserData().get(DirectoryTaxonomyWriter.INDEX_EPOCH)));
 
     // now recreate the taxonomy, and check that the epoch is preserved after opening DirTW again.
     taxoWriter.close();
@@ -195,14 +197,11 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     touchTaxo(taxoWriter, new CategoryPath("d"));
     taxoWriter.close();
 
-    // this should fail
-    try {
-      taxoReader.refresh();
-      fail("IconsistentTaxonomyException should have been thrown");
-    } catch (InconsistentTaxonomyException e) {
-      // ok, expected
-    }
-    
+    newtr = TaxonomyReader.openIfChanged(taxoReader);
+    taxoReader.close();
+    taxoReader = newtr;
+    assertEquals(2, Integer.parseInt(taxoReader.getCommitUserData().get(DirectoryTaxonomyWriter.INDEX_EPOCH)));
+
     taxoReader.close();
     dir.close();
   }
@@ -221,7 +220,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(dir);
     assertEquals(1, Integer.parseInt(taxoReader.getCommitUserData().get(DirectoryTaxonomyWriter.INDEX_EPOCH)));
-    taxoReader.refresh();
+    assertNull(TaxonomyReader.openIfChanged(taxoReader));
     taxoReader.close();
     
     dir.close();

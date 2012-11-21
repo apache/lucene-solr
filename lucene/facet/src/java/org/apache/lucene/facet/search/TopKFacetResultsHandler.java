@@ -8,8 +8,8 @@ import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.search.results.MutableFacetResultNode;
 import org.apache.lucene.facet.search.results.IntermediateFacetResult;
+import org.apache.lucene.facet.taxonomy.ChildrenArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader.ChildrenArrays;
 import org.apache.lucene.facet.util.ResultSortUtils;
 
 /*
@@ -120,7 +120,7 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
    * @return total number of descendants considered here by pq, excluding ordinal itself.
    */
   private int heapDescendants(int ordinal, Heap<FacetResultNode> pq,
-      MutableFacetResultNode parentResultNode, FacetArrays facetArrays, int offset) {
+      MutableFacetResultNode parentResultNode, FacetArrays facetArrays, int offset) throws IOException {
     int partitionSize = facetArrays.getArraysLength();
     int endOffset = offset + partitionSize;
     ChildrenArrays childrenArray = taxonomyReader.getChildrenArrays();
