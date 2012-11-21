@@ -520,7 +520,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 //    Thread.currentThread().sleep(500);
 //    printLayout();
     
-    int tries = 20;
+    int tries = 50;
     while (leaderProps.getCoreUrl().equals(zkStateReader.getLeaderUrl("unloadcollection", "shard1", 15000))) {
       Thread.sleep(100);
       if (tries-- == 0) {
