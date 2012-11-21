@@ -230,6 +230,9 @@ Bug Fixes
 * SOLR-4034: Check if a collection already exists before trying to create a
   new one. (Po Rui, Mark Miller)
 
+* SOLR-4097: Race can cause NPE in logging line on first cluster state update.
+  (Mark Miller)
+
 Other Changes
 ----------------------
 
