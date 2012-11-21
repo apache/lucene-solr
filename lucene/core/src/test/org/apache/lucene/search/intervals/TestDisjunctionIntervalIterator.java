@@ -125,6 +125,5 @@ public class TestDisjunctionIntervalIterator extends IntervalTestBase {
 
   }
 
-
 }
 

@@ -31,7 +31,7 @@ public abstract class IntervalIterator {
   public static final IntervalIterator[] EMPTY = new IntervalIterator[0];
 
   /** An IntervalIterator containing no further Intervals */
-  public static final IntervalIterator NO_MORE_POSITIONS = new EmptyIntervalIterator();
+  public static final IntervalIterator NO_MORE_INTERVALS = new EmptyIntervalIterator();
 
   /** Integer representing no more documents */
   public static final int NO_MORE_DOCS = Integer.MAX_VALUE;

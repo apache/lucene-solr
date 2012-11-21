@@ -50,7 +50,7 @@ public class TestCachingCollector extends LuceneTestCase {
 
     @Override
     public IntervalIterator intervals(boolean collectIntervals) throws IOException {
-      return IntervalIterator.NO_MORE_POSITIONS;
+      return IntervalIterator.NO_MORE_INTERVALS;
     }
     
   }

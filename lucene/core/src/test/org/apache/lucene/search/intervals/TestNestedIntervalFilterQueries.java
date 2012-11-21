@@ -106,4 +106,17 @@ public class TestNestedIntervalFilterQueries extends IntervalTestBase {
         { 0, 0, 11, 0, 3, 9, 11 }
     });
   }
+
+  public void testOrNearNearNonExistentQuery() throws IOException {
+    Query near1 = new OrderedNearQuery(2, false, makeTermQuery("w1"), makeTermQuery("w12"));
+    Query near2 = new OrderedNearQuery(2, false, makeTermQuery("w3"), makeTermQuery("w8"));
+    BooleanQuery bq = new BooleanQuery();
+    bq.add(near1, BooleanClause.Occur.SHOULD);
+    bq.add(near2, BooleanClause.Occur.SHOULD);
+    BooleanQuery wrapper = new BooleanQuery();
+    wrapper.add(bq, BooleanClause.Occur.MUST);
+    wrapper.add(makeTermQuery("foo"), BooleanClause.Occur.MUST_NOT);
+    checkIntervals(wrapper, searcher, new int[][]{});
+  }
+
 }

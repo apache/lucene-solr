@@ -99,7 +99,12 @@ public abstract class Scorer extends DocIdSetIterator {
       throws IOException {
     IntervalIterator[] iterators = new IntervalIterator[scorers.length];
     for (int i = 0; i < scorers.length; i++) {
-      iterators[i] = scorers[i].intervals(collectIntervals);
+      if (scorers[i] == null) {
+        iterators[i] = IntervalIterator.NO_MORE_INTERVALS;
+      }
+      else {
+        iterators[i] = scorers[i].intervals(collectIntervals);
+      }
     }
     return iterators;
   }
