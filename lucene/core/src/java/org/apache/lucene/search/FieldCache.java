@@ -519,11 +519,10 @@ public interface FieldCache {
   // nocommit: can we merge this api with the SortedDocValues api?
   public abstract static class DocTermsIndex {
 
-    // nocommit remove this?
     public int binarySearchLookup(BytesRef key, BytesRef spare) {
       // this special case is the reason that Arrays.binarySearch() isn't useful.
       if (key == null) {
-        return -1;
+        throw new IllegalArgumentException("key must not be null");
       }
 
       int low = 0;

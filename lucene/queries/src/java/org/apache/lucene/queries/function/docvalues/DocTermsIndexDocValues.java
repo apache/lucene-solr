@@ -59,14 +59,14 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
 
   @Override
   public boolean exists(int doc) {
-    return termsIndex.getOrd(doc) != 0;
+    return termsIndex.getOrd(doc) != -1;
   }
 
 
   @Override
   public boolean bytesVal(int doc, BytesRef target) {
     int ord=termsIndex.getOrd(doc);
-    if (ord==0) {
+    if (ord==-1) {
       target.length = 0;
       return false;
     }
@@ -77,7 +77,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
   @Override
   public String strVal(int doc) {
     int ord=termsIndex.getOrd(doc);
-    if (ord==0) return null;
+    if (ord==-1) return null;
     termsIndex.lookup(ord, spare);
     UnicodeUtil.UTF8toUTF16(spare, spareChars);
     return spareChars.toString();
@@ -149,8 +149,12 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
       @Override
       public void fillValue(int doc) {
         int ord = termsIndex.getOrd(doc);
-        mval.exists = ord != 0;
-        mval.value = termsIndex.lookup(ord, mval.value);
+        mval.exists = ord != -1;
+        if (!mval.exists) {
+          mval.value.length = 0;
+        } else {
+          mval.value = termsIndex.lookup(ord, mval.value);
+        }
       }
     };
   }

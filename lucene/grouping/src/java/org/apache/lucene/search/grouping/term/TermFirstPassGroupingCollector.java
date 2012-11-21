@@ -63,7 +63,7 @@ public class TermFirstPassGroupingCollector extends AbstractFirstPassGroupingCol
   @Override
   protected BytesRef getDocGroupValue(int doc) {
     final int ord = index.getOrd(doc);
-    return ord == 0 ? null : index.lookup(ord, scratchBytesRef);
+    return ord == -1 ? null : index.lookup(ord, scratchBytesRef);
   }
 
   @Override

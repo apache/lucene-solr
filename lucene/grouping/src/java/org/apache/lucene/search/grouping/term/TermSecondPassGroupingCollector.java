@@ -47,7 +47,7 @@ public class TermSecondPassGroupingCollector extends AbstractSecondPassGroupingC
                                          int maxDocsPerGroup, boolean getScores, boolean getMaxScores, boolean fillSortFields)
       throws IOException {
     super(groups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
-    ordSet = new SentinelIntSet(groupMap.size(), -1);
+    ordSet = new SentinelIntSet(groupMap.size(), -2);
     this.groupField = groupField;
     groupDocs = (SearchGroupDocs<BytesRef>[]) new SearchGroupDocs[ordSet.keys.length];
   }
@@ -61,8 +61,8 @@ public class TermSecondPassGroupingCollector extends AbstractSecondPassGroupingC
     ordSet.clear();
     for (SearchGroupDocs<BytesRef> group : groupMap.values()) {
 //      System.out.println("  group=" + (group.groupValue == null ? "null" : group.groupValue.utf8ToString()));
-      int ord = group.groupValue == null ? 0 : index.binarySearchLookup(group.groupValue, spareBytesRef);
-      if (ord >= 0) {
+      int ord = group.groupValue == null ? -1 : index.binarySearchLookup(group.groupValue, spareBytesRef);
+      if (group.groupValue == null || ord >= 0) {
         groupDocs[ordSet.put(ord)] = group;
       }
     }

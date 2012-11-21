@@ -213,13 +213,13 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       if (canUseIDV) {
         switch(valueType) {
         case BYTES_VAR_DEREF:
-          valuesField = new DerefBytesDocValuesField("group", new BytesRef());
+          valuesField = new DerefBytesDocValuesField("group_dv", new BytesRef());
           break;
         case BYTES_VAR_STRAIGHT:
-          valuesField = new StraightBytesDocValuesField("group", new BytesRef());
+          valuesField = new StraightBytesDocValuesField("group_dv", new BytesRef());
           break;
         case BYTES_VAR_SORTED:
-          valuesField = new SortedBytesDocValuesField("group", new BytesRef());
+          valuesField = new SortedBytesDocValuesField("group_dv", new BytesRef());
           break;
         default:
           fail("unhandled type");
@@ -525,7 +525,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       collector =  new FunctionAllGroupHeadsCollector(vs, new HashMap<Object, Object>(), sortWithinGroup);
     } else if (canUseIDV && random().nextBoolean()) {
       boolean diskResident = random().nextBoolean();
-      collector =  DVAllGroupHeadsCollector.create(groupField, sortWithinGroup, valueType, diskResident);
+      collector =  DVAllGroupHeadsCollector.create(groupField + "_dv", sortWithinGroup, valueType, diskResident);
     } else {
       collector =  TermAllGroupHeadsCollector.create(groupField, sortWithinGroup);
     }
@@ -543,13 +543,13 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       Field valuesField = null;
       switch(valueType) {
       case BYTES_VAR_DEREF:
-        valuesField = new DerefBytesDocValuesField(groupField, new BytesRef(value));
+        valuesField = new DerefBytesDocValuesField(groupField + "_dv", new BytesRef(value));
         break;
       case BYTES_VAR_STRAIGHT:
-        valuesField = new StraightBytesDocValuesField(groupField, new BytesRef(value));
+        valuesField = new StraightBytesDocValuesField(groupField + "_dv", new BytesRef(value));
         break;
       case BYTES_VAR_SORTED:
-        valuesField = new SortedBytesDocValuesField(groupField, new BytesRef(value));
+        valuesField = new SortedBytesDocValuesField(groupField + "_dv", new BytesRef(value));
         break;
       default:
         fail("unhandled type");

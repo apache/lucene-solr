@@ -974,6 +974,9 @@ class FieldCacheImpl implements FieldCache {
 
     @Override
     public int getOrd(int docID) {
+      // Subtract 1, matching the 1+ord we did when
+      // storing, so that missing values, which are 0 in the
+      // packed ints, are returned as -1 ord:
       return (int) docToTermOrd.get(docID)-1;
     }
 
@@ -984,6 +987,9 @@ class FieldCacheImpl implements FieldCache {
 
     @Override
     public BytesRef lookup(int ord, BytesRef ret) {
+      if (ord < 0) {
+        throw new IllegalArgumentException("ord must be >=0 (got ord=" + ord + ")");
+      }
       return bytes.fill(ret, termOrdToBytesOffset.get(ord));
     }
 
@@ -1235,7 +1241,6 @@ class FieldCacheImpl implements FieldCache {
         GrowableWriter termOrdToBytesOffset = new GrowableWriter(startBytesBPV, 1+startNumUniqueTerms, acceptableOverheadRatio);
         final GrowableWriter docToTermOrd = new GrowableWriter(startTermsBPV, maxDoc, acceptableOverheadRatio);
 
-        // 0 is reserved for "unset"
         int termOrd = 0;
 
         // nocommit use Uninvert?
@@ -1266,6 +1271,7 @@ class FieldCacheImpl implements FieldCache {
               if (docID == DocIdSetIterator.NO_MORE_DOCS) {
                 break;
               }
+              // Store 1+ ord into packed bits
               docToTermOrd.set(docID, 1+termOrd);
             }
             termOrd++;

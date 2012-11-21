@@ -66,7 +66,7 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
    *                    heap usage is 4 bytes * initialSize.
    */
   public TermAllGroupsCollector(String groupField, int initialSize) {
-    ordSet = new SentinelIntSet(initialSize, -1);
+    ordSet = new SentinelIntSet(initialSize, -2);
     groups = new ArrayList<BytesRef>(initialSize);
     this.groupField = groupField;
   }
@@ -87,7 +87,7 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
     int key = index.getOrd(doc);
     if (!ordSet.exists(key)) {
       ordSet.put(key);
-      BytesRef term = key == 0 ? null : index.lookup(key, new BytesRef());
+      BytesRef term = key == -1 ? null : index.lookup(key, new BytesRef());
       groups.add(term);
     }
   }
@@ -104,11 +104,14 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
     // Clear ordSet and fill it with previous encountered groups that can occur in the current segment.
     ordSet.clear();
     for (BytesRef countedGroup : groups) {
-      int ord = index.binarySearchLookup(countedGroup, spareBytesRef);
-      if (ord >= 0) {
-        ordSet.put(ord);
+      if (countedGroup == null) {
+        ordSet.put(-1);
+      } else {
+        int ord = index.binarySearchLookup(countedGroup, spareBytesRef);
+        if (ord >= 0) {
+          ordSet.put(ord);
+        }
       }
     }
   }
-
 }

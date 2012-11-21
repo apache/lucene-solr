@@ -45,7 +45,9 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
   private final static NullComparator nullComparator = new NullComparator();
   
   private final String groupField = "author";
+  private final String dvGroupField = "author_dv";
   private final String countField = "publisher";
+  private final String dvCountField = "publisher_dv";
 
   public void testSimple() throws Exception {
     Random random = random();
@@ -249,7 +251,15 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
         if (VERBOSE) {
           System.out.println("Index iter=" + indexIter);
           System.out.println("Search iter=" + searchIter);
-          System.out.println("Collector class name=" + distinctValuesCollector.getClass().getName());
+          System.out.println("1st pass collector class name=" + firstCollector.getClass().getName());
+          System.out.println("2nd pass collector class name=" + distinctValuesCollector.getClass().getName());
+          System.out.println("Search term=" + term);
+          System.out.println("DVType=" + dvType);
+          System.out.println("1st pass groups=" + firstCollector.getTopGroups(0, false));
+          System.out.println("Expected:");      
+          printGroups(expectedResult);
+          System.out.println("Actual:");      
+          printGroups(actualResult);
         }
 
         assertEquals(expectedResult.size(), actualResult.size());
@@ -262,13 +272,32 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
           Collections.sort(expectedUniqueValues, nullComparator);
           List<Comparable<?>> actualUniqueValues = new ArrayList<Comparable<?>>(actual.uniqueValues);
           Collections.sort(actualUniqueValues, nullComparator);
-          for (int j = 0; j < expected.uniqueValues.size(); j++) {
+          for (int j = 0; j < expectedUniqueValues.size(); j++) {
             assertValues(expectedUniqueValues.get(j), actualUniqueValues.get(j));
           }
         }
       }
       context.indexReader.close();
       context.directory.close();
+    }
+  }
+
+  private void printGroups(List<AbstractDistinctValuesCollector.GroupCount<Comparable<?>>> results) {
+    for(int i=0;i<results.size();i++) {
+      AbstractDistinctValuesCollector.GroupCount<Comparable<?>> group = results.get(i);
+      Object gv = group.groupValue;
+      if (gv instanceof BytesRef) {
+        System.out.println(i + ": groupValue=" + ((BytesRef) gv).utf8ToString());
+      } else {
+        System.out.println(i + ": groupValue=" + gv);
+      }
+      for(Object o : group.uniqueValues) {
+        if (o instanceof BytesRef) {
+          System.out.println("  " + ((BytesRef) o).utf8ToString());
+        } else {
+          System.out.println("  " + o);
+        }
+      }
     }
   }
 
@@ -316,24 +345,25 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
   }
 
   private void addField(Document doc, String field, String value, DocValues.Type type) {
-    doc.add(new StringField(field, value, Field.Store.NO));
+    doc.add(new StringField(field, value, Field.Store.YES));
     if (type == null) {
       return;
     }
+    String dvField = field + "_dv";
 
     Field valuesField = null;
     switch (type) {
       case VAR_INTS:
-        valuesField = new PackedLongDocValuesField(field, Integer.parseInt(value));
+        valuesField = new PackedLongDocValuesField(dvField, Integer.parseInt(value));
         break;
       case FLOAT_64:
-        valuesField = new DoubleDocValuesField(field, Double.parseDouble(value));
+        valuesField = new DoubleDocValuesField(dvField, Double.parseDouble(value));
         break;
       case BYTES_VAR_STRAIGHT:
-        valuesField = new StraightBytesDocValuesField(field, new BytesRef(value));
+        valuesField = new StraightBytesDocValuesField(dvField, new BytesRef(value));
         break;
       case BYTES_VAR_SORTED:
-        valuesField = new SortedBytesDocValuesField(field, new BytesRef(value));
+        valuesField = new SortedBytesDocValuesField(dvField, new BytesRef(value));
         break;
     }
     doc.add(valuesField);
@@ -348,7 +378,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     Collection<SearchGroup<T>> searchGroups = firstPassGroupingCollector.getTopGroups(0, false);
     if (DVFirstPassGroupingCollector.class.isAssignableFrom(firstPassGroupingCollector.getClass())) {
       boolean diskResident = random.nextBoolean();
-      return DVDistinctValuesCollector.create(groupField, countField, searchGroups, diskResident, dvType);
+      return DVDistinctValuesCollector.create(dvGroupField, dvCountField, searchGroups, diskResident, dvType);
     } else if (FunctionFirstPassGroupingCollector.class.isAssignableFrom(firstPassGroupingCollector.getClass())) {
       return (AbstractDistinctValuesCollector) new FunctionDistinctValuesCollector(new HashMap<Object, Object>(), new BytesRefFieldSource(groupField), new BytesRefFieldSource(countField), (Collection) searchGroups);
     } else {
@@ -362,7 +392,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     if (dvType != null) {
       if (random.nextBoolean()) {
         boolean diskResident = random.nextBoolean();
-        return DVFirstPassGroupingCollector.create(groupSort, topNGroups, groupField, dvType, diskResident);
+        return DVFirstPassGroupingCollector.create(groupSort, topNGroups, dvGroupField, dvType, diskResident);
       } else if (random.nextBoolean()) {
         return (AbstractFirstPassGroupingCollector<T>) new FunctionFirstPassGroupingCollector(new BytesRefFieldSource(groupField), new HashMap<Object, Object>(), groupSort, topNGroups);
       } else {
@@ -450,18 +480,25 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
       countsVals.add(countValue);
 
       Document doc = new Document();
-      doc.add(new StringField("id", String.format(Locale.ROOT, "%09d", i), Field.Store.NO));
+      doc.add(new StringField("id", String.format(Locale.ROOT, "%09d", i), Field.Store.YES));
       if (groupValue != null) {
         addField(doc, groupField, groupValue, dvType);
       }
       if (countValue != null) {
         addField(doc, countField, countValue, dvType);
       }
-      doc.add(new TextField("content", content, Field.Store.NO));
+      doc.add(new TextField("content", content, Field.Store.YES));
       w.addDocument(doc);
     }
 
     DirectoryReader reader = w.getReader();
+    if (VERBOSE) {
+      for(int docID=0;docID<reader.maxDoc();docID++) {
+        StoredDocument doc = reader.document(docID);
+        System.out.println("docID=" + docID + " id=" + doc.get("id") + " content=" + doc.get("content") + " author=" + doc.get("author") + " publisher=" + doc.get("publisher"));
+      }
+    }
+
     w.close();
     return new IndexContext(dir, reader, dvType, searchTermToGroupCounts, contentStrings.toArray(new String[contentStrings.size()]));
   }
