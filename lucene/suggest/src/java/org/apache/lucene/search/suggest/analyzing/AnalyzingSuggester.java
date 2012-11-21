@@ -74,10 +74,9 @@ import org.apache.lucene.util.fst.Util;
  * example, if you use an analyzer removing stop words, 
  * then the partial text "ghost chr..." could see the
  * suggestion "The Ghost of Christmas Past". Note that
- * your stop filter must NOT preserve position increments
- * for this to work, which means you cannot use the {@code
- * StopFilter} from the analysis module because it always
- * preserves position increments.
+ * your {@code StopFilter} instance must NOT preserve
+ * position increments for this example to work, so you should call
+ * {@code setEnablePositionIncrements(false)} on it.
  *
  * <p>
  * If SynonymFilter is used to map wifi and wireless network to
