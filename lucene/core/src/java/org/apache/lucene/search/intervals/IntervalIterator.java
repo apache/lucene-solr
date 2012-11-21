@@ -137,6 +137,11 @@ public abstract class IntervalIterator {
     public int matchDistance() {
       return Integer.MAX_VALUE;
     }
+
+    @Override
+    public int docID() {
+      return IntervalIterator.NO_MORE_DOCS;
+    }
     
   }
   
