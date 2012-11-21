@@ -287,6 +287,51 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
     writer.close();
     dir.close();
   }
+  
+  @Test
+  public void testOpenIfChangedNoChangesButSegmentMerges() throws Exception {
+    // test openIfChanged() when the taxonomy hasn't really changed, but segments
+    // were merged. The NRT reader will be reopened, and ParentArray used to assert
+    // that the new reader contains more ordinals than were given from the old
+    // TaxReader version
+    Directory dir = newDirectory();
+    
+    // hold onto IW to forceMerge
+    // note how we don't close it, since DTW will close it.
+    final IndexWriter iw = new IndexWriter(dir,
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer())
+            .setMergePolicy(new LogByteSizeMergePolicy()));
+    DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir) {
+      @Override
+      protected IndexWriter openIndexWriter(Directory directory,
+          IndexWriterConfig config) throws IOException {
+        return iw;
+      }
+    };
+    
+    // add a category so that the following DTR open will cause a flush and 
+    // a new segment will be created
+    writer.addCategory(new CategoryPath("a"));
+    
+    TaxonomyReader reader = new DirectoryTaxonomyReader(writer);
+    assertEquals(2, reader.getSize());
+    assertEquals(2, reader.getParentArray().length);
+
+    // merge all the segments so that NRT reader thinks there's a change 
+    iw.forceMerge(1);
+    
+    // now calling openIfChanged should trip on the wrong assert in ParetArray's ctor
+    TaxonomyReader newtr = TaxonomyReader.openIfChanged(reader);
+    assertNotNull(newtr);
+    reader.close();
+    reader = newtr;
+    assertEquals(2, reader.getSize());
+    assertEquals(2, reader.getParentArray().length);
+    
+    reader.close();
+    writer.close();
+    dir.close();
+  }
  
   @Test
   public void testOpenIfChangedReuseAfterRecreate() throws Exception {
