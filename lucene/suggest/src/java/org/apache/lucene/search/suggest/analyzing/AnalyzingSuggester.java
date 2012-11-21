@@ -73,8 +73,14 @@ import org.apache.lucene.util.fst.Util;
  * This can result in powerful suggester functionality.  For
  * example, if you use an analyzer removing stop words, 
  * then the partial text "ghost chr..." could see the
- * suggestion "The Ghost of Christmas Past".  If
- * SynonymFilter is used to map wifi and wireless network to
+ * suggestion "The Ghost of Christmas Past". Note that
+ * your stop filter must NOT preserve position increments
+ * for this to work, which means you cannot use the {@code
+ * StopFilter} from the analysis module because it always
+ * preserves position increments.
+ *
+ * <p>
+ * If SynonymFilter is used to map wifi and wireless network to
  * hotspot then the partial text "wirele..." could suggest
  * "wifi router".  Token normalization like stemmers, accent
  * removal, etc., would allow suggestions to ignore such
