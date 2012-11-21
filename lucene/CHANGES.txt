@@ -154,6 +154,9 @@ Bug Fixes
   WFST suggesters when no suggestions were added (selckin via Mike
   McCandless)
 
+* LUCENE-4568: Fixed integer overflow in
+  PagedBytes.PagedBytesData{In,Out}put.getPosition. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-2221: oal.util.BitUtil was modified to use Long.bitCount and

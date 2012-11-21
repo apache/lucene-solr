@@ -256,6 +256,7 @@ public final class PagedBytes {
   /** 1&lt;&lt;blockBits must be bigger than biggest single
    *  BytesRef slice that will be pulled */
   public PagedBytes(int blockBits) {
+    assert blockBits > 0 && blockBits <= 31 : blockBits;
     this.blockSize = 1 << blockBits;
     this.blockBits = blockBits;
     blockMask = blockSize-1;
@@ -423,7 +424,7 @@ public final class PagedBytes {
 
     /** Returns the current byte position. */
     public long getPosition() {
-      return currentBlockIndex * blockSize + currentBlockUpto;
+      return (long) currentBlockIndex * blockSize + currentBlockUpto;
     }
   
     /** Seek to a position previously obtained from
@@ -525,11 +526,7 @@ public final class PagedBytes {
 
     /** Return the current byte position. */
     public long getPosition() {
-      if (currentBlock == null) {
-        return 0;
-      } else {
-        return blocks.size() * blockSize + upto;
-      }
+      return getPointer();
     }
   }
 
