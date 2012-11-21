@@ -3,11 +3,10 @@ package org.apache.lucene.facet.taxonomy.directory;
 import java.io.IOException;
 
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.ArrayUtil;
 
@@ -58,9 +57,12 @@ class ParentArray {
   
   public ParentArray(IndexReader reader, ParentArray copyFrom) throws IOException {
     assert copyFrom != null;
+
+    // note that copyParents.length may be equal to reader.maxDoc(). this is not a bug
+    // it may be caused if e.g. the taxonomy segments were merged, and so an updated
+    // NRT reader was obtained, even though nothing was changed. this is not very likely
+    // to happen.
     int[] copyParents = copyFrom.getArray();
-    assert copyParents.length < reader.maxDoc() : "do not init a new ParentArray if the index hasn't changed";
-    
     this.parentOrdinals = new int[reader.maxDoc()];
     System.arraycopy(copyParents, 0, parentOrdinals, 0, copyParents.length);
     initFromReader(reader, copyParents.length);
@@ -72,47 +74,36 @@ class ParentArray {
       return;
     }
     
-    TermsEnum termsEnum = null;
-    DocsAndPositionsEnum positions = null;
-    int idx = 0;
-    for (AtomicReaderContext context : reader.leaves()) {
-      if (context.docBase < first) {
-        continue;
-      }
+    // it's ok to use MultiFields because we only iterate on one posting list.
+    // breaking it to loop over the leaves() only complicates code for no
+    // apparent gain.
+    DocsAndPositionsEnum positions = MultiFields.getTermPositionsEnum(reader, null,
+        Consts.FIELD_PAYLOADS, Consts.PAYLOAD_PARENT_BYTES_REF,
+        DocsAndPositionsEnum.FLAG_PAYLOADS);
 
-      // in general we could call readerCtx.reader().termPositionsEnum(), but that
-      // passes the liveDocs. Since we know there are no deletions, the code
-      // below may save some CPU cycles.
-      termsEnum = context.reader().fields().terms(Consts.FIELD_PAYLOADS).iterator(termsEnum);
-      if (!termsEnum.seekExact(Consts.PAYLOAD_PARENT_BYTES_REF, true)) {
-        throw new CorruptIndexException("Missing parent stream data for segment " + context.reader());
-      }
-      positions = termsEnum.docsAndPositions(null /* no deletes in taxonomy */, positions);
-      if (positions == null) {
-        throw new CorruptIndexException("Missing parent stream data for segment " + context.reader());
-      }
-
-      idx = context.docBase;
-      int doc;
-      while ((doc = positions.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        doc += context.docBase;
-        if (doc == idx) {
-          if (positions.freq() == 0) { // shouldn't happen
-            throw new CorruptIndexException("Missing parent data for category " + idx);
-          }
-          
-          parentOrdinals[idx++] = positions.nextPosition();
-        } else { // this shouldn't happen
-          throw new CorruptIndexException("Missing parent data for category " + idx);
-        }
-      }
-      if (idx + 1 < context.reader().maxDoc()) {
-        throw new CorruptIndexException("Missing parent data for category " + (idx + 1));
-      }
+    // shouldn't really happen, if it does, something's wrong
+    if (positions == null || positions.advance(first) == DocIdSetIterator.NO_MORE_DOCS) {
+      throw new CorruptIndexException("Missing parent data for category " + first);
     }
     
-    if (idx != reader.maxDoc()) {
-      throw new CorruptIndexException("Missing parent data for category " + idx);
+    int num = reader.maxDoc();
+    for (int i = first; i < num; i++) {
+      if (positions.docID() == i) {
+        if (positions.freq() == 0) { // shouldn't happen
+          throw new CorruptIndexException("Missing parent data for category " + i);
+        }
+        
+        parentOrdinals[i] = positions.nextPosition();
+        
+        if (positions.nextDoc() == DocIdSetIterator.NO_MORE_DOCS) {
+          if (i + 1 < num) {
+            throw new CorruptIndexException("Missing parent data for category "+ (i + 1));
+          }
+          break;
+        }
+      } else { // this shouldn't happen
+        throw new CorruptIndexException("Missing parent data for category " + i);
+      }
     }
   }
   

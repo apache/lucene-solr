@@ -1,11 +1,15 @@
 package org.apache.lucene.facet.taxonomy.directory;
 
+import java.io.IOException;
 import java.util.Random;
 
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -242,6 +246,48 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
     dir.close();
   }
   
+  @Test
+  public void testOpenIfChangedMergedSegment() throws Exception {
+    // test openIfChanged() when all index segments were merged - used to be
+    // a bug in ParentArray, caught by testOpenIfChangedManySegments - only
+    // this test is not random
+    Directory dir = newDirectory();
+    
+    // hold onto IW to forceMerge
+    // note how we don't close it, since DTW will close it.
+    final IndexWriter iw = new IndexWriter(dir,
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer())
+            .setMergePolicy(new LogByteSizeMergePolicy()));
+    DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir) {
+      @Override
+      protected IndexWriter openIndexWriter(Directory directory,
+          IndexWriterConfig config) throws IOException {
+        return iw;
+      }
+    };
+    
+    TaxonomyReader reader = new DirectoryTaxonomyReader(writer);
+    assertEquals(1, reader.getSize());
+    assertEquals(1, reader.getParentArray().length);
+
+    // add category and call forceMerge -- this should flush IW and merge segments down to 1
+    // in ParentArray.initFromReader, this used to fail assuming there are no parents.
+    writer.addCategory(new CategoryPath("1"));
+    iw.forceMerge(1);
+    
+    // now calling openIfChanged should trip on the bug
+    TaxonomyReader newtr = TaxonomyReader.openIfChanged(reader);
+    assertNotNull(newtr);
+    reader.close();
+    reader = newtr;
+    assertEquals(2, reader.getSize());
+    assertEquals(2, reader.getParentArray().length);
+    
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+ 
   @Test
   public void testOpenIfChangedReuseAfterRecreate() throws Exception {
     // tests that if the taxonomy is recreated, no data is reused from the previous taxonomy
