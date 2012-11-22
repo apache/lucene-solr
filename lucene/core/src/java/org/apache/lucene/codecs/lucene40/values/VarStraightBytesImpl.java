@@ -134,7 +134,6 @@ class VarStraightBytesImpl {
               docToAddress[lastDocID] = address + offset;
             }
             address += numDataBytes; // this is the address after all addr pointers are updated
-            iter.close();
           } finally {
             IOUtils.close(cloneIdx);
           }
