@@ -822,6 +822,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals("[barbazfoo/10]", suggester.lookup("bar baz foo", false, 5).toString());
   }
   
+  @SuppressWarnings("fallthrough")
   private static String addRandomEdit(String string, int prefixLength) {
     char[] input = string.toCharArray();
     StringBuilder builder = new StringBuilder();
