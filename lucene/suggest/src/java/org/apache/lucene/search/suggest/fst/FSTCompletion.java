@@ -109,7 +109,7 @@ public class FSTCompletion {
    *          Find and push an exact match to the first position of the result
    *          list if found.
    */
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked","rawtypes"})
   public FSTCompletion(FST<Object> automaton, boolean higherWeightsFirst, boolean exactFirst) {
     this.automaton = automaton;
     if (automaton != null) {
@@ -133,7 +133,7 @@ public class FSTCompletion {
    * Cache the root node's output arcs starting with completions with the
    * highest weights.
    */
-  @SuppressWarnings({"all"})
+  @SuppressWarnings({"unchecked","rawtypes"})
   private static Arc<Object>[] cacheRootArcs(FST<Object> automaton) {
     try {
       List<Arc<Object>> rootArcs = new ArrayList<Arc<Object>>();
