@@ -18,12 +18,10 @@
 package org.apache.solr.search;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.*;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupHeadsCollector;
@@ -128,7 +126,7 @@ public class Grouping {
    *
    * @param field The fieldname to group by.
    */
-  public void addFieldCommand(String field, SolrQueryRequest request) throws ParseException {
+  public void addFieldCommand(String field, SolrQueryRequest request) throws SyntaxError {
     SchemaField schemaField = searcher.getSchema().getField(field); // Throws an exception when field doesn't exist. Bad request.
     FieldType fieldType = schemaField.getType();
     ValueSource valueSource = fieldType.getValueSource(schemaField, null);
@@ -160,7 +158,7 @@ public class Grouping {
     commands.add(gc);
   }
 
-  public void addFunctionCommand(String groupByStr, SolrQueryRequest request) throws ParseException {
+  public void addFunctionCommand(String groupByStr, SolrQueryRequest request) throws SyntaxError {
     QParser parser = QParser.getParser(groupByStr, "func", request);
     Query q = parser.getQuery();
     final Grouping.Command gc;
@@ -203,7 +201,7 @@ public class Grouping {
     commands.add(gc);
   }
 
-  public void addQueryCommand(String groupByStr, SolrQueryRequest request) throws ParseException {
+  public void addQueryCommand(String groupByStr, SolrQueryRequest request) throws SyntaxError {
     QParser parser = QParser.getParser(groupByStr, null, request);
     Query gq = parser.getQuery();
     Grouping.CommandQuery gc = new CommandQuery();

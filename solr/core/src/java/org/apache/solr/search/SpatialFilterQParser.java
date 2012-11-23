@@ -17,7 +17,6 @@ package org.apache.solr.search;
  */
 
 
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import com.spatial4j.core.distance.DistanceUtils;
 import org.apache.solr.common.SolrException;
@@ -44,7 +43,7 @@ public class SpatialFilterQParser extends QParser {
   
 
   @Override
-  public Query parse() throws ParseException {
+  public Query parse() throws SyntaxError {
     //if more than one, we need to treat them as a point...
     //TODO: Should we accept multiple fields
     String[] fields = localParams.getParams("f");

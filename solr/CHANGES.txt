@@ -34,6 +34,13 @@ Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.5
 
+Upgrading from Solr 4.0.0-BETA
+----------------------
+
+Custom java parsing plugins need to migrade from throwing the internal
+ParseException to throwing SyntaxError.
+
+
 Detailed Change List
 ----------------------
 
@@ -87,6 +94,12 @@ New Features
 * SOLR-4101: Add support for storing term offsets in the index via a
   'storeOffsetsWithPositions' flag on field definitions in the schema.
   (Tom Winch, Alan Woodward)
+
+* SOLR-4093: Solr QParsers may now be directly invoked in the lucene
+  query syntax without the _query_ magic field hack.
+  Example:  foo AND {!term f=myfield v=$qq}
+  (yonik)
+
 
 Optimizations
 ----------------------

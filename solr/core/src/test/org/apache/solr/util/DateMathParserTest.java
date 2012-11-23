@@ -329,7 +329,7 @@ public class DateMathParserTest extends LuceneTestCase {
     for (String command : badCommands.keySet()) {
       try {
         Date out = p.parseMath(command);
-        fail("Didn't generate ParseException for: " + command);
+        fail("Didn't generate SyntaxError for: " + command);
       } catch (ParseException e) {
         assertEquals("Wrong pos for: " + command + " => " + e.getMessage(),
                      badCommands.get(command).intValue(), e.getErrorOffset());

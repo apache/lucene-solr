@@ -772,7 +772,7 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
             "defType", "edismax")
         , "*[count(//doc)=1]");
     
-    // Query string field 'cat_s' for special char / - causes ParseException without patch SOLR-3467
+    // Query string field 'cat_s' for special char / - causes SyntaxError without patch SOLR-3467
     assertQ("Escaping string with reserved / character",
         req("q", "foo/",
             "qf", "cat_s",

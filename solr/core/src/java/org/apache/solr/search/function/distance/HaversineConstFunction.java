@@ -24,7 +24,6 @@ import org.apache.lucene.queries.function.valuesource.ConstNumberSource;
 import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
 import org.apache.lucene.queries.function.valuesource.MultiValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.IndexSearcher;
 import com.spatial4j.core.io.ParseUtils;
 import com.spatial4j.core.distance.DistanceUtils;
@@ -32,6 +31,7 @@ import com.spatial4j.core.exception.InvalidShapeException;
 import org.apache.solr.common.params.SpatialParams;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.FunctionQParser;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.ValueSourceParser;
 
 import java.io.IOException;
@@ -48,7 +48,7 @@ public class HaversineConstFunction extends ValueSource {
 
   public static ValueSourceParser parser = new ValueSourceParser() {
     @Override
-    public ValueSource parse(FunctionQParser fp) throws ParseException
+    public ValueSource parse(FunctionQParser fp) throws SyntaxError
     {
       // TODO: dispatch through SpatialQueryable in the future?
       List<ValueSource> sources = fp.parseValueSourceList();
@@ -65,7 +65,7 @@ public class HaversineConstFunction extends ValueSource {
       } else if (sources.size() == 1) {
         ValueSource vs = sources.get(0);
         if (!(vs instanceof MultiValueSource)) {
-          throw new ParseException("geodist - invalid parameters:" + sources);
+          throw new SyntaxError("geodist - invalid parameters:" + sources);
         }
         mv1 = (MultiValueSource)vs;
       } else if (sources.size() == 2) {
@@ -88,7 +88,7 @@ public class HaversineConstFunction extends ValueSource {
           mv1 = makeMV(sources.subList(0,2), sources);
           vs1 = sources.get(2);
           if (!(vs1 instanceof MultiValueSource)) {
-            throw new ParseException("geodist - invalid parameters:" + sources);
+            throw new SyntaxError("geodist - invalid parameters:" + sources);
           }
           mv2 = (MultiValueSource)vs1;
         }
@@ -96,7 +96,7 @@ public class HaversineConstFunction extends ValueSource {
         mv1 = makeMV(sources.subList(0,2), sources);
         mv2 = makeMV(sources.subList(2,4), sources);
       } else if (sources.size() > 4) {
-        throw new ParseException("geodist - invalid parameters:" + sources);
+        throw new SyntaxError("geodist - invalid parameters:" + sources);
       }
 
       if (mv1 == null) {
@@ -109,7 +109,7 @@ public class HaversineConstFunction extends ValueSource {
       }
 
       if (mv1 == null || mv2 == null) {
-        throw new ParseException("geodist - not enough parameters:" + sources);
+        throw new SyntaxError("geodist - not enough parameters:" + sources);
       }
 
       // We have all the parameters at this point, now check if one of the points is constant
@@ -130,24 +130,24 @@ public class HaversineConstFunction extends ValueSource {
   };
 
   /** make a MultiValueSource from two non MultiValueSources */
-  private static VectorValueSource makeMV(List<ValueSource> sources, List<ValueSource> orig) throws ParseException {
+  private static VectorValueSource makeMV(List<ValueSource> sources, List<ValueSource> orig) throws SyntaxError {
     ValueSource vs1 = sources.get(0);
     ValueSource vs2 = sources.get(1);
 
     if (vs1 instanceof MultiValueSource || vs2 instanceof MultiValueSource) {
-      throw new ParseException("geodist - invalid parameters:" + orig);
+      throw new SyntaxError("geodist - invalid parameters:" + orig);
     }
     return  new VectorValueSource(sources);
   }
 
-  private static MultiValueSource parsePoint(FunctionQParser fp) throws ParseException {
+  private static MultiValueSource parsePoint(FunctionQParser fp) throws SyntaxError {
     String pt = fp.getParam(SpatialParams.POINT);
     if (pt == null) return null;
     double[] point = null;
     try {
       point = ParseUtils.parseLatitudeLongitude(pt);
     } catch (InvalidShapeException e) {
-      throw new ParseException("Bad spatial pt:" + pt);
+      throw new SyntaxError("Bad spatial pt:" + pt);
     }
     return new VectorValueSource(Arrays.<ValueSource>asList(new DoubleConstValueSource(point[0]),new DoubleConstValueSource(point[1])));
   }
@@ -161,13 +161,13 @@ public class HaversineConstFunction extends ValueSource {
     return null;
   }
 
-  private static MultiValueSource parseSfield(FunctionQParser fp) throws ParseException {
+  private static MultiValueSource parseSfield(FunctionQParser fp) throws SyntaxError {
     String sfield = fp.getParam(SpatialParams.FIELD);
     if (sfield == null) return null;
     SchemaField sf = fp.getReq().getSchema().getField(sfield);
     ValueSource vs = sf.getType().getValueSource(sf, fp);
     if (!(vs instanceof MultiValueSource)) {
-      throw new ParseException("Spatial field must implement MultiValueSource:" + sf);
+      throw new SyntaxError("Spatial field must implement MultiValueSource:" + sf);
     }
     return (MultiValueSource)vs;
   }
