@@ -30,6 +30,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.PackedInts.Reader;
 
+// nocommit if types are inconsistent, refuse to build
+
 /**
  * A wrapper for CompositeIndexReader providing access to per segment
  * {@link DocValues}

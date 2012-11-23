@@ -173,7 +173,7 @@ class BoolFieldSource extends ValueSource {
     int nord = sindex.numOrd();
     BytesRef br = new BytesRef();
     int tord = -1;
-    for (int i=1; i<nord; i++) {
+    for (int i=0; i<nord; i++) {
       sindex.lookup(i, br);
       if (br.length==1 && br.bytes[br.offset]=='T') {
         tord = i;
@@ -191,7 +191,7 @@ class BoolFieldSource extends ValueSource {
 
       @Override
       public boolean exists(int doc) {
-        return sindex.getOrd(doc) != 0;
+        return sindex.getOrd(doc) != -1;
       }
 
       @Override
@@ -208,7 +208,7 @@ class BoolFieldSource extends ValueSource {
           public void fillValue(int doc) {
             int ord = sindex.getOrd(doc);
             mval.value = (ord == trueOrd);
-            mval.exists = (ord != 0);
+            mval.exists = (ord != -1);
           }
         };
       }

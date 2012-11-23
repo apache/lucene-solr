@@ -298,11 +298,13 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
           if (fields[i].getType() == SortField.Type.SCORE) {
             scores[i] = scorer.score();
           } else {
-            sortValues[i] = sortsIndex[i].getTerm(doc, new BytesRef());
             sortOrds[i] = sortsIndex[i].getOrd(doc);
+            sortValues[i] = new BytesRef();
+            if (sortOrds[i] != -1) {
+              sortValues[i] = sortsIndex[i].getTerm(doc, sortValues[i]);
+            }
           }
         }
-
       }
 
       public int compare(int compIDX, int doc) throws IOException {
@@ -317,7 +319,12 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
         } else {
           if (sortOrds[compIDX] < 0) {
             // The current segment doesn't contain the sort value we encountered before. Therefore the ord is negative.
-            return sortValues[compIDX].compareTo(sortsIndex[compIDX].getTerm(doc, scratchBytesRef));
+            if (sortsIndex[compIDX].getOrd(doc) == -1) {
+              scratchBytesRef.length = 0;
+            } else {
+              sortsIndex[compIDX].getTerm(doc, scratchBytesRef);
+            }
+            return sortValues[compIDX].compareTo(scratchBytesRef);
           } else {
             return sortOrds[compIDX] - sortsIndex[compIDX].getOrd(doc);
           }
@@ -329,15 +336,17 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
           if (fields[i].getType() == SortField.Type.SCORE) {
             scores[i] = scorer.score();
           } else {
-            sortValues[i] = sortsIndex[i].getTerm(doc, sortValues[i]);
             sortOrds[i] = sortsIndex[i].getOrd(doc);
+            if (sortOrds[i] == -1) {
+              sortValues[i].length = 0;
+            } else {
+              sortValues[i] = sortsIndex[i].getTerm(doc, sortValues[i]);
+            }
           }
         }
         this.doc = doc + readerContext.docBase;
       }
-
     }
-
   }
 
 
@@ -412,7 +421,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
           for (int i = 0; i < sortsIndex.length; i++) {
             int sortOrd;
-            if (collectedGroup.sortValues[i] == null) {
+            if (collectedGroup.sortOrds[i] == -1) {
               sortOrd = -1;
             } else {
               sortOrd = sortsIndex[i].binarySearchLookup(collectedGroup.sortValues[i], scratchBytesRef);
@@ -433,15 +442,23 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
         sortValues = new BytesRef[sortsIndex.length];
         sortOrds = new int[sortsIndex.length];
         for (int i = 0; i < sortsIndex.length; i++) {
-          sortValues[i] = sortsIndex[i].getTerm(doc, new BytesRef());
           sortOrds[i] = sortsIndex[i].getOrd(doc);
+          sortValues[i] = new BytesRef();
+          if (sortOrds[i] != -1) {
+            sortsIndex[i].getTerm(doc, sortValues[i]);
+          }
         }
       }
 
       public int compare(int compIDX, int doc) throws IOException {
         if (sortOrds[compIDX] < 0) {
           // The current segment doesn't contain the sort value we encountered before. Therefore the ord is negative.
-          return sortValues[compIDX].compareTo(sortsIndex[compIDX].getTerm(doc, scratchBytesRef));
+          if (sortsIndex[compIDX].getOrd(doc) == -1) {
+            scratchBytesRef.length = 0;
+          } else {
+            sortsIndex[compIDX].getTerm(doc, scratchBytesRef);
+          }
+          return sortValues[compIDX].compareTo(scratchBytesRef);
         } else {
           return sortOrds[compIDX] - sortsIndex[compIDX].getOrd(doc);
         }
@@ -449,8 +466,12 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
       public void updateDocHead(int doc) throws IOException {
         for (int i = 0; i < sortsIndex.length; i++) {
-          sortValues[i] = sortsIndex[i].getTerm(doc, sortValues[i]);
           sortOrds[i] = sortsIndex[i].getOrd(doc);
+          if (sortOrds[i] == -1) {
+            sortValues[i].length = 0;
+          } else {
+            sortValues[i] = sortsIndex[i].getTerm(doc, sortValues[i]);
+          }
         }
         this.doc = doc + readerContext.docBase;
       }

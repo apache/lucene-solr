@@ -89,7 +89,8 @@ final class DocFieldProcessor extends DocConsumer {
       DocFieldProcessorPerField field = fieldHash[i];
       while(field != null) {
         // nocommit maybe we should sort by .... somethign?
-        // field name?  field number?  else this is hash order!!
+        // field name?  field number?  else this is hash
+        // order!!
         if (field.bytesDVWriter != null || field.numberDVWriter != null || field.sortedBytesDVWriter != null) {
 
           if (dvConsumer == null) {

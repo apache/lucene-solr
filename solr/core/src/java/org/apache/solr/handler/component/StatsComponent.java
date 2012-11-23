@@ -261,7 +261,7 @@ class SimpleStats {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Stats can only facet on single-valued fields, not: " + facetField );
       }
-
+      
       try {
         facetTermsIndex = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), facetField);
       }
@@ -276,11 +276,19 @@ class SimpleStats {
     DocIterator iter = docs.iterator();
     while (iter.hasNext()) {
       int docID = iter.nextDoc();
-      BytesRef raw = si.lookup(si.getOrd(docID), tempBR);
-      if( raw.length > 0 ) {
-        allstats.accumulate(raw);
-      } else {
+      int docOrd = si.getOrd(docID);
+      BytesRef raw;
+      if (docOrd == -1) {
         allstats.missing();
+        tempBR.length = 0;
+        raw = tempBR;
+      } else {
+        raw = si.lookup(docOrd, tempBR);
+        if( raw.length > 0 ) {
+          allstats.accumulate(raw);
+        } else {
+          allstats.missing();
+        }
       }
 
       // now update the facets

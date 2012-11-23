@@ -1913,6 +1913,7 @@ public abstract class FieldComparator<T> {
     }
   }
 
+  // nocommit why do we have this AND DTI.binarySearch?
   final protected static int binarySearch(BytesRef br, DocTermsIndex a, BytesRef key) {
     return binarySearch(br, a, key, 0, a.numOrd()-1);
   }

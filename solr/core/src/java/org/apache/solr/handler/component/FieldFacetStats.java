@@ -62,7 +62,7 @@ public class FieldFacetStats {
     this.facet_sf = facet_sf;
     this.numStatsTerms = numStatsTerms;
 
-    startTermIndex = 1;
+    startTermIndex = 0;
     endTermIndex = si.numOrd();
     nTerms = endTermIndex - startTermIndex;
 
@@ -79,7 +79,7 @@ public class FieldFacetStats {
 
   BytesRef getTermText(int docID, BytesRef ret) {
     final int ord = si.getOrd(docID);
-    if (ord == 0) {
+    if (ord == -1) {
       return null;
     } else {
       return si.lookup(ord, ret);

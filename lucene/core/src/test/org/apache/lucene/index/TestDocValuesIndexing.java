@@ -25,10 +25,12 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.ByteDocValuesField;
@@ -47,9 +49,9 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.SourceCache.DirectSourceCache;
 import org.apache.lucene.index.DocValues.SourceCache;
 import org.apache.lucene.index.DocValues.Type;
-import org.apache.lucene.index.DocValues.SourceCache.DirectSourceCache;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -79,6 +81,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
    * Simple test case to show how to use the API
    */
   public void testDocValuesSimple() throws IOException {
+    assumeTrue("requires simple dv", _TestUtil.canUseSimpleDV());
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, writerConfig(false));
     for (int i = 0; i < 5; i++) {
@@ -133,6 +136,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   public void testAddIndexes() throws IOException {
+    assumeTrue("requires simple dv", _TestUtil.canUseSimpleDV());
     Directory d1 = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d1);
     Document doc = new Document();
@@ -816,8 +820,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     Document doc = new Document();
     // Index doc values are single-valued so we should not
     // be able to add same field more than once:
-    Field f;
-    doc.add(f = new PackedLongDocValuesField("field", 17));
+    Field f = new PackedLongDocValuesField("field", 17);
+    doc.add(f);
     doc.add(new SortedBytesDocValuesField("field", new BytesRef("hello")));
     try {
       w.addDocument(doc);
@@ -825,15 +829,16 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     } catch (IllegalArgumentException iae) {
       // expected
     }
-
     doc = new Document();
     doc.add(f);
     w.addDocument(doc);
     w.forceMerge(1);
-    DirectoryReader r = w.getReader();
+    if (_TestUtil.canUseSimpleDV()) {
+      DirectoryReader r = w.getReader();
+      assertEquals(17, getOnlySegmentReader(r).getNumericDocValues("field").get(0));
+      r.close();
+    }
     w.close();
-    assertEquals(17, getOnlySegmentReader(r).getNumericDocValues("field").get(0));
-    r.close();
     d.close();
   }
   
@@ -929,6 +934,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   public void testWithThreads() throws Exception {
+    assumeTrue("requires simple dv", _TestUtil.canUseSimpleDV());
     Random random = random();
     final int NUM_DOCS = atLeast(100);
     final Directory dir = newDirectory();
@@ -1110,57 +1116,227 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     writer.close();
     dir.close();
   }
+
+  // Same field in one document as different types:
+  public void testMixedTypesSameDocument() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(new IntDocValuesField("foo", 0));
+    doc.add(new SortedBytesDocValuesField("foo", new BytesRef("hello")));
+    try {
+      w.addDocument(doc);
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    w.close();
+    dir.close();
+  }
+
+  // Two documents with same field as different types:
+  public void testMixedTypesDifferentDocuments() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(new IntDocValuesField("foo", 0));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new SortedBytesDocValuesField("foo", new BytesRef("hello")));
+    try {
+      w.addDocument(doc);
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    w.close();
+    dir.close();
+  }
+
+  // Two documents across segments
+  public void testMixedTypesDifferentSegments() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(new IntDocValuesField("foo", 0));
+    w.addDocument(doc);
+    w.commit();
+
+    doc = new Document();
+    doc.add(new SortedBytesDocValuesField("foo", new BytesRef("hello")));
+    try {
+      w.addDocument(doc);
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    w.close();
+    dir.close();
+  }
+
+  // Add inconsistent document after deleteAll
+  public void testMixedTypesAfterDeleteAll() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(new IntDocValuesField("foo", 0));
+    w.addDocument(doc);
+    w.deleteAll();
+
+    doc = new Document();
+    doc.add(new SortedBytesDocValuesField("foo", new BytesRef("hello")));
+    w.addDocument(doc);
+    w.close();
+    dir.close();
+  }
+
+  // Add inconsistent document after reopening IW w/ create
+  public void testMixedTypesAfterReopenCreate() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(new IntDocValuesField("foo", 0));
+    w.addDocument(doc);
+    w.close();
+
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+    w = new IndexWriter(dir, iwc);
+    doc = new Document();
+    doc.add(new SortedBytesDocValuesField("foo", new BytesRef("hello")));
+    w.addDocument(doc);
+    w.close();
+    dir.close();
+  }
+
+  // Two documents with same field as different types, added
+  // from separate threads:
+  public void testMixedTypesDifferentThreads() throws Exception {
+    Directory dir = newDirectory();
+    final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+
+    final CountDownLatch startingGun = new CountDownLatch(1);
+    final AtomicBoolean hitExc = new AtomicBoolean();
+    Thread[] threads = new Thread[3];
+    for(int i=0;i<3;i++) {
+      Field field;
+      if (i == 0) {
+        field = new SortedBytesDocValuesField("foo", new BytesRef("hello"));
+      } else if (i == 1) {
+        field = new IntDocValuesField("foo", 0);
+      } else {
+        field = new DerefBytesDocValuesField("foo", new BytesRef("bazz"), true);
+      }
+      final Document doc = new Document();
+      doc.add(field);
+
+      threads[i] = new Thread() {
+          @Override
+          public void run() {
+            try {
+              startingGun.await();
+              w.addDocument(doc);
+            } catch (IllegalArgumentException iae) {
+              // expected
+              hitExc.set(true);
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          }
+        };
+      threads[i].start();
+    }
+
+    startingGun.countDown();
+
+    for(Thread t : threads) {
+      t.join();
+    }
+    assertTrue(hitExc.get());
+    w.close();
+    dir.close();
+  }
+
+  // Adding documents via addIndexes
+  public void testMixedTypesViaAddIndexes() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    Document doc = new Document();
+    doc.add(new IntDocValuesField("foo", 0));
+    w.addDocument(doc);
+
+    // Make 2nd index w/ inconsistent field
+    Directory dir2 = newDirectory();
+    IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    doc = new Document();
+    doc.add(new SortedBytesDocValuesField("foo", new BytesRef("hello")));
+    w2.addDocument(doc);
+    w2.close();
+
+    try {
+      w.addIndexes(new Directory[] {dir2});
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+
+    IndexReader r = DirectoryReader.open(dir2);
+    try {
+      w.addIndexes(new IndexReader[] {r});
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+
+    r.close();
+    dir2.close();
+    w.close();
+    dir.close();
+  }
   
-  /**
-  *
-  */
- public static class NotCachingSourceCache extends SourceCache {
+  public static class NotCachingSourceCache extends SourceCache {
    
-   @Override
-   public Source load(DocValues values) throws IOException {
-     return values.loadSource();
-   }
+    @Override
+    public Source load(DocValues values) throws IOException {
+      return values.loadSource();
+    }
    
-   @Override
-   public Source loadDirect(DocValues values) throws IOException {
-     return values.loadDirectSource();
-   }
+    @Override
+    public Source loadDirect(DocValues values) throws IOException {
+      return values.loadDirectSource();
+    }
    
-   @Override
-   public void invalidate(DocValues values) {}
- }
+    @Override
+    public void invalidate(DocValues values) {}
+  }
  
- public NumericDocValues numeric(AtomicReader reader, String field) throws IOException {
-   NumericDocValues docValues = reader.getNumericDocValues(field);
-   if(random().nextBoolean()) {
-     return docValues.newRAMInstance();
-   }
-   return docValues;
- }
+  public NumericDocValues numeric(AtomicReader reader, String field) throws IOException {
+    NumericDocValues docValues = reader.getNumericDocValues(field);
+    if(random().nextBoolean()) {
+      return docValues.newRAMInstance();
+    }
+    return docValues;
+  }
  
- public NumericDocValues numeric(DirectoryReader reader, String field) throws IOException {
-   return numeric(getOnlySegmentReader(reader), field);
- }
- public BinaryDocValues binary(DirectoryReader reader, String field) throws IOException {
-   return binary(getOnlySegmentReader(reader), field);
- }
- public SortedDocValues sorted(DirectoryReader reader, String field) throws IOException {
-   return sorted(getOnlySegmentReader(reader), field);
- }
+  public NumericDocValues numeric(DirectoryReader reader, String field) throws IOException {
+    return numeric(getOnlySegmentReader(reader), field);
+  }
+  public BinaryDocValues binary(DirectoryReader reader, String field) throws IOException {
+    return binary(getOnlySegmentReader(reader), field);
+  }
+  public SortedDocValues sorted(DirectoryReader reader, String field) throws IOException {
+    return sorted(getOnlySegmentReader(reader), field);
+  }
  
- public BinaryDocValues binary(AtomicReader reader, String field) throws IOException {
-   BinaryDocValues docValues = reader.getBinaryDocValues(field);
-   if(random().nextBoolean()) {
-     return docValues.newRAMInstance();
-   }
-   return docValues;
- }
- public SortedDocValues sorted(AtomicReader reader, String field) throws IOException {
-   SortedDocValues docValues = reader.getSortedDocValues(field);
-   if(random().nextBoolean()) {
-     return docValues.newRAMInstance();
-   }
-   return docValues;
- }
+  public BinaryDocValues binary(AtomicReader reader, String field) throws IOException {
+    BinaryDocValues docValues = reader.getBinaryDocValues(field);
+    if(random().nextBoolean()) {
+      return docValues.newRAMInstance();
+    }
+    return docValues;
+  }
+  public SortedDocValues sorted(AtomicReader reader, String field) throws IOException {
+    SortedDocValues docValues = reader.getSortedDocValues(field);
+    if(random().nextBoolean()) {
+      return docValues.newRAMInstance();
+    }
+    return docValues;
+  }
  
 }

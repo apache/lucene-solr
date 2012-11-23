@@ -77,15 +77,14 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.FilteredQuery.FilterStrategy;
+import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.junit.Assert;
-
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -672,6 +671,11 @@ public class _TestUtil {
     } else {
       return p.getName();
     }
+  }
+
+  // nocommit remove this once all codecs support simple dv!!
+  public static boolean canUseSimpleDV() {
+    return Codec.getDefault().simpleDocValuesFormat() != null;
   }
 
   public static boolean anyFilesExceptWriteLock(Directory dir) throws IOException {

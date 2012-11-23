@@ -79,7 +79,7 @@ public class ReverseOrdFieldSource extends ValueSource {
     return new IntDocValues(this) {
      @Override
       public int intVal(int doc) {
-        return (end - sindex.getOrd(doc+off));
+        return (end - sindex.getOrd(doc+off) - 1);
       }
     };
   }

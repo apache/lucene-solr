@@ -48,11 +48,12 @@ import org.junit.BeforeClass;
 
 public class TestFieldsReader extends LuceneTestCase {
   private static Directory dir;
-  private static Document testDoc = new Document();
+  private static Document testDoc;
   private static FieldInfos.Builder fieldInfos = null;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    testDoc = new Document();
     fieldInfos = new FieldInfos.Builder();
     DocHelper.setupDoc(testDoc);
     for (IndexableField field : testDoc.getFields()) {

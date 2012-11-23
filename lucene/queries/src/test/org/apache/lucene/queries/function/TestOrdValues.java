@@ -133,7 +133,7 @@ public class TestOrdValues extends FunctionTestSetup {
       String id = s.getIndexReader().document(sd[i].doc).get(ID_FIELD);
       log("-------- " + i + ". Explain doc " + id);
       log(s.explain(q, sd[i].doc));
-      float expectedScore = N_DOCS - i;
+      float expectedScore = N_DOCS - i - 1;
       assertEquals("score of result " + i + " shuould be " + expectedScore + " != " + score, expectedScore, score, TEST_SCORE_TOLERANCE_DELTA);
       String expectedId = inOrder
               ? id2String(N_DOCS - i) // in-order ==> larger  values first
