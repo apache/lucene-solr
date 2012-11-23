@@ -19,15 +19,9 @@ import org.apache.solr.search.QParser;
 
 public class QueryParser extends SolrQueryParserBase implements QueryParserConstants {
   /** The default operator for parsing queries.
-   * Use {@link QueryParserBase#setDefaultOperator} to change it.
    */
   static public enum Operator { OR, AND }
 
-  /** Create a query parser.
-   *  @param matchVersion  Lucene version to match. See <a href="#version">above</a>.
-   *  @param defaultField  the default field for query terms.
-   *  @param a   used to find terms in the query text.
-   */
    public QueryParser(Version matchVersion, String defaultField, QParser parser) {
     this(new FastCharStream(new StringReader("")));
     init(matchVersion, defaultField, parser);
