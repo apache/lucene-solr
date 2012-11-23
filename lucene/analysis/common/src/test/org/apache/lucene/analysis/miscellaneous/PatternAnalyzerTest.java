@@ -171,7 +171,8 @@ public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
     }
     StackTraceElement trace[] = t.getStackTrace();
     for (StackTraceElement st : trace) {
-      if ("java.text.RuleBasedBreakIterator".equals(st.getClassName()) 
+      if ("java.text.RuleBasedBreakIterator".equals(st.getClassName()) || 
+          "sun.util.locale.provider.RuleBasedBreakIterator".equals(st.getClassName()) 
           && "lookupBackwardState".equals(st.getMethodName())) {
         return true;
       }
