@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler;
 
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -27,6 +26,7 @@ import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
 
 import java.net.URL;
@@ -148,7 +148,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         }
       } else {
         SolrException.log(SolrCore.log,e);
-        if (e instanceof ParseException) {
+        if (e instanceof SyntaxError) {
           e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
         }
       }

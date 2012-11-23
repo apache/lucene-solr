@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -35,6 +34,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.index.Term;
+import org.apache.solr.search.SyntaxError;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -65,7 +65,7 @@ public class PivotFacetHelper extends SimpleFacets
       //ex: pivot == "features,cat" or even "{!ex=mytag}features,cat"
       try {
         this.parseParams(FacetParams.FACET_PIVOT, pivot);
-      } catch (ParseException e) {
+      } catch (SyntaxError e) {
         throw new SolrException(ErrorCode.BAD_REQUEST, e);
       }
       pivot = facetValue;//facetValue potentially modified from parseParams()

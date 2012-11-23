@@ -16,12 +16,11 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.parser.QueryParser;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
@@ -58,8 +57,8 @@ public class DisMaxQParser extends QParser {
    */
   public static String parseMinShouldMatch(final IndexSchema schema, 
                                            final SolrParams params) {
-    QueryParser.Operator op = QueryParsing.getQueryParserDefaultOperator
-      (schema, params.get(QueryParsing.OP));
+    org.apache.solr.parser.QueryParser.Operator op = QueryParsing.getQueryParserDefaultOperator
+        (schema, params.get(QueryParsing.OP));
     return params.get(DisMaxParams.MM, 
                       op.equals(QueryParser.Operator.AND) ? "100%" : "0%");
   }
@@ -69,12 +68,12 @@ public class DisMaxQParser extends QParser {
    * or {@link org.apache.solr.schema.IndexSchema#getDefaultSearchFieldName()}.
    */
   public static Map<String, Float> parseQueryFields(final IndexSchema indexSchema, final SolrParams solrParams)
-      throws ParseException {
+      throws SyntaxError {
     Map<String, Float> queryFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.QF));
     if (queryFields.isEmpty()) {
       String df = QueryParsing.getDefaultField(indexSchema, solrParams.get(CommonParams.DF));
       if (df == null) {
-        throw new ParseException("Neither "+DisMaxParams.QF+", "+CommonParams.DF +", nor the default search field are present.");
+        throw new SyntaxError("Neither "+DisMaxParams.QF+", "+CommonParams.DF +", nor the default search field are present.");
       }
       queryFields.put(df, 1.0f);
     }
@@ -96,7 +95,7 @@ public class DisMaxQParser extends QParser {
 
 
   @Override
-  public Query parse() throws ParseException {
+  public Query parse() throws SyntaxError {
     SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
 
     queryFields = parseQueryFields(req.getSchema(), solrParams);
@@ -115,7 +114,7 @@ public class DisMaxQParser extends QParser {
     return query;
   }
 
-  protected void addBoostFunctions(BooleanQuery query, SolrParams solrParams) throws ParseException {
+  protected void addBoostFunctions(BooleanQuery query, SolrParams solrParams) throws SyntaxError {
     String[] boostFuncs = solrParams.getParams(DisMaxParams.BF);
     if (null != boostFuncs && 0 != boostFuncs.length) {
       for (String boostFunc : boostFuncs) {
@@ -133,7 +132,7 @@ public class DisMaxQParser extends QParser {
     }
   }
 
-  protected void addBoostQuery(BooleanQuery query, SolrParams solrParams) throws ParseException {
+  protected void addBoostQuery(BooleanQuery query, SolrParams solrParams) throws SyntaxError {
     boostParams = solrParams.getParams(DisMaxParams.BQ);
     //List<Query> boostQueries = SolrPluginUtils.parseQueryStrings(req, boostParams);
     boostQueries = null;
@@ -168,7 +167,7 @@ public class DisMaxQParser extends QParser {
   }
 
   /** Adds the main query to the query argument. If its blank then false is returned. */
-  protected boolean addMainQuery(BooleanQuery query, SolrParams solrParams) throws ParseException {
+  protected boolean addMainQuery(BooleanQuery query, SolrParams solrParams) throws SyntaxError {
     Map<String, Float> phraseFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.PF));
     float tiebreaker = solrParams.getFloat(DisMaxParams.TIE, 0.0f);
 
@@ -206,7 +205,7 @@ public class DisMaxQParser extends QParser {
     return true;
   }
 
-  protected Query getAlternateUserQuery(SolrParams solrParams) throws ParseException {
+  protected Query getAlternateUserQuery(SolrParams solrParams) throws SyntaxError {
     String altQ = solrParams.get(DisMaxParams.ALTQ);
     if (altQ != null) {
       QParser altQParser = subQuery(altQ, null);
@@ -216,7 +215,7 @@ public class DisMaxQParser extends QParser {
     }
   }
 
-  protected Query getPhraseQuery(String userQuery, SolrPluginUtils.DisjunctionMaxQueryParser pp) throws ParseException {
+  protected Query getPhraseQuery(String userQuery, SolrPluginUtils.DisjunctionMaxQueryParser pp) throws SyntaxError {
     /* * * Add on Phrases for the Query * * */
 
     /* build up phrase boosting queries */
@@ -231,7 +230,9 @@ public class DisMaxQParser extends QParser {
   }
 
   protected Query getUserQuery(String userQuery, SolrPluginUtils.DisjunctionMaxQueryParser up, SolrParams solrParams)
-          throws ParseException {
+          throws SyntaxError {
+
+
     String minShouldMatch = parseMinShouldMatch(req.getSchema(), solrParams);
     Query dis = up.parse(userQuery);
     Query query = dis;
@@ -261,7 +262,7 @@ public class DisMaxQParser extends QParser {
   }
 
   @Override
-  public Query getHighlightQuery() throws ParseException {
+  public Query getHighlightQuery() throws SyntaxError {
     return parsedUserQuery == null ? altUserQuery : parsedUserQuery;
   }
 

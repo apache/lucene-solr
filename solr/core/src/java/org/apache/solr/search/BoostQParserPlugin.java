@@ -20,7 +20,6 @@ import org.apache.lucene.queries.function.BoostedQuery;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -52,7 +51,7 @@ public class BoostQParserPlugin extends QParserPlugin {
       String b;
 
       @Override
-      public Query parse() throws ParseException {
+      public Query parse() throws SyntaxError {
         b = localParams.get(BOOSTFUNC);
         baseParser = subQuery(localParams.get(QueryParsing.V), null);
         Query q = baseParser.getQuery();
@@ -74,7 +73,7 @@ public class BoostQParserPlugin extends QParserPlugin {
       }
                                            
       @Override
-      public Query getHighlightQuery() throws ParseException {
+      public Query getHighlightQuery() throws SyntaxError {
         return baseParser.getHighlightQuery();
       }
 

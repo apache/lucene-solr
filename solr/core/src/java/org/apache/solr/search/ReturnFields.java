@@ -22,7 +22,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -338,7 +337,7 @@ public class ReturnFields
           okFieldNames.add( funcStr );
           augmenters.addTransformer( new ValueSourceAugmenter( key, parser, vs ) );
         }
-        catch (ParseException e) {
+        catch (SyntaxError e) {
           // try again, simple rules for a field name with no whitespace
           sp.pos = start;
           field = sp.getSimpleString();
@@ -357,7 +356,7 @@ public class ReturnFields
        // end try as function
 
       } // end for(;;)
-    } catch (ParseException e) {
+    } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing fieldname", e);
     }
   }

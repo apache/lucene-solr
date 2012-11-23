@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.*;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Bits;
@@ -53,7 +52,7 @@ public class JoinQParserPlugin extends QParserPlugin {
 
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
-      public Query parse() throws ParseException {
+      public Query parse() throws SyntaxError {
         String fromField = getParam("from");
         String fromIndex = getParam("fromIndex");
         String toField = getParam("to");

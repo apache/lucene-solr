@@ -42,4 +42,56 @@
   </target>
 
   <target name="dist-maven" depends="dist-maven-src-java"/>
+
+
+
+
+  <target name="javacc" depends="javacc-QueryParser"/>
+  <target name="javacc-QueryParser" depends="resolve-javacc">
+    <sequential>
+      <invoke-javacc target="src/java/org/apache/solr/parser/QueryParser.jj"
+                     outputDir="src/java/org/apache/solr/parser"/>
+
+      <!-- Change the incorrect public ctors for QueryParser to be protected instead -->
+      <replaceregexp file="src/java/org/apache/solr/parser/QueryParser.java"
+                     byline="true"
+                     match="public QueryParser\(CharStream "
+                     replace="protected QueryParser(CharStream "/>
+      <replaceregexp file="src/java/org/apache/solr/parser/QueryParser.java"
+                     byline="true"
+                     match="public QueryParser\(QueryParserTokenManager "
+                     replace="protected QueryParser(QueryParserTokenManager "/>
+
+    </sequential>
+  </target>
+  <target name="resolve-javacc" xmlns:ivy="antlib:org.apache.ivy.ant">
+    <!-- setup a "fake" JavaCC distribution folder in ${build.dir} to make JavaCC ANT task happy: -->
+    <ivy:retrieve organisation="net.java.dev.javacc" module="javacc" revision="5.0"
+      inline="true" conf="default" transitive="false" type="jar" sync="true"
+      pattern="${build.dir}/javacc/bin/lib/[artifact].[ext]"/>
+  </target>
+
+  <macrodef name="invoke-javacc">
+    <attribute name="target"/>
+    <attribute name="outputDir"/>
+    <sequential>
+      <mkdir dir="@{outputDir}"/>
+      <delete>
+        <fileset dir="@{outputDir}" includes="*.java">
+          <containsregexp expression="Generated.*By.*JavaCC"/>
+        </fileset>
+      </delete>
+      <javacc
+          target="@{target}"
+          outputDirectory="@{outputDir}"
+          javacchome="${build.dir}/javacc"
+          jdkversion="${javac.source}"
+      />
+      <fixcrlf srcdir="@{outputDir}" includes="*.java" encoding="UTF-8">
+        <containsregexp expression="Generated.*By.*JavaCC"/>
+      </fixcrlf>
+    </sequential>
+  </macrodef>
+
+
 </project>

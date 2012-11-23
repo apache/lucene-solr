@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -29,6 +28,7 @@ import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -71,7 +71,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
         try {
           QParser parser = QParser.getParser(hlq, null, rb.req);
           rb.setHighlightQuery(parser.getHighlightQuery());
-        } catch (ParseException e) {
+        } catch (SyntaxError e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
         }
       }

@@ -19,9 +19,9 @@ package org.apache.solr.core;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SimpleFloatFunction;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.FunctionQParser;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.ValueSourceParser;
 
 
@@ -38,7 +38,7 @@ public class DummyValueSourceParser extends ValueSourceParser {
   }
 
   @Override
-  public ValueSource parse(FunctionQParser fp) throws ParseException {
+  public ValueSource parse(FunctionQParser fp) throws SyntaxError {
     ValueSource source = fp.parseValueSource();
     ValueSource result = new SimpleFloatFunction(source) {
       @Override
