@@ -279,6 +279,10 @@ Other Changes
 * SOLR-1916: DIH to not use Lucene-forbidden Java APIs 
   (default encoding, locale, etc.) (James Dyer, Robert Muir)
 
+* SOLR-4111: SpellCheckCollatorTest#testContextSensitiveCollate to test against
+  both DirectSolrSpellChecker & IndexBasedSpellChecker
+  (Tomás Fernández Löbbe via James Dyer)
+
 ==================  4.0.0 ==================
 
 Versions of Major Components
