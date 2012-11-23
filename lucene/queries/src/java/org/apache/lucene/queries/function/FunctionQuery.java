@@ -160,7 +160,7 @@ public class FunctionQuery extends Query {
     }
 
     @Override
-    public float freq() throws IOException {
+    public int freq() throws IOException {
       return 1;
     }
 

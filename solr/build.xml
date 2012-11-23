@@ -203,9 +203,7 @@
         <include name="executors.txt" />
       </apiFileSet>
       <fileset dir="${basedir}/build">
-        <include name="**/*.class" />
-        <!-- exclude DIH for now as it is broken with Locales and Encodings: SOLR-1916 -->
-        <exclude name="contrib/solr-dataimporthandler*/**" />
+        <include name="**/*.class" />        
       </fileset>
     </forbidden-apis>
   </target>
@@ -526,6 +524,15 @@
   <!-- TODO: also integrate checkJavaDocs.py, which does more checks -->
   <target name="javadocs-lint" depends="javadocs">
     <check-broken-links dir="build/docs"/>
+    <!-- prevent the modules without problems from getting worse -->
+    <check-missing-javadocs dir="${javadoc.dir}/solr-analysis-extras" level="package"/>
+    <check-missing-javadocs dir="${javadoc.dir}/solr-cell" level="package"/>
+    <check-missing-javadocs dir="${javadoc.dir}/solr-clustering" level="package"/>
+    <!-- solr-core: problems: -->
+    <check-missing-javadocs dir="${javadoc.dir}/solr-dataimporthandler" level="package"/>
+    <check-missing-javadocs dir="${javadoc.dir}/solr-dataimporthandler-extras" level="package"/>
+    <check-missing-javadocs dir="${javadoc.dir}/solr-solrj" level="package"/>
+    <check-missing-javadocs dir="${javadoc.dir}/solr-test-framework" level="package"/>
   </target>
  
   <target name="generate-maven-artifacts" depends="install-maven-tasks">

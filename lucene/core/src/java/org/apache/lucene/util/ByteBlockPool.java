@@ -113,10 +113,14 @@ public final class ByteBlockPool {
     }
   };
 
-
+  /**
+   * array of buffers currently used in the pool. Buffers are allocated if
+   * needed don't modify this outside of this class.
+   */
   public byte[][] buffers = new byte[10][];
-
-  int bufferUpto = -1;                        // Which buffer we are upto
+  
+  /** index into the buffers array pointing to the current buffer used as the head */
+  private int bufferUpto = -1;                        // Which buffer we are upto
   /** Where we are in head buffer */
   public int byteUpto = BYTE_BLOCK_SIZE;
 
@@ -131,43 +135,64 @@ public final class ByteBlockPool {
     this.allocator = allocator;
   }
   
-  public void dropBuffersAndReset() {
-    if (bufferUpto != -1) {
-      // Recycle all but the first buffer
-      allocator.recycleByteBlocks(buffers, 0, 1+bufferUpto);
-
-      // Re-use the first buffer
-      bufferUpto = -1;
-      byteUpto = BYTE_BLOCK_SIZE;
-      byteOffset = -BYTE_BLOCK_SIZE;
-      buffers = new byte[10][];
-      buffer = null;
-    }
-  }
-
+  /**
+   * Resets the pool to its initial state reusing the first buffer and fills all
+   * buffers with <tt>0</tt> bytes before they reused or passed to
+   * {@link Allocator#recycleByteBlocks(byte[][], int, int)}. Calling
+   * {@link ByteBlockPool#nextBuffer()} is not needed after reset.
+   */
   public void reset() {
+    reset(true, true);
+  }
+  
+  /**
+   * Expert: Resets the pool to its initial state reusing the first buffer. Calling
+   * {@link ByteBlockPool#nextBuffer()} is not needed after reset. 
+   * @param zeroFillBuffers if <code>true</code> the buffers are filled with <tt>0</tt>. 
+   *        This should be set to <code>true</code> if this pool is used with slices.
+   * @param reuseFirst if <code>true</code> the first buffer will be reused and calling
+   *        {@link ByteBlockPool#nextBuffer()} is not needed after reset iff the 
+   *        block pool was used before ie. {@link ByteBlockPool#nextBuffer()} was called before.
+   */
+  public void reset(boolean zeroFillBuffers, boolean reuseFirst) {
     if (bufferUpto != -1) {
       // We allocated at least one buffer
 
-      for(int i=0;i<bufferUpto;i++)
-        // Fully zero fill buffers that we fully used
-        Arrays.fill(buffers[i], (byte) 0);
-
-      // Partial zero fill the final buffer
-      Arrays.fill(buffers[bufferUpto], 0, byteUpto, (byte) 0);
-          
-      if (bufferUpto > 0)
-        // Recycle all but the first buffer
-        allocator.recycleByteBlocks(buffers, 1, 1+bufferUpto);
-
-      // Re-use the first buffer
-      bufferUpto = 0;
-      byteUpto = 0;
-      byteOffset = 0;
-      buffer = buffers[0];
+      if (zeroFillBuffers) {
+        for(int i=0;i<bufferUpto;i++) {
+          // Fully zero fill buffers that we fully used
+          Arrays.fill(buffers[i], (byte) 0);
+        }
+        // Partial zero fill the final buffer
+        Arrays.fill(buffers[bufferUpto], 0, byteUpto, (byte) 0);
+      }
+     
+     if (bufferUpto > 0 || !reuseFirst) {
+       final int offset = reuseFirst ? 1 : 0;  
+       // Recycle all but the first buffer
+       allocator.recycleByteBlocks(buffers, offset, 1+bufferUpto);
+       Arrays.fill(buffers, offset, 1+bufferUpto, null);
+     }
+     if (reuseFirst) {
+       // Re-use the first buffer
+       bufferUpto = 0;
+       byteUpto = 0;
+       byteOffset = 0;
+       buffer = buffers[0];
+     } else {
+       bufferUpto = -1;
+       byteUpto = BYTE_BLOCK_SIZE;
+       byteOffset = -BYTE_BLOCK_SIZE;
+       buffer = null;
+     }
     }
   }
-  
+  /**
+   * Advances the pool to its next buffer. This method should be called once
+   * after the constructor to initialize the pool. In contrast to the
+   * constructor a {@link ByteBlockPool#reset()} call will advance the pool to
+   * its first buffer immediately.
+   */
   public void nextBuffer() {
     if (1+bufferUpto == buffers.length) {
       byte[][] newBuffers = new byte[ArrayUtil.oversize(buffers.length+1,
@@ -181,7 +206,11 @@ public final class ByteBlockPool {
     byteUpto = 0;
     byteOffset += BYTE_BLOCK_SIZE;
   }
-
+  
+  /**
+   * Allocates a new slice with the given size. 
+   * @see ByteBlockPool#FIRST_LEVEL_SIZE
+   */
   public int newSlice(final int size) {
     if (byteUpto > BYTE_BLOCK_SIZE-size)
       nextBuffer();
@@ -197,15 +226,32 @@ public final class ByteBlockPool {
   // array is the length of each slice, ie first slice is 5
   // bytes, next slice is 14 bytes, etc.
   
-  public final static int[] nextLevelArray = {1, 2, 3, 4, 5, 6, 7, 8, 9, 9};
-  public final static int[] levelSizeArray = {5, 14, 20, 30, 40, 40, 80, 80, 120, 200};
-  public final static int FIRST_LEVEL_SIZE = levelSizeArray[0];
+  /**
+   * An array holding the offset into the {@link ByteBlockPool#LEVEL_SIZE_ARRAY}
+   * to quickly navigate to the next slice level.
+   */
+  public final static int[] NEXT_LEVEL_ARRAY = {1, 2, 3, 4, 5, 6, 7, 8, 9, 9};
+  
+  /**
+   * An array holding the level sizes for byte slices.
+   */
+  public final static int[] LEVEL_SIZE_ARRAY = {5, 14, 20, 30, 40, 40, 80, 80, 120, 200};
+  
+  /**
+   * The first level size for new slices
+   * @see ByteBlockPool#newSlice(int)
+   */
+  public final static int FIRST_LEVEL_SIZE = LEVEL_SIZE_ARRAY[0];
 
+  /**
+   * Creates a new byte slice with the given starting size and 
+   * returns the slices offset in the pool.
+   */
   public int allocSlice(final byte[] slice, final int upto) {
 
     final int level = slice[upto] & 15;
-    final int newLevel = nextLevelArray[level];
-    final int newSize = levelSizeArray[newLevel];
+    final int newLevel = NEXT_LEVEL_ARRAY[level];
+    final int newSize = LEVEL_SIZE_ARRAY[newLevel];
 
     // Maybe allocate another block
     if (byteUpto > BYTE_BLOCK_SIZE-newSize)
@@ -288,13 +334,14 @@ public final class ByteBlockPool {
   }
   
   /**
-   *
+   * Copies bytes from the pool starting at the given offset with the given  
+   * length into the given {@link BytesRef} at offset <tt>0</tt> and returns it.
+   * <p>Note: this method allows to copy across block boundaries.</p>
    */
-  public final BytesRef copyFrom(final BytesRef bytes) {
-    final int length = bytes.length;
-    final int offset = bytes.offset;
+  public final BytesRef copyFrom(final BytesRef bytes, final int offset, final int length) {
     bytes.offset = 0;
     bytes.grow(length);
+    bytes.length = length;
     int bufferIndex = offset >> BYTE_BLOCK_SHIFT;
     byte[] buffer = buffers[bufferIndex];
     int pos = offset & BYTE_BLOCK_MASK;

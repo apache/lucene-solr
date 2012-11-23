@@ -1317,6 +1317,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
                 checkpoint();
               }
             }
+
+            // Must bump changeCount so if no other changes
+            // happened, we still commit this change:
+            changeCount++;
           }
           //System.out.println("  yes " + info.info.name + " " + docID);
           return true;
@@ -1887,6 +1891,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   /**
+   * Expert: returns true if there are merges waiting to be scheduled.
+   * 
+   * @lucene.experimental
+   */
+  public synchronized boolean hasPendingMerges() {
+    return pendingMerges.size() != 0;
+  }
+
+  /**
    * Close the <code>IndexWriter</code> without committing
    * any changes that have occurred since the last commit
    * (or since it was opened, if commit hasn't been called).
@@ -2069,7 +2082,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // they are aborted.
       while(runningMerges.size() > 0) {
         if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "now wait for " + runningMerges.size() + " running merge to abort");
+          infoStream.message("IW", "now wait for " + runningMerges.size() + " running merge/s to abort");
         }
         doWait();
       }

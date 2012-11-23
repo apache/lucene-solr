@@ -89,7 +89,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     
     final CoreContainer cores = h.getCoreContainer();
     cores.setPersistent(true); // is this needed since we make explicit calls?
-    
+
     String instDir = null;
     {
       SolrCore template = null;
@@ -108,12 +108,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     
     final File oneXml = new File(workDir, "1.solr.xml");
     cores.persistFile(oneXml);
-    
+
     assertXmlFile(oneXml, "/solr[@persistent='true']",
-        "/solr/cores[@defaultCoreName='collection1']",
-        "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir
-            + "']", "1=count(/solr/cores/core)");
-    
+        "/solr/cores[@defaultCoreName='collection1' and not(@swappableCacheSize)]",
+        "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir +
+        "' and @swappable='false' and @loadOnStartup='true' ]", "1=count(/solr/cores/core)");
+
     // create some new cores and sanity check the persistence
     
     final File dataXfile = new File(workDir, "dataX");
@@ -142,16 +142,18 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       assertEquals("cores not added?", 3, cores.getCoreNames().size());
       
       final File twoXml = new File(workDir, "2.solr.xml");
+      cores.swappableCacheSize = 32;
+
       cores.persistFile(twoXml);
-      
+
       assertXmlFile(twoXml, "/solr[@persistent='true']",
-          "/solr/cores[@defaultCoreName='collection1']",
+          "/solr/cores[@defaultCoreName='collection1' and @swappableCacheSize='32']",
           "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir
               + "']", "/solr/cores/core[@name='X' and @instanceDir='" + instDir
               + "' and @dataDir='" + dataX + "']",
           "/solr/cores/core[@name='Y' and @instanceDir='" + instY + "']",
           "3=count(/solr/cores/core)");
-      
+
       // delete a core, check persistence again
       assertNotNull("removing X returned null", cores.remove("X"));
       
@@ -200,7 +202,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       throw new RuntimeException("XPath is invalid", e2);
     }
   }
-  
+
   public void testNoCores() throws IOException, ParserConfigurationException, SAXException {
     //create solrHome
     File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName()

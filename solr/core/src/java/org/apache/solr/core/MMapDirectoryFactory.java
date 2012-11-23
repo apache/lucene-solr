@@ -30,8 +30,8 @@ import java.io.IOException;
 
 
 /**
- *  Directly provide MMapDirectory instead of relying on {@link org.apache.lucene.store.FSDirectory#open}
- *
+ * Directly provide MMapDirectory instead of relying on {@link org.apache.lucene.store.FSDirectory#open}.
+ * <p>
  * Can set the following parameters:
  * <ul>
  *  <li>unmap -- See {@link MMapDirectory#setUseUnmap(boolean)}</li>

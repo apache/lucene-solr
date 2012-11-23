@@ -1,3 +1,8 @@
+package org.apache.solr.handler.dataimport;
+
+import org.junit.Ignore;
+import org.junit.Test;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,168 +19,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.dataimport;
-
-import org.junit.Test;
-import org.junit.Ignore;
-
-import java.util.*;
 
 /**
- * <p>
- * Test for SqlEntityProcessor
- * </p>
- *
- *
- * @since solr 1.3
+ * Test with various combinations of parameters, child entities, caches, transformers.
  */
-@Ignore("FIXME: I fail so often it makes me ill!")
-public class TestSqlEntityProcessor extends AbstractDataImportHandlerTestCase {
-  private static ThreadLocal<Integer> local = new ThreadLocal<Integer>();
-
+public class TestSqlEntityProcessor extends AbstractSqlEntityProcessorTestCase { 
+   
   @Test
-  public void testSingleBatch() {
-    SqlEntityProcessor sep = new SqlEntityProcessor();
-    List<Map<String, Object>> rows = getRows(3);
-    VariableResolverImpl vr = new VariableResolverImpl();
-    HashMap<String, String> ea = new HashMap<String, String>();
-    ea.put("query", "SELECT * FROM A");
-    Context c = getContext(null, vr, getDs(rows), Context.FULL_DUMP, null, ea);
-    sep.init(c);
-    int count = 0;
-    while (true) {
-      Map<String, Object> r = sep.nextRow();
-      if (r == null)
-        break;
-      count++;
-    }
-
-    assertEquals(3, count);
-  }
-
+  public void testSingleEntity() throws Exception {
+    singleEntity(1);
+  }  
   @Test
-  public void testTranformer() {
-    EntityProcessor sep = new EntityProcessorWrapper( new SqlEntityProcessor(), null, null);
-    List<Map<String, Object>> rows = getRows(2);
-    VariableResolverImpl vr = new VariableResolverImpl();
-    HashMap<String, String> ea = new HashMap<String, String>();
-    ea.put("query", "SELECT * FROM A");
-    ea.put("transformer", T.class.getName());
-
-    sep.init(getContext(null, vr, getDs(rows), Context.FULL_DUMP, null, ea));
-    List<Map<String, Object>> rs = new ArrayList<Map<String, Object>>();
-    Map<String, Object> r = null;
-    while (true) {
-      r = sep.nextRow();
-      if (r == null)
-        break;
-      rs.add(r);
-
-    }
-    assertEquals(2, rs.size());
-    assertNotNull(rs.get(0).get("T"));
+  public void testWithSimpleTransformer() throws Exception {
+    simpleTransform(1);   
   }
-
   @Test
-  public void testTranformerWithReflection() {
-    EntityProcessor sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null, null);
-    List<Map<String, Object>> rows = getRows(2);
-    VariableResolverImpl vr = new VariableResolverImpl();
-    HashMap<String, String> ea = new HashMap<String, String>();
-    ea.put("query", "SELECT * FROM A");
-    ea.put("transformer", T3.class.getName());
-
-    sep.init(getContext(null, vr, getDs(rows), Context.FULL_DUMP, null, ea));
-    List<Map<String, Object>> rs = new ArrayList<Map<String, Object>>();
-    Map<String, Object> r = null;
-    while (true) {
-      r = sep.nextRow();
-      if (r == null)
-        break;
-      rs.add(r);
-
-    }
-    assertEquals(2, rs.size());
-    assertNotNull(rs.get(0).get("T3"));
+  public void testWithComplexTransformer() throws Exception {
+    complexTransform(1, 0);
   }
-
   @Test
-  public void testTranformerList() {
-    EntityProcessor sep = new EntityProcessorWrapper(new SqlEntityProcessor(),null, null);
-    List<Map<String, Object>> rows = getRows(2);
-    VariableResolverImpl vr = new VariableResolverImpl();
-
-    HashMap<String, String> ea = new HashMap<String, String>();
-    ea.put("query", "SELECT * FROM A");
-    ea.put("transformer", T2.class.getName());
-    sep.init(getContext(null, vr, getDs(rows), Context.FULL_DUMP, null, ea));
-
-    local.set(0);
-    Map<String, Object> r = null;
-    int count = 0;
-    while (true) {
-      r = sep.nextRow();
-      if (r == null)
-        break;
-      count++;
-    }
-    assertEquals(2, (int) local.get());
-    assertEquals(4, count);
+  public void testChildEntities() throws Exception {
+    withChildEntities(false, true);
   }
-
-  private List<Map<String, Object>> getRows(int count) {
-    List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
-    for (int i = 0; i < count; i++) {
-      Map<String, Object> row = new HashMap<String, Object>();
-      row.put("id", i);
-      row.put("value", "The value is " + i);
-      rows.add(row);
-    }
-    return rows;
+  @Test
+  public void testCachedChildEntities() throws Exception {
+    withChildEntities(true, true);
   }
-
-  private static DataSource<Iterator<Map<String, Object>>> getDs(
-          final List<Map<String, Object>> rows) {
-    return new DataSource<Iterator<Map<String, Object>>>() {
-      @Override
-      public Iterator<Map<String, Object>> getData(String query) {
-        return rows.iterator();
-      }
-
-      @Override
-      public void init(Context context, Properties initProps) {
-      }
-
-      @Override
-      public void close() {
-      }
-    };
+  @Test
+  @Ignore("broken see SOLR-3857")
+  public void testSimpleCacheChildEntities() throws Exception {
+    simpleCacheChildEntities(true);
   }
-
-  public static class T extends Transformer {
-    @Override
-    public Object transformRow(Map<String, Object> aRow, Context context) {
-      aRow.put("T", "Class T");
-      return aRow;
-    }
+   
+  @Override
+  protected String deltaQueriesCountryTable() {
+    return "";
   }
-
-  public static class T3 {
-    public Object transformRow(Map<String, Object> aRow) {
-      aRow.put("T3", "T3 class");
-      return aRow;
-    }
-  }
-
-  public static class T2 extends Transformer {
-    @Override
-    public Object transformRow(Map<String, Object> aRow, Context context) {
-      Integer count = local.get();
-      local.set(count + 1);
-      List<Map<String, Object>> l = new ArrayList<Map<String, Object>>();
-      l.add(aRow);
-      l.add(aRow);
-      return l;
-    }
-  }
+  @Override
+  protected String deltaQueriesPersonTable() {
+    return "";
+  }  
 }

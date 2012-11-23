@@ -134,7 +134,6 @@ class VarStraightBytesImpl {
               docToAddress[lastDocID] = address + offset;
             }
             address += numDataBytes; // this is the address after all addr pointers are updated
-            iter.close();
           } finally {
             IOUtils.close(cloneIdx);
           }
@@ -188,7 +187,7 @@ class VarStraightBytesImpl {
         } else {
           IOUtils.closeWhileHandlingException(datOut);
         }
-        pool.dropBuffersAndReset();
+        pool.reset(false, false);
       }
 
       success = false;
@@ -247,12 +246,12 @@ class VarStraightBytesImpl {
     }
 
     @Override
-    public Source load() throws IOException {
+    protected Source loadSource() throws IOException {
       return new VarStraightSource(cloneData(), cloneIndex());
     }
 
     @Override
-    public Source getDirectSource()
+    protected Source loadDirectSource()
         throws IOException {
       return new DirectVarStraightSource(cloneData(), cloneIndex(), getType());
     }

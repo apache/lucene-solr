@@ -4,5 +4,5 @@
 
 The API of oal.document was restructured to differentiate between stored 
 documents and indexed documents. IndexReader.document(int) now returns 
-StorableDocument instead of Document. In most cases a simple replacement 
+StoredDocument instead of Document. In most cases a simple replacement
 of the return type is enough to upgrade.

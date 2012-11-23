@@ -97,12 +97,6 @@ public class SimpleTextTermVectorsReader extends TermVectorsReader {
   
   @Override
   public Fields get(int doc) throws IOException {
-    // TestTV tests for this in testBadParams... but is this
-    // really guaranteed by the API?
-    if (doc < 0 || doc >= offsets.length) {
-      throw new IllegalArgumentException("doc id out of range");
-    }
-
     SortedMap<String,SimpleTVTerms> fields = new TreeMap<String,SimpleTVTerms>();
     in.seek(offsets[doc]);
     readLine();

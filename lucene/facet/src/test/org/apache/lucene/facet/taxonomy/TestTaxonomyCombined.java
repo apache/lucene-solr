@@ -5,18 +5,17 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader.ChildrenArrays;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.SlowRAMDirectory;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -35,6 +34,8 @@ import org.apache.lucene.util.SlowRAMDirectory;
  * limitations under the License.
  */
 
+// TODO: remove this suppress after we fix the TaxoWriter Codec to a non-default (see todo in DirTW)
+@SuppressCodecs("SimpleText")
 public class TestTaxonomyCombined extends LuceneTestCase {
 
   /**  The following categories will be added to the taxonomy by
@@ -725,7 +726,10 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     assertEquals(3, ca.getOlderSiblingArray().length);
     assertEquals(3, ca.getYoungestChildArray().length);
     // After the refresh, things change:
-    tr.refresh();
+    TaxonomyReader newtr = TaxonomyReader.openIfChanged(tr);
+    assertNotNull(newtr);
+    tr.close();
+    tr = newtr;
     ca = tr.getChildrenArrays();
     assertEquals(5, tr.getSize());
     assertEquals(5, ca.getOlderSiblingArray().length);
@@ -737,14 +741,11 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     indexDir.close();
   }
   
-  /**
-   * Test that getParentArrays is valid when retrieved during refresh
-   */
+  // Test that getParentArrays is valid when retrieved during refresh
   @Test
-  @Ignore
   public void testTaxonomyReaderRefreshRaces() throws Exception {
     // compute base child arrays - after first chunk, and after the other
-    Directory indexDirBase =  newDirectory();
+    Directory indexDirBase = newDirectory();
     TaxonomyWriter twBase = new DirectoryTaxonomyWriter(indexDirBase);
     twBase.addCategory(new CategoryPath("a", "0"));
     final CategoryPath abPath = new CategoryPath("a", "b");
@@ -757,56 +758,64 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     final int abOrd = trBase.getOrdinal(abPath);
     final int abYoungChildBase1 = ca1.getYoungestChildArray()[abOrd]; 
     
-    for (int i=0; i < 1<<10; i++) { //1024 facets
+    final int numCategories = atLeast(800);
+    for (int i = 0; i < numCategories; i++) {
       twBase.addCategory(new CategoryPath("a", "b", Integer.toString(i)));
     }
-    twBase.commit();
+    twBase.close();
     
-    trBase.refresh();
+    TaxonomyReader newTaxoReader = TaxonomyReader.openIfChanged(trBase);
+    assertNotNull(newTaxoReader);
+    trBase.close();
+    trBase = newTaxoReader;
     
     final ChildrenArrays ca2 = trBase.getChildrenArrays();
     final int abYoungChildBase2 = ca2.getYoungestChildArray()[abOrd];
     
-    for (int retry=0; retry<100; retry++) {
-      assertConsistentYoungestChild(abPath, abOrd, abYoungChildBase1,  abYoungChildBase2, retry);
+    int numRetries = atLeast(50);
+    for (int retry = 0; retry < numRetries; retry++) {
+      assertConsistentYoungestChild(abPath, abOrd, abYoungChildBase1, abYoungChildBase2, retry, numCategories);
     }
+    
+    trBase.close();
     indexDirBase.close();
   }
 
   private void assertConsistentYoungestChild(final CategoryPath abPath,
-      final int abOrd, final int abYoungChildBase1, final int abYoungChildBase2, final int retry)
+      final int abOrd, final int abYoungChildBase1, final int abYoungChildBase2, final int retry, int numCategories)
       throws Exception {
-    SlowRAMDirectory indexDir =  new SlowRAMDirectory(-1,null); // no slowness for intialization
+    SlowRAMDirectory indexDir = new SlowRAMDirectory(-1, null); // no slowness for intialization
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(indexDir);
     tw.addCategory(new CategoryPath("a", "0"));
     tw.addCategory(abPath);
     tw.commit();
     
-    final TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
-    for (int i=0; i < 1<<10; i++) { //1024 facets
+    final DirectoryTaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
+    for (int i = 0; i < numCategories; i++) {
       final CategoryPath cp = new CategoryPath("a", "b", Integer.toString(i));
       tw.addCategory(cp);
       assertEquals("Ordinal of "+cp+" must be invalid until Taxonomy Reader was refreshed", TaxonomyReader.INVALID_ORDINAL, tr.getOrdinal(cp));
     }
-    tw.commit();
+    tw.close();
     
-    final boolean[] stop = new boolean[] { false };
+    final AtomicBoolean stop = new AtomicBoolean(false);
     final Throwable[] error = new Throwable[] { null };
     final int retrieval[] = { 0 }; 
     
     Thread thread = new Thread("Child Arrays Verifier") {
       @Override
       public void run() {
-        setPriority(1+getPriority());
+        setPriority(1 + getPriority());
         try {
-          while (!stop[0]) {
-            int lastOrd = tr.getParentArray().length-1;
-            assertNotNull("path of last-ord "+lastOrd+" is not found!",tr.getPath(lastOrd));
-            assertChildrenArrays(tr.getChildrenArrays(),retry,retrieval[0]++);
+          while (!stop.get()) {
+            int lastOrd = tr.getParentArray().length - 1;
+            assertNotNull("path of last-ord " + lastOrd + " is not found!", tr.getPath(lastOrd));
+            assertChildrenArrays(tr.getChildrenArrays(), retry, retrieval[0]++);
+            sleep(10); // don't starve refresh()'s CPU, which sleeps every 50 bytes for 1 ms
           }
         } catch (Throwable e) {
           error[0] = e;
-          stop[0] = true;
+          stop.set(true);
         }
       }
 
@@ -822,13 +831,15 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     thread.start();
     
     indexDir.setSleepMillis(1); // some delay for refresh
-    tr.refresh();
+    TaxonomyReader newTaxoReader = TaxonomyReader.openIfChanged(tr);
+    if (newTaxoReader != null) {
+      newTaxoReader.close();
+    }
     
-    stop[0] = true;
+    stop.set(true);
     thread.join();
     assertNull("Unexpcted exception at retry "+retry+" retrieval "+retrieval[0]+": \n"+stackTraceStr(error[0]), error[0]);
     
-    tw.close();
     tr.close();
   }
 
@@ -885,7 +896,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
       // ok
     }
     assertEquals(1, tr.getSize()); // still root only...
-    tr.refresh(); // this is not enough, because tw.commit() hasn't been done yet
+    assertNull(TaxonomyReader.openIfChanged(tr)); // this is not enough, because tw.commit() hasn't been done yet
     try {
       tr.getParent(author);
       fail("Before commit() and refresh(), getParent for "+author+" should still throw exception");
@@ -901,7 +912,11 @@ public class TestTaxonomyCombined extends LuceneTestCase {
       // ok
     }
     assertEquals(1, tr.getSize()); // still root only...
-    tr.refresh();
+    TaxonomyReader newTaxoReader = TaxonomyReader.openIfChanged(tr);
+    assertNotNull(newTaxoReader);
+    tr.close();
+    tr = newTaxoReader;
+    
     try {
       assertEquals(TaxonomyReader.ROOT_ORDINAL, tr.getParent(author));
       // ok
@@ -917,7 +932,10 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     tw.addCategory(new CategoryPath("Author", "Richard Dawkins"));
     int dawkins = 2;
     tw.commit();
-    tr.refresh();
+    newTaxoReader = TaxonomyReader.openIfChanged(tr);
+    assertNotNull(newTaxoReader);
+    tr.close();
+    tr = newTaxoReader;
     assertEquals(author, tr.getParent(dawkins));
     assertEquals(TaxonomyReader.ROOT_ORDINAL, tr.getParent(author));
     assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getParent(TaxonomyReader.ROOT_ORDINAL));
@@ -943,16 +961,19 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     // before commit and refresh, no change:
     assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getOrdinal(author));
     assertEquals(1, tr.getSize()); // still root only...
-    tr.refresh(); // this is not enough, because tw.commit() hasn't been done yet
+    assertNull(TaxonomyReader.openIfChanged(tr)); // this is not enough, because tw.commit() hasn't been done yet
     assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getOrdinal(author));
     assertEquals(1, tr.getSize()); // still root only...
     tw.commit();
     // still not enough before refresh:
     assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getOrdinal(author));
     assertEquals(1, tr.getSize()); // still root only...
-    tr.refresh(); // finally
+    TaxonomyReader newTaxoReader = TaxonomyReader.openIfChanged(tr);
+    assertNotNull(newTaxoReader);
+    tr.close();
+    tr = newTaxoReader;
     assertEquals(1, tr.getOrdinal(author));
-    assertEquals(2, tr.getSize()); // still root only...
+    assertEquals(2, tr.getSize());
     tw.close();
     tr.close();
     indexDir.close();
@@ -977,7 +998,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     // Try to open a second writer, with the first one locking the directory.
     // We expect to get a LockObtainFailedException.
     try {
-      new DirectoryTaxonomyWriter(indexDir);
+      assertNull(new DirectoryTaxonomyWriter(indexDir));
       fail("should have failed to write in locked directory");
     } catch (LockObtainFailedException e) {
       // this is what we expect to happen.
@@ -989,7 +1010,10 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     tw2.addCategory(new CategoryPath("hey"));
     tw2.close();
     // See that the writer indeed wrote:
-    tr.refresh();
+    TaxonomyReader newtr = TaxonomyReader.openIfChanged(tr);
+    assertNotNull(newtr);
+    tr.close();
+    tr = newtr;
     assertEquals(3, tr.getOrdinal(new CategoryPath("hey")));
     tr.close();
     tw.close();
@@ -1084,6 +1108,27 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     checkPaths(tw);
     tw.close();
     indexDir.close();
+  }
+
+  @Test
+  public void testNRT() throws Exception {
+    Directory dir = newDirectory();
+    DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(dir);
+    TaxonomyReader reader = new DirectoryTaxonomyReader(writer);
+    
+    CategoryPath cp = new CategoryPath("a");
+    writer.addCategory(cp);
+    TaxonomyReader newReader = TaxonomyReader.openIfChanged(reader);
+    assertNotNull("expected a new instance", newReader);
+    assertEquals(2, newReader.getSize());
+    assertNotSame(TaxonomyReader.INVALID_ORDINAL, newReader.getOrdinal(cp));
+    reader.close();
+    reader = newReader;
+    
+    writer.close();
+    reader.close();
+    
+    dir.close();
   }
 
 //  TODO (Facet): test multiple readers, one writer. Have the multiple readers

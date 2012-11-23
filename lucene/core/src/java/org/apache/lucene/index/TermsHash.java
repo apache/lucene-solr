@@ -23,6 +23,8 @@ import java.util.Map;
 
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.IntBlockPool;
 
 /** This class implements {@link InvertedDocConsumer}, which
  *  is passed each token produced by the analyzer on each
@@ -36,11 +38,11 @@ final class TermsHash extends InvertedDocConsumer {
 
   final TermsHashConsumer consumer;
   final TermsHash nextTermsHash;
-  final DocumentsWriterPerThread docWriter;
 
   final IntBlockPool intPool;
   final ByteBlockPool bytePool;
   ByteBlockPool termBytePool;
+  final Counter bytesUsed;
 
   final boolean primary;
   final DocumentsWriterPerThread.DocState docState;
@@ -56,11 +58,11 @@ final class TermsHash extends InvertedDocConsumer {
 
   public TermsHash(final DocumentsWriterPerThread docWriter, final TermsHashConsumer consumer, boolean trackAllocations, final TermsHash nextTermsHash) {
     this.docState = docWriter.docState;
-    this.docWriter = docWriter;
     this.consumer = consumer;
     this.trackAllocations = trackAllocations; 
     this.nextTermsHash = nextTermsHash;
-    intPool = new IntBlockPool(docWriter);
+    this.bytesUsed = trackAllocations ? docWriter.bytesUsed : Counter.newCounter();
+    intPool = new IntBlockPool(docWriter.intBlockAllocator);
     bytePool = new ByteBlockPool(docWriter.byteBlockAllocator);
 
     if (nextTermsHash != null) {
@@ -87,12 +89,9 @@ final class TermsHash extends InvertedDocConsumer {
 
   // Clear all state
   void reset() {
-    intPool.reset();
-    bytePool.reset();
-
-    if (primary) {
-      bytePool.reset();
-    }
+    // we don't reuse so we drop everything and don't fill with 0
+    intPool.reset(false, false); 
+    bytePool.reset(false, false);
   }
 
   @Override

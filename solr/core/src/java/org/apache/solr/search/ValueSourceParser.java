@@ -1286,7 +1286,7 @@ class TestValueSource extends ValueSource {
   }
 
   @Override
-  public SortField getSortField(boolean reverse) throws IOException {
+  public SortField getSortField(boolean reverse) {
     return super.getSortField(reverse);
   }
 }

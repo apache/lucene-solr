@@ -147,10 +147,40 @@ public class TestSlowCollationMethods extends LuceneTestCase {
     }
   }
   
-  public void testQuery() {
+  public void testQuery() throws Exception {
+
+    // Copied from beforeClass, but scaled down to few docs:
+    // since otherwise this test can run for a very long
+    // time (1-2 hours or more; see Lucene-Solr-4.x-Linux Build #2204):
+    final Locale locale = LuceneTestCase.randomLocale(random());
+    Collator collator = Collator.getInstance(locale);
+    collator.setStrength(Collator.IDENTICAL);
+    collator.setDecomposition(Collator.NO_DECOMPOSITION);
+
+    int numDocs = 20 * RANDOM_MULTIPLIER;
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      String value = _TestUtil.randomUnicodeString(random());
+      Field field = newStringField("field", value, Field.Store.YES);
+      doc.add(field);
+      iw.addDocument(doc);
+    }
+    IndexReader reader = iw.getReader();
+    iw.close();
+
+    IndexSearcher searcher = newSearcher(reader);
+
     String startPoint = _TestUtil.randomUnicodeString(random());
     String endPoint = _TestUtil.randomUnicodeString(random());
     Query query = new SlowCollatedTermRangeQuery("field", startPoint, endPoint, true, true, collator);
     QueryUtils.check(random(), query, searcher);
+    reader.close();
+    dir.close();
+    collator = null;
+    searcher = null;
+    reader = null;
+    dir = null;
   }
 }

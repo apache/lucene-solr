@@ -185,7 +185,7 @@ public class TestIndexableField extends LuceneTestCase {
 
       IndexDocument d = new IndexDocument() {
         @Override
-        public Iterable<? extends IndexableField> indexableFields() {
+        public Iterable<IndexableField> indexableFields() {
           return new Iterable<IndexableField>() {
             @Override
             public Iterator<IndexableField> iterator() {
@@ -230,7 +230,7 @@ public class TestIndexableField extends LuceneTestCase {
         }
 
         @Override
-        public Iterable<? extends StorableField> storableFields() {
+        public Iterable<StorableField> storableFields() {
           return new Iterable<StorableField>() {
             @Override
             public Iterator<StorableField> iterator() {

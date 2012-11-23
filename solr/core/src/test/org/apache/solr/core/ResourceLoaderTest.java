@@ -17,11 +17,13 @@
 
 package org.apache.solr.core;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import junit.framework.Assert;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.ngram.NGramFilterFactory;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.FacetComponent;
@@ -35,6 +37,9 @@ import java.nio.charset.CharacterCodingException;
 import java.util.Arrays;
 import java.util.List;
 
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class
+})
 public class ResourceLoaderTest extends LuceneTestCase 
 {
   public void testInstanceDir() throws Exception {

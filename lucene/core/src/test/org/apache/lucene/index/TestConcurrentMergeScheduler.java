@@ -18,14 +18,20 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestConcurrentMergeScheduler extends LuceneTestCase {
   
@@ -244,5 +250,78 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     writer.close();
 
     directory.close();
+  }
+
+  // LUCENE-4544
+  public void testMaxMergeCount() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+
+    final int maxMergeCount = _TestUtil.nextInt(random(), 1, 5);
+    final int maxMergeThreads = _TestUtil.nextInt(random(), 1, maxMergeCount);
+    final CountDownLatch enoughMergesWaiting = new CountDownLatch(maxMergeCount);
+    final AtomicInteger runningMergeCount = new AtomicInteger(0);
+    final AtomicBoolean failed = new AtomicBoolean();
+
+    if (VERBOSE) {
+      System.out.println("TEST: maxMergeCount=" + maxMergeCount + " maxMergeThreads=" + maxMergeThreads);
+    }
+
+    ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler() {
+
+      @Override
+      protected void doMerge(MergePolicy.OneMerge merge) throws IOException {
+        try {
+          // Stall all incoming merges until we see
+          // maxMergeCount:
+          int count = runningMergeCount.incrementAndGet();
+          try {
+            assertTrue("count=" + count + " vs maxMergeCount=" + maxMergeCount, count <= maxMergeCount);
+            enoughMergesWaiting.countDown();
+
+            // Stall this merge until we see exactly
+            // maxMergeCount merges waiting
+            while (true) {
+              if (enoughMergesWaiting.await(10, TimeUnit.MILLISECONDS) || failed.get()) {
+                break;
+              }
+            }
+            // Then sleep a bit to give a chance for the bug
+            // (too many pending merges) to appear:
+            Thread.sleep(20);
+            super.doMerge(merge);
+          } finally {
+            runningMergeCount.decrementAndGet();
+          }
+        } catch (Throwable t) {
+          failed.set(true);
+          writer.mergeFinish(merge);
+          throw new RuntimeException(t);
+        }
+      }
+      };
+    if (maxMergeThreads > cms.getMaxMergeCount()) {
+      cms.setMaxMergeCount(maxMergeCount);
+    }
+    cms.setMaxThreadCount(maxMergeThreads);
+    cms.setMaxMergeCount(maxMergeCount);
+    iwc.setMergeScheduler(cms);
+    iwc.setMaxBufferedDocs(2);
+
+    TieredMergePolicy tmp = new TieredMergePolicy();
+    iwc.setMergePolicy(tmp);
+    tmp.setMaxMergeAtOnce(2);
+    tmp.setSegmentsPerTier(2);
+
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(newField("field", "field", TextField.TYPE_NOT_STORED));
+    while(enoughMergesWaiting.getCount() != 0 && !failed.get()) {
+      for(int i=0;i<10;i++) {
+        w.addDocument(doc);
+      }
+    }
+    w.close(false);
+    dir.close();
   }
 }

@@ -84,19 +84,16 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     assertEquals("OK", rsp.getValues().get("status")); 
 
   }
-  
   public void testEnablingServer() throws Exception {
 
     assertTrue(! healthcheckFile.exists());
 
     // first make sure that ping responds back that the service is disabled
-
-    try {
-      makeRequest(handler, req());
-      fail("Should have thrown a SolrException because not enabled yet");
-    } catch (SolrException se){
-      assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code,se.code());
-    }
+    SolrQueryResponse sqr = makeRequest(handler, req());
+    SolrException se = (SolrException) sqr.getException();
+    assertEquals(
+      "Response should have been replaced with a 503 SolrException.",
+      se.code(), SolrException.ErrorCode.SERVICE_UNAVAILABLE.code);
 
     // now enable
 
@@ -115,7 +112,6 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue(healthcheckFile.exists());
 
   }
-  
   public void testDisablingServer() throws Exception {
 
     assertTrue(! healthcheckFile.exists());
@@ -133,14 +129,12 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     
     assertFalse(healthcheckFile.exists());
 
-    // now make sure that ping responds back that the service is disabled
-
-    try {
-      makeRequest(handler, req());
-      fail("Should have thrown a SolrException because not enabled yet");
-    } catch (SolrException se){
-      assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code,se.code());
-    }
+    // now make sure that ping responds back that the service is disabled    
+    SolrQueryResponse sqr = makeRequest(handler, req());
+    SolrException se = (SolrException) sqr.getException();
+    assertEquals(
+      "Response should have been replaced with a 503 SolrException.",
+      se.code(), SolrException.ErrorCode.SERVICE_UNAVAILABLE.code);
     
     // disable when already disabled shouldn't cause any problems
     makeRequest(handler, req("action", "disable"));

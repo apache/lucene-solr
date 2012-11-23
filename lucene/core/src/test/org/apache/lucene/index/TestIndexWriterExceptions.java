@@ -424,7 +424,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testExceptionOnMergeInit() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(random()))
-      .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()).setMergePolicy(newLogMergePolicy());
+      .setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy());
+    ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+    cms.setSuppressExceptions();
+    conf.setMergeScheduler(cms);
     ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(2);
     MockIndexWriter3 w = new MockIndexWriter3(dir, conf);
     w.doFail = true;
@@ -1568,7 +1571,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         List<StorableField> storedList = new ArrayList<StorableField>();
         
         @Override
-        public Iterable<? extends IndexableField> indexableFields() {
+        public Iterable<IndexableField> indexableFields() {
           if (list.size() == 0) {
             list.add(new IndexableField() {
               @Override
@@ -1596,7 +1599,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         }
 
         @Override
-        public Iterable<? extends StorableField> storableFields() {
+        public Iterable<StorableField> storableFields() {
           return storedList;
         }
         

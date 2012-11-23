@@ -334,7 +334,11 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     }
 
     @Override
-    public float freq() throws IOException {
+    public int freq() throws IOException {
+      return 1; // nocommit how to calculate frequency?
+    }
+
+    public float sloppyFreq() throws IOException {
       float freq = 0.0f;
       do {
         int d = filter.matchDistance();

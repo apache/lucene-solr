@@ -42,16 +42,15 @@ final class Packed16ThreeBlocks extends PackedInts.MutableImpl {
     blocks = new short[valueCount * 3];
   }
 
-  Packed16ThreeBlocks(DataInput in, int valueCount) throws IOException {
+  Packed16ThreeBlocks(int packedIntsVersion, DataInput in, int valueCount) throws IOException {
     this(valueCount);
     for (int i = 0; i < 3 * valueCount; ++i) {
       blocks[i] = in.readShort();
     }
-    final int mod = blocks.length % 4;
-    if (mod != 0) {
-      for (int i = mod; i < 4; ++i) {
-         in.readShort();
-      }
+    // because packed ints have not always been byte-aligned
+    final int remaining = (int) (PackedInts.Format.PACKED.byteCount(packedIntsVersion, valueCount, 48) - 3L * valueCount * 2);
+    for (int i = 0; i < remaining; ++i) {
+       in.readByte();
     }
   }
 

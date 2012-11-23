@@ -28,6 +28,8 @@ public class ConfigNameConstants {
   public static final String NAME = "name";
 
   public static final String PROCESSOR = "processor";
+  
+  public static final String PROPERTY_WRITER = "propertyWriter";
 
   /**
    * @deprecated use IMPORTER_NS_SHORT instead

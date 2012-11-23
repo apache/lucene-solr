@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -72,12 +73,22 @@ import org.apache.lucene.util.fst.Util;
  * This can result in powerful suggester functionality.  For
  * example, if you use an analyzer removing stop words, 
  * then the partial text "ghost chr..." could see the
- * suggestion "The Ghost of Christmas Past".  If
- * SynonymFilter is used to map wifi and wireless network to
+ * suggestion "The Ghost of Christmas Past". Note that
+ * your {@code StopFilter} instance must NOT preserve
+ * position increments for this example to work, so you should call
+ * {@code setEnablePositionIncrements(false)} on it.
+ *
+ * <p>
+ * If SynonymFilter is used to map wifi and wireless network to
  * hotspot then the partial text "wirele..." could suggest
  * "wifi router".  Token normalization like stemmers, accent
  * removal, etc., would allow suggestions to ignore such
  * variations.
+ *
+ * <p>
+ * When two matching suggestions have the same weight, they
+ * are tie-broken by the analyzed form.  If their analyzed
+ * form is the same then the order is undefined.
  *
  * <p>
  * There are some limitations:
@@ -310,7 +321,7 @@ public class AnalyzingSuggester extends Lookup {
     }
   }
 
-  private TokenStreamToAutomaton getTokenStreamToAutomaton() {
+  TokenStreamToAutomaton getTokenStreamToAutomaton() {
     if (preserveSep) {
       return new EscapingTokenStreamToAutomaton();
     } else {
@@ -319,6 +330,56 @@ public class AnalyzingSuggester extends Lookup {
       return new TokenStreamToAutomaton();
     }
   }
+
+  private  Comparator<BytesRef> sortComparator = new Comparator<BytesRef>() {
+    private final ByteArrayDataInput readerA = new ByteArrayDataInput();
+    private final ByteArrayDataInput readerB = new ByteArrayDataInput();
+    private final BytesRef scratchA = new BytesRef();
+    private final BytesRef scratchB = new BytesRef();
+
+    @Override
+    public int compare(BytesRef a, BytesRef b) {
+
+      // First by analyzed form:
+      readerA.reset(a.bytes, a.offset, a.length);
+      scratchA.length = readerA.readShort();
+      scratchA.bytes = a.bytes;
+      scratchA.offset = readerA.getPosition();
+
+      readerB.reset(b.bytes, b.offset, b.length);
+      scratchB.bytes = b.bytes;
+      scratchB.length = readerB.readShort();
+      scratchB.offset = readerB.getPosition();
+
+      int cmp = scratchA.compareTo(scratchB);
+      if (cmp != 0) {
+        return cmp;
+      }
+
+      // Next by cost:
+      long aCost = readerA.readInt();
+      long bCost = readerB.readInt();
+
+      if (aCost < bCost) {
+        return -1;
+      } else if (aCost > bCost) {
+        return 1;
+      }
+
+      // Finally by surface form:
+      scratchA.offset = readerA.getPosition();
+      scratchA.length = a.length - scratchA.offset;
+      scratchB.offset = readerB.getPosition();
+      scratchB.length = b.length - scratchB.offset;
+
+      cmp = scratchA.compareTo(scratchB);
+      if (cmp != 0) {
+        return cmp;
+      }
+
+      return 0;
+    }
+  };
   
   @Override
   public void build(TermFreqIterator iterator) throws IOException {
@@ -332,36 +393,17 @@ public class AnalyzingSuggester extends Lookup {
     BytesRef scratch = new BytesRef();
 
     TokenStreamToAutomaton ts2a = getTokenStreamToAutomaton();
+
     // analyzed sequence + 0(byte) + weight(int) + surface + analyzedLength(short) 
     boolean success = false;
     byte buffer[] = new byte[8];
     try {
       ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
       BytesRef surfaceForm;
+
       while ((surfaceForm = iterator.next()) != null) {
-
-        // Analyze surface form:
-        TokenStream ts = indexAnalyzer.tokenStream("", new StringReader(surfaceForm.utf8ToString()));
-
-        // Create corresponding automaton: labels are bytes
-        // from each analyzed token, with byte 0 used as
-        // separator between tokens:
-        Automaton automaton = ts2a.toAutomaton(ts);
-        ts.end();
-        ts.close();
-
-        replaceSep(automaton);
-
-        assert SpecialOperations.isFinite(automaton);
-
-        // Get all paths from the automaton (there can be
-        // more than one path, eg if the analyzer created a
-        // graph using SynFilter or WDF):
-
-        // TODO: we could walk & add simultaneously, so we
-        // don't have to alloc [possibly biggish]
-        // intermediate HashSet in RAM:
-        Set<IntsRef> paths = SpecialOperations.getFiniteStrings(automaton, maxGraphExpansions);
+        Set<IntsRef> paths = toFiniteStrings(surfaceForm, ts2a);
+        
         maxAnalyzedPathsForOneInput = Math.max(maxAnalyzedPathsForOneInput, paths.size());
 
         for (IntsRef path : paths) {
@@ -369,80 +411,93 @@ public class AnalyzingSuggester extends Lookup {
           Util.toBytesRef(path, scratch);
           
           // length of the analyzed text (FST input)
+          if (scratch.length > Short.MAX_VALUE-2) {
+            throw new IllegalArgumentException("cannot handle analyzed forms > " + (Short.MAX_VALUE-2) + " in length (got " + scratch.length + ")");
+          }
           short analyzedLength = (short) scratch.length;
+
           // compute the required length:
-          // analyzed sequence + 12 (separator) + weight (4) + surface + analyzedLength (short)
-          int requiredLength = analyzedLength + 2 + 4 + surfaceForm.length + 2;
+          // analyzed sequence + weight (4) + surface + analyzedLength (short)
+          int requiredLength = analyzedLength + 4 + surfaceForm.length + 2;
           
           buffer = ArrayUtil.grow(buffer, requiredLength);
           
           output.reset(buffer);
-          output.writeBytes(scratch.bytes, scratch.offset, scratch.length);
-          output.writeByte((byte)0); // separator: not used, just for sort order
-          output.writeByte((byte)0); // separator: not used, just for sort order
 
-          // NOTE: important that writeInt is big-endian,
-          // because this means we sort secondarily by
-          // cost ascending (= weight descending) so that
-          // when we discard too many surface forms for a
-          // single analyzed form we are discarding the
-          // least weight ones:
+          output.writeShort(analyzedLength);
+
+          output.writeBytes(scratch.bytes, scratch.offset, scratch.length);
+
           output.writeInt(encodeWeight(iterator.weight()));
 
           output.writeBytes(surfaceForm.bytes, surfaceForm.offset, surfaceForm.length);
-          output.writeShort(analyzedLength);
+
+          assert output.getPosition() == requiredLength: output.getPosition() + " vs " + requiredLength;
+
           writer.write(buffer, 0, output.getPosition());
         }
       }
       writer.close();
 
       // Sort all input/output pairs (required by FST.Builder):
-      new Sort().sort(tempInput, tempSorted);
+      new Sort(sortComparator).sort(tempInput, tempSorted);
+
+      // Free disk space:
+      tempInput.delete();
+
       reader = new Sort.ByteSequencesReader(tempSorted);
      
       PairOutputs<Long,BytesRef> outputs = new PairOutputs<Long,BytesRef>(PositiveIntOutputs.getSingleton(true), ByteSequenceOutputs.getSingleton());
       Builder<Pair<Long,BytesRef>> builder = new Builder<Pair<Long,BytesRef>>(FST.INPUT_TYPE.BYTE1, outputs);
 
       // Build FST:
-      BytesRef previous = null;
+      BytesRef previousAnalyzed = null;
       BytesRef analyzed = new BytesRef();
       BytesRef surface = new BytesRef();
       IntsRef scratchInts = new IntsRef();
       ByteArrayDataInput input = new ByteArrayDataInput();
 
+      // Used to remove duplicate surface forms (but we
+      // still index the hightest-weight one).  We clear
+      // this when we see a new analyzed form, so it cannot
+      // grow unbounded (at most 256 entries):
+      Set<BytesRef> seenSurfaceForms = new HashSet<BytesRef>();
+
       int dedup = 0;
       while (reader.read(scratch)) {
         input.reset(scratch.bytes, scratch.offset, scratch.length);
-        input.setPosition(input.length()-2);
         short analyzedLength = input.readShort();
-
-        analyzed.bytes = scratch.bytes;
-        analyzed.offset = scratch.offset;
+        analyzed.grow(analyzedLength+2);
+        input.readBytes(analyzed.bytes, 0, analyzedLength);
         analyzed.length = analyzedLength;
-        
-        input.setPosition(analyzedLength + 2); // analyzed sequence + separator
+
         long cost = input.readInt();
-   
+
         surface.bytes = scratch.bytes;
         surface.offset = input.getPosition();
-        surface.length = input.length() - input.getPosition() - 2;
-
-        if (previous == null) {
-          previous = new BytesRef();
-          previous.copyBytes(analyzed);
-        } else if (analyzed.equals(previous)) {
+        surface.length = scratch.length - surface.offset;
+        
+        if (previousAnalyzed == null) {
+          previousAnalyzed = new BytesRef();
+          previousAnalyzed.copyBytes(analyzed);
+          seenSurfaceForms.add(BytesRef.deepCopyOf(surface));
+        } else if (analyzed.equals(previousAnalyzed)) {
           dedup++;
           if (dedup >= maxSurfaceFormsPerAnalyzedForm) {
             // More than maxSurfaceFormsPerAnalyzedForm
             // dups: skip the rest:
             continue;
           }
+          if (seenSurfaceForms.contains(surface)) {
+            continue;
+          }
+          seenSurfaceForms.add(BytesRef.deepCopyOf(surface));
         } else {
           dedup = 0;
-          previous.copyBytes(analyzed);
+          previousAnalyzed.copyBytes(analyzed);
+          seenSurfaceForms.clear();
+          seenSurfaceForms.add(BytesRef.deepCopyOf(surface));
         }
-
-        analyzed.grow(analyzed.length+2);
 
         // TODO: I think we can avoid the extra 2 bytes when
         // there is no dup (dedup==0), but we'd have to fix
@@ -452,8 +507,8 @@ public class AnalyzingSuggester extends Lookup {
 
         // NOTE: must be byte 0 so we sort before whatever
         // is next
-        analyzed.bytes[analyzed.length] = 0;
-        analyzed.bytes[analyzed.length+1] = (byte) dedup;
+        analyzed.bytes[analyzed.offset+analyzed.length] = 0;
+        analyzed.bytes[analyzed.offset+analyzed.length+1] = (byte) dedup;
         analyzed.length += 2;
 
         Util.toIntsRef(analyzed, scratchInts);
@@ -481,6 +536,10 @@ public class AnalyzingSuggester extends Lookup {
   public boolean store(OutputStream output) throws IOException {
     DataOutput dataOut = new OutputStreamDataOutput(output);
     try {
+      if (fst == null) {
+        return false;
+      }
+
       fst.save(dataOut);
       dataOut.writeVInt(maxAnalyzedPathsForOneInput);
     } finally {
@@ -508,29 +567,15 @@ public class AnalyzingSuggester extends Lookup {
     if (onlyMorePopular) {
       throw new IllegalArgumentException("this suggester only works with onlyMorePopular=false");
     }
+    if (fst == null) {
+      return Collections.emptyList();
+    }
 
     //System.out.println("lookup key=" + key + " num=" + num);
-
+    final BytesRef utf8Key = new BytesRef(key);
     try {
 
-      // TODO: is there a Reader from a CharSequence?
-      // Turn tokenstream into automaton:
-      TokenStream ts = queryAnalyzer.tokenStream("", new StringReader(key.toString()));
-      Automaton automaton = getTokenStreamToAutomaton().toAutomaton(ts);
-      ts.end();
-      ts.close();
-
-      // TODO: we could use the end offset to "guess"
-      // whether the final token was a partial token; this
-      // would only be a heuristic ... but maybe an OK one.
-      // This way we could eg differentiate "net" from "net ",
-      // which we can't today...
-
-      replaceSep(automaton);
-
-      // TODO: we can optimize this somewhat by determinizing
-      // while we convert
-      BasicOperations.determinize(automaton);
+      Automaton lookupAutomaton = toLookupAutomaton(key);
 
       final CharsRef spare = new CharsRef();
 
@@ -538,8 +583,7 @@ public class AnalyzingSuggester extends Lookup {
     
       // Intersect automaton w/ suggest wFST and get all
       // prefix starting nodes & their outputs:
-      final List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths;
-      prefixPaths = FSTUtil.intersectPrefixPaths(automaton, fst);
+      //final PathIntersector intersector = getPathIntersector(lookupAutomaton, fst);
 
       //System.out.println("  prefixPaths: " + prefixPaths.size());
 
@@ -548,6 +592,8 @@ public class AnalyzingSuggester extends Lookup {
       FST.Arc<Pair<Long,BytesRef>> scratchArc = new FST.Arc<Pair<Long,BytesRef>>();
 
       final List<LookupResult> results = new ArrayList<LookupResult>();
+
+      List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths = FSTUtil.intersectPrefixPaths(lookupAutomaton, fst);
 
       if (exactFirst) {
 
@@ -593,9 +639,9 @@ public class AnalyzingSuggester extends Lookup {
         // nodes we have and the
         // maxSurfaceFormsPerAnalyzedForm:
         for(MinResult<Pair<Long,BytesRef>> completion : completions) {
-          spare.grow(completion.output.output2.length);
-          UnicodeUtil.UTF8toUTF16(completion.output.output2, spare);
-          if (CHARSEQUENCE_COMPARATOR.compare(spare, key) == 0) {
+          if (utf8Key.bytesEquals(completion.output.output2)) {
+            spare.grow(completion.output.output2.length);
+            UnicodeUtil.UTF8toUTF16(completion.output.output2, spare);
             results.add(new LookupResult(spare.toString(), decodeWeight(completion.output.output1)));
             break;
           }
@@ -630,9 +676,7 @@ public class AnalyzingSuggester extends Lookup {
             // In exactFirst mode, don't accept any paths
             // matching the surface form since that will
             // create duplicate results:
-            spare.grow(output.output2.length);
-            UnicodeUtil.UTF8toUTF16(output.output2, spare);
-            if (CHARSEQUENCE_COMPARATOR.compare(spare, key) == 0) {
+            if (utf8Key.bytesEquals(output.output2)) {
               // We found exact match, which means we should
               // have already found it in the first search:
               assert results.size() == 1;
@@ -644,6 +688,8 @@ public class AnalyzingSuggester extends Lookup {
         }
       };
 
+      prefixPaths = getFullPrefixPaths(prefixPaths, lookupAutomaton, fst);
+      
       for (FSTUtil.Path<Pair<Long,BytesRef>> path : prefixPaths) {
         searcher.addStartPaths(path.fstNode, path.output, true, path.input);
       }
@@ -654,6 +700,10 @@ public class AnalyzingSuggester extends Lookup {
         spare.grow(completion.output.output2.length);
         UnicodeUtil.UTF8toUTF16(completion.output.output2, spare);
         LookupResult result = new LookupResult(spare.toString(), decodeWeight(completion.output.output1));
+
+        // TODO: for fuzzy case would be nice to return
+        // how many edits were required
+
         //System.out.println("    result=" + result);
         results.add(result);
 
@@ -669,6 +719,63 @@ public class AnalyzingSuggester extends Lookup {
       throw new RuntimeException(bogus);
     }
   }
+
+  /** Returns all prefix paths to initialize the search. */
+  protected List<FSTUtil.Path<Pair<Long,BytesRef>>> getFullPrefixPaths(List<FSTUtil.Path<Pair<Long,BytesRef>>> prefixPaths,
+                                                                       Automaton lookupAutomaton,
+                                                                       FST<Pair<Long,BytesRef>> fst)
+    throws IOException {
+    return prefixPaths;
+  }
+  
+  final Set<IntsRef> toFiniteStrings(final BytesRef surfaceForm, final TokenStreamToAutomaton ts2a) throws IOException {
+ // Analyze surface form:
+    TokenStream ts = indexAnalyzer.tokenStream("", new StringReader(surfaceForm.utf8ToString()));
+
+    // Create corresponding automaton: labels are bytes
+    // from each analyzed token, with byte 0 used as
+    // separator between tokens:
+    Automaton automaton = ts2a.toAutomaton(ts);
+    ts.end();
+    ts.close();
+
+    replaceSep(automaton);
+
+    assert SpecialOperations.isFinite(automaton);
+
+    // Get all paths from the automaton (there can be
+    // more than one path, eg if the analyzer created a
+    // graph using SynFilter or WDF):
+
+    // TODO: we could walk & add simultaneously, so we
+    // don't have to alloc [possibly biggish]
+    // intermediate HashSet in RAM:
+    return SpecialOperations.getFiniteStrings(automaton, maxGraphExpansions);
+  }
+
+  final Automaton toLookupAutomaton(final CharSequence key) throws IOException {
+    // TODO: is there a Reader from a CharSequence?
+    // Turn tokenstream into automaton:
+    TokenStream ts = queryAnalyzer.tokenStream("", new StringReader(key.toString()));
+    Automaton automaton = (getTokenStreamToAutomaton()).toAutomaton(ts);
+    ts.end();
+    ts.close();
+
+    // TODO: we could use the end offset to "guess"
+    // whether the final token was a partial token; this
+    // would only be a heuristic ... but maybe an OK one.
+    // This way we could eg differentiate "net" from "net ",
+    // which we can't today...
+
+    replaceSep(automaton);
+
+    // TODO: we can optimize this somewhat by determinizing
+    // while we convert
+    BasicOperations.determinize(automaton);
+    return automaton;
+  }
+  
+  
 
   /**
    * Returns the weight associated with an input string,

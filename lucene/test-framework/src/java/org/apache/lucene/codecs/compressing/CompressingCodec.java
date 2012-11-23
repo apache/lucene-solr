@@ -24,37 +24,40 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 /**
  * A codec that uses {@link CompressingStoredFieldsFormat} for its stored
  * fields and delegates to {@link Lucene41Codec} for everything else.
  */
-public class CompressingCodec extends FilterCodec {
+public abstract class CompressingCodec extends FilterCodec {
 
   /**
    * Create a random instance.
    */
+  public static CompressingCodec randomInstance(Random random, int chunkSize) {
+    switch (random.nextInt(4)) {
+    case 0:
+      return new FastCompressingCodec(chunkSize);
+    case 1:
+      return new FastDecompressionCompressingCodec(chunkSize);
+    case 2:
+      return new HighCompressionCompressingCodec(chunkSize);
+    case 3:
+      return new DummyCompressingCodec(chunkSize);
+    default:
+      throw new AssertionError();
+    }
+  }
+
   public static CompressingCodec randomInstance(Random random) {
-    final CompressionMode mode = RandomPicks.randomFrom(random, CompressionMode.values());
-    final int chunkSize = RandomInts.randomIntBetween(random, 1, 500);
-    final CompressingStoredFieldsIndex index = RandomPicks.randomFrom(random, CompressingStoredFieldsIndex.values());
-    return new CompressingCodec(mode, chunkSize, index);
+    return randomInstance(random, RandomInts.randomIntBetween(random, 1, 500));
   }
 
   private final CompressingStoredFieldsFormat storedFieldsFormat;
 
-  /**
-   * @see CompressingStoredFieldsFormat#CompressingStoredFieldsFormat(CompressionMode, int, CompressingStoredFieldsIndex)
-   */
-  public CompressingCodec(CompressionMode compressionMode, int chunkSize,
-      CompressingStoredFieldsIndex storedFieldsIndexFormat) {
-    super("Compressing", new Lucene41Codec());
-    this.storedFieldsFormat = new CompressingStoredFieldsFormat(compressionMode, chunkSize, storedFieldsIndexFormat);
-  }
-
-  public CompressingCodec() {
-    this(CompressionMode.FAST, 1 << 14, CompressingStoredFieldsIndex.MEMORY_CHUNK);
+  public CompressingCodec(String name, CompressionMode compressionMode, int chunkSize) {
+    super(name, new Lucene41Codec());
+    this.storedFieldsFormat = new CompressingStoredFieldsFormat(name, compressionMode, chunkSize);
   }
 
   @Override

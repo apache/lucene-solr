@@ -22,6 +22,8 @@ import java.util.*;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.fst.FST.Arc;
+import org.apache.lucene.util.fst.FST.BytesReader;
 
 /** Static helper methods.
  *
@@ -230,16 +232,14 @@ public final class Util {
     }    
   }
 
-  private static class FSTPath<T> implements Comparable<FSTPath<T>> {
+  private static class FSTPath<T> {
     public FST.Arc<T> arc;
     public T cost;
     public final IntsRef input;
-    final Comparator<T> comparator;
 
-    public FSTPath(T cost, FST.Arc<T> arc, Comparator<T> comparator, IntsRef input) {
+    public FSTPath(T cost, FST.Arc<T> arc, IntsRef input) {
       this.arc = new FST.Arc<T>().copyFrom(arc);
       this.cost = cost;
-      this.comparator = comparator;
       this.input = input;
     }
 
@@ -247,12 +247,21 @@ public final class Util {
     public String toString() {
       return "input=" + input + " cost=" + cost;
     }
+  }
+
+  /** Compares first by the provided comparator, and then
+   *  tie breaks by path.input. */
+  private static class TieBreakByInputComparator<T> implements Comparator<FSTPath<T>> {
+    private final Comparator<T> comparator;
+    public TieBreakByInputComparator(Comparator<T> comparator) {
+      this.comparator = comparator;
+    }
 
     @Override
-    public int compareTo(FSTPath<T> other) {
-      int cmp = comparator.compare(cost, other.cost);
+    public int compare(FSTPath<T> a, FSTPath<T> b) {
+      int cmp = comparator.compare(a.cost, b.cost);
       if (cmp == 0) {
-        return input.compareTo(other.input);
+        return a.input.compareTo(b.input);
       } else {
         return cmp;
       }
@@ -281,7 +290,7 @@ public final class Util {
       this.maxQueueDepth = maxQueueDepth;
       this.comparator = comparator;
 
-      queue = new TreeSet<FSTPath<T>>();
+      queue = new TreeSet<FSTPath<T>>(new TieBreakByInputComparator<T>(comparator));
     }
 
     // If back plus this arc is competitive then add to queue:
@@ -304,7 +313,10 @@ public final class Util {
           path.input.ints[path.input.length++] = path.arc.label;
           final int cmp = bottom.input.compareTo(path.input);
           path.input.length--;
+
+          // We should never see dups:
           assert cmp != 0;
+
           if (cmp < 0) {
             // Doesn't compete
             return;
@@ -321,7 +333,7 @@ public final class Util {
       System.arraycopy(path.input.ints, 0, newInput.ints, 0, path.input.length);
       newInput.ints[path.input.length] = path.arc.label;
       newInput.length = path.input.length+1;
-      final FSTPath<T> newPath = new FSTPath<T>(cost, path.arc, comparator, newInput);
+      final FSTPath<T> newPath = new FSTPath<T>(cost, path.arc, newInput);
 
       queue.add(newPath);
 
@@ -339,7 +351,7 @@ public final class Util {
         startOutput = fst.outputs.getNoOutput();
       }
 
-      FSTPath<T> path = new FSTPath<T>(startOutput, node, comparator, input);
+      FSTPath<T> path = new FSTPath<T>(startOutput, node, input);
       fst.readFirstTargetArc(node, path.arc, bytesReader);
 
       //System.out.println("add start paths");
@@ -397,7 +409,7 @@ public final class Util {
           //System.out.println("    empty string!  cost=" + path.cost);
           // Empty string!
           path.input.length--;
-          results.add(new MinResult<T>(path.input, path.cost, comparator));
+          results.add(new MinResult<T>(path.input, path.cost));
           continue;
         }
 
@@ -460,7 +472,7 @@ public final class Util {
             //System.out.println("    done!: " + path);
             T finalOutput = fst.outputs.add(path.cost, path.arc.output);
             if (acceptResult(path.input, finalOutput)) {
-              results.add(new MinResult<T>(path.input, finalOutput, comparator));
+              results.add(new MinResult<T>(path.input, finalOutput));
             } else {
               rejectCount++;
               assert rejectCount + topN <= maxQueueDepth: "maxQueueDepth (" + maxQueueDepth + ") is too small for topN (" + topN + "): rejected " + rejectCount + " paths";
@@ -487,24 +499,12 @@ public final class Util {
 
   /** Holds a single input (IntsRef) + output, returned by
    *  {@link #shortestPaths shortestPaths()}. */
-  public final static class MinResult<T> implements Comparable<MinResult<T>> {
+  public final static class MinResult<T> {
     public final IntsRef input;
     public final T output;
-    final Comparator<T> comparator;
-    public MinResult(IntsRef input, T output, Comparator<T> comparator) {
+    public MinResult(IntsRef input, T output) {
       this.input = input;
       this.output = output;
-      this.comparator = comparator;
-    }
-
-    @Override
-    public int compareTo(MinResult<T> other) {
-      int cmp = comparator.compare(output, other.output);
-      if (cmp == 0) {
-        return input.compareTo(other.input);
-      } else {
-        return cmp;
-      }
     }
   }
 
@@ -846,4 +846,93 @@ public final class Util {
     w.close();
   }
   */
+
+  /**
+   * Reads the first arc greater or equal that the given label into the provided
+   * arc in place and returns it iff found, otherwise return <code>null</code>.
+   * 
+   * @param label the label to ceil on
+   * @param fst the fst to operate on
+   * @param follow the arc to follow reading the label from
+   * @param arc the arc to read into in place
+   * @param in the fst's {@link BytesReader}
+   */
+  public static <T> Arc<T> readCeilArc(int label, FST<T> fst, Arc<T> follow,
+      Arc<T> arc, BytesReader in) throws IOException {
+    // TODO maybe this is a useful in the FST class - we could simplify some other code like FSTEnum?
+    if (label == FST.END_LABEL) {
+      if (follow.isFinal()) {
+        if (follow.target <= 0) {
+          arc.flags = FST.BIT_LAST_ARC;
+        } else {
+          arc.flags = 0;
+          // NOTE: nextArc is a node (not an address!) in this case:
+          arc.nextArc = follow.target;
+          arc.node = follow.target;
+        }
+        arc.output = follow.nextFinalOutput;
+        arc.label = FST.END_LABEL;
+        return arc;
+      } else {
+        return null;
+      }
+    }
+
+    if (!FST.targetHasArcs(follow)) {
+      return null;
+    }
+    fst.readFirstTargetArc(follow, arc, in);
+    if (arc.bytesPerArc != 0 && arc.label != FST.END_LABEL) {
+      // Arcs are fixed array -- use binary search to find
+      // the target.
+
+      int low = arc.arcIdx;
+      int high = arc.numArcs - 1;
+      int mid = 0;
+      // System.out.println("do arc array low=" + low + " high=" + high +
+      // " targetLabel=" + targetLabel);
+      while (low <= high) {
+        mid = (low + high) >>> 1;
+        in.pos = arc.posArcsStart;
+        in.skip(arc.bytesPerArc * mid + 1);
+        final int midLabel = fst.readLabel(in);
+        final int cmp = midLabel - label;
+        // System.out.println("  cycle low=" + low + " high=" + high + " mid=" +
+        // mid + " midLabel=" + midLabel + " cmp=" + cmp);
+        if (cmp < 0) {
+          low = mid + 1;
+        } else if (cmp > 0) {
+          high = mid - 1;
+        } else {
+          arc.arcIdx = mid-1;
+          return fst.readNextRealArc(arc, in);
+        }
+      }
+      if (low == arc.numArcs) {
+        // DEAD END!
+        return null;
+      }
+      
+      arc.arcIdx = (low > high ? high : low);
+      return fst.readNextRealArc(arc, in);
+    }
+
+    // Linear scan
+    fst.readFirstRealTargetArc(follow.target, arc, in);
+
+    while (true) {
+      // System.out.println("  non-bs cycle");
+      // TODO: we should fix this code to not have to create
+      // object for the output of every arc we scan... only
+      // for the matching arc, if found
+      if (arc.label >= label) {
+        // System.out.println("    found!");
+        return arc;
+      } else if (arc.isLast()) {
+        return null;
+      } else {
+        fst.readNextRealArc(arc, in);
+      }
+    }
+  }
 }

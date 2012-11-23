@@ -42,7 +42,8 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
-    if (threadName.startsWith("facetExecutor-") || 
+    if (threadName.startsWith("facetExecutor-") ||
+        threadName.startsWith("metrics-") ||
         threadName.startsWith("cmdDistribExecutor-") ||
         threadName.startsWith("httpShardExecutor-")) {
       return true;

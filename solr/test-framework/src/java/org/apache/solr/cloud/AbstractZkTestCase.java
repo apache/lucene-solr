@@ -149,6 +149,9 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
     zkServer.shutdown();
 
+    zkServer = null;
+    zkDir = null;
+    
     // wait just a bit for any zk client threads to outlast timeout
     Thread.sleep(2000);
   }

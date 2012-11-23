@@ -36,15 +36,24 @@
   <!-- nothing to cover -->
   <target name="pitest"/>
 
-  <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
+  <!-- a hack because we don't use sync-true since we have 3 different profiles.
+       we have these different profiles because each has a different artifact pattern.
+       this way we can rename servlet-api-xxxxxxxxxxxxxxxxxxx.jar -> lib/servlet-api-3.0.jar,
+       and rename jetty-start-xxxxxxxxxxxxx.jar -> start.jar (not in lib/) ! 
+
+       there is probably a cleaner way: but this ensure we have no garbage if jetty is upgraded -->
+  <target name="sync-hack">
+    <delete failonerror="false">
+      <fileset dir="lib" includes="*.jar"/>
+    </delete>
+  </target>
+
+  <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure,sync-hack">
     <sequential>
     <!-- jetty libs in lib/ -->
-    <ivy:retrieve conf="default" type="jar" log="download-only"/>
+    <ivy:retrieve conf="jetty" type="jar" log="download-only"/>
     <!-- start.jar -->
-    <!-- TODO: put this in ivy.xml -->
-    <ivy:retrieve inline="true" organisation="org.eclipse.jetty" 
-                  module="jetty-start" revision="8.1.2.v20120308" 
-                  transitive="false" type="jar" log="download-only" 
+    <ivy:retrieve conf="start" type="jar" log="download-only" 
                   pattern="start.jar"/>
     <!-- servlet-api.jar -->
     <ivy:retrieve conf="servlet" log="download-only" type="orbit"

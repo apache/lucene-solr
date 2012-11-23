@@ -51,7 +51,7 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
 
     Context c = getContext(
             null,                          //parentEntity
-            new VariableResolverImpl(),  //resolver
+            new VariableResolver(),  //resolver
             getDataSource(filecontents),   //parentDataSource
             Context.FULL_DUMP,                             //currProcess
             Collections.EMPTY_LIST,        //entityFields
@@ -91,7 +91,7 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
 
     Context c = getContext(
             null,                          //parentEntity
-            new VariableResolverImpl(),  //resolver
+            new VariableResolver(),  //resolver
             getDataSource(filecontents),   //parentDataSource
             Context.FULL_DUMP,                             //currProcess
             Collections.EMPTY_LIST,        //entityFields
@@ -129,7 +129,7 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
 
     Context c = getContext(
             null,                          //parentEntity
-            new VariableResolverImpl(),  //resolver
+            new VariableResolver(),  //resolver
             getDataSource(filecontents),   //parentDataSource
             Context.FULL_DUMP,                             //currProcess
             Collections.EMPTY_LIST,        //entityFields
@@ -165,7 +165,7 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
 
     Context c = getContext(
             null,                          //parentEntity
-            new VariableResolverImpl(),  //resolver
+            new VariableResolver(),  //resolver
             getDataSource(filecontents),   //parentDataSource
             Context.FULL_DUMP,                             //currProcess
             Collections.EMPTY_LIST,        //entityFields

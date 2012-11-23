@@ -305,8 +305,6 @@ public class QueryParsing {
               }
               continue;
             }
-          } catch (IOException ioe) {
-            throw ioe;
           } catch (Exception e) {
             // hang onto this in case the string isn't a full field name either
             qParserException = e;
@@ -355,8 +353,6 @@ public class QueryParsing {
       }
 
     } catch (ParseException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "error in sort: " + sortSpec, e);
-    } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "error in sort: " + sortSpec, e);
     }
 
@@ -540,6 +536,11 @@ public class QueryParsing {
     } else if (query instanceof ConstantScoreQuery) {
       out.append(query.toString());
       writeBoost = false;
+    } else if (query instanceof WrappedQuery) {
+      WrappedQuery q = (WrappedQuery)query;
+      out.append(q.getOptions());
+      toString(q.getWrappedQuery(), schema, out, flags);
+      writeBoost = false; // we don't use the boost on wrapped queries
     } else {
       out.append(query.getClass().getSimpleName()
               + '(' + query.toString() + ')');
@@ -577,7 +578,7 @@ public class QueryParsing {
   }
 
   /**
-   * Simple class to help with parsing a string
+   * Simple class to help with parsing a string.
    * <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
    */
   public static class StrParser {

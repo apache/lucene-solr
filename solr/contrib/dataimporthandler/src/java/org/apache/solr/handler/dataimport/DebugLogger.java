@@ -22,6 +22,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.MessageFormat;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Stack;
@@ -50,7 +51,7 @@ class DebugLogger {
   private static final String LINE = "---------------------------------------------";
 
   private MessageFormat fmt = new MessageFormat(
-          "----------- row #{0}-------------");
+          "----------- row #{0}-------------", Locale.ROOT);
 
   boolean enabled = true;
 

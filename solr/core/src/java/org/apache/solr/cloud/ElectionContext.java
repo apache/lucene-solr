@@ -249,7 +249,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         core.getCoreDescriptor().getCloudDescriptor().isLeader = false;
         
         // we could not publish ourselves as leader - rejoin election
-        rejoinLeaderElection(coreName, core);
+        rejoinLeaderElection(leaderSeqPath, core);
       } finally {
         if (core != null) {
           core.close();

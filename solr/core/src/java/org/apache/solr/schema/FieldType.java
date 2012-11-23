@@ -294,14 +294,18 @@ public abstract class FieldType extends FieldProperties {
     StorableField f = createField( field, value, boost);
     return f==null ? new StorableField[]{} : new StorableField[]{f};
   }
-  protected IndexOptions getIndexOptions(SchemaField field,
-                                         String internalVal) {
+
+  protected IndexOptions getIndexOptions(SchemaField field, String internalVal) {
+
     IndexOptions options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     if (field.omitTermFreqAndPositions()) {
       options = IndexOptions.DOCS_ONLY;
     } else if (field.omitPositions()) {
       options = IndexOptions.DOCS_AND_FREQS;
+    } else if (field.storeOffsetsWithPositions()) {
+      options = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
     }
+
     return options;
   }
 

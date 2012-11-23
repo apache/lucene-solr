@@ -103,12 +103,14 @@ public class PayloadTermQuery extends SpanTermQuery {
         }
         doc = spans.doc();
         freq = 0.0f;
+        numMatches = 0;
         payloadScore = 0;
         payloadsSeen = 0;
         while (more && doc == spans.doc()) {
           int matchLength = spans.end() - spans.start();
 
           freq += docScorer.computeSlopFactor(matchLength);
+          numMatches++;
           processPayload(similarity);
 
           more = spans.next();// this moves positions to the next match in this
@@ -179,7 +181,7 @@ public class PayloadTermQuery extends SpanTermQuery {
       if (scorer != null) {
         int newDoc = scorer.advance(doc);
         if (newDoc == doc) {
-          float freq = scorer.freq();
+          float freq = scorer.sloppyFreq();
           SloppySimScorer docScorer = similarity.sloppySimScorer(stats, context);
           Explanation expl = new Explanation();
           expl.setDescription("weight("+getQuery()+" in "+doc+") [" + similarity.getClass().getSimpleName() + "], result of:");

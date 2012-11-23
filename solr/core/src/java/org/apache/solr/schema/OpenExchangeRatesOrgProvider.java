@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Exchange Rates Provider for {@link CurrencyField} implementing the freely available
  * exchange rates from openexchangerates.org
- * <p/>
+ * <p>
  * <b>Disclaimer:</b> This data is collected from various providers and provided free of charge
  * for informational purposes only, with no guarantee whatsoever of accuracy, validity,
  * availability or fitness for any purpose; use at your own risk. Other than that - have

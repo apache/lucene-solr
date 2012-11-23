@@ -833,7 +833,7 @@
             <assertions>
               <enable package="org.apache.lucene"/>
               <enable package="org.apache.solr"/>
-            </assertions>
+            </assertions>  
 
             <!-- JVM arguments and system properties. -->
             <jvmarg line="${args}"/>
@@ -903,6 +903,7 @@
                 <propertyref prefix="tests.maxfailures" />
                 <propertyref prefix="tests.failfast" />
                 <propertyref prefix="tests.badapples" />
+                <propertyref prefix="tests.timeoutSuite" />
             </syspropertyset>
 
             <!-- Pass randomized settings to the forked JVM. -->
@@ -1083,7 +1084,7 @@ ant test -Dtests.dups=N ...
 ant -Dtests.nightly=[false]   - nightly test group (@Nightly)
 ant -Dtests.weekly=[false]    - weekly tests (@Weekly)
 ant -Dtests.awaitsfix=[false] - known issue (@AwaitsFix)
-ant -Dtests.slow=[false]      - slow tests (@Slow)
+ant -Dtests.slow=[true]       - slow tests (@Slow)
 
 #
 # Load balancing and caches. --------------------------------------
@@ -1118,6 +1119,9 @@ ant -verbose test
 # sysout/syserr, even if the test passes.
 # Enabled automatically when running for a single test case.
 ant -Dtests.showSuccess=true test
+
+# Change the default suite timeout to 5 seconds.
+ant -Dtests.timeoutSuite=5000! ...
 
 # Display local averaged stats, if any (30 slowest tests).
 ant test-times -Dmax=30

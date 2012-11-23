@@ -19,29 +19,30 @@ package org.apache.lucene.util.packed;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.LongsRef;
 
 final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
 
+  final int packedIntsVersion;
   final PackedInts.Format format;
   final BulkOperation bulkOperation;
-  final long[] nextBlocks;
+  final byte[] nextBlocks;
   final LongsRef nextValues;
   final int iterations;
   int position;
 
-  PackedReaderIterator(PackedInts.Format format, int valueCount, int bitsPerValue, DataInput in, int mem) {
+  PackedReaderIterator(PackedInts.Format format, int packedIntsVersion, int valueCount, int bitsPerValue, DataInput in, int mem) {
     super(valueCount, bitsPerValue, in);
     this.format = format;
+    this.packedIntsVersion = packedIntsVersion;
     bulkOperation = BulkOperation.of(format, bitsPerValue);
     iterations = bulkOperation.computeIterations(valueCount, mem);
     assert valueCount == 0 || iterations > 0;
-    nextBlocks = new long[iterations * bulkOperation.blockCount()];
+    nextBlocks = new byte[8 * iterations * bulkOperation.blockCount()];
     nextValues = new LongsRef(new long[iterations * bulkOperation.valueCount()], 0, 0);
-    assert iterations * bulkOperation.valueCount() == nextValues.longs.length;
-    assert iterations * bulkOperation.blockCount() == nextBlocks.length;
     nextValues.offset = nextValues.longs.length;
     position = -1;
   }
@@ -61,13 +62,11 @@ final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
     count = Math.min(remaining, count);
 
     if (nextValues.offset == nextValues.longs.length) {
-      final int remainingBlocks = format.nblocks(bitsPerValue, remaining);
-      final int blocksToRead = Math.min(remainingBlocks, nextBlocks.length);
-      for (int i = 0; i < blocksToRead; ++i) {
-        nextBlocks[i] = in.readLong();
-      }
-      for (int i = blocksToRead; i < nextBlocks.length; ++i) {
-        nextBlocks[i] = 0L;
+      final long remainingBlocks = format.byteCount(packedIntsVersion, remaining, bitsPerValue);
+      final int blocksToRead = (int) Math.min(remainingBlocks, nextBlocks.length);
+      in.readBytes(nextBlocks, 0, blocksToRead);
+      if (blocksToRead < nextBlocks.length) {
+        Arrays.fill(nextBlocks, blocksToRead, nextBlocks.length, (byte) 0);
       }
 
       bulkOperation.decode(nextBlocks, 0, nextValues.longs, 0, iterations);

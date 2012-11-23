@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Norm;
@@ -190,25 +192,6 @@ final class JustCompileSearch {
     
   }
 
-  static final class JustCompilePhraseScorer extends PhraseScorer {
-
-    JustCompilePhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-        Similarity.SloppySimScorer docScorer) throws IOException {
-      super(weight, postings, docScorer);
-    }
-
-    @Override
-    protected float phraseFreq() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    public IntervalIterator intervals(boolean collectIntervals) throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-  }
-
   static final class JustCompileQuery extends Query {
 
     @Override
@@ -235,7 +218,7 @@ final class JustCompileSearch {
     }
     
     @Override
-    public float freq() {
+    public int freq() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

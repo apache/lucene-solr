@@ -297,7 +297,7 @@ public interface FacetParams {
   
   /**
    * An enumeration of the legal values for {@link #FACET_DATE_INCLUDE} and {@link #FACET_RANGE_INCLUDE}
-   *
+   * <p>
    * <ul>
    * <li>lower = all gap based ranges include their lower bound</li>
    * <li>upper = all gap based ranges include their upper bound</li>

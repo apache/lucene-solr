@@ -186,7 +186,7 @@ public class ZkStateReader {
           if (EventType.None.equals(event.getType())) {
             return;
           }
-          log.info("A cluster state change has occurred - updating... ({})", ZkStateReader.this.clusterState.getLiveNodes().size());
+          log.info("A cluster state change has occurred - updating... ({})", ZkStateReader.this.clusterState == null ? 0 : ZkStateReader.this.clusterState.getLiveNodes().size());
           try {
             
             // delayed approach
@@ -407,8 +407,8 @@ public class ZkStateReader {
     long timeoutAt = System.currentTimeMillis() + timeout;
     while (System.currentTimeMillis() < timeoutAt) {
       if (clusterState != null) {    
-        final ZkNodeProps nodeProps = clusterState.getLeader(collection, shard);
-        if (nodeProps != null) {
+        final ZkNodeProps nodeProps = clusterState.getLeader(collection, shard);     
+        if (nodeProps != null && getClusterState().liveNodesContain((String) nodeProps.get(ZkStateReader.NODE_NAME_PROP))) {
           return nodeProps;
         }
       }

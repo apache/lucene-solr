@@ -64,7 +64,7 @@ def javaExe(version):
     raise RuntimeError("unknown Java version '%s'" % version)
   if cygwin:
     path = os.popen('cygpath -u "%s"' % path).read().strip()
-  return 'export JAVA_HOME="%s" PATH="%s/bin:$PATH"' % (path, path)
+  return 'export JAVA_HOME="%s" PATH="%s/bin:$PATH" JAVACMD="%s/bin/java"' % (path, path, path)
 
 def verifyJavaVersion(version):
   s = os.popen('%s; java -version 2>&1' % javaExe(version)).read()
@@ -77,11 +77,13 @@ try:
   JAVA6_HOME = env['JAVA6_HOME']
 except KeyError:
   JAVA6_HOME = '/usr/local/jdk1.6.0_27'
+print('JAVA6_HOME is %s' % JAVA6_HOME)
 
 try:
   JAVA7_HOME = env['JAVA7_HOME']
 except KeyError:
   JAVA7_HOME = '/usr/local/jdk1.7.0_01'
+print('JAVA7_HOME is %s' % JAVA7_HOME)
 
 verifyJavaVersion('1.6')
 verifyJavaVersion('1.7')
@@ -461,27 +463,29 @@ def cygwinifyPaths(command):
   if '; ant ' in command: command = reUnixPath.sub(unix2win, command)
   return command
 
+def printFileContents(fileName):
+
+  # Assume log file was written in system's default encoding, but
+  # even if we are wrong, we replace errors ... the ASCII chars
+  # (which is what we mostly care about eg for the test seed) should
+  # still survive:
+  txt = codecs.open(fileName, 'r', encoding=sys.getdefaultencoding(), errors='replace').read()
+
+  # Encode to our output encoding (likely also system's default
+  # encoding):
+  bytes = txt.encode(sys.stdout.encoding, errors='replace')
+
+  # Decode back to string and print... we should hit no exception here
+  # since all errors have been replaced:
+  print(codecs.getdecoder(sys.stdout.encoding)(bytes)[0])
+  print()
+
 def run(command, logFile):
   if cygwin: command = cygwinifyPaths(command)
   if os.system('%s > %s 2>&1' % (command, logFile)):
     logPath = os.path.abspath(logFile)
     print('\ncommand "%s" failed:' % command)
-
-    # Assume log file was written in system's default encoding, but
-    # even if we are wrong, we replace errors ... the ASCII chars
-    # (which is what we mostly care about eg for the test seed) should
-    # still survive:
-    txt = codecs.open(logPath, 'r', encoding=sys.getdefaultencoding(), errors='replace').read()
-
-    # Encode to our output encoding (likely also system's default
-    # encoding):
-    bytes = txt.encode(sys.stdout.encoding, errors='replace')
-
-    # Decode back to string and print... we should hit no exception here
-    # since all errors have been replaced:
-    print(codecs.getdecoder(sys.stdout.encoding)(bytes)[0])
-    print()
-
+    printFileContents(logFile)
     raise RuntimeError('command "%s" failed; see log file %s' % (command, logPath))
     
 def verifyDigests(artifact, urlString, tmpDir):
@@ -760,19 +764,29 @@ def readSolrOutput(p, startupEvent, failureEvent, logFile):
   f = open(logFile, 'wb')
   try:
     while True:
-      line = p.readline()
+      line = p.stderr.readline()
       if len(line) == 0:
+        p.poll()
+        if not startupEvent.isSet():
+          failureEvent.set()
+          startupEvent.set()
         break
       f.write(line)
       f.flush()
-      # print 'SOLR: %s' % line.strip()
-      if not startupEvent.isSet() and line.find(b'Started SocketConnector@0.0.0.0:8983') != -1:
-        startupEvent.set()
+      #print('SOLR: %s' % line.strip())
+      if not startupEvent.isSet():
+        if line.find(b'Started SocketConnector@0.0.0.0:8983') != -1:
+          startupEvent.set()
+        elif p.poll() is not None:
+          failureEvent.set()
+          startupEvent.set()
+          break
   except:
     print()
     print('Exception reading Solr output:')
     traceback.print_exc()
     failureEvent.set()
+    startupEvent.set()
   finally:
     f.close()
     
@@ -784,16 +798,24 @@ def testSolrExample(unpackPath, javaPath, isSrc):
   env.update(os.environ)
   env['JAVA_HOME'] = javaPath
   env['PATH'] = '%s/bin:%s' % (javaPath, env['PATH'])
-  server = subprocess.Popen(['java', '-jar', 'start.jar'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+  server = subprocess.Popen(['java', '-jar', 'start.jar'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, env=env)
 
   startupEvent = threading.Event()
   failureEvent = threading.Event()
-  serverThread = threading.Thread(target=readSolrOutput, args=(server.stderr, startupEvent, failureEvent, logFile))
+  serverThread = threading.Thread(target=readSolrOutput, args=(server, startupEvent, failureEvent, logFile))
   serverThread.setDaemon(True)
   serverThread.start()
 
   # Make sure Solr finishes startup:
-  startupEvent.wait()
+  if not startupEvent.wait(1800):
+    raise RuntimeError('startup took more than 30 minutes')
+  if failureEvent.isSet():
+    logFile = os.path.abspath(logFile)
+    print
+    print('Startup failed; see log %s' % logFile)
+    printFileContents(logFile)
+    raise RuntimeError('failure on startup; see log %s' % logFile)
+    
   print('      startup done')
   
   try:

@@ -90,6 +90,7 @@ public final class SchemaField extends FieldProperties {
 
   public boolean omitTermFreqAndPositions() { return (properties & OMIT_TF_POSITIONS)!=0; }
   public boolean omitPositions() { return (properties & OMIT_POSITIONS)!=0; }
+  public boolean storeOffsetsWithPositions() { return (properties & STORE_OFFSETS)!=0; }
 
   public boolean multiValued() { return (properties & MULTIVALUED)!=0; }
   public boolean sortMissingFirst() { return (properties & SORT_MISSING_FIRST)!=0; }

@@ -76,10 +76,6 @@ public class SolrException extends RuntimeException {
 
   public void log(Logger log) { log(log,this); }
   public static void log(Logger log, Throwable e) {
-    if (e instanceof SolrException
-        && ((SolrException) e).code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
-      return;
-    }
     String stackTrace = toStr(e);
     String ignore = doIgnore(e, stackTrace);
     if (ignore != null) {
@@ -91,10 +87,6 @@ public class SolrException extends RuntimeException {
   }
 
   public static void log(Logger log, String msg, Throwable e) {
-    if (e instanceof SolrException
-        && ((SolrException) e).code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
-      log(log, msg);
-    }
     String stackTrace = msg + ':' + toStr(e);
     String ignore = doIgnore(e, stackTrace);
     if (ignore != null) {

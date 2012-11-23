@@ -80,7 +80,7 @@ public class OverseerCollectionProcessor implements Runnable {
   
   @Override
   public void run() {
-    log.info("Process current queue of collection creations");
+    log.info("Process current queue of collection messages");
     while (amILeader() && !isClosed) {
       try {
         byte[] head = workQueue.peek(true);
@@ -88,13 +88,20 @@ public class OverseerCollectionProcessor implements Runnable {
         //if (head != null) {    // should not happen since we block above
           final ZkNodeProps message = ZkNodeProps.load(head);
           final String operation = message.getStr(QUEUE_OPERATION);
-          
+        try {
           boolean success = processMessage(message, operation);
           if (!success) {
             // TODO: what to do on failure / partial failure
             // if we fail, do we clean up then ?
-            SolrException.log(log, "Collection creation of " + message.getStr("name") + " failed");
+            SolrException.log(log,
+                "Collection " + operation + " of " + message.getStr("name")
+                    + " failed");
           }
+        } catch(Throwable t) {
+          SolrException.log(log,
+              "Collection " + operation + " of " + message.getStr("name")
+                  + " failed", t);
+        }
         //}
         workQueue.remove();
       } catch (KeeperException e) {
@@ -151,7 +158,12 @@ public class OverseerCollectionProcessor implements Runnable {
   }
 
   private boolean createCollection(ClusterState clusterState, ZkNodeProps message) {
-    
+    String collectionName = message.getStr("name");
+    if (clusterState.getCollections().contains(collectionName)) {
+      SolrException.log(log, "collection already exists: " + collectionName);
+      return false;
+    }
+
     // look at the replication factor and see if it matches reality
     // if it does not, find best nodes to create more cores
     
@@ -172,6 +184,17 @@ public class OverseerCollectionProcessor implements Runnable {
       return false;
     }
     
+    if (numReplicas < 0) {
+      SolrException.log(log, REPLICATION_FACTOR + " must be > 0");
+      return false;
+    }
+    
+    if (numShards < 0) {
+      SolrException.log(log, "numShards must be > 0");
+      return false;
+    }
+    
+    
     String name = message.getStr("name");
     String configName = message.getStr("collection.configName");
     
@@ -191,6 +214,15 @@ public class OverseerCollectionProcessor implements Runnable {
     Collections.shuffle(nodeList);
     
     int numNodes = numShards * (numReplicas + 1);
+    if (nodeList.size() < numNodes) {
+      log.warn("Not enough nodes available to satisfy create collection request for collection:"
+          + collectionName
+          + " nodes needed:"
+          + numNodes
+          + " nodes available:"
+          + nodeList.size() + " - using nodes available");
+    }
+
     List<String> createOnNodes = nodeList.subList(0, Math.min(nodeList.size(), numNodes));
     
     log.info("Create collection " + name + " on " + createOnNodes);
@@ -255,20 +287,25 @@ public class OverseerCollectionProcessor implements Runnable {
       for (Map.Entry<String,Replica> shardEntry : shardEntries) {
         final ZkNodeProps node = shardEntry.getValue();
         if (clusterState.liveNodesContain(node.getStr(ZkStateReader.NODE_NAME_PROP))) {
-          params.set(CoreAdminParams.CORE, node.getStr(ZkStateReader.CORE_NAME_PROP));
-
+          // For thread safety, only simple clone the ModifiableSolrParams
+          ModifiableSolrParams cloneParams = new ModifiableSolrParams();
+          cloneParams.add(params);
+          cloneParams.set(CoreAdminParams.CORE,
+              node.getStr(ZkStateReader.CORE_NAME_PROP));
+          
           String replica = node.getStr(ZkStateReader.BASE_URL_PROP);
           ShardRequest sreq = new ShardRequest();
+          
           // yes, they must use same admin handler path everywhere...
-          params.set("qt", adminPath);
-
+          cloneParams.set("qt", adminPath);
           sreq.purpose = 1;
           // TODO: this sucks
           if (replica.startsWith("http://")) replica = replica.substring(7);
           sreq.shards = new String[] {replica};
           sreq.actualShards = sreq.shards;
-          sreq.params = params;
-          log.info("Collection Admin sending CoreAdmin cmd to " + replica);
+          sreq.params = cloneParams;
+          log.info("Collection Admin sending CoreAdmin cmd to " + replica
+              + " params:" + sreq.params);
           shardHandler.submit(sreq, replica, sreq.params);
         }
       }

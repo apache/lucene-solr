@@ -32,6 +32,7 @@ import java.util.Map;
 /**
  * A k-Nearest Neighbor classifier (see <code>http://en.wikipedia.org/wiki/K-nearest_neighbors</code>) based
  * on {@link MoreLikeThis}
+ *
  * @lucene.experimental
  */
 public class KNearestNeighborClassifier implements Classifier {
@@ -44,6 +45,7 @@ public class KNearestNeighborClassifier implements Classifier {
 
   /**
    * Create a {@link Classifier} using kNN algorithm
+   *
    * @param k the number of neighbors to analyze as an <code>int</code>
    */
   public KNearestNeighborClassifier(int k) {
@@ -62,8 +64,7 @@ public class KNearestNeighborClassifier implements Classifier {
       Integer count = classCounts.get(cl);
       if (count != null) {
         classCounts.put(cl, count + 1);
-      }
-      else {
+      } else {
         classCounts.put(cl, 1);
       }
     }
@@ -76,7 +77,7 @@ public class KNearestNeighborClassifier implements Classifier {
         assignedClass = cl;
       }
     }
-    double score = 1; // TODO : derive score from query
+    double score = max / k;
     return new ClassificationResult(assignedClass, score);
   }
 

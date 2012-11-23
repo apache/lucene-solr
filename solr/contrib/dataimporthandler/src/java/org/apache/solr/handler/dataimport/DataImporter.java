@@ -29,10 +29,15 @@ import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
 import org.apache.solr.handler.dataimport.config.ConfigParseUtil;
 import org.apache.solr.handler.dataimport.config.DIHConfiguration;
 import org.apache.solr.handler.dataimport.config.Entity;
+import org.apache.solr.handler.dataimport.config.PropertyWriter;
 import org.apache.solr.handler.dataimport.config.Script;
 
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
+import static org.apache.solr.handler.dataimport.DocBuilder.loadClass;
+import static org.apache.solr.handler.dataimport.config.ConfigNameConstants.CLASS;
+import static org.apache.solr.handler.dataimport.config.ConfigNameConstants.NAME;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -78,7 +83,6 @@ public class DataImporter {
   public DocBuilder.Statistics cumulativeStatistics = new DocBuilder.Statistics();
   private SolrCore core;  
   private Map<String, Object> coreScopeSession = new ConcurrentHashMap<String,Object>();
-  private DIHPropertiesWriter propWriter;
   private ReentrantLock importLock = new ReentrantLock();
   private boolean isDeltaImportSupported = false;  
   private final String handlerName;  
@@ -88,8 +92,6 @@ public class DataImporter {
    * Only for testing purposes
    */
   DataImporter() {
-    createPropertyWriter();
-    propWriter.init(this);
     this.handlerName = "dataimport" ;
   }
   
@@ -97,19 +99,10 @@ public class DataImporter {
     this.handlerName = handlerName;
     this.core = core;
     this.schema = core.getSchema();
-    loadSchemaFieldMap();
-    createPropertyWriter();    
+    loadSchemaFieldMap();   
   }
   
-  private void createPropertyWriter() {
-    if (this.core == null
-        || !this.core.getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
-      propWriter = new SimplePropertiesWriter();
-    } else {
-      propWriter = new ZKPropertiesWriter();
-    }
-    propWriter.init(this);
-  }
+  
 
   
   boolean maybeReloadConfiguration(RequestInfo params,
@@ -278,7 +271,7 @@ public class DataImporter {
         }
       }
     }
-    List<Element> dataSourceTags = ConfigParseUtil.getChildNodes(e, DATA_SRC);
+    List<Element> dataSourceTags = ConfigParseUtil.getChildNodes(e, ConfigNameConstants.DATA_SRC);
     if (!dataSourceTags.isEmpty()) {
       for (Element element : dataSourceTags) {
         Map<String,String> p = new HashMap<String,String>();
@@ -295,7 +288,54 @@ public class DataImporter {
         break;        
       } 
     }
-    return new DIHConfiguration(documentTags.get(0), this, functions, script, dataSources);
+    PropertyWriter pw = null;
+    List<Element> propertyWriterTags = ConfigParseUtil.getChildNodes(e, ConfigNameConstants.PROPERTY_WRITER);
+    if (propertyWriterTags.isEmpty()) {
+      boolean zookeeper = false;
+      if (this.core != null
+          && this.core.getCoreDescriptor().getCoreContainer()
+              .isZooKeeperAware()) {
+        zookeeper = true;
+      }
+      pw = new PropertyWriter(zookeeper ? "ZKPropertiesWriter"
+          : "SimplePropertiesWriter", Collections.<String,String> emptyMap());
+    } else if (propertyWriterTags.size() > 1) {
+      throw new DataImportHandlerException(SEVERE, "Only one "
+          + ConfigNameConstants.PROPERTY_WRITER + " can be configured.");
+    } else {
+      Element pwElement = propertyWriterTags.get(0);
+      String type = null;
+      Map<String,String> params = new HashMap<String,String>();
+      for (Map.Entry<String,String> entry : ConfigParseUtil.getAllAttributes(
+          pwElement).entrySet()) {
+        if (TYPE.equals(entry.getKey())) {
+          type = entry.getValue();
+        } else {
+          params.put(entry.getKey(), entry.getValue());
+        }
+      }
+      if (type == null) {
+        throw new DataImportHandlerException(SEVERE, "The "
+            + ConfigNameConstants.PROPERTY_WRITER + " element must specify "
+            + TYPE);
+      }
+      pw = new PropertyWriter(type, params);
+    }
+    return new DIHConfiguration(documentTags.get(0), this, functions, script, dataSources, pw);
+  }
+    
+  @SuppressWarnings("unchecked")
+  private DIHProperties createPropertyWriter() {
+    DIHProperties propWriter = null;
+    PropertyWriter configPw = config.getPropertyWriter();
+    try {
+      Class<DIHProperties> writerClass = DocBuilder.loadClass(configPw.getType(), this.core);
+      propWriter = writerClass.newInstance();
+      propWriter.init(this, configPw.getParameters());
+    } catch (Exception e) {
+      throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Unable to PropertyWriter implementation:" + configPw.getType(), e);
+    }
+    return propWriter;
   }
 
   DIHConfiguration getConfig() {
@@ -374,11 +414,11 @@ public class DataImporter {
     LOG.info("Starting Full Import");
     setStatus(Status.RUNNING_FULL_DUMP);
 
-    setIndexStartTime(new Date());
-
     try {
-      docBuilder = new DocBuilder(this, writer, propWriter, requestParams);
-      checkWritablePersistFile(writer);
+      DIHProperties dihPropWriter = createPropertyWriter();
+      setIndexStartTime(dihPropWriter.getCurrentTimestamp());
+      docBuilder = new DocBuilder(this, writer, dihPropWriter, requestParams);
+      checkWritablePersistFile(writer, dihPropWriter);
       docBuilder.execute();
       if (!requestParams.isDebug())
         cumulativeStatistics.add(docBuilder.importStatistics);
@@ -392,10 +432,8 @@ public class DataImporter {
 
   }
 
-  private void checkWritablePersistFile(SolrWriter writer) {
-//    File persistFile = propWriter.getPersistFile();
-//    boolean isWritable = persistFile.exists() ? persistFile.canWrite() : persistFile.getParentFile().canWrite();
-    if (isDeltaImportSupported && !propWriter.isWritable()) {
+  private void checkWritablePersistFile(SolrWriter writer, DIHProperties dihPropWriter) {
+   if (isDeltaImportSupported && !dihPropWriter.isWritable()) {
       throw new DataImportHandlerException(SEVERE,
           "Properties is not writable. Delta imports are supported by data config but will not work.");
     }
@@ -406,9 +444,10 @@ public class DataImporter {
     setStatus(Status.RUNNING_DELTA_DUMP);
 
     try {
-      setIndexStartTime(new Date());
-      docBuilder = new DocBuilder(this, writer, propWriter, requestParams);
-      checkWritablePersistFile(writer);
+      DIHProperties dihPropWriter = createPropertyWriter();
+      setIndexStartTime(dihPropWriter.getCurrentTimestamp());
+      docBuilder = new DocBuilder(this, writer, dihPropWriter, requestParams);
+      checkWritablePersistFile(writer, dihPropWriter);
       docBuilder.execute();
       if (!requestParams.isDebug())
         cumulativeStatistics.add(docBuilder.importStatistics);
@@ -476,6 +515,30 @@ public class DataImporter {
   DocBuilder getDocBuilder() {
     return docBuilder;
   }
+  
+  Map<String, Evaluator> getEvaluators() {
+    return getEvaluators(config.getFunctions());
+  }
+  
+  /**
+   * used by tests.
+   */
+  Map<String, Evaluator> getEvaluators(List<Map<String,String>> fn) {
+    Map<String, Evaluator> evaluators = new HashMap<String, Evaluator>();
+    evaluators.put(Evaluator.DATE_FORMAT_EVALUATOR, new DateFormatEvaluator());
+    evaluators.put(Evaluator.SQL_ESCAPE_EVALUATOR, new SqlEscapingEvaluator());
+    evaluators.put(Evaluator.URL_ENCODE_EVALUATOR, new UrlEvaluator());
+    evaluators.put(Evaluator.ESCAPE_SOLR_QUERY_CHARS, new SolrQueryEscapingEvaluator());
+    SolrCore core = docBuilder == null ? null : docBuilder.dataImporter.getCore();
+    for (Map<String, String> map : fn) {
+      try {
+        evaluators.put(map.get(NAME), (Evaluator) loadClass(map.get(CLASS), core).newInstance());
+      } catch (Exception e) {
+        wrapAndThrow(SEVERE, e, "Unable to instantiate evaluator: " + map.get(CLASS));
+      }
+    }
+    return evaluators;    
+  }
 
   static final ThreadLocal<AtomicLong> QUERY_COUNT = new ThreadLocal<AtomicLong>() {
     @Override
@@ -484,12 +547,7 @@ public class DataImporter {
     }
   };
 
-  static final ThreadLocal<SimpleDateFormat> DATE_TIME_FORMAT = new ThreadLocal<SimpleDateFormat>() {
-    @Override
-    protected SimpleDateFormat initialValue() {
-      return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    }
-  };
+  
 
   static final class MSG {
     public static final String NO_CONFIG_FOUND = "Configuration not found";
@@ -563,4 +621,5 @@ public class DataImporter {
   public static final String RELOAD_CONF_CMD = "reload-config";
 
   public static final String SHOW_CONF_CMD = "show-config";
+  
 }

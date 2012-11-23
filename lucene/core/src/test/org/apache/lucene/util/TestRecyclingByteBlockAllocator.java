@@ -39,7 +39,7 @@ public class TestRecyclingByteBlockAllocator extends LuceneTestCase {
 
   private RecyclingByteBlockAllocator newAllocator() {
     return new RecyclingByteBlockAllocator(1 << (2 + random().nextInt(15)),
-        random().nextInt(97), new AtomicLong());
+        random().nextInt(97), Counter.newCounter());
   }
 
   @Test

@@ -136,7 +136,7 @@ public class SimpleTextPerDocProducer extends PerDocProducerBase {
     }
 
     @Override
-    public Source load() throws IOException {
+    protected Source loadSource() throws IOException {
       boolean success = false;
       IndexInput in = input.clone();
       try {
@@ -198,9 +198,14 @@ public class SimpleTextPerDocProducer extends PerDocProducerBase {
       assert scratch.equals(END);
       return reader.getSource();
     }
-
+    
     @Override
     public Source getDirectSource() throws IOException {
+      return this.getSource(); // don't cache twice
+    }
+
+    @Override
+    protected Source loadDirectSource() throws IOException {
       return this.getSource();
     }
 

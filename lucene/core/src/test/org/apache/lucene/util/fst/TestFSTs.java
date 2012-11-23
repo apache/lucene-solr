@@ -1336,12 +1336,12 @@ public class TestFSTs extends LuceneTestCase {
         if (e.getKey().startsWith(prefix)) {
           //System.out.println("  consider " + e.getKey());
           matches.add(new Util.MinResult<Long>(Util.toIntsRef(new BytesRef(e.getKey().substring(prefix.length())), new IntsRef()),
-                                         e.getValue() - prefixOutput, minLongComparator));
+                                         e.getValue() - prefixOutput));
         }
       }
 
       assertTrue(matches.size() > 0);
-      Collections.sort(matches);
+      Collections.sort(matches, new TieBreakByInputComparator<Long>(minLongComparator));
       if (matches.size() > topN) {
         matches.subList(topN, matches.size()).clear();
       }
@@ -1355,7 +1355,24 @@ public class TestFSTs extends LuceneTestCase {
       }
     }
   }
-  
+
+  private static class TieBreakByInputComparator<T> implements Comparator<Util.MinResult<T>> {
+    private final Comparator<T> comparator;
+    public TieBreakByInputComparator(Comparator<T> comparator) {
+      this.comparator = comparator;
+    }
+
+    @Override
+    public int compare(Util.MinResult<T> a, Util.MinResult<T> b) {
+      int cmp = comparator.compare(a.output, b.output);
+      if (cmp == 0) {
+        return a.input.compareTo(b.input);
+      } else {
+        return cmp;
+      }
+    }
+  }
+
   // used by slowcompletor
   class TwoLongs {
     long a;
@@ -1440,13 +1457,12 @@ public class TestFSTs extends LuceneTestCase {
         if (e.getKey().startsWith(prefix)) {
           //System.out.println("  consider " + e.getKey());
           matches.add(new Util.MinResult<Pair<Long,Long>>(Util.toIntsRef(new BytesRef(e.getKey().substring(prefix.length())), new IntsRef()),
-                                         outputs.newPair(e.getValue().a - prefixOutput.output1, e.getValue().b - prefixOutput.output2), 
-                                         minPairWeightComparator));
+                                                          outputs.newPair(e.getValue().a - prefixOutput.output1, e.getValue().b - prefixOutput.output2)));
         }
       }
 
       assertTrue(matches.size() > 0);
-      Collections.sort(matches);
+      Collections.sort(matches, new TieBreakByInputComparator<Pair<Long,Long>>(minPairWeightComparator));
       if (matches.size() > topN) {
         matches.subList(topN, matches.size()).clear();
       }

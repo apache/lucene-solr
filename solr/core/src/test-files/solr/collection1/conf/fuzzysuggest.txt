@@ -1,0 +1,4 @@
+# simple fuzzy suggest phrase dictionary for testing
+change	1.0
+charge	1.0
+chance	1.0

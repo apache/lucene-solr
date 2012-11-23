@@ -16,8 +16,8 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.commons.lang.ObjectUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.loader.XMLLoader;
@@ -27,26 +27,33 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamReader;
-
 public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
-  private static XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+  private static XMLInputFactory inputFactory;
   protected static UpdateRequestHandler handler;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig.xml","schema.xml");
     handler = new UpdateRequestHandler();
+    inputFactory = XMLInputFactory.newInstance();
+  }
+
+  @AfterClass
+  public static void afterTests() {
+    inputFactory = null;
+    handler = null;
   }
 
   @Test

@@ -193,7 +193,7 @@ final class ExactPhraseScorer extends Scorer {
   }
   
   @Override
-  public float freq() {
+  public int freq() {
     return freq;
   }
   
@@ -333,6 +333,6 @@ final class ExactPhraseScorer extends Scorer {
     for (int i = 0; i < chunkStates.length; i++) {
       posIters[i] = new TermIntervalIterator(this, enums[i] = chunkStates[i].factory.docsAndPositionsEnum(), false, collectIntervals);
     }
-    return new PhraseScorer.AdvancingIntervalIterator(this, collectIntervals, enums, new BlockIntervalIterator(this, collectIntervals, posIters));
+    return new SloppyPhraseScorer.AdvancingIntervalIterator(this, collectIntervals, enums, new BlockIntervalIterator(this, collectIntervals, posIters));
   }
 }

@@ -112,14 +112,14 @@ public class SolrZkClient {
           });
     } catch (Throwable e) {
       connManager.close();
-      throw new RuntimeException();
+      throw new RuntimeException(e);
     }
     
     try {
       connManager.waitForConnected(clientConnectTimeout);
     } catch (Throwable e) {
       connManager.close();
-      throw new RuntimeException();
+      throw new RuntimeException(e);
     }
     numOpens.incrementAndGet();
   }
@@ -590,6 +590,8 @@ public class SolrZkClient {
       return;
     }
     for (String string : children) {
+      // we can't clean the built-in zookeeper node
+      if (path.equals("/") && string.equals("zookeeper")) continue;
       if (path.equals("/")) {
         clean(path + string);
       } else {

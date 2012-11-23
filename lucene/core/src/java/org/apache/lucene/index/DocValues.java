@@ -33,8 +33,8 @@ import org.apache.lucene.document.PackedLongDocValuesField; // javadocs
 import org.apache.lucene.document.ShortDocValuesField; // javadocs
 import org.apache.lucene.document.SortedBytesDocValuesField; // javadocs
 import org.apache.lucene.document.StraightBytesDocValuesField; // javadocs
-import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -95,7 +95,6 @@ public abstract class DocValues implements Closeable {
 
   private volatile SourceCache cache = new SourceCache.DirectSourceCache();
   private final Object cacheLock = new Object();
-  
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
   protected DocValues() {
@@ -112,12 +111,12 @@ public abstract class DocValues implements Closeable {
    * @see #getSource()
    * @see #setCache(SourceCache)
    */
-  public abstract Source load() throws IOException;
+  protected abstract Source loadSource() throws IOException;
 
   /**
    * Returns a {@link Source} instance through the current {@link SourceCache}.
    * Iff no {@link Source} has been loaded into the cache so far the source will
-   * be loaded through {@link #load()} and passed to the {@link SourceCache}.
+   * be loaded through {@link #loadSource()} and passed to the {@link SourceCache}.
    * The caller of this method should not close the obtained {@link Source}
    * instance unless it is not needed for the rest of its life time.
    * <p>
@@ -129,12 +128,30 @@ public abstract class DocValues implements Closeable {
   public Source getSource() throws IOException {
     return cache.load(this);
   }
+  
+  /**
+   * Returns a disk resident {@link Source} instance through the current
+   * {@link SourceCache}. Direct Sources are cached per thread in the
+   * {@link SourceCache}. The obtained instance should not be shared with other
+   * threads.
+   */
+  public Source getDirectSource() throws IOException {
+    return this.cache.loadDirect(this);
+  }
+  
 
   /**
-   * Returns a disk resident {@link Source} instance. Direct Sources are not
-   * cached in the {@link SourceCache} and should not be shared between threads.
+   * Loads a new {@link Source direct source} instance from this {@link DocValues} field
+   * instance. Source instances returned from this method are not cached. It is
+   * the callers responsibility to maintain the instance and release its
+   * resources once the source is not needed anymore.
+   * <p>
+   * For managed {@link Source direct source} instances see {@link #getDirectSource()}.
+   * 
+   * @see #getDirectSource()
+   * @see #setCache(SourceCache)
    */
-  public abstract Source getDirectSource() throws IOException;
+  protected abstract Source loadDirectSource() throws IOException;
 
   /**
    * Returns the {@link Type} of this {@link DocValues} instance
@@ -163,10 +180,10 @@ public abstract class DocValues implements Closeable {
 
   /**
    * Sets the {@link SourceCache} used by this {@link DocValues} instance. This
-   * method should be called before {@link #load()} is called. All {@link Source} instances in the currently used cache will be closed
+   * method should be called before {@link #loadSource()} is called. All {@link Source} instances in the currently used cache will be closed
    * before the new cache is installed.
    * <p>
-   * Note: All instances previously obtained from {@link #load()} will be lost.
+   * Note: All instances previously obtained from {@link #loadSource()} will be lost.
    * 
    * @throws IllegalArgumentException
    *           if the given cache is <code>null</code>
@@ -180,6 +197,14 @@ public abstract class DocValues implements Closeable {
       this.cache = cache;
       toClose.close(this);
     }
+  }
+  /**
+   * Returns the currently used cache instance;
+   * @see #setCache(SourceCache)
+   */
+  // for tests
+  SourceCache getCache() {
+    return cache;
   }
 
   /**
@@ -687,9 +712,9 @@ public abstract class DocValues implements Closeable {
   /**
    * Abstract base class for {@link DocValues} {@link Source} cache.
    * <p>
-   * {@link Source} instances loaded via {@link DocValues#load()} are entirely memory resident
+   * {@link Source} instances loaded via {@link DocValues#loadSource()} are entirely memory resident
    * and need to be maintained by the caller. Each call to
-   * {@link DocValues#load()} will cause an entire reload of
+   * {@link DocValues#loadSource()} will cause an entire reload of
    * the underlying data. Source instances obtained from
    * {@link DocValues#getSource()} and {@link DocValues#getSource()}
    * respectively are maintained by a {@link SourceCache} that is closed (
@@ -721,6 +746,15 @@ public abstract class DocValues implements Closeable {
      * This method will not return <code>null</code>
      */
     public abstract Source load(DocValues values) throws IOException;
+    
+    /**
+     * Atomically loads a {@link Source direct source} into the per-thread cache from the given
+     * {@link DocValues} and returns it iff no other {@link Source direct source} has already
+     * been cached. Otherwise the cached source is returned.
+     * <p>
+     * This method will not return <code>null</code>
+     */
+    public abstract Source loadDirect(DocValues values) throws IOException;
 
     /**
      * Atomically invalidates the cached {@link Source} 
@@ -744,20 +778,34 @@ public abstract class DocValues implements Closeable {
      */
     public static final class DirectSourceCache extends SourceCache {
       private Source ref;
-
+      private final CloseableThreadLocal<Source> directSourceCache = new CloseableThreadLocal<Source>();
+      
       /** Sole constructor. */
       public DirectSourceCache() {
       }
 
       public synchronized Source load(DocValues values) throws IOException {
         if (ref == null) {
-          ref = values.load();
+          ref = values.loadSource();
         }
         return ref;
       }
 
       public synchronized void invalidate(DocValues values) {
         ref = null;
+        directSourceCache.close();
+      }
+
+      @Override
+      public synchronized Source loadDirect(DocValues values) throws IOException {
+        final Source source = directSourceCache.get();
+        if (source == null) {
+          final Source loadDirectSource = values.loadDirectSource();
+          directSourceCache.set(loadDirectSource);
+          return loadDirectSource;
+        } else {
+          return source;
+        }
       }
     }
   }

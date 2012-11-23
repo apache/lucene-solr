@@ -28,41 +28,53 @@ import org.apache.lucene.store.RAMDirectory;
 public class TestByteBlockPool extends LuceneTestCase {
 
   public void testCopyRefAndWrite() throws IOException {
-    List<String> list = new ArrayList<String>();
-    int maxLength = atLeast(500);
-    ByteBlockPool pool = new ByteBlockPool(new ByteBlockPool.DirectAllocator());
+    Counter bytesUsed = Counter.newCounter();
+    ByteBlockPool pool = new ByteBlockPool(new ByteBlockPool.DirectTrackingAllocator(bytesUsed));
     pool.nextBuffer();
-    final int numValues = atLeast(100);
-    BytesRef ref = new BytesRef();
-    for (int i = 0; i < numValues; i++) {
-      final String value = _TestUtil.randomRealisticUnicodeString(random(),
-          maxLength);
-      list.add(value);
-      ref.copyChars(value);
-      pool.copy(ref);
+    boolean reuseFirst = random().nextBoolean();
+    for (int j = 0; j < 2; j++) {
+        
+      List<String> list = new ArrayList<String>();
+      int maxLength = atLeast(500);
+      final int numValues = atLeast(100);
+      BytesRef ref = new BytesRef();
+      for (int i = 0; i < numValues; i++) {
+        final String value = _TestUtil.randomRealisticUnicodeString(random(),
+            maxLength);
+        list.add(value);
+        ref.copyChars(value);
+        pool.copy(ref);
+      }
+      RAMDirectory dir = new RAMDirectory();
+      IndexOutput stream = dir.createOutput("foo.txt", newIOContext(random()));
+      pool.writePool(stream);
+      stream.flush();
+      stream.close();
+      IndexInput input = dir.openInput("foo.txt", newIOContext(random()));
+      assertEquals(pool.byteOffset + pool.byteUpto, stream.length());
+      BytesRef expected = new BytesRef();
+      BytesRef actual = new BytesRef();
+      for (String string : list) {
+        expected.copyChars(string);
+        actual.grow(expected.length);
+        actual.length = expected.length;
+        input.readBytes(actual.bytes, 0, actual.length);
+        assertEquals(expected, actual);
+      }
+      try {
+        input.readByte();
+        fail("must be EOF");
+      } catch (EOFException e) {
+        // expected - read past EOF
+      }
+      pool.reset(random().nextBoolean(), reuseFirst);
+      if (reuseFirst) {
+        assertEquals(ByteBlockPool.BYTE_BLOCK_SIZE, bytesUsed.get());
+      } else {
+        assertEquals(0, bytesUsed.get());
+        pool.nextBuffer(); // prepare for next iter
+      }
+      dir.close();
     }
-    RAMDirectory dir = new RAMDirectory();
-    IndexOutput stream = dir.createOutput("foo.txt", newIOContext(random()));
-    pool.writePool(stream);
-    stream.flush();
-    stream.close();
-    IndexInput input = dir.openInput("foo.txt", newIOContext(random()));
-    assertEquals(pool.byteOffset + pool.byteUpto, stream.length());
-    BytesRef expected = new BytesRef();
-    BytesRef actual = new BytesRef();
-    for (String string : list) {
-      expected.copyChars(string);
-      actual.grow(expected.length);
-      actual.length = expected.length;
-      input.readBytes(actual.bytes, 0, actual.length);
-      assertEquals(expected, actual);
-    }
-    try {
-      input.readByte();
-      fail("must be EOF");
-    } catch (EOFException e) {
-      // expected - read past EOF
-    }
-    dir.close();
   }
 }

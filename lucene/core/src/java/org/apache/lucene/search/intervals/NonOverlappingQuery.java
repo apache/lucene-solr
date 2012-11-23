@@ -318,7 +318,7 @@ public final class NonOverlappingQuery extends Query implements Cloneable {
     }
 
     @Override
-    public float freq() throws IOException {
+    public int freq() throws IOException {
       return minuend.freq();
     }
 

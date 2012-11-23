@@ -108,7 +108,7 @@ class ReqExclScorer extends Scorer {
   }
   
   @Override
-  public float freq() throws IOException {
+  public int freq() throws IOException {
     return reqScorer.freq();
   }
 

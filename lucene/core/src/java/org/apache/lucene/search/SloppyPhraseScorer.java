@@ -30,16 +30,22 @@ import java.util.Map;
 
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.intervals.ConjunctionIntervalIterator;
 import org.apache.lucene.search.intervals.Interval;
+import org.apache.lucene.search.intervals.IntervalCollector;
 import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.search.intervals.SloppyIntervalIterator;
 import org.apache.lucene.search.intervals.TermIntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.OpenBitSet;
 
-final class SloppyPhraseScorer extends PhraseScorer {
-//  private MaxLengthPositionIntervalIterator iter;
+final class SloppyPhraseScorer extends Scorer {
+  private PhrasePositions min, max;
+
+  private float sloppyFreq; //phrase frequency in current doc as computed by phraseFreq().
+
+  private final Similarity.SloppySimScorer docScorer;
+  private final PhraseQuery.PostingsAndFreq[] postings;
+  
   private final int slop;
   private final int numPostings;
   private final PhraseQueue pq; // for advancing min position
@@ -52,23 +58,34 @@ final class SloppyPhraseScorer extends PhraseScorer {
   private PhrasePositions[][] rptGroups; // in each group are PPs that repeats each other (i.e. same term), sorted by (query) offset 
   private PhrasePositions[] rptStack; // temporary stack for switching colliding repeating pps 
   
+  private int numMatches;
+  
   SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
-      int slop, Similarity.SloppySimScorer docScorer) throws IOException {
-    super(weight, postings, docScorer);
+      int slop, Similarity.SloppySimScorer docScorer) {
+    super(weight);
+    this.docScorer = docScorer;
+    this.postings = postings;
     this.slop = slop;
     this.numPostings = postings==null ? 0 : postings.length;
     pq = new PhraseQueue(postings.length);
-//    iter = (MaxLengthPositionIntervalIterator) positions(false, false, false);
+    // convert tps to a list of phrase positions.
+    // note: phrase-position differs from term-position in that its position
+    // reflects the phrase offset: pp.pos = tp.pos - offset.
+    // this allows to easily identify a matching (exact) phrase 
+    // when all PhrasePositions have exactly the same position.
+    if (postings.length > 0) {
+      min = new PhrasePositions(postings[0].postings, postings[0].position, 0, postings[0].terms);
+      max = min;
+      max.doc = -1;
+      for (int i = 1; i < postings.length; i++) {
+        PhrasePositions pp = new PhrasePositions(postings[i].postings, postings[i].position, i, postings[i].terms);
+        max.next = pp;
+        max = pp;
+        max.doc = -1;
+      }
+      max.next = min; // make it cyclic for easier manipulation
+    }
   }
-  
-//  String current() {
-//    StringBuilder b = new StringBuilder();
-//    int i = 0;
-//    for (PhrasePositions phrasePositions : postings) {
-//      b.append(i++).append(phrasePositions).append("\n");
-//    }
-//    return b.toString();
-//  }
 
   /**
    * Score a candidate doc for all slop-valid position-combinations (matches) 
@@ -88,76 +105,39 @@ final class SloppyPhraseScorer extends PhraseScorer {
    * would get same score as "g f"~2, although "c b"~2 could be matched twice.
    * We may want to fix this in the future (currently not, for performance reasons).
    */
-  @Override
-  protected float phraseFreq() throws IOException {
-//    float freq = 0.0f;
-//
-//    if (1 ==1) {
-//    if (iter.docID() != this.docID()) {
-//      iter.advanceTo(this.docID());
-//    }
-//    while(iter.next() != null) {
-//      freq += docScorer.computeSlopFactor(iter.matchLength()); // score match
-//    }
-//    
-//    return freq;
-//    }
-//    freq = 0.0f;
-
+  private float phraseFreq() throws IOException {
     if (!initPhrasePositions()) {
       return 0.0f;
     }
-   
     float freq = 0.0f;
+    numMatches = 0;
     PhrasePositions pp = pq.pop();
     int matchLength = end - pp.position;
     int next = pq.top().position; 
-    
-//    int _lPos = pp.position;
-//    int _lend = end;
-//    String _s = current();
-//    Term[] _lTerms = pp.terms;
     while (advancePP(pp)) {
       if (hasRpts && !advanceRpts(pp)) {
         break; // pps exhausted
       }
       if (pp.position > next) { // done minimizing current match-length 
         if (matchLength <= slop) {
-//          System.out.println("match: " + _lPos + " " + _lend + " " + Arrays.toString(_lTerms)  + " " + matchLength);
-//          System.out.println(_s);
-//          System.out.println( docScorer.computeSlopFactor(matchLength));
           freq += docScorer.computeSlopFactor(matchLength); // score match
+          numMatches++;
         }      
         pq.add(pp);
         pp = pq.pop();
         next = pq.top().position;
         matchLength = end - pp.position;
-//        _lPos = pp.position;
-//        _lend = end;
-//        _lTerms = pp.terms;
-//        _s = current();
       } else {
         int matchLength2 = end - pp.position;
-        
         if (matchLength2 < matchLength) {
-//          _lPos = pp.position;
-//          _lend = end;
-//          _lTerms = pp.terms;
-//          _s = current();
           matchLength = matchLength2;
         }
       }
     }
     if (matchLength <= slop) {
-//      System.out.println("match: " + _lPos + " " + _lend + " " + Arrays.toString(_lTerms) + " " + matchLength);
-//      System.out.println(_s);
-//      System.out.println( docScorer.computeSlopFactor(matchLength));
-
       freq += docScorer.computeSlopFactor(matchLength); // score match
-
+      numMatches++;
     }    
-//    System.out.println("res: " + freq + " doc: " + this.docID());
-    
     return freq;
   }
 
@@ -542,6 +522,87 @@ final class SloppyPhraseScorer extends PhraseScorer {
   }
 
   @Override
+  public int freq() {
+    return numMatches;
+  }
+  
+  float sloppyFreq() {
+    return sloppyFreq;
+  }
+  
+//  private void printQueue(PrintStream ps, PhrasePositions ext, String title) {
+//    //if (min.doc != ?) return;
+//    ps.println();
+//    ps.println("---- "+title);
+//    ps.println("EXT: "+ext);
+//    PhrasePositions[] t = new PhrasePositions[pq.size()];
+//    if (pq.size()>0) {
+//      t[0] = pq.pop();
+//      ps.println("  " + 0 + "  " + t[0]);
+//      for (int i=1; i<t.length; i++) {
+//        t[i] = pq.pop();
+//        assert t[i-1].position <= t[i].position;
+//        ps.println("  " + i + "  " + t[i]);
+//      }
+//      // add them back
+//      for (int i=t.length-1; i>=0; i--) {
+//        pq.add(t[i]);
+//      }
+//    }
+//  }
+  
+  private boolean advanceMin(int target) throws IOException {
+    if (!min.skipTo(target)) { 
+      max.doc = NO_MORE_DOCS; // for further calls to docID() 
+      return false;
+    }
+    min = min.next; // cyclic
+    max = max.next; // cyclic
+    return true;
+  }
+  
+  @Override
+  public int docID() {
+    return max.doc; 
+  }
+
+  @Override
+  public int nextDoc() throws IOException {
+    return advance(max.doc);
+  }
+  
+  @Override
+  public float score() {
+    return docScorer.score(max.doc, sloppyFreq);
+  }
+
+  @Override
+  public int advance(int target) throws IOException {
+    sloppyFreq = 0.0f;
+    if (!advanceMin(target)) {
+      return NO_MORE_DOCS;
+    }        
+    boolean restart=false;
+    while (sloppyFreq == 0.0f) {
+      while (min.doc < max.doc || restart) {
+        restart = false;
+        if (!advanceMin(max.doc)) {
+          return NO_MORE_DOCS;
+        }        
+      }
+      // found a doc with all of the terms
+      sloppyFreq = phraseFreq(); // check for phrase
+      restart = true;
+    } 
+
+    // found a match
+    return max.doc;
+  }
+  
+  @Override
+  public String toString() { return "scorer(" + weight + ")"; }
+
+  @Override
   public IntervalIterator intervals(boolean collectIntervals) throws IOException {
     Map<Term, IterAndOffsets> map = new HashMap<Term, IterAndOffsets>();
     List<DocsAndPositionsEnum> enums = new ArrayList<DocsAndPositionsEnum>();
@@ -572,15 +633,15 @@ final class SloppyPhraseScorer extends PhraseScorer {
     }
     return new AdvancingIntervalIterator(this, collectIntervals, enums.toArray(new DocsAndPositionsEnum[enums.size()]), new SloppyIntervalIterator(this, slop, collectIntervals, iters));
   }
-  
+
   private final static class IterAndOffsets {
     final List<Integer> offsets = new ArrayList<Integer>();
     final IntervalIterator iter;
-    
+
     IterAndOffsets(IntervalIterator iter) {
       this.iter = iter;
     }
-    
+
     int[] toIntArray() {
       int[] array = new int[offsets.size()];
       for (int i = 0; i < array.length; i++) {
@@ -589,6 +650,47 @@ final class SloppyPhraseScorer extends PhraseScorer {
       return array;
     }
   }
-  
 
+  final static class AdvancingIntervalIterator extends IntervalIterator {
+
+    public AdvancingIntervalIterator(Scorer scorer, boolean collectIntervals, final DocsAndPositionsEnum[] enums, final IntervalIterator delegate) {
+      super(scorer, collectIntervals);
+      this.enums = enums;
+      this.delegate = delegate;
+    }
+
+    private final DocsAndPositionsEnum[] enums;
+    private final IntervalIterator delegate;
+    @Override
+    public int scorerAdvanced(int docId) throws IOException {
+      assert docId == docID();
+      for (DocsAndPositionsEnum oneEnum : enums) {
+        int advance = oneEnum.advance(docId);
+        assert advance == docId;
+      }
+      delegate.scorerAdvanced(docId);
+      return docId;
+    }
+
+    @Override
+    public Interval next() throws IOException {
+      return delegate.next();
+    }
+
+    @Override
+    public void collect(IntervalCollector collector) {
+      delegate.collect(collector);
+    }
+
+    @Override
+    public IntervalIterator[] subs(boolean inOrder) {
+      return delegate.subs(inOrder);
+    }
+
+    @Override
+    public int matchDistance() {
+      return delegate.matchDistance();
+    }
+
+  }
 }

@@ -33,12 +33,12 @@ class MemoryIndexNormDocValues extends DocValues {
     this.source = source;
   }
   @Override
-  public Source load() throws IOException {
+  protected Source loadSource() throws IOException {
     return source;
   }
 
   @Override
-  public Source getDirectSource() throws IOException {
+  protected Source loadDirectSource() throws IOException {
     return source;
   }
 

@@ -96,8 +96,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   // is made to delete an open file, we enroll it here.
   private Set<String> openFilesDeleted;
 
-  final RateLimiter rateLimiter;
-
   private synchronized void init() {
     if (openFiles == null) {
       openFiles = new HashMap<String,Integer>();
@@ -120,19 +118,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         .mBitsToBytes(40 + randomState.nextInt(10)), 5 + randomState.nextInt(5), null);
     // force wrapping of lockfactory
     this.lockFactory = new MockLockFactoryWrapper(this, delegate.getLockFactory());
-
-    // 2% of the time use rate limiter
-    if (randomState.nextInt(50) == 17) {
-      // Use RateLimiter
-      double maxMBPerSec = 10 + 5*(randomState.nextDouble()-0.5);
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockDirectoryWrapper: will rate limit output IO to " + maxMBPerSec + " MB/sec");
-      }
-      rateLimiter = new RateLimiter(maxMBPerSec);
-    } else {
-      rateLimiter = null;
-    }
-
     init();
   }
 
@@ -177,7 +162,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       throw new IOException("cannot sync after crash");
     }
     unSyncedFiles.removeAll(names);
-    if (LuceneTestCase.rarely(randomState) || delegate instanceof NRTCachingDirectory) {
+    // TODO: need to improve hack to be OK w/
+    // RateLimitingDirWrapper in between...
+    if (true || LuceneTestCase.rarely(randomState) || delegate instanceof NRTCachingDirectory) {
       // don't wear out our hardware so much in tests.
       delegate.sync(names);
     }
@@ -447,7 +434,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         ramdir.fileMap.put(name, file);
       }
     }
-    
     //System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
     IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name, LuceneTestCase.newIOContext(randomState, context)), name);
     addFileHandle(io, name, Handle.Output);
@@ -455,7 +441,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     
     // throttling REALLY slows down tests, so don't do it very often for SOMETIMES.
     if (throttling == Throttling.ALWAYS || 
-        (throttling == Throttling.SOMETIMES && rateLimiter == null && randomState.nextInt(50) == 0)) {
+        (throttling == Throttling.SOMETIMES && randomState.nextInt(50) == 0) && !(delegate instanceof RateLimitedDirectoryWrapper)) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockDirectoryWrapper: throttling indexOutput");
       }

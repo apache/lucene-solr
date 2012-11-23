@@ -20,6 +20,7 @@ package org.apache.solr.update;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
@@ -114,6 +115,9 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
 
   @Override
   public synchronized void newIndexWriter(SolrCore core, boolean rollback, boolean forceNewDir) throws IOException {
+    if (closed) {
+      throw new AlreadyClosedException("SolrCoreState already closed");
+    }
     log.info("Creating new IndexWriter...");
     String coreName = core.getName();
     synchronized (writerPauseLock) {

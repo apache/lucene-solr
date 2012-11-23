@@ -102,4 +102,10 @@ public class LRUHashMap<K,V> extends LinkedHashMap<K,V> {
     return size() > maxSize;
   }
 
+  @SuppressWarnings("unchecked")
+  @Override
+  public LRUHashMap<K,V> clone() {
+    return (LRUHashMap<K,V>) super.clone();
+  }
+  
 }

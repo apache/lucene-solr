@@ -189,7 +189,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
     }
     
     @Override
-    public float freq() throws IOException {
+    public int freq() throws IOException {
       return 1;
     }
 
@@ -220,7 +220,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {
-    return "ConstantScore(" + filter.toString()
+    return ExtendedQueryBase.getOptionsString(this) + "ConstantScore(" + filter.toString()
       + (getBoost()==1.0 ? ")" : "^" + getBoost());
   }
 

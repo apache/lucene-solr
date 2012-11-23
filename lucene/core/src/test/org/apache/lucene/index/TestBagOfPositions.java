@@ -45,6 +45,12 @@ public class TestBagOfPositions extends LuceneTestCase {
     List<String> postingsList = new ArrayList<String>();
     int numTerms = atLeast(300);
     final int maxTermsPerDoc = _TestUtil.nextInt(random(), 10, 20);
+    boolean isSimpleText = "SimpleText".equals(_TestUtil.getPostingsFormat("field"));
+
+    if (isSimpleText && (TEST_NIGHTLY || RANDOM_MULTIPLIER > 1)) {
+      // Otherwise test can take way too long (> 2 hours)
+      numTerms /= 2;
+    }
     if (VERBOSE) {
       System.out.println("maxTermsPerDoc=" + maxTermsPerDoc);
       System.out.println("numTerms=" + numTerms);

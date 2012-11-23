@@ -2,6 +2,7 @@
 
 package org.apache.lucene.util.packed;
 
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -157,14 +158,19 @@ abstract class BulkOperation implements PackedInts.Decoder, PackedInts.Encoder {
    *  - 50 bits per value -> b=25, v=32
    *  - 63 bits per value -> b=63, v=64
    *  - ...
-   *
+   * <p>
    * A bulk read consists in copying <code>iterations*v</code> values that are
    * contained in <code>iterations*b</code> blocks into a <code>long[]</code>
    * (higher values of <code>iterations</code> are likely to yield a better
    * throughput) => this requires n * (b + v) longs in memory.
-   *
+   * <p>
    * This method computes <code>iterations</code> as
    * <code>ramBudget / (8 * (b + v))</code> (since a long is 8 bytes).
+   * <p>
+   * The resulting number of iterations of this method is guaranteed not to
+   * overflow when multiplied by
+   * <tt>8 * {@link PackedInts.Encoder#blockCount()}</tt> or
+   * <tt>8 * {@link PackedInts.Decoder#blockCount()}</tt>.
    */
   public final int computeIterations(int valueCount, int ramBudget) {
     final int iterations = (ramBudget >>> 3) / (blockCount() + valueCount());

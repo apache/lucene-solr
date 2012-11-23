@@ -33,12 +33,13 @@ public class LevenshteinAutomata {
   /** @lucene.internal */
   public static final int MAXIMUM_SUPPORTED_DISTANCE = 2;
   /* input word */
-  final String input;
   final int word[];
   /* the automata alphabet. */
   final int alphabet[];
+  /* the maximum symbol in the alphabet (e.g. 255 for UTF-8 or 10FFFF for UTF-32) */
+  final int alphaMax;
 
-  /* the unicode ranges outside of alphabet */
+  /* the ranges outside of alphabet */
   final int rangeLower[];
   final int rangeUpper[];
   int numRanges = 0;
@@ -50,17 +51,26 @@ public class LevenshteinAutomata {
    * Optionally count transpositions as a primitive edit.
    */
   public LevenshteinAutomata(String input, boolean withTranspositions) {
-    this.input = input;
-    int length = Character.codePointCount(input, 0, input.length());
-    word = new int[length];
-    for (int i = 0, j = 0, cp = 0; i < input.length(); i += Character.charCount(cp)) {
-      word[j++] = cp = input.codePointAt(i);
-    }
-    
+    this(codePoints(input), Character.MAX_CODE_POINT, withTranspositions);
+  }
+
+  /**
+   * Expert: specify a custom maximum possible symbol
+   * (alphaMax); default is Character.MAX_CODE_POINT.
+   */
+  public LevenshteinAutomata(int[] word, int alphaMax, boolean withTranspositions) {
+    this.word = word;
+    this.alphaMax = alphaMax;
+
     // calculate the alphabet
     SortedSet<Integer> set = new TreeSet<Integer>();
-    for (int i = 0; i < word.length; i++)
-      set.add(word[i]);
+    for (int i = 0; i < word.length; i++) {
+      int v = word[i];
+      if (v > alphaMax) {
+        throw new IllegalArgumentException("alphaMax exceeded by symbol " + v + " in word");
+      }
+      set.add(v);
+    }
     alphabet = new int[set.size()];
     Iterator<Integer> iterator = set.iterator();
     for (int i = 0; i < alphabet.length; i++)
@@ -81,9 +91,9 @@ public class LevenshteinAutomata {
       lower = higher + 1;
     }
     /* add the final endpoint */
-    if (lower <= Character.MAX_CODE_POINT) {
+    if (lower <= alphaMax) {
       rangeLower[numRanges] = lower;
-      rangeUpper[numRanges] = Character.MAX_CODE_POINT;
+      rangeUpper[numRanges] = alphaMax;
       numRanges++;
     }
 
@@ -92,6 +102,15 @@ public class LevenshteinAutomata {
         withTranspositions ? new Lev1TParametricDescription(word.length) : new Lev1ParametricDescription(word.length),
         withTranspositions ? new Lev2TParametricDescription(word.length) : new Lev2ParametricDescription(word.length),
     };
+  }
+  
+  private static int[] codePoints(String input) {
+    int length = Character.codePointCount(input, 0, input.length());
+    int word[] = new int[length];
+    for (int i = 0, j = 0, cp = 0; i < input.length(); i += Character.charCount(cp)) {
+      word[j++] = cp = input.codePointAt(i);
+    }
+    return word;
   }
   
   /**
@@ -106,8 +125,9 @@ public class LevenshteinAutomata {
    * </p>
    */
   public Automaton toAutomaton(int n) {
-    if (n == 0)
-      return BasicAutomata.makeString(input);
+    if (n == 0) {
+      return BasicAutomata.makeString(word, 0, word.length);
+    }
     
     if (n >= descriptions.length)
       return null;

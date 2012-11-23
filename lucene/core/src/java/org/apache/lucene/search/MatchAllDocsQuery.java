@@ -69,7 +69,7 @@ public class MatchAllDocsQuery extends Query {
     }
 
     @Override
-    public float freq() {
+    public int freq() {
       return 1;
     }
 

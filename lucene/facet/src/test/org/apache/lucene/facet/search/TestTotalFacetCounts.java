@@ -78,11 +78,9 @@ public class TestTotalFacetCounts extends LuceneTestCase {
     TestTotalFacetCountsCache.addFacets(iParams, writers[0].indexWriter, writers[0].taxWriter, "b", "c");
 
     // Commit Changes
-    writers[0].commit();
     writers[0].close();
 
-    IndexTaxonomyReaderPair[] readers = 
-      FacetTestUtils.createIndexTaxonomyReaderPair(dirs);
+    IndexTaxonomyReaderPair[] readers = FacetTestUtils.createIndexTaxonomyReaderPair(dirs);
     
     int[] intArray = new int[iParams.getPartitionSize()];
 
@@ -93,8 +91,7 @@ public class TestTotalFacetCounts extends LuceneTestCase {
     tfcc.load(tmpFile, readers[0].indexReader, readers[0].taxReader, iParams);
     
     // now retrieve the one just loaded
-    TotalFacetCounts totalCounts = 
-      tfcc.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+    TotalFacetCounts totalCounts = tfcc.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
 
     int partition = 0;
     for (int i=0; i<expectedCounts.length; i+=partitionSize) {

@@ -211,8 +211,36 @@ public class SystemInfoHandler extends RequestHandlerBase
   public static SimpleOrderedMap<Object> getJvmInfo()
   {
     SimpleOrderedMap<Object> jvm = new SimpleOrderedMap<Object>();
-    jvm.add( "version", System.getProperty("java.vm.version") );
-    jvm.add( "name", System.getProperty("java.vm.name") );
+
+    final String javaVersion = System.getProperty("java.specification.version", "unknown"); 
+    final String javaVendor = System.getProperty("java.specification.vendor", "unknown"); 
+    final String javaName = System.getProperty("java.specification.name", "unknown"); 
+    final String jreVersion = System.getProperty("java.version", "unknown");
+    final String jreVendor = System.getProperty("java.vendor", "unknown");
+    final String vmVersion = System.getProperty("java.vm.version", "unknown"); 
+    final String vmVendor = System.getProperty("java.vm.vendor", "unknown"); 
+    final String vmName = System.getProperty("java.vm.name", "unknown"); 
+
+    // Summary Info
+    jvm.add( "version", jreVersion + " " + vmVersion);
+    jvm.add( "name", jreVendor + " " + vmName );
+    
+    // details
+    SimpleOrderedMap<Object> java = new SimpleOrderedMap<Object>();
+    java.add( "vendor", javaVendor );
+    java.add( "name", javaName );
+    java.add( "version", javaVersion );
+    jvm.add( "spec", java );
+    SimpleOrderedMap<Object> jre = new SimpleOrderedMap<Object>();
+    jre.add( "vendor", jreVendor );
+    jre.add( "version", jreVersion );
+    jvm.add( "jre", jre );
+    SimpleOrderedMap<Object> vm = new SimpleOrderedMap<Object>();
+    vm.add( "vendor", vmVendor );
+    vm.add( "name", vmName );
+    vm.add( "version", vmVersion );
+    jvm.add( "vm", vm );
+           
     
     Runtime runtime = Runtime.getRuntime();
     jvm.add( "processors", runtime.availableProcessors() );

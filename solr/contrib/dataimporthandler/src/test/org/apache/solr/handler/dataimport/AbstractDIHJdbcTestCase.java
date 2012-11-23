@@ -1,4 +1,5 @@
 package org.apache.solr.handler.dataimport;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
@@ -16,155 +17,194 @@ package org.apache.solr.handler.dataimport;
  * the License.
  */
 
+import java.io.OutputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import junit.framework.Assert;
 
+import org.apache.derby.iapi.error.StandardException;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.BeforeClass;
+
 /**
- * This sets up an in-memory Derby Sql database with a little sample data.
- * The schema here is poorly-designed to illustrate DIH's ability to 
- * overcome these kinds of challenges.
+ * This sets up an in-memory Sql database with a little sample data.
  */
-public abstract class AbstractDIHJdbcTestCase extends AbstractDataImportHandlerTestCase {
+public abstract class AbstractDIHJdbcTestCase extends
+    AbstractDataImportHandlerTestCase {
+  
+  protected Database dbToUse;
+  
+  public enum Database {
+    RANDOM, DERBY, HSQLDB
+  }
+  
+  protected boolean skipThisTest = false;
+  
+  private static final Pattern totalRequestsPattern = Pattern
+      .compile(".str name..Total Requests made to DataSource..(\\d+)..str.");
+    
   @BeforeClass
   public static void beforeClassDihJdbcTest() throws Exception {
     try {
       Class.forName("org.hsqldb.jdbcDriver").newInstance();
+      String oldProp = System.getProperty("derby.stream.error.field");
+      System.setProperty("derby.stream.error.field", "DerbyUtil.DEV_NULL");
+      Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
+      if (oldProp != null) {
+        System.setProperty("derby.stream.error.field", oldProp);
+      }
     } catch (Exception e) {
       throw e;
     }
-    
-    Connection conn = null;
-    Statement s = null;
-    PreparedStatement ps = null;    
-    try {    
-      conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");    
-      s = conn.createStatement();
-      s.executeUpdate("create table countries(code char(2) not null primary key, country_name varchar(50))");
-      s.executeUpdate("create table people(id int not null primary key, name varchar(50), country_codes varchar(100))");
-      s.executeUpdate("create table people_sports(id int not null primary key, person_id int, sport_name varchar(50))");
-      
-      ps = conn.prepareStatement("insert into countries values (?,?)");
-      for(String[] country : countries) {
-        ps.setString(1, country[0]);
-        ps.setString(2, country[1]);
-        Assert.assertEquals(1, ps.executeUpdate());
-      }
-      ps.close();
-            
-      ps = conn.prepareStatement("insert into people values (?,?,?)");
-      for(Object[] person : people) {
-        ps.setInt(1, (Integer) person[0]);
-        ps.setString(2, (String) person[1]);
-        ps.setString(3, (String) person[2]);
-        Assert.assertEquals(1, ps.executeUpdate());
-      }
-      ps.close(); 
-      
-      ps = conn.prepareStatement("insert into people_sports values (?,?,?)");
-      for(Object[] sport : people_sports) {
-        ps.setInt(1, (Integer) sport[0]);
-        ps.setInt(2, (Integer) sport[1]);
-        ps.setString(3, (String) sport[2]);
-        Assert.assertEquals(1, ps.executeUpdate());
-      }
-      ps.close();
-      conn.close();    
-    } catch(Exception e) {
-      throw e;
-    } finally {
-      if(s!=null) { s.close(); }
-      if(ps!=null) { ps.close(); }
-      if(conn!=null) { conn.close(); }
-    }
+    initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
   }
   
   @AfterClass
-  public static void afterClassDihJdbcTest() throws Exception {  
-    Connection conn = null;
-    Statement s = null;
-    try {      
-      conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");    
-      s = conn.createStatement();
-      s.executeUpdate("shutdown");
+  public static void afterClassDihJdbcTest() throws Exception {
+    try {
+      DriverManager.getConnection("jdbc:derby:;shutdown=true");
     } catch (SQLException e) {
-      throw e;
-    } finally {
-      if(s!=null) { s.close(); }
-      if(conn!=null) { conn.close(); }
+      // ignore...we might not even be using derby this time...
     }
   }
   
-  public static final String[][] countries = {
-    {"NA",   "Namibia"},
-    {"NC",   "New Caledonia"},
-    {"NE",   "Niger"},
-    {"NF",   "Norfolk Island"},
-    {"NG",   "Nigeria"},
-    {"NI",   "Nicaragua"},
-    {"NL",   "Netherlands"},
-    {"NO",   "Norway"},
-    {"NP",   "Nepal"},
-    {"NR",   "Nauru"},
-    {"NU",   "Niue"},
-    {"NZ",   "New Zealand"}
-  };
+  protected Database setAllowedDatabases() {
+    return Database.RANDOM;
+  }
   
-  public static final Object[][] people = {
-    {1,"Jacob","NZ"},
-    {2,"Ethan","NU,NA,NE"},
-    {3,"Michael","NR"},
-    {4,"Jayden","NP"},
-    {5,"William","NO"},
-    {6,"Alexander","NL"},
-    {7,"Noah","NI"},
-    {8,"Daniel","NG"},
-    {9,"Aiden","NF"},
-    {10,"Anthony","NE"},
-    {11,"Emma","NL"},
-    {12,"Grace","NI"},
-    {13,"Hailey","NG"},
-    {14,"Isabella","NF"},
-    {15,"Lily","NE"},
-    {16,"Madison","NC"},
-    {17,"Mia","NA"},
-    {18,"Natalie","NP,NR,NU,NZ"},
-    {19,"Olivia","NU"},
-    {20,"Samantha","NR"}
-  };
+  @Before
+  public void beforeDihJdbcTest() throws Exception {  
+    skipThisTest = false;
+    dbToUse = setAllowedDatabases();
+    if (dbToUse == Database.RANDOM) {
+      if (random().nextBoolean()) {
+        dbToUse = Database.DERBY;
+      } else {
+        dbToUse = Database.HSQLDB;
+      }
+    }
+    
+    clearIndex();
+    assertU(commit());
+    buildDatabase();
+  }
   
-  public static final Object[][] people_sports = {
-    {100, 1, "Swimming"},
-    {200, 2, "Triathlon"},
-    {300, 3, "Water polo"},
-    {310, 3, "Underwater rugby"},
-    {320, 3, "Kayaking"},
-    {400, 4, "Snorkeling"},
-    {500, 5, "Synchronized diving"},
-    {600, 6, "Underwater rugby"},
-    {700, 7, "Boating"},
-    {800, 8, "Bodyboarding"},
-    {900, 9, "Canoeing"},
-    {1000, 10, "Fishing"},
-    {1100, 11, "Jet Ski"},
-    {1110, 11, "Rowing"},
-    {1120, 11, "Sailing"},
-    {1200, 12, "Kayaking"},
-    {1210, 12, "Canoeing"},
-    {1300, 13, "Kite surfing"},
-    {1400, 14, "Parasailing"},
-    {1500, 15, "Rafting"},
-    {1600, 16, "Rowing"},
-    {1700, 17, "Sailing"},
-    {1800, 18, "White Water Rafting"},
-    {1900, 19, "Water skiing"},
-    {2000, 20, "Windsurfing"}
-  };  
+  @After
+  public void afterDihJdbcTest() throws Exception {
+    Connection conn = null;
+    Statement s = null;
+    try {
+      if (dbToUse == Database.DERBY) {
+        try {
+          conn = DriverManager
+              .getConnection("jdbc:derby:memory:derbyDB;drop=true");
+        } catch (SQLException e) {
+          if (!"08006".equals(e.getSQLState())) {
+            throw e;
+          }
+        }
+      } else if (dbToUse == Database.HSQLDB) {
+        conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");
+        s = conn.createStatement();
+        s.executeUpdate("shutdown");
+      }
+    } catch (SQLException e) {
+      if(!skipThisTest) {
+        throw e;
+      }
+    } finally {
+      try {
+        s.close();
+      } catch (Exception ex) {}
+      try {
+        conn.close();
+      } catch (Exception ex) {}
+    }
+  }
   
+  protected Connection newConnection() throws Exception {
+    if (dbToUse == Database.DERBY) {
+      return DriverManager.getConnection("jdbc:derby:memory:derbyDB;");
+    } else if (dbToUse == Database.HSQLDB) {
+      return DriverManager.getConnection("jdbc:hsqldb:mem:.");
+    }
+    throw new AssertionError("Invalid database to use: " + dbToUse);
+  }
+  
+  protected void buildDatabase() throws Exception {
+    Connection conn = null;
+    try {
+      if (dbToUse == Database.DERBY) {
+        conn = DriverManager
+            .getConnection("jdbc:derby:memory:derbyDB;create=true");
+      } else if (dbToUse == Database.HSQLDB) {
+        conn = DriverManager.getConnection("jdbc:hsqldb:mem:.");
+      } else {
+        throw new AssertionError("Invalid database to use: " + dbToUse);
+      }
+      populateData(conn);
+    } catch (SQLException sqe) {
+      Throwable cause = sqe;
+      while(cause.getCause()!=null) {
+        cause = cause.getCause();
+      }
+      String message = cause.getMessage();
+      if(cause instanceof StandardException) {
+        message = ((StandardException) cause).getMessageId();
+      }
+      //Derby INVALID_LOCALE_DESCRIPTION
+      if("XBM0X.D".equals(message)) {
+        log.warn("Skipping test because Database " + dbToUse + " does not support the locale " + Locale.getDefault());
+        skipThisTest = true;
+        Assume.assumeNoException(sqe); 
+        throw sqe;
+      }      
+    } finally {
+      try {
+        conn.close();
+      } catch (Exception e1) {}
+    }
+  }
+  
+  protected void populateData(Connection conn) throws Exception {
+    // no-op
+  }
+  
+  public int totalDatabaseRequests(String dihHandlerName) throws Exception {
+    LocalSolrQueryRequest request = lrf.makeRequest("indent", "true");
+    String response = h.query(dihHandlerName, request);
+    Matcher m = totalRequestsPattern.matcher(response);
+    Assert.assertTrue("The handler " + dihHandlerName
+        + " is not reporting any database requests. ",
+        m.find() && m.groupCount() == 1);
+    return Integer.parseInt(m.group(1));
+  }
+  
+  public int totalDatabaseRequests() throws Exception {
+    return totalDatabaseRequests("/dataimport");
+  }
+  
+  protected LocalSolrQueryRequest generateRequest() {
+    return lrf.makeRequest("command", "full-import", "dataConfig",
+        generateConfig(), "clean", "true", "commit", "true", "synchronous",
+        "true", "indent", "true");
+  }
+  
+  protected abstract String generateConfig();
+  
+  public static class DerbyUtil {
+    public static final OutputStream DEV_NULL = new OutputStream() {
+      public void write(int b) {}
+    };
+  }
 }

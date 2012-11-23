@@ -18,7 +18,6 @@
 package org.apache.solr.handler;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Locale;
@@ -201,8 +200,10 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
     switch(action){
       case PING:
         if( isPingDisabled() ) {
-          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, 
+          SolrException e = new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, 
                                   "Service disabled");
+          rsp.setException(e);
+          return;
         }
         handlePing(req, rsp);
         break;

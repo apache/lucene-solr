@@ -2,6 +2,7 @@ package org.apache.lucene.facet.taxonomy.directory;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.util.BytesRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -28,6 +29,7 @@ abstract class Consts {
   static final String FULL = "$full_path$";
   static final String FIELD_PAYLOADS = "$payloads$";
   static final String PAYLOAD_PARENT = "p";
+  static final BytesRef PAYLOAD_PARENT_BYTES_REF = new BytesRef(PAYLOAD_PARENT);
   static final char[] PAYLOAD_PARENT_CHARS = PAYLOAD_PARENT.toCharArray();
 
   /**

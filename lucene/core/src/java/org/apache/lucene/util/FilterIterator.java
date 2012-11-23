@@ -1,8 +1,5 @@
 package org.apache.lucene.util;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
@@ -20,20 +17,27 @@ import java.util.NoSuchElementException;
  * the License.
  */
 
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 /**
  * An {@link Iterator} implementation that filters elements with a boolean predicate.
+ *
+ * @param <T> generic parameter for this iterator instance: this iterator implements {@link Iterator Iterator&lt;T&gt;}
+ * @param <InnerT> generic parameter of the wrapped iterator, must be <tt>T</tt> or extend <tt>T</tt>
  * @see #predicateFunction
+ * @lucene.internal
  */
-public abstract class FilterIterator<T> implements Iterator<T> {
+public abstract class FilterIterator<T, InnerT extends T> implements Iterator<T> {
   
-  private final Iterator<T> iterator;
+  private final Iterator<InnerT> iterator;
   private T next = null;
   private boolean nextIsSet = false;
   
   /** returns true, if this element should be returned by {@link #next()}. */
-  protected abstract boolean predicateFunction(T object);
+  protected abstract boolean predicateFunction(InnerT object);
   
-  public FilterIterator(Iterator<T> baseIterator) {
+  public FilterIterator(Iterator<InnerT> baseIterator) {
     this.iterator = baseIterator;
   }
   
@@ -60,7 +64,7 @@ public abstract class FilterIterator<T> implements Iterator<T> {
   
   private boolean setNext() {
     while (iterator.hasNext()) {
-      final T object = iterator.next();
+      final InnerT object = iterator.next();
       if (predicateFunction(object)) {
         next = object;
         nextIsSet = true;
