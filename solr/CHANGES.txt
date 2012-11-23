@@ -73,6 +73,10 @@ New Features
 * SOLR-3970: SystemInfoHandler now exposes more details about the 
   JRE/VM/Java version in use.  (hossman)
 
+* SOLR-4101: Add support for storing term offsets in the index via a
+  'storeOffsetsWithPositions' flag on field definitions in the schema.
+  (Tom Winch, Alan Woodward)
+
 Optimizations
 ----------------------
 
