@@ -147,7 +147,12 @@ class SortableLongFieldSource extends FieldCacheSource {
       @Override
       public long longVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        return ord==-1 ? def  : NumberUtils.SortableStr2long(termsIndex.lookup(ord, spare),0,5);
+        if (ord==-1) {
+          return def;
+        } else {
+          termsIndex.lookupOrd(ord, spare);
+          return NumberUtils.SortableStr2long(spare,0,5);
+        }
       }
 
       @Override
@@ -163,7 +168,12 @@ class SortableLongFieldSource extends FieldCacheSource {
       @Override
       public Object objectVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        return ord==-1 ? null  : NumberUtils.SortableStr2long(termsIndex.lookup(ord, spare));
+        if (ord==-1) {
+          return null;
+        } else {
+          termsIndex.lookupOrd(ord, spare);
+          return NumberUtils.SortableStr2long(spare);
+        }
       }
 
       @Override
@@ -188,7 +198,8 @@ class SortableLongFieldSource extends FieldCacheSource {
               mval.value = def;
               mval.exists = false;
             } else {
-              mval.value = NumberUtils.SortableStr2long(termsIndex.lookup(ord, spare),0,5);
+              termsIndex.lookupOrd(ord, spare);
+              mval.value = NumberUtils.SortableStr2long(spare,0,5);
               mval.exists = true;
             }
           }

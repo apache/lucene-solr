@@ -477,7 +477,7 @@ public class SimpleFacets {
     FieldType ft = searcher.getSchema().getFieldType(fieldName);
     NamedList<Integer> res = new NamedList<Integer>();
 
-    FieldCache.DocTermsIndex si = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), fieldName);
+    SortedDocValues si = FieldCache.DEFAULT.getTermsIndex(searcher.getAtomicReader(), fieldName);
 
     final BytesRef prefixRef;
     if (prefix == null) {
@@ -493,15 +493,15 @@ public class SimpleFacets {
 
     int startTermIndex, endTermIndex;
     if (prefix!=null) {
-      startTermIndex = si.binarySearchLookup(prefixRef, br);
+      startTermIndex = si.lookupTerm(prefixRef, br);
       if (startTermIndex<0) startTermIndex=-startTermIndex-1;
       prefixRef.append(UnicodeUtil.BIG_TERM);
-      endTermIndex = si.binarySearchLookup(prefixRef, br);
+      endTermIndex = si.lookupTerm(prefixRef, br);
       assert endTermIndex < 0;
       endTermIndex = -endTermIndex-1;
     } else {
       startTermIndex=-1;
-      endTermIndex=si.numOrd();
+      endTermIndex=si.getValueCount();
     }
 
     final int nTerms=endTermIndex-startTermIndex;
@@ -564,7 +564,8 @@ public class SimpleFacets {
           long pair = sorted[i];
           int c = (int)(pair >>> 32);
           int tnum = Integer.MAX_VALUE - (int)pair;
-          ft.indexedToReadable(si.lookup(startTermIndex+tnum, br), charsRef);
+          si.lookupOrd(startTermIndex+tnum, br);
+          ft.indexedToReadable(br, charsRef);
           res.add(charsRef.toString(), c);
         }
       
@@ -582,7 +583,8 @@ public class SimpleFacets {
           int c = counts[i];
           if (c<mincount || --off>=0) continue;
           if (--lim<0) break;
-          ft.indexedToReadable(si.lookup(startTermIndex+i, br), charsRef);
+          si.lookupOrd(startTermIndex+i, br);
+          ft.indexedToReadable(br, charsRef);
           res.add(charsRef.toString(), c);
         }
       }

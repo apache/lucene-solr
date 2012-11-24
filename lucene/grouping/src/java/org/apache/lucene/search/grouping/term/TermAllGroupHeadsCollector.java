@@ -17,14 +17,15 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.*;
+
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SentinelIntSet;
-
-import java.io.IOException;
-import java.util.*;
 
 /**
  * A base implementation of {@link org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector} for retrieving the most relevant groups when grouping
@@ -40,7 +41,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
   final String groupField;
   final BytesRef scratchBytesRef = new BytesRef();
 
-  FieldCache.DocTermsIndex groupIndex;
+  SortedDocValues groupIndex;
   AtomicReaderContext readerContext;
 
   protected TermAllGroupHeadsCollector(String groupField, int numberOfSorts) {
@@ -124,7 +125,13 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
     protected void retrieveGroupHeadAndAddIfNotExist(int doc) throws IOException {
       final int ord = groupIndex.getOrd(doc);
-      final BytesRef groupValue = ord == -1 ? null : groupIndex.lookup(ord, scratchBytesRef);
+      final BytesRef groupValue;
+      if (ord == -1) {
+        groupValue = null;
+      } else {
+        groupIndex.lookupOrd(ord, scratchBytesRef);
+        groupValue = scratchBytesRef;
+      }
       GroupHead groupHead = groups.get(groupValue);
       if (groupHead == null) {
         groupHead = new GroupHead(groupValue, sortWithinGroup, doc);
@@ -199,7 +206,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     private final List<GroupHead> collectedGroups;
     private final SortField[] fields;
 
-    private FieldCache.DocTermsIndex[] sortsIndex;
+    private SortedDocValues[] sortsIndex;
     private Scorer scorer;
     private GroupHead[] segmentGroupHeads;
 
@@ -210,7 +217,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
       final SortField[] sortFields = sortWithinGroup.getSort();
       fields = new SortField[sortFields.length];
-      sortsIndex = new FieldCache.DocTermsIndex[sortFields.length];
+      sortsIndex = new SortedDocValues[sortFields.length];
       for (int i = 0; i < sortFields.length; i++) {
         reversed[i] = sortFields[i].getReverse() ? -1 : 1;
         fields[i] = sortFields[i];
@@ -230,7 +237,13 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       GroupHead groupHead;
       if (!ordSet.exists(key)) {
         ordSet.put(key);
-        BytesRef term = key == -1 ? null : groupIndex.getTerm(doc, new BytesRef());
+        BytesRef term;
+        if (key == -1) {
+          term = null;
+        } else {
+          term = new BytesRef();
+          groupIndex.lookupOrd(key, term);
+        }
         groupHead = new GroupHead(doc, term);
         collectedGroups.add(groupHead);
         segmentGroupHeads[key+1] = groupHead;
@@ -255,13 +268,13 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
       // Clear ordSet and fill it with previous encountered groups that can occur in the current segment.
       ordSet.clear();
-      segmentGroupHeads = new GroupHead[groupIndex.numOrd()+1];
+      segmentGroupHeads = new GroupHead[groupIndex.getValueCount()+1];
       for (GroupHead collectedGroup : collectedGroups) {
         int ord;
         if (collectedGroup.groupValue == null) {
           ord = -1;
         } else {
-          ord = groupIndex.binarySearchLookup(collectedGroup.groupValue, scratchBytesRef);
+          ord = groupIndex.lookupTerm(collectedGroup.groupValue, scratchBytesRef);
         }
         if (collectedGroup.groupValue == null || ord >= 0) {
           ordSet.put(ord);
@@ -275,7 +288,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
             if (collectedGroup.sortValues[i] == null) {
               sortOrd = -1;
             } else {
-              sortOrd = sortsIndex[i].binarySearchLookup(collectedGroup.sortValues[i], scratchBytesRef);
+              sortOrd = sortsIndex[i].lookupTerm(collectedGroup.sortValues[i], scratchBytesRef);
             }
             collectedGroup.sortOrds[i] = sortOrd;
           }
@@ -301,7 +314,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
             sortOrds[i] = sortsIndex[i].getOrd(doc);
             sortValues[i] = new BytesRef();
             if (sortOrds[i] != -1) {
-              sortValues[i] = sortsIndex[i].getTerm(doc, sortValues[i]);
+              sortsIndex[i].get(doc, sortValues[i]);
             }
           }
         }
@@ -322,7 +335,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
             if (sortsIndex[compIDX].getOrd(doc) == -1) {
               scratchBytesRef.length = 0;
             } else {
-              sortsIndex[compIDX].getTerm(doc, scratchBytesRef);
+              sortsIndex[compIDX].get(doc, scratchBytesRef);
             }
             return sortValues[compIDX].compareTo(scratchBytesRef);
           } else {
@@ -340,7 +353,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
             if (sortOrds[i] == -1) {
               sortValues[i].length = 0;
             } else {
-              sortValues[i] = sortsIndex[i].getTerm(doc, sortValues[i]);
+              sortsIndex[i].get(doc, sortValues[i]);
             }
           }
         }
@@ -357,7 +370,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
     private final List<GroupHead> collectedGroups;
     private final SortField[] fields;
 
-    private FieldCache.DocTermsIndex[] sortsIndex;
+    private SortedDocValues[] sortsIndex;
     private GroupHead[] segmentGroupHeads;
 
     OrdAllGroupHeadsCollector(String groupField, Sort sortWithinGroup, int initialSize) {
@@ -367,7 +380,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
       final SortField[] sortFields = sortWithinGroup.getSort();
       fields = new SortField[sortFields.length];
-      sortsIndex = new FieldCache.DocTermsIndex[sortFields.length];
+      sortsIndex = new SortedDocValues[sortFields.length];
       for (int i = 0; i < sortFields.length; i++) {
         reversed[i] = sortFields[i].getReverse() ? -1 : 1;
         fields[i] = sortFields[i];
@@ -386,7 +399,13 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       GroupHead groupHead;
       if (!ordSet.exists(key)) {
         ordSet.put(key);
-        BytesRef term = key == -1 ? null : groupIndex.getTerm(doc, new BytesRef());
+        BytesRef term;
+        if (key == -1) {
+          term = null;
+        } else {
+          term = new BytesRef();
+          groupIndex.lookupOrd(key, term);
+        }
         groupHead = new GroupHead(doc, term);
         collectedGroups.add(groupHead);
         segmentGroupHeads[key+1] = groupHead;
@@ -407,13 +426,13 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
       // Clear ordSet and fill it with previous encountered groups that can occur in the current segment.
       ordSet.clear();
-      segmentGroupHeads = new GroupHead[groupIndex.numOrd()+1];
+      segmentGroupHeads = new GroupHead[groupIndex.getValueCount()+1];
       for (GroupHead collectedGroup : collectedGroups) {
         int groupOrd;
         if (collectedGroup.groupValue == null) {
           groupOrd = -1;
         } else {
-          groupOrd = groupIndex.binarySearchLookup(collectedGroup.groupValue, scratchBytesRef);
+          groupOrd = groupIndex.lookupTerm(collectedGroup.groupValue, scratchBytesRef);
         }
         if (collectedGroup.groupValue == null || groupOrd >= 0) {
           ordSet.put(groupOrd);
@@ -424,7 +443,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
             if (collectedGroup.sortOrds[i] == -1) {
               sortOrd = -1;
             } else {
-              sortOrd = sortsIndex[i].binarySearchLookup(collectedGroup.sortValues[i], scratchBytesRef);
+              sortOrd = sortsIndex[i].lookupTerm(collectedGroup.sortValues[i], scratchBytesRef);
             }
             collectedGroup.sortOrds[i] = sortOrd;
           }
@@ -445,7 +464,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
           sortOrds[i] = sortsIndex[i].getOrd(doc);
           sortValues[i] = new BytesRef();
           if (sortOrds[i] != -1) {
-            sortsIndex[i].getTerm(doc, sortValues[i]);
+            sortsIndex[i].get(doc, sortValues[i]);
           }
         }
       }
@@ -456,7 +475,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
           if (sortsIndex[compIDX].getOrd(doc) == -1) {
             scratchBytesRef.length = 0;
           } else {
-            sortsIndex[compIDX].getTerm(doc, scratchBytesRef);
+            sortsIndex[compIDX].get(doc, scratchBytesRef);
           }
           return sortValues[compIDX].compareTo(scratchBytesRef);
         } else {
@@ -470,7 +489,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
           if (sortOrds[i] == -1) {
             sortValues[i].length = 0;
           } else {
-            sortValues[i] = sortsIndex[i].getTerm(doc, sortValues[i]);
+            sortsIndex[i].lookupOrd(sortOrds[i], sortValues[i]);
           }
         }
         this.doc = doc + readerContext.docBase;
@@ -517,7 +536,13 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       GroupHead groupHead;
       if (!ordSet.exists(key)) {
         ordSet.put(key);
-        BytesRef term = key == -1 ? null : groupIndex.getTerm(doc, new BytesRef());
+        BytesRef term;
+        if (key == -1) {
+          term = null;
+        } else {
+          term = new BytesRef();
+          groupIndex.lookupOrd(key, term);
+        }
         groupHead = new GroupHead(doc, term);
         collectedGroups.add(groupHead);
         segmentGroupHeads[key+1] = groupHead;
@@ -535,13 +560,13 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
 
       // Clear ordSet and fill it with previous encountered groups that can occur in the current segment.
       ordSet.clear();
-      segmentGroupHeads = new GroupHead[groupIndex.numOrd()+1];
+      segmentGroupHeads = new GroupHead[groupIndex.getValueCount()+1];
       for (GroupHead collectedGroup : collectedGroups) {
         int ord;
         if (collectedGroup.groupValue == null) {
           ord = -1;
         } else {
-          ord = groupIndex.binarySearchLookup(collectedGroup.groupValue, scratchBytesRef);
+          ord = groupIndex.lookupTerm(collectedGroup.groupValue, scratchBytesRef);
         }
         if (collectedGroup.groupValue == null || ord >= 0) {
           ordSet.put(ord);

@@ -17,20 +17,20 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.*;
+
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.FieldCache.DocTermsIndex; // javadocs
 import org.apache.lucene.search.grouping.AbstractDistinctValuesCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SentinelIntSet;
 
-import java.io.IOException;
-import java.util.*;
-
 /**
  * A term based implementation of {@link org.apache.lucene.search.grouping.AbstractDistinctValuesCollector} that relies
- * on {@link DocTermsIndex} to count the distinct values per group.
+ * on {@link SortedDocValues} to count the distinct values per group.
  *
  * @lucene.experimental
  */
@@ -43,8 +43,8 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
   private final GroupCount groupCounts[];
   private final BytesRef spare = new BytesRef();
 
-  private FieldCache.DocTermsIndex groupFieldTermIndex;
-  private FieldCache.DocTermsIndex countFieldTermIndex;
+  private SortedDocValues groupFieldTermIndex;
+  private SortedDocValues countFieldTermIndex;
 
   /**
    * Constructs {@link TermDistinctValuesCollector} instance.
@@ -69,7 +69,6 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
     if (slot < 0) {
       return;
     }
-    int groupOrd = groupFieldTermIndex.getOrd(doc);
 
     GroupCount gc = groupCounts[slot];
     int countOrd = countFieldTermIndex.getOrd(doc);
@@ -77,7 +76,9 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
       if (countOrd == -1) {
         gc.uniqueValues.add(null);
       } else {
-        gc.uniqueValues.add(countFieldTermIndex.lookup(countOrd, new BytesRef()));
+        BytesRef br = new BytesRef();
+        countFieldTermIndex.lookupOrd(countOrd, br);
+        gc.uniqueValues.add(br);
       }
 
       gc.ords = Arrays.copyOf(gc.ords, gc.ords.length + 1);
@@ -107,7 +108,7 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
     ordSet.clear();
     BytesRef scratch = new BytesRef();
     for (GroupCount group : groups) {
-      int groupOrd = group.groupValue == null ? -1 : groupFieldTermIndex.binarySearchLookup(group.groupValue, spare);
+      int groupOrd = group.groupValue == null ? -1 : groupFieldTermIndex.lookupTerm(group.groupValue, spare);
       if (group.groupValue != null && groupOrd < 0) {
         continue;
       }
@@ -117,7 +118,7 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
       Arrays.fill(group.ords, -2);
       int i = 0;
       for (BytesRef value : group.uniqueValues) {
-        int countOrd = value == null ? -1 : countFieldTermIndex.binarySearchLookup(value, scratch);
+        int countOrd = value == null ? -1 : countFieldTermIndex.lookupTerm(value, scratch);
         if (value == null || countOrd >= 0) {
           group.ords[i++] = countOrd;
         }

@@ -47,7 +47,6 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
-import org.apache.lucene.util.packed.PackedInts.Reader;
 
 // nocommit rename to UninvertFieldCacheImpl or something ...
 
@@ -73,7 +72,7 @@ class FieldCacheImpl implements FieldCache {
     caches.put(Long.TYPE, new LongCache(this));
     caches.put(Double.TYPE, new DoubleCache(this));
     caches.put(DocTerms.class, new DocTermsCache(this));
-    caches.put(DocTermsIndex.class, new DocTermsIndexCache(this));
+    caches.put(SortedDocValues.class, new SortedDocValuesCache(this));
     caches.put(DocTermOrds.class, new DocTermOrdsCache(this));
     caches.put(DocsWithFieldCache.class, new DocsWithFieldCache(this));
   }
@@ -574,7 +573,6 @@ class FieldCacheImpl implements FieldCache {
         // nocommit should we throw exc if parser isn't
         // null?  if setDocsWithField is true?
       } else {
-        int maxDoc = reader.maxDoc();      
         final int[] values;
         final IntParser parser = (IntParser) key.custom;
         if (parser == null) {
@@ -728,7 +726,6 @@ class FieldCacheImpl implements FieldCache {
         // nocommit should we throw exc if parser isn't
         // null?  if setDocsWithField is true?
       } else {
-        int maxDoc = reader.maxDoc();
         final float[] values;
         final FloatParser parser = (FloatParser) key.custom;
         if (parser == null) {
@@ -819,7 +816,6 @@ class FieldCacheImpl implements FieldCache {
         // nocommit should we throw exc if parser isn't
         // null?  if setDocsWithField is true?
       } else {
-        int maxDoc = reader.maxDoc();
         final long[] values;
         final LongParser parser = (LongParser) key.custom;
         if (parser == null) {
@@ -910,7 +906,6 @@ class FieldCacheImpl implements FieldCache {
         // nocommit should we throw exc if parser isn't
         // null?  if setDocsWithField is true?
       } else {
-        int maxDoc = reader.maxDoc();
         final double[] values;
         final DoubleParser parser = (DoubleParser) key.custom;
         if (parser == null) {
@@ -954,13 +949,13 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  public static class DocTermsIndexImpl extends DocTermsIndex {
+  public static class SortedDocValuesImpl extends SortedDocValues {
     private final PagedBytes.Reader bytes;
     private final PackedInts.Reader termOrdToBytesOffset;
     private final PackedInts.Reader docToTermOrd;
     private final int numOrd;
 
-    public DocTermsIndexImpl(PagedBytes.Reader bytes, PackedInts.Reader termOrdToBytesOffset, PackedInts.Reader docToTermOrd, int numOrd) {
+    public SortedDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader termOrdToBytesOffset, PackedInts.Reader docToTermOrd, int numOrd) {
       this.bytes = bytes;
       this.docToTermOrd = docToTermOrd;
       this.termOrdToBytesOffset = termOrdToBytesOffset;
@@ -968,7 +963,7 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    public int numOrd() {
+    public int getValueCount() {
       return numOrd;
     }
 
@@ -986,19 +981,31 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    public BytesRef lookup(int ord, BytesRef ret) {
+    public void lookupOrd(int ord, BytesRef ret) {
       if (ord < 0) {
         throw new IllegalArgumentException("ord must be >=0 (got ord=" + ord + ")");
       }
-      return bytes.fill(ret, termOrdToBytesOffset.get(ord));
+      bytes.fill(ret, termOrdToBytesOffset.get(ord));
+    }
+
+    @Override
+    public int maxLength() {
+      // nocommit hmm
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isFixedLength() {
+      // nocommit hmm
+      throw new UnsupportedOperationException();
     }
 
     @Override
     public TermsEnum getTermsEnum() {
-      return this.new DocTermsIndexEnum();
+      return this.new SortedDocValuesEnum();
     }
 
-    class DocTermsIndexEnum extends TermsEnum {
+    class SortedDocValuesEnum extends TermsEnum {
       int currentOrd;
       int currentBlockNumber;
       int end;  // end position in the current block
@@ -1007,7 +1014,7 @@ class FieldCacheImpl implements FieldCache {
 
       final BytesRef term = new BytesRef();
 
-      public DocTermsIndexEnum() {
+      public SortedDocValuesEnum() {
         currentOrd = -1;
         currentBlockNumber = 0;
         blocks = bytes.getBlocks();
@@ -1043,8 +1050,9 @@ class FieldCacheImpl implements FieldCache {
         }
       }
 
+      @Override
       public void seekExact(long ord) throws IOException {
-        assert ord >= 0 && ord <= numOrd;
+        assert ord >= 0 && ord < numOrd;
         // TODO: if gap is small, could iterate from current position?  Or let user decide that?
         currentBlockNumber = bytes.fillAndGetIndex(term, termOrdToBytesOffset.get((int)ord));
         end = blockEnds[currentBlockNumber];
@@ -1140,16 +1148,16 @@ class FieldCacheImpl implements FieldCache {
   // nocommit woudl be nice if .getTErms would return a
   // DocTermsIndex if one already existed
 
-  public DocTermsIndex getTermsIndex(AtomicReader reader, String field) throws IOException {
+  public SortedDocValues getTermsIndex(AtomicReader reader, String field) throws IOException {
     return getTermsIndex(reader, field, PackedInts.FAST);
   }
 
-  public DocTermsIndex getTermsIndex(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException {
-    return (DocTermsIndex) caches.get(DocTermsIndex.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
+  public SortedDocValues getTermsIndex(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException {
+    return (SortedDocValues) caches.get(SortedDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
   }
 
-  static class DocTermsIndexCache extends Cache {
-    DocTermsIndexCache(FieldCacheImpl wrapper) {
+  static class SortedDocValuesCache extends Cache {
+    SortedDocValuesCache(FieldCacheImpl wrapper) {
       super(wrapper);
     }
 
@@ -1160,36 +1168,7 @@ class FieldCacheImpl implements FieldCache {
       final int maxDoc = reader.maxDoc();
       SortedDocValues valuesIn = reader.getSortedDocValues(key.field);
       if (valuesIn != null) {
-        final SortedDocValues ramInstance = valuesIn.newRAMInstance();
-        return new DocTermsIndex() {
-
-          @Override
-          public BytesRef lookup(int ord, BytesRef reuse) {
-            ramInstance.lookupOrd(ord, reuse);
-            return reuse;
-          }
-
-          @Override
-          public int getOrd(int docID) {
-            return ramInstance.getOrd(docID);
-          }
-
-          @Override
-          public int numOrd() {
-            return ramInstance.getValueCount();
-          }
-
-          @Override
-          public int size() {
-            return ramInstance.size();
-          }
-
-          @Override
-          public TermsEnum getTermsEnum() {
-            // nocommit: to the codec api? or can that termsenum just use this thing?
-            return null;
-          }
-        };
+        return valuesIn.newRAMInstance();
       } else {
 
         Terms terms = reader.terms(key.field);
@@ -1283,7 +1262,7 @@ class FieldCacheImpl implements FieldCache {
         }
 
         // maybe an int-only impl?
-        return new DocTermsIndexImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
+        return new SortedDocValuesImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
       }
     }
   }

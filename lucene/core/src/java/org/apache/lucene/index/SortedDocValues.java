@@ -17,6 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Comparator;
+
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 // nocommit need marker interface?
@@ -28,12 +32,121 @@ public abstract class SortedDocValues extends BinaryDocValues {
   public abstract void lookupOrd(int ord, BytesRef result);
 
   // nocommit throws IOE or not?
+  // nocommit .getUniqueValueCount?
   public abstract int getValueCount();
 
   @Override
   public void get(int docID, BytesRef result) {
     int ord = getOrd(docID);
+    if (ord == -1) {
+      // nocommit what to do ... maybe we need to return
+      // BytesRef?
+      throw new IllegalArgumentException("doc has no value");
+    }
     lookupOrd(ord, result);
+  }
+
+  public TermsEnum getTermsEnum() {
+    // nocommit who tests this base impl ...
+    // Default impl just uses the existing API; subclasses
+    // can specialize:
+    return new TermsEnum() {
+      private int currentOrd = -1;
+
+      private final BytesRef term = new BytesRef();
+
+      @Override
+      public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
+        int low = 0;
+        int high = getValueCount()-1;
+        
+        while (low <= high) {
+          int mid = (low + high) >>> 1;
+          seekExact(mid);
+          int cmp = term.compareTo(text);
+
+          if (cmp < 0)
+            low = mid + 1;
+          else if (cmp > 0)
+            high = mid - 1;
+          else {
+            return SeekStatus.FOUND; // key found
+          }
+        }
+        
+        if (low == getValueCount()) {
+          return SeekStatus.END;
+        } else {
+          seekExact(low);
+          return SeekStatus.NOT_FOUND;
+        }
+      }
+
+      @Override
+      public void seekExact(long ord) throws IOException {
+        assert ord >= 0 && ord < getValueCount();
+        currentOrd = (int) ord;
+        lookupOrd(currentOrd, term);
+      }
+
+      @Override
+      public BytesRef next() throws IOException {
+        currentOrd++;
+        if (currentOrd >= getValueCount()) {
+          return null;
+        }
+        lookupOrd(currentOrd, term);
+        return term;
+      }
+
+      @Override
+      public BytesRef term() throws IOException {
+        return term;
+      }
+
+      @Override
+      public long ord() throws IOException {
+        return currentOrd;
+      }
+
+      @Override
+      public int docFreq() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public long totalTermFreq() {
+        return -1;
+      }
+
+      @Override
+      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public Comparator<BytesRef> getComparator() {
+        return BytesRef.getUTF8SortedAsUnicodeComparator();
+      }
+
+      @Override
+      public void seekExact(BytesRef term, TermState state) throws IOException {
+        assert state != null && state instanceof OrdTermState;
+        this.seekExact(((OrdTermState)state).ord);
+      }
+
+      @Override
+      public TermState termState() throws IOException {
+        OrdTermState state = new OrdTermState();
+        state.ord = currentOrd;
+        return state;
+      }
+    };
   }
 
   @Override
@@ -135,5 +248,32 @@ public abstract class SortedDocValues extends BinaryDocValues {
     public int maxLength() {
       return 0;
     }
+  }
+
+  // nocommit javadocs
+  public int lookupTerm(BytesRef key, BytesRef spare) {
+    // this special case is the reason that Arrays.binarySearch() isn't useful.
+    if (key == null) {
+      throw new IllegalArgumentException("key must not be null");
+    }
+
+    int low = 0;
+    int high = getValueCount()-1;
+
+    while (low <= high) {
+      int mid = (low + high) >>> 1;
+      lookupOrd(mid, spare);
+      int cmp = spare.compareTo(key);
+
+      if (cmp < 0) {
+        low = mid + 1;
+      } else if (cmp > 0) {
+        high = mid - 1;
+      } else {
+        return mid; // key found
+      }
+    }
+
+    return -(low + 1);  // key not found.
   }
 }

@@ -17,16 +17,17 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Collection;
+
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector;
 import org.apache.lucene.search.grouping.SearchGroup;
-import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
-import java.util.Collection;
+import org.apache.lucene.util.SentinelIntSet;
 
 /**
  * Concrete implementation of {@link org.apache.lucene.search.grouping.AbstractSecondPassGroupingCollector} that groups based on
@@ -38,7 +39,7 @@ import java.util.Collection;
 public class TermSecondPassGroupingCollector extends AbstractSecondPassGroupingCollector<BytesRef> {
 
   private final SentinelIntSet ordSet;
-  private FieldCache.DocTermsIndex index;
+  private SortedDocValues index;
   private final BytesRef spareBytesRef = new BytesRef();
   private final String groupField;
 
@@ -61,7 +62,7 @@ public class TermSecondPassGroupingCollector extends AbstractSecondPassGroupingC
     ordSet.clear();
     for (SearchGroupDocs<BytesRef> group : groupMap.values()) {
 //      System.out.println("  group=" + (group.groupValue == null ? "null" : group.groupValue.utf8ToString()));
-      int ord = group.groupValue == null ? -1 : index.binarySearchLookup(group.groupValue, spareBytesRef);
+      int ord = group.groupValue == null ? -1 : index.lookupTerm(group.groupValue, spareBytesRef);
       if (group.groupValue == null || ord >= 0) {
         groupDocs[ordSet.put(ord)] = group;
       }

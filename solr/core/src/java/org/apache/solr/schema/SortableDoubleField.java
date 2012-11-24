@@ -149,7 +149,12 @@ class SortableDoubleFieldSource extends FieldCacheSource {
       @Override
       public double doubleVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        return ord==-1 ? def  : NumberUtils.SortableStr2double(termsIndex.lookup(ord, spare));
+        if (ord == -1) {
+          return def;
+        } else {
+          termsIndex.lookupOrd(ord, spare);
+          return NumberUtils.SortableStr2double(spare);
+        }
       }
 
       @Override
@@ -160,7 +165,12 @@ class SortableDoubleFieldSource extends FieldCacheSource {
       @Override
       public Object objectVal(int doc) {
         int ord=termsIndex.getOrd(doc);
-        return ord==-1 ? null  : NumberUtils.SortableStr2double(termsIndex.lookup(ord, spare));
+        if (ord==-1) {
+          return null;
+        } else {
+          termsIndex.lookupOrd(ord, spare);
+          return NumberUtils.SortableStr2double(spare);
+        }
       }
 
       @Override
@@ -185,7 +195,8 @@ class SortableDoubleFieldSource extends FieldCacheSource {
               mval.value = def;
               mval.exists = false;
             } else {
-              mval.value = NumberUtils.SortableStr2double(termsIndex.lookup(ord, spare));
+              termsIndex.lookupOrd(ord, spare);
+              mval.value = NumberUtils.SortableStr2double(spare);
               mval.exists = true;
             }
           }

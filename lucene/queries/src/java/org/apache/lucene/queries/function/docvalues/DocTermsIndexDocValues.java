@@ -17,26 +17,27 @@
 
 package org.apache.lucene.queries.function.docvalues;
 
+import java.io.IOException;
+
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
-import java.io.IOException;
-
 /**
  * Internal class, subject to change.
  * Serves as base class for FunctionValues based on DocTermsIndex.
  */
 public abstract class DocTermsIndexDocValues extends FunctionValues {
-  protected final FieldCache.DocTermsIndex termsIndex;
+  protected final SortedDocValues termsIndex;
   protected final ValueSource vs;
   protected final MutableValueStr val = new MutableValueStr();
   protected final BytesRef spare = new BytesRef();
@@ -51,7 +52,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
     this.vs = vs;
   }
 
-  public FieldCache.DocTermsIndex getDocTermsIndex() {
+  public SortedDocValues getSortedDocValues() {
     return termsIndex;
   }
 
@@ -70,7 +71,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
       target.length = 0;
       return false;
     }
-    termsIndex.lookup(ord, target);
+    termsIndex.lookupOrd(ord, target);
     return true;
   }
 
@@ -78,7 +79,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
   public String strVal(int doc) {
     int ord=termsIndex.getOrd(doc);
     if (ord==-1) return null;
-    termsIndex.lookup(ord, spare);
+    termsIndex.lookupOrd(ord, spare);
     UnicodeUtil.UTF8toUTF16(spare, spareChars);
     return spareChars.toString();
   }
@@ -101,7 +102,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
 
     int lower = Integer.MIN_VALUE;
     if (lowerVal != null) {
-      lower = termsIndex.binarySearchLookup(new BytesRef(lowerVal), spare);
+      lower = termsIndex.lookupTerm(new BytesRef(lowerVal), spare);
       if (lower < 0) {
         lower = -lower-1;
       } else if (!includeLower) {
@@ -111,7 +112,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
 
     int upper = Integer.MAX_VALUE;
     if (upperVal != null) {
-      upper = termsIndex.binarySearchLookup(new BytesRef(upperVal), spare);
+      upper = termsIndex.lookupTerm(new BytesRef(upperVal), spare);
       if (upper < 0) {
         upper = -upper-2;
       } else if (!includeUpper) {
@@ -153,7 +154,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
         if (!mval.exists) {
           mval.value.length = 0;
         } else {
-          mval.value = termsIndex.lookup(ord, mval.value);
+          termsIndex.lookupOrd(ord, mval.value);
         }
       }
     };

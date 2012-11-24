@@ -23,9 +23,9 @@ import java.util.Comparator;
 import org.apache.lucene.index.AtomicReader; // javadocs
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.FieldCache.ByteParser;
 import org.apache.lucene.search.FieldCache.DocTerms;
-import org.apache.lucene.search.FieldCache.DocTermsIndex;
 import org.apache.lucene.search.FieldCache.DoubleParser;
 import org.apache.lucene.search.FieldCache.FloatParser;
 import org.apache.lucene.search.FieldCache.IntParser;
@@ -1096,7 +1096,7 @@ public abstract class FieldComparator<T> {
 
     /* Current reader's doc ord/values.
        @lucene.internal */
-    DocTermsIndex termsIndex;
+    SortedDocValues termsIndex;
 
     private final String field;
 
@@ -1159,8 +1159,8 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compareDocToValue(int doc, BytesRef value) {
-      BytesRef docValue = termsIndex.getTerm(doc, tempBR);
-      if (docValue == null) {
+      int ord = termsIndex.getOrd(doc);
+      if (ord == -1) {
         if (value == null) {
           return 0;
         }
@@ -1168,11 +1168,9 @@ public abstract class FieldComparator<T> {
       } else if (value == null) {
         return 1;
       }
-      return docValue.compareTo(value);
+      termsIndex.lookupOrd(ord, tempBR);
+      return tempBR.compareTo(value);
     }
-
-    // nocommit remove null from FC DocTerms/Index as an
-    // allowed value
 
     /** Base class for specialized (per bit width of the
      * ords) per-segment comparator.  NOTE: this is messy;
@@ -1223,10 +1221,10 @@ public abstract class FieldComparator<T> {
 
     // Used per-segment when docToOrd is null:
     private final class AnyOrdComparator extends PerSegmentComparator {
-      private final DocTermsIndex termsIndex;
+      private final SortedDocValues termsIndex;
       private final int docBase;
 
-      public AnyOrdComparator(DocTermsIndex termsIndex, int docBase) {
+      public AnyOrdComparator(SortedDocValues termsIndex, int docBase) {
         this.termsIndex = termsIndex;
         this.docBase = docBase;
       }
@@ -1259,7 +1257,7 @@ public abstract class FieldComparator<T> {
           if (values[slot] == null) {
             values[slot] = new BytesRef();
           }
-          termsIndex.lookup(ord, values[slot]);
+          termsIndex.lookupOrd(ord, values[slot]);
         }
         readerGen[slot] = currentReaderGen;
       }
@@ -1294,7 +1292,7 @@ public abstract class FieldComparator<T> {
           bottomSameReader = true;
           readerGen[bottomSlot] = currentReaderGen;
         } else {
-          final int index = binarySearch(tempBR, termsIndex, bottomValue);
+          final int index = termsIndex.lookupTerm(bottomValue, tempBR);
           if (index < 0) {
             bottomOrd = -index - 2;
             bottomSameReader = false;
@@ -1911,32 +1909,5 @@ public abstract class FieldComparator<T> {
     public int compareDocToValue(int doc, BytesRef value) {
       return docTerms.getBytes(doc, tempBR).compareTo(value);
     }
-  }
-
-  // nocommit why do we have this AND DTI.binarySearch?
-  final protected static int binarySearch(BytesRef br, DocTermsIndex a, BytesRef key) {
-    return binarySearch(br, a, key, 0, a.numOrd()-1);
-  }
-
-  final protected static int binarySearch(BytesRef br, DocTermsIndex a, BytesRef key, int low, int high) {
-
-    while (low <= high) {
-      int mid = (low + high) >>> 1;
-      BytesRef midVal = a.lookup(mid, br);
-      int cmp;
-      if (midVal != null) {
-        cmp = midVal.compareTo(key);
-      } else {
-        cmp = -1;
-      }
-
-      if (cmp < 0)
-        low = mid + 1;
-      else if (cmp > 0)
-        high = mid - 1;
-      else
-        return mid;
-    }
-    return -(low + 1);
   }
 }

@@ -17,15 +17,20 @@
 
 package org.apache.solr.request;
 
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.*;
+
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.solr.common.SolrException;
@@ -35,10 +40,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
 
 
 class PerSegmentSingleValuedFaceting {
@@ -223,7 +224,7 @@ class PerSegmentSingleValuedFaceting {
       this.context = context;
     }
     
-    FieldCache.DocTermsIndex si;
+    SortedDocValues si;
     int startTermIndex;
     int endTermIndex;
     int[] counts;
@@ -239,16 +240,16 @@ class PerSegmentSingleValuedFaceting {
 
       if (prefix!=null) {
         BytesRef prefixRef = new BytesRef(prefix);
-        startTermIndex = si.binarySearchLookup(prefixRef, tempBR);
+        startTermIndex = si.lookupTerm(prefixRef, tempBR);
         if (startTermIndex<0) startTermIndex=-startTermIndex-1;
         prefixRef.append(UnicodeUtil.BIG_TERM);
         // TODO: we could constrain the lower endpoint if we had a binarySearch method that allowed passing start/end
-        endTermIndex = si.binarySearchLookup(prefixRef, tempBR);
+        endTermIndex = si.lookupTerm(prefixRef, tempBR);
         assert endTermIndex < 0;
         endTermIndex = -endTermIndex-1;
       } else {
         startTermIndex=-1;
-        endTermIndex=si.numOrd();
+        endTermIndex=si.getValueCount();
       }
 
       final int nTerms=endTermIndex-startTermIndex;

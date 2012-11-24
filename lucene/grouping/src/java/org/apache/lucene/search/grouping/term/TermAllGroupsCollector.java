@@ -17,17 +17,17 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
-import org.apache.lucene.util.SentinelIntSet;
-import org.apache.lucene.util.BytesRef;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.grouping.AbstractAllGroupsCollector;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.SentinelIntSet;
 
 /**
  * A collector that collects all groups that match the
@@ -52,7 +52,7 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
   private final SentinelIntSet ordSet;
   private final List<BytesRef> groups;
 
-  private FieldCache.DocTermsIndex index;
+  private SortedDocValues index;
   private final BytesRef spareBytesRef = new BytesRef();
 
   /**
@@ -87,7 +87,13 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
     int key = index.getOrd(doc);
     if (!ordSet.exists(key)) {
       ordSet.put(key);
-      BytesRef term = key == -1 ? null : index.lookup(key, new BytesRef());
+      BytesRef term;
+      if (key == -1) {
+        term = null;
+      } else {
+        term =  new BytesRef();
+        index.lookupOrd(key, term);
+      }
       groups.add(term);
     }
   }
@@ -107,7 +113,7 @@ public class TermAllGroupsCollector extends AbstractAllGroupsCollector<BytesRef>
       if (countedGroup == null) {
         ordSet.put(-1);
       } else {
-        int ord = index.binarySearchLookup(countedGroup, spareBytesRef);
+        int ord = index.lookupTerm(countedGroup, spareBytesRef);
         if (ord >= 0) {
           ordSet.put(ord);
         }

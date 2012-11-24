@@ -18,15 +18,16 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.document.DoubleField; // for javadocs
+import org.apache.lucene.document.FloatField; // for javadocs
+import org.apache.lucene.document.IntField; // for javadocs
+import org.apache.lucene.document.LongField; // for javadocs
 import org.apache.lucene.index.AtomicReader; // for javadocs
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.document.IntField; // for javadocs
-import org.apache.lucene.document.FloatField; // for javadocs
-import org.apache.lucene.document.LongField; // for javadocs
-import org.apache.lucene.document.DoubleField; // for javadocs
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 
 /**
  * A range filter built on top of a cached single term field (in {@link FieldCache}).
@@ -89,10 +90,10 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
     return new FieldCacheRangeFilter<String>(field, null, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
       public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-        final FieldCache.DocTermsIndex fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
+        final SortedDocValues fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
         final BytesRef spare = new BytesRef();
-        final int lowerPoint = lowerVal == null ? -1 : fcsi.binarySearchLookup(new BytesRef(lowerVal), spare);
-        final int upperPoint = upperVal == null ? -1 : fcsi.binarySearchLookup(new BytesRef(upperVal), spare);
+        final int lowerPoint = lowerVal == null ? -1 : fcsi.lookupTerm(new BytesRef(lowerVal), spare);
+        final int upperPoint = upperVal == null ? -1 : fcsi.lookupTerm(new BytesRef(upperVal), spare);
 
         final int inclusiveLowerPoint, inclusiveUpperPoint;
 

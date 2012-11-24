@@ -17,16 +17,17 @@
 
 package org.apache.solr.search;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.packed.PackedInts;
-
-import java.io.IOException;
 
 
 public class MissingStringLastComparatorSource extends FieldComparatorSource {
@@ -62,7 +63,7 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
   private final BytesRef[] values;
   private final int[] readerGen;
 
-  private FieldCache.DocTermsIndex termsIndex;
+  private SortedDocValues termsIndex;
   private final String field;
 
   private final BytesRef NULL_VAL;
@@ -137,7 +138,7 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
     protected final int[] readerGen;
 
     protected int currentReaderGen = -1;
-    protected FieldCache.DocTermsIndex termsIndex;
+    protected SortedDocValues termsIndex;
 
     protected int bottomSlot = -1;
     protected int bottomOrd;
@@ -202,7 +203,7 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
           bottomSameReader = true;
           readerGen[bottomSlot] = currentReaderGen;
         } else {
-          final int index = binarySearch(tempBR, termsIndex, bottomValue);
+          final int index = termsIndex.lookupTerm(bottomValue, tempBR);
           if (index < 0) {
             bottomOrd = -index - 2;
             bottomSameReader = false;
@@ -224,8 +225,8 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
 
     @Override
     public int compareDocToValue(int doc, BytesRef value) {
-      final BytesRef docValue = termsIndex.getTerm(doc, tempBR);
-      if (docValue == null) {
+      int docOrd = termsIndex.getOrd(doc);
+      if (docOrd == -1) {
         if (value == null) {
           return 0;
         }
@@ -233,7 +234,8 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
       } else if (value == null) {
         return -1;
       }
-      return docValue.compareTo(value);
+      termsIndex.lookupOrd(docOrd, tempBR);
+      return tempBR.compareTo(value);
     }
   }
 
@@ -270,7 +272,7 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
         if (order == NULL_ORD) {
           return bottomValue.compareTo(parent.NULL_VAL);
         } else {
-          termsIndex.lookup(order, tempBR);
+          termsIndex.lookupOrd(order, tempBR);
           return bottomValue.compareTo(tempBR);
         }
       }
@@ -288,7 +290,7 @@ class TermOrdValComparator_SML extends FieldComparator<Comparable> {
         if (values[slot] == null) {
           values[slot] = new BytesRef();
         }
-        termsIndex.lookup(ord, values[slot]);
+        termsIndex.lookupOrd(ord, values[slot]);
       }
       readerGen[slot] = currentReaderGen;
     }

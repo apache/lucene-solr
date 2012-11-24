@@ -188,35 +188,42 @@ public class TestFieldCache extends LuceneTestCase {
     }
 
     // getTermsIndex
-    FieldCache.DocTermsIndex termsIndex = cache.getTermsIndex(reader, "theRandomUnicodeString");
+    SortedDocValues termsIndex = cache.getTermsIndex(reader, "theRandomUnicodeString");
     assertSame("Second request to cache return same array", termsIndex, cache.getTermsIndex(reader, "theRandomUnicodeString"));
     assertTrue("doubles Size: " + termsIndex.size() + " is not: " + NUM_DOCS, termsIndex.size() == NUM_DOCS);
     final BytesRef br = new BytesRef();
     for (int i = 0; i < NUM_DOCS; i++) {
-      final BytesRef term = termsIndex.getTerm(i, br);
+      final BytesRef term;
+      final int ord = termsIndex.getOrd(i);
+      if (ord == -1) {
+        term = null;
+      } else {
+        termsIndex.lookupOrd(ord, br);
+        term = br;
+      }
       final String s = term == null ? null : term.utf8ToString();
       assertTrue("for doc " + i + ": " + s + " does not equal: " + unicodeStrings[i], unicodeStrings[i] == null || unicodeStrings[i].equals(s));
     }
 
-    int nTerms = termsIndex.numOrd();
+    int nTerms = termsIndex.getValueCount();
     // System.out.println("nTerms="+nTerms);
 
     TermsEnum tenum = termsIndex.getTermsEnum();
     BytesRef val = new BytesRef();
     for (int i=0; i<nTerms; i++) {
       BytesRef val1 = tenum.next();
-      BytesRef val2 = termsIndex.lookup(i,val);
+      termsIndex.lookupOrd(i, val);
       // System.out.println("i="+i);
-      assertEquals(val2, val1);
+      assertEquals(val, val1);
     }
 
     // seek the enum around (note this isn't a great test here)
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
       int k = _TestUtil.nextInt(random(), 1, nTerms-1);
-      BytesRef val1 = termsIndex.lookup(k, val);
-      assertEquals(TermsEnum.SeekStatus.FOUND, tenum.seekCeil(val1));
-      assertEquals(val1, tenum.term());
+      termsIndex.lookupOrd(k, val);
+      assertEquals(TermsEnum.SeekStatus.FOUND, tenum.seekCeil(val));
+      assertEquals(val, tenum.term());
     }
     
     // test bad field

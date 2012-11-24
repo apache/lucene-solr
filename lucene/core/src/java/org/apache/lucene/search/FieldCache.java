@@ -21,18 +21,17 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
-import org.apache.lucene.document.IntField; // for javadocs
-import org.apache.lucene.document.FloatField; // for javadocs
-import org.apache.lucene.document.LongField; // for javadocs
 import org.apache.lucene.document.DoubleField; // for javadocs
-import org.apache.lucene.index.DocTermOrds;
+import org.apache.lucene.document.FloatField; // for javadocs
+import org.apache.lucene.document.IntField; // for javadocs
+import org.apache.lucene.document.LongField; // for javadocs
 import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.DocTermOrds;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Expert: Maintains caches of term values.
@@ -41,6 +40,8 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  * @since   lucene 1.4
  * @see org.apache.lucene.util.FieldCacheSanityChecker
+ *
+ * @lucene.internal
  */
 // nocommit abstract class...?
 public interface FieldCache {
@@ -480,7 +481,7 @@ public interface FieldCache {
   public Doubles getDoubles(AtomicReader reader, String field, DoubleParser parser, boolean setDocsWithField) throws IOException;
 
   /** Returned by {@link #getTerms} */
-  // nocommit: can we merge this api with the BinaryDocValues api?
+  // nocommit: merge this api with the BinaryDocValues api?
   public abstract static class DocTerms {
     /** The BytesRef argument must not be null; the method
      *  returns the same BytesRef, or an empty (length=0)
@@ -515,64 +516,6 @@ public interface FieldCache {
    *  subsequent calls will share the same cache entry. */
   public DocTerms getTerms (AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException;
 
-  /** Returned by {@link #getTermsIndex} */
-  // nocommit: can we merge this api with the SortedDocValues api?
-  public abstract static class DocTermsIndex {
-
-    public int binarySearchLookup(BytesRef key, BytesRef spare) {
-      // this special case is the reason that Arrays.binarySearch() isn't useful.
-      if (key == null) {
-        throw new IllegalArgumentException("key must not be null");
-      }
-
-      int low = 0;
-      int high = numOrd()-1;
-
-      while (low <= high) {
-        int mid = (low + high) >>> 1;
-        int cmp = lookup(mid, spare).compareTo(key);
-
-        if (cmp < 0)
-          low = mid + 1;
-        else if (cmp > 0)
-          high = mid - 1;
-        else
-          return mid; // key found
-      }
-      return -(low + 1);  // key not found.
-    }
-
-    /** The BytesRef argument must not be null; the method
-     *  returns the same BytesRef, or an empty (length=0)
-     *  BytesRef if this ord is the null ord (-1). */
-    public abstract BytesRef lookup(int ord, BytesRef reuse);
-
-    /** Convenience method, to lookup the Term for a doc.
-     *  If this doc is deleted or did not have this field,
-     *  this will return an empty (length=0) BytesRef. */
-    public BytesRef getTerm(int docID, BytesRef reuse) {
-      int ord = getOrd(docID);
-      if (ord == -1) {
-        return null;
-      }
-      return lookup(ord, reuse);
-    }
-
-    /** Returns sort ord for this document.  Ord -1 is
-     *  is returend for docs that are deleted or did not have
-     *  this field.  */
-    public abstract int getOrd(int docID);
-
-    /** Returns total unique ord count. */
-    public abstract int numOrd();
-
-    /** Number of documents */
-    public abstract int size();
-
-    /** Returns a TermsEnum that can iterate over the values in this index entry */
-    public abstract TermsEnum getTermsEnum();
-  }
-
   /** Checks the internal cache for an appropriate entry, and if none
    * is found, reads the term values in <code>field</code>
    * and returns a {@link DocTerms} instance, providing a
@@ -582,7 +525,7 @@ public interface FieldCache {
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public DocTermsIndex getTermsIndex (AtomicReader reader, String field) throws IOException;
+  public SortedDocValues getTermsIndex (AtomicReader reader, String field) throws IOException;
 
   /** Expert: just like {@link
    *  #getTermsIndex(AtomicReader,String)}, but you can specify
@@ -590,7 +533,7 @@ public interface FieldCache {
    *  faster lookups (default is "true").  Note that the
    *  first call for a given reader and field "wins",
    *  subsequent calls will share the same cache entry. */
-  public DocTermsIndex getTermsIndex (AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException;
+  public SortedDocValues getTermsIndex (AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException;
 
   /**
    * Checks the internal cache for an appropriate entry, and if none is found, reads the term values
@@ -662,7 +605,7 @@ public interface FieldCache {
      * The most recently estimated size of the value, null unless 
      * estimateSize has been called.
      */
-    public final String getEstimatedSize() {
+    public String getEstimatedSize() {
       return size;
     }
     

@@ -17,13 +17,14 @@ package org.apache.lucene.search.grouping.term;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector;
 import org.apache.lucene.util.BytesRef;
-
-import java.io.IOException;
 
 /**
  * Concrete implementation of {@link org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector} that groups based on
@@ -35,7 +36,7 @@ import java.io.IOException;
 public class TermFirstPassGroupingCollector extends AbstractFirstPassGroupingCollector<BytesRef> {
 
   private final BytesRef scratchBytesRef = new BytesRef();
-  private FieldCache.DocTermsIndex index;
+  private SortedDocValues index;
 
   private String groupField;
 
@@ -63,7 +64,12 @@ public class TermFirstPassGroupingCollector extends AbstractFirstPassGroupingCol
   @Override
   protected BytesRef getDocGroupValue(int doc) {
     final int ord = index.getOrd(doc);
-    return ord == -1 ? null : index.lookup(ord, scratchBytesRef);
+    if (ord == -1) {
+      return null;
+    } else {
+      index.lookupOrd(ord, scratchBytesRef);
+      return scratchBytesRef;
+    }
   }
 
   @Override

@@ -22,9 +22,10 @@ import java.io.IOException;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsEnum; // javadoc @link
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.FixedBitSet;
 
 /**
  * A {@link Filter} that only accepts documents whose single
@@ -118,11 +119,11 @@ public class FieldCacheTermsFilter extends Filter {
 
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
-    final FieldCache.DocTermsIndex fcsi = getFieldCache().getTermsIndex(context.reader(), field);
-    final FixedBitSet bits = new FixedBitSet(fcsi.numOrd());
+    final SortedDocValues fcsi = getFieldCache().getTermsIndex(context.reader(), field);
+    final FixedBitSet bits = new FixedBitSet(fcsi.getValueCount());
     final BytesRef spare = new BytesRef();
     for (int i=0;i<terms.length;i++) {
-      int ord = fcsi.binarySearchLookup(terms[i], spare);
+      int ord = fcsi.lookupTerm(terms[i], spare);
       if (ord >= 0) {
         bits.set(ord);
       }
