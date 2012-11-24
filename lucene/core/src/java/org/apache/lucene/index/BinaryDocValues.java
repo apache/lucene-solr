@@ -23,6 +23,8 @@ import org.apache.lucene.util.BytesRef;
 public abstract class BinaryDocValues {
   // nocommit throws IOE or not?
   public abstract void get(int docID, BytesRef result);
+
+  public static final byte[] MISSING = new byte[0];
   
   public abstract int size();
   

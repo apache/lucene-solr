@@ -17,7 +17,10 @@ package org.apache.lucene.search.join;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.Collector;
@@ -25,8 +28,6 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
-
-import java.io.IOException;
 
 /**
  * A collector that collects all terms from a specified field matching the query.
@@ -105,14 +106,15 @@ abstract class TermsCollector extends Collector {
   static class SV extends TermsCollector {
 
     final BytesRef spare = new BytesRef();
-    private FieldCache.DocTerms fromDocTerms;
+    private BinaryDocValues fromDocTerms;
 
     SV(String field) {
       super(field);
     }
 
     public void collect(int doc) throws IOException {
-      collectorTerms.add(fromDocTerms.getTerm(doc, spare));
+      fromDocTerms.get(doc, spare);
+      collectorTerms.add(spare);
     }
 
     public void setNextReader(AtomicReaderContext context) throws IOException {

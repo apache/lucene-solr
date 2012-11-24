@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-// nocommit need marker interface?
 public abstract class NumericDocValues {
   // nocommit throws IOE or not?
   public abstract long get(int docID);

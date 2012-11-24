@@ -39,11 +39,11 @@ public abstract class SortedDocValues extends BinaryDocValues {
   public void get(int docID, BytesRef result) {
     int ord = getOrd(docID);
     if (ord == -1) {
-      // nocommit what to do ... maybe we need to return
-      // BytesRef?
-      throw new IllegalArgumentException("doc has no value");
+      result.bytes = MISSING;
+      result.length = 0;
+    } else {
+      lookupOrd(ord, result);
     }
-    lookupOrd(ord, result);
   }
 
   public TermsEnum getTermsEnum() {
@@ -211,7 +211,6 @@ public abstract class SortedDocValues extends BinaryDocValues {
     };
   }
 
-  // nocommit binary search lookup?
   public static class EMPTY extends SortedDocValues {
     private final int size;
     
@@ -252,10 +251,6 @@ public abstract class SortedDocValues extends BinaryDocValues {
 
   // nocommit javadocs
   public int lookupTerm(BytesRef key, BytesRef spare) {
-    // this special case is the reason that Arrays.binarySearch() isn't useful.
-    if (key == null) {
-      throw new IllegalArgumentException("key must not be null");
-    }
 
     int low = 0;
     int high = getValueCount()-1;

@@ -26,6 +26,7 @@ import org.apache.lucene.document.FloatField; // for javadocs
 import org.apache.lucene.document.IntField; // for javadocs
 import org.apache.lucene.document.LongField; // for javadocs
 import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.Bits;
@@ -480,33 +481,16 @@ public interface FieldCache {
    */
   public Doubles getDoubles(AtomicReader reader, String field, DoubleParser parser, boolean setDocsWithField) throws IOException;
 
-  /** Returned by {@link #getTerms} */
-  // nocommit: merge this api with the BinaryDocValues api?
-  public abstract static class DocTerms {
-    /** The BytesRef argument must not be null; the method
-     *  returns the same BytesRef, or an empty (length=0)
-     *  BytesRef if the doc did not have this field or was
-     *  deleted. */
-    public abstract BytesRef getTerm(int docID, BytesRef ret);
-
-    /** Returns true if this doc has this field and is not
-     *  deleted. */
-    public abstract boolean exists(int docID);
-
-    /** Number of documents */
-    public abstract int size();
-  }
-
   /** Checks the internal cache for an appropriate entry, and if none
    * is found, reads the term values in <code>field</code>
-   * and returns a {@link DocTerms} instance, providing a
+   * and returns a {@link BinaryDocValues} instance, providing a
    * method to retrieve the term (as a BytesRef) per document.
    * @param reader  Used to get field values.
    * @param field   Which field contains the strings.
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public DocTerms getTerms (AtomicReader reader, String field)
+  public BinaryDocValues getTerms (AtomicReader reader, String field)
   throws IOException;
 
   /** Expert: just like {@link #getTerms(AtomicReader,String)},
@@ -514,12 +498,13 @@ public interface FieldCache {
    *  faster lookups (default is "true").  Note that the
    *  first call for a given reader and field "wins",
    *  subsequent calls will share the same cache entry. */
-  public DocTerms getTerms (AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException;
+  public BinaryDocValues getTerms (AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none
    * is found, reads the term values in <code>field</code>
-   * and returns a {@link DocTerms} instance, providing a
-   * method to retrieve the term (as a BytesRef) per document.
+   * and returns a {@link SortedDocValues} instance,
+   * providing methods to retrieve sort ordinals and terms
+   * (as a ByteRef) per document.
    * @param reader  Used to get field values.
    * @param field   Which field contains the strings.
    * @return The values in the given field for each document.

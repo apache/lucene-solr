@@ -230,11 +230,17 @@ public class TestFieldCache extends LuceneTestCase {
     termsIndex = cache.getTermsIndex(reader, "bogusfield");
 
     // getTerms
-    FieldCache.DocTerms terms = cache.getTerms(reader, "theRandomUnicodeString");
+    BinaryDocValues terms = cache.getTerms(reader, "theRandomUnicodeString");
     assertSame("Second request to cache return same array", terms, cache.getTerms(reader, "theRandomUnicodeString"));
     assertTrue("doubles Size: " + terms.size() + " is not: " + NUM_DOCS, terms.size() == NUM_DOCS);
     for (int i = 0; i < NUM_DOCS; i++) {
-      final BytesRef term = terms.getTerm(i, br);
+      terms.get(i, br);
+      final BytesRef term;
+      if (br.bytes == BinaryDocValues.MISSING) {
+        term = null;
+      } else {
+        term = br;
+      }
       final String s = term == null ? null : term.utf8ToString();
       assertTrue("for doc " + i + ": " + s + " does not equal: " + unicodeStrings[i], unicodeStrings[i] == null || unicodeStrings[i].equals(s));
     }

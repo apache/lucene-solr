@@ -71,7 +71,7 @@ class FieldCacheImpl implements FieldCache {
     caches.put(Float.TYPE, new FloatCache(this));
     caches.put(Long.TYPE, new LongCache(this));
     caches.put(Double.TYPE, new DoubleCache(this));
-    caches.put(DocTerms.class, new DocTermsCache(this));
+    caches.put(BinaryDocValues.class, new BinaryDocValuesCache(this));
     caches.put(SortedDocValues.class, new SortedDocValuesCache(this));
     caches.put(DocTermOrds.class, new DocTermOrdsCache(this));
     caches.put(DocsWithFieldCache.class, new DocsWithFieldCache(this));
@@ -1267,11 +1267,11 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  private static class DocTermsImpl extends DocTerms {
+  private static class BinaryDocValuesImpl extends BinaryDocValues {
     private final PagedBytes.Reader bytes;
     private final PackedInts.Reader docToOffset;
 
-    public DocTermsImpl(PagedBytes.Reader bytes, PackedInts.Reader docToOffset) {
+    public BinaryDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader docToOffset) {
       this.bytes = bytes;
       this.docToOffset = docToOffset;
     }
@@ -1282,29 +1282,42 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    public boolean exists(int docID) {
-      return docToOffset.get(docID) == 0;
+    public void get(int docID, BytesRef ret) {
+      final int pointer = (int) docToOffset.get(docID);
+      if (pointer == 0) {
+        ret.bytes = MISSING;
+        ret.offset = 0;
+        ret.length = 0;
+      } else {
+        bytes.fill(ret, pointer);
+      }
     }
 
     @Override
-    public BytesRef getTerm(int docID, BytesRef ret) {
-      final int pointer = (int) docToOffset.get(docID);
-      return bytes.fill(ret, pointer);
-    }      
+    public boolean isFixedLength() {
+      // nocommit hmm
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int maxLength() {
+      // nocommit hmm
+      throw new UnsupportedOperationException();
+    }
   }
 
   // TODO: this if DocTermsIndex was already created, we
   // should share it...
-  public DocTerms getTerms(AtomicReader reader, String field) throws IOException {
+  public BinaryDocValues getTerms(AtomicReader reader, String field) throws IOException {
     return getTerms(reader, field, PackedInts.FAST);
   }
 
-  public DocTerms getTerms(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException {
-    return (DocTerms) caches.get(DocTerms.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
+  public BinaryDocValues getTerms(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException {
+    return (BinaryDocValues) caches.get(BinaryDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
   }
 
-  static final class DocTermsCache extends Cache {
-    DocTermsCache(FieldCacheImpl wrapper) {
+  static final class BinaryDocValuesCache extends Cache {
+    BinaryDocValuesCache(FieldCacheImpl wrapper) {
       super(wrapper);
     }
 
@@ -1314,26 +1327,7 @@ class FieldCacheImpl implements FieldCache {
 
       BinaryDocValues valuesIn = reader.getBinaryDocValues(key.field);
       if (valuesIn != null) {
-        final BinaryDocValues ramInstance = valuesIn.newRAMInstance();
-        return new DocTerms() {
-
-          @Override
-          public BytesRef getTerm(int docID, BytesRef ret) {
-            ramInstance.get(docID, ret);
-            return ret;
-          }
-
-          @Override
-          public boolean exists(int docID) {
-            // nocommit lying ...?
-            return true;
-          }
-
-          @Override
-          public int size() {
-            return ramInstance.size();
-          }     
-        };
+        return valuesIn;
       } else {
         final int maxDoc = reader.maxDoc();
         Terms terms = reader.terms(key.field);
@@ -1398,7 +1392,7 @@ class FieldCacheImpl implements FieldCache {
         }
 
         // maybe an int-only impl?
-        return new DocTermsImpl(bytes.freeze(true), docToOffset.getMutable());
+        return new BinaryDocValuesImpl(bytes.freeze(true), docToOffset.getMutable());
       }
     }
   }

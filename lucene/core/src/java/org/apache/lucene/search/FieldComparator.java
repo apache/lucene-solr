@@ -22,10 +22,10 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.AtomicReader; // javadocs
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.FieldCache.ByteParser;
-import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.search.FieldCache.DoubleParser;
 import org.apache.lucene.search.FieldCache.FloatParser;
 import org.apache.lucene.search.FieldCache.IntParser;
@@ -1755,7 +1755,7 @@ public abstract class FieldComparator<T> {
   public static final class TermValComparator extends FieldComparator<BytesRef> {
 
     private BytesRef[] values;
-    private DocTerms docTerms;
+    private BinaryDocValues docTerms;
     private final String field;
     private BytesRef bottom;
     private final BytesRef tempBR = new BytesRef();
@@ -1783,16 +1783,16 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compareBottom(int doc) {
-      BytesRef val2 = docTerms.getTerm(doc, tempBR);
-      if (bottom == null) {
-        if (val2 == null) {
+      docTerms.get(doc, tempBR);
+      if (bottom.bytes == BinaryDocValues.MISSING) {
+        if (tempBR.bytes == BinaryDocValues.MISSING) {
           return 0;
         }
         return -1;
-      } else if (val2 == null) {
+      } else if (tempBR.bytes == BinaryDocValues.MISSING) {
         return 1;
       }
-      return bottom.compareTo(val2);
+      return bottom.compareTo(tempBR);
     }
 
     @Override
@@ -1800,7 +1800,7 @@ public abstract class FieldComparator<T> {
       if (values[slot] == null) {
         values[slot] = new BytesRef();
       }
-      docTerms.getTerm(doc, values[slot]);
+      docTerms.get(doc, values[slot]);
     }
 
     @Override
@@ -1834,7 +1834,8 @@ public abstract class FieldComparator<T> {
 
     @Override
     public int compareDocToValue(int doc, BytesRef value) {
-      return docTerms.getTerm(doc, tempBR).compareTo(value);
+      docTerms.get(doc, tempBR);
+      return tempBR.compareTo(value);
     }
   }
 
