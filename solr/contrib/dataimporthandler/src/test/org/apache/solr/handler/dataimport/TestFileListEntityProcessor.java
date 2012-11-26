@@ -132,7 +132,6 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   }
 
   @Test
-  @Ignore("Known Locale/TZ problems: see https://issues.apache.org/jira/browse/SOLR-1916")
   public void testNTOT() throws IOException {
     File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
     tmpdir.delete();
