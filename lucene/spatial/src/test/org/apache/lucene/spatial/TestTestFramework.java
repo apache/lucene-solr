@@ -59,4 +59,11 @@ public class TestTestFramework extends LuceneTestCase {
     Assert.assertEquals( SpatialOperation.Intersects, sf.args.getOperation() );
   }
 
+  @Test
+  public void spatialExample() throws IOException {
+    //kind of a hack so that SpatialExample is tested despite
+    // it not starting or ending with "Test".
+    SpatialExample.main(null);
+  }
+
 }

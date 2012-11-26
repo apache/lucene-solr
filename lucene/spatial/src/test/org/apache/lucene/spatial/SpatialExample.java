@@ -55,6 +55,8 @@ import java.io.IOException;
  */
 public class SpatialExample extends LuceneTestCase {
 
+  //Note: Test invoked via TestTestFramework.spatialExample()
+
   public static void main(String[] args) throws IOException {
     new SpatialExample().test();
   }
@@ -149,14 +151,27 @@ public class SpatialExample extends LuceneTestCase {
       Filter filter = strategy.makeFilter(args);
       TopDocs docs = indexSearcher.search(new MatchAllDocsQuery(), filter, 10, idSort);
       assertDocMatchedIds(indexSearcher, docs, 2);
+      //Now, lets get the distance for the 1st doc via computing from stored point value:
+      // (this computation is usually not redundant)
+      Document doc1 = indexSearcher.doc(docs.scoreDocs[0].doc);
+      String doc1Str = doc1.getField(strategy.getFieldName()).stringValue();
+      Point doc1Point = (Point) ctx.readShape(doc1Str);
+      double doc1DistDEG = ctx.getDistCalc().distance(args.getShape().getCenter(), doc1Point);
+      assertEquals(121.6d, DistanceUtils.degrees2Dist(doc1DistDEG, DistanceUtils.EARTH_MEAN_RADIUS_KM), 0.1);
     }
-    //--Match all, order by distance
+    //--Match all, order by distance ascending
     {
       Point pt = ctx.makePoint(60, -50);
       ValueSource valueSource = strategy.makeDistanceValueSource(pt);//the distance (in degrees)
-      Sort reverseDistSort = new Sort(valueSource.getSortField(false)).rewrite(indexSearcher);//true=asc dist
-      TopDocs docs = indexSearcher.search(new MatchAllDocsQuery(), 10, reverseDistSort);
+      Sort distSort = new Sort(valueSource.getSortField(false)).rewrite(indexSearcher);//false=asc dist
+      TopDocs docs = indexSearcher.search(new MatchAllDocsQuery(), 10, distSort);
       assertDocMatchedIds(indexSearcher, docs, 4, 20, 2);
+      //To get the distance, we could compute from stored values like earlier.
+      // However in this example we sorted on it, and the distance will get
+      // computed redundantly.  If the distance is only needed for the top-X
+      // search results then that's not a big deal. Alternatively, try wrapping
+      // the ValueSource with CachingDoubleValueSource then retrieve the value
+      // from the ValueSource now. See LUCENE-4541 for an example.
     }
     //demo arg parsing
     {
