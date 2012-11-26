@@ -82,7 +82,10 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   }
 
   protected List<Document> getDocuments(String testDataFile) throws IOException {
-    Iterator<SampleData> sampleData = getSampleData(testDataFile);
+    return getDocuments(getSampleData(testDataFile));
+  }
+
+  protected List<Document> getDocuments(Iterator<SampleData> sampleData) {
     List<Document> documents = new ArrayList<Document>();
     while (sampleData.hasNext()) {
       SampleData data = sampleData.next();
