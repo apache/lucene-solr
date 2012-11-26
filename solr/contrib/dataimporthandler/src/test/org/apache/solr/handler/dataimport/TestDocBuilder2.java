@@ -238,7 +238,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @Ignore("Known Locale/TZ problems: see https://issues.apache.org/jira/browse/SOLR-1916")
+  @Ignore("Fix Me. See SOLR-4103.")
   public void testFileListEntityProcessor_lastIndexTime() throws Exception  {
     File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
     tmpdir.delete();
