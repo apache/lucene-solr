@@ -44,7 +44,7 @@ import org.apache.lucene.util.FixedBitSet;
  * <p/>
  * 
  * The first invocation of this filter on a given field will
- * be slower, since a {@link FieldCache.DocTermsIndex} must be
+ * be slower, since a {@link SortedDocValues} must be
  * created.  Subsequent invocations using the same field
  * will re-use this cache.  However, as with all
  * functionality based on {@link FieldCache}, persistent RAM

@@ -30,7 +30,7 @@ import org.apache.lucene.util.SentinelIntSet;
 /**
  * A base implementation of {@link org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector} for retrieving the most relevant groups when grouping
  * on a string based group field. More specifically this all concrete implementations of this base implementation
- * use {@link org.apache.lucene.search.FieldCache.DocTermsIndex}.
+ * use {@link org.apache.lucene.index.SortedDocValues}.
  *
  * @lucene.experimental
  */

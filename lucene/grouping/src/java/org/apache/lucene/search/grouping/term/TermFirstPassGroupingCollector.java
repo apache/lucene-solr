@@ -28,7 +28,7 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * Concrete implementation of {@link org.apache.lucene.search.grouping.AbstractFirstPassGroupingCollector} that groups based on
- * field values and more specifically uses {@link org.apache.lucene.search.FieldCache.DocTermsIndex}
+ * field values and more specifically uses {@link org.apache.lucene.index.SortedDocValues}
  * to collect groups.
  *
  * @lucene.experimental
