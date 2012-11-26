@@ -90,6 +90,10 @@ New Features
   (yonik)
 
 
+* SOLR-1972: Add extra statistics to RequestHandlers - 5 & 15-minute reqs/sec
+  rolling averages; median, 75th, 95th, 99th, 99.9th percentile request times
+  (Alan Woodward, Shawn Heisey, Adrien Grand)
+
 Optimizations
 ----------------------
 

@@ -17,12 +17,11 @@
 
 package org.apache.solr.client.solrj.embedded;
 
-import java.io.File;
-import java.net.URL;
-import java.util.Random;
-
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
@@ -33,12 +32,18 @@ import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.io.File;
+import java.net.URL;
+import java.util.Random;
 
 /**
  *
  * @since solr 1.3
  */
+
+@ThreadLeakFilters(defaultFilters = true, filters = {
+    SolrIgnoredThreadsFilter.class
+})
 public class JettyWebappTest extends LuceneTestCase 
 {
   int port = 0;
