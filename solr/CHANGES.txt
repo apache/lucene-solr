@@ -239,6 +239,9 @@ Bug Fixes
 * SOLR-4099: Allow the collection api work queue to make forward progress even
   when it's watcher is not fired for some reason. (Raintung Li via Mark Miller)
 
+* SOLR-3960: Fixed a bug where Distributed Grouping ignored PostFilters
+  (Nathan Visagan, hossman)
+
 Other Changes
 ----------------------
 

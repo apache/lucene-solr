@@ -179,6 +179,19 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "*:*", "fq", s1 + ":a", "fl", "id," + i1, "group", "true", "group.field", i1, "sort", i1 + " asc, id asc", "group.ngroups", "true");
     query("q", "*:*", "fq", s1 + ":a", "rows", 0, "fl", "id," + i1, "group", "true", "group.field", i1, "sort", i1 + " asc, id asc", "group.ngroups", "true");
 
+    // SOLR-3960 - include a postfilter
+    for (String facet : new String[] { "false", "true"}) {
+      for (String fcache : new String[] { "", " cache=false cost=200"}) {
+      query("q", "*:*", "rows", 100, "fl", "id," + i1, 
+            "group.limit", 10, "sort", i1 + " asc, id asc",
+            "group", "true", "group.field", i1, 
+            "fq", "{!frange l=50 "+fcache+"}"+tlong,
+            "facet.field", t1,
+            "facet", facet
+            );
+      }
+    }
+
     ModifiableSolrParams params = new ModifiableSolrParams();
     Object[] q =  {"q", "*:*", "fq", s1 + ":a", "rows", 1, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "group.ngroups", "true"};
 
