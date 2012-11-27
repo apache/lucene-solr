@@ -63,6 +63,7 @@ public class VariableResolver {
   }
   
   public static final String FUNCTIONS_NAMESPACE = "dataimporter.functions.";
+  public static final String FUNCTIONS_NAMESPACE_SHORT = "dih.functions.";
   
   public VariableResolver() {
     rootNamespace = new HashMap<String,Object>();
@@ -95,7 +96,11 @@ public class VariableResolver {
       r = currentLevel.get(nameParts[nameParts.length - 1]);
       if (r == null && name.startsWith(FUNCTIONS_NAMESPACE)
           && name.length() > FUNCTIONS_NAMESPACE.length()) {
-        return resolveEvaluator(name);
+        return resolveEvaluator(FUNCTIONS_NAMESPACE, name);
+      }
+      if (r == null && name.startsWith(FUNCTIONS_NAMESPACE_SHORT)
+          && name.length() > FUNCTIONS_NAMESPACE_SHORT.length()) {
+        return resolveEvaluator(FUNCTIONS_NAMESPACE_SHORT, name);
       }
       if (r == null) {
         r = System.getProperty(name);
@@ -104,12 +109,12 @@ public class VariableResolver {
     return r == null ? "" : r;
   }
   
-  private Object resolveEvaluator(String name) {
+  private Object resolveEvaluator(String namespace, String name) {
     if (evaluators == null) {
       return "";
     }
     Matcher m = EVALUATOR_FORMAT_PATTERN.matcher(name
-        .substring(FUNCTIONS_NAMESPACE.length()));
+        .substring(namespace.length()));
     if (m.find()) {
       String fname = m.group(1);
       Evaluator evaluator = evaluators.get(fname);

@@ -67,6 +67,15 @@ public class DateFormatEvaluator extends Evaluator {
       availableLocales.put(locale.toString(), locale);
     }
   }
+  private SimpleDateFormat getDateFormat(String pattern, Locale locale) {
+    DateFormatCacheKey dfck = new DateFormatCacheKey(locale, pattern);
+    SimpleDateFormat sdf = cache.get(dfck);
+    if(sdf == null) {
+      sdf = new SimpleDateFormat(pattern, locale);
+      cache.put(dfck, sdf);
+    }
+    return sdf;
+  }
   
   
   @Override
@@ -81,15 +90,13 @@ public class DateFormatEvaluator extends Evaluator {
       VariableWrapper wrapper = (VariableWrapper) format;
       o = wrapper.resolve();
       format = o.toString();
-    }
+    }    
     Locale locale = Locale.ROOT;
     if(l.size()==3) {
       Object localeObj = l.get(2);
       String localeStr = null;
       if (localeObj  instanceof VariableWrapper) {
-        VariableWrapper wrapper = (VariableWrapper) localeObj;
-        o = wrapper.resolve();
-        localeStr = o.toString();
+        localeStr = ((VariableWrapper) localeObj).resolve().toString();        
       } else {
         localeStr = localeObj.toString();
       }
@@ -97,14 +104,9 @@ public class DateFormatEvaluator extends Evaluator {
       if(locale==null) {
         throw new DataImportHandlerException(SEVERE, "Unsupported locale: " + localeStr);
       }
-    }
+    }    
     String dateFmt = format.toString();
-    DateFormatCacheKey dfck = new DateFormatCacheKey(locale, dateFmt);
-    SimpleDateFormat sdf = cache.get(dfck);
-    if(sdf==null) {
-      sdf = new SimpleDateFormat(dateFmt, locale);
-      cache.put(dfck, sdf);
-    }
+    SimpleDateFormat fmt = getDateFormat(dateFmt, locale);
     Date date = null;
     if (o instanceof VariableWrapper) {
       VariableWrapper variableWrapper = (VariableWrapper) o;
@@ -114,13 +116,7 @@ public class DateFormatEvaluator extends Evaluator {
       } else {
         String s = variableval.toString();
         try {
-          dfck = new DateFormatCacheKey(locale, DEFAULT_DATE_FORMAT);
-          sdf = cache.get(dfck);
-          if(sdf==null) {
-            sdf = new SimpleDateFormat(dfck.dateFormat, dfck.locale);
-            cache.put(dfck, sdf);
-          }
-          date = new SimpleDateFormat(DEFAULT_DATE_FORMAT, locale).parse(s);
+          date = getDateFormat(DEFAULT_DATE_FORMAT, locale).parse(s);
         } catch (ParseException exp) {
           wrapAndThrow(SEVERE, exp, "Invalid expression for date");
         }
@@ -134,7 +130,7 @@ public class DateFormatEvaluator extends Evaluator {
         wrapAndThrow(SEVERE, e, "Invalid expression for date");
       }
     }
-    return sdf.format(date);
+    return fmt.format(date);
   }
   static DateMathParser getDateMathParser(Locale l) {
     return new DateMathParser(TimeZone.getDefault(), l) {

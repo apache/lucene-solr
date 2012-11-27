@@ -24,7 +24,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * <p> Test for EvaluatorBag </p>
+ * <p> Test for Evaluators </p>
  *
  *
  * @since solr 1.3
