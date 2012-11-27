@@ -52,14 +52,20 @@ public class KNearestNeighborClassifier implements Classifier {
     this.k = k;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public ClassificationResult assignClass(String text) throws IOException {
     Query q = mlt.like(new StringReader(text), textFieldName);
-    TopDocs docs = indexSearcher.search(q, k);
+    TopDocs topDocs = indexSearcher.search(q, k);
+    return selectClassFromNeighbors(topDocs);
+  }
 
+  private ClassificationResult selectClassFromNeighbors(TopDocs topDocs) throws IOException {
     // TODO : improve the nearest neighbor selection
     Map<String, Integer> classCounts = new HashMap<String, Integer>();
-    for (ScoreDoc scoreDoc : docs.scoreDocs) {
+    for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
       String cl = indexSearcher.doc(scoreDoc.doc).getField(classFieldName).stringValue();
       Integer count = classCounts.get(cl);
       if (count != null) {
@@ -68,7 +74,7 @@ public class KNearestNeighborClassifier implements Classifier {
         classCounts.put(cl, 1);
       }
     }
-    int max = 0;
+    double max = 0;
     String assignedClass = null;
     for (String cl : classCounts.keySet()) {
       Integer count = classCounts.get(cl);
@@ -77,10 +83,13 @@ public class KNearestNeighborClassifier implements Classifier {
         assignedClass = cl;
       }
     }
-    double score = max / k;
+    double score = max / (double) k;
     return new ClassificationResult(assignedClass, score);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer) throws IOException {
     this.textFieldName = textFieldName;

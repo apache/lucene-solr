@@ -38,6 +38,7 @@ import java.util.LinkedList;
 
 /**
  * A simplistic Lucene based NaiveBayes classifier, see <code>http://en.wikipedia.org/wiki/Naive_Bayes_classifier</code>
+ *
  * @lucene.experimental
  */
 public class SimpleNaiveBayesClassifier implements Classifier {
@@ -48,14 +49,19 @@ public class SimpleNaiveBayesClassifier implements Classifier {
   private int docsWithClassSize;
   private Analyzer analyzer;
   private IndexSearcher indexSearcher;
-  
-  /** 
+
+  /**
    * Creates a new NaiveBayes classifier.
    * Note that you must call {@link #train(AtomicReader, String, String, Analyzer) train()} before you can
    * classify any documents.
    */
-  public SimpleNaiveBayesClassifier() {}
+  public SimpleNaiveBayesClassifier() {
+  }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public void train(AtomicReader atomicReader, String textFieldName, String classFieldName, Analyzer analyzer)
       throws IOException {
     this.atomicReader = atomicReader;
@@ -79,6 +85,10 @@ public class SimpleNaiveBayesClassifier implements Classifier {
     return result.toArray(new String[result.size()]);
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public ClassificationResult assignClass(String inputDocument) throws IOException {
     if (atomicReader == null) {
       throw new RuntimeException("need to train the classifier first");
@@ -89,7 +99,7 @@ public class SimpleNaiveBayesClassifier implements Classifier {
     Terms terms = MultiFields.getTerms(atomicReader, classFieldName);
     TermsEnum termsEnum = terms.iterator(null);
     BytesRef next;
-    while((next = termsEnum.next()) != null) {
+    while ((next = termsEnum.next()) != null) {
       // TODO : turn it to be in log scale
       double clVal = calculatePrior(next) * calculateLikelihood(inputDocument, next);
       if (clVal > max) {
