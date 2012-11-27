@@ -256,6 +256,9 @@ Bug Fixes
 * SOLR-3960: Fixed a bug where Distributed Grouping ignored PostFilters
   (Nathan Visagan, hossman)
 
+* SOLR-3842: DIH would not populate multivalued fields if the column name
+  derives from a resolved variable (James Dyer)
+
 Other Changes
 ----------------------
 
@@ -298,6 +301,8 @@ Other Changes
 * SOLR-4111: SpellCheckCollatorTest#testContextSensitiveCollate to test against
   both DirectSolrSpellChecker & IndexBasedSpellChecker
   (Tomás Fernández Löbbe via James Dyer)
+
+* SOLR-2141: Better test coverage for Evaluators (James Dyer)
 
 ==================  4.0.0 ==================
 
