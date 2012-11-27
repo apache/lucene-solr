@@ -66,27 +66,27 @@ public class TestVariableResolverEndToEnd  extends AbstractDIHJdbcTestCase {
     sb.append("<document name=\"TestEvaluators\"> \n");
     sb.append("<entity name=\"FIRST\" processor=\"SqlEntityProcessor\" dataSource=\"hsqldb\" ");
     sb.append(" query=\"" +
-    		"select " +
-    		" 1 as id, " +
-    		" 'SELECT' as SELECT_KEYWORD, " +
-    		" CURRENT_TIMESTAMP as FIRST_TS " +
-    		"from DUAL \" >\n");
+        "select " +
+        " 1 as id, " +
+        " 'SELECT' as SELECT_KEYWORD, " +
+        " CURRENT_TIMESTAMP as FIRST_TS " +
+        "from DUAL \" >\n");
     sb.append("  <field column=\"SELECT_KEYWORD\" name=\"select_keyword_s\" /> \n");
     sb.append("  <entity name=\"SECOND\" processor=\"SqlEntityProcessor\" dataSource=\"hsqldb\" transformer=\"TemplateTransformer\" ");
     sb.append("   query=\"" +
-    		"${dataimporter.functions.encodeUrl(FIRST.SELECT_KEYWORD)} " +
-    		" 1 as SORT, " +
-    		" CURRENT_TIMESTAMP as SECOND_TS, " +
-    		" '${dataimporter.functions.formatDate(FIRST.FIRST_TS, 'yyyy'" + thirdLocaleParam + ")}' as SECOND1_S,  " +
-    		" 'PORK' AS MEAT, " +
-    		" 'GRILL' AS METHOD, " +
+        "${dataimporter.functions.encodeUrl(FIRST.SELECT_KEYWORD)} " +
+        " 1 as SORT, " +
+        " CURRENT_TIMESTAMP as SECOND_TS, " +
+        " '${dataimporter.functions.formatDate(FIRST.FIRST_TS, 'yyyy'" + thirdLocaleParam + ")}' as SECOND1_S,  " +
+        " 'PORK' AS MEAT, " +
+        " 'GRILL' AS METHOD, " +
         " 'ROUND' AS CUTS, " +
         " 'BEEF_CUTS' AS WHATKIND " +
-    		"from DUAL " +
-    		"WHERE 1=${FIRST.ID} " +
-    		"UNION " +    		
-    		"${dataimporter.functions.encodeUrl(FIRST.SELECT_KEYWORD)} " +
-    		" 2 as SORT, " +
+        "from DUAL " +
+        "WHERE 1=${FIRST.ID} " +
+        "UNION " +        
+        "${dataimporter.functions.encodeUrl(FIRST.SELECT_KEYWORD)} " +
+        " 2 as SORT, " +
         " CURRENT_TIMESTAMP as SECOND_TS, " +
         " '${dataimporter.functions.formatDate(FIRST.FIRST_TS, 'yyyy'" + thirdLocaleParam + ")}' as SECOND1_S,  " +
         " 'FISH' AS MEAT, " +
@@ -96,7 +96,7 @@ public class TestVariableResolverEndToEnd  extends AbstractDIHJdbcTestCase {
         "from DUAL " +
         "WHERE 1=${FIRST.ID} " +
         "ORDER BY SORT \"" +
-    		">\n");
+        ">\n");
     sb.append("   <field column=\"SECOND_S\" name=\"second_s\" /> \n");
     sb.append("   <field column=\"SECOND1_S\" name=\"second1_s\" /> \n");
     sb.append("   <field column=\"second2_s\" template=\"${dataimporter.functions.formatDate(SECOND.SECOND_TS, 'yyyy'" + thirdLocaleParam + ")}\" /> \n");
