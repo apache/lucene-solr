@@ -69,6 +69,9 @@ New Features
 
 * SOLR-3911: Make Directory and DirectoryFactory first class so that the majority 
   of Solr's features work with any custom implementations. (Mark Miller)
+  Additional Work:
+  - SOLR-4032: Files larger than an internal buffer size fail to replicate.
+    (Mark Miller, Markus Jelsma)
 
 * SOLR-1972: Add extra statistics to RequestHandlers - 5 & 15-minute reqs/sec
   rolling averages; median, 75th, 95th, 99th, 99.9th percentile request times

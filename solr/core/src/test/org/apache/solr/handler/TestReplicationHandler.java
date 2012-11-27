@@ -656,6 +656,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   private void doTestReplicateAfterCoreReload() throws Exception {
+    int docs = TEST_NIGHTLY ? 200000 : 0;
+    
     //stop slave
     slaveJetty.stop();
 
@@ -670,14 +672,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
     masterClient.deleteByQuery("*:*");
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < docs; i++)
       index(masterClient, "id", i, "name", "name = " + i);
 
     masterClient.commit();
 
-    NamedList masterQueryRsp = rQuery(10, "*:*", masterClient);
+    NamedList masterQueryRsp = rQuery(docs, "*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
-    assertEquals(10, masterQueryResult.getNumFound());
+    assertEquals(docs, masterQueryResult.getNumFound());
     
     slave.setTestPort(masterJetty.getLocalPort());
     slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
@@ -687,9 +689,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
     
     //get docs from slave and check if number is equal to master
-    NamedList slaveQueryRsp = rQuery(10, "*:*", slaveClient);
+    NamedList slaveQueryRsp = rQuery(docs, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    assertEquals(10, slaveQueryResult.getNumFound());
+    assertEquals(docs, slaveQueryResult.getNumFound());
     
     //compare results
     String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
@@ -703,19 +705,19 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(version, getIndexVersion(masterClient).get("indexversion"));
     assertEquals(commits.get("commits"), getCommits(masterClient).get("commits"));
     
-    index(masterClient, "id", 110, "name", "name = 1");
-    index(masterClient, "id", 120, "name", "name = 2");
+    index(masterClient, "id", docs + 10, "name", "name = 1");
+    index(masterClient, "id", docs + 20, "name", "name = 2");
 
     masterClient.commit();
     
-    NamedList resp =  rQuery(12, "*:*", masterClient);
+    NamedList resp =  rQuery(docs + 2, "*:*", masterClient);
     masterQueryResult = (SolrDocumentList) resp.get("response");
-    assertEquals(12, masterQueryResult.getNumFound());
+    assertEquals(docs + 2, masterQueryResult.getNumFound());
     
     //get docs from slave and check if number is equal to master
-    slaveQueryRsp = rQuery(12, "*:*", slaveClient);
+    slaveQueryRsp = rQuery(docs + 2, "*:*", slaveClient);
     slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    assertEquals(12, slaveQueryResult.getNumFound());
+    assertEquals(docs + 2, slaveQueryResult.getNumFound());
     
     // NOTE: revert config on master.
     master.copyConfigFile(CONF_DIR + "solrconfig-master.xml", "solrconfig.xml");
