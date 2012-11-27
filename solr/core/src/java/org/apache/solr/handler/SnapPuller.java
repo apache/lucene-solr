@@ -296,6 +296,7 @@ public class SnapPuller {
     successfulInstall = false;
     replicationStartTime = System.currentTimeMillis();
     Directory tmpIndexDir = null;
+    String tmpIndex = null;
     Directory indexDir = null;
     boolean deleteTmpIdxDir = true;
     try {
@@ -368,7 +369,7 @@ public class SnapPuller {
       boolean isFullCopyNeeded = IndexDeletionPolicyWrapper.getCommitTimestamp(commit) >= latestVersion || forceReplication;
       
       String tmpIdxDirName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
-      String tmpIndex = createTempindexDir(core, tmpIdxDirName);
+      tmpIndex = createTempindexDir(core, tmpIdxDirName);
 
       tmpIndexDir = core.getDirectoryFactory().get(tmpIndex, null);
       
@@ -466,7 +467,9 @@ public class SnapPuller {
       } finally {
         if (deleteTmpIdxDir) {
           LOG.info("removing temporary index download directory files " + tmpIndexDir);
-          DirectoryFactory.empty(tmpIndexDir);
+          if (tmpIndex != null && core.getDirectoryFactory().exists(tmpIndex)) {
+            DirectoryFactory.empty(tmpIndexDir);
+          }
         } 
       }
     } finally {
