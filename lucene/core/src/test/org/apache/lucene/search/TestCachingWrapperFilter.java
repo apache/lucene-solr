@@ -189,8 +189,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     final Filter startFilter = new QueryWrapperFilter(new TermQuery(new Term("id", "1")));
 
-    // force cache to regenerate after deletions:
-    CachingWrapperFilter filter = new CachingWrapperFilter(startFilter, true);
+    CachingWrapperFilter filter = new CachingWrapperFilter(startFilter);
 
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
 
@@ -231,9 +230,8 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     docs = searcher.search(new MatchAllDocsQuery(), filter, 1);
     assertEquals("[query + filter] Should *not* find a hit...", 0, docs.totalHits);
 
-    // cache miss, because we asked CWF to recache when
-    // deletes changed:
-    assertEquals(missCount+1, filter.missCount);
+    // cache hit
+    assertEquals(missCount, filter.missCount);
     docs = searcher.search(constantScore, 1);
     assertEquals("[just filter] Should *not* find a hit...", 0, docs.totalHits);
 

@@ -39,36 +39,12 @@ public class CachingWrapperFilter extends Filter {
   // level of the readers hierarchy it should be cached.
   private final Filter filter;
   private final Map<Object,DocIdSet> cache = Collections.synchronizedMap(new WeakHashMap<Object,DocIdSet>());
-  private final boolean recacheDeletes;
 
   /** Wraps another filter's result and caches it.
-   * Deletions are not cached and AND'd in on the fly, see
-   * {@link #CachingWrapperFilter(Filter,boolean)} for an explanation.
-   * This constructor is recommended for often changing indexes.
    * @param filter Filter to cache results of
-   * @see #CachingWrapperFilter(Filter,boolean)
    */
   public CachingWrapperFilter(Filter filter) {
-    this(filter, false);
-  }
-
-  /** Wraps another filter's result and caches it. If
-   * {@code recacheDeletes} is {@code true}, then new deletes (for example
-   * after {@link DirectoryReader#openIfChanged}) will cause the filter
-   * {@link DocIdSet} to be recached.
-   *
-   * <p>If your index changes seldom, it is recommended to use {@code recacheDeletes=true},
-   * as recaching will only occur when the index is reopened.
-   * For near-real-time indexes or indexes that are often
-   * reopened with (e.g., {@link DirectoryReader#openIfChanged} is used), you should
-   * pass {@code recacheDeletes=false}. This will cache the filter results omitting
-   * deletions and will AND them in while scoring.
-   * @param filter Filter to cache results of
-   * @param recacheDeletes if deletions on the underlying index should recache
-   */
-  public CachingWrapperFilter(Filter filter, boolean recacheDeletes) {
     this.filter = filter;
-    this.recacheDeletes = recacheDeletes;
   }
 
   /** Provide the DocIdSet to be cached, using the DocIdSet provided
@@ -104,54 +80,34 @@ public class CachingWrapperFilter extends Filter {
   @Override
   public DocIdSet getDocIdSet(AtomicReaderContext context, final Bits acceptDocs) throws IOException {
     final AtomicReader reader = context.reader();
-
-    // Only cache if incoming acceptDocs is == live docs;
-    // if Lucene passes in more interesting acceptDocs in
-    // the future (@UweSays: it already does when you chain FilteredQuery) we don't want to over-cache:
-    final Bits liveDocs = reader.getLiveDocs();
-    final boolean doCacheAcceptDocs = (recacheDeletes && acceptDocs == liveDocs);
-
-    final Object key;
-    final Bits cacheAcceptDocs;
-    if (doCacheAcceptDocs) {
-      assert acceptDocs == liveDocs;
-      key = reader.getCombinedCoreAndDeletesKey();
-      cacheAcceptDocs = acceptDocs;
-    } else {
-      key = reader.getCoreCacheKey();
-      cacheAcceptDocs = null;
-    }
+    final Object key = reader.getCoreCacheKey();
 
     DocIdSet docIdSet = cache.get(key);
     if (docIdSet != null) {
       hitCount++;
     } else {
       missCount++;
-      docIdSet = docIdSetToCache(filter.getDocIdSet(context, cacheAcceptDocs), reader);
+      docIdSet = docIdSetToCache(filter.getDocIdSet(context, null), reader);
       cache.put(key, docIdSet);
     }
 
-    if (doCacheAcceptDocs) {
-      return docIdSet;
-    } else {
-      return BitsFilteredDocIdSet.wrap(docIdSet, acceptDocs);
-    }
+    return BitsFilteredDocIdSet.wrap(docIdSet, acceptDocs);
   }
 
   @Override
   public String toString() {
-    return "CachingWrapperFilter("+filter+",recacheDeletes=" + recacheDeletes + ")";
+    return "CachingWrapperFilter("+filter+")";
   }
 
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof CachingWrapperFilter)) return false;
     final CachingWrapperFilter other = (CachingWrapperFilter) o;
-    return this.filter.equals(other.filter) && this.recacheDeletes == other.recacheDeletes;
+    return this.filter.equals(other.filter);
   }
 
   @Override
   public int hashCode() {
-    return (filter.hashCode() ^ 0x1117BF25) + (recacheDeletes ? 0 : 1);
+    return (filter.hashCode() ^ 0x1117BF25);
   }
 }

@@ -54,6 +54,11 @@ Changes in backwards compatibility policy
     abstract.
     (Shai Erera, Gilad Barkai)
 
+* LUCENE-4576: Remove CachingWrapperFilter(Filter, boolean). This recacheDeletes
+  option gave less than 1% speedup at the expense of cache churn (filters were
+  invalidated on reopen if even a single delete was posted against the segment).
+  (Robert Muir)
+
 New Features
 
 * LUCENE-4226: New experimental StoredFieldsFormat that compresses chunks of
