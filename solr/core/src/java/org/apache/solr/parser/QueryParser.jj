@@ -89,7 +89,6 @@ PARSER_END(QueryParser)
  | <STAR:      "*" >
  | <CARAT:     "^" > : Boost
  | <QUOTED:     "\"" (<_QUOTED_CHAR>)* "\"">
- | <SQUOTED:     "'" (<_SQUOTED_CHAR>)* "'">
  | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
  | <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
  | <PREFIXTERM:  ("*") | ( <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" ) >
@@ -97,7 +96,10 @@ PARSER_END(QueryParser)
  | <REGEXPTERM: "/" (~[ "/" ] | "\\/" )* "/" >
  | <RANGEIN_START: "[" > : Range
  | <RANGEEX_START: "{" > : Range
- | <LPARAMS:     ("{!" ( (<_WHITESPACE>)* (~["=","}"])+ ( "=" (<QUOTED> | <SQUOTED> | (~[" ","}"])+ )? )? )* "}")+  (~[")"," ","\t","\n","{","^"])*  >
+// TODO: consider using token states instead of inlining SQUOTED
+//  | <SQUOTED:     "'" (<_SQUOTED_CHAR>)* "'">
+//  | <LPARAMS:     ("{!" ( (<_WHITESPACE>)* (~["=","}"])+ ( "=" (<QUOTED> | <SQUOTED> | (~[" ","}"])+ )? )? )* "}")+  (~[")"," ","\t","\n","{","^"])*  >
+  | <LPARAMS:     ("{!" ( (<_WHITESPACE>)* (~["=","}"])+ ( "=" (<QUOTED> | ("'" (<_SQUOTED_CHAR>)* "'") | (~[" ","}"])+ )? )? )* "}")+  (~[")"," ","\t","\n","{","^"])*  >
 }
 
 <Boost> TOKEN : {
