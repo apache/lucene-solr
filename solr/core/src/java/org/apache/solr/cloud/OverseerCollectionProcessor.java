@@ -201,11 +201,7 @@ public class OverseerCollectionProcessor implements Runnable {
     // we need to look at every node and see how many cores it serves
     // add our new cores to existing nodes serving the least number of cores
     // but (for now) require that each core goes on a distinct node.
-    
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CoreAdminParams.ACTION, CoreAdminAction.CREATE.toString());
-    
-    
+
     // TODO: add smarter options that look at the current number of cores per node?
     // for now we just go random
     Set<String> nodes = clusterState.getLiveNodes();
@@ -230,6 +226,11 @@ public class OverseerCollectionProcessor implements Runnable {
     for (String replica : createOnNodes) {
       // TODO: this does not work if original url had _ in it
       // We should have a master list
+      
+      // Need to create new params for each request
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(CoreAdminParams.ACTION, CoreAdminAction.CREATE.toString());
+      
       replica = replica.replaceAll("_", "/");
       params.set(CoreAdminParams.NAME, name);
       params.set("collection.configName", configName);

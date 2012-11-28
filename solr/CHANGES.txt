@@ -206,7 +206,7 @@ Bug Fixes
 
 * SOLR-4055: Fix a thread safety issue with the Collections API that could
   cause actions to be targeted at the wrong SolrCores. 
-  (Raintung Li via Mark Miller)
+  (Raintung Li, Per Steffensen via Mark Miller)
 
 * SOLR-3993: If multiple SolrCore's for a shard coexist on a node, on cluster
   restart, leader election would stall until timeout, waiting to see all of 
