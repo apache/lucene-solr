@@ -298,6 +298,8 @@ Other Changes
 
 * SOLR-2141: Better test coverage for Evaluators (James Dyer)
 
+* SOLR-4119: Update Guava to 13.0.1 (Mark Miller)
+
 ==================  4.0.0 ==================
 
 Versions of Major Components
