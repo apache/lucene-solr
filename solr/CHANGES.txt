@@ -262,6 +262,10 @@ Bug Fixes
 * SOLR-3842: DIH would not populate multivalued fields if the column name
   derives from a resolved variable (James Dyer)
 
+* SOLR-4117: Retrieving the size of the index may use the wrong index dir if
+  you are replicating.
+  (Mark Miller, Markus Jelsma)
+
 Other Changes
 ----------------------
 
