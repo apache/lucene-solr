@@ -89,6 +89,9 @@ New Features
   Example:  foo AND {!term f=myfield v=$qq}
   (yonik)
 
+* SOLR-4087: Add MAX_DOC_FREQ option to MoreLikeThis.
+  (Andrew Janowczyk via Mark Miller)
+
 
 * SOLR-1972: Add extra statistics to RequestHandlers - 5 & 15-minute reqs/sec
   rolling averages; median, 75th, 95th, 99th, 99.9th percentile request times
