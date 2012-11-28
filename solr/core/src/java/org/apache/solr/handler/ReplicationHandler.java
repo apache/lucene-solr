@@ -474,7 +474,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   long getIndexSize() {
-    return FileUtils.sizeOfDirectory(new File(core.getIndexDir()));
+    return FileUtils.sizeOfDirectory(new File(core.getNewIndexDir()));
   }
 
   /**
