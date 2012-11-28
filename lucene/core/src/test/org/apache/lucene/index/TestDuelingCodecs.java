@@ -30,7 +30,6 @@ import java.util.TreeSet;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -65,10 +64,6 @@ public class TestDuelingCodecs extends LuceneTestCase {
     // as this gives the best overall coverage. when we have more
     // codecs we should probably pick 2 from Codec.availableCodecs()
     
-    // TODO: it would also be nice to support preflex, but it doesn't
-    // support a lot of the current feature set (docvalues, statistics)
-    // so this would make assertEquals complicated.
-
     leftCodec = Codec.forName("SimpleText");
     rightCodec = new RandomCodec(random());
     leftDir = newDirectory();
@@ -522,6 +517,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
     }
     
     for (String field : leftFields) {
+      // nocommit cutover to per-segment comparison
       DocValues leftNorms = MultiDocValues.getNormDocValues(leftReader, field);
       DocValues rightNorms = MultiDocValues.getNormDocValues(rightReader, field);
       if (leftNorms != null && rightNorms != null) {
@@ -609,6 +605,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
     assertEquals(info, leftValues, rightValues);
 
     for (String field : leftValues) {
+      // nocommit cutover to per-segment comparison
       DocValues leftDocValues = MultiDocValues.getDocValues(leftReader, field);
       DocValues rightDocValues = MultiDocValues.getDocValues(rightReader, field);
       if (leftDocValues != null && rightDocValues != null) {

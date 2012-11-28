@@ -90,19 +90,19 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
 
   @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
-    // nocommit todo
+    ensureOpen();
     return null;
   }
 
   @Override
   public BinaryDocValues getBinaryDocValues(String field) throws IOException {
-    // nocommit todo
+    ensureOpen();
     return null;
   }
 
   @Override
   public SortedDocValues getSortedDocValues(String field) throws IOException {
-    // nocommit todo
+    ensureOpen();
     return null;
   }
   

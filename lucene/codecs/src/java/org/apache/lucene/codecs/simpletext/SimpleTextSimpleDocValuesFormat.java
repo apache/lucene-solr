@@ -268,7 +268,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       };
     }
     
-    // nocommit
     @Override
     public SortedDocValuesConsumer addSortedField(FieldInfo field, final int valueCount, boolean fixedLength, final int maxLength) throws IOException {
       assert fieldSeen(field.name);
@@ -466,7 +465,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           field.ordPattern = stripPrefix(ORDPATTERN);
           field.dataStartFilePointer = data.getFilePointer();
           data.seek(data.getFilePointer() + (9+field.pattern.length()+field.maxLength) * field.numValues + (1+field.ordPattern.length())*maxDoc);
-          // nocommit: we need to seek past the data section!!!!
         } else {
           throw new AssertionError();
         }
@@ -491,9 +489,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         @Override
         public long get(int docID) {
           try {
-            // nocommit bounds check docID?  spooky
-            // because if we don't you can maybe get
-            // value from the wrong field ...
+            if (docID < 0 || docID >= maxDoc) {
+              throw new IndexOutOfBoundsException("docID must be 0 .. " + (maxDoc-1) + "; got " + docID);
+            }
             in.seek(field.dataStartFilePointer + (1+field.pattern.length())*docID);
             SimpleTextUtil.readLine(in, scratch);
             //System.out.println("parsing delta: " + scratch.utf8ToString());
@@ -544,9 +542,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         @Override
         public void get(int docID, BytesRef result) {
           try {
-            // nocommit bounds check docID?  spooky
-            // because if we don't you can maybe get
-            // value from the wrong field ...
+            if (docID < 0 || docID >= maxDoc) {
+              throw new IndexOutOfBoundsException("docID must be 0 .. " + (maxDoc-1) + "; got " + docID);
+            }
             in.seek(field.dataStartFilePointer + (9+field.pattern.length() + field.maxLength)*docID);
             SimpleTextUtil.readLine(in, scratch);
             assert StringHelper.startsWith(scratch, LENGTH);
@@ -554,7 +552,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
             try {
               len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, "UTF-8")).intValue();
             } catch (ParseException pe) {
-              // nocommit add message
               CorruptIndexException e = new CorruptIndexException("failed to parse int length");
               e.initCause(pe);
               throw e;
@@ -564,7 +561,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
             result.length = len;
             in.readBytes(result.bytes, 0, len);
           } catch (IOException ioe) {
-            // nocommit should .get() just throw IOE...
             throw new RuntimeException(ioe);
           }
         }
@@ -602,6 +598,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       return new SortedDocValues() {
         @Override
         public int getOrd(int docID) {
+          if (docID < 0 || docID >= maxDoc) {
+            throw new IndexOutOfBoundsException("docID must be 0 .. " + (maxDoc-1) + "; got " + docID);
+          }
           try {
             in.seek(field.dataStartFilePointer + field.numValues * (9 + field.pattern.length() + field.maxLength) + docID * (1 + field.ordPattern.length()));
             SimpleTextUtil.readLine(in, scratch);
@@ -613,7 +612,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
               throw e;
             }
           } catch (IOException ioe) {
-            // nocommit should .get() just throw IOE...
             throw new RuntimeException(ioe);
           }
         }
@@ -621,6 +619,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         @Override
         public void lookupOrd(int ord, BytesRef result) {
           try {
+            if (ord < 0 || ord >= field.numValues) {
+              throw new IndexOutOfBoundsException("ord must be 0 .. " + (field.numValues-1) + "; got " + ord);
+            }
             in.seek(field.dataStartFilePointer + ord * (9 + field.pattern.length() + field.maxLength));
             SimpleTextUtil.readLine(in, scratch);
             assert StringHelper.startsWith(scratch, LENGTH);
@@ -637,7 +638,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
             result.length = len;
             in.readBytes(result.bytes, 0, len);
           } catch (IOException ioe) {
-            // nocommit should .get() just throw IOE...
             throw new RuntimeException(ioe);
           }
         }

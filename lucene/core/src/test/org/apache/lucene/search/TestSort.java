@@ -48,7 +48,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.StorableField;
@@ -130,9 +129,6 @@ public class TestSort extends LuceneTestCase {
     Directory indexStore = newDirectory();
     dirs.add(indexStore);
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
-
-    // nocommit remove:
-    ((LogMergePolicy) writer.w.getConfig().getMergePolicy()).setUseCompoundFile(false);
 
     final DocValues.Type stringDVType;
     if (dvStringSorted) {
@@ -253,9 +249,7 @@ public class TestSort extends LuceneTestCase {
       }
 
       String numFixed = getRandomCharString(fixedLen, 48, 52);
-      // nocommit shouldn't this be tracer_fixed?  how is
-      // this passing?
-      doc.add (new Field ("fixed_tracer", numFixed, onlyStored));
+      doc.add (new Field ("tracer_fixed", numFixed, onlyStored));
       //doc.add (new Field ("contents", Integer.toString(i), Field.Store.NO, Field.Index.ANALYZED));
       doc.add(new StringField("string_fixed", numFixed, Field.Store.NO));
       doc.add(new SortedBytesDocValuesField("string_fixed", new BytesRef(numFixed), true));
@@ -272,8 +266,6 @@ public class TestSort extends LuceneTestCase {
 
       writer.addDocument (doc);
     }
-    // nocommit
-    //writer.forceMerge(1);
     //System.out.println(writer.getSegmentCount());
     writer.close();
     IndexReader reader = DirectoryReader.open(indexStore);

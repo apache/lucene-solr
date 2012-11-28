@@ -739,17 +739,14 @@ public class MemoryIndex {
       return new FieldInfos(fieldInfos.values().toArray(new FieldInfo[fieldInfos.size()]));
     }
 
-    // nocommit todo
     public NumericDocValues getNumericDocValues(String field) {
       return null;
     }
 
-    // nocommit todo
     public BinaryDocValues getBinaryDocValues(String field) {
       return null;
     }
 
-    // nocommit todo
     public SortedDocValues getSortedDocValues(String field) {
       return null;
     }

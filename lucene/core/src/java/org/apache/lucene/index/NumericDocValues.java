@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 public abstract class NumericDocValues {
-  // nocommit throws IOE or not?
   public abstract long get(int docID);
   
   public abstract long minValue();

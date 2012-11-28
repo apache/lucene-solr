@@ -23,16 +23,11 @@ import java.util.Comparator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
-// nocommit need marker interface?
 public abstract class SortedDocValues extends BinaryDocValues {
-  // nocommit throws IOE or not?
   public abstract int getOrd(int docID);
 
-  // nocommit throws IOE or not?
   public abstract void lookupOrd(int ord, BytesRef result);
 
-  // nocommit throws IOE or not?
-  // nocommit .getUniqueValueCount?
   public abstract int getValueCount();
 
   @Override
@@ -249,7 +244,13 @@ public abstract class SortedDocValues extends BinaryDocValues {
     }
   }
 
-  // nocommit javadocs
+  /** If {@code key} exists, returns its ordinal, else
+   *  returns {@code -insertionPoint-1}, like {@code
+   *  Arrays.binarySearch}.
+   *
+   *  @param key Key to look up
+   *  @param spare Spare BytesRef
+   **/
   public int lookupTerm(BytesRef key, BytesRef spare) {
 
     int low = 0;

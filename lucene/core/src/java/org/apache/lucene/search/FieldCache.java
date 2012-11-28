@@ -44,7 +44,6 @@ import org.apache.lucene.util.RamUsageEstimator;
  *
  * @lucene.internal
  */
-// nocommit abstract class...?
 public interface FieldCache {
 
   public static abstract class Bytes {

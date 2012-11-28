@@ -45,6 +45,9 @@ public final class SimpleTextCodec extends Codec {
   // TODO: need a plain-text impl (using the above)
   private final NormsFormat normsFormat = new SimpleTextNormsFormat();
   private final LiveDocsFormat liveDocs = new SimpleTextLiveDocsFormat();
+
+  // nocommit rename
+  private final SimpleDocValuesFormat simpleDVFormat = new SimpleTextSimpleDocValuesFormat();
   
   public SimpleTextCodec() {
     super("SimpleText");
@@ -90,11 +93,8 @@ public final class SimpleTextCodec extends Codec {
     return liveDocs;
   }
 
-  // nocommit;
-  private final SimpleDocValuesFormat nocommit = new SimpleTextSimpleDocValuesFormat();
   @Override
   public SimpleDocValuesFormat simpleDocValuesFormat() {
-    // nocommit
-    return nocommit;
+    return simpleDVFormat;
   }
 }

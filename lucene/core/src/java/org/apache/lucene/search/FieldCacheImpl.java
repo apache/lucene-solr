@@ -405,8 +405,6 @@ class FieldCacheImpl implements FieldCache {
             return (byte) ramInstance.get(docID);
           }
         };
-        // nocommit should we throw exc if parser isn't
-        // null?  if setDocsWithField is true?
       } else {
 
         int maxDoc = reader.maxDoc();
@@ -489,8 +487,6 @@ class FieldCacheImpl implements FieldCache {
             return (short) ramInstance.get(docID);
           }
         };
-        // nocommit should we throw exc if parser isn't
-        // null?  if setDocsWithField is true?
       } else {
         int maxDoc = reader.maxDoc();
         final short[] values;
@@ -570,8 +566,6 @@ class FieldCacheImpl implements FieldCache {
             return (int) ramInstance.get(docID);
           }
         };
-        // nocommit should we throw exc if parser isn't
-        // null?  if setDocsWithField is true?
       } else {
         final int[] values;
         final IntParser parser = (IntParser) key.custom;
@@ -723,8 +717,6 @@ class FieldCacheImpl implements FieldCache {
             return Float.intBitsToFloat((int) ramInstance.get(docID));
           }
         };
-        // nocommit should we throw exc if parser isn't
-        // null?  if setDocsWithField is true?
       } else {
         final float[] values;
         final FloatParser parser = (FloatParser) key.custom;
@@ -813,8 +805,6 @@ class FieldCacheImpl implements FieldCache {
             return ramInstance.get(docID);
           }
         };
-        // nocommit should we throw exc if parser isn't
-        // null?  if setDocsWithField is true?
       } else {
         final long[] values;
         final LongParser parser = (LongParser) key.custom;
@@ -903,8 +893,6 @@ class FieldCacheImpl implements FieldCache {
             return Double.longBitsToDouble(ramInstance.get(docID));
           }
         };
-        // nocommit should we throw exc if parser isn't
-        // null?  if setDocsWithField is true?
       } else {
         final double[] values;
         final DoubleParser parser = (DoubleParser) key.custom;
@@ -954,12 +942,16 @@ class FieldCacheImpl implements FieldCache {
     private final PackedInts.Reader termOrdToBytesOffset;
     private final PackedInts.Reader docToTermOrd;
     private final int numOrd;
+    private final int maxLength;
+    private final boolean isFixedLength;
 
-    public SortedDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader termOrdToBytesOffset, PackedInts.Reader docToTermOrd, int numOrd) {
+    public SortedDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader termOrdToBytesOffset, PackedInts.Reader docToTermOrd, int numOrd, int maxLength, boolean isFixedLength) {
       this.bytes = bytes;
       this.docToTermOrd = docToTermOrd;
       this.termOrdToBytesOffset = termOrdToBytesOffset;
       this.numOrd = numOrd;
+      this.maxLength = maxLength;
+      this.isFixedLength = isFixedLength;
     }
 
     @Override
@@ -989,15 +981,13 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    public int maxLength() {
-      // nocommit hmm
-      throw new UnsupportedOperationException();
+    public boolean isFixedLength() {
+      return isFixedLength;
     }
 
     @Override
-    public boolean isFixedLength() {
-      // nocommit hmm
-      throw new UnsupportedOperationException();
+    public int maxLength() {
+      return maxLength;
     }
 
     @Override
@@ -1188,7 +1178,7 @@ class FieldCacheImpl implements FieldCache {
           termCountHardLimit = maxDoc+1;
         }
 
-        // nocommit use Uninvert?
+        // TODO: use Uninvert?
         if (terms != null) {
           // Try for coarse estimate for number of bits; this
           // should be an underestimate most of the time, which
@@ -1222,7 +1212,10 @@ class FieldCacheImpl implements FieldCache {
 
         int termOrd = 0;
 
-        // nocommit use Uninvert?
+        int sameLength = -2;
+        int maxLength = -1;
+
+        // TODO: use Uninvert?
 
         if (terms != null) {
           final TermsEnum termsEnum = terms.iterator(null);
@@ -1233,6 +1226,12 @@ class FieldCacheImpl implements FieldCache {
             if (term == null) {
               break;
             }
+            if (sameLength == -2) {
+              sameLength = term.length;
+            } else if (sameLength != term.length) {
+              sameLength = -1;
+            }
+            maxLength = Math.max(maxLength, term.length);
             if (termOrd >= termCountHardLimit) {
               break;
             }
@@ -1262,7 +1261,7 @@ class FieldCacheImpl implements FieldCache {
         }
 
         // maybe an int-only impl?
-        return new SortedDocValuesImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
+        return new SortedDocValuesImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd, maxLength, sameLength >= 0);
       }
     }
   }
@@ -1270,10 +1269,14 @@ class FieldCacheImpl implements FieldCache {
   private static class BinaryDocValuesImpl extends BinaryDocValues {
     private final PagedBytes.Reader bytes;
     private final PackedInts.Reader docToOffset;
+    private final int maxLength;
+    private final boolean isFixedLength;
 
-    public BinaryDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader docToOffset) {
+    public BinaryDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader docToOffset, int maxLength, boolean isFixedLength) {
       this.bytes = bytes;
       this.docToOffset = docToOffset;
+      this.maxLength = maxLength;
+      this.isFixedLength = isFixedLength;
     }
 
     @Override
@@ -1295,14 +1298,12 @@ class FieldCacheImpl implements FieldCache {
 
     @Override
     public boolean isFixedLength() {
-      // nocommit hmm
-      throw new UnsupportedOperationException();
+      return isFixedLength;
     }
 
     @Override
     public int maxLength() {
-      // nocommit hmm
-      throw new UnsupportedOperationException();
+      return maxLength;
     }
   }
 
@@ -1363,6 +1364,9 @@ class FieldCacheImpl implements FieldCache {
         // pointer==0 means not set
         bytes.copyUsingLengthPrefix(new BytesRef());
 
+        int sameLength = -2;
+        int maxLength = -1;
+
         if (terms != null) {
           int termCount = 0;
           final TermsEnum termsEnum = terms.iterator(null);
@@ -1379,6 +1383,12 @@ class FieldCacheImpl implements FieldCache {
             if (term == null) {
               break;
             }
+            if (sameLength == -2) {
+              sameLength = term.length;
+            } else if (sameLength != term.length) {
+              sameLength = -1;
+            }
+            maxLength = Math.max(maxLength, term.length);
             final long pointer = bytes.copyUsingLengthPrefix(term);
             docs = termsEnum.docs(null, docs, 0);
             while (true) {
@@ -1392,7 +1402,7 @@ class FieldCacheImpl implements FieldCache {
         }
 
         // maybe an int-only impl?
-        return new BinaryDocValuesImpl(bytes.freeze(true), docToOffset.getMutable());
+        return new BinaryDocValuesImpl(bytes.freeze(true), docToOffset.getMutable(), maxLength, sameLength >= 0);
       }
     }
   }

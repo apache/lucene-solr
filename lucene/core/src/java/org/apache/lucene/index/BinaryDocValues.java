@@ -19,9 +19,8 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.util.BytesRef;
 
-// nocommit need marker interface?
 public abstract class BinaryDocValues {
-  // nocommit throws IOE or not?
+
   public abstract void get(int docID, BytesRef result);
 
   public static final byte[] MISSING = new byte[0];
