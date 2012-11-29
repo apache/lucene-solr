@@ -911,11 +911,14 @@ public final class SolrCore implements SolrInfoMBean {
       SolrException.log(log,e);
     }
     
-    
-    if (updateHandler instanceof IndexWriterCloser) {
-      decrefSolrCoreState((IndexWriterCloser)updateHandler);
-    } else {
-      decrefSolrCoreState(null);
+    try {
+      if (updateHandler instanceof IndexWriterCloser) {
+        decrefSolrCoreState((IndexWriterCloser) updateHandler);
+      } else {
+        decrefSolrCoreState(null);
+      }
+    } catch (Throwable e) {
+      SolrException.log(log, e);
     }
     
     try {

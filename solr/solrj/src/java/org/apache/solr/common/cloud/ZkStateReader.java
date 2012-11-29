@@ -197,9 +197,13 @@ public class ZkStateReader {
               Stat stat = new Stat();
               byte[] data = zkClient.getData(CLUSTER_STATE, thisWatch, stat ,
                   true);
-              
-              ClusterState clusterState = ClusterState.load(stat.getVersion(), data,
-                  ZkStateReader.this.clusterState.getLiveNodes());
+              List<String> liveNodes = zkClient.getChildren(
+                  LIVE_NODES_ZKNODE, this, true);
+     
+              Set<String> liveNodesSet = new HashSet<String>();
+              liveNodesSet.addAll(liveNodes);
+              Set<String> ln = ZkStateReader.this.clusterState.getLiveNodes();
+              ClusterState clusterState = ClusterState.load(stat.getVersion(), data, ln);
               // update volatile
               ZkStateReader.this.clusterState = clusterState;
             }
@@ -301,9 +305,9 @@ public class ZkStateReader {
               ZkStateReader.this.clusterState.getZkClusterStateVersion(), liveNodesSet,
               ZkStateReader.this.clusterState.getCollectionStates());
         }
+        this.clusterState = clusterState;
       }
 
-      this.clusterState = clusterState;
     } else {
       if (clusterStateUpdateScheduled) {
         log.info("Cloud state update for ZooKeeper already scheduled");
@@ -330,7 +334,7 @@ public class ZkStateReader {
                 clusterState = ClusterState.load(zkClient, liveNodesSet);
               } else {
                 log.info("Updating live nodes from ZooKeeper... ");
-                clusterState = new ClusterState(ZkStateReader.this.clusterState .getZkClusterStateVersion(), liveNodesSet, ZkStateReader.this.clusterState.getCollectionStates());
+                clusterState = new ClusterState(ZkStateReader.this.clusterState.getZkClusterStateVersion(), liveNodesSet, ZkStateReader.this.clusterState.getCollectionStates());
               }
               
               ZkStateReader.this.clusterState = clusterState;

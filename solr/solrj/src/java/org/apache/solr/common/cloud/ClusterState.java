@@ -70,6 +70,7 @@ public class ClusterState implements JSONWriter.Writable {
    */
   public ClusterState(Integer zkClusterStateVersion, Set<String> liveNodes,
       Map<String, Map<String,Slice>> collectionStates) {
+    this.zkClusterStateVersion = zkClusterStateVersion;
     this.liveNodes = new HashSet<String>(liveNodes.size());
     this.liveNodes.addAll(liveNodes);
     this.collectionStates = new HashMap<String, Map<String,Slice>>(collectionStates.size());
