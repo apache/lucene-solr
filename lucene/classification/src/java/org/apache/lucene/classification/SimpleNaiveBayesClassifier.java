@@ -99,9 +99,10 @@ public class SimpleNaiveBayesClassifier implements Classifier {
     Terms terms = MultiFields.getTerms(atomicReader, classFieldName);
     TermsEnum termsEnum = terms.iterator(null);
     BytesRef next;
+    String[] tokenizedDoc = tokenizeDoc(inputDocument);
     while ((next = termsEnum.next()) != null) {
       // TODO : turn it to be in log scale
-      double clVal = calculatePrior(next) * calculateLikelihood(inputDocument, next);
+      double clVal = calculatePrior(next) * calculateLikelihood(tokenizedDoc, next);
       if (clVal > max) {
         max = clVal;
         foundClass = next.utf8ToString();
@@ -111,10 +112,10 @@ public class SimpleNaiveBayesClassifier implements Classifier {
   }
 
 
-  private double calculateLikelihood(String document, BytesRef c) throws IOException {
+  private double calculateLikelihood(String[] tokenizedDoc, BytesRef c) throws IOException {
     // for each word
     double result = 1d;
-    for (String word : tokenizeDoc(document)) {
+    for (String word : tokenizedDoc) {
       // search with text:word AND class:c
       int hits = getWordFreqForClass(word, c);
 
