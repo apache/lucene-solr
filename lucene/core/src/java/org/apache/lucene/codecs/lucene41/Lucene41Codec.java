@@ -36,6 +36,7 @@ import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
 import org.apache.lucene.codecs.lucene41.values.Lucene41DocValuesFormat;
+import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /**
@@ -63,6 +64,14 @@ public class Lucene41Codec extends Codec {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       return Lucene41Codec.this.getPostingsFormatForField(field);
+    }
+  };
+  
+  
+  private final SimpleDocValuesFormat simpleDocValuesFormat = new PerFieldDocValuesFormat() {
+    @Override
+    public SimpleDocValuesFormat getDocValuesFormatForField(String field) {
+      return Lucene41Codec.this.getDocValuesFormatForField(field);
     }
   };
 
@@ -120,7 +129,14 @@ public class Lucene41Codec extends Codec {
     return defaultFormat;
   }
   
-  private final SimpleDocValuesFormat simpleDocValuesFormat = new Lucene41DocValuesFormat();
+  /** Returns the docvalues format that should be used for writing 
+   *  new segments of <code>field</code>.
+   *  
+   *  The default implementation always returns "Lucene41"
+   */
+  public SimpleDocValuesFormat getDocValuesFormatForField(String field) {
+    return defaultDVFormat;
+  }
   
   @Override
   public SimpleDocValuesFormat simpleDocValuesFormat() {
@@ -128,4 +144,5 @@ public class Lucene41Codec extends Codec {
   }
 
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
+  private final SimpleDocValuesFormat defaultDVFormat = SimpleDocValuesFormat.forName("Lucene41");
 }

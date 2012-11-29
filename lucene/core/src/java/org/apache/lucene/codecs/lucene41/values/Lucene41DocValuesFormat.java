@@ -27,6 +27,10 @@ import org.apache.lucene.index.SegmentWriteState;
 
 public class Lucene41DocValuesFormat extends SimpleDocValuesFormat {
   
+  public Lucene41DocValuesFormat() {
+    super("Lucene41");
+  }
+  
   @Override
   public SimpleDVConsumer fieldsConsumer(SegmentWriteState state)
       throws IOException {

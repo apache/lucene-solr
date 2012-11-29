@@ -21,6 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.SimpleDocValuesFormat;
+import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
@@ -42,6 +44,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Ignore;
 
 /**
  * A very simple demo used in the API documentation (src/java/overview.html).
@@ -663,6 +666,63 @@ public class TestDemoDocValue extends LuceneTestCase {
     assertEquals(new BytesRef("hello world 2"), scratch);
     dv.lookupOrd(dv.getOrd(1), scratch);
     assertEquals(new BytesRef(""), scratch);
+    ireader.close();
+    directory.close();
+  }
+  
+  @Ignore("broken until we fix e.g. Lucene41's impl to actually handle suffixes correctly")
+  // nocommit: if we are going to pass down suffixes to segmentread/writestate,
+  // then they should be respected by *all* codec apis!
+  public void testDemoTwoFieldsTwoFormats() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    Directory directory = newDirectory();
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    // TODO: Fix the CFS/suffixing of Lucene41DocValues so it actually works with this
+    final SimpleDocValuesFormat fast = SimpleDocValuesFormat.forName("Lucene41");
+    final SimpleDocValuesFormat slow = SimpleDocValuesFormat.forName("SimpleText");
+    iwc.setCodec(new Lucene41Codec() {
+      @Override
+      public SimpleDocValuesFormat getDocValuesFormatForField(String field) {
+        if ("dv1".equals(field)) {
+          return fast;
+        } else {
+          return slow;
+        }
+      }
+    });
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
+    String text = "This is the text to be indexed. " + longTerm;
+    doc.add(newTextField("fieldname", text, Field.Store.YES));
+    doc.add(new PackedLongDocValuesField("dv1", 5));
+    doc.add(new StraightBytesDocValuesField("dv2", new BytesRef("hello world")));
+    iwriter.addDocument(doc);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    IndexSearcher isearcher = new IndexSearcher(ireader);
+
+    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    Query query = new TermQuery(new Term("fieldname", "text"));
+    TopDocs hits = isearcher.search(query, null, 1);
+    assertEquals(1, hits.totalHits);
+    BytesRef scratch = new BytesRef();
+    // Iterate through the results:
+    for (int i = 0; i < hits.scoreDocs.length; i++) {
+      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      assertEquals(text, hitDoc.get("fieldname"));
+      assert ireader.leaves().size() == 1;
+      NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv1");
+      assertEquals(5, dv.get(hits.scoreDocs[i].doc));
+      BinaryDocValues dv2 = ireader.leaves().get(0).reader().getBinaryDocValues("dv2");
+      dv2.get(hits.scoreDocs[i].doc, scratch);
+      assertEquals(new BytesRef("hello world"), scratch);
+    }
+
     ireader.close();
     directory.close();
   }

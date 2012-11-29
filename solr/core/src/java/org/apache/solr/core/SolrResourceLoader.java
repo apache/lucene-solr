@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.SimpleDocValuesFormat;
 import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -177,6 +178,7 @@ public class SolrResourceLoader implements ResourceLoader
   void reloadLuceneSPI() {
     // Codecs:
     PostingsFormat.reloadPostingsFormats(this.classLoader);
+    SimpleDocValuesFormat.reloadDocValuesFormats(this.classLoader);
     Codec.reloadCodecs(this.classLoader);
     // Analysis:
     CharFilterFactory.reloadCharFilters(this.classLoader);

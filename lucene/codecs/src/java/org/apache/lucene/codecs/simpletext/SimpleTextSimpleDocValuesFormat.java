@@ -74,6 +74,10 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   // used for sorted bytes
   final static BytesRef NUMVALUES = new BytesRef("  numvalues ");
   final static BytesRef ORDPATTERN = new BytesRef("  ordpattern ");
+  
+  public SimpleTextSimpleDocValuesFormat() {
+    super("SimpleText");
+  }
 
   @Override
   public SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException {

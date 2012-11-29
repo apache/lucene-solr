@@ -521,7 +521,10 @@ public class CheckIndex {
           msg("    diagnostics = " + diagnostics);
         }
 
-        // TODO: we could append the info attributes() to the msg?
+        Map<String,String> atts = info.info.attributes();
+        if (atts != null && !atts.isEmpty()) {
+          msg("    attributes = " + atts);
+        }
 
         if (!info.hasDeletions()) {
           msg("    no deletions");
@@ -1442,6 +1445,11 @@ public class CheckIndex {
   
   // nocommit
   private void checkSimpleDocValues(FieldInfo fi, SegmentReader reader) throws Exception {
+    // nocommit: just for debugging
+    Map<String,String> atts = fi.attributes();
+    if (atts != null) {
+      msg("  field: " + fi.name + ": " + atts);
+    }
     switch(fi.getDocValuesType()) {
       case BYTES_FIXED_SORTED:
       case BYTES_VAR_SORTED:
