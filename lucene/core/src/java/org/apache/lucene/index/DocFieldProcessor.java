@@ -159,11 +159,6 @@ final class DocFieldProcessor extends DocConsumer {
     }
   }
 
-  @Override
-  public boolean freeRAM() {
-    return consumer.freeRAM();
-  }
-
   public Collection<DocFieldConsumerPerField> fields() {
     Collection<DocFieldConsumerPerField> fields = new HashSet<DocFieldConsumerPerField>();
     for(int i=0;i<fieldHash.length;i++) {

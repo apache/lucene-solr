@@ -77,16 +77,8 @@ final class DocInverter extends DocFieldConsumer {
     }
   }
 
-  // nocommit nuke all freeRAMs: they are unused?
-
-  @Override
-  public boolean freeRAM() {
-    return consumer.freeRAM();
-  }
-
   @Override
   public DocFieldConsumerPerField addField(FieldInfo fi) {
     return new DocInverterPerField(this, fi);
   }
-
 }
