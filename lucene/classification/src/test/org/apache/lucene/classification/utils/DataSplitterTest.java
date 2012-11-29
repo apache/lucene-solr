@@ -30,6 +30,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -62,15 +63,15 @@ public class DataSplitterTest extends LuceneTestCase {
     ft.setStoreTermVectorOffsets(true);
     ft.setStoreTermVectorPositions(true);
 
-    Analyzer analyzer = new MockAnalyzer(new Random());
+    Analyzer analyzer = new MockAnalyzer(random());
 
     Document doc;
+    Random rnd = random();
     for (int i = 0; i < 100; i++) {
       doc = new Document();
-      doc.add(new Field(idFieldName, new Random().toString(), ft));
-      doc.add(new Field(textFieldName, new StringBuilder(new Random().toString()).append(new Random().toString()).append(
-          new Random().toString()).toString(), ft));
-      doc.add(new Field(classFieldName, new Random().toString(), ft));
+      doc.add(new Field(idFieldName, Integer.toString(i), ft));
+      doc.add(new Field(textFieldName, _TestUtil.randomUnicodeString(rnd, 1024), ft));
+      doc.add(new Field(classFieldName, _TestUtil.randomUnicodeString(rnd, 10), ft));
       indexWriter.addDocument(doc, analyzer);
     }
 
@@ -108,7 +109,7 @@ public class DataSplitterTest extends LuceneTestCase {
 
     try {
       DatasetSplitter datasetSplitter = new DatasetSplitter(testRatio, crossValidationRatio);
-      datasetSplitter.split(originalIndex, trainingIndex, testIndex, crossValidationIndex, new MockAnalyzer(new Random()), fieldNames);
+      datasetSplitter.split(originalIndex, trainingIndex, testIndex, crossValidationIndex, new MockAnalyzer(random()), fieldNames);
 
       assertNotNull(trainingIndex);
       assertNotNull(testIndex);
