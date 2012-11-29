@@ -63,18 +63,21 @@ class DocumentsWriterPerThread {
       This is the current indexing chain:
 
       DocConsumer / DocConsumerPerThread
-        --> code: DocFieldProcessor / DocFieldProcessorPerThread
-          --> DocFieldConsumer / DocFieldConsumerPerThread / DocFieldConsumerPerField
-            --> code: DocFieldConsumers / DocFieldConsumersPerThread / DocFieldConsumersPerField
-              --> code: DocInverter / DocInverterPerThread / DocInverterPerField
-                --> InvertedDocConsumer / InvertedDocConsumerPerThread / InvertedDocConsumerPerField
-                  --> code: TermsHash / TermsHashPerThread / TermsHashPerField
-                    --> TermsHashConsumer / TermsHashConsumerPerThread / TermsHashConsumerPerField
-                      --> code: FreqProxTermsWriter / FreqProxTermsWriterPerThread / FreqProxTermsWriterPerField
-                      --> code: TermVectorsTermsWriter / TermVectorsTermsWriterPerThread / TermVectorsTermsWriterPerField
-                --> InvertedDocEndConsumer / InvertedDocConsumerPerThread / InvertedDocConsumerPerField
-                  --> code: NormsWriter / NormsWriterPerThread / NormsWriterPerField
-              --> code: StoredFieldsWriter / StoredFieldsWriterPerThread / StoredFieldsWriterPerField
+        --> code: DocFieldProcessor
+          --> DocFieldConsumer / DocFieldConsumerPerField
+            --> code: DocFieldConsumers / DocFieldConsumersPerField
+              --> code: DocInverter / DocInverterPerField
+                --> InvertedDocConsumer / InvertedDocConsumerPerField
+                  --> code: TermsHash / TermsHashPerField
+                    --> TermsHashConsumer / TermsHashConsumerPerField
+                      --> code: FreqProxTermsWriter / FreqProxTermsWriterPerField
+                      --> code: TermVectorsTermsWriter / TermVectorsTermsWriterPerField
+                --> InvertedDocEndConsumer / InvertedDocConsumerPerField
+                  --> code: NormsWriter / NormsWriterPerField
+          --> StoredFieldsConsumer
+            --> TwoStoredFieldConsumers
+              -> code: StoredFieldsProcessor
+              -> code: DocValuesProcessor
     */
 
     // Build up indexing chain:
@@ -86,7 +89,10 @@ class DocumentsWriterPerThread {
                                                           new TermsHash(documentsWriterPerThread, termVectorsWriter, false, null));
       final NormsConsumer normsWriter = new NormsConsumer(documentsWriterPerThread);
       final DocInverter docInverter = new DocInverter(documentsWriterPerThread.docState, termsHash, normsWriter);
-      return new DocFieldProcessor(documentsWriterPerThread, docInverter);
+      final StoredFieldsConsumer storedFields = new TwoStoredFieldsConsumers(
+                                                      new StoredFieldsProcessor(documentsWriterPerThread),
+                                                      new DocValuesProcessor(documentsWriterPerThread.bytesUsed));
+      return new DocFieldProcessor(documentsWriterPerThread, docInverter, storedFields);
     }
   };
 

@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BinaryDocValuesConsumer;
+import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefArray;
 import org.apache.lucene.util.Counter;
@@ -29,7 +30,7 @@ import org.apache.lucene.util.Counter;
  *  segment flushes. */
 // nocommit name?
 // nocommit make this a consumer in the chain?
-class BytesDVWriter {
+class BytesDVWriter extends DocValuesWriter {
 
   private final BytesRefArray bytesRefArray;
   private final FieldInfo fieldInfo;
@@ -78,13 +79,18 @@ class BytesDVWriter {
     totalSize += length;
   }
 
+  @Override
   public void finish(int maxDoc) {
     if (addedValues < maxDoc) {
       mergeLength(0);
     }
   }
 
-  public void flush(FieldInfo fieldInfo, SegmentWriteState state, BinaryDocValuesConsumer consumer) throws IOException {
+  @Override
+  public void flush(SegmentWriteState state, SimpleDVConsumer dvConsumer) throws IOException {
+    BinaryDocValuesConsumer consumer = dvConsumer.addBinaryField(fieldInfo,
+                                                                 fixedLength >= 0,
+                                                                 maxLength);
     final int bufferedDocCount = addedValues;
     BytesRef value = new BytesRef();
     for(int docID=0;docID<bufferedDocCount;docID++) {

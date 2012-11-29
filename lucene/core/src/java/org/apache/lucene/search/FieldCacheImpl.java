@@ -1328,7 +1328,7 @@ class FieldCacheImpl implements FieldCache {
 
       BinaryDocValues valuesIn = reader.getBinaryDocValues(key.field);
       if (valuesIn != null) {
-        return valuesIn;
+        return valuesIn.newRAMInstance();
       } else {
         final int maxDoc = reader.maxDoc();
         Terms terms = reader.terms(key.field);

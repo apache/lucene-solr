@@ -49,7 +49,7 @@ import org.apache.lucene.util.IOUtils;
 final class DocFieldProcessor extends DocConsumer {
 
   final DocFieldConsumer consumer;
-  final StoredFieldsConsumer fieldsWriter;
+  final StoredFieldsConsumer storedConsumer;
   final Codec codec;
 
   // Holds all fields seen in current doc
@@ -66,12 +66,12 @@ final class DocFieldProcessor extends DocConsumer {
 
   final Counter bytesUsed;
 
-  public DocFieldProcessor(DocumentsWriterPerThread docWriter, DocFieldConsumer consumer) {
+  public DocFieldProcessor(DocumentsWriterPerThread docWriter, DocFieldConsumer consumer, StoredFieldsConsumer storedConsumer) {
     this.docState = docWriter.docState;
     this.codec = docWriter.codec;
     this.bytesUsed = docWriter.bytesUsed;
     this.consumer = consumer;
-    fieldsWriter = new StoredFieldsConsumer(docWriter);
+    this.storedConsumer = storedConsumer;
   }
 
   @Override
@@ -83,72 +83,9 @@ final class DocFieldProcessor extends DocConsumer {
       childFields.put(f.getFieldInfo().name, f);
     }
 
-    SimpleDVConsumer dvConsumer = null;
-
-    for(int i=0;i<fieldHash.length;i++) {
-      DocFieldProcessorPerField field = fieldHash[i];
-      while(field != null) {
-        // nocommit maybe we should sort by .... somethign?
-        // field name?  field number?  else this is hash
-        // order!!
-        if (field.bytesDVWriter != null || field.numberDVWriter != null || field.sortedBytesDVWriter != null) {
-
-          if (dvConsumer == null) {
-            SimpleDocValuesFormat fmt =  state.segmentInfo.getCodec().simpleDocValuesFormat();
-            // nocommit once we make
-            // Codec.simpleDocValuesFormat abstract, change
-            // this to assert dvConsumer != null!
-            if (fmt == null) {
-              field = field.next;
-              continue;
-            }
-
-            dvConsumer = fmt.fieldsConsumer(state);
-            // nocommit shouldn't need null check:
-            if (dvConsumer == null) {
-              continue;
-            }
-          }
-
-          if (field.bytesDVWriter != null) {
-            field.bytesDVWriter.finish(state.segmentInfo.getDocCount());
-            field.bytesDVWriter.flush(field.fieldInfo, state,
-                                      dvConsumer.addBinaryField(field.fieldInfo,
-                                                                field.bytesDVWriter.fixedLength >= 0,
-                                                                field.bytesDVWriter.maxLength));
-            // nocommit must null it out now else next seg
-            // will flush even if no docs had DV...?
-          }
-
-          if (field.sortedBytesDVWriter != null) {
-            field.sortedBytesDVWriter.finish(state.segmentInfo.getDocCount());
-            field.sortedBytesDVWriter.flush(field.fieldInfo, state,
-                                            dvConsumer.addSortedField(field.fieldInfo,
-                                                                      field.sortedBytesDVWriter.hash.size(),
-                                                                      field.sortedBytesDVWriter.fixedLength >= 0,
-                                                                      field.sortedBytesDVWriter.maxLength));
-            // nocommit must null it out now else next seg
-            // will flush even if no docs had DV...?
-          }
-
-          if (field.numberDVWriter != null) {
-            field.numberDVWriter.finish(state.segmentInfo.getDocCount());
-            field.numberDVWriter.flush(field.fieldInfo, state,
-                                       dvConsumer.addNumericField(field.fieldInfo,
-                                                                  field.numberDVWriter.minValue,
-                                                                  field.numberDVWriter.maxValue));
-            // nocommit must null it out now else next seg
-            // will flush even if no docs had DV...?
-          }
-        }
-        field = field.next;
-      }
-    }
-
     assert fields.size() == totalFieldCount;
 
-
-    fieldsWriter.flush(state);
+    storedConsumer.flush(state);
     consumer.flush(childFields, state);
 
     for (DocValuesConsumerHolder consumer : docValues.values()) {
@@ -157,7 +94,7 @@ final class DocFieldProcessor extends DocConsumer {
     
     // close perDocConsumer during flush to ensure all files are flushed due to PerCodec CFS
     // nocommit
-    IOUtils.close(perDocConsumer, dvConsumer);
+    IOUtils.close(perDocConsumer);
 
     // Important to save after asking consumer to flush so
     // consumer can alter the FieldInfo* if necessary.  EG,
@@ -188,7 +125,7 @@ final class DocFieldProcessor extends DocConsumer {
     // TODO add abort to PerDocConsumer!
     
     try {
-      fieldsWriter.abort();
+      storedConsumer.abort();
     } catch (Throwable t) {
       if (th == null) {
         th = t;
@@ -278,7 +215,7 @@ final class DocFieldProcessor extends DocConsumer {
   public void processDocument(FieldInfos.Builder fieldInfos) throws IOException {
 
     consumer.startDocument();
-    fieldsWriter.startDocument();
+    storedConsumer.startDocument();
 
     fieldCount = 0;
 
@@ -297,49 +234,17 @@ final class DocFieldProcessor extends DocConsumer {
 
       fp.addField(field);
     }
+
     for (StorableField field: docState.doc.storableFields()) {
       final String fieldName = field.name();
       IndexableFieldType ft = field.fieldType();
-
-      DocFieldProcessorPerField fp = processField(fieldInfos, thisFieldGen, fieldName, ft);
-      if (ft.stored()) {
-        fieldsWriter.addField(field, fp.fieldInfo);
-      }
+      FieldInfo fieldInfo = fieldInfos.addOrUpdate(fieldName, ft);
+      storedConsumer.addField(docState.docID, field, fieldInfo);
       
-      // nocommit the DV indexing should be just another
-      // consumer in the chain, not stuck inside here?  this
-      // source should just "dispatch"
       final DocValues.Type dvType = ft.docValueType();
       if (dvType != null) {
-        switch(dvType) {
-        case BYTES_VAR_STRAIGHT:
-        case BYTES_FIXED_STRAIGHT:
-          fp.addBytesDVField(docState.docID, field.binaryValue());
-          break;
-        case BYTES_VAR_SORTED:
-        case BYTES_FIXED_SORTED:
-        case BYTES_VAR_DEREF:
-        case BYTES_FIXED_DEREF:
-          fp.addSortedBytesDVField(docState.docID, field.binaryValue());
-          break;
-        case VAR_INTS:
-        case FIXED_INTS_8:
-        case FIXED_INTS_16:
-        case FIXED_INTS_32:
-        case FIXED_INTS_64:
-          fp.addNumberDVField(docState.docID, field.numericValue());
-          break;
-        case FLOAT_32:
-          fp.addFloatDVField(docState.docID, field.numericValue());
-          break;
-        case FLOAT_64:
-          fp.addDoubleDVField(docState.docID, field.numericValue());
-          break;
-        default:
-          break;
-        }
         DocValuesConsumerHolder docValuesConsumer = docValuesConsumer(dvType,
-            docState, fp.fieldInfo);
+            docState, fieldInfo);
         DocValuesConsumer consumer = docValuesConsumer.docValuesConsumer;
         if (docValuesConsumer.compatibility == null) {
           consumer.add(docState.docID, field);
@@ -381,6 +286,7 @@ final class DocFieldProcessor extends DocConsumer {
 
   private DocFieldProcessorPerField processField(FieldInfos.Builder fieldInfos,
       final int thisFieldGen, final String fieldName, IndexableFieldType ft) {
+
     // Make sure we have a PerField allocated
     final int hashPos = fieldName.hashCode() & hashMask;
     DocFieldProcessorPerField fp = fieldHash[hashPos];
@@ -406,6 +312,9 @@ final class DocFieldProcessor extends DocConsumer {
         rehash();
       }
     } else {
+      // nocommit this is wasteful: it's another hash lookup
+      // by field name; can we just do fp.fieldInfo.update
+      // directly?
       fieldInfos.addOrUpdate(fp.fieldInfo.name, ft);
     }
 
@@ -436,7 +345,7 @@ final class DocFieldProcessor extends DocConsumer {
   @Override
   void finishDocument() throws IOException {
     try {
-      fieldsWriter.finishDocument();
+      storedConsumer.finishDocument();
     } finally {
       consumer.finishDocument();
     }
@@ -485,5 +394,4 @@ final class DocFieldProcessor extends DocConsumer {
     docValues.put(fieldInfo.name, docValuesConsumerAndDocID);
     return docValuesConsumerAndDocID;
   }
-  
 }

@@ -35,12 +35,6 @@ final class DocFieldProcessorPerField {
   final FieldInfo fieldInfo;
   private final Counter bytesUsed;
 
-  // nocommit after flush we should null these out?  then we
-  // don't need reset() impl'd in each...
-  BytesDVWriter bytesDVWriter;
-  SortedBytesDVWriter sortedBytesDVWriter;
-  NumberDVWriter numberDVWriter;
-
   DocFieldProcessorPerField next;
   int lastGen = -1;
 
@@ -52,58 +46,6 @@ final class DocFieldProcessorPerField {
     this.consumer = docFieldProcessor.consumer.addField(fieldInfo);
     this.fieldInfo = fieldInfo;
     this.bytesUsed = docFieldProcessor.bytesUsed;
-  }
-
-  // nocommit make this generic chain through consumer?
-  public void addBytesDVField(int docID, BytesRef value) {
-    if (bytesDVWriter == null) {
-      verifyField(fieldInfo, "binary");
-      bytesDVWriter = new BytesDVWriter(fieldInfo, bytesUsed);
-    }
-    bytesDVWriter.addValue(docID, value);
-  }
-
-  // nocommit make this generic chain through consumer?
-  public void addSortedBytesDVField(int docID, BytesRef value) {
-    if (sortedBytesDVWriter == null) {
-      verifyField(fieldInfo, "sorted");
-      sortedBytesDVWriter = new SortedBytesDVWriter(fieldInfo, bytesUsed);
-    }
-    sortedBytesDVWriter.addValue(docID, value);
-  }
-
-  // nocommit make this generic chain through consumer?
-  public void addNumberDVField(int docID, Number value) {
-    if (numberDVWriter == null) {
-      verifyField(fieldInfo, "numeric");
-      numberDVWriter = new NumberDVWriter(fieldInfo, bytesUsed);
-    }
-    numberDVWriter.addValue(docID, value.longValue());
-  }
-
-  // nocommit make this generic chain through consumer?
-  public void addFloatDVField(int docID, Number value) {
-    if (numberDVWriter == null) {
-      verifyField(fieldInfo, "numeric");
-      numberDVWriter = new NumberDVWriter(fieldInfo, bytesUsed);
-    }
-    numberDVWriter.addValue(docID, Float.floatToRawIntBits(value.floatValue()));
-  }
-
-  // nocommit make this generic chain through consumer?
-  public void addDoubleDVField(int docID, Number value) {
-    if (numberDVWriter == null) {
-      verifyField(fieldInfo, "numeric");
-      numberDVWriter = new NumberDVWriter(fieldInfo, bytesUsed);
-    }
-    numberDVWriter.addValue(docID, Double.doubleToRawLongBits(value.doubleValue()));
-  }
-
-  private void verifyField(FieldInfo field, String type) {
-    if (dvFields.containsKey(field)) {
-      throw new IllegalArgumentException("Incompatible DocValues type: field \"" + field.name + "\" changed from " + dvFields.get(field) + " to " + type);
-    }
-    dvFields.put(field, type);
   }
 
   public void addField(IndexableField field) {
@@ -119,14 +61,5 @@ final class DocFieldProcessorPerField {
 
   public void abort() {
     consumer.abort();
-    if (bytesDVWriter != null) {
-      bytesDVWriter.abort();
-    }
-    if (sortedBytesDVWriter != null) {
-      sortedBytesDVWriter.abort();
-    }
-    if (numberDVWriter != null) {
-      numberDVWriter.abort();
-    }
   }
 }

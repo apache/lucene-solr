@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.NumericDocValuesConsumer;
+import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.packed.AppendingLongBuffer;
 import org.apache.lucene.util.packed.PackedInts;
@@ -30,7 +31,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *  segment flushes. */
 // nocommit name?
 // nocommit make this a consumer in the chain?
-class NumberDVWriter {
+class NumberDVWriter extends DocValuesWriter {
 
   private final static long MISSING = 0L;
 
@@ -83,13 +84,16 @@ class NumberDVWriter {
     }
   }
 
+  @Override
   public void finish(int maxDoc) {
     if (pending.size() < maxDoc) {
       mergeValue(0);
     }
   }
 
-  public void flush(FieldInfo fieldInfo, SegmentWriteState state, NumericDocValuesConsumer consumer) throws IOException {
+  @Override
+  public void flush(SegmentWriteState state, SimpleDVConsumer dvConsumer) throws IOException {
+    NumericDocValuesConsumer consumer = dvConsumer.addNumericField(fieldInfo, minValue, maxValue);
     final int bufferedDocCount = pending.size();
 
     AppendingLongBuffer.Iterator it = pending.iterator();

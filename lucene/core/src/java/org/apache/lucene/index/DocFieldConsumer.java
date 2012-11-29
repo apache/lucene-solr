@@ -38,5 +38,4 @@ abstract class DocFieldConsumer {
   abstract DocFieldConsumerPerField addField(FieldInfo fi);
 
   abstract void finishDocument() throws IOException;
-
 }

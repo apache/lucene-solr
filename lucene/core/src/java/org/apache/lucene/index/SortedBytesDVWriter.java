@@ -19,21 +19,22 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SortedDocValuesConsumer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 
 
 /** Buffers up pending byte[] per doc, deref and sorting via
  *  int ord, then flushes when segment flushes. */
 // nocommit name?
 // nocommit make this a consumer in the chain?
-class SortedBytesDVWriter {
+class SortedBytesDVWriter extends DocValuesWriter {
   final BytesRefHash hash;
   private int[] pending = new int[DEFAULT_PENDING_SIZE];
   private int pendingIndex = 0;
@@ -76,6 +77,7 @@ class SortedBytesDVWriter {
     addOneValue(value);
   }
 
+  @Override
   public void finish(int maxDoc) {
     if (pendingIndex < maxDoc) {
       addOneValue(EMPTY);
@@ -107,8 +109,12 @@ class SortedBytesDVWriter {
     maxLength = Math.max(maxLength, length);
   }
 
-  public void flush(FieldInfo fieldInfo, SegmentWriteState state, SortedDocValuesConsumer consumer) throws IOException {
-
+  @Override
+  public void flush(SegmentWriteState state, SimpleDVConsumer dvConsumer) throws IOException {
+    SortedDocValuesConsumer consumer = dvConsumer.addSortedField(fieldInfo,
+                                                                 hash.size(),
+                                                                 fixedLength >= 0,
+                                                                 maxLength);
     final int maxDoc = state.segmentInfo.getDocCount();
     int emptyOrd = -1;
     if (pendingIndex < maxDoc) {
