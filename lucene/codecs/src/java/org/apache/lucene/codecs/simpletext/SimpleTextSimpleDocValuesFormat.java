@@ -38,15 +38,11 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
@@ -81,12 +77,12 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
 
   @Override
   public SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return new SimpleTextDocValuesWriter(state.directory, state.segmentInfo, state.context);
+    return new SimpleTextDocValuesWriter(state);
   }
 
   @Override
   public SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new SimpleTextDocValuesReader(state.fieldInfos, state.directory, state.segmentInfo, state.context);
+    return new SimpleTextDocValuesReader(state);
   }
   
   /** the .dat file contains the data.
@@ -150,9 +146,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     final int numDocs;
     private final Set<String> fieldsSeen = new HashSet<String>(); // for asserting
     
-    SimpleTextDocValuesWriter(Directory dir, SegmentInfo si, IOContext context) throws IOException {
-      data = dir.createOutput(IndexFileNames.segmentFileName(si.name, "", "dat"), context);
-      numDocs = si.getDocCount();
+    SimpleTextDocValuesWriter(SegmentWriteState state) throws IOException {
+      data = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "dat"), state.context);
+      numDocs = state.segmentInfo.getDocCount();
     }
 
     // for asserting
@@ -404,10 +400,10 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     final BytesRef scratch = new BytesRef();
     final Map<String,OneField> fields = new HashMap<String,OneField>();
     
-    SimpleTextDocValuesReader(FieldInfos fieldInfos, Directory dir, SegmentInfo si, IOContext context) throws IOException {
+    SimpleTextDocValuesReader(SegmentReadState state) throws IOException {
       //System.out.println("dir=" + dir + " seg=" + si.name);
-      data = dir.openInput(IndexFileNames.segmentFileName(si.name, "", "dat"), context);
-      maxDoc = si.getDocCount();
+      data = state.directory.openInput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "dat"), state.context);
+      maxDoc = state.segmentInfo.getDocCount();
       while(true) {
         readLine();
         //System.out.println("READ field=" + scratch.utf8ToString());
@@ -417,7 +413,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         assert startsWith(FIELD) : scratch.utf8ToString();
         String fieldName = stripPrefix(FIELD);
         //System.out.println("  field=" + fieldName);
-        FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldName);
+        FieldInfo fieldInfo = state.fieldInfos.fieldInfo(fieldName);
         assert fieldInfo != null;
 
         OneField field = new OneField();
