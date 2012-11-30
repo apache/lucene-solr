@@ -269,6 +269,9 @@ Bug Fixes
   you are replicating.
   (Mark Miller, Markus Jelsma)
 
+* SOLR-2890: Fixed a bug that prevented omitNorms and omitTermFreqAndPositions 
+  options from being respected in some <fieldType/> declarations (hossman)
+
 Other Changes
 ----------------------
 
