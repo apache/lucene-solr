@@ -28,7 +28,9 @@ public abstract class PrimitiveFieldType extends FieldType {
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
     super.init(schema, args);
-    if(schema.getVersion() > 1.4) {
+    if(schema.getVersion() > 1.4F &&
+       // only override if it's not explicitly false
+       0 == (falseProperties & OMIT_NORMS)) {
       properties |= OMIT_NORMS;
     }
   }

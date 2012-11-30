@@ -60,8 +60,12 @@ public class TextField extends FieldType {
   @Override
   protected void init(IndexSchema schema, Map<String,String> args) {
     properties |= TOKENIZED;
-    if (schema.getVersion()> 1.1f) properties &= ~OMIT_TF_POSITIONS;
-    if (schema.getVersion() > 1.3f) {
+    if (schema.getVersion() > 1.1F &&
+        // only override if it's not explicitly true
+        0 == (trueProperties & OMIT_TF_POSITIONS)) {
+      properties &= ~OMIT_TF_POSITIONS;
+    }
+    if (schema.getVersion() > 1.3F) {
       autoGeneratePhraseQueries = false;
     } else {
       autoGeneratePhraseQueries = true;

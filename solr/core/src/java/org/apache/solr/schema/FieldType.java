@@ -84,7 +84,7 @@ public abstract class FieldType extends FieldProperties {
   public boolean isMultiValued() {
     return (properties & MULTIVALUED) != 0;
   }
-  
+
   /** Check if a property is set */
   protected boolean hasProperty( int p ) {
     return (properties & p) != 0;
