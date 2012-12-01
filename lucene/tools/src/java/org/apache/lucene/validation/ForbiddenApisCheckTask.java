@@ -315,6 +315,16 @@ public class ForbiddenApisCheckTask extends Task {
   
   @Override
   public void execute() throws BuildException {
+    // the checker is not compatible with JDK 1.8+ (changed class format: 52.0), don't fail just report warning:
+    try {
+      Collections.class.getMethod("emptySortedSet");
+      // this is Java 8 :(
+      log("Java 8 or later is currently not supported by this checker. Please run the checks with a previous JDK!", Project.MSG_WARN);
+      return;
+    } catch (NoSuchMethodException nsme) {
+      // ignore, we are fine!
+    }
+    
     AntClassLoader antLoader = null;
     try {
       if (classpath != null) {
