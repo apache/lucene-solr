@@ -89,6 +89,11 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   /** Encodes/decodes document normalization values */
   public abstract NormsFormat normsFormat();
   
+  public SimpleNormsFormat simpleNormsFormat() {
+    // nocommit make this abstract
+    return null;
+  }
+
   /** Encodes/decodes live docs */
   public abstract LiveDocsFormat liveDocsFormat();
   

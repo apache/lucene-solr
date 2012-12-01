@@ -29,7 +29,7 @@ import org.apache.lucene.util.packed.PackedInts;
 
 /** Buffers up pending long per doc, then flushes when
  *  segment flushes. */
-// nocommit name?
+// nocommit rename to NumericDVWriter?
 // nocommit make this a consumer in the chain?
 class NumberDVWriter extends DocValuesWriter {
 
@@ -116,9 +116,9 @@ class NumberDVWriter extends DocValuesWriter {
     reset();
   }
 
-  // nocommit do we really need this...?  can't parent alloc
+  // nocommit do we really need this...?  can't/doesn't parent alloc
   // a new instance after flush?
-  private void reset() {
+  void reset() {
     pending = new AppendingLongBuffer();
     updateBytesUsed();
     anyValues = false;

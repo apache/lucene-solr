@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.similarities.Similarity;
 
@@ -30,6 +31,7 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
   private final Norm norm;
   private final NormsConsumer parent;
   private Type initType;
+  private final NumberDVWriter simpleNormsWriter;
   
   public NormsConsumerPerField(final DocInverterPerField docInverterPerField, final FieldInfo fieldInfo, NormsConsumer parent) {
     this.fieldInfo = fieldInfo;
@@ -38,6 +40,7 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
     fieldState = docInverterPerField.fieldState;
     similarity = docState.similarity;
     norm = new Norm();
+    simpleNormsWriter = new NumberDVWriter(fieldInfo, docState.docWriter.bytesUsed);
   }
 
   @Override
@@ -56,14 +59,37 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
         DocValuesConsumer consumer = getConsumer(norm.type());
         consumer.add(docState.docID, field);
       }
+
+      long norm = similarity.computeSimpleNorm(fieldState);
+      if (norm != -1) {
+        // nocommit is -1 really a safe "not set" value!?
+        // nocommit shouldn't we require that it's either
+        // all -1's or none?  a sim can't not compute norms
+        // for only some docs?  hmm unless the field is
+        // missing for this doc... but then finish() isn't
+        // called?
+        simpleNormsWriter.addValue(docState.docID, norm);
+      }
     }    
   }
   
-  Type flush(int docCount) throws IOException {
+  Type flush(SegmentWriteState state, SimpleDVConsumer normsConsumer) throws IOException {
+    int docCount = state.segmentInfo.getDocCount();
     if (!initialized()) {
       return null; // null type - not omitted but not written
     }
     consumer.finish(docCount);
+    // nocommit change to assert normsConsumer != null
+    if (normsConsumer != null) {
+      // nocommit we need to change the suffix?  ie so norms
+      // don't step on dvs? hmmm.... where does this happen
+      // today ...
+      simpleNormsWriter.finish(docCount);
+      simpleNormsWriter.flush(state, normsConsumer);
+    } else {
+      // nocommit remove:
+      simpleNormsWriter.reset();
+    }
     return initType;
   }
   

@@ -23,6 +23,7 @@ import org.apache.lucene.document.ByteDocValuesField; // javadoc
 import org.apache.lucene.document.FloatDocValuesField; // javadoc
 import org.apache.lucene.index.AtomicReader; // javadoc
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Norm;
 import org.apache.lucene.search.BooleanQuery;
@@ -163,7 +164,19 @@ public abstract class Similarity {
    * @param norm holds the computed norm value when this method returns
    */
   public abstract void computeNorm(FieldInvertState state, Norm norm);
-  
+
+  // nocommit replace computeNorm w/ this, make it abstract:
+  public long computeSimpleNorm(FieldInvertState state) {
+    Norm normScratch = new Norm();
+    computeNorm(state, normScratch);
+    if (normScratch.type() != null && DocValues.isNumber(normScratch.type())) {
+      return normScratch.field().numericValue().longValue();
+    } else {
+      // nocommit hmm how to return "not set"...?
+      return -1;
+    }
+  }
+
   /**
    * Compute any collection-level weight (e.g. IDF, average document length, etc) needed for scoring a query.
    *

@@ -25,6 +25,7 @@ import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
+import org.apache.lucene.codecs.SimpleNormsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 
@@ -44,6 +45,7 @@ public final class SimpleTextCodec extends Codec {
   private final DocValuesFormat docValues = new SimpleTextDocValuesFormat();
   // TODO: need a plain-text impl (using the above)
   private final NormsFormat normsFormat = new SimpleTextNormsFormat();
+  private final SimpleNormsFormat simpleNormsFormat = new SimpleTextSimpleNormsFormat();
   private final LiveDocsFormat liveDocs = new SimpleTextLiveDocsFormat();
 
   // nocommit rename
@@ -86,6 +88,11 @@ public final class SimpleTextCodec extends Codec {
   @Override
   public NormsFormat normsFormat() {
     return normsFormat;
+  }
+
+  @Override
+  public SimpleNormsFormat simpleNormsFormat() {
+    return simpleNormsFormat;
   }
   
   @Override

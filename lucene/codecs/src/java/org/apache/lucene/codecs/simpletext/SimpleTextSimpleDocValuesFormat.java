@@ -77,12 +77,12 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
 
   @Override
   public SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return new SimpleTextDocValuesWriter(state);
+    return new SimpleTextDocValuesWriter(state, "dat");
   }
 
   @Override
   public SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new SimpleTextDocValuesReader(state);
+    return new SimpleTextDocValuesReader(state, "dat");
   }
   
   /** the .dat file contains the data.
@@ -146,8 +146,8 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     final int numDocs;
     private final Set<String> fieldsSeen = new HashSet<String>(); // for asserting
     
-    SimpleTextDocValuesWriter(SegmentWriteState state) throws IOException {
-      data = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "dat"), state.context);
+    SimpleTextDocValuesWriter(SegmentWriteState state, String ext) throws IOException {
+      data = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext), state.context);
       numDocs = state.segmentInfo.getDocCount();
     }
 
@@ -400,9 +400,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     final BytesRef scratch = new BytesRef();
     final Map<String,OneField> fields = new HashMap<String,OneField>();
     
-    SimpleTextDocValuesReader(SegmentReadState state) throws IOException {
+    SimpleTextDocValuesReader(SegmentReadState state, String ext) throws IOException {
       //System.out.println("dir=" + dir + " seg=" + si.name);
-      data = state.directory.openInput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "dat"), state.context);
+      data = state.directory.openInput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext), state.context);
       maxDoc = state.segmentInfo.getDocCount();
       while(true) {
         readLine();

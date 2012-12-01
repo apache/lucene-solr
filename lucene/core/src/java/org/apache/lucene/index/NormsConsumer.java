@@ -23,6 +23,8 @@ import java.util.Map;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PerDocConsumer;
+import org.apache.lucene.codecs.SimpleDVConsumer;
+import org.apache.lucene.codecs.SimpleNormsFormat;
 import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.util.IOUtils;
 
@@ -48,14 +50,20 @@ final class NormsConsumer extends InvertedDocEndConsumer {
     }
   }
 
-  /** Produce _X.nrm if any document had a field with norms
-   *  not disabled */
   @Override
   public void flush(Map<String,InvertedDocEndConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException {
     boolean success = false;
+    SimpleDVConsumer normsConsumer = null;
     boolean anythingFlushed = false;
     try {
       if (state.fieldInfos.hasNorms()) {
+        SimpleNormsFormat normsFormat = state.segmentInfo.getCodec().simpleNormsFormat();
+
+        // nocommit change this to assert normsFormat != null
+        if (normsFormat != null) {
+          normsConsumer = normsFormat.normsConsumer(state);
+        }
+
         for (FieldInfo fi : state.fieldInfos) {
           final NormsConsumerPerField toWrite = (NormsConsumerPerField) fieldsToFlush.get(fi.name);
           // we must check the final value of omitNorms for the fieldinfo, it could have 
@@ -63,13 +71,16 @@ final class NormsConsumer extends InvertedDocEndConsumer {
           if (!fi.omitsNorms()) {
             if (toWrite != null && toWrite.initialized()) {
               anythingFlushed = true;
-              final Type type = toWrite.flush(state.segmentInfo.getDocCount());
+              final Type type = toWrite.flush(state, normsConsumer);
               assert fi.getNormType() == type;
             } else if (fi.isIndexed()) {
               anythingFlushed = true;
               assert fi.getNormType() == null: "got " + fi.getNormType() + "; field=" + fi.name;
             }
           }
+        }
+        if (normsConsumer != null) {
+          
         }
       } 
       
@@ -79,9 +90,9 @@ final class NormsConsumer extends InvertedDocEndConsumer {
       }
     } finally {
       if (success) {
-        IOUtils.close(consumer);
+        IOUtils.close(consumer, normsConsumer);
       } else {
-        IOUtils.closeWhileHandlingException(consumer);
+        IOUtils.closeWhileHandlingException(consumer, normsConsumer);
       }
     }
   }

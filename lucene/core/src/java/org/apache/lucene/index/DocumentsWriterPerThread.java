@@ -73,7 +73,7 @@ class DocumentsWriterPerThread {
                       --> code: FreqProxTermsWriter / FreqProxTermsWriterPerField
                       --> code: TermVectorsTermsWriter / TermVectorsTermsWriterPerField
                 --> InvertedDocEndConsumer / InvertedDocConsumerPerField
-                  --> code: NormsWriter / NormsWriterPerField
+                  --> code: NormsConsumer / NormsConsumerPerField
           --> StoredFieldsConsumer
             --> TwoStoredFieldConsumers
               -> code: StoredFieldsProcessor
