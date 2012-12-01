@@ -2,6 +2,7 @@ package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /*
@@ -24,6 +25,7 @@ import org.junit.Test;
 /**
  * Test with various combinations of parameters, child entites, transformers.
  */
+@Ignore
 public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestCase {
   private boolean delta = false;
   private boolean useParentDeltaQueryParam = false;
