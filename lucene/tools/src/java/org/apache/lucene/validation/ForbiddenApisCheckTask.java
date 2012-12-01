@@ -70,6 +70,8 @@ public class ForbiddenApisCheckTask extends Task {
   private final Resources apiSignatures = new Resources();
   private Path classpath = null;
   
+  private boolean failOnUnsupportedJava = false;
+  
   ClassLoader loader = null;
   
   final Map<String,ClassSignatureLookup> classesToCheck = new HashMap<String,ClassSignatureLookup>();
@@ -315,16 +317,6 @@ public class ForbiddenApisCheckTask extends Task {
   
   @Override
   public void execute() throws BuildException {
-    // the checker is not compatible with JDK 1.8+ (changed class format: 52.0), don't fail just report warning:
-    try {
-      Collections.class.getMethod("emptySortedSet");
-      // this is Java 8 :(
-      log("Java 8 or later is currently not supported by this checker. Please run the checks with a previous JDK!", Project.MSG_WARN);
-      return;
-    } catch (NoSuchMethodException nsme) {
-      // ignore, we are fine!
-    }
-    
     AntClassLoader antLoader = null;
     try {
       if (classpath != null) {
@@ -340,6 +332,22 @@ public class ForbiddenApisCheckTask extends Task {
       apiSignatures.setProject(getProject());
       
       final long start = System.currentTimeMillis();
+      
+      // check if we can load runtime classes (e.g. java.lang.String).
+      // If this fails, we have a newer Java version than ASM supports:
+      try {
+        getClassFromClassLoader(String.class.getName());
+      } catch (IllegalArgumentException iae) {
+        final String msg = String.format(Locale.ROOT, 
+          "Your Java version (%s) is not supported by <%s/>. Please run the checks with a supported JDK!",
+          System.getProperty("java.version"), getTaskName());
+        if (failOnUnsupportedJava) {
+          throw new BuildException(msg);
+        } else {
+          log("WARNING: " + msg, Project.MSG_WARN);
+          return;
+        }
+      }
 
       try {
         @SuppressWarnings("unchecked")
@@ -453,6 +461,10 @@ public class ForbiddenApisCheckTask extends Task {
         this.classpath = new Path(getProject());
     }
     return this.classpath.createPath();
+  }
+  
+  public void setFailOnUnsupportedJava(boolean failOnUnsupportedJava) {
+    this.failOnUnsupportedJava = failOnUnsupportedJava;
   }
 
   static final class ClassSignatureLookup {
