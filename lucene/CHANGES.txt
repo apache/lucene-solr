@@ -104,6 +104,10 @@ New Features
 * LUCENE-4489: Added consumeAllTokens option to LimitTokenCountFilter
   (hossman, Robert Muir)
 
+* LUCENE-4566: Add NRT/SearcherManager.RefreshListener/addListener to
+  be notified whenever a new searcher was opened. (selckin via Shai
+  Erera, Mike McCandless)
+
 API Changes
 
 * LUCENE-4399: Deprecated AppendingCodec. Lucene's term dictionaries

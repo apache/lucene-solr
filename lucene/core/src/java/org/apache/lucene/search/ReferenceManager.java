@@ -19,6 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -44,7 +46,9 @@ public abstract class ReferenceManager<G> implements Closeable {
   protected volatile G current;
   
   private final Lock refreshLock = new ReentrantLock();
-  
+
+  private final List<RefreshListener> refreshListeners = new CopyOnWriteArrayList<RefreshListener>();
+
   private void ensureOpen() {
     if (current == null) {
       throw new AlreadyClosedException(REFERENCE_MANAGER_IS_CLOSED_MSG);
@@ -142,18 +146,18 @@ public abstract class ReferenceManager<G> implements Closeable {
     // Per ReentrantLock's javadoc, calling lock() by the same thread more than
     // once is ok, as long as unlock() is called a matching number of times.
     refreshLock.lock();
+    boolean refreshed = false;
     try {
       final G reference = acquire();
       try {
         G newReference = refreshIfNeeded(reference);
         if (newReference != null) {
           assert newReference != reference : "refreshIfNeeded should return null if refresh wasn't needed";
-          boolean success = false;
           try {
             swapReference(newReference);
-            success = true;
+            refreshed = true;
           } finally {
-            if (!success) {
+            if (!refreshed) {
               release(newReference);
             }
           }
@@ -161,12 +165,15 @@ public abstract class ReferenceManager<G> implements Closeable {
       } finally {
         release(reference);
       }
-      afterRefresh();
+      afterMaybeRefresh();
+      if (refreshed) {
+        notifyRefreshListeners();
+      }
     } finally {
       refreshLock.unlock();
     }
   }
-  
+
   /**
    * You must call this (or {@link #maybeRefreshBlocking()}), periodically, if
    * you want that {@link #acquire()} will return refreshed instances.
@@ -228,11 +235,11 @@ public abstract class ReferenceManager<G> implements Closeable {
     }
   }
 
-  /** Called after swapReference has installed a new
-   *  instance.
+  /** Called after a refresh was attempted, regardless of
+   *  whether a new reference was in fact created.
    *  @throws IOException if a low level I/O exception occurs  
    **/
-  protected void afterRefresh() throws IOException {
+  protected void afterMaybeRefresh() throws IOException {
   }
   
   /**
@@ -244,5 +251,41 @@ public abstract class ReferenceManager<G> implements Closeable {
   public final void release(G reference) throws IOException {
     assert reference != null;
     decRef(reference);
+  }
+
+  private void notifyRefreshListeners() {
+    for (RefreshListener refreshListener : refreshListeners) {
+      refreshListener.afterRefresh();
+    }
+  }
+
+  /**
+   * Adds a listener, to be notified when a reference is refreshed/swapped.
+   */
+  public void addListener(RefreshListener listener) {
+    if (listener == null) {
+      throw new NullPointerException("Listener cannot be null");
+    }
+    refreshListeners.add(listener);
+  }
+
+  /**
+   * Remove a listener added with {@link #addListener(RefreshListener)}.
+   */
+  public void removeListener(RefreshListener listener) {
+    if (listener == null) {
+      throw new NullPointerException("Listener cannot be null");
+    }
+    refreshListeners.remove(listener);
+  }
+
+  /** Use to receive notification when a refresh has
+   *  finished.  See {@link #addListener}. */
+  public interface RefreshListener {
+
+    /**
+     * Called after a successful refresh and a new reference has been installed. When this is called {@link #acquire()} is guaranteed to return a new instance.
+     */
+    void afterRefresh();
   }
 }

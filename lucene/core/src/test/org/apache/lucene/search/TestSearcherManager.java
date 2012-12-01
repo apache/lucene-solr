@@ -324,6 +324,27 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     dir.close();
   }
 
+  public void testListenerCalled() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    final AtomicBoolean afterRefreshCalled = new AtomicBoolean(false);
+    SearcherManager sm = new SearcherManager(iw, false, new SearcherFactory());
+    sm.addListener(new ReferenceManager.RefreshListener() {
+      @Override
+      public void afterRefresh() {
+        afterRefreshCalled.set(true);
+      }
+    });
+    iw.addDocument(new Document());
+    iw.commit();
+    assertFalse(afterRefreshCalled.get());
+    sm.maybeRefreshBlocking();
+    assertTrue(afterRefreshCalled.get());
+    sm.close();
+    iw.close();
+    dir.close();
+  }
+
   public void testEvilSearcherFactory() throws Exception {
     final Random random = random();
     final Directory dir = newDirectory();

@@ -28,10 +28,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDocument;
-import org.apache.lucene.index.SegmentInfoPerCommit;
 import org.apache.lucene.index.IndexReader; // javadocs
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher; // javadocs
 import org.apache.lucene.search.SearcherFactory; // javadocs
@@ -70,7 +68,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * @lucene.experimental
  */
 
-public class NRTManager extends ReferenceManager<IndexSearcher> {
+public final class NRTManager extends ReferenceManager<IndexSearcher> {
   private static final long MAX_SEARCHER_GEN = Long.MAX_VALUE;
   private final TrackingIndexWriter writer;
   private final List<WaitingListener> waitingListeners = new CopyOnWriteArrayList<WaitingListener>();
@@ -361,7 +359,7 @@ public class NRTManager extends ReferenceManager<IndexSearcher> {
   }
 
   @Override
-  protected void afterRefresh() {
+  protected void afterMaybeRefresh() {
     genLock.lock();
     try {
       if (searchingGen != MAX_SEARCHER_GEN) {
