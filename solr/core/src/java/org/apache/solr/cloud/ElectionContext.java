@@ -293,7 +293,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     final String shardsElectZkPath = electionPath + LeaderElector.ELECTION_NODE;
     
     Slice slices = zkController.getClusterState().getSlice(collection, shardId);
-    
+    int cnt = 0;
     while (true && !isClosed) {
       // wait for everyone to be up
       if (slices != null) {
@@ -310,9 +310,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           log.info("Enough replicas found to continue.");
           return;
         } else {
-          log.info("Waiting until we see more replicas up: total="
+          if (cnt % 40 == 0) {
+            log.info("Waiting until we see more replicas up: total="
               + slices.getReplicasMap().size() + " found=" + found
               + " timeoutin=" + (timeoutAt - System.currentTimeMillis()));
+          }
         }
         
         if (System.currentTimeMillis() > timeoutAt) {
@@ -324,6 +326,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       Thread.sleep(500);
       slices = zkController.getClusterState().getSlice(collection, shardId);
       // System.out.println("###### waitForReplicasToComeUp  : slices=" + slices + " all=" + zkController.getClusterState().getCollectionStates() );
+      cnt++;
     }
   }
 
