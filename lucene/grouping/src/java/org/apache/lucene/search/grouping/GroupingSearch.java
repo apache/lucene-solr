@@ -210,7 +210,7 @@ public class GroupingSearch {
     if (allGroupHeads || allGroups) {
       List<Collector> collectors = new ArrayList<Collector>();
       collectors.add(firstPassCollector);
-      if (allGroupHeads) {
+      if (allGroups) {
         collectors.add(allGroupsCollector);
       }
       if (allGroupHeads) {
@@ -403,7 +403,7 @@ public class GroupingSearch {
   }
 
   /**
-   * Whether to also co0.0mpute all groups matching the query.
+   * Whether to also compute all groups matching the query.
    * This can be used to determine the number of groups, which can be used for accurate pagination.
    * <p/>
    * When grouping by doc block the number of groups are automatically included in the {@link TopGroups} and this

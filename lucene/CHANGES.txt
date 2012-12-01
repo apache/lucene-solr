@@ -182,6 +182,10 @@ Bug Fixes
 * LUCENE-4568: Fixed integer overflow in
   PagedBytes.PagedBytesData{In,Out}put.getPosition. (Adrien Grand)
 
+* LUCENE-4581: GroupingSearch.setAllGroups(true) was failing to
+  actually compute allMatchingGroups (dizh@neusoft.com via Mike
+  McCandless)
+
 Optimizations
 
 * LUCENE-2221: oal.util.BitUtil was modified to use Long.bitCount and
