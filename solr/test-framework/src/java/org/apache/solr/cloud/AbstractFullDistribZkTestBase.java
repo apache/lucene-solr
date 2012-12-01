@@ -226,18 +226,22 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     System.setProperty("collection", "control_collection");
     String numShards = System.getProperty(ZkStateReader.NUM_SHARDS_PROP);
-    System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
-    
+
+    // we want hashes by default, so set to 1 shard as opposed to leaving unset
+    // System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
+    System.setProperty(ZkStateReader.NUM_SHARDS_PROP, "1");
+
     File controlJettyDir = new File(TEMP_DIR,
             getClass().getName() + "-controljetty-" + System.currentTimeMillis());
     org.apache.commons.io.FileUtils.copyDirectory(new File(getSolrHome()), controlJettyDir);
 
-    controlJetty = createJetty(controlJettyDir, testDir + "/control/data",
-        "control_shard");
+    controlJetty = createJetty(controlJettyDir, testDir + "/control/data");  // don't pass shard name... let it default to "shard1"
     System.clearProperty("collection");
     if(numShards != null) {
       System.setProperty(ZkStateReader.NUM_SHARDS_PROP, numShards);
-    } 
+    } else {
+      System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
+    }
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
     
     initCloud();
@@ -339,7 +343,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected int getNumShards(String collection) {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    Map<String,Slice> slices = zkStateReader.getClusterState().getSlices(collection);
+    Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(collection);
     if (slices == null) {
       throw new IllegalArgumentException("Could not find collection:" + collection);
     }
@@ -371,7 +375,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     shardToJetty.clear();
     
     ClusterState clusterState = zkStateReader.getClusterState();
-    Map<String,Slice> slices = clusterState.getSlices(DEFAULT_COLLECTION);
+    Map<String,Slice> slices = clusterState.getSlicesMap(DEFAULT_COLLECTION);
     
     if (slices == null) {
       throw new RuntimeException("No slices found for collection "
@@ -943,7 +947,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     try {
       zk.createClusterStateWatchersAndUpdate();
       clusterState = zk.getClusterState();
-      slices = clusterState.getSlices(DEFAULT_COLLECTION);
+      slices = clusterState.getSlicesMap(DEFAULT_COLLECTION);
     } finally {
       zk.close();
     }

@@ -60,6 +60,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -440,7 +441,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     zkStateReader.updateClusterState(true);
 
-    int slices = zkStateReader.getClusterState().getCollectionStates().get("unloadcollection").size();
+    int slices = zkStateReader.getClusterState().getCollectionStates().get("unloadcollection").getSlices().size();
     assertEquals(1, slices);
     
     client = clients.get(1);
@@ -455,7 +456,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     server.request(createCmd);
     
     zkStateReader.updateClusterState(true);
-    slices = zkStateReader.getClusterState().getCollectionStates().get("unloadcollection").size();
+    slices = zkStateReader.getClusterState().getCollectionStates().get("unloadcollection").getSlices().size();
     assertEquals(1, slices);
     
     waitForRecoveriesToFinish("unloadcollection", zkStateReader, false);
@@ -922,10 +923,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void collectStartTimes(String collectionName,
       Map<String,Long> urlToTime) throws SolrServerException, IOException {
-    Map<String,Map<String,Slice>> collections = solrj.getZkStateReader()
+    Map<String,DocCollection> collections = solrj.getZkStateReader()
         .getClusterState().getCollectionStates();
     if (collections.containsKey(collectionName)) {
-      Map<String,Slice> slices = collections.get(collectionName);
+      Map<String,Slice> slices = collections.get(collectionName).getSlicesMap();
 
       Iterator<Entry<String,Slice>> it = slices.entrySet().iterator();
       while (it.hasNext()) {
@@ -951,7 +952,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private String getUrlFromZk(String collection) {
     ClusterState clusterState = solrj.getZkStateReader().getClusterState();
-    Map<String,Slice> slices = clusterState.getCollectionStates().get(collection);
+    Map<String,Slice> slices = clusterState.getCollectionStates().get(collection).getSlicesMap();
     
     if (slices == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find collection:" + collection);
@@ -1015,10 +1016,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     boolean sliceMatch = false;
     while (System.currentTimeMillis() < timeoutAt) {
       ClusterState clusterState = solrj.getZkStateReader().getClusterState();
-      Map<String,Map<String,Slice>> collections = clusterState
+      Map<String,DocCollection> collections = clusterState
           .getCollectionStates();
       if (collections.containsKey(collectionName)) {
-        Map<String,Slice> slices = collections.get(collectionName);
+        Map<String,Slice> slices = collections.get(collectionName).getSlicesMap();
         // did we find expectedSlices slices/shards?
         if (slices.size() == expectedSlices) {
           sliceMatch = true;
@@ -1044,7 +1045,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     while (System.currentTimeMillis() < timeoutAt) {
       solrj.getZkStateReader().updateClusterState(true);
       ClusterState clusterState = solrj.getZkStateReader().getClusterState();
-      Map<String,Map<String,Slice>> collections = clusterState
+      Map<String,DocCollection> collections = clusterState
           .getCollectionStates();
       if (!collections.containsKey(collectionName)) {
         found = false;
@@ -1107,6 +1108,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   // cloud level test mainly needed just to make sure that versions and errors are propagated correctly
   private void doOptimisticLockingAndUpdating() throws Exception {
+    log.info("### STARTING doOptimisticLockingAndUpdating");
     printLayout();
     
     SolrInputDocument sd =  sdoc("id", 1000, "_version_", -1);
@@ -1147,6 +1149,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void testNumberOfCommitsWithCommitAfterAdd()
       throws SolrServerException, IOException {
+    log.info("### STARTING testNumberOfCommitsWithCommitAfterAdd");
     long startCommits = getNumCommits((HttpSolrServer) clients.get(0));
     
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
@@ -1178,6 +1181,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
 
   private void testANewCollectionInOneInstanceWithManualShardAssignement() throws Exception {
+    log.info("### STARTING testANewCollectionInOneInstanceWithManualShardAssignement");
     System.clearProperty("numShards");
     List<SolrServer> collectionClients = new ArrayList<SolrServer>();
     SolrServer client = clients.get(0);
@@ -1243,7 +1247,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     // we added a role of none on these creates - check for it
     ZkStateReader zkStateReader = solrj.getZkStateReader();
     zkStateReader.updateClusterState(true);
-    Map<String,Slice> slices = zkStateReader.getClusterState().getSlices(oneInstanceCollection2);
+    Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(oneInstanceCollection2);
     assertNotNull(slices);
     String roles = slices.get("slice1").getReplicasMap().values().iterator().next().getStr(ZkStateReader.ROLES_PROP);
     assertEquals("none", roles);
@@ -1271,6 +1275,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
 
   private void testSearchByCollectionName() throws SolrServerException {
+    log.info("### STARTING testSearchByCollectionName");
     SolrServer client = clients.get(0);
     final String baseUrl = ((HttpSolrServer) client).getBaseURL().substring(
         0,
@@ -1286,6 +1291,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
 
   private void testANewCollectionInOneInstance() throws Exception {
+    log.info("### STARTING testANewCollectionInOneInstance");
     List<SolrServer> collectionClients = new ArrayList<SolrServer>();
     SolrServer client = clients.get(0);
     otherCollectionClients.put(oneInstanceCollection , collectionClients);
@@ -1380,6 +1386,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
 
   private void testMultipleCollections() throws Exception {
+    log.info("### STARTING testMultipleCollections");
     // create another 2 collections and search across them
     createNewCollection("collection2");
     createNewCollection("collection3");

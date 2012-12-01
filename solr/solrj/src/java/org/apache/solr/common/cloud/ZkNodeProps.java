@@ -39,6 +39,8 @@ public class ZkNodeProps implements JSONWriter.Writable {
    */
   public ZkNodeProps(Map<String,Object> propMap) {
     this.propMap = propMap;
+    // TODO: store an unmodifiable map, but in a way that guarantees not to wrap more than once.
+    // Always wrapping introduces a memory leak.
   }
 
 
@@ -70,14 +72,14 @@ public class ZkNodeProps implements JSONWriter.Writable {
    * Get property keys.
    */
   public Set<String> keySet() {
-    return Collections.unmodifiableSet(propMap.keySet());
+    return propMap.keySet();
   }
 
   /**
    * Get all properties as map.
    */
   public Map<String, Object> getProperties() {
-    return Collections.unmodifiableMap(propMap);
+    return propMap;
   }
 
   /** Returns a shallow writable copy of the properties */

@@ -171,7 +171,7 @@ public class ClusterStateUpdateTest extends SolrTestCaseJ4  {
     Map<String,Slice> slices = null;
     for (int i = 75; i > 0; i--) {
       clusterState2 = zkController2.getClusterState();
-      slices = clusterState2.getSlices("testcore");
+      slices = clusterState2.getSlicesMap("testcore");
       
       if (slices != null && slices.containsKey("shard1")
           && slices.get("shard1").getReplicasMap().size() > 0) {

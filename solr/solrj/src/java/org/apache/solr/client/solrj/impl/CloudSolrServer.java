@@ -197,7 +197,7 @@ public class CloudSolrServer extends SolrServer {
     Map<String,Slice> slices = new HashMap<String,Slice>();
     for (int i = 0; i < collectionList.size(); i++) {
       String coll= collectionList.get(i);
-      ClientUtils.appendMap(coll, slices, clusterState.getSlices(coll));
+      ClientUtils.appendMap(coll, slices, clusterState.getSlicesMap(coll));
     }
 
     Set<String> liveNodes = clusterState.getLiveNodes();

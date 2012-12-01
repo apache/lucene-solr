@@ -39,7 +39,7 @@ public class AssignShard {
       numShards = 1;
     }
     String returnShardId = null;
-    Map<String, Slice> sliceMap = state.getSlices(collection);
+    Map<String, Slice> sliceMap = state.getSlicesMap(collection);
 
     if (sliceMap == null) {
       return "shard1";

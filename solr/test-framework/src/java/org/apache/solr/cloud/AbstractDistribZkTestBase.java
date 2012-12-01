@@ -79,8 +79,16 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     FileUtils.copyDirectory(new File(getSolrHome()), controlHome);
     
     System.setProperty("collection", "control_collection");
-    controlJetty = createJetty(controlHome, null, "control_shard");
+    String numShardsS = System.getProperty(ZkStateReader.NUM_SHARDS_PROP);
+    System.setProperty(ZkStateReader.NUM_SHARDS_PROP, "1");
+    controlJetty = createJetty(controlHome, null);      // let the shardId default to shard1
     System.clearProperty("collection");
+    if(numShardsS != null) {
+      System.setProperty(ZkStateReader.NUM_SHARDS_PROP, numShardsS);
+    } else {
+      System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
+    }
+
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
 
     StringBuilder sb = new StringBuilder();
@@ -128,7 +136,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       boolean sawLiveRecovering = false;
       zkStateReader.updateClusterState(true);
       ClusterState clusterState = zkStateReader.getClusterState();
-      Map<String,Slice> slices = clusterState.getSlices(collection);
+      Map<String,Slice> slices = clusterState.getSlicesMap(collection);
       assertNotNull("Could not find collection:" + collection, slices);
       for (Map.Entry<String,Slice> entry : slices.entrySet()) {
         Map<String,Replica> shards = entry.getValue().getReplicasMap();
@@ -181,7 +189,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
       zkStateReader.updateClusterState(true);
       ClusterState clusterState = zkStateReader.getClusterState();
-      Map<String,Slice> slices = clusterState.getSlices(collection);
+      Map<String,Slice> slices = clusterState.getSlicesMap(collection);
       if (slices == null) {
         throw new IllegalArgumentException("Cannot find collection:" + collection);
       }

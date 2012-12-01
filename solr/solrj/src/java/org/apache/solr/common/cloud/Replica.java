@@ -41,4 +41,5 @@ public class Replica extends ZkNodeProps {
     return name + ':' + JSONUtil.toJSON(propMap, -1); // small enough, keep it on one line (i.e. no indent)
   }
 
+  // TODO: should we have a pointer back to the slice the replica belongs to?
 }

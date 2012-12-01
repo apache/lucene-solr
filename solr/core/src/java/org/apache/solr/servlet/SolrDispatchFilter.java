@@ -317,7 +317,7 @@ public class SolrDispatchFilter implements Filter
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     
     ClusterState clusterState = zkStateReader.getClusterState();
-    Map<String,Slice> slices = clusterState.getSlices(collection);
+    Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     if (slices == null) {
       return null;
     }

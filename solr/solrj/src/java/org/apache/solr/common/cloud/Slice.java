@@ -34,7 +34,7 @@ public class Slice extends ZkNodeProps {
   public static String LEADER = "leader";       // FUTURE: do we want to record the leader as a slice property in the JSON (as opposed to isLeader as a replica property?)
 
   private final String name;
-  private final HashPartitioner.Range range;
+  private final DocRouter.Range range;
   private final Integer replicationFactor;
   private final Map<String,Replica> replicas;
   private final Replica leader;
@@ -49,11 +49,11 @@ public class Slice extends ZkNodeProps {
     this.name = name;
 
     Object rangeObj = propMap.get(RANGE);
-    HashPartitioner.Range tmpRange = null;
-    if (rangeObj instanceof HashPartitioner.Range) {
-      tmpRange = (HashPartitioner.Range)rangeObj;
+    DocRouter.Range tmpRange = null;
+    if (rangeObj instanceof DocRouter.Range) {
+      tmpRange = (DocRouter.Range)rangeObj;
     } else if (rangeObj != null) {
-      HashPartitioner hp = new HashPartitioner();
+      DocRouter hp = new DocRouter();
       tmpRange = hp.fromString(rangeObj.toString());
     }
     range = tmpRange;
@@ -119,6 +119,14 @@ public class Slice extends ZkNodeProps {
 
   public Replica getLeader() {
     return leader;
+  }
+
+  public Replica getReplica(String replicaName) {
+    return replicas.get(replicaName);
+  }
+
+  public DocRouter.Range getRange() {
+    return range;
   }
 
   @Override

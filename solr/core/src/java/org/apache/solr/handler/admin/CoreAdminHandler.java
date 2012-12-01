@@ -39,7 +39,8 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.HashPartitioner;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -216,7 +217,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
   }
 
   /** Creates a new core and registers it. The returned core will have it's reference count incremented an extra time and close() should be called when finished. */
-  private SolrCore createCore(SolrCore current, int ord, HashPartitioner.Range newRange) throws IOException, SAXException, ParserConfigurationException {
+  private SolrCore createCore(SolrCore current, int ord, DocRouter.Range newRange) throws IOException, SAXException, ParserConfigurationException {
     CoreDescriptor currCoreD = current.getCoreDescriptor();
     CloudDescriptor currCloudD = currCoreD.getCloudDescriptor();
 
@@ -268,7 +269,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
      // partitions=N    (split into N partitions, leaving it up to solr what the ranges are and where to put them)
     // path - multiValued param, or comma separated param?  Only creates indexes, not cores
 
-    List<HashPartitioner.Range> ranges = null;
+    List<DocRouter.Range> ranges = null;
     // boolean closeDirectories = true;
     // DirectoryFactory dirFactory = null;
 
@@ -290,9 +291,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
       //  split on every other doc rather than hash.
 
       // TODO (cloud): get from the current core
-      HashPartitioner.Range currentRange = new HashPartitioner.Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
+      DocRouter.Range currentRange = new DocRouter.Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
 
-      HashPartitioner hp = new HashPartitioner();
+      DocRouter hp = new DocRouter();
       ranges = hp.partitionRange(partitions, currentRange);
 
       if (pathsArr == null) {

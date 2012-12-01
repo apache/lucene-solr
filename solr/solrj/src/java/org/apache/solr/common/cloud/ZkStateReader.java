@@ -450,7 +450,7 @@ public class ZkStateReader {
     if (clusterState == null) {
       return null;
     }
-    Map<String,Slice> slices = clusterState.getSlices(collection);
+    Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     if (slices == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
           "Could not find collection in zk: " + collection + " "

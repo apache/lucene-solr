@@ -20,13 +20,14 @@ package org.apache.solr.cloud;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.HashPartitioner;
-import org.apache.solr.common.cloud.HashPartitioner.Range;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouter.Range;
 
 public class TestHashPartitioner extends SolrTestCaseJ4 {
   
   public void testMapHashes() throws Exception {
-    HashPartitioner hp = new HashPartitioner();
+    DocRouter hp = new DocRouter();
     List<Range> ranges;
 
     // make sure the partitioner uses the "natural" boundaries and doesn't suffer from an off-by-one

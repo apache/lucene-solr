@@ -263,7 +263,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       ZkNodeProps leaderProps, String collection, String shardId) {
     ClusterState clusterState = zkController.getZkStateReader()
         .getClusterState();
-    Map<String,Slice> slices = clusterState.getSlices(collection);
+    Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     Slice slice = slices.get(shardId);
     Map<String,Replica> replicasMap = slice.getReplicasMap();
     for (Map.Entry<String,Replica> shard : replicasMap.entrySet()) {
@@ -323,6 +323,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       
       Thread.sleep(500);
       slices = zkController.getClusterState().getSlice(collection, shardId);
+      // System.out.println("###### waitForReplicasToComeUp  : slices=" + slices + " all=" + zkController.getClusterState().getCollectionStates() );
     }
   }
 

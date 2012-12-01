@@ -302,12 +302,12 @@ public class HttpShardHandler extends ShardHandler {
           // cloud state and add them to the Map 'slices'.
           for (int i = 0; i < collectionList.size(); i++) {
             String collection = collectionList.get(i);
-            ClientUtils.appendMap(collection, slices, clusterState.getSlices(collection));
+            ClientUtils.appendMap(collection, slices, clusterState.getSlicesMap(collection));
           }
         } else {
           // If no collections were specified, default to the collection for
           // this core.
-          slices = clusterState.getSlices(cloudDescriptor.getCollectionName());
+          slices = clusterState.getSlicesMap(cloudDescriptor.getCollectionName());
           if (slices == null) {
             throw new SolrException(ErrorCode.BAD_REQUEST,
                 "Could not find collection:"
@@ -337,7 +337,7 @@ public class HttpShardHandler extends ShardHandler {
           if (rb.shards[i] == null) {
             if (clusterState == null) {
               clusterState =  zkController.getClusterState();
-              slices = clusterState.getSlices(cloudDescriptor.getCollectionName());
+              slices = clusterState.getSlicesMap(cloudDescriptor.getCollectionName());
             }
             String sliceName = rb.slices[i];
 

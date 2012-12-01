@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
@@ -889,6 +890,10 @@ public final class ZkController {
 
         try {
           Map<String,Object> collectionProps = new HashMap<String,Object>();
+
+          // set defaults
+          collectionProps.put(DocCollection.DOC_ROUTER, "compositeId");
+
           // TODO: if collection.configName isn't set, and there isn't already a conf in zk, just use that?
           String defaultConfigName = System.getProperty(COLLECTION_PARAM_PREFIX+CONFIGNAME_PROP, collection);
 
@@ -903,8 +908,10 @@ public final class ZkController {
             }
 
             // if the config name wasn't passed in, use the default
-            if (!collectionProps.containsKey(CONFIGNAME_PROP))
+            if (!collectionProps.containsKey(CONFIGNAME_PROP)) {
+              // TODO: getting the configName from the collectionPath should fail since we already know it doesn't exist?
               getConfName(collection, collectionPath, collectionProps);
+            }
             
           } else if(System.getProperty("bootstrap_confdir") != null) {
             // if we are bootstrapping a collection, default the config for
@@ -928,7 +935,6 @@ public final class ZkController {
           } else {
             getConfName(collection, collectionPath, collectionProps);
           }
-          
           ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
           zkClient.makePath(collectionPath, ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, null, true);
 
