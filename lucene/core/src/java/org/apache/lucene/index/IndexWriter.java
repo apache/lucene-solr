@@ -543,10 +543,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * Used internally to throw an {@link
    * AlreadyClosedException} if this IndexWriter has been
    * closed.
-   * @throws AlreadyClosedException if this IndexWriter is closed
+   * @throws AlreadyClosedException if this IndexWriter is
+   * closed
+   * @param failIfClosing if true, also fail when
+   * {@code IndexWriter} is in the process of closing
+   * ({@code closing=true}) but not yet done closing ({@code
+   * closed=false})
    */
-  protected final void ensureOpen(boolean includePendingClose) throws AlreadyClosedException {
-    if (closed || (includePendingClose && closing)) {
+  protected final void ensureOpen(boolean failIfClosing) throws AlreadyClosedException {
+    if (closed || (failIfClosing && closing)) {
       throw new AlreadyClosedException("this IndexWriter is closed");
     }
   }
@@ -554,7 +559,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   /**
    * Used internally to throw an {@link
    * AlreadyClosedException} if this IndexWriter has been
-   * closed.
+   * closed ({@code closed=true}) or is in the process of
+   * closing ({@code closing=true}).
    * <p>
    * Calls {@link #ensureOpen(boolean) ensureOpen(true)}.
    * @throws AlreadyClosedException if this IndexWriter is closed
