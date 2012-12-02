@@ -293,7 +293,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       // TODO (cloud): get from the current core
       DocRouter.Range currentRange = new DocRouter.Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
 
-      DocRouter hp = new DocRouter();
+      DocRouter hp = DocRouter.DEFAULT;  // TODO: get actual doc router for collection if available
       ranges = hp.partitionRange(partitions, currentRange);
 
       if (pathsArr == null) {

@@ -397,19 +397,22 @@ public class ZkStateReader {
   }
   
   /**
-   * Get shard leader properties.
+   * Get shard leader properties, with retry if none exist.
    */
-  public ZkNodeProps getLeaderProps(String collection, String shard) throws InterruptedException {
+  public Replica getLeaderProps(String collection, String shard) throws InterruptedException {
     return getLeaderProps(collection, shard, 1000);
   }
-  
-  public ZkNodeProps getLeaderProps(String collection, String shard, int timeout) throws InterruptedException {
+
+  /**
+   * Get shard leader properties, with retry if none exist.
+   */
+  public Replica getLeaderProps(String collection, String shard, int timeout) throws InterruptedException {
     long timeoutAt = System.currentTimeMillis() + timeout;
     while (System.currentTimeMillis() < timeoutAt) {
       if (clusterState != null) {    
-        final ZkNodeProps nodeProps = clusterState.getLeader(collection, shard);     
-        if (nodeProps != null && getClusterState().liveNodesContain((String) nodeProps.get(ZkStateReader.NODE_NAME_PROP))) {
-          return nodeProps;
+        Replica replica = clusterState.getLeader(collection, shard);
+        if (replica != null && getClusterState().liveNodesContain(replica.getNodeName())) {
+          return replica;
         }
       }
       Thread.sleep(50);

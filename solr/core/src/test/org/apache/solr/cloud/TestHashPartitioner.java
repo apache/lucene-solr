@@ -27,7 +27,7 @@ import org.apache.solr.common.cloud.DocRouter.Range;
 public class TestHashPartitioner extends SolrTestCaseJ4 {
   
   public void testMapHashes() throws Exception {
-    DocRouter hp = new DocRouter();
+    DocRouter hp = DocRouter.DEFAULT;
     List<Range> ranges;
 
     // make sure the partitioner uses the "natural" boundaries and doesn't suffer from an off-by-one

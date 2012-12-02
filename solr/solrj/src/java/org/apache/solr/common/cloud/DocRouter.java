@@ -25,15 +25,37 @@ import org.apache.solr.common.util.Hash;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Class to partition int range into n ranges.
  * @lucene.experimental
  */
-public class DocRouter {
-   public static final String DEFAULT_NAME = "compositeId";
-   public static final DocRouter DEFAULT = new CompositeIdRouter();
+public abstract class DocRouter {
+  public static final String DEFAULT_NAME = CompositeIdRouter.NAME;
+  public static final DocRouter DEFAULT = new CompositeIdRouter();
+
+  public static DocRouter getDocRouter(Object routerSpec) {
+    DocRouter router = routerMap.get(routerSpec);
+    if (router != null) return router;
+    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown document router '"+ routerSpec + "'");
+  }
+
+  // currently just an implementation detail...
+  private final static Map<String, DocRouter> routerMap;
+  static {
+    routerMap = new HashMap<String, DocRouter>();
+    PlainIdRouter plain = new PlainIdRouter();
+    // instead of doing back compat this way, we could always convert the clusterstate on first read to "plain" if it doesn't have any properties.
+    routerMap.put(null, plain);     // back compat with 4.0
+    routerMap.put(PlainIdRouter.NAME, plain);
+    routerMap.put(CompositeIdRouter.NAME, DEFAULT_NAME.equals(CompositeIdRouter.NAME) ? DEFAULT : new CompositeIdRouter());
+    routerMap.put(ImplicitDocRouter.NAME, new ImplicitDocRouter());
+    // NOTE: careful that the map keys (the static .NAME members) are filled in by making them final
+  }
+
 
   // Hash ranges can't currently "wrap" - i.e. max must be greater or equal to min.
   // TODO: ranges may not be all contiguous in the future (either that or we will
@@ -122,20 +144,35 @@ public class DocRouter {
   }
 
 
-  public int shardHash(String id, SolrInputDocument sdoc, SolrParams params) {
-    return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
-  }
+  public abstract Slice getTargetShard(String id, SolrInputDocument sdoc, SolrParams params, DocCollection collection);
 
-  public String getId(SolrInputDocument sdoc, SolrParams params) {
-    Object  idObj = sdoc.getFieldValue("id");  // blech
-    String id = idObj != null ? idObj.toString() : "null";  // should only happen on client side
-    return id;
-  }
 
+  /*
+  List<Slice> shardQuery(String id, SolrParams params, ClusterState state)
+  List<Slice> shardQuery(SolrParams params, ClusterState state)
+  */
+
+
+
+}
+
+abstract class HashBasedRouter extends DocRouter {
+
+  @Override
   public Slice getTargetShard(String id, SolrInputDocument sdoc, SolrParams params, DocCollection collection) {
     if (id == null) id = getId(sdoc, params);
     int hash = shardHash(id, sdoc, params);
     return hashToSlice(hash, collection);
+  }
+
+  protected int shardHash(String id, SolrInputDocument sdoc, SolrParams params) {
+    return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
+  }
+
+  protected String getId(SolrInputDocument sdoc, SolrParams params) {
+    Object  idObj = sdoc.getFieldValue("id");  // blech
+    String id = idObj != null ? idObj.toString() : "null";  // should only happen on client side
+    return id;
   }
 
   protected Slice hashToSlice(int hash, DocCollection collection) {
@@ -143,26 +180,21 @@ public class DocRouter {
       DocRouter.Range range = slice.getRange();
       if (range != null && range.includes(hash)) return slice;
     }
-    // return null or throw exception?
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No slice servicing hash code " + Integer.toHexString(hash) + " in " + collection);
   }
-
-  /*
-  List<Slice> shardQuery(String id, SolrParams params, ClusterState state)
-  List<Slice> shardQuery(SolrParams params, ClusterState state)
-  */
 }
 
-
-class PlainIdRouter extends DocRouter {
-
+class PlainIdRouter extends HashBasedRouter {
+  public static final String NAME = "plain";
 }
 
 //
 // user!uniqueid
 // user,4!uniqueid
 //
-class CompositeIdRouter extends DocRouter {
+class CompositeIdRouter extends HashBasedRouter {
+  public static final String NAME = "compositeId";
+
   private int separator = '!';
   private int bits = 16;
   private int mask1 = 0xffff0000;
@@ -185,7 +217,7 @@ class CompositeIdRouter extends DocRouter {
   }
 
   @Override
-  public int shardHash(String id, SolrInputDocument doc, SolrParams params) {
+  protected int shardHash(String id, SolrInputDocument doc, SolrParams params) {
     int idx = id.indexOf(separator);
     if (idx < 0) {
       return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);

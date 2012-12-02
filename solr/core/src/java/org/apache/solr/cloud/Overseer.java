@@ -29,6 +29,7 @@ import org.apache.solr.common.cloud.ClosableThread;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -285,10 +286,9 @@ public class Overseer {
 
       private ClusterState createCollection(ClusterState state, String collectionName, int numShards) {
         log.info("Create collection {} with numShards {}", collectionName, numShards);
-        
-        DocRouter hp = new DocRouter();
-        List<DocRouter.Range> ranges = hp.partitionRange(numShards, hp.fullRange());
 
+        DocRouter router = DocRouter.DEFAULT;
+        List<DocRouter.Range> ranges = router.partitionRange(numShards, router.fullRange());
 
         Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>();
 
@@ -306,7 +306,6 @@ public class Overseer {
 
         // TODO: fill in with collection properties read from the /collections/<collectionName> node
         Map<String,Object> collectionProps = defaultCollectionProps();
-        DocRouter router = DocRouter.DEFAULT;
 
         DocCollection newCollection = new DocCollection(collectionName, newSlices, collectionProps, router);
 
@@ -343,10 +342,12 @@ public class Overseer {
         DocRouter router;
 
         if (coll == null) {
-          // TODO: is updateSlice really called on a collection that doesn't exist?
+          //  when updateSlice is called on a collection that doesn't exist, it's currently when a core is publishing itself
+          // without explicitly creating a collection.  In this current case, we assume custom sharding with an "implicit" router.
           slices = new HashMap<String, Slice>(1);
-          props = defaultCollectionProps();
-          router = DocRouter.DEFAULT;
+          props = new HashMap<String,Object>(1);
+          props.put(DocCollection.DOC_ROUTER, ImplicitDocRouter.NAME);
+          router = new ImplicitDocRouter();
         } else {
           props = coll.getProperties();
           router = coll.getRouter();

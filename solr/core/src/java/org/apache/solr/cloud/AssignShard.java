@@ -41,6 +41,9 @@ public class AssignShard {
     String returnShardId = null;
     Map<String, Slice> sliceMap = state.getSlicesMap(collection);
 
+
+    // TODO: now that we create shards ahead of time, is this code needed?  Esp since hash ranges aren't assigned when creating via this method?
+
     if (sliceMap == null) {
       return "shard1";
     }
@@ -50,6 +53,8 @@ public class AssignShard {
     if (shardIdNames.size() < numShards) {
       return "shard" + (shardIdNames.size() + 1);
     }
+
+    // TODO: don't need to sort to find shard with fewest replicas!
 
     // else figure out which shard needs more replicas
     final Map<String, Integer> map = new HashMap<String, Integer>();

@@ -51,9 +51,6 @@ public class ClusterState implements JSONWriter.Writable {
   private final Set<String> liveNodes;
 
   private final Map<String,RangeInfo> rangeInfos = new HashMap<String,RangeInfo>();
-  private final Map<String,Map<String,ZkNodeProps>> leaders = new HashMap<String,Map<String,ZkNodeProps>>();
-
-
   
   /**
    * Use this constr when ClusterState is meant for publication.
@@ -80,9 +77,9 @@ public class ClusterState implements JSONWriter.Writable {
 
 
   /**
-   * Get properties of a shard/slice leader for specific collection.
+   * Get properties of a shard/slice leader for specific collection, or null if one currently doesn't exist.
    */
-  public ZkNodeProps getLeader(String collection, String sliceName) {
+  public Replica getLeader(String collection, String sliceName) {
     DocCollection coll = collectionStates.get(collection);
     if (coll == null) return null;
     Slice slice = coll.getSlice(sliceName);
@@ -283,7 +280,7 @@ public class ClusterState implements JSONWriter.Writable {
   private static DocCollection collectionFromObjects(String name, Map<String,Object> objs) {
     Map<String,Object> props = (Map<String,Object>)objs.get(DocCollection.PROPERTIES);
     if (props == null) props = Collections.emptyMap();
-    DocRouter router = getRouter(props.get(DocCollection.DOC_ROUTER));
+    DocRouter router = DocRouter.getDocRouter(props.get(DocCollection.DOC_ROUTER));
     Map<String,Slice> slices = makeSlices(objs);
     return new DocCollection(name, slices, props, router);
   }
@@ -304,19 +301,6 @@ public class ClusterState implements JSONWriter.Writable {
       result.put(name, s);
     }
     return result;
-  }
-
-
-  private static DocRouter getRouter(Object routerSpec) {
-    if (routerSpec == null) return new PlainIdRouter();   // back compat with 4.0
-
-    if (DocRouter.DEFAULT_NAME.equals(routerSpec)) {
-      return DocRouter.DEFAULT;
-    }
-
-    // TODO: how to instantiate custom routers?
-
-    throw new SolrException(ErrorCode.SERVER_ERROR, "Unknown document router '"+ routerSpec + "'");
   }
 
   @Override

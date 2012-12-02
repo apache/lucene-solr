@@ -177,115 +177,43 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  private List<Node> setupRequest(int hash) {
-    List<Node> nodes = null;
 
-    // if we are in zk mode...
-    if (zkEnabled) {
-      // set num nodes
-      numNodes = zkController.getClusterState().getLiveNodes().size();
-      
-      String shardId = getShard(hash, collection, zkController.getClusterState()); // get the right shard based on the hash...
-
-      try {
-        ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderProps(
-            collection, shardId));
-        
-        String leaderNodeName = leaderProps.getCoreNodeName();
-        String coreName = req.getCore().getName();
-        String coreNodeName = zkController.getNodeName() + "_" + coreName;
-        isLeader = coreNodeName.equals(leaderNodeName);
-        
-        DistribPhase phase = 
-            DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
-       
-        doDefensiveChecks(shardId, phase);
-     
-
-        if (DistribPhase.FROMLEADER == phase) {
-          // we are coming from the leader, just go local - add no urls
-          forwardToLeader = false;
-        } else if (isLeader) {
-          // that means I want to forward onto my replicas...
-          // so get the replicas...
-          forwardToLeader = false;
-          List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
-              .getReplicaProps(collection, shardId, zkController.getNodeName(),
-                  coreName, null, ZkStateReader.DOWN);
-          if (replicaProps != null) {
-            nodes = new ArrayList<Node>(replicaProps.size());
-            // check for test param that lets us miss replicas
-            String[] skipList = req.getParams().getParams("test.distrib.skip.servers");
-            Set<String> skipListSet = null;
-            if (skipList != null) {
-              skipListSet = new HashSet<String>(skipList.length);
-              skipListSet.addAll(Arrays.asList(skipList));
-            }
-            
-            for (ZkCoreNodeProps props : replicaProps) {
-              if (skipList != null) {
-                if (!skipListSet.contains(props.getCoreUrl())) {
-                  nodes.add(new StdNode(props));
-                }
-              } else {
-                nodes.add(new StdNode(props));
-              }
-            }
-          }
-          
-        } else {
-          // I need to forward onto the leader...
-          nodes = new ArrayList<Node>(1);
-          nodes.add(new RetryNode(leaderProps, zkController.getZkStateReader(), collection, shardId));
-          forwardToLeader = true;
-        }
-        
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
-            e);
-      }
-    }
-
-    return nodes;
-  }
-
-
-  // trying to incrementally get things to pass
-  private List<Node> setupRequest2(int hash, String id, SolrInputDocument doc) {
+  private List<Node> setupRequest(String id, SolrInputDocument doc) {
     List<Node> nodes = null;
 
     // if we are in zk mode...
     if (zkEnabled) {
 
-//////
+      String coreName = req.getCore().getName();
+      String coreNodeName = zkController.getNodeName() + "_" + coreName;
+
       ClusterState cstate = zkController.getClusterState();
       numNodes = cstate.getLiveNodes().size();
       DocCollection coll = cstate.getCollection(collection);
       Slice slice = coll.getRouter().getTargetShard(id, doc, req.getParams(), coll);
 
-      Replica leader = slice.getLeader();
+      if (slice == null) {
+        // No slice found.  Most strict routers will have already thrown an exception, so a null return is
+        // a signal to use the slice of this core.
+        // TODO: what if this core is not in the targeted collection?
+        String shardId = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
+        slice = coll.getSlice(shardId);
+        if (slice == null) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "No shard " + shardId + " in " + coll);
+        }
+      }
 
 
-
-//////
-
-      // set num nodes
-      numNodes = cstate.getLiveNodes().size();
-
-      String shardId = getShard(hash, collection, zkController.getClusterState()); // get the right shard based on the hash...
-
-if (shardId != slice.getName()) {
-  System.out.println("######################## shardId="+shardId + "  slice="+slice + " cstate=" + cstate);
-}
+      String shardId = slice.getName();
 
       try {
+        // Not equivalent to getLeaderProps, which does retries to find a leader.
+        // Replica leader = slice.getLeader();
+
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderProps(
             collection, shardId));
 
         String leaderNodeName = leaderProps.getCoreNodeName();
-        String coreName = req.getCore().getName();
-        String coreNodeName = zkController.getNodeName() + "_" + coreName;
         isLeader = coreNodeName.equals(leaderNodeName);
 
         DistribPhase phase =
@@ -337,80 +265,6 @@ if (shardId != slice.getName()) {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
             e);
       }
-    }
-
-    return nodes;
-  }
-
-
-  // use old code for now
-  private List<Node> setupRequest(String id, SolrInputDocument doc) {
-//     return setupRequest2(DocRouter.DEFAULT.shardHash(id, null, null), id, doc);
-    return setupRequest(DocRouter.DEFAULT.shardHash(id, null, null));
-  }
-
-
-  private List<Node> setupRequestX(String id, SolrInputDocument doc) {
-    List<Node> nodes = null;
-
-    // if we are in zk mode...
-    if (zkEnabled) {
-      // set num nodes
-      ClusterState cstate = zkController.getClusterState();
-      numNodes = cstate.getLiveNodes().size();
-      DocCollection coll = cstate.getCollection(collection);
-      Slice slice = coll.getRouter().getTargetShard(id, doc, req.getParams(), coll);
-
-      Replica leader = slice.getLeader();
-
-      String coreName = req.getCore().getName();
-      String coreNodeName = zkController.getNodeName() + "_" + coreName;
-      isLeader = coreNodeName.equals(leader.getName());  // is this me?
-
-      DistribPhase phase =
-          DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
-
-      doDefensiveChecks(slice.getName(), phase);
-
-
-      if (DistribPhase.FROMLEADER == phase) {
-        // we are coming from the leader, just go local - add no urls
-        forwardToLeader = false;
-      } else if (isLeader) {
-        // that means I want to forward onto my replicas...
-        // so get the replicas...
-        forwardToLeader = false;
-        List<ZkCoreNodeProps> replicaProps = zkController.getZkStateReader()
-            .getReplicaProps(collection, slice.getName(), zkController.getNodeName(),
-                coreName, null, ZkStateReader.DOWN);
-        if (replicaProps != null) {
-          nodes = new ArrayList<Node>(replicaProps.size());
-          // check for test param that lets us miss replicas
-          String[] skipList = req.getParams().getParams("test.distrib.skip.servers");
-          Set<String> skipListSet = null;
-          if (skipList != null) {
-            skipListSet = new HashSet<String>(skipList.length);
-            skipListSet.addAll(Arrays.asList(skipList));
-          }
-
-          for (ZkCoreNodeProps props : replicaProps) {
-            if (skipList != null) {
-              if (!skipListSet.contains(props.getCoreUrl())) {
-                nodes.add(new StdNode(props));
-              }
-            } else {
-              nodes.add(new StdNode(props));
-            }
-          }
-        }
-
-      } else {
-        // I need to forward onto the leader...
-        nodes = new ArrayList<Node>(1);
-        nodes.add(new RetryNode(new ZkCoreNodeProps(leader), zkController.getZkStateReader(), collection, leader.getName()));
-        forwardToLeader = true;
-      }
-
     }
 
     return nodes;
