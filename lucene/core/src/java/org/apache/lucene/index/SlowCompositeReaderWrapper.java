@@ -116,6 +116,13 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
     }
     return values;
   }
+
+  @Override
+  public NumericDocValues simpleNormValues(String field) throws IOException {
+    ensureOpen();
+    // nocommit hmm
+    return null;
+  }
   
   @Override
   public Fields getTermVectors(int docID)

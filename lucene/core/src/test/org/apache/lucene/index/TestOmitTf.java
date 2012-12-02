@@ -252,7 +252,8 @@ public class TestOmitTf extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
             setMaxBufferedDocs(2).
             setSimilarity(new SimpleSimilarity()).
-            setMergePolicy(newLogMergePolicy(2))
+            setMergePolicy(newLogMergePolicy(2)).
+        setMergeScheduler(new SerialMergeScheduler())  // nocommit
     );
         
     StringBuilder sb = new StringBuilder(265);
@@ -312,7 +313,7 @@ public class TestOmitTf extends LuceneTestCase {
                       public final void collect(int doc) throws IOException {
                         //System.out.println("Q1: Doc=" + doc + " score=" + score);
                         float score = scorer.score();
-                        assertTrue(score==1.0f);
+                        assertTrue("got score=" + score, score==1.0f);
                         super.collect(doc);
                       }
                     });

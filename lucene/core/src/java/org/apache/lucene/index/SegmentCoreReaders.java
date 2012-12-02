@@ -19,9 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -55,6 +53,7 @@ final class SegmentCoreReaders {
   
   final FieldsProducer fields;
   final SimpleDVProducer simpleDVProducer;
+  final SimpleDVProducer simpleNormsProducer;
   final PerDocProducer perDocProducer;
   final PerDocProducer norms;
 
@@ -124,6 +123,16 @@ final class SegmentCoreReaders {
         }
       } else {
         simpleDVProducer = null;
+      }
+      // nocommit shouldn't need null check:
+      if (codec.simpleNormsFormat() != null) {
+        if (fieldInfos.hasNorms()) {
+          simpleNormsProducer = codec.simpleNormsFormat().normsProducer(segmentReadState);
+        } else {
+          simpleNormsProducer = null;
+        }
+      } else {
+        simpleNormsProducer = null;
       }
   
       fieldsReaderOrig = si.info.getCodec().storedFieldsFormat().fieldsReader(cfsDir, si.info, fieldInfos, context);
@@ -221,18 +230,32 @@ final class SegmentCoreReaders {
     return simpleDVProducer.getSorted(fi);
   }
 
-  // nocommit binary, sorted too
-  
+  NumericDocValues getSimpleNormValues(String field) throws IOException {
+    FieldInfo fi = fieldInfos.fieldInfo(field);
+    if (fi == null) {
+      // Field does not exist
+      return null;
+    }
+    if (fi.omitsNorms()) {
+      return null;
+    }
+    // nocommit change to assert != null!!
+    if (simpleNormsProducer == null) {
+      return null;
+    }
+    return simpleNormsProducer.getNumeric(fi);
+  }
+
   void decRef() throws IOException {
-    //System.out.println("core.decRef seg=" + owner.getSegmentInfo() + " rc=" + ref);
     if (ref.decrementAndGet() == 0) {
       IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, simpleDVProducer,
-                    perDocProducer, termVectorsReaderOrig, fieldsReaderOrig, cfsReader, norms);
+                    perDocProducer, termVectorsReaderOrig, fieldsReaderOrig, cfsReader, norms,
+                    simpleNormsProducer);
       notifyCoreClosedListeners();
     }
   }
   
-  private final void notifyCoreClosedListeners() {
+  private void notifyCoreClosedListeners() {
     synchronized(coreClosedListeners) {
       for (CoreClosedListener listener : coreClosedListeners) {
         listener.onClose(owner);

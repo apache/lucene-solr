@@ -434,4 +434,10 @@ public class FilterAtomicReader extends AtomicReader {
     ensureOpen();
     return in.normValues(field);
   }
+
+  @Override
+  public NumericDocValues simpleNormValues(String field) throws IOException {
+    ensureOpen();
+    return in.simpleNormValues(field);
+  }
 }

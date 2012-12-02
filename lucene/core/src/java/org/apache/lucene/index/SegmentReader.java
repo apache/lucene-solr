@@ -227,19 +227,22 @@ public final class SegmentReader extends AtomicReader {
 
   @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
+    ensureOpen();
     return core.getNumericDocValues(field);
   }
 
   @Override
   public BinaryDocValues getBinaryDocValues(String field) throws IOException {
+    ensureOpen();
     return core.getBinaryDocValues(field);
   }
 
   @Override
   public SortedDocValues getSortedDocValues(String field) throws IOException {
+    ensureOpen();
     return core.getSortedDocValues(field);
   }
-  
+
   @Override
   public DocValues docValues(String field) throws IOException {
     ensureOpen();
@@ -248,6 +251,12 @@ public final class SegmentReader extends AtomicReader {
       return null;
     }
     return perDoc.docValues(field);
+  }
+
+  @Override
+  public NumericDocValues simpleNormValues(String field) throws IOException {
+    ensureOpen();
+    return core.getSimpleNormValues(field);
   }
   
   @Override

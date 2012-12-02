@@ -184,6 +184,11 @@ public abstract class AtomicReader extends IndexReader {
    */
   public abstract DocValues normValues(String field) throws IOException;
 
+  /** Returns {@link NumericDocValues} representing norms
+   *  for this field, or null if no {@link NumericDocValues}
+   *  were indexed. */
+  public abstract NumericDocValues simpleNormValues(String field) throws IOException;
+
   /**
    * Get the {@link FieldInfos} describing all fields in
    * this reader.

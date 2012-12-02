@@ -438,7 +438,7 @@
           description="Compiles core classes">
     <compile
       srcdir="${src.dir}"
-      DESTDIR="${build.dir}/classes/java">
+      destdir="${build.dir}/classes/java">
       <classpath refid="classpath"/>
     </compile>
 

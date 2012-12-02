@@ -132,7 +132,7 @@ public final class FieldInfo {
 
   // should only be called by FieldInfos#addOrUpdate
   void update(boolean indexed, boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions) {
-
+    //System.out.println("FI.update field=" + name + " indexed=" + indexed + " omitNorms=" + omitNorms + " this.omitNorms=" + this.omitNorms);
     if (this.indexed != indexed) {
       this.indexed = true;                      // once indexed, always index
     }

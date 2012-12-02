@@ -79,14 +79,12 @@ final class NormsConsumer extends InvertedDocEndConsumer {
             }
           }
         }
-        if (normsConsumer != null) {
-          
-        }
       } 
       
       success = true;
       if (!anythingFlushed && consumer != null) {
         consumer.abort();
+        // nocommit do we also need to normsConsumer.abort!?
       }
     } finally {
       if (success) {

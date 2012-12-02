@@ -144,11 +144,15 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     final IndexOutput data;
     final BytesRef scratch = new BytesRef();
     final int numDocs;
+    // nocommit
+    final boolean isNorms;
     private final Set<String> fieldsSeen = new HashSet<String>(); // for asserting
     
     SimpleTextDocValuesWriter(SegmentWriteState state, String ext) throws IOException {
+      //System.out.println("WRITE: " + IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext) + " " + state.segmentInfo.getDocCount() + " docs");
       data = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext), state.context);
       numDocs = state.segmentInfo.getDocCount();
+      isNorms = ext.equals("slen");
     }
 
     // for asserting
@@ -218,6 +222,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     @Override
     public BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, final int maxLength) throws IOException {
       assert fieldSeen(field.name);
+      assert !isNorms;
       writeFieldEntry(field);
       // write fixedlength
       SimpleTextUtil.write(data, FIXEDLENGTH);
@@ -271,6 +276,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     @Override
     public SortedDocValuesConsumer addSortedField(FieldInfo field, final int valueCount, boolean fixedLength, final int maxLength) throws IOException {
       assert fieldSeen(field.name);
+      assert !isNorms;
       writeFieldEntry(field);
       // write numValues
       SimpleTextUtil.write(data, NUMVALUES);
@@ -358,6 +364,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     public void close() throws IOException {
       boolean success = false;
       try {
+        assert !fieldsSeen.isEmpty();
         // TODO: sheisty to do this here?
         SimpleTextUtil.write(data, END);
         SimpleTextUtil.writeNewline(data);
@@ -401,7 +408,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     final Map<String,OneField> fields = new HashMap<String,OneField>();
     
     SimpleTextDocValuesReader(SegmentReadState state, String ext) throws IOException {
-      //System.out.println("dir=" + dir + " seg=" + si.name);
+      //System.out.println("dir=" + state.directory + " seg=" + state.segmentInfo.name + " ext=" + ext);
       data = state.directory.openInput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext), state.context);
       maxDoc = state.segmentInfo.getDocCount();
       while(true) {
@@ -420,12 +427,14 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         fields.put(fieldName, field);
 
         field.fieldInfo = fieldInfo;
-        
-        DocValues.Type dvType = fieldInfo.getDocValuesType();
+        //System.out.println("  field=" + fieldName);
+
+        // nocommit hack hack hack!!:
+        DocValues.Type dvType = ext.equals("slen") ? DocValues.Type.FIXED_INTS_8 : fieldInfo.getDocValuesType();
         assert dvType != null;
         if (DocValues.isNumber(dvType) || DocValues.isFloat(dvType)) {
           readLine();
-          assert startsWith(MINVALUE);
+          assert startsWith(MINVALUE): "got " + scratch.utf8ToString() + " field=" + fieldName + " ext=" + ext;
           field.minValue = Long.parseLong(stripPrefix(MINVALUE));
           readLine();
           assert startsWith(MAXVALUE);
@@ -469,15 +478,29 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           throw new AssertionError();
         }
       }
+
+      // We should only be called from above if at least one
+      // field has DVs:
+      assert !fields.isEmpty();
     }
 
     @Override
     public NumericDocValues getNumeric(FieldInfo fieldInfo) throws IOException {
       final OneField field = fields.get(fieldInfo.name);
 
+      // This can happen, in exceptional cases, where the
+      // only doc containing a field hit a non-aborting
+      // exception.  The field then appears in FieldInfos,
+      // marked as indexed and !omitNorms, and then merging
+      // will try to retrieve it:
+      // nocommit can we somehow avoid this ...?
+      if (field == null) {
+        return null;
+      }
+
       // SegmentCoreReaders already verifies this field is
       // valid:
-      assert field != null;
+      assert field != null: "field=" + fieldInfo.name + " fields=" + fields;
 
       final IndexInput in = data.clone();
       final BytesRef scratch = new BytesRef();

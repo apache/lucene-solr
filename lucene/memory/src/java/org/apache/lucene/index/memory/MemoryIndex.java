@@ -739,15 +739,24 @@ public class MemoryIndex {
       return new FieldInfos(fieldInfos.values().toArray(new FieldInfo[fieldInfos.size()]));
     }
 
+    @Override
     public NumericDocValues getNumericDocValues(String field) {
       return null;
     }
 
+    @Override
     public BinaryDocValues getBinaryDocValues(String field) {
       return null;
     }
 
+    @Override
     public SortedDocValues getSortedDocValues(String field) {
+      return null;
+    }
+
+    @Override
+    public NumericDocValues simpleNormValues(String field) {
+      // nocommit
       return null;
     }
 

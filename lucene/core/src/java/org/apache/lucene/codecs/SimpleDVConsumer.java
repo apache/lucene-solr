@@ -22,8 +22,6 @@ import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DocValues.SortedSource;
-import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
@@ -41,12 +39,15 @@ public abstract class SimpleDVConsumer implements Closeable {
   public abstract BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, int maxLength) throws IOException;
   // nocommit: figure out whats fair here.
   public abstract SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, int maxLength) throws IOException;
-  
-  public void merge(MergeState mergeState) throws IOException {
+
+  // nocommit bogus forceNorms param:
+  public void merge(MergeState mergeState, boolean forceNorms) throws IOException {
     for (FieldInfo field : mergeState.fieldInfos) {
-      if (field.hasDocValues()) {
+      if ((!forceNorms && field.hasDocValues()) || (forceNorms && field.isIndexed() && !field.omitsNorms())) {
         mergeState.fieldInfo = field;
-        DocValues.Type type = field.getDocValuesType();
+        //System.out.println("merge field=" + field.name + " forceNorms=" + forceNorms);
+        // nocommit a field can never have doc values AND norms!?
+        DocValues.Type type = forceNorms ? DocValues.Type.FIXED_INTS_8 : field.getDocValuesType();
         switch(type) {
           case VAR_INTS:
           case FIXED_INTS_8:
@@ -55,7 +56,7 @@ public abstract class SimpleDVConsumer implements Closeable {
           case FIXED_INTS_64:
           case FLOAT_64:
           case FLOAT_32:
-            mergeNumericField(mergeState);
+            mergeNumericField(mergeState, forceNorms);
             break;
           case BYTES_VAR_SORTED:
           case BYTES_FIXED_SORTED:
@@ -74,8 +75,9 @@ public abstract class SimpleDVConsumer implements Closeable {
     }
   }
 
+  // nocommit bogus forceNorms:
   // dead simple impl: codec can optimize
-  protected void mergeNumericField(MergeState mergeState) throws IOException {
+  protected void mergeNumericField(MergeState mergeState, boolean forceNorms) throws IOException {
     // first compute min and max value of live ones to be merged.
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
@@ -83,8 +85,12 @@ public abstract class SimpleDVConsumer implements Closeable {
       final int maxDoc = reader.maxDoc();
       final Bits liveDocs = reader.getLiveDocs();
       //System.out.println("merge field=" + mergeState.fieldInfo.name);
-      NumericDocValues docValues = reader.getNumericDocValues(mergeState.fieldInfo.name);
+      NumericDocValues docValues = forceNorms ? reader.simpleNormValues(mergeState.fieldInfo.name) : reader.getNumericDocValues(mergeState.fieldInfo.name);
       if (docValues == null) {
+        // nocommit this isn't correct i think?  ie this one
+        // segment may have no docs containing this
+        // field... and that doesn't mean norms are omitted ...
+        //assert !forceNorms;
         docValues = new NumericDocValues.EMPTY(maxDoc);
       }
       for (int i = 0; i < maxDoc; i++) {
@@ -98,7 +104,7 @@ public abstract class SimpleDVConsumer implements Closeable {
     }
     // now we can merge
     NumericDocValuesConsumer field = addNumericField(mergeState.fieldInfo, minValue, maxValue);
-    field.merge(mergeState);
+    field.merge(mergeState, forceNorms);
   }
   
   // dead simple impl: codec can optimize

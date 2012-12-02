@@ -367,57 +367,57 @@ void assertTermDocsCount(String msg,
 
   
   public void testBinaryFields() throws IOException {
-      Directory dir = newDirectory();
-      byte[] bin = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    Directory dir = newDirectory();
+    byte[] bin = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
       
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
       
-      for (int i = 0; i < 10; i++) {
-        addDoc(writer, "document number " + (i + 1));
-        addDocumentWithFields(writer);
-        addDocumentWithDifferentFields(writer);
-        addDocumentWithTermVectorFields(writer);
-      }
-      writer.close();
-      writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
-      Document doc = new Document();
-      doc.add(new StoredField("bin1", bin));
-      doc.add(new TextField("junk", "junk text", Field.Store.NO));
-      writer.addDocument(doc);
-      writer.close();
-      DirectoryReader reader = DirectoryReader.open(dir);
-      StoredDocument doc2 = reader.document(reader.maxDoc() - 1);
-      StorableField[] fields = doc2.getFields("bin1");
-      assertNotNull(fields);
-      assertEquals(1, fields.length);
-      StorableField b1 = fields[0];
-      assertTrue(b1.binaryValue() != null);
-      BytesRef bytesRef = b1.binaryValue();
-      assertEquals(bin.length, bytesRef.length);
-      for (int i = 0; i < bin.length; i++) {
-        assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
-      }
-      reader.close();
-      // force merge
+    for (int i = 0; i < 10; i++) {
+      addDoc(writer, "document number " + (i + 1));
+      addDocumentWithFields(writer);
+      addDocumentWithDifferentFields(writer);
+      addDocumentWithTermVectorFields(writer);
+    }
+    writer.close();
+    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
+    Document doc = new Document();
+    doc.add(new StoredField("bin1", bin));
+    doc.add(new TextField("junk", "junk text", Field.Store.NO));
+    writer.addDocument(doc);
+    writer.close();
+    DirectoryReader reader = DirectoryReader.open(dir);
+    StoredDocument doc2 = reader.document(reader.maxDoc() - 1);
+    StorableField[] fields = doc2.getFields("bin1");
+    assertNotNull(fields);
+    assertEquals(1, fields.length);
+    StorableField b1 = fields[0];
+    assertTrue(b1.binaryValue() != null);
+    BytesRef bytesRef = b1.binaryValue();
+    assertEquals(bin.length, bytesRef.length);
+    for (int i = 0; i < bin.length; i++) {
+      assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
+    }
+    reader.close();
+    // force merge
 
 
-      writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
-      writer.forceMerge(1);
-      writer.close();
-      reader = DirectoryReader.open(dir);
-      doc2 = reader.document(reader.maxDoc() - 1);
-      fields = doc2.getFields("bin1");
-      assertNotNull(fields);
-      assertEquals(1, fields.length);
-      b1 = fields[0];
-      assertTrue(b1.binaryValue() != null);
-      bytesRef = b1.binaryValue();
-      assertEquals(bin.length, bytesRef.length);
-      for (int i = 0; i < bin.length; i++) {
-        assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
-      }
-      reader.close();
-      dir.close();
+    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND).setMergePolicy(newLogMergePolicy()));
+    writer.forceMerge(1);
+    writer.close();
+    reader = DirectoryReader.open(dir);
+    doc2 = reader.document(reader.maxDoc() - 1);
+    fields = doc2.getFields("bin1");
+    assertNotNull(fields);
+    assertEquals(1, fields.length);
+    b1 = fields[0];
+    assertTrue(b1.binaryValue() != null);
+    bytesRef = b1.binaryValue();
+    assertEquals(bin.length, bytesRef.length);
+    for (int i = 0; i < bin.length; i++) {
+      assertEquals(bin[i], bytesRef.bytes[i + bytesRef.offset]);
+    }
+    reader.close();
+    dir.close();
   }
 
   /* ??? public void testOpenEmptyDirectory() throws IOException{

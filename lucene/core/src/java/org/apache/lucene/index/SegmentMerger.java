@@ -71,14 +71,14 @@ final class SegmentMerger {
   /**
    * Add an IndexReader to the collection of readers that are to be merged
    */
-  final void add(IndexReader reader) {
+  void add(IndexReader reader) {
     for (final AtomicReaderContext ctx : reader.leaves()) {
       final AtomicReader r = ctx.reader();
       mergeState.readers.add(r);
     }
   }
 
-  final void add(SegmentReader reader) {
+  void add(SegmentReader reader) {
     mergeState.readers.add(reader);
   }
 
@@ -88,7 +88,7 @@ final class SegmentMerger {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  final MergeState merge() throws IOException {
+  MergeState merge() throws IOException {
     // NOTE: it's important to add calls to
     // checkAbort.work(...) if you make any changes to this
     // method that will spend alot of time.  The frequency
@@ -109,14 +109,35 @@ final class SegmentMerger {
     
     if (mergeState.fieldInfos.hasNorms()) {
       mergeNorms(segmentWriteState);
+      if (codec.simpleNormsFormat() != null) {
+        SimpleDVConsumer consumer = codec.simpleNormsFormat().normsConsumer(segmentWriteState);
+        boolean success = false;
+        try {
+          consumer.merge(mergeState, true);
+        } finally {
+          if (success) {
+            IOUtils.close(consumer);
+          } else {
+            IOUtils.closeWhileHandlingException(consumer);            
+          }
+        }
+      }
     }
 
     if (mergeState.fieldInfos.hasDocValues()) {
       // nocommit shouldn't need null check:
       if (codec.simpleDocValuesFormat() != null) {
         SimpleDVConsumer consumer = codec.simpleDocValuesFormat().fieldsConsumer(segmentWriteState);
-        consumer.merge(mergeState);
-        consumer.close();
+        boolean success = false;
+        try {
+          consumer.merge(mergeState, false);
+        } finally {
+          if (success) {
+            IOUtils.close(consumer);
+          } else {
+            IOUtils.closeWhileHandlingException(consumer);            
+          }
+        }
       }
     }
 
@@ -263,7 +284,7 @@ final class SegmentMerger {
    * Merge the TermVectors from each of the segments into the new one.
    * @throws IOException if there is a low-level IO error
    */
-  private final int mergeVectors() throws IOException {
+  private int mergeVectors() throws IOException {
     final TermVectorsWriter termVectorsWriter = codec.termVectorsFormat().vectorsWriter(directory, mergeState.segmentInfo, context);
     
     try {
@@ -299,7 +320,7 @@ final class SegmentMerger {
     return docBase;
   }
 
-  private final void mergeTerms(SegmentWriteState segmentWriteState) throws IOException {
+  private void mergeTerms(SegmentWriteState segmentWriteState) throws IOException {
     
     final List<Fields> fields = new ArrayList<Fields>();
     final List<ReaderSlice> slices = new ArrayList<ReaderSlice>();
