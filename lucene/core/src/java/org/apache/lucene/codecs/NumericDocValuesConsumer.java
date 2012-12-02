@@ -18,6 +18,7 @@ package org.apache.lucene.codecs;
  */
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.MergeState;
@@ -28,19 +29,16 @@ public abstract class NumericDocValuesConsumer {
   public abstract void add(long value) throws IOException;
   public abstract void finish() throws IOException;
 
-  // nocommit bogus forceNorms
-  public int merge(MergeState mergeState, boolean forceNorms) throws IOException {
+  public int merge(MergeState mergeState, List<NumericDocValues> toMerge) throws IOException {
     int docCount = 0;
-    for (AtomicReader reader : mergeState.readers) {
-      final int maxDoc = reader.maxDoc();
-      final Bits liveDocs = reader.getLiveDocs();
-      NumericDocValues source = forceNorms ? reader.simpleNormValues(mergeState.fieldInfo.name) : reader.getNumericDocValues(mergeState.fieldInfo.name);
-      if (source == null) {
-        source = new NumericDocValues.EMPTY(maxDoc);
-      }
+    for (int readerIDX=0;readerIDX<toMerge.size();readerIDX++) {
+      AtomicReader reader = mergeState.readers.get(readerIDX);
+      int maxDoc = reader.maxDoc();
+      Bits liveDocs = reader.getLiveDocs();
+      NumericDocValues values = toMerge.get(readerIDX);
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {
-          add(source.get(i));
+          add(values.get(i));
         }
         docCount++;
         mergeState.checkAbort.work(300);

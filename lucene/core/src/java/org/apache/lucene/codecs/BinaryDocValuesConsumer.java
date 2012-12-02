@@ -18,6 +18,7 @@ package org.apache.lucene.codecs;
  */
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.BinaryDocValues;
@@ -29,21 +30,18 @@ public abstract class BinaryDocValuesConsumer {
   public abstract void add(BytesRef value) throws IOException;
   public abstract void finish() throws IOException;
   
-  public int merge(MergeState mergeState) throws IOException {
+  public int merge(MergeState mergeState, List<BinaryDocValues> toMerge) throws IOException {
     int docCount = 0;
     final BytesRef bytes = new BytesRef();
-    for (AtomicReader reader : mergeState.readers) {
-      final int maxDoc = reader.maxDoc();
-      final Bits liveDocs = reader.getLiveDocs();
+    for (int readerIDX=0;readerIDX<toMerge.size();readerIDX++) {
+      AtomicReader reader = mergeState.readers.get(readerIDX);
+      int maxDoc = reader.maxDoc();
+      Bits liveDocs = reader.getLiveDocs();
 
-      BinaryDocValues source = reader.getBinaryDocValues(mergeState.fieldInfo.name);
-      if (source == null) {
-        source = new BinaryDocValues.EMPTY(maxDoc);
-      }
-
+      BinaryDocValues values = toMerge.get(readerIDX);
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {
-          source.get(i, bytes);
+          values.get(i, bytes);
           add(bytes);
         }
         docCount++;

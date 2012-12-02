@@ -19,6 +19,7 @@ package org.apache.lucene.codecs;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.BinaryDocValues;
@@ -26,6 +27,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -40,90 +42,46 @@ public abstract class SimpleDVConsumer implements Closeable {
   // nocommit: figure out whats fair here.
   public abstract SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, int maxLength) throws IOException;
 
-  // nocommit bogus forceNorms param:
-  public void merge(MergeState mergeState, boolean forceNorms) throws IOException {
-    for (FieldInfo field : mergeState.fieldInfos) {
-      if ((!forceNorms && field.hasDocValues()) || (forceNorms && field.isIndexed() && !field.omitsNorms())) {
-        mergeState.fieldInfo = field;
-        //System.out.println("merge field=" + field.name + " forceNorms=" + forceNorms);
-        // nocommit a field can never have doc values AND norms!?
-        DocValues.Type type = forceNorms ? DocValues.Type.FIXED_INTS_8 : field.getDocValuesType();
-        switch(type) {
-          case VAR_INTS:
-          case FIXED_INTS_8:
-          case FIXED_INTS_16:
-          case FIXED_INTS_32:
-          case FIXED_INTS_64:
-          case FLOAT_64:
-          case FLOAT_32:
-            mergeNumericField(mergeState, forceNorms);
-            break;
-          case BYTES_VAR_SORTED:
-          case BYTES_FIXED_SORTED:
-          case BYTES_VAR_DEREF:
-          case BYTES_FIXED_DEREF:
-            mergeSortedField(mergeState);
-            break;
-          case BYTES_VAR_STRAIGHT:
-          case BYTES_FIXED_STRAIGHT:
-            mergeBinaryField(mergeState);
-            break;
-          default:
-            throw new AssertionError();
-        }
-      }
-    }
-  }
-
-  // nocommit bogus forceNorms:
   // dead simple impl: codec can optimize
-  protected void mergeNumericField(MergeState mergeState, boolean forceNorms) throws IOException {
+  public void mergeNumericField(FieldInfo fieldInfo, MergeState mergeState, List<NumericDocValues> toMerge) throws IOException {
     // first compute min and max value of live ones to be merged.
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
-    for (AtomicReader reader : mergeState.readers) {
-      final int maxDoc = reader.maxDoc();
-      final Bits liveDocs = reader.getLiveDocs();
-      //System.out.println("merge field=" + mergeState.fieldInfo.name);
-      NumericDocValues docValues = forceNorms ? reader.simpleNormValues(mergeState.fieldInfo.name) : reader.getNumericDocValues(mergeState.fieldInfo.name);
-      if (docValues == null) {
-        // nocommit this isn't correct i think?  ie this one
-        // segment may have no docs containing this
-        // field... and that doesn't mean norms are omitted ...
-        //assert !forceNorms;
-        docValues = new NumericDocValues.EMPTY(maxDoc);
-      }
+    for (int readerIDX=0;readerIDX<toMerge.size();readerIDX++) {
+      AtomicReader reader = mergeState.readers.get(readerIDX);
+      int maxDoc = reader.maxDoc();
+      Bits liveDocs = reader.getLiveDocs();
+      NumericDocValues values = toMerge.get(readerIDX);
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {
-          long val = docValues.get(i);
+          long val = values.get(i);
           minValue = Math.min(val, minValue);
           maxValue = Math.max(val, maxValue);
         }
         mergeState.checkAbort.work(300);
       }
     }
+
     // now we can merge
-    NumericDocValuesConsumer field = addNumericField(mergeState.fieldInfo, minValue, maxValue);
-    field.merge(mergeState, forceNorms);
+    NumericDocValuesConsumer field = addNumericField(fieldInfo, minValue, maxValue);
+    field.merge(mergeState, toMerge);
   }
   
   // dead simple impl: codec can optimize
-  protected void mergeBinaryField(MergeState mergeState) throws IOException {
+  public void mergeBinaryField(FieldInfo fieldInfo, MergeState mergeState, List<BinaryDocValues> toMerge) throws IOException {
     // first compute fixedLength and maxLength of live ones to be merged.
     // nocommit: messy, and can be simplified by using docValues.maxLength/fixedLength in many cases.
     boolean fixedLength = true;
     int maxLength = -1;
     BytesRef bytes = new BytesRef();
-    for (AtomicReader reader : mergeState.readers) {
-      final int maxDoc = reader.maxDoc();
-      final Bits liveDocs = reader.getLiveDocs();
-      BinaryDocValues docValues = reader.getBinaryDocValues(mergeState.fieldInfo.name);
-      if (docValues == null) {
-        docValues = new BinaryDocValues.EMPTY(maxDoc);
-      }
+    for (int readerIDX=0;readerIDX<toMerge.size();readerIDX++) {
+      AtomicReader reader = mergeState.readers.get(readerIDX);      
+      int maxDoc = reader.maxDoc();
+      Bits liveDocs = reader.getLiveDocs();
+      BinaryDocValues values = toMerge.get(readerIDX);
       for (int i = 0; i < maxDoc; i++) {
         if (liveDocs == null || liveDocs.get(i)) {
-          docValues.get(i, bytes);
+          values.get(i, bytes);
           if (maxLength == -1) {
             maxLength = bytes.length;
           } else {
@@ -136,14 +94,14 @@ public abstract class SimpleDVConsumer implements Closeable {
     }
     // now we can merge
     assert maxLength >= 0; // could this happen (nothing to do?)
-    BinaryDocValuesConsumer field = addBinaryField(mergeState.fieldInfo, fixedLength, maxLength);
-    field.merge(mergeState);
+    BinaryDocValuesConsumer field = addBinaryField(fieldInfo, fixedLength, maxLength);
+    field.merge(mergeState, toMerge);
   }
 
-  protected void mergeSortedField(MergeState mergeState) throws IOException {
+  public void mergeSortedField(FieldInfo fieldInfo, MergeState mergeState, List<SortedDocValues> toMerge) throws IOException {
     SortedDocValuesConsumer.Merger merger = new SortedDocValuesConsumer.Merger();
-    merger.merge(mergeState);
-    SortedDocValuesConsumer consumer = addSortedField(mergeState.fieldInfo, merger.numMergedTerms, merger.fixedLength >= 0, merger.maxLength);
+    merger.merge(mergeState, toMerge);
+    SortedDocValuesConsumer consumer = addSortedField(fieldInfo, merger.numMergedTerms, merger.fixedLength >= 0, merger.maxLength);
     consumer.merge(mergeState, merger);
   }
 }

@@ -94,19 +94,17 @@ public abstract class SortedDocValuesConsumer {
       }
     }
 
-    public void merge(MergeState mergeState) throws IOException {
+    public void merge(MergeState mergeState, List<SortedDocValues> toMerge) throws IOException {
 
       // First pass: mark "live" terms
-      for (AtomicReader reader : mergeState.readers) {
+      for (int readerIDX=0;readerIDX<toMerge.size();readerIDX++) {
+        AtomicReader reader = mergeState.readers.get(readerIDX);      
         // nocommit what if this is null...?  need default source?
         int maxDoc = reader.maxDoc();
 
         SegmentState state = new SegmentState();
         state.reader = reader;
-        state.values = reader.getSortedDocValues(mergeState.fieldInfo.name);
-        if (state.values == null) {
-          state.values = new SortedDocValues.EMPTY(maxDoc);
-        }
+        state.values = toMerge.get(readerIDX);
 
         segStates.add(state);
         assert state.values.getValueCount() < Integer.MAX_VALUE;

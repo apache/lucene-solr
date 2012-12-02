@@ -123,7 +123,7 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
       final String formatName = format.getName();
       
       String previousValue = field.putAttribute(PER_FIELD_FORMAT_KEY, formatName);
-      assert previousValue == null;
+      assert previousValue == null: "formatName=" + formatName + " prevValue=" + previousValue;
       
       Integer suffix;
       

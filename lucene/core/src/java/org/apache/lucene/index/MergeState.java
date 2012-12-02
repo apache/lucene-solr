@@ -218,6 +218,7 @@ public class MergeState {
   public InfoStream infoStream;
 
   /** Current field being merged. */
+  // nocommit shouldn't this be ... a param?:
   public FieldInfo fieldInfo;
   
   // TODO: get rid of this? it tells you which segments are 'aligned' (e.g. for bulk merging)
