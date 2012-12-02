@@ -25,7 +25,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
@@ -58,6 +59,8 @@ import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
 public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
+
+  private static final Codec NON_COMPRESSING_CODEC = new SimpleTextCodec();
 
   private Directory dir;
   IndexWriterConfig iwConf;
@@ -119,11 +122,11 @@ public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
       iw.w.addDocument(doc);
       if (random().nextBoolean() && (i % (data.length / 10) == 0)) {
         iw.w.close();
-        // switch codecs
-        if (iwConf.getCodec() instanceof Lucene41Codec) {
+        // test merging against a non-compressing codec
+        if (iwConf.getCodec() == NON_COMPRESSING_CODEC) {
           iwConf.setCodec(CompressingCodec.randomInstance(random()));
         } else {
-          iwConf.setCodec(new Lucene41Codec());
+          iwConf.setCodec(NON_COMPRESSING_CODEC);
         }
         iw = new RandomIndexWriter(random(), dir, iwConf);
       }
