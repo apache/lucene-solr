@@ -144,68 +144,6 @@ public abstract class SortedDocValues extends BinaryDocValues {
     };
   }
 
-  @Override
-  public SortedDocValues newRAMInstance() {
-    // nocommit optimize this
-    // nocommit, see also BinaryDocValues nocommits
-    final int maxDoc = size();
-    final int maxLength = maxLength();
-    final boolean fixedLength = isFixedLength();
-    final int valueCount = getValueCount();
-    // nocommit used packed ints and so on
-    final byte[][] values = new byte[valueCount][];
-    BytesRef scratch = new BytesRef();
-    for(int ord=0;ord<values.length;ord++) {
-      lookupOrd(ord, scratch);
-      values[ord] = new byte[scratch.length];
-      System.arraycopy(scratch.bytes, scratch.offset, values[ord], 0, scratch.length);
-    }
-
-    final int[] docToOrd = new int[maxDoc];
-    for(int docID=0;docID<maxDoc;docID++) {
-      docToOrd[docID] = getOrd(docID);
-    }
-    return new SortedDocValues() {
-
-      @Override
-      public int getOrd(int docID) {
-        return docToOrd[docID];
-      }
-
-      @Override
-      public void lookupOrd(int ord, BytesRef result) {
-        result.bytes = values[ord];
-        result.offset = 0;
-        result.length = result.bytes.length;
-      }
-
-      @Override
-      public int getValueCount() {
-        return valueCount;
-      }
-
-      @Override
-      public int size() {
-        return maxDoc;
-      }
-
-      @Override
-      public boolean isFixedLength() {
-        return fixedLength;
-      }
-
-      @Override
-      public int maxLength() {
-        return maxLength;
-      }
-
-      @Override
-      public SortedDocValues newRAMInstance() {
-        return this; // see the nocommit in BinaryDocValues
-      }
-    };
-  }
-
   public static class EMPTY extends SortedDocValues {
     private final int size;
     

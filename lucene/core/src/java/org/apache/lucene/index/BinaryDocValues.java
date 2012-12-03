@@ -30,54 +30,6 @@ public abstract class BinaryDocValues {
   public abstract boolean isFixedLength();
   public abstract int maxLength();
   
-  // nocommit: rethink this api? alternative is boolean on atomicreader...?
-  // doc that the thing returned here must be thread safe...
-  public BinaryDocValues newRAMInstance() {
-    // TODO: optimize this default impl with e.g. isFixedLength/maxLength and so on
-    // nocommit used packed ints/pagedbytes and so on
-    final int maxDoc = size();
-    final int maxLength = maxLength();
-    final boolean fixedLength = isFixedLength();
-    final byte[][] values = new byte[maxDoc][];
-    BytesRef scratch = new BytesRef();
-    for(int docID=0;docID<maxDoc;docID++) {
-      get(docID, scratch);
-      values[docID] = new byte[scratch.length];
-      System.arraycopy(scratch.bytes, scratch.offset, values[docID], 0, scratch.length);
-    }
-    
-    return new BinaryDocValues() {
-
-      @Override
-      public void get(int docID, BytesRef result) {
-        result.bytes = values[docID];
-        result.offset = 0;
-        result.length = result.bytes.length;
-      }
-
-      @Override
-      public int size() {
-        return maxDoc;
-      }
-
-      @Override
-      public boolean isFixedLength() {
-        return fixedLength;
-      }
-
-      @Override
-      public int maxLength() {
-        return maxLength;
-      }
-
-      @Override
-      public BinaryDocValues newRAMInstance() {
-        // nocommit: ugly, maybe throw exception instead?
-        return this; 
-      }
-    };
-  }
-  
   public static class EMPTY extends BinaryDocValues {
     private final int size;
     

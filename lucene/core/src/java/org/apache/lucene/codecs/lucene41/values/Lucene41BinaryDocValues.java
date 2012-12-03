@@ -90,19 +90,6 @@ public final class Lucene41BinaryDocValues extends BinaryDocValues {
   public int maxLength() {
     return maxLength;
   }
-  
-  
-  
-  @Override
-  public BinaryDocValues newRAMInstance() {
-    try {
-    return factory == null ? this : factory.getInMemory();
-    } catch (IOException e) {
-      return this; // nocommit ?? now IOException
-    }
-  }
-
-
 
   public static final class Factory extends DocValuesFactory<BinaryDocValues> {
     private final IndexInput datIn;

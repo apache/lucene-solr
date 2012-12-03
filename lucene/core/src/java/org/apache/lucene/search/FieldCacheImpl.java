@@ -396,13 +396,12 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
+      final NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
       if (valuesIn != null) {
-        final NumericDocValues ramInstance = valuesIn.newRAMInstance();
         return new Bytes() {
           @Override
           public byte get(int docID) {
-            return (byte) ramInstance.get(docID);
+            return (byte) valuesIn.get(docID);
           }
         };
       } else {
@@ -478,13 +477,12 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
+      final NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
       if (valuesIn != null) {
-        final NumericDocValues ramInstance = valuesIn.newRAMInstance();
         return new Shorts() {
           @Override
           public short get(int docID) {
-            return (short) ramInstance.get(docID);
+            return (short) valuesIn.get(docID);
           }
         };
       } else {
@@ -557,13 +555,12 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
+      final NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
       if (valuesIn != null) {
-        final NumericDocValues ramInstance = valuesIn.newRAMInstance();
         return new Ints() {
           @Override
           public int get(int docID) {
-            return (int) ramInstance.get(docID);
+            return (int) valuesIn.get(docID);
           }
         };
       } else {
@@ -708,13 +705,12 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
+      final NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
       if (valuesIn != null) {
-        final NumericDocValues ramInstance = valuesIn.newRAMInstance();
         return new Floats() {
           @Override
           public float get(int docID) {
-            return Float.intBitsToFloat((int) ramInstance.get(docID));
+            return Float.intBitsToFloat((int) valuesIn.get(docID));
           }
         };
       } else {
@@ -796,13 +792,12 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
+      final NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
       if (valuesIn != null) {
-        final NumericDocValues ramInstance = valuesIn.newRAMInstance();
         return new Longs() {
           @Override
           public long get(int docID) {
-            return ramInstance.get(docID);
+            return valuesIn.get(docID);
           }
         };
       } else {
@@ -884,13 +879,12 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
+      final NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
       if (valuesIn != null) {
-        final NumericDocValues ramInstance = valuesIn.newRAMInstance();
         return new Doubles() {
           @Override
           public double get(int docID) {
-            return Double.longBitsToDouble(ramInstance.get(docID));
+            return Double.longBitsToDouble(valuesIn.get(docID));
           }
         };
       } else {
@@ -1158,7 +1152,7 @@ class FieldCacheImpl implements FieldCache {
       final int maxDoc = reader.maxDoc();
       SortedDocValues valuesIn = reader.getSortedDocValues(key.field);
       if (valuesIn != null) {
-        return valuesIn.newRAMInstance();
+        return valuesIn;
       } else {
 
         Terms terms = reader.terms(key.field);
@@ -1328,7 +1322,7 @@ class FieldCacheImpl implements FieldCache {
 
       BinaryDocValues valuesIn = reader.getBinaryDocValues(key.field);
       if (valuesIn != null) {
-        return valuesIn.newRAMInstance();
+        return valuesIn;
       } else {
         final int maxDoc = reader.maxDoc();
         Terms terms = reader.terms(key.field);

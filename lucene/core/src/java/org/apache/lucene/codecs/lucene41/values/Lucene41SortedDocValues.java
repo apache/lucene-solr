@@ -111,15 +111,6 @@ public class Lucene41SortedDocValues extends SortedDocValues {
     return maxLength;
   }
   
-  @Override
-  public SortedDocValues newRAMInstance() {
-    try {
-      return factory == null ? this : factory.getInMemory();
-    } catch (IOException e) {
-      return this; // nocommit ?? now IOException
-    }
-  }
-
   public static final class Factory extends
       DocValuesFactory<SortedDocValues> {
     private final IndexInput datIn;

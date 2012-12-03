@@ -51,15 +51,6 @@ public class Lucene41NumericDocValues extends NumericDocValues {
     return values.get(docID) + minValue;
   }
   
-  @Override
-  public NumericDocValues newRAMInstance() {
-    try {
-      return factory == null ? this : factory.getInMemory();
-    } catch (IOException e) {
-      return this; // nocommit ?? now IOException
-    }
-  }
-  
   public static final class Factory extends DocValuesFactory<NumericDocValues> {
     private final IndexInput datIn;
     private final PackedInts.Header header;

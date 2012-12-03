@@ -986,12 +986,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     writer.close();
     
     final AtomicReader sr = getOnlySegmentReader(r);
-    final SortedDocValues dv = sorted(sr, "stringdv").newRAMInstance();
+    final SortedDocValues dv = sorted(sr, "stringdv");
     assertNotNull(dv);
 
     final long END_TIME = System.currentTimeMillis() + (TEST_NIGHTLY ? 30 : 1);
 
-    final NumericDocValues docIDToID = numeric(sr, "id").newRAMInstance();
+    final NumericDocValues docIDToID = numeric(sr, "id");
 
     final int NUM_THREADS = _TestUtil.nextInt(random(), 1, 10);
     Thread[] threads = new Thread[NUM_THREADS];
@@ -1309,7 +1309,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public NumericDocValues numeric(AtomicReader reader, String field) throws IOException {
     NumericDocValues docValues = reader.getNumericDocValues(field);
     if(random().nextBoolean()) {
-      return docValues.newRAMInstance();
+      return docValues;
     }
     return docValues;
   }
@@ -1327,16 +1327,15 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public BinaryDocValues binary(AtomicReader reader, String field) throws IOException {
     BinaryDocValues docValues = reader.getBinaryDocValues(field);
     if(random().nextBoolean()) {
-      return docValues.newRAMInstance();
+      return docValues;
     }
     return docValues;
   }
   public SortedDocValues sorted(AtomicReader reader, String field) throws IOException {
     SortedDocValues docValues = reader.getSortedDocValues(field);
     if(random().nextBoolean()) {
-      return docValues.newRAMInstance();
+      return docValues;
     }
     return docValues;
   }
- 
 }
