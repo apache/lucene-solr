@@ -87,9 +87,9 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
     taxoWriter.addCategory(new CategoryPath("a"));
     taxoWriter.addCategory(new CategoryPath("b"));
-    Map <String, String> userCommitData = new HashMap<String, String>();
+    Map<String, String> userCommitData = new HashMap<String, String>();
     userCommitData.put("testing", "1 2 3");
-    taxoWriter.commit(userCommitData);
+    taxoWriter.setCommitData(userCommitData);
     taxoWriter.close();
     DirectoryReader r = DirectoryReader.open(dir);
     assertEquals("2 categories plus root should have been committed to the underlying directory", 3, r.numDocs());
@@ -104,9 +104,14 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     // that the taxonomy index has been recreated.
     taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
     taxoWriter.addCategory(new CategoryPath("c")); // add a category so that commit will happen
-    taxoWriter.commit(new HashMap<String, String>(){{
+    taxoWriter.setCommitData(new HashMap<String, String>(){{
       put("just", "data");
     }});
+    taxoWriter.commit();
+    
+    // verify taxoWriter.getCommitData()
+    assertNotNull(DirectoryTaxonomyWriter.INDEX_EPOCH
+        + " not found in taoxWriter.commitData", taxoWriter.getCommitData().get(DirectoryTaxonomyWriter.INDEX_EPOCH));
     taxoWriter.close();
     
     r = DirectoryReader.open(dir);
@@ -163,9 +168,10 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
 
   private void touchTaxo(DirectoryTaxonomyWriter taxoWriter, CategoryPath cp) throws IOException {
     taxoWriter.addCategory(cp);
-    taxoWriter.commit(new HashMap<String, String>(){{
+    taxoWriter.setCommitData(new HashMap<String, String>(){{
       put("just", "data");
     }});
+    taxoWriter.commit();
   }
   
   @Test

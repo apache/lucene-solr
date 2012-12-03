@@ -129,6 +129,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   private volatile ParentArray parentArray;
   private volatile int nextID;
 
+//  private Map<String,String> commitData;
+  
   /** Reads the commit data from a Directory. */
   private static Map<String, String> readCommitData(Directory dir) throws IOException {
     SegmentInfos infos = new SegmentInfos();
@@ -353,7 +355,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   @Override
   public synchronized void close() throws IOException {
     if (!isClosed) {
-      indexWriter.commit(combinedCommitData(null));
+      indexWriter.setCommitData(combinedCommitData(indexWriter.getCommitData()));
+      indexWriter.commit();
       doClose();
     }
   }
@@ -660,39 +663,31 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     }
   }
   
-  /**
-   * Calling commit() ensures that all the categories written so far are
-   * visible to a reader that is opened (or reopened) after that call.
-   * When the index is closed(), commit() is also implicitly done.
-   * See {@link TaxonomyWriter#commit()}
-   */ 
   @Override
   public synchronized void commit() throws IOException {
     ensureOpen();
-    indexWriter.commit(combinedCommitData(null));
+    indexWriter.setCommitData(combinedCommitData(indexWriter.getCommitData()));
+    indexWriter.commit();
   }
 
-  /**
-   * Combine original user data with that of the taxonomy creation time
-   */
-  private Map<String,String> combinedCommitData(Map<String,String> userData) {
+  /** Combine original user data with the taxonomy epoch. */
+  private Map<String,String> combinedCommitData(Map<String,String> commitData) {
     Map<String,String> m = new HashMap<String, String>();
-    if (userData != null) {
-      m.putAll(userData);
+    if (commitData != null) {
+      m.putAll(commitData);
     }
     m.put(INDEX_EPOCH, Long.toString(indexEpoch));
     return m;
   }
   
-  /**
-   * Like commit(), but also store properties with the index. These properties
-   * are retrievable by {@link DirectoryTaxonomyReader#getCommitUserData}.
-   * See {@link TaxonomyWriter#commit(Map)}. 
-   */
   @Override
-  public synchronized void commit(Map<String,String> commitUserData) throws IOException {
-    ensureOpen();
-    indexWriter.commit(combinedCommitData(commitUserData));
+  public void setCommitData(Map<String,String> commitUserData) {
+    indexWriter.setCommitData(combinedCommitData(commitUserData));
+  }
+  
+  @Override
+  public Map<String,String> getCommitData() {
+    return combinedCommitData(indexWriter.getCommitData());
   }
   
   /**
@@ -702,17 +697,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   @Override
   public synchronized void prepareCommit() throws IOException {
     ensureOpen();
-    indexWriter.prepareCommit(combinedCommitData(null));
-  }
-
-  /**
-   * Like above, and also prepares to store user data with the index.
-   * See {@link IndexWriter#prepareCommit(Map)}
-   */
-  @Override
-  public synchronized void prepareCommit(Map<String,String> commitUserData) throws IOException {
-    ensureOpen();
-    indexWriter.prepareCommit(combinedCommitData(commitUserData));
+    indexWriter.setCommitData(combinedCommitData(indexWriter.getCommitData()));
+    indexWriter.prepareCommit();
   }
   
   @Override

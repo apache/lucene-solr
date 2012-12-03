@@ -1,7 +1,6 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import java.util.Map;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -38,33 +37,12 @@ public interface TwoPhaseCommit {
   public void prepareCommit() throws IOException;
 
   /**
-   * Like {@link #commit()}, but takes an additional commit data to be included
-   * w/ the commit.
-   * <p>
-   * <b>NOTE:</b> some implementations may not support any custom data to be
-   * included w/ the commit and may discard it altogether. Consult the actual
-   * implementation documentation for verifying if this is supported.
-   * 
-   * @see #prepareCommit()
-   */
-  public void prepareCommit(Map<String, String> commitData) throws IOException;
-
-  /**
    * The second phase of a 2-phase commit. Implementations should ideally do
    * very little work in this method (following {@link #prepareCommit()}, and
    * after it returns, the caller can assume that the changes were successfully
    * committed to the underlying storage.
    */
   public void commit() throws IOException;
-
-  /**
-   * Like {@link #commit()}, but takes an additional commit data to be included
-   * w/ the commit.
-   * 
-   * @see #commit()
-   * @see #prepareCommit(Map)
-   */
-  public void commit(Map<String, String> commitData) throws IOException;
 
   /**
    * Discards any changes that have occurred since the last commit. In a 2-phase
