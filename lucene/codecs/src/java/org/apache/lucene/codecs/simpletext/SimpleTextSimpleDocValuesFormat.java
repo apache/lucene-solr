@@ -16,6 +16,7 @@ package org.apache.lucene.codecs.simpletext;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -140,7 +141,8 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
    *  the reader can just scan this file when it opens, skipping over the data blocks
    *  and saving the offset/etc for each field. 
    */
-  static class SimpleTextDocValuesWriter extends SimpleDVConsumer {
+  // nocommit not public
+  public static class SimpleTextDocValuesWriter extends SimpleDVConsumer {
     final IndexOutput data;
     final BytesRef scratch = new BytesRef();
     final int numDocs;
@@ -148,7 +150,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     final boolean isNorms;
     private final Set<String> fieldsSeen = new HashSet<String>(); // for asserting
     
-    SimpleTextDocValuesWriter(SegmentWriteState state, String ext) throws IOException {
+    public SimpleTextDocValuesWriter(SegmentWriteState state, String ext) throws IOException {
       //System.out.println("WRITE: " + IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext) + " " + state.segmentInfo.getDocCount() + " docs");
       data = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext), state.context);
       numDocs = state.segmentInfo.getDocCount();
@@ -388,7 +390,8 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   // nocommit make sure we test "all docs have 0 value",
   // "all docs have empty BytesREf"
 
-  static class SimpleTextDocValuesReader extends SimpleDVProducer {
+  // nocommit not public
+  public static class SimpleTextDocValuesReader extends SimpleDVProducer {
 
     static class OneField {
       FieldInfo fieldInfo;
@@ -407,7 +410,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     final BytesRef scratch = new BytesRef();
     final Map<String,OneField> fields = new HashMap<String,OneField>();
     
-    SimpleTextDocValuesReader(SegmentReadState state, String ext) throws IOException {
+    public SimpleTextDocValuesReader(SegmentReadState state, String ext) throws IOException {
       //System.out.println("dir=" + state.directory + " seg=" + state.segmentInfo.name + " ext=" + ext);
       data = state.directory.openInput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext), state.context);
       maxDoc = state.segmentInfo.getDocCount();

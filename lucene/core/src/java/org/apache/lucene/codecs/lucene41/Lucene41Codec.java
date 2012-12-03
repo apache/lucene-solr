@@ -145,5 +145,5 @@ public class Lucene41Codec extends Codec {
 
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
   // nocommit
-  private final SimpleDocValuesFormat defaultDVFormat = SimpleDocValuesFormat.forName("SimpleText");
+  private final SimpleDocValuesFormat defaultDVFormat = SimpleDocValuesFormat.forName("Memory");
 }
