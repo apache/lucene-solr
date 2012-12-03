@@ -32,15 +32,27 @@ public class MockDirectoryFactory extends CachingDirectoryFactory {
   @Override
   protected Directory create(String path) throws IOException {
     Directory dir = LuceneTestCase.newDirectory();
-    // we can't currently do this check because of how
-    // Solr has to reboot a new Directory sometimes when replicating
-    // or rolling back - the old directory is closed and the following
-    // test assumes it can open an IndexWriter when that happens - we
-    // have a new Directory for the same dir and still an open IW at 
-    // this point
     if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setAssertNoUnrefencedFilesOnClose(false);
+      MockDirectoryWrapper mockDirWrapper = (MockDirectoryWrapper) dir;
+      
+      // we can't currently do this check because of how
+      // Solr has to reboot a new Directory sometimes when replicating
+      // or rolling back - the old directory is closed and the following
+      // test assumes it can open an IndexWriter when that happens - we
+      // have a new Directory for the same dir and still an open IW at 
+      // this point
+      mockDirWrapper.setAssertNoUnrefencedFilesOnClose(false);
+      
+      // ram dirs in cores that are restarted end up empty
+      // and check index fails
+      mockDirWrapper.setCheckIndexOnClose(false);
+      
+      // if we enable this, TestReplicationHandler fails when it
+      // tries to write to index.properties after the file has
+      // already been created.
+      mockDirWrapper.setPreventDoubleWrite(false);
     }
+	
     return dir;
   }
   
