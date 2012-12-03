@@ -41,7 +41,7 @@ import org.apache.lucene.util.BytesRef;
  */
 public class SimpleTextSimpleNormsFormat extends SimpleNormsFormat {
   // nocommit put back to len once we replace current norms format:
-  private static final String NORMS_SEG_SUFFIX = "slen";
+  private static final String NORMS_SEG_EXTENSION = "slen";
   
   @Override
   public SimpleDVConsumer normsConsumer(SegmentWriteState state) throws IOException {
@@ -62,9 +62,9 @@ public class SimpleTextSimpleNormsFormat extends SimpleNormsFormat {
    */
   public static class SimpleTextSimpleNormsProducer extends SimpleTextDocValuesReader {
     public SimpleTextSimpleNormsProducer(SegmentReadState state) throws IOException {
-      // All we do is change the suffix from .dat -> .len;
+      // All we do is change the extension from .dat -> .len;
       // otherwise this is a normal simple doc values file:
-      super(state, NORMS_SEG_SUFFIX);
+      super(state, NORMS_SEG_EXTENSION);
     }
   }
   
@@ -77,9 +77,9 @@ public class SimpleTextSimpleNormsFormat extends SimpleNormsFormat {
    */
   public static class SimpleTextSimpleNormsConsumer extends SimpleTextDocValuesWriter {
     public SimpleTextSimpleNormsConsumer(SegmentWriteState state) throws IOException {
-      // All we do is change the suffix from .dat -> .len;
+      // All we do is change the extension from .dat -> .len;
       // otherwise this is a normal simple doc values file:
-      super(state, NORMS_SEG_SUFFIX);
+      super(state, NORMS_SEG_EXTENSION);
     }
   }
 }
