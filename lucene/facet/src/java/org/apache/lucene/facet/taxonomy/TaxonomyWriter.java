@@ -2,6 +2,7 @@ package org.apache.lucene.facet.taxonomy;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.lucene.index.TwoPhaseCommit;
 
@@ -104,4 +105,20 @@ public interface TaxonomyWriter extends Closeable, TwoPhaseCommit {
    */
   public int getSize();
 
+  /**
+   * Sets the commit user data map. That method is considered a transaction and
+   * will be {@link #commit() committed} even if no other changes were made to
+   * the writer instance.
+   * <p>
+   * <b>NOTE:</b> the map is cloned internally, therefore altering the map's
+   * contents after calling this method has no effect.
+   */
+  public void setCommitData(Map<String,String> commitUserData);
+
+  /**
+   * Returns the commit user data map that was set on
+   * {@link #setCommitData(Map)}.
+   */
+  public Map<String,String> getCommitData();
+  
 }

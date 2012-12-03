@@ -49,7 +49,8 @@ public class CommitIndexTask extends PerfTask {
   public int doLogic() throws Exception {
     IndexWriter iw = getRunData().getIndexWriter();
     if (iw != null) {
-      iw.commit(commitUserData);
+      iw.setCommitData(commitUserData);
+      iw.commit();
     }
     
     return 1;

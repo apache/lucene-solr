@@ -212,7 +212,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     Map<String,String> commitData = new HashMap<String,String>();
     commitData.put("commitTime", String.valueOf(System.currentTimeMillis()));
-    writer.commit(commitData);
+    writer.setCommitData(commitData);
+    writer.commit();
     writer.close();
 
     long lastDeleteTime = 0;
@@ -234,7 +235,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
       }
       commitData = new HashMap<String,String>();
       commitData.put("commitTime", String.valueOf(System.currentTimeMillis()));
-      writer.commit(commitData);
+      writer.setCommitData(commitData);
+      writer.commit();
       writer.close();
 
       Thread.sleep((int) (1000.0*(SECONDS/5.0)));

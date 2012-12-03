@@ -59,6 +59,11 @@ Changes in backwards compatibility policy
   invalidated on reopen if even a single delete was posted against the segment).
   (Robert Muir)
 
+* LUCENE-4575: Replace IndexWriter's commit/prepareCommit versions that take
+  commitData with setCommitData(). That allows committing changes to IndexWriter
+  even if the commitData is the only thing that changes.
+  (Shai Erera, Michael McCandless)
+
 New Features
 
 * LUCENE-4226: New experimental StoredFieldsFormat that compresses chunks of

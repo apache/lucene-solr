@@ -23,6 +23,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -60,6 +61,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
+import org.junit.Test;
 
 public class TestIndexWriter extends LuceneTestCase {
 
@@ -1932,4 +1934,65 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
     dir.close();
   }
+  
+  // LUCENE-4575
+  public void testCommitWithUserDataOnly() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    writer.commit(); // first commit to complete IW create transaction.
+    
+    // this should store the commit data, even though no other changes were made
+    writer.setCommitData(new HashMap<String,String>() {{
+      put("key", "value");
+    }});
+    writer.commit();
+    
+    DirectoryReader r = DirectoryReader.open(dir);
+    assertEquals("value", r.getIndexCommit().getUserData().get("key"));
+    r.close();
+    
+    // now check setCommitData and prepareCommit/commit sequence
+    writer.setCommitData(new HashMap<String,String>() {{
+      put("key", "value1");
+    }});
+    writer.prepareCommit();
+    writer.setCommitData(new HashMap<String,String>() {{
+      put("key", "value2");
+    }});
+    writer.commit(); // should commit the first commitData only, per protocol
+
+    r = DirectoryReader.open(dir);
+    assertEquals("value1", r.getIndexCommit().getUserData().get("key"));
+    r.close();
+    
+    // now should commit the second commitData - there was a bug where 
+    // IndexWriter.finishCommit overrode the second commitData
+    writer.commit();
+    r = DirectoryReader.open(dir);
+    assertEquals("IndexWriter.finishCommit may have overridden the second commitData",
+        "value2", r.getIndexCommit().getUserData().get("key"));
+    r.close();
+    
+    writer.close();
+    dir.close();
+  }
+  
+  @Test
+  public void testGetCommitData() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null));
+    writer.setCommitData(new HashMap<String,String>() {{
+      put("key", "value");
+    }});
+    assertEquals("value", writer.getCommitData().get("key"));
+    writer.close();
+    
+    // validate that it's also visible when opening a new IndexWriter
+    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, null).setOpenMode(OpenMode.APPEND));
+    assertEquals("value", writer.getCommitData().get("key"));
+    writer.close();
+    
+    dir.close();
+  }
+  
 }
