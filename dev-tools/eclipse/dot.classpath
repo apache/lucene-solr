@@ -25,6 +25,7 @@
   <classpathentry kind="src" path="lucene/analysis/icu/src/java"/>
   <classpathentry kind="src" output="eclipse-build/analysis-icu" path="lucene/analysis/icu/src/resources"/>
   <classpathentry kind="src" path="lucene/analysis/icu/src/test"/>
+  <classpathentry kind="src" path="lucene/analysis/icu/src/test-files"/>
   <classpathentry kind="src" path="lucene/analysis/kuromoji/src/java"/>
   <classpathentry kind="src" output="eclipse-build/analysis-kuromoji" path="lucene/analysis/kuromoji/src/resources"/>
   <classpathentry kind="src" path="lucene/analysis/kuromoji/src/test"/>
