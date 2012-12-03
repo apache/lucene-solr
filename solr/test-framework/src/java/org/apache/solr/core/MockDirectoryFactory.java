@@ -52,7 +52,7 @@ public class MockDirectoryFactory extends CachingDirectoryFactory {
       // already been created.
       mockDirWrapper.setPreventDoubleWrite(false);
     }
-	
+    
     return dir;
   }
   
