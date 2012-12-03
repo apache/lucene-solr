@@ -19,18 +19,73 @@ package org.apache.lucene.analysis.icu.segmentation;
 
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 
 /** basic tests for {@link ICUTokenizerFactory} **/
 public class TestICUTokenizerFactory extends BaseTokenStreamTestCase {
   public void testMixedText() throws Exception {
     Reader reader = new StringReader("การที่ได้ต้องแสดงว่างานดี  This is a test ກວ່າດອກ");
     ICUTokenizerFactory factory = new ICUTokenizerFactory();
+    factory.init(new HashMap<String,String>());
+    factory.inform(new ClasspathResourceLoader(getClass()));
     TokenStream stream = factory.create(reader);
     assertTokenStreamContents(stream,
         new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี",
         "This", "is", "a", "test", "ກວ່າ", "ດອກ"});
+  }
+
+  public void testTokenizeLatinOnWhitespaceOnly() throws Exception {
+    // “ U+201C LEFT DOUBLE QUOTATION MARK; ” U+201D RIGHT DOUBLE QUOTATION MARK
+    Reader reader = new StringReader
+        ("  Don't,break.at?/(punct)!  \u201Cnice\u201D\r\n\r\n85_At:all; `really\" +2=3$5,&813 !@#%$^)(*@#$   ");
+    ICUTokenizerFactory factory = new ICUTokenizerFactory();
+    final Map<String,String> args = new HashMap<String,String>();
+    args.put(ICUTokenizerFactory.RULEFILES, "Latn:Latin-break-only-on-whitespace.rbbi");
+    factory.init(args);
+    factory.inform(new ClasspathResourceLoader(this.getClass()));
+    TokenStream stream = factory.create(reader);
+    assertTokenStreamContents(stream,
+        new String[] { "Don't,break.at?/(punct)!", "\u201Cnice\u201D", "85_At:all;", "`really\"",  "+2=3$5,&813", "!@#%$^)(*@#$" },
+        new String[] { "<ALPHANUM>",               "<ALPHANUM>",       "<ALPHANUM>", "<ALPHANUM>", "<NUM>",       "<OTHER>" });
+  }
+
+  public void testTokenizeLatinDontBreakOnHyphens() throws Exception {
+    Reader reader = new StringReader
+        ("One-two punch.  Brang-, not brung-it.  This one--not that one--is the right one, -ish.");
+    ICUTokenizerFactory factory = new ICUTokenizerFactory();
+    final Map<String,String> args = new HashMap<String,String>();
+    args.put(ICUTokenizerFactory.RULEFILES, "Latn:Latin-dont-break-on-hyphens.rbbi");
+    factory.init(args);
+    factory.inform(new ClasspathResourceLoader(getClass()));
+    TokenStream stream = factory.create(reader);
+    assertTokenStreamContents(stream,
+        new String[] { "One-two", "punch",
+            "Brang", "not", "brung-it",
+            "This", "one", "not", "that", "one", "is", "the", "right", "one", "ish" });
+  }
+
+  /**
+   * Specify more than one script/rule file pair.
+   * Override default DefaultICUTokenizerConfig Thai script tokenization.
+   * Use the same rule file for both scripts.
+   */
+  public void testKeywordTokenizeCyrillicAndThai() throws Exception {
+    Reader reader = new StringReader
+        ("Some English.  Немного русский.  ข้อความภาษาไทยเล็ก ๆ น้อย ๆ  More English.");
+    ICUTokenizerFactory factory = new ICUTokenizerFactory();
+    final Map<String,String> args = new HashMap<String,String>();
+    args.put(ICUTokenizerFactory.RULEFILES, "Cyrl:KeywordTokenizer.rbbi,Thai:KeywordTokenizer.rbbi");
+    factory.init(args);
+    factory.inform(new ClasspathResourceLoader(getClass()));
+    TokenStream stream = factory.create(reader);
+    assertTokenStreamContents(stream, new String[] { "Some", "English",
+        "Немного русский.  ",
+        "ข้อความภาษาไทยเล็ก ๆ น้อย ๆ  ",
+        "More", "English" });
   }
 }

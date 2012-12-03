@@ -113,6 +113,10 @@ New Features
   be notified whenever a new searcher was opened. (selckin via Shai
   Erera, Mike McCandless)
 
+* SOLR-4123: Add per-script customizability to ICUTokenizerFactory via
+  rule files in the ICU RuleBasedBreakIterator format.
+  (Shawn Heisey, Robert Muir, Steve Rowe)
+
 API Changes
 
 * LUCENE-4399: Deprecated AppendingCodec. Lucene's term dictionaries

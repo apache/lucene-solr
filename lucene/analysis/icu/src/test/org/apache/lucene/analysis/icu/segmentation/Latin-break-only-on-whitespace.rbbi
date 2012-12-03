@@ -1,0 +1,40 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Break only on whitespace; assign token type from set { <ALPHANUM>, <NUM>, <OTHER> }
+#
+
+!!forward;
+
+$Whitespace = [\p{Whitespace}];
+$NonWhitespace = [\P{Whitespace}];
+$Letter = [\p{Letter}];
+$Number = [\p{Number}];
+
+# Default rule status is {0}=RBBI.WORD_NONE => not tokenized by ICUTokenizer
+$Whitespace;
+
+# Assign rule status {200}=RBBI.WORD_LETTER when the token contains a letter char
+# Mapped to <ALPHANUM> token type by DefaultICUTokenizerConfig
+$NonWhitespace* $Letter $NonWhitespace*   {200};
+
+# Assign rule status {100}=RBBI.WORD_NUM when the token contains a numeric char
+# Mapped to <NUM> token type by DefaultICUTokenizerConfig
+$NonWhitespace* $Number $NonWhitespace*   {100};
+
+# Assign rule status {1} (no RBBI equivalent) when the token contains neither a letter nor a numeric char
+# Mapped to <OTHER> token type by DefaultICUTokenizerConfig
+$NonWhitespace+   {1};

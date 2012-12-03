@@ -35,6 +35,11 @@
     <path refid="base.classpath"/>
   </path>
 
+  <path id="test.classpath">
+    <path refid="test.base.classpath" />
+    <pathelement path="src/test-files" />
+  </path>
+
   <target name="compile-core" depends="jar-analyzers-common, common.compile-core" />
 
   <property name="utr30.data.dir" location="src/data/utr30"/>
