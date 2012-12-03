@@ -195,6 +195,9 @@ Bug Fixes
   actually compute allMatchingGroups (dizh@neusoft.com via Mike
   McCandless)
 
+* LUCENE-4009: Improve TermsFilter.toString (Tim Costermans via Chris
+  Male, Mike McCandless)
+
 Optimizations
 
 * LUCENE-2221: oal.util.BitUtil was modified to use Long.bitCount and

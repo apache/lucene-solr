@@ -332,4 +332,34 @@ public class BooleanFilterTest extends LuceneTestCase {
     booleanFilter.add(getTermsFilter("accessRights", "admin"), Occur.MUST);
     tstFilterCard(">0 shoulds with no matches should return no docs", 0, booleanFilter);
   }
+
+  public void testToStringOfBooleanFilterContainingTermsFilter() {
+    BooleanFilter booleanFilter = new BooleanFilter();
+    booleanFilter.add(getTermsFilter("inStock", "N"), Occur.MUST);
+    booleanFilter.add(getTermsFilter("isFragile", "Y"), Occur.MUST);
+
+    assertEquals("BooleanFilter(+inStock:N +isFragile:Y)", booleanFilter.toString());
+  }
+
+  public void testToStringOfWrappedBooleanFilters() {
+    BooleanFilter orFilter = new BooleanFilter();
+
+    BooleanFilter stockFilter = new BooleanFilter();
+    stockFilter.add(new FilterClause(getTermsFilter("inStock", "Y"), Occur.MUST));
+    stockFilter.add(new FilterClause(getTermsFilter("barCode", "12345678"), Occur.MUST));
+
+    orFilter.add(new FilterClause(stockFilter,Occur.SHOULD));
+
+    BooleanFilter productPropertyFilter = new BooleanFilter();
+    productPropertyFilter.add(new FilterClause(getTermsFilter("isHeavy", "N"), Occur.MUST));
+    productPropertyFilter.add(new FilterClause(getTermsFilter("isDamaged", "Y"), Occur.MUST));
+
+    orFilter.add(new FilterClause(productPropertyFilter,Occur.SHOULD));
+
+    BooleanFilter composedFilter = new BooleanFilter();
+    composedFilter.add(new FilterClause(orFilter,Occur.MUST));
+
+    assertEquals("BooleanFilter(+BooleanFilter(BooleanFilter(+inStock:Y +barCode:12345678) BooleanFilter(+isHeavy:N +isDamaged:Y)))",
+        composedFilter.toString());
+  }
 }
