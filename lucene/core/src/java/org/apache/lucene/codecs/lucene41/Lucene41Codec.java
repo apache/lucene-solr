@@ -140,11 +140,10 @@ public class Lucene41Codec extends Codec {
   
   @Override
   public SimpleDocValuesFormat simpleDocValuesFormat() {
-    // nocommit tests seem to fail if we use this:
-    //return simpleDocValuesFormat;
-    return null;
+    return simpleDocValuesFormat;
   }
 
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
-  private final SimpleDocValuesFormat defaultDVFormat = SimpleDocValuesFormat.forName("Lucene41");
+  // nocommit
+  private final SimpleDocValuesFormat defaultDVFormat = SimpleDocValuesFormat.forName("SimpleText");
 }

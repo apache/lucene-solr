@@ -53,7 +53,7 @@ import org.junit.Ignore;
  * to this class.
  */
 // nocommit don't suppress any:
-@SuppressCodecs({"Asserting", "Direct", "Memory", "MockRandom", "Lucene40", "Compressing", "Lucene41"})
+@SuppressCodecs({"Asserting", "Direct", "Memory", "MockRandom", "Lucene40", "Compressing"})
 public class TestDemoDocValue extends LuceneTestCase {
 
   public void testDemoNumber() throws IOException {
