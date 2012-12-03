@@ -414,6 +414,11 @@ public class TestDocSet extends LuceneTestCase {
       }
 
       @Override
+      public NumericDocValues simpleNormValues(String field) {
+        return null;
+      }
+
+      @Override
       protected void doClose() {
       }
 
