@@ -670,7 +670,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  @Ignore("broken until we fix e.g. Lucene41's impl to actually handle suffixes correctly")
+  // nocommit: fix e.g. Lucene41's impl to actually handle suffixes correctly
   // nocommit: if we are going to pass down suffixes to segmentread/writestate,
   // then they should be respected by *all* codec apis!
   public void testDemoTwoFieldsTwoFormats() throws IOException {
@@ -680,7 +680,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     // TODO: Fix the CFS/suffixing of Lucene41DocValues so it actually works with this
-    final SimpleDocValuesFormat fast = SimpleDocValuesFormat.forName("Lucene41");
+    final SimpleDocValuesFormat fast = SimpleDocValuesFormat.forName("Memory");
     final SimpleDocValuesFormat slow = SimpleDocValuesFormat.forName("SimpleText");
     iwc.setCodec(new Lucene41Codec() {
       @Override
