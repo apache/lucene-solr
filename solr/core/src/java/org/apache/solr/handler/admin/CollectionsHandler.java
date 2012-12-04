@@ -179,11 +179,12 @@ public class CollectionsHandler extends RequestHandlerBase {
     Integer numReplicas = req.getParams().getInt(OverseerCollectionProcessor.REPLICATION_FACTOR, 0);
     String name = req.getParams().required().get("name");
     String configName = req.getParams().get("collection.configName");
-    String numShards = req.getParams().get("numShards");
+    String numShards = req.getParams().get(OverseerCollectionProcessor.NUM_SLICES);
+    String maxShardsPerNode = req.getParams().get(OverseerCollectionProcessor.MAX_SHARDS_PER_NODE);
     
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
         OverseerCollectionProcessor.CREATECOLLECTION, OverseerCollectionProcessor.REPLICATION_FACTOR, numReplicas.toString(), "name", name,
-        "collection.configName", configName, "numShards", numShards);
+        "collection.configName", configName, OverseerCollectionProcessor.NUM_SLICES, numShards, OverseerCollectionProcessor.MAX_SHARDS_PER_NODE, maxShardsPerNode);
 
     // TODO: what if you want to block until the collection is available?
     coreContainer.getZkController().getOverseerCollectionQueue().offer(ZkStateReader.toJSON(m));
