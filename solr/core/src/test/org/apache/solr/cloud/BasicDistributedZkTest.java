@@ -1076,7 +1076,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void checkCollectionIsNotCreated(String collectionName)
     throws Exception {
-    // nocommit
+    // TODO: this method not called because of below sleep
     Thread.sleep(60000);
     assertFalse(collectionName + " not supposed to exist", getCommonCloudSolrServer().getZkStateReader().getClusterState().getCollections().contains(collectionName));
   }
