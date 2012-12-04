@@ -65,8 +65,9 @@ final class SegmentCoreReaders {
   final TermVectorsReader termVectorsReaderOrig;
   final CompoundFileDirectory cfsReader;
 
-  // nocommit we should make a single thread local w/ a
-  // class holding these N things...?
+  // TODO: make a single thread local w/ a
+  // Thingy class holding fieldsReader, termVectorsReader,
+  // simpleNormsProducer, simpleDVProducer
 
   final CloseableThreadLocal<StoredFieldsReader> fieldsReaderLocal = new CloseableThreadLocal<StoredFieldsReader>() {
     @Override
@@ -82,8 +83,6 @@ final class SegmentCoreReaders {
     }
   };
 
-  // nocommit not great to hold onto lots-o-ram in a thread
-  // local...?  do we need a "needsClone"/"isThreadSafe"!?
   final CloseableThreadLocal<SimpleDVProducer> simpleDocValuesLocal = new CloseableThreadLocal<SimpleDVProducer>() {
     @Override
     protected SimpleDVProducer initialValue() {
@@ -92,8 +91,6 @@ final class SegmentCoreReaders {
     }
   };
 
-  // nocommit not great to hold onto lots-o-ram in a thread
-  // local...?  do we need a "needsClone"/"isThreadSafe"!?
   final CloseableThreadLocal<SimpleDVProducer> simpleNormsLocal = new CloseableThreadLocal<SimpleDVProducer>() {
     @Override
     protected SimpleDVProducer initialValue() {
