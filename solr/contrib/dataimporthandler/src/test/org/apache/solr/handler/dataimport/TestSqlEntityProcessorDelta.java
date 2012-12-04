@@ -25,7 +25,6 @@ import org.junit.Test;
 /**
  * Test with various combinations of parameters, child entites, transformers.
  */
-@Ignore
 public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestCase {
   private boolean delta = false;
   private boolean useParentDeltaQueryParam = false;
