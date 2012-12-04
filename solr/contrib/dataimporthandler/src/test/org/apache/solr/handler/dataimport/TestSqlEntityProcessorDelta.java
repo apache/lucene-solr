@@ -25,7 +25,6 @@ import org.junit.Test;
 /**
  * Test with various combinations of parameters, child entites, transformers.
  */
-@Ignore
 public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestCase {
   private boolean delta = false;
   private boolean useParentDeltaQueryParam = false;
@@ -40,35 +39,50 @@ public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestC
   }
   @Test
   public void testSingleEntity() throws Exception {
+    log.info("testSingleEntity full-import...");
     singleEntity(1);
+    logPropertiesFile();
     changeStuff();
     int c = calculateDatabaseCalls();
+    log.info("testSingleEntity delta-import (" + c + " database calls expected)...");
     singleEntity(c);
     validateChanges();
   }
   @Test
   public void testWithSimpleTransformer() throws Exception {
-    simpleTransform(1);  
+    log.info("testWithSimpleTransformer full-import...");    
+    simpleTransform(1); 
+    logPropertiesFile(); 
     changeStuff();
-    simpleTransform(calculateDatabaseCalls());  
+    int c = calculateDatabaseCalls();
+    simpleTransform(c);
+    log.info("testWithSimpleTransformer delta-import (" + c + " database calls expected)...");
     validateChanges(); 
   }
   @Test
   public void testWithComplexTransformer() throws Exception {
+    log.info("testWithComplexTransformer full-import...");     
     complexTransform(1, 0);
+    logPropertiesFile();
     changeStuff();
-    complexTransform(calculateDatabaseCalls(), personChanges.deletedKeys.length);
+    int c = calculateDatabaseCalls();
+    log.info("testWithComplexTransformer delta-import (" + c + " database calls expected)...");
+    complexTransform(c, personChanges.deletedKeys.length);
     validateChanges();  
   }
   @Test
   public void testChildEntities() throws Exception {
+    log.info("testChildEntities full-import...");
     useParentDeltaQueryParam = random().nextBoolean();
+    log.info("using parent delta? " + useParentDeltaQueryParam);
     withChildEntities(false, true);
+    logPropertiesFile();
     changeStuff();
+    log.info("testChildEntities delta-import...");
     withChildEntities(false, false);
     validateChanges();
   }
-  
+    
   
   private int calculateDatabaseCalls() {
     //The main query generates 1
@@ -111,7 +125,7 @@ public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestC
           personChanges = modifySomePeople();
           break;
         case 1:
-          countryChanges = modifySomeCountries();
+          countryChanges = modifySomeCountries();  
           break;
         case 2:
           personChanges = modifySomePeople();
@@ -121,7 +135,27 @@ public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestC
     } else {
       personChanges = modifySomePeople();
     }
+    countryChangesLog();
+    personChangesLog();
     delta = true;
+  }
+  private void countryChangesLog() 
+  {
+    if(countryChanges!=null) {
+      StringBuilder sb = new StringBuilder();
+      sb.append("country changes { ");
+      for(String s : countryChanges) {
+        sb.append(s).append(" ");
+      }
+      sb.append(" }");    
+      log.info(sb.toString());
+    }
+  }
+  private void personChangesLog()
+  {
+    if(personChanges!=null) {
+    log.info("person changes { " + personChanges.toString() + " } ");
+    }
   }
   @Override
   protected LocalSolrQueryRequest generateRequest() {

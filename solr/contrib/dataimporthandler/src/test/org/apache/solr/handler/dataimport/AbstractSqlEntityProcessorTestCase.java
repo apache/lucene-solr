@@ -1,17 +1,23 @@
 package org.apache.solr.handler.dataimport;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.After;
+import org.junit.Before;
 
 import junit.framework.Assert;
 
@@ -42,8 +48,23 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
   protected boolean sportsCached;
   protected String rootTransformerName;
   protected boolean countryTransformer;
-  protected boolean sportsTransformer;  
+  protected boolean sportsTransformer;    
+  protected String fileLocation;
+  protected String fileName;
   
+  @Before
+  public void beforeSqlEntitiyProcessorTestCase() throws Exception {
+    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    tmpdir.delete();
+    tmpdir.mkdir();
+    fileLocation = tmpdir.getPath();
+    fileName = "the.properties";
+  }
+  @After
+  public void spwAfter() throws Exception {
+    new File(fileLocation + File.separatorChar + fileName).delete();
+    new File(fileLocation).delete();
+  }  
   @After
   public void afterSqlEntitiyProcessorTestCase() {
     useSimpleCaches = false;
@@ -55,6 +76,26 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
     countryTransformer = false;
     sportsTransformer = false;
     underlyingDataModified = false;
+    
+    new File(fileLocation + File.separatorChar + fileName).delete();
+    new File(fileLocation).delete();
+  }
+  
+  protected void logPropertiesFile() {
+    Map<String,String> init = new HashMap<String,String>();
+    init.put("filename", fileName);
+    init.put("directory", fileLocation);
+    SimplePropertiesWriter spw = new SimplePropertiesWriter();
+    spw.init(new DataImporter(), init);
+    Map<String,Object> props = spw.readIndexerProperties();
+    if(props!=null) {
+      StringBuilder sb = new StringBuilder();
+      sb.append("\ndataimporter.properties: \n");
+      for(Map.Entry<String,Object> entry : props.entrySet()) {
+        sb.append("  > key=" + entry.getKey() + " / value=" + entry.getValue() + "\n");
+      }
+      log.info(sb.toString());
+    }
   }
   
   protected abstract String deltaQueriesCountryTable();
@@ -379,6 +420,9 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
     // One second in the future ensures a change time after the last import (DIH
     // uses second precision only)
     Timestamp theTime = new Timestamp(System.currentTimeMillis() + 1000);
+    log.info("PEOPLE UPDATE USING TIMESTAMP: "
+        + new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.ROOT)
+            .format(theTime));
     try {
       conn = newConnection();
       change = conn
@@ -447,6 +491,9 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
     // One second in the future ensures a change time after the last import (DIH
     // uses second precision only)
     Timestamp theTime = new Timestamp(System.currentTimeMillis() + 1000);
+    log.info("COUNTRY UPDATE USING TIMESTAMP: "
+        + new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.ROOT)
+            .format(theTime));
     try {
       conn = newConnection();
       change = conn
@@ -480,6 +527,30 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
     public Integer[] changedKeys;
     public Integer[] deletedKeys;
     public Integer[] addedKeys;
+    
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      if(changedKeys!=null) {
+        sb.append("changes: ");
+        for(int i : changedKeys) {
+          sb.append(i).append(" ");
+        }
+      }
+      if(deletedKeys!=null) {
+        sb.append("deletes: ");
+        for(int i : deletedKeys) {
+          sb.append(i).append(" ");
+        }
+      }
+      if(addedKeys!=null) {
+        sb.append("adds: ");
+        for(int i : addedKeys) {
+          sb.append(i).append(" ");
+        }
+      }
+      return sb.toString();
+    }
   }
   
   @Override
@@ -493,7 +564,8 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
       throw new AssertionError("Invalid database to use: " + dbToUse);
     }
     StringBuilder sb = new StringBuilder();
-    sb.append("<dataConfig> \n");
+    sb.append("\n<dataConfig> \n");
+    sb.append("<propertyWriter type=''SimplePropertiesWriter'' directory=''" + fileLocation + "'' filename=''" + fileName + "'' />\n");
     sb.append("<dataSource name=''hsqldb'' driver=''org.hsqldb.jdbcDriver'' url=''jdbc:hsqldb:mem:.'' /> \n");
     sb.append("<dataSource name=''derby'' driver=''org.apache.derby.jdbc.EmbeddedDriver'' url=''jdbc:derby:memory:derbyDB;'' /> \n");
     sb.append("<document name=''TestSqlEntityProcessor''> \n");
@@ -567,7 +639,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
     sb.append("</document> \n");
     sb.append("</dataConfig> \n");
     String config = sb.toString().replaceAll("[']{2}", "\"");
-    log.debug(config);
+    log.info(config);
     return config;
   }
   @Override
@@ -580,7 +652,9 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
       s.executeUpdate("create table countries(code varchar(3) not null primary key, country_name varchar(50), deleted char(1) default 'N', last_modified timestamp not null)");
       s.executeUpdate("create table people(id int not null primary key, name varchar(50), country_code char(2), deleted char(1) default 'N', last_modified timestamp not null)");
       s.executeUpdate("create table people_sports(id int not null primary key, person_id int, sport_name varchar(50), deleted char(1) default 'N', last_modified timestamp not null)");
-      
+      log.info("INSERTING DB DATA USING TIMESTAMP: "
+          + new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.ROOT)
+              .format(theTime));
       ps = conn
           .prepareStatement("insert into countries (code, country_name, last_modified) values (?,?,?)");
       for (String[] country : countries) {
