@@ -254,6 +254,9 @@ Optimizations
   Users of this API can now simply obtain an instance via DocValues#getDirectSource per thread.
   (Simon Willnauer)
 
+* LUCENE-4580: DrillDown.query variants return a ConstantScoreQuery with boost set to 0.0f
+  so that documents scores are not affected by running a drill-down query. (Shai Erera)
+  
 Documentation
 
 * LUCENE-4483: Refer to BytesRef.deepCopyOf in Term's constructor that takes BytesRef.
