@@ -58,7 +58,13 @@ import org.apache.lucene.document.PackedLongDocValuesField;
 import org.apache.lucene.document.ShortDocValuesField;
 import org.apache.lucene.document.SortedBytesDocValuesField;
 import org.apache.lucene.document.StraightBytesDocValuesField;
+import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
+import org.apache.lucene.index.CheckIndex.Status.FieldNormStatus;
+import org.apache.lucene.index.CheckIndex.Status.StoredFieldStatus;
+import org.apache.lucene.index.CheckIndex.Status.TermIndexStatus;
+import org.apache.lucene.index.CheckIndex.Status.TermVectorStatus;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocsAndPositionsEnum;
@@ -205,6 +211,37 @@ public class _TestUtil {
         System.out.println(bos.toString("UTF-8"));
       }
       return indexStatus;
+    }
+  }
+  
+  /** This runs the CheckIndex tool on the Reader.  If any
+   *  issues are hit, a RuntimeException is thrown */
+  public static void checkReader(AtomicReader reader) throws IOException {
+    checkReader(reader, true);
+  }
+  
+  public static void checkReader(AtomicReader reader, boolean crossCheckTermVectors) throws IOException {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+    PrintStream infoStream = new PrintStream(bos, false, "UTF-8");
+
+    FieldNormStatus fieldNormStatus = CheckIndex.testFieldNorms(reader, infoStream);
+    TermIndexStatus termIndexStatus = CheckIndex.testPostings(reader, infoStream);
+    StoredFieldStatus storedFieldStatus = CheckIndex.testStoredFields(reader, infoStream);
+    TermVectorStatus termVectorStatus = CheckIndex.testTermVectors(reader, infoStream, false, crossCheckTermVectors);
+    DocValuesStatus docValuesStatus = CheckIndex.testDocValues(reader, infoStream);
+    
+    if (fieldNormStatus.error != null || 
+      termIndexStatus.error != null ||
+      storedFieldStatus.error != null ||
+      termVectorStatus.error != null ||
+      docValuesStatus.error != null) {
+      System.out.println("CheckReader failed");
+      System.out.println(bos.toString("UTF-8"));
+      throw new RuntimeException("CheckReader failed");
+    } else {
+      if (LuceneTestCase.INFOSTREAM) {
+        System.out.println(bos.toString("UTF-8"));
+      }
     }
   }
 
