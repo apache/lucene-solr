@@ -986,8 +986,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     writer.close();
     
     final AtomicReader sr = getOnlySegmentReader(r);
-    final SortedDocValues dv = sorted(sr, "stringdv");
-    assertNotNull(dv);
 
     final long END_TIME = System.currentTimeMillis() + (TEST_NIGHTLY ? 30 : 1);
 
@@ -1000,11 +998,8 @@ public class TestDocValuesIndexing extends LuceneTestCase {
           @Override
           public void run() {
             Random random = random();            
-            final SortedDocValues stringDV = dv;
             final SortedDocValues stringDVDirect;
             try {
-              
-              assertNotNull(stringDV);
               stringDVDirect = sr.getSortedDocValues("stringdv");
               assertNotNull(stringDVDirect);
             } catch (IOException ioe) {
@@ -1012,11 +1007,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
             }
             while(System.currentTimeMillis() < END_TIME) {
               final SortedDocValues source;
-              if (random.nextBoolean()) {
-                source = stringDV;
-              } else {
-                source = stringDVDirect;
-              }
+              source = stringDVDirect;
               final BytesRef scratch = new BytesRef();
 
               for(int iter=0;iter<100;iter++) {

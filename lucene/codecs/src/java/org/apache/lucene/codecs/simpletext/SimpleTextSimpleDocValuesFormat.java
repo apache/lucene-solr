@@ -487,6 +487,17 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       assert !fields.isEmpty();
     }
 
+    private SimpleTextDocValuesReader(SimpleTextDocValuesReader other) {
+      this.data = other.data.clone();
+      this.fields.putAll(other.fields);
+      this.maxDoc = other.maxDoc;
+    }
+
+    @Override
+    public SimpleDVProducer clone() {
+      return new SimpleTextDocValuesReader(this);
+    }
+
     @Override
     public NumericDocValues getNumeric(FieldInfo fieldInfo) throws IOException {
       final OneField field = fields.get(fieldInfo.name);
@@ -505,7 +516,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       // valid:
       assert field != null: "field=" + fieldInfo.name + " fields=" + fields;
 
-      final IndexInput in = data.clone();
+      final IndexInput in = data;
       final BytesRef scratch = new BytesRef();
       final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
 
@@ -515,6 +526,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         @Override
         public long get(int docID) {
           try {
+            //System.out.println(Thread.currentThread().getName() + ": get docID=" + docID + " in=" + in);
             if (docID < 0 || docID >= maxDoc) {
               throw new IndexOutOfBoundsException("docID must be 0 .. " + (maxDoc-1) + "; got " + docID);
             }
@@ -560,7 +572,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       // valid:
       assert field != null;
 
-      final IndexInput in = data.clone();
+      final IndexInput in = data;
       final BytesRef scratch = new BytesRef();
       final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
 
@@ -616,7 +628,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       // valid:
       assert field != null;
 
-      final IndexInput in = data.clone();
+      final IndexInput in = data;
       final BytesRef scratch = new BytesRef();
       final DecimalFormat decoder = new DecimalFormat(field.pattern, new DecimalFormatSymbols(Locale.ROOT));
       final DecimalFormat ordDecoder = new DecimalFormat(field.ordPattern, new DecimalFormatSymbols(Locale.ROOT));

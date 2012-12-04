@@ -132,6 +132,7 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
         };
       }
 
+      @Override
       public SortedDocValues getSorted(FieldInfo field) throws IOException {
         SortedDocValues valuesIn = producer.getSorted(field);
         final int maxDoc = valuesIn.size();
@@ -186,6 +187,12 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
             return maxLength;
           }
         };
+      }
+
+      @Override
+      public SimpleDVProducer clone() {
+        // We are already thread-safe:
+        return this;
       }
 
       @Override

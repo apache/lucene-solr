@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.perfield;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.ServiceLoader; // javadocs
 import java.util.TreeMap;
@@ -183,6 +184,9 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
     }
   }
 
+  // nocommit what if SimpleNormsFormat wants to use this
+  // ...?  we have a "boolean isNorms" issue...?  I guess we
+  // just need to make a PerFieldNormsFormat?
   private class FieldsReader extends SimpleDVProducer {
 
     private final Map<String,SimpleDVProducer> fields = new TreeMap<String,SimpleDVProducer>();
@@ -219,6 +223,24 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
       }
     }
 
+    private FieldsReader(FieldsReader other) {
+
+      Map<SimpleDVProducer,SimpleDVProducer> oldToNew = new IdentityHashMap<SimpleDVProducer,SimpleDVProducer>();
+      // First clone all formats
+      for(Map.Entry<String,SimpleDVProducer> ent : other.formats.entrySet()) {
+        SimpleDVProducer values = ent.getValue().clone();
+        formats.put(ent.getKey(), values);
+        oldToNew.put(ent.getValue(), values);
+      }
+
+      // Then rebuild fields:
+      for(Map.Entry<String,SimpleDVProducer> ent : other.fields.entrySet()) {
+        SimpleDVProducer producer = oldToNew.get(ent.getValue());
+        assert producer != null;
+        fields.put(ent.getKey(), producer);
+      }
+    }
+
     @Override
     public NumericDocValues getNumeric(FieldInfo field) throws IOException {
       SimpleDVProducer producer = fields.get(field.name);
@@ -240,6 +262,11 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
     @Override
     public void close() throws IOException {
       IOUtils.close(formats.values());
+    }
+
+    @Override
+    public SimpleDVProducer clone() {
+      return new FieldsReader(this);
     }
   }
 

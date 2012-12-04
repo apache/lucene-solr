@@ -163,16 +163,19 @@ public abstract class AtomicReader extends IndexReader {
    */
   public abstract DocValues docValues(String field) throws IOException;
 
+  // nocommit document that these are thread-private:
   /** Returns {@link NumericDocValues} for this field, or
    *  null if no {@link NumericDocValues} were indexed for
    *  this field. */
   public abstract NumericDocValues getNumericDocValues(String field) throws IOException;
 
+  // nocommit document that these are thread-private:
   /** Returns {@link BinaryDocValues} for this field, or
    *  null if no {@link BinaryDocValues} were indexed for
    *  this field. */
   public abstract BinaryDocValues getBinaryDocValues(String field) throws IOException;
 
+  // nocommit document that these are thread-private:
   /** Returns {@link SortedDocValues} for this field, or
    *  null if no {@link SortedDocValues} were indexed for
    *  this field. */
@@ -184,6 +187,7 @@ public abstract class AtomicReader extends IndexReader {
    */
   public abstract DocValues normValues(String field) throws IOException;
 
+  // nocommit document that these are thread-private:
   /** Returns {@link NumericDocValues} representing norms
    *  for this field, or null if no {@link NumericDocValues}
    *  were indexed. */

@@ -81,6 +81,12 @@ public class Lucene41DocValuesProducer extends SimpleDVProducer {
       IOUtils.close(cfs);
     }
   }
+
+  @Override
+  public SimpleDVProducer clone() {
+    // nocommit todo
+    return null;
+  }
   
   @Override
   public NumericDocValues getNumeric(FieldInfo field) throws IOException {

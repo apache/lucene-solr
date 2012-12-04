@@ -65,6 +65,9 @@ final class SegmentCoreReaders {
   final TermVectorsReader termVectorsReaderOrig;
   final CompoundFileDirectory cfsReader;
 
+  // nocommit we should make a single thread local w/ a
+  // class holding these N things...?
+
   final CloseableThreadLocal<StoredFieldsReader> fieldsReaderLocal = new CloseableThreadLocal<StoredFieldsReader>() {
     @Override
     protected StoredFieldsReader initialValue() {
@@ -75,10 +78,31 @@ final class SegmentCoreReaders {
   final CloseableThreadLocal<TermVectorsReader> termVectorsLocal = new CloseableThreadLocal<TermVectorsReader>() {
     @Override
     protected TermVectorsReader initialValue() {
-      return (termVectorsReaderOrig == null) ?
-        null : termVectorsReaderOrig.clone();
+      return (termVectorsReaderOrig == null) ? null : termVectorsReaderOrig.clone();
     }
   };
+
+  // nocommit not great to hold onto lots-o-ram in a thread
+  // local...?  do we need a "needsClone"/"isThreadSafe"!?
+  final CloseableThreadLocal<SimpleDVProducer> simpleDocValuesLocal = new CloseableThreadLocal<SimpleDVProducer>() {
+    @Override
+    protected SimpleDVProducer initialValue() {
+      // nocommit remove null check
+      return (simpleDVProducer == null) ? null : simpleDVProducer.clone();
+    }
+  };
+
+  // nocommit not great to hold onto lots-o-ram in a thread
+  // local...?  do we need a "needsClone"/"isThreadSafe"!?
+  final CloseableThreadLocal<SimpleDVProducer> simpleNormsLocal = new CloseableThreadLocal<SimpleDVProducer>() {
+    @Override
+    protected SimpleDVProducer initialValue() {
+      // nocommit remove null check
+      return (simpleNormsProducer == null) ? null : simpleNormsProducer.clone();
+    }
+  };
+
+  // nocommit norms too
   
   private final Set<CoreClosedListener> coreClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
@@ -181,7 +205,7 @@ final class SegmentCoreReaders {
       return null;
     }
 
-    return simpleDVProducer.getNumeric(fi);
+    return simpleDocValuesLocal.get().getNumeric(fi);
   }
 
   BinaryDocValues getBinaryDocValues(String field) throws IOException {
@@ -204,7 +228,7 @@ final class SegmentCoreReaders {
       return null;
     }
 
-    return simpleDVProducer.getBinary(fi);
+    return simpleDocValuesLocal.get().getBinary(fi);
   }
 
   SortedDocValues getSortedDocValues(String field) throws IOException {
@@ -227,7 +251,7 @@ final class SegmentCoreReaders {
       return null;
     }
 
-    return simpleDVProducer.getSorted(fi);
+    return simpleDocValuesLocal.get().getSorted(fi);
   }
 
   NumericDocValues getSimpleNormValues(String field) throws IOException {
@@ -243,12 +267,12 @@ final class SegmentCoreReaders {
     if (simpleNormsProducer == null) {
       return null;
     }
-    return simpleNormsProducer.getNumeric(fi);
+    return simpleNormsLocal.get().getNumeric(fi);
   }
 
   void decRef() throws IOException {
     if (ref.decrementAndGet() == 0) {
-      IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, simpleDVProducer,
+      IOUtils.close(termVectorsLocal, fieldsReaderLocal, simpleDocValuesLocal, simpleNormsLocal, fields, simpleDVProducer,
                     perDocProducer, termVectorsReaderOrig, fieldsReaderOrig, cfsReader, norms,
                     simpleNormsProducer);
       notifyCoreClosedListeners();

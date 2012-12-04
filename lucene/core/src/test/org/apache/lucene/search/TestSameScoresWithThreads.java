@@ -49,24 +49,31 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
     final Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     LineFileDocs docs = new LineFileDocs(random());
-    int bytesToIndex = atLeast(100000);
-    int bytesIndexed = 0;
-    while(bytesIndexed < bytesToIndex) {
+    int charsToIndex = atLeast(100000);
+    int charsIndexed = 0;
+    //System.out.println("bytesToIndex=" + charsToIndex);
+    while(charsIndexed < charsToIndex) {
       Document doc = docs.nextDoc();
-      bytesIndexed += RamUsageEstimator.sizeOf(doc);
+      charsIndexed += doc.get("body").length();
       w.addDocument(doc);
+      //System.out.println("  bytes=" + charsIndexed + " add: " + doc);
     }
     IndexReader r = w.getReader();
+    //System.out.println("numDocs=" + r.numDocs());
     w.close();
 
     final IndexSearcher s = new IndexSearcher(r);
     Terms terms = MultiFields.getFields(r).terms("body");
-    long termCount = terms.size();
+    int termCount = 0;
+    TermsEnum termsEnum = terms.iterator(null);
+    while(termsEnum.next() != null) {
+      termCount++;
+    }
     assertTrue(termCount > 0);
     
     // Target ~10 terms to search:
     double chance = 10.0 / termCount;
-    TermsEnum termsEnum = terms.iterator(null);
+    termsEnum = terms.iterator(termsEnum);
     final Map<BytesRef,TopDocs> answers = new HashMap<BytesRef,TopDocs>();
     while(termsEnum.next() != null) {
       if (random().nextDouble() <= chance) {
@@ -90,10 +97,10 @@ public class TestSameScoresWithThreads extends LuceneTestCase {
                   List<Map.Entry<BytesRef,TopDocs>> shuffled = new ArrayList<Map.Entry<BytesRef,TopDocs>>(answers.entrySet());
                   Collections.shuffle(shuffled);
                   for(Map.Entry<BytesRef,TopDocs> ent : shuffled) {
-                    TopDocs actual = s.search(new TermQuery(new Term("body", ent.getKey())), 10);
+                    TopDocs actual = s.search(new TermQuery(new Term("body", ent.getKey())), 100);
                     TopDocs expected = ent.getValue();
                     assertEquals(expected.totalHits, actual.totalHits);
-                    assertEquals(expected.scoreDocs.length, actual.scoreDocs.length);
+                    assertEquals("query=" + ent.getKey().utf8ToString(), expected.scoreDocs.length, actual.scoreDocs.length);
                     for(int hit=0;hit<expected.scoreDocs.length;hit++) {
                       assertEquals(expected.scoreDocs[hit].doc, actual.scoreDocs[hit].doc);
                       // Floats really should be identical:
