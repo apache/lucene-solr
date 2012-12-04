@@ -91,10 +91,13 @@ public abstract class AbstractTestCompressionMode extends LuceneTestCase {
   }
 
   public void testDecompress() throws IOException {
-    final byte[] decompressed = randomArray();
-    final byte[] compressed = compress(decompressed);
-    final byte[] restored = decompress(compressed, decompressed.length);
-    assertArrayEquals(decompressed, restored);
+    final int iterations = atLeast(10);
+    for (int i = 0; i < iterations; ++i) {
+      final byte[] decompressed = randomArray();
+      final byte[] compressed = compress(decompressed);
+      final byte[] restored = decompress(compressed, decompressed.length);
+      assertArrayEquals(decompressed, restored);
+    }
   }
 
   public void testPartialDecompress() throws IOException {
@@ -120,11 +123,12 @@ public abstract class AbstractTestCompressionMode extends LuceneTestCase {
     assertArrayEquals(compressed, copyCompressedData(compressed, decompressed.length));
   }
 
-  public void test(byte[] decompressed) throws IOException {
+  public byte[] test(byte[] decompressed) throws IOException {
     final byte[] compressed = compress(decompressed);
     final byte[] restored = decompress(compressed, decompressed.length);
     assertEquals(decompressed.length, restored.length);
     assertArrayEquals(compressed, copyCompressedData(compressed, decompressed.length));
+    return compressed;
   }
 
   public void testEmptySequence() throws IOException {
@@ -140,33 +144,6 @@ public abstract class AbstractTestCompressionMode extends LuceneTestCase {
     for (int i = 0; i < decompressed.length; ++i) {
       decompressed[i] = (byte) i;
     }
-    test(decompressed);
-  }
-
-  // for LZ compression
-
-  public void testShortLiteralsAndMatchs() throws IOException {
-    // literals and matchs lengths <= 15
-    final byte[] decompressed = "1234562345673456745678910123".getBytes("UTF-8");
-    test(decompressed);
-  }
-
-  public void testLongMatchs() throws IOException {
-    // match length > 16
-    final byte[] decompressed = new byte[RandomInts.randomIntBetween(random(), 300, 1024)];
-    for (int i = 0; i < decompressed.length; ++i) {
-      decompressed[i] = (byte) i;
-    }
-    test(decompressed);
-  }
-
-  public void testLongLiterals() throws IOException {
-    // long literals (length > 16) which are not the last literals
-    final byte[] decompressed = randomArray(RandomInts.randomIntBetween(random(), 400, 1024), 256);
-    final int matchRef = random().nextInt(30);
-    final int matchOff = RandomInts.randomIntBetween(random(), decompressed.length - 40, decompressed.length - 20);
-    final int matchLength = RandomInts.randomIntBetween(random(), 4, 10);
-    System.arraycopy(decompressed, matchRef, decompressed, matchOff, matchLength);
     test(decompressed);
   }
 

@@ -17,12 +17,23 @@ package org.apache.lucene.codecs.compressing;
  * limitations under the License.
  */
 
+import java.io.IOException;
 
-public class TestFastDecompressionMode extends AbstractTestCompressionMode {
+public class TestFastDecompressionMode extends AbstractTestLZ4CompressionMode {
 
   public void setUp() throws Exception {
     super.setUp();
     mode = CompressionMode.FAST_DECOMPRESSION;
+  }
+
+  @Override
+  public byte[] test(byte[] decompressed) throws IOException {
+    final byte[] compressed = super.test(decompressed);
+    final byte[] compressed2 = compress(CompressionMode.FAST.newCompressor(), decompressed);
+    // because of the way this compression mode works, its output is necessarily
+    // smaller than the output of CompressionMode.FAST
+    assertTrue(compressed.length <= compressed2.length);
+    return compressed;
   }
 
 }
