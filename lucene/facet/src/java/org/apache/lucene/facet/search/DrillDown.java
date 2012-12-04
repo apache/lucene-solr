@@ -92,7 +92,7 @@ public final class DrillDown {
     if (baseQuery == null) {
       return drillDownQuery;
     } else {
-      BooleanQuery res = new BooleanQuery();
+      BooleanQuery res = new BooleanQuery(true);
       res.add(baseQuery, Occur.MUST);
       res.add(drillDownQuery, Occur.MUST);
       return res;
