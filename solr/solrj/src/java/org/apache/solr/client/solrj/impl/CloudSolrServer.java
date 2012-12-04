@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -195,9 +196,8 @@ public class CloudSolrServer extends SolrServer {
     // Retrieve slices from the cloud state and, for each collection specified,
     // add it to the Map of slices.
     Map<String,Slice> slices = new HashMap<String,Slice>();
-    for (int i = 0; i < collectionList.size(); i++) {
-      String coll= collectionList.get(i);
-      ClientUtils.appendMap(coll, slices, clusterState.getSlicesMap(coll));
+    for (String collectionName : collectionList) {
+      ClientUtils.addSlices(slices, collectionName, clusterState.getSlices(collectionName), true);
     }
 
     Set<String> liveNodes = clusterState.getLiveNodes();

@@ -38,7 +38,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -190,7 +189,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       ClusterState cstate = zkController.getClusterState();
       numNodes = cstate.getLiveNodes().size();
       DocCollection coll = cstate.getCollection(collection);
-      Slice slice = coll.getRouter().getTargetShard(id, doc, req.getParams(), coll);
+      Slice slice = coll.getRouter().getTargetSlice(id, doc, req.getParams(), coll);
 
       if (slice == null) {
         // No slice found.  Most strict routers will have already thrown an exception, so a null return is
@@ -287,13 +286,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
 
-  private String getShard(int hash, String collection, ClusterState clusterState) {
-    // ranges should be part of the cloud state and eventually gotten from zk
-
-    // get the shard names
-    return clusterState.getShard(hash, collection);
-  }
-
   // used for deleteByQuery to get the list of nodes this leader should forward to
   private List<Node> setupRequest() {
     List<Node> nodes = null;
@@ -333,11 +325,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    // TODO: check for id field?
-    int hash = 0;
     if (zkEnabled) {
       zkCheck();
-      hash = hash(cmd);
       nodes = setupRequest(cmd.getHashableId(), cmd.getSolrInputDocument());
     } else {
       isLeader = getNonZkLeaderAssumption(req);
@@ -1100,19 +1089,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return null;
     }
     return urls;
-  }
-  
-  // TODO: move this to AddUpdateCommand/DeleteUpdateCommand and cache it? And
-  // make the hash pluggable of course.
-  // The hash also needs to be pluggable
-  private int hash(AddUpdateCommand cmd) {
-    String hashableId = cmd.getHashableId();
-    
-    return Hash.murmurhash3_x86_32(hashableId, 0, hashableId.length(), 0);
-  }
-  
-  private int hash(DeleteUpdateCommand cmd) {
-    return Hash.murmurhash3_x86_32(cmd.getId(), 0, cmd.getId().length(), 0);
   }
   
   // RetryNodes are used in the case of 'forward to leader' where we want

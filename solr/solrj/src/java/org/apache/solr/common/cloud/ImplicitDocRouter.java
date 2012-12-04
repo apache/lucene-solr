@@ -21,13 +21,16 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 
+import java.util.Collection;
+import java.util.Collections;
+
 /** This document router is for custom sharding
  */
 public class ImplicitDocRouter extends DocRouter {
   public static final String NAME = "implicit";
 
   @Override
-  public Slice getTargetShard(String id, SolrInputDocument sdoc, SolrParams params, DocCollection collection) {
+  public Slice getTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, DocCollection collection) {
     String shard = null;
     if (sdoc != null) {
       Object o = sdoc.getFieldValue("_shard_");
@@ -48,6 +51,21 @@ public class ImplicitDocRouter extends DocRouter {
     }
 
     return null;  // no shard specified... use default.
+  }
+
+  @Override
+  public Collection<Slice> getSearchSlices(String shardKey, SolrParams params, DocCollection collection) {
+    if (shardKey == null) {
+      return collection.getSlices();
+    }
+
+    // assume the shardKey is just a slice name
+    Slice slice = collection.getSlice(shardKey);
+    if (slice == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "implicit router can't find shard " + shardKey + " in collection " + collection.getName());
+    }
+
+    return Collections.singleton(slice);
   }
 
 }

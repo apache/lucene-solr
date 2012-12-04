@@ -182,6 +182,8 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       }
       cnt++;
     }
+
+    log.info("Recoveries finished - collection: " + collection);
   }
 
   protected void assertAllActive(String collection,ZkStateReader zkStateReader)

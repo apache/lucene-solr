@@ -133,7 +133,7 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   /**
-   * Get the named DocCollection object, or thow an exception if it doesn't exist.
+   * Get the named DocCollection object, or throw an exception if it doesn't exist.
    */
   public DocCollection getCollection(String collection) {
     DocCollection coll = collectionStates.get(collection);

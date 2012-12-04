@@ -24,6 +24,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Hash;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -72,6 +73,14 @@ public abstract class DocRouter {
 
     public boolean includes(int hash) {
       return hash >= min && hash <= max;
+    }
+
+    public boolean isSubsetOf(Range superset) {
+      return superset.min <= min && superset.max >= max;
+    }
+
+    public boolean overlaps(Range other) {
+      return includes(other.min) || includes(other.max) || isSubsetOf(other);
     }
 
     public String toString() {
@@ -144,28 +153,26 @@ public abstract class DocRouter {
   }
 
 
-  public abstract Slice getTargetShard(String id, SolrInputDocument sdoc, SolrParams params, DocCollection collection);
+  public abstract Slice getTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, DocCollection collection);
 
-
-  /*
-  List<Slice> shardQuery(String id, SolrParams params, ClusterState state)
-  List<Slice> shardQuery(SolrParams params, ClusterState state)
-  */
-
-
+  /** This method is consulted to determine what slices should be queried for a request when
+   *  an explicit shards parameter was not used.
+   *  shardKey (normally from shard.keys) and params may be null.
+   **/
+  public abstract Collection<Slice> getSearchSlices(String shardKey, SolrParams params, DocCollection collection);
 
 }
 
 abstract class HashBasedRouter extends DocRouter {
 
   @Override
-  public Slice getTargetShard(String id, SolrInputDocument sdoc, SolrParams params, DocCollection collection) {
+  public Slice getTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, DocCollection collection) {
     if (id == null) id = getId(sdoc, params);
-    int hash = shardHash(id, sdoc, params);
+    int hash = sliceHash(id, sdoc, params);
     return hashToSlice(hash, collection);
   }
 
-  protected int shardHash(String id, SolrInputDocument sdoc, SolrParams params) {
+  protected int sliceHash(String id, SolrInputDocument sdoc, SolrParams params) {
     return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
   }
 
@@ -182,6 +189,19 @@ abstract class HashBasedRouter extends DocRouter {
     }
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No slice servicing hash code " + Integer.toHexString(hash) + " in " + collection);
   }
+
+
+  @Override
+  public Collection<Slice> getSearchSlices(String shardKey, SolrParams params, DocCollection collection) {
+    if (shardKey == null) {
+      // search across whole collection
+      // TODO: this may need modification in the future when shard splitting could cause an overlap
+      return collection.getSlices();
+    }
+
+    // use the shardKey as an id for plain hashing
+    return Collections.singletonList(getTargetSlice(shardKey, null, params, collection));
+  }
 }
 
 class PlainIdRouter extends HashBasedRouter {
@@ -190,12 +210,15 @@ class PlainIdRouter extends HashBasedRouter {
 
 //
 // user!uniqueid
-// user,4!uniqueid
+// user/4!uniqueid
 //
 class CompositeIdRouter extends HashBasedRouter {
   public static final String NAME = "compositeId";
 
   private int separator = '!';
+
+  // separator used to optionally specify number of bits to allocate toward first part.
+  private int bitsSepartor = '/';
   private int bits = 16;
   private int mask1 = 0xffff0000;
   private int mask2 = 0x0000ffff;
@@ -208,7 +231,7 @@ class CompositeIdRouter extends HashBasedRouter {
 
   protected int getBits(String firstPart, int commaIdx) {
     int v = 0;
-    for (int idx = commaIdx +1; idx<firstPart.length(); idx++) {
+    for (int idx = commaIdx + 1; idx<firstPart.length(); idx++) {
       char ch = firstPart.charAt(idx);
       if (ch < '0' || ch > '9') return -1;
       v *= 10 + (ch - '0');
@@ -217,7 +240,7 @@ class CompositeIdRouter extends HashBasedRouter {
   }
 
   @Override
-  protected int shardHash(String id, SolrInputDocument doc, SolrParams params) {
+  protected int sliceHash(String id, SolrInputDocument doc, SolrParams params) {
     int idx = id.indexOf(separator);
     if (idx < 0) {
       return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
@@ -227,13 +250,13 @@ class CompositeIdRouter extends HashBasedRouter {
     int m2 = mask2;
 
     String part1 = id.substring(0,idx);
-    int commaIdx = part1.indexOf(',');
+    int commaIdx = part1.indexOf(bitsSepartor);
     if (commaIdx > 0) {
       int firstBits = getBits(part1, commaIdx);
       if (firstBits >= 0) {
         m1 = -1 << (32-firstBits);
         m2 = -1 >>> firstBits;
-        part1 = part1.substring(0, commaIdx);  // actually, this isn't strictly necessary
+        part1 = part1.substring(0, commaIdx);
       }
     }
 
@@ -244,4 +267,52 @@ class CompositeIdRouter extends HashBasedRouter {
     return (hash1 & m1) | (hash2 & m2);
   }
 
+  @Override
+  public Collection<Slice> getSearchSlices(String shardKey, SolrParams params, DocCollection collection) {
+    if (shardKey == null) {
+      // search across whole collection
+      // TODO: this may need modification in the future when shard splitting could cause an overlap
+      return collection.getSlices();
+    }
+    String id = shardKey;
+
+    int idx = shardKey.indexOf(separator);
+    if (idx < 0) {
+      // shardKey is a simple id, so don't do a range
+      return Collections.singletonList(hashToSlice(Hash.murmurhash3_x86_32(id, 0, id.length(), 0), collection));
+    }
+
+    int m1 = mask1;
+    int m2 = mask2;
+
+    String part1 = id.substring(0,idx);
+    int commaIdx = part1.indexOf(bitsSepartor);
+    if (commaIdx > 0) {
+      int firstBits = getBits(part1, commaIdx);
+      if (firstBits >= 0) {
+        m1 = -1 << (32-firstBits);
+        m2 = -1 >>> firstBits;
+        part1 = part1.substring(0, commaIdx);
+      }
+    }
+
+    //  If the upper bits are 0xF0000000, the range we want to cover is
+    //  0xF0000000 0xFfffffff
+
+    int hash1 = Hash.murmurhash3_x86_32(part1, 0, part1.length(), 0);
+    int upperBits = hash1 & m1;
+    int lowerBound = upperBits;
+    int upperBound = upperBits | m2;
+    Range completeRange = new Range(lowerBound, upperBound);
+
+    List<Slice> slices = new ArrayList(1);
+    for (Slice slice : slices) {
+      Range range = slice.getRange();
+      if (range != null && range.overlaps(completeRange)) {
+        slices.add(slice);
+      }
+    }
+
+    return slices;
+  }
 }

@@ -17,6 +17,7 @@ package org.apache.solr.handler.component;
  */
 
 import java.net.ConnectException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,6 +43,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -240,6 +242,7 @@ public class HttpShardHandler extends ShardHandler {
       future.cancel(true);
     }
   }
+
   public void checkDistributed(ResponseBuilder rb) {
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
@@ -279,14 +282,17 @@ public class HttpShardHandler extends ShardHandler {
           }
         }
       } else if (zkController != null) {
-        // we weren't provided with a list of slices to query, so find the list that will cover the complete index
+        // we weren't provided with an explicit list of slices to query via "shards", so use the cluster state
 
         clusterState =  zkController.getClusterState();
+        String shardKeys = params.get(ShardParams.SHARD_KEYS);
 
-        // This can be more efficient... we only record the name, even though we
-        // have the shard info we need in the next step of mapping slice->shards
-        
-        // Stores the comma-separated list of specified collections.
+        // This will be the complete list of slices we need to query for this request.
+        slices = new HashMap<String,Slice>();
+
+        // we need to find out what collections this request is for.
+
+        // A comma-separated list of specified collections.
         // Eg: "collection1,collection2,collection3"
         String collections = params.get("collection");
         if (collections != null) {
@@ -294,26 +300,23 @@ public class HttpShardHandler extends ShardHandler {
           // each parameter and store as a seperate member of a List.
           List<String> collectionList = StrUtils.splitSmart(collections, ",",
               true);
-          
-          // First create an empty HashMap to add the slice info to.
-          slices = new HashMap<String,Slice>();
-          
           // In turn, retrieve the slices that cover each collection from the
           // cloud state and add them to the Map 'slices'.
-          for (int i = 0; i < collectionList.size(); i++) {
-            String collection = collectionList.get(i);
-            ClientUtils.appendMap(collection, slices, clusterState.getSlicesMap(collection));
+          for (String collectionName : collectionList) {
+            DocCollection coll = clusterState.getCollection(collectionName);
+            // The original code produced <collection-name>_<shard-name> when the collections
+            // parameter was specified (see ClientUtils.appendMap)
+            // Is this necessary if ony one collection is specified?
+            // i.e. should we change multiCollection to collectionList.size() > 1?
+            addSlices(slices, clusterState, params, collectionName,  shardKeys, true);
           }
         } else {
-          // If no collections were specified, default to the collection for
-          // this core.
-          slices = clusterState.getSlicesMap(cloudDescriptor.getCollectionName());
-          if (slices == null) {
-            throw new SolrException(ErrorCode.BAD_REQUEST,
-                "Could not find collection:"
-                    + cloudDescriptor.getCollectionName());
-          }
+          // just this collection
+          String collectionName = cloudDescriptor.getCollectionName();
+          DocCollection coll = clusterState.getCollection(cloudDescriptor.getCollectionName());
+          addSlices(slices, clusterState, params, collectionName,  shardKeys, false);
         }
+
         
         // Store the logical slices in the ResponseBuilder and create a new
         // String array to hold the physical shards (which will be mapped
@@ -388,5 +391,21 @@ public class HttpShardHandler extends ShardHandler {
     }
   }
 
-}
 
+  private void addSlices(Map<String,Slice> target, ClusterState state, SolrParams params, String collectionName, String shardKeys, boolean multiCollection) {
+    DocCollection coll = state.getCollection(collectionName);
+    if (shardKeys != null) {
+      List<String> shardKeyList = StrUtils.splitSmart(shardKeys, ",", true);
+      for (String oneShardKey : shardKeyList) {
+        Collection<Slice> someSlices =  coll.getRouter().getSearchSlices(oneShardKey, params, coll);
+        ClientUtils.addSlices(target, collectionName, someSlices, multiCollection);
+      }
+    } else {
+      Collection<Slice> someSlices =  coll.getRouter().getSearchSlices(null, params, coll);
+      ClientUtils.addSlices(target, collectionName, someSlices, multiCollection);
+    }
+  }
+
+
+
+}
