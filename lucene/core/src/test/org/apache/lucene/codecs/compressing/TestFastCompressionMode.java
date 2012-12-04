@@ -17,7 +17,7 @@ package org.apache.lucene.codecs.compressing;
  * limitations under the License.
  */
 
-public class TestFastCompressionMode extends AbstractTestCompressionMode {
+public class TestFastCompressionMode extends AbstractTestLZ4CompressionMode {
 
   public void setUp() throws Exception {
     super.setUp();

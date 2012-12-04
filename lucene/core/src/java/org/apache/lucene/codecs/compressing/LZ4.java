@@ -121,7 +121,7 @@ class LZ4 {
       matchLen += MIN_MATCH;
 
       // copying a multiple of 8 bytes can make decompression from 5% to 10% faster
-      final int fastLen = ((matchLen - 1) & 0xFFFFFFF8) + 8;
+      final int fastLen = (matchLen + 7) & 0xFFFFFFF8;
       if (matchDec < matchLen || dOff + fastLen > destEnd) {
         // overlap -> naive incremental copy
         for (int ref = dOff - matchDec, end = dOff + matchLen; dOff < end; ++ref, ++dOff) {
@@ -222,7 +222,7 @@ class LZ4 {
         }
 
         // compute match length
-        final int matchLen = MIN_MATCH + commonBytes(bytes, ref + 4, off + 4, limit);
+        final int matchLen = MIN_MATCH + commonBytes(bytes, ref + MIN_MATCH, off + MIN_MATCH, limit);
 
         encodeSequence(bytes, anchor, ref, off, matchLen, out);
         off += matchLen;
