@@ -279,6 +279,10 @@ Build
   RandomizedContext.contexts static map. Upgrade randomized testing
   to version 2.0.2 (Mike McCandless, Dawid Weiss)
 
+* LUCENE-4589: Upgraded benchmark module's Nekohtml dependency to version
+  1.9.17, removing the workaround in Lucene's HTML parser for the
+  Turkish locale.  (Uwe Schindler)
+
   
 ======================= Lucene 4.0.0 =======================
 

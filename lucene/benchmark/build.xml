@@ -152,7 +152,7 @@
     	<fileset dir="lib">
     	  <include name="commons-compress-1.4.1.jar"/>
     	  <include name="xercesImpl-2.9.1.jar"/>
-    	  <include name="nekohtml-1.9.15.jar"/>
+    	  <include name="nekohtml-1.9.17.jar"/>
     	</fileset>
     </path>
     <path id="run.classpath">
