@@ -20,6 +20,7 @@ package org.apache.lucene.benchmark.byTask.feeds;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
@@ -65,10 +66,10 @@ public class DemoHTMLParser implements HTMLParser {
         @Override
         public void startElement(String namespaceURI, String localName, String qName, Attributes atts) throws SAXException {
           if (inHEAD > 0) {
-            if (equalsIgnoreTurkish("title", localName)) {
+            if ("title".equals(localName)) {
               inTITLE++;
             } else {
-              if (equalsIgnoreTurkish("meta", localName)) {
+              if ("meta".equals(localName)) {
                 String name = atts.getValue("name");
                 if (name == null) {
                   name = atts.getValue("http-equiv");
@@ -82,7 +83,7 @@ public class DemoHTMLParser implements HTMLParser {
           } else if (inBODY > 0) {
             if (SUPPRESS_ELEMENTS.contains(localName)) {
               suppressed++;
-            } else if (equalsIgnoreTurkish("img", localName)) {
+            } else if ("img".equals(localName)) {
               // the original javacc-based parser preserved <IMG alt="..."/>
               // attribute as body text in [] parenthesis:
               final String alt = atts.getValue("alt");
@@ -90,11 +91,11 @@ public class DemoHTMLParser implements HTMLParser {
                 body.append('[').append(alt).append(']');
               }
             }
-          } else if (equalsIgnoreTurkish("body", localName)) {
+          } else if ("body".equals(localName)) {
             inBODY++;
-          } else if (equalsIgnoreTurkish("head", localName)) {
+          } else if ("head".equals(localName)) {
             inHEAD++;
-          } else if (equalsIgnoreTurkish("frameset", localName)) {
+          } else if ("frameset".equals(localName)) {
             throw new SAXException("This parser does not support HTML framesets.");
           }
         }
@@ -102,7 +103,7 @@ public class DemoHTMLParser implements HTMLParser {
         @Override
         public void endElement(String namespaceURI, String localName, String qName) throws SAXException {
           if (inBODY > 0) {
-            if (equalsIgnoreTurkish("body", localName)) {
+            if ("body".equals(localName)) {
               inBODY--;
             } else if (ENDLINE_ELEMENTS.contains(localName)) {
               body.append('\n');
@@ -110,9 +111,9 @@ public class DemoHTMLParser implements HTMLParser {
               suppressed--;
             }
           } else if (inHEAD > 0) {
-            if (equalsIgnoreTurkish("head", localName)) {
+            if ("head".equals(localName)) {
               inHEAD--;
-            } else if (inTITLE > 0 && equalsIgnoreTurkish("title", localName)) {
+            } else if (inTITLE > 0 && "title".equals(localName)) {
               inTITLE--;
             }
           }
@@ -145,36 +146,8 @@ public class DemoHTMLParser implements HTMLParser {
       this.body = body.toString();
     }
     
-    // TODO: remove the Turkish workaround once this is fixed in NekoHTML:
-    // https://sourceforge.net/tracker/?func=detail&aid=3544334&group_id=195122&atid=952178
-    
-    // BEGIN: workaround
-    static final String convertTurkish(String s) {
-      return s.replace('i', 'ı');
-    }
-    
-    static final boolean equalsIgnoreTurkish(String s1, String s2) {
-      final int len1 = s1.length(), len2 = s2.length();
-      if (len1 != len2)
-        return false;
-      for (int i = 0; i < len1; i++) {
-        char ch1 = s1.charAt(i), ch2 = s2.charAt(i);
-        if (ch1 == 'ı') ch1 = 'i';
-        if (ch2 == 'ı') ch2 = 'i';
-        if (ch1 != ch2)
-          return false;
-      }
-      return true;
-    }
-    // END: workaround
-    
-    static final Set<String> createElementNameSet(String... names) {
-      final HashSet<String> set = new HashSet<String>();
-      for (final String name : names) {
-        set.add(name);
-        set.add(convertTurkish(name));
-      }
-      return Collections.unmodifiableSet(set);
+    private static final Set<String> createElementNameSet(String... names) {
+      return Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(names)));
     }
     
     /** HTML elements that cause a line break (they are block-elements) */
