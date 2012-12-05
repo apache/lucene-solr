@@ -328,7 +328,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
     if (!expectedResults.equals(actualResults)) {
       System.err.println("Results are not the same!");
       System.err.println("Expected:\n" + expectedResults);
-      System.err.println("Actual" + actualResults);
+      System.err.println("Actual:\n" + actualResults);
       throw new NotSameResultError();
     }
   }

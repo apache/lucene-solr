@@ -14,6 +14,8 @@ import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.ScoredDocIDs;
 import org.apache.lucene.facet.search.ScoredDocIdCollector;
+import org.apache.lucene.facet.search.params.FacetRequest;
+import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -42,6 +44,20 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
   
   /** since there is a chance that this test would fail even if the code is correct, retry the sampling */
   protected static final int RETRIES = 10;
+  
+  @Override
+  protected FacetSearchParams searchParamsWithRequests(int numResults, int partitionSize) {
+    FacetSearchParams res = super.searchParamsWithRequests(numResults, partitionSize);
+    for (FacetRequest req : res.getFacetRequests()) {
+      // randomize the way we aggregate results
+      if (random().nextBoolean()) {
+        req.setResultMode(ResultMode.GLOBAL_FLAT);
+      } else {
+        req.setResultMode(ResultMode.PER_NODE_IN_TREE);
+      }
+    }
+    return res;
+  }
   
   protected abstract FacetsAccumulator getSamplingAccumulator(Sampler sampler,
       TaxonomyReader taxoReader, IndexReader indexReader,

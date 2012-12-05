@@ -592,7 +592,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
     
     @Override
     protected boolean leftGoesNow (int ord1, double val1, int ord2, double val2) {
-      return (val1 < val2);
+      return (val1 == val2) ? (ord1 < ord2) : (val1 < val2);
     }
   }
 
@@ -602,7 +602,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
     
     @Override
     protected boolean leftGoesNow (int ord1, double val1, int ord2, double val2) {
-      return (val1 > val2);
+      return (val1 == val2) ? (ord1 > ord2) : (val1 > val2);
     }
   }
 
@@ -656,6 +656,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
       this.totalNumOfFacetsConsidered = 0;
     }
 
+    @Override
     public FacetRequest getFacetRequest() {
       return this.facetRequest;
     }

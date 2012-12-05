@@ -202,6 +202,13 @@ Bug Fixes
 * LUCENE-4009: Improve TermsFilter.toString (Tim Costermans via Chris
   Male, Mike McCandless)
 
+Changes in Runtime Behavior
+  
+* LUCENE-4586: Change default ResultMode of FacetRequest to PER_NODE_IN_TREE.
+  This only affects requests with depth>1. If you execute such requests and
+  rely on the facet results being returned flat (i.e. no hierarchy), you should
+  set the ResultMode to GLOBAL_FLAT. (Shai Erera, Gilad Barkai) 
+
 Optimizations
 
 * LUCENE-2221: oal.util.BitUtil was modified to use Long.bitCount and

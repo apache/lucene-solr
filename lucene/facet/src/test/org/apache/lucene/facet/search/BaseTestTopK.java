@@ -61,6 +61,10 @@ public abstract class BaseTestTopK extends FacetTestBase {
       return;
     }
     currDoc = doc;
+    // the code below tries to achieve non-uniform distribution of
+    // categories. Perhaps we can use random.nextGaussian() instead,
+    // something like nextGaussian() * stdev + maxCategory/2. Or
+    // try to generate a Zipf distribution.
     nextInt = random().nextInt(categoriesPow2);
     nextInt = (int)Math.sqrt(nextInt);
   }
