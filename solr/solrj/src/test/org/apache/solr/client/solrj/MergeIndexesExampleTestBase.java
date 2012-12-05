@@ -59,6 +59,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
   @AfterClass
   public static void afterClass() {
     cores.shutdown();
+    cores = null;
   }
   
   @Override
