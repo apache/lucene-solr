@@ -59,12 +59,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
     tmpdir.mkdir();
     fileLocation = tmpdir.getPath();
     fileName = "the.properties";
-  }
-  @After
-  public void spwAfter() throws Exception {
-    new File(fileLocation + File.separatorChar + fileName).delete();
-    new File(fileLocation).delete();
-  }  
+  } 
   @After
   public void afterSqlEntitiyProcessorTestCase() {
     useSimpleCaches = false;
