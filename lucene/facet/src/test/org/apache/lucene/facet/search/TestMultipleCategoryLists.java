@@ -12,6 +12,7 @@ import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
+import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
@@ -122,8 +123,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     // prepare searcher to search against
     IndexSearcher searcher = newSearcher(ir);
 
-    FacetsCollector facetsCollector = performSearch(iParams, tr, ir,
-        searcher);
+    FacetsCollector facetsCollector = performSearch(iParams, tr, ir, searcher);
 
     // Obtain facets results and hand-test them
     assertCorrectResults(facetsCollector);
@@ -335,16 +335,14 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     // Faceted search parameters indicate which facets are we interested in
     FacetSearchParams facetSearchParams = new FacetSearchParams(iParams);
 
-    facetSearchParams.addFacetRequest(new CountFacetRequest(
-        new CategoryPath("Band"), 10));
-    CountFacetRequest bandDepth = new CountFacetRequest(new CategoryPath(
-    "Band"), 10);
+    facetSearchParams.addFacetRequest(new CountFacetRequest(new CategoryPath("Band"), 10));
+    CountFacetRequest bandDepth = new CountFacetRequest(new CategoryPath("Band"), 10);
     bandDepth.setDepth(2);
+    // makes it easier to check the results in the test.
+    bandDepth.setResultMode(ResultMode.GLOBAL_FLAT);
     facetSearchParams.addFacetRequest(bandDepth);
-    facetSearchParams.addFacetRequest(new CountFacetRequest(
-        new CategoryPath("Author"), 10));
-    facetSearchParams.addFacetRequest(new CountFacetRequest(
-        new CategoryPath("Band", "Rock & Pop"), 10));
+    facetSearchParams.addFacetRequest(new CountFacetRequest(new CategoryPath("Author"), 10));
+    facetSearchParams.addFacetRequest(new CountFacetRequest(new CategoryPath("Band", "Rock & Pop"), 10));
 
     // perform documents search and facets accumulation
     FacetsCollector facetsCollector = new FacetsCollector(facetSearchParams, ir, tr);
