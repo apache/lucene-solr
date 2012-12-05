@@ -39,46 +39,46 @@ public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestC
   }
   @Test
   public void testSingleEntity() throws Exception {
-    log.info("testSingleEntity full-import...");
+    log.debug("testSingleEntity full-import...");
     singleEntity(1);
     logPropertiesFile();
     changeStuff();
     int c = calculateDatabaseCalls();
-    log.info("testSingleEntity delta-import (" + c + " database calls expected)...");
+    log.debug("testSingleEntity delta-import (" + c + " database calls expected)...");
     singleEntity(c);
     validateChanges();
   }
   @Test
   public void testWithSimpleTransformer() throws Exception {
-    log.info("testWithSimpleTransformer full-import...");    
+    log.debug("testWithSimpleTransformer full-import...");    
     simpleTransform(1); 
     logPropertiesFile(); 
     changeStuff();
     int c = calculateDatabaseCalls();
     simpleTransform(c);
-    log.info("testWithSimpleTransformer delta-import (" + c + " database calls expected)...");
+    log.debug("testWithSimpleTransformer delta-import (" + c + " database calls expected)...");
     validateChanges(); 
   }
   @Test
   public void testWithComplexTransformer() throws Exception {
-    log.info("testWithComplexTransformer full-import...");     
+    log.debug("testWithComplexTransformer full-import...");     
     complexTransform(1, 0);
     logPropertiesFile();
     changeStuff();
     int c = calculateDatabaseCalls();
-    log.info("testWithComplexTransformer delta-import (" + c + " database calls expected)...");
+    log.debug("testWithComplexTransformer delta-import (" + c + " database calls expected)...");
     complexTransform(c, personChanges.deletedKeys.length);
     validateChanges();  
   }
   @Test
   public void testChildEntities() throws Exception {
-    log.info("testChildEntities full-import...");
+    log.debug("testChildEntities full-import...");
     useParentDeltaQueryParam = random().nextBoolean();
-    log.info("using parent delta? " + useParentDeltaQueryParam);
+    log.debug("using parent delta? " + useParentDeltaQueryParam);
     withChildEntities(false, true);
     logPropertiesFile();
     changeStuff();
-    log.info("testChildEntities delta-import...");
+    log.debug("testChildEntities delta-import...");
     withChildEntities(false, false);
     validateChanges();
   }
@@ -148,13 +148,13 @@ public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestC
         sb.append(s).append(" ");
       }
       sb.append(" }");    
-      log.info(sb.toString());
+      log.debug(sb.toString());
     }
   }
   private void personChangesLog()
   {
     if(personChanges!=null) {
-    log.info("person changes { " + personChanges.toString() + " } ");
+    log.debug("person changes { " + personChanges.toString() + " } ");
     }
   }
   @Override
