@@ -82,7 +82,11 @@
   <property name="args" value=""/>
 
   <property name="tests.seed" value="" />
+
+  <!-- This is a hack to be able to override the JVM count for special modules that don't like parallel tests: -->
   <property name="tests.jvms" value="auto" />
+  <property name="tests.jvms.override" value="${tests.jvms}" />
+
   <property name="tests.multiplier" value="1" />
   <property name="tests.codec" value="random" />
   <property name="tests.postingsformat" value="random" />
@@ -1160,7 +1164,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
        jars so we just order it after compile-test to ensure that -->
   <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate" description="Runs unit tests">
     <mkdir dir="${junit.output.dir}"/>
-    <test-macro threadNum="${tests.jvms}" />
+    <test-macro threadNum="${tests.jvms.override}" />
   </target>
 
   <!--
