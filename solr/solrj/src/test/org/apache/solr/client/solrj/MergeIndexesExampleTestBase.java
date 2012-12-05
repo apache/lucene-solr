@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.ExternalPaths;
+import org.junit.AfterClass;
 
 /**
  * Abstract base class for testing merge indexes command
@@ -91,6 +92,11 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
     
     if (saveProp == null) System.clearProperty("solr.directoryFactory");
     else System.setProperty("solr.directoryFactory", saveProp);
+  }
+  
+  @AfterClass
+  public static void afterClass() {
+    cores = null;
   }
 
   @Override
