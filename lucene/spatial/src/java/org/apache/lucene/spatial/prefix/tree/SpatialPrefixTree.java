@@ -156,7 +156,7 @@ public abstract class SpatialPrefixTree {
     }
     final Collection<Node> subCells = node.getSubCells(shape);
     if (node.getLevel() == detailLevel - 1) {
-      if (subCells.size() < node.getSubCellsSize()) {
+      if (subCells.size() < node.getSubCellsSize() || node.getLevel() == 0) {
         if (inclParents)
           result.add(node);
         for (Node subCell : subCells) {
@@ -164,7 +164,7 @@ public abstract class SpatialPrefixTree {
         }
         result.addAll(subCells);
       } else {//a bottom level (i.e. detail level) optimization where all boxes intersect, so use parent cell.
-        node.setLeaf();
+        node.setLeaf();//the cell may not be strictly within but its close
         result.add(node);
       }
     } else {

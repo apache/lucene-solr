@@ -56,6 +56,12 @@ Changes in backwards compatibility policy
   previous two methods returned by calling parents(), children() or siblings()
   on the returned ParallelTaxonomyArrays. (Shai Erera)
   
+* LUCENE-4585: Spatial PrefixTree based Strategies (either TermQuery or
+  RecursivePrefix based) MAY want to re-index if used for point data. If a
+  re-index is not done, then an indexed point is ~1/2 the smallest grid cell
+  larger and as such is slightly more likely to match a query shape.
+  (David Smiley)
+  
 New Features
 
 * LUCENE-4226: New experimental StoredFieldsFormat that compresses chunks of
@@ -191,12 +197,18 @@ Bug Fixes
 * LUCENE-4009: Improve TermsFilter.toString (Tim Costermans via Chris
   Male, Mike McCandless)
 
+* LUCENE-4585: Spatial RecursivePrefixTreeFilter had some bugs that only
+  occurred when shapes were indexed.  In what appears to be rare circumstances,
+  documents with shapes near a query shape were erroneously considered a match.
+  In addition, it wasn't possible to index a shape representing the entire
+  globe.
+
 Changes in Runtime Behavior
-  
+
 * LUCENE-4586: Change default ResultMode of FacetRequest to PER_NODE_IN_TREE.
   This only affects requests with depth>1. If you execute such requests and
   rely on the facet results being returned flat (i.e. no hierarchy), you should
-  set the ResultMode to GLOBAL_FLAT. (Shai Erera, Gilad Barkai) 
+  set the ResultMode to GLOBAL_FLAT. (Shai Erera, Gilad Barkai)
 
 Optimizations
 
@@ -252,7 +264,7 @@ Optimizations
 
 * LUCENE-4580: DrillDown.query variants return a ConstantScoreQuery with boost set to 0.0f
   so that documents scores are not affected by running a drill-down query. (Shai Erera)
-  
+
 Documentation
 
 * LUCENE-4483: Refer to BytesRef.deepCopyOf in Term's constructor that takes BytesRef.

@@ -228,16 +228,16 @@ public class QuadPrefixTree extends SpatialPrefixTree {
   class QuadCell extends Node {
 
     public QuadCell(String token) {
-      super(QuadPrefixTree.this, token);
+      super(token);
     }
 
     public QuadCell(String token, SpatialRelation shapeRel) {
-      super(QuadPrefixTree.this, token);
+      super(token);
       this.shapeRel = shapeRel;
     }
 
     QuadCell(byte[] bytes, int off, int len) {
-      super(QuadPrefixTree.this, bytes, off, len);
+      super(bytes, off, len);
     }
 
     @Override
