@@ -374,7 +374,7 @@
          "dir" - the target directory for transaction logs, defaults to the
             solr data directory.  --> 
     <updateLog>
-      <str name="dir">${solr.data.dir:}</str>
+      <str name="dir">${solr.ulog.dir:}</str>
     </updateLog>
    
 

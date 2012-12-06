@@ -324,6 +324,9 @@ Other Changes
 * SOLR-4074: Raise default ramBufferSizeMB to 100 from 32.
   (yonik, Mark Miller)
 
+* SOLR-4062: The update log location in solrconfig.xml should default to 
+  ${solr.ulog.dir} rather than ${solr.data.dir:} (Mark Miller)
+
 ==================  4.0.0 ==================
 
 Versions of Major Components
