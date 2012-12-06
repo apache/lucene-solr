@@ -233,7 +233,7 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
       // assert categories
       assertEquals(numCategories, reader.getSize());
       int roundOrdinal = reader.getOrdinal(new CategoryPath(Integer.toString(i)));
-      int[] parents = reader.getParentArray();
+      int[] parents = reader.getParallelTaxonomyArrays().parents();
       assertEquals(0, parents[roundOrdinal]); // round's parent is root
       for (int j = 0; j < numCats; j++) {
         int ord = reader.getOrdinal(new CategoryPath(Integer.toString(i), Integer.toString(j)));
@@ -268,7 +268,7 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
     
     TaxonomyReader reader = new DirectoryTaxonomyReader(writer);
     assertEquals(1, reader.getSize());
-    assertEquals(1, reader.getParentArray().length);
+    assertEquals(1, reader.getParallelTaxonomyArrays().parents().length);
 
     // add category and call forceMerge -- this should flush IW and merge segments down to 1
     // in ParentArray.initFromReader, this used to fail assuming there are no parents.
@@ -281,7 +281,7 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
     reader.close();
     reader = newtr;
     assertEquals(2, reader.getSize());
-    assertEquals(2, reader.getParentArray().length);
+    assertEquals(2, reader.getParallelTaxonomyArrays().parents().length);
     
     reader.close();
     writer.close();
@@ -315,7 +315,7 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
     
     TaxonomyReader reader = new DirectoryTaxonomyReader(writer);
     assertEquals(2, reader.getSize());
-    assertEquals(2, reader.getParentArray().length);
+    assertEquals(2, reader.getParallelTaxonomyArrays().parents().length);
 
     // merge all the segments so that NRT reader thinks there's a change 
     iw.forceMerge(1);
@@ -326,7 +326,7 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
     reader.close();
     reader = newtr;
     assertEquals(2, reader.getSize());
-    assertEquals(2, reader.getParentArray().length);
+    assertEquals(2, reader.getParallelTaxonomyArrays().parents().length);
     
     reader.close();
     writer.close();

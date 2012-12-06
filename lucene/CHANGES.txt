@@ -64,6 +64,11 @@ Changes in backwards compatibility policy
   even if the commitData is the only thing that changes.
   (Shai Erera, Michael McCandless)
 
+* LUCENE-4565: TaxonomyReader.getParentArray and .getChildrenArrays consolidated
+  into one getParallelTaxonomyArrays(). You can obtain the 3 arrays that the
+  previous two methods returned by calling parents(), children() or siblings()
+  on the returned ParallelTaxonomyArrays. (Shai Erera)
+  
 New Features
 
 * LUCENE-4226: New experimental StoredFieldsFormat that compresses chunks of
