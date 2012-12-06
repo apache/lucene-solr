@@ -213,6 +213,12 @@ Bug Fixes
 * LUCENE-4009: Improve TermsFilter.toString (Tim Costermans via Chris
   Male, Mike McCandless)
 
+* LUCENE-4585: Spatial RecursivePrefixTreeFilter had some bugs that only
+  occurred when shapes were indexed.  In what appears to be rare circumstances,
+  documents with shapes near a query shape were erroneously considered a match.
+  In addition, it wasn't possible to index a shape representing the entire
+  globe.
+
 Optimizations
 
 * LUCENE-2221: oal.util.BitUtil was modified to use Long.bitCount and
