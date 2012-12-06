@@ -17,14 +17,17 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.text.ParseException;
 import java.util.Properties;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class EnwikiContentSourceTest extends LuceneTestCase {
@@ -38,10 +41,16 @@ public class EnwikiContentSourceTest extends LuceneTestCase {
       this.docs = docs;
     }
     
-    @SuppressWarnings("deprecation") // fine for the characters used in this test
     @Override
     protected InputStream openInputStream() throws IOException {
-      return new java.io.StringBufferInputStream(docs);
+      // StringBufferInputStream would have been handy, but it is forbidden
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      OutputStreamWriter w = new OutputStreamWriter(baos, IOUtils.CHARSET_UTF_8);
+      w.write(docs);
+      w.close();
+      byte[] byteArray = baos.toByteArray();
+      baos.close();
+      return new ByteArrayInputStream(byteArray);
     }
 
   }
