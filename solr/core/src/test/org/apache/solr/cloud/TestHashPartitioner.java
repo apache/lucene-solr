@@ -115,12 +115,17 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
     doId(coll, "d!baz", "shard3");
     doId(coll, "e!qux", "shard4");
 
-    // syntax to specify bits
+    // syntax to specify bits.  Anything over 2 should give the same results as above (since only top 2 bits
+    // affect our 4 slice collection).
     doId(coll, "b/2!foo", "shard1");
     doId(coll, "c/2!bar", "shard2");
     doId(coll, "d/2!baz", "shard3");
     doId(coll, "e/2!qux", "shard4");
 
+    doId(coll, "b/32!foo", "shard1");
+    doId(coll, "c/32!bar", "shard2");
+    doId(coll, "d/32!baz", "shard3");
+    doId(coll, "e/32!qux", "shard4");
   }
 
   /***

@@ -41,10 +41,11 @@ public class CompositeIdRouter extends HashBasedRouter {
   private int mask1 = 0xffff0000;
   private int mask2 = 0x0000ffff;
 
-  protected void setBits(int bits) {
-    this.bits = bits;
-    mask1 = -1 << (32-bits);
-    mask2 = -1 >>> bits;
+  protected void setBits(int firstBits) {
+    this.bits = firstBits;
+    // java can't shift 32 bits
+    mask1 = firstBits==0 ? 0 : (-1 << (32-firstBits));
+    mask2 = firstBits==32 ? 0 : (-1 >>> firstBits);
   }
 
   protected int getBits(String firstPart, int commaIdx) {
@@ -72,8 +73,8 @@ public class CompositeIdRouter extends HashBasedRouter {
     if (commaIdx > 0) {
       int firstBits = getBits(part1, commaIdx);
       if (firstBits >= 0) {
-        m1 = -1 << (32-firstBits);
-        m2 = -1 >>> firstBits;
+        m1 = firstBits==0 ? 0 : (-1 << (32-firstBits));
+        m2 = firstBits==32 ? 0 : (-1 >>> firstBits);
         part1 = part1.substring(0, commaIdx);
       }
     }
@@ -108,8 +109,8 @@ public class CompositeIdRouter extends HashBasedRouter {
     if (bitsSepIdx > 0) {
       int firstBits = getBits(part1, bitsSepIdx);
       if (firstBits >= 0) {
-        m1 = -1 << (32-firstBits);
-        m2 = -1 >>> firstBits;
+        m1 = firstBits==0 ? 0 : (-1 << (32-firstBits));
+        m2 = firstBits==32 ? 0 : (-1 >>> firstBits);
         part1 = part1.substring(0, bitsSepIdx);
       }
     }
