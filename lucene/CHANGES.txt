@@ -202,6 +202,9 @@ Bug Fixes
 * LUCENE-4009: Improve TermsFilter.toString (Tim Costermans via Chris
   Male, Mike McCandless)
 
+* LUCENE-4588: Benchmark's EnwikiContentSource was discarding last wiki 
+  document and had leaking threads in 'forever' mode. (Doron Cohen)   
+
 Changes in Runtime Behavior
   
 * LUCENE-4586: Change default ResultMode of FacetRequest to PER_NODE_IN_TREE.
