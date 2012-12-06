@@ -23,15 +23,32 @@ import java.io.IOException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * Factory to instantiate {@link org.apache.lucene.store.NRTCachingDirectory}
  */
 public class NRTCachingDirectoryFactory extends StandardDirectoryFactory {
+  private double maxMergeSizeMB;
+  private double maxCachedMB;
+
+  @Override
+  public void init(NamedList args) {
+    SolrParams params = SolrParams.toSolrParams(args);
+    maxMergeSizeMB = params.getDouble("maxMergeSizeMB", 4);
+    if (maxMergeSizeMB <= 0){
+      throw new IllegalArgumentException("maxMergeSizeMB must be greater than 0");
+    }
+    maxCachedMB = params.getDouble("maxCachedMB", 48);
+    if (maxCachedMB <= 0){
+      throw new IllegalArgumentException("maxCachedMB must be greater than 0");
+    }
+  }
 
   @Override
   protected Directory create(String path) throws IOException {
-    return new NRTCachingDirectory(FSDirectory.open(new File(path)), 4, 48);
+    return new NRTCachingDirectory(FSDirectory.open(new File(path)), maxMergeSizeMB, maxCachedMB);
   }
 
 }

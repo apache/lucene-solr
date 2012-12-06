@@ -99,6 +99,9 @@ New Features
   rolling averages; median, 75th, 95th, 99th, 99.9th percentile request times
   (Alan Woodward, Shawn Heisey, Adrien Grand)
 
+* SOLR-3531: Allowing configuring maxMergeSizeMB and maxCachedMB when
+  using NRTCachingDirectoryFactory. (Andy Laird via Mark Miller) 
+
 Optimizations
 ----------------------
 
