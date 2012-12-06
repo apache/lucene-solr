@@ -109,6 +109,9 @@ New Features
 * SOLR-4114: Allow creating more than one shard per instance with the
   Collection API. (Per Steffensen, Mark Miller)
 
+* SOLR-3531: Allowing configuring maxMergeSizeMB and maxCachedMB when
+  using NRTCachingDirectoryFactory. (Andy Laird via Mark Miller) 
+
 Optimizations
 ----------------------
 
