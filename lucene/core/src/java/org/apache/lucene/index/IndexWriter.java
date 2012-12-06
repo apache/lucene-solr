@@ -1426,7 +1426,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   public void updateDocument(Term term, Iterable<? extends IndexableField> doc) throws IOException {
     ensureOpen();
-    updateDocument(term, doc, getAnalyzer());
+    updateDocument(term, doc, analyzer);
   }
 
   /**
