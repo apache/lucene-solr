@@ -303,7 +303,6 @@ public class HttpShardHandler extends ShardHandler {
           // In turn, retrieve the slices that cover each collection from the
           // cloud state and add them to the Map 'slices'.
           for (String collectionName : collectionList) {
-            DocCollection coll = clusterState.getCollection(collectionName);
             // The original code produced <collection-name>_<shard-name> when the collections
             // parameter was specified (see ClientUtils.appendMap)
             // Is this necessary if ony one collection is specified?
@@ -313,7 +312,6 @@ public class HttpShardHandler extends ShardHandler {
         } else {
           // just this collection
           String collectionName = cloudDescriptor.getCollectionName();
-          DocCollection coll = clusterState.getCollection(cloudDescriptor.getCollectionName());
           addSlices(slices, clusterState, params, collectionName,  shardKeys, false);
         }
 
@@ -323,19 +321,34 @@ public class HttpShardHandler extends ShardHandler {
         // later).
         rb.slices = slices.keySet().toArray(new String[slices.size()]);
         rb.shards = new String[rb.slices.length];
-
-        /***
-         rb.slices = new String[slices.size()];
-         for (int i=0; i<rb.slices.length; i++) {
-         rb.slices[i] = slices.get(i).getName();
-         }
-         ***/
       }
 
       //
       // Map slices to shards
       //
       if (zkController != null) {
+
+        // Are we hosting the shard that this request is for, and are we active? If so, then handle it ourselves
+        // and make it a non-distributed request.
+        String ourSlice = cloudDescriptor.getShardId();
+        String ourCollection = cloudDescriptor.getCollectionName();
+        if (rb.slices.length == 1
+            && ( rb.slices[0].equals(ourSlice) || rb.slices[0].equals(ourCollection + "_" + ourSlice) )  // handle the <collection>_<slice> format
+            && ZkStateReader.ACTIVE.equals(cloudDescriptor.getLastPublished()) )
+        {
+          boolean shortCircuit = params.getBool("shortCircuit", true);       // currently just a debugging parameter to check distrib search on a single node
+
+          String targetHandler = params.get(ShardParams.SHARDS_QT);
+          shortCircuit = shortCircuit && targetHandler == null;             // if a different handler is specified, don't short-circuit
+
+          if (shortCircuit) {
+            rb.isDistrib = false;
+            return;
+          }
+          // We shouldn't need to do anything to handle "shard.rows" since it was previously meant to be an optimization?
+        }
+
+
         for (int i=0; i<rb.shards.length; i++) {
           if (rb.shards[i] == null) {
             if (clusterState == null) {
