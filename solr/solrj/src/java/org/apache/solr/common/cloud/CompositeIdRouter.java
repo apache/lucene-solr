@@ -122,16 +122,18 @@ public class CompositeIdRouter extends HashBasedRouter {
     int upperBits = hash1 & m1;
     int lowerBound = upperBits;
     int upperBound = upperBits | m2;
+
+    // lowerBound will be greater than upperBound if we are in the negatives
     Range completeRange = new Range(lowerBound, upperBound);
 
-    List<Slice> slices = new ArrayList(1);
-    for (Slice slice : slices) {
+    List<Slice> targetSlices = new ArrayList<Slice>(1);
+    for (Slice slice : collection.getSlices()) {
       Range range = slice.getRange();
       if (range != null && range.overlaps(completeRange)) {
-        slices.add(slice);
+        targetSlices.add(slice);
       }
     }
 
-    return slices;
+    return targetSlices;
   }
 }

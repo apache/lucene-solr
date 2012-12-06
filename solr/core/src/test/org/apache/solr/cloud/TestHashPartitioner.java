@@ -17,6 +17,7 @@ package org.apache.solr.cloud;
  * the License.
  */
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -96,6 +97,15 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
   public void doId(DocCollection coll, String id, String expectedShard) {
     DocRouter router = coll.getRouter();
     Slice target = router.getTargetSlice(id, null, null, coll);
+    assertEquals(expectedShard, target.getName());
+
+    Collection<Slice> slices = router.getSearchSlices(id, null, coll);
+if (slices.size() != 1) { // nocommit
+  slices = router.getSearchSlices(id, null, coll);
+}
+
+    assertEquals(1, slices.size());
+    target = slices.iterator().next();
     assertEquals(expectedShard, target.getName());
   }
 
