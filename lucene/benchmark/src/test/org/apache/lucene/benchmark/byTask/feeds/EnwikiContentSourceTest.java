@@ -43,14 +43,7 @@ public class EnwikiContentSourceTest extends LuceneTestCase {
     
     @Override
     protected InputStream openInputStream() throws IOException {
-      // StringBufferInputStream would have been handy, but it is forbidden
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      OutputStreamWriter w = new OutputStreamWriter(baos, IOUtils.CHARSET_UTF_8);
-      w.write(docs);
-      w.close();
-      byte[] byteArray = baos.toByteArray();
-      baos.close();
-      return new ByteArrayInputStream(byteArray);
+      return new ByteArrayInputStream(docs.getBytes(IOUtils.CHARSET_UTF_8));
     }
 
   }
