@@ -31,6 +31,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.packed.PackedInts;
 
 /** Indexes doc values to disk and loads them in RAM at
  *  search time. */
@@ -57,21 +58,22 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
       public NumericDocValues getNumeric(FieldInfo field) throws IOException {
         NumericDocValues valuesIn = producer.getNumeric(field);
 
-        // nocommit more ram efficient
         final int maxDoc = valuesIn.size();
         final long minValue = valuesIn.minValue();
         final long maxValue = valuesIn.maxValue();
 
-        final long[] values = new long[maxDoc];
+        final long delta = maxValue - minValue;
+        final int bitsRequired = delta < 0 ? 64 : PackedInts.bitsRequired(delta);
+        final PackedInts.Mutable values = PackedInts.getMutable(maxDoc, bitsRequired, PackedInts.COMPACT);
         for(int docID=0;docID<maxDoc;docID++) {
-          values[docID] = valuesIn.get(docID);
+          values.set(docID, valuesIn.get(docID) - minValue);
         }
 
         return new NumericDocValues() {
 
           @Override
           public long get(int docID) {
-            return values[docID];
+            return minValue + values.get(docID);
           }
 
           @Override
