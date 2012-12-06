@@ -100,9 +100,6 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
     assertEquals(expectedShard, target.getName());
 
     Collection<Slice> slices = router.getSearchSlices(id, null, coll);
-if (slices.size() != 1) { // nocommit
-  slices = router.getSearchSlices(id, null, coll);
-}
 
     assertEquals(1, slices.size());
     target = slices.iterator().next();
