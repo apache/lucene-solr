@@ -82,6 +82,8 @@ public class SpatialTestQuery {
 
   @Override
   public String toString() {
-    return line;
+    if (line != null)
+      return line;
+    return args.toString()+" "+ids;
   }
 }
