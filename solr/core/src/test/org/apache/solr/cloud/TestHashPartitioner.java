@@ -17,12 +17,20 @@ package org.apache.solr.cloud;
  * the License.
  */
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.http.impl.client.RoutedRequest;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.cloud.CompositeIdRouter;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.DocRouter.Range;
+import org.apache.solr.common.cloud.PlainIdRouter;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.Hash;
 
 public class TestHashPartitioner extends SolrTestCaseJ4 {
   
@@ -63,5 +71,129 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
 
     }
   }
-  
+
+  public int hash(String id) {
+    // our hashing is defined to be murmurhash3 on the UTF-8 bytes of the key.
+    return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
+  }
+
+  public void testHashCodes() throws Exception {
+    DocRouter router = DocRouter.getDocRouter(PlainIdRouter.NAME);
+    assertTrue(router instanceof PlainIdRouter);
+    DocCollection coll = createCollection(4, router);
+    doNormalIdHashing(coll);
+  }
+
+  public void doNormalIdHashing(DocCollection coll) throws Exception {
+    assertEquals(4, coll.getSlices().size());
+
+    doId(coll, "b", "shard1");
+    doId(coll, "c", "shard2");
+    doId(coll, "d", "shard3");
+    doId(coll, "e", "shard4");
+  }
+
+  public void doId(DocCollection coll, String id, String expectedShard) {
+    DocRouter router = coll.getRouter();
+    Slice target = router.getTargetSlice(id, null, null, coll);
+    assertEquals(expectedShard, target.getName());
+  }
+
+
+  public void testCompositeHashCodes() throws Exception {
+    DocRouter router = DocRouter.getDocRouter(CompositeIdRouter.NAME);
+    assertTrue(router instanceof CompositeIdRouter);
+    router = DocRouter.DEFAULT;
+    assertTrue(router instanceof CompositeIdRouter);
+
+    DocCollection coll = createCollection(4, router);
+    doNormalIdHashing(coll);
+
+    // ensure that the shard hashed to is only dependent on the first part of the compound key
+    doId(coll, "b!foo", "shard1");
+    doId(coll, "c!bar", "shard2");
+    doId(coll, "d!baz", "shard3");
+    doId(coll, "e!qux", "shard4");
+
+    // syntax to specify bits
+    doId(coll, "b/2!foo", "shard1");
+    doId(coll, "c/2!bar", "shard2");
+    doId(coll, "d/2!baz", "shard3");
+    doId(coll, "e/2!qux", "shard4");
+
+  }
+
+  /***
+  public void testPrintHashCodes() throws Exception {
+   // from negative to positive, the upper bits of the hash ranges should be
+   // shard1: 11
+   // shard2: 10
+   // shard3: 00
+   // shard4: 01
+
+   String[] highBitsToShard = {"shard3","shard4","shard1","shard2"};
+
+
+   for (int i = 0; i<26; i++) {
+      String id  = new String(Character.toChars('a'+i));
+      int hash = hash(id);
+      System.out.println("hash of " + id + " is " + Integer.toHexString(hash) + " high bits=" + (hash>>>30)
+          + " shard="+highBitsToShard[hash>>>30]);
+    }
+  }
+  ***/
+
+
+
+  DocCollection createCollection(int nSlices, DocRouter router) {
+    List<Range> ranges = router.partitionRange(nSlices, router.fullRange());
+
+    Map<String,Slice> slices = new HashMap<String,Slice>();
+    for (int i=0; i<ranges.size(); i++) {
+      Range range = ranges.get(i);
+      Slice slice = new Slice("shard"+(i+1), null, map("range",range));
+      slices.put(slice.getName(), slice);
+    }
+
+    DocCollection coll = new DocCollection("collection1", slices, null, router);
+    return coll;
+  }
+
+
+
+  // from negative to positive, the upper bits of the hash ranges should be
+  // shard1: top bits:10  80000000:bfffffff
+  // shard2: top bits:11  c0000000:ffffffff
+  // shard3: top bits:00  00000000:3fffffff
+  // shard4: top bits:01  40000000:7fffffff
+
+  /***
+   hash of a is 3c2569b2 high bits=0 shard=shard3
+   hash of b is 95de7e03 high bits=2 shard=shard1
+   hash of c is e132d65f high bits=3 shard=shard2
+   hash of d is 27191473 high bits=0 shard=shard3
+   hash of e is 656c4367 high bits=1 shard=shard4
+   hash of f is 2b64883b high bits=0 shard=shard3
+   hash of g is f18ae416 high bits=3 shard=shard2
+   hash of h is d482b2d3 high bits=3 shard=shard2
+   hash of i is 811a702b high bits=2 shard=shard1
+   hash of j is ca745a39 high bits=3 shard=shard2
+   hash of k is cfbda5d1 high bits=3 shard=shard2
+   hash of l is 1d5d6a2c high bits=0 shard=shard3
+   hash of m is 5ae4385c high bits=1 shard=shard4
+   hash of n is c651d8ac high bits=3 shard=shard2
+   hash of o is 68348473 high bits=1 shard=shard4
+   hash of p is 986fdf9a high bits=2 shard=shard1
+   hash of q is ff8209e8 high bits=3 shard=shard2
+   hash of r is 5c9373f1 high bits=1 shard=shard4
+   hash of s is ff4acaf1 high bits=3 shard=shard2
+   hash of t is ca87df4d high bits=3 shard=shard2
+   hash of u is 62203ae0 high bits=1 shard=shard4
+   hash of v is bdafcc55 high bits=2 shard=shard1
+   hash of w is ff439d1f high bits=3 shard=shard2
+   hash of x is 3e9a9b1b high bits=0 shard=shard3
+   hash of y is 477d9216 high bits=1 shard=shard4
+   hash of z is c1f69a17 high bits=3 shard=shard2
+   ***/
+
 }

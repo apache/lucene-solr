@@ -52,7 +52,7 @@ public class CompositeIdRouter extends HashBasedRouter {
     for (int idx = commaIdx + 1; idx<firstPart.length(); idx++) {
       char ch = firstPart.charAt(idx);
       if (ch < '0' || ch > '9') return -1;
-      v *= 10 + (ch - '0');
+      v = v * 10 + (ch - '0');
     }
     return v > 32 ? -1 : v;
   }
@@ -104,13 +104,13 @@ public class CompositeIdRouter extends HashBasedRouter {
     int m2 = mask2;
 
     String part1 = id.substring(0,idx);
-    int commaIdx = part1.indexOf(bitsSepartor);
-    if (commaIdx > 0) {
-      int firstBits = getBits(part1, commaIdx);
+    int bitsSepIdx = part1.indexOf(bitsSepartor);
+    if (bitsSepIdx > 0) {
+      int firstBits = getBits(part1, bitsSepIdx);
       if (firstBits >= 0) {
         m1 = -1 << (32-firstBits);
         m2 = -1 >>> firstBits;
-        part1 = part1.substring(0, commaIdx);
+        part1 = part1.substring(0, bitsSepIdx);
       }
     }
 
