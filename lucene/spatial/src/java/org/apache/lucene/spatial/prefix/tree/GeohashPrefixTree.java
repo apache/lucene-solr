@@ -101,11 +101,11 @@ public class GeohashPrefixTree extends SpatialPrefixTree {
 
   class GhCell extends Node {
     GhCell(String token) {
-      super(GeohashPrefixTree.this, token);
+      super(token);
     }
 
     GhCell(byte[] bytes, int off, int len) {
-      super(GeohashPrefixTree.this, bytes, off, len);
+      super(bytes, off, len);
     }
 
     @Override
