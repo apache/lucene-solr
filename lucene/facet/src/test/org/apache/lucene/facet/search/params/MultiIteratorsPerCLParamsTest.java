@@ -232,13 +232,15 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
         CategoryPath cp = new CategoryPath(requestedPath.getComponent(0));
         parentOrdinal = taxo.getOrdinal(cp);
       }
-      parentArray = taxo.getParentArray();
+      parentArray = taxo.getParallelTaxonomyArrays().parents();
     }
 
+    @Override
     public boolean init() throws IOException {
       return superCLI.init();
     }
 
+    @Override
     public long nextCategory() throws IOException {
       long next;
       while ((next = superCLI.nextCategory()) <= Integer.MAX_VALUE
@@ -259,6 +261,7 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
       return false;
     }
 
+    @Override
     public boolean skipTo(int docId) throws IOException {
       return superCLI.skipTo(docId);
     }

@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
@@ -545,7 +546,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     fillTaxonomy(tw);
     tw.close();
     TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
-    int[] parents = tr.getParentArray();
+    int[] parents = tr.getParallelTaxonomyArrays().parents();
     assertEquals(tr.getSize(), parents.length);
     for (int i=0; i<tr.getSize(); i++) {
       assertEquals(tr.getParent(i), parents[i]);
@@ -566,10 +567,10 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     fillTaxonomy(tw);
     tw.close();
     TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
-    ChildrenArrays ca = tr.getChildrenArrays();
-    int[] youngestChildArray = ca.getYoungestChildArray();
+    ParallelTaxonomyArrays ca = tr.getParallelTaxonomyArrays();
+    int[] youngestChildArray = ca.children();
     assertEquals(tr.getSize(), youngestChildArray.length);
-    int[] olderSiblingArray = ca.getOlderSiblingArray();
+    int[] olderSiblingArray = ca.siblings();
     assertEquals(tr.getSize(), olderSiblingArray.length);
     for (int i=0; i<expectedCategories.length; i++) {
       // find expected children by looking at all expectedCategories
@@ -630,15 +631,15 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     fillTaxonomy(tw);
     tw.close();
     TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
-    ChildrenArrays ca = tr.getChildrenArrays();
-    int[] youngestChildArray = ca.getYoungestChildArray();
-    assertEquals(tr.getSize(), youngestChildArray.length);
-    int[] olderSiblingArray = ca.getOlderSiblingArray();
+    ParallelTaxonomyArrays ca = tr.getParallelTaxonomyArrays();
+    int[] children = ca.children();
+    assertEquals(tr.getSize(), children.length);
+    int[] olderSiblingArray = ca.siblings();
     assertEquals(tr.getSize(), olderSiblingArray.length);
         
     // test that the "youngest child" of every category is indeed a child:
     for (int i=0; i<tr.getSize(); i++) {
-      int youngestChild = youngestChildArray[i];
+      int youngestChild = children[i];
       if (youngestChild != TaxonomyReader.INVALID_ORDINAL) {
         assertEquals(i, tr.getParent(youngestChild));
       }
@@ -676,7 +677,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
       if (j==i) { // no child found
         j=TaxonomyReader.INVALID_ORDINAL;
       }
-      assertEquals(j, youngestChildArray[i]);
+      assertEquals(j, children[i]);
     }
 
     // test that the "older sibling" is indeed the least oldest one - and
@@ -710,32 +711,32 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     tw.addCategory(new CategoryPath("hi", "there"));
     tw.commit();
     TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
-    ChildrenArrays ca = tr.getChildrenArrays();
+    ParallelTaxonomyArrays ca = tr.getParallelTaxonomyArrays();
     assertEquals(3, tr.getSize());
-    assertEquals(3, ca.getOlderSiblingArray().length);
-    assertEquals(3, ca.getYoungestChildArray().length);
-    assertTrue(Arrays.equals(new int[] { 1, 2, -1 }, ca.getYoungestChildArray()));
-    assertTrue(Arrays.equals(new int[] { -1, -1, -1 }, ca.getOlderSiblingArray()));
+    assertEquals(3, ca.siblings().length);
+    assertEquals(3, ca.children().length);
+    assertTrue(Arrays.equals(new int[] { 1, 2, -1 }, ca.children()));
+    assertTrue(Arrays.equals(new int[] { -1, -1, -1 }, ca.siblings()));
     tw.addCategory(new CategoryPath("hi", "ho"));
     tw.addCategory(new CategoryPath("hello"));
     tw.commit();
     // Before refresh, nothing changed..
-    ChildrenArrays newca = tr.getChildrenArrays();
+    ParallelTaxonomyArrays newca = tr.getParallelTaxonomyArrays();
     assertSame(newca, ca); // we got exactly the same object
     assertEquals(3, tr.getSize());
-    assertEquals(3, ca.getOlderSiblingArray().length);
-    assertEquals(3, ca.getYoungestChildArray().length);
+    assertEquals(3, ca.siblings().length);
+    assertEquals(3, ca.children().length);
     // After the refresh, things change:
     TaxonomyReader newtr = TaxonomyReader.openIfChanged(tr);
     assertNotNull(newtr);
     tr.close();
     tr = newtr;
-    ca = tr.getChildrenArrays();
+    ca = tr.getParallelTaxonomyArrays();
     assertEquals(5, tr.getSize());
-    assertEquals(5, ca.getOlderSiblingArray().length);
-    assertEquals(5, ca.getYoungestChildArray().length);
-    assertTrue(Arrays.equals(new int[] { 4, 3, -1, -1, -1 }, ca.getYoungestChildArray()));
-    assertTrue(Arrays.equals(new int[] { -1, -1, -1, 2, 1 }, ca.getOlderSiblingArray()));
+    assertEquals(5, ca.siblings().length);
+    assertEquals(5, ca.children().length);
+    assertTrue(Arrays.equals(new int[] { 4, 3, -1, -1, -1 }, ca.children()));
+    assertTrue(Arrays.equals(new int[] { -1, -1, -1, 2, 1 }, ca.siblings()));
     tw.close();
     tr.close();
     indexDir.close();
@@ -753,10 +754,10 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     twBase.commit();
     TaxonomyReader trBase = new DirectoryTaxonomyReader(indexDirBase);
 
-    final ChildrenArrays ca1 = trBase.getChildrenArrays();
+    final ParallelTaxonomyArrays ca1 = trBase.getParallelTaxonomyArrays();
     
     final int abOrd = trBase.getOrdinal(abPath);
-    final int abYoungChildBase1 = ca1.getYoungestChildArray()[abOrd]; 
+    final int abYoungChildBase1 = ca1.children()[abOrd]; 
     
     final int numCategories = atLeast(800);
     for (int i = 0; i < numCategories; i++) {
@@ -769,8 +770,8 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     trBase.close();
     trBase = newTaxoReader;
     
-    final ChildrenArrays ca2 = trBase.getChildrenArrays();
-    final int abYoungChildBase2 = ca2.getYoungestChildArray()[abOrd];
+    final ParallelTaxonomyArrays ca2 = trBase.getParallelTaxonomyArrays();
+    final int abYoungChildBase2 = ca2.children()[abOrd];
     
     int numRetries = atLeast(50);
     for (int retry = 0; retry < numRetries; retry++) {
@@ -808,9 +809,9 @@ public class TestTaxonomyCombined extends LuceneTestCase {
         setPriority(1 + getPriority());
         try {
           while (!stop.get()) {
-            int lastOrd = tr.getParentArray().length - 1;
+            int lastOrd = tr.getParallelTaxonomyArrays().parents().length - 1;
             assertNotNull("path of last-ord " + lastOrd + " is not found!", tr.getPath(lastOrd));
-            assertChildrenArrays(tr.getChildrenArrays(), retry, retrieval[0]++);
+            assertChildrenArrays(tr.getParallelTaxonomyArrays(), retry, retrieval[0]++);
             sleep(10); // don't starve refresh()'s CPU, which sleeps every 50 bytes for 1 ms
           }
         } catch (Throwable e) {
@@ -819,13 +820,13 @@ public class TestTaxonomyCombined extends LuceneTestCase {
         }
       }
 
-      private void assertChildrenArrays(ChildrenArrays ca, int retry, int retrieval) {
-        final int abYoungChild = ca.getYoungestChildArray()[abOrd];
+      private void assertChildrenArrays(ParallelTaxonomyArrays ca, int retry, int retrieval) {
+        final int abYoungChild = ca.children()[abOrd];
         assertTrue(
             "Retry "+retry+": retrieval: "+retrieval+": wrong youngest child for category "+abPath+" (ord="+abOrd+
             ") - must be either "+abYoungChildBase1+" or "+abYoungChildBase2+" but was: "+abYoungChild,
             abYoungChildBase1==abYoungChild ||
-            abYoungChildBase2==ca.getYoungestChildArray()[abOrd]);
+            abYoungChildBase2==ca.children()[abOrd]);
       }
     };
     thread.start();

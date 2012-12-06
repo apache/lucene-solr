@@ -112,6 +112,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   private int cacheMissesUntilFill = 11;
   private boolean shouldFillCache = true;
   
+  // even though lazily initialized, not volatile so that access to it is
+  // faster. we keep a volatile boolean init instead.
+  private ReaderManager readerManager;
+  private volatile boolean initializedReaderManager = false;
+  private volatile boolean shouldRefreshReaderManager;
+  
   /**
    * We call the cache "complete" if we know that every category in our
    * taxonomy is in the cache. When the cache is <B>not</B> complete, and
@@ -123,14 +129,10 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * that some of the cached data was cleared).
    */
   private volatile boolean cacheIsComplete;
-  private volatile ReaderManager readerManager;
-  private volatile boolean shouldRefreshReaderManager;
   private volatile boolean isClosed = false;
-  private volatile ParentArray parentArray;
+  private volatile ParallelTaxonomyArrays taxoArrays;
   private volatile int nextID;
 
-//  private Map<String,String> commitData;
-  
   /** Reads the commit data from a Directory. */
   private static Map<String, String> readCommitData(Directory dir) throws IOException {
     SegmentInfos infos = new SegmentInfos();
@@ -308,13 +310,14 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   
   /** Opens a {@link ReaderManager} from the internal {@link IndexWriter}. */
   private void initReaderManager() throws IOException {
-    if (readerManager == null) {
+    if (!initializedReaderManager) {
       synchronized (this) {
         // verify that the taxo-writer hasn't been closed on us.
         ensureOpen();
-        if (readerManager == null) {
+        if (!initializedReaderManager) {
           readerManager = new ReaderManager(indexWriter, false);
           shouldRefreshReaderManager = false;
+          initializedReaderManager = true;
         }
       }
     }
@@ -340,8 +343,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   public static TaxonomyWriterCache defaultTaxonomyWriterCache() {
     return new Cl2oTaxonomyWriterCache(1024, 0.15f, 3);
   }
-
-  // convenience constructors:
 
   public DirectoryTaxonomyWriter(Directory d) throws IOException {
     this(d, OpenMode.CREATE_OR_APPEND);
@@ -375,9 +376,10 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * <code>super.closeResources()</code> call in your implementation.
    */
   protected synchronized void closeResources() throws IOException {
-    if (readerManager != null) {
+    if (initializedReaderManager) {
       readerManager.close();
       readerManager = null;
+      initializedReaderManager = false;
     }
     if (cache != null) {
       cache.close();
@@ -467,15 +469,19 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     int doc = -1;
     DirectoryReader reader = readerManager.acquire();
     try {
+      TermsEnum termsEnum = null; // reuse
+      DocsEnum docs = null; // reuse
       final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter, prefixLen));
       for (AtomicReaderContext ctx : reader.leaves()) {
         Terms terms = ctx.reader().terms(Consts.FULL);
         if (terms != null) {
-          TermsEnum termsEnum = terms.iterator(null);
+          termsEnum = terms.iterator(termsEnum);
           if (termsEnum.seekExact(catTerm, true)) {
-            // TODO: is it really ok that null is passed here as liveDocs?
-            DocsEnum docs = termsEnum.docs(null, null, 0);
+            // liveDocs=null because the taxonomy has no deletes
+            docs = termsEnum.docs(null, docs, 0 /* freqs not required */);
+            // if the term was found, we know it has exactly one document.
             doc = docs.nextDoc() + ctx.docBase;
+            break;
           }
         }
       }
@@ -589,7 +595,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     addToCache(categoryPath, length, id);
     
     // also add to the parent array
-    parentArray = getParentArray().add(id, parent);
+    taxoArrays = getTaxoArrays().add(id, parent);
 
     return id;
   }
@@ -657,7 +663,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // NOTE: since this method is sync'ed, it can call maybeRefresh, instead of
     // maybeRefreshBlocking. If ever this is changed, make sure to change the
     // call too.
-    if (shouldRefreshReaderManager && readerManager != null) {
+    if (shouldRefreshReaderManager && initializedReaderManager) {
       readerManager.maybeRefresh();
       shouldRefreshReaderManager = false;
     }
@@ -791,25 +797,30 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         // initReaderManager called in parallel.
         readerManager.close();
         readerManager = null;
+        initializedReaderManager = false;
       }
     }
   }
 
-  private ParentArray getParentArray() throws IOException {
-    if (parentArray == null) {
+  private ParallelTaxonomyArrays getTaxoArrays() throws IOException {
+    if (taxoArrays == null) {
       synchronized (this) {
-        if (parentArray == null) {
+        if (taxoArrays == null) {
           initReaderManager();
           DirectoryReader reader = readerManager.acquire();
           try {
-            parentArray = new ParentArray(reader);
+            // according to Java Concurrency, this might perform better on some
+            // JVMs, since the object initialization doesn't happen on the
+            // volatile member.
+            ParallelTaxonomyArrays tmpArrays = new ParallelTaxonomyArrays(reader);
+            taxoArrays = tmpArrays;
           } finally {
             readerManager.release(reader);
           }
         }
       }
     }
-    return parentArray;
+    return taxoArrays;
   }
   
   @Override
@@ -821,7 +832,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     if (ordinal >= nextID) {
       throw new ArrayIndexOutOfBoundsException("requested ordinal is bigger than the largest ordinal in the taxonomy");
     }
-    return getParentArray().getArray()[ordinal];
+    return getTaxoArrays().parents()[ordinal];
   }
   
   /**

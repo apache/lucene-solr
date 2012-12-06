@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.store.AlreadyClosedException;
 
 /*
@@ -162,16 +163,10 @@ public abstract class TaxonomyReader implements Closeable {
   }
   
   /**
-   * Returns a {@link ChildrenArrays} object which can be used together to
-   * efficiently enumerate the children of any category.
-   * <p>
-   * The caller can hold on to the object it got indefinitely - it is guaranteed
-   * that no-one else will modify it. The other side of the same coin is that
-   * the caller must treat the object which it got (and the arrays it contains)
-   * as read-only and <b>not modify it</b>, because other callers might have
-   * gotten the same object too.
+   * Returns a {@link ParallelTaxonomyArrays} object which can be used to
+   * efficiently traverse the taxonomy tree.
    */
-  public abstract ChildrenArrays getChildrenArrays() throws IOException;
+  public abstract ParallelTaxonomyArrays getParallelTaxonomyArrays() throws IOException;
   
   /**
    * Retrieve user committed data.
@@ -195,7 +190,6 @@ public abstract class TaxonomyReader implements Closeable {
    * Returns the ordinal of the parent category of the category with the given
    * ordinal, according to the following rules:
    * 
-   * 
    * <ul>
    * <li>If the given ordinal is the {@link #ROOT_ORDINAL}, an
    * {@link #INVALID_ORDINAL} is returned.
@@ -210,19 +204,7 @@ public abstract class TaxonomyReader implements Closeable {
    *           available ordinal)
    */
   public abstract int getParent(int ordinal) throws IOException;
-  
-  /**
-   * Returns an {@code int[]} the size of the taxonomy listing the ordinal of
-   * the parent category of each category in the taxonomy.
-   * <p>
-   * The caller can hold on to the array it got indefinitely - it is guaranteed
-   * that no-one else will modify it. The other side of the same coin is that
-   * the caller must treat the array it got as read-only and <b>not modify
-   * it</b>, because other callers might have gotten the same array too (and
-   * getParent() calls might be answered from the same array).
-   */
-  public abstract int[] getParentArray() throws IOException;
-  
+ 
   /**
    * Returns the path name of the category with the given ordinal. The path is
    * returned as a new CategoryPath object - to reuse an existing object, use

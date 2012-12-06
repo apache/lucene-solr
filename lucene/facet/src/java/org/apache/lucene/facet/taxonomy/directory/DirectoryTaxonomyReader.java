@@ -6,7 +6,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.ChildrenArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.Consts.LoadFullPathOnly;
 import org.apache.lucene.index.CorruptIndexException;
@@ -63,9 +62,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   private LRUHashMap<String, Integer> ordinalCache;
   private LRUHashMap<Integer, String> categoryCache;
 
-  // TODO: consolidate these objects into one ParentInfo or something?
-  private volatile ParentArray parentArray;
-  private volatile ChildrenArrays childrenArrays;
+  private volatile ParallelTaxonomyArrays taxoArrays;
 
   private char delimiter = Consts.DEFAULT_DELIMITER;
 
@@ -75,9 +72,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
    * arrays.
    */
   DirectoryTaxonomyReader(DirectoryReader indexReader, DirectoryTaxonomyWriter taxoWriter,
-      LRUHashMap<String,Integer> ordinalCache,
-      LRUHashMap<Integer,String> categoryCache, ParentArray parentArray,
-      ChildrenArrays childrenArrays) throws IOException {
+      LRUHashMap<String,Integer> ordinalCache, LRUHashMap<Integer,String> categoryCache,
+      ParallelTaxonomyArrays taxoArrays) throws IOException {
     this.indexReader = indexReader;
     this.taxoWriter = taxoWriter;
     this.taxoEpoch = taxoWriter == null ? -1 : taxoWriter.getTaxonomyEpoch();
@@ -86,14 +82,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     this.ordinalCache = ordinalCache == null ? new LRUHashMap<String,Integer>(DEFAULT_CACHE_VALUE) : ordinalCache;
     this.categoryCache = categoryCache == null ? new LRUHashMap<Integer,String>(DEFAULT_CACHE_VALUE) : categoryCache;
     
-    this.parentArray = null;
-    this.childrenArrays = null;
-    if (parentArray != null) {
-      this.parentArray = new ParentArray(indexReader, parentArray);
-      if (childrenArrays != null) {
-        this.childrenArrays = new ChildrenArrays(this.parentArray.getArray(), childrenArrays);
-      }
-    }
+    this.taxoArrays = taxoArrays != null ? new ParallelTaxonomyArrays(indexReader, taxoArrays) : null;
   }
   
   /**
@@ -167,11 +156,20 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     return ret;
   }
   
+  private synchronized void initTaxoArrays() throws IOException {
+    if (taxoArrays == null) {
+      // according to Java Concurrency in Practice, this might perform better on
+      // some JVMs, because the array initialization doesn't happen on the
+      // volatile member.
+      ParallelTaxonomyArrays tmpArrays = new ParallelTaxonomyArrays(indexReader);
+      taxoArrays = tmpArrays;
+    }
+  }
+  
   @Override
   protected void doClose() throws IOException {
     indexReader.close();
-    parentArray = null;
-    childrenArrays = null;
+    taxoArrays = null;
     // do not clear() the caches, as they may be used by other DTR instances.
     ordinalCache = null;
     categoryCache = null;
@@ -233,9 +231,9 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
       if (recreated) {
         // if recreated, do not reuse anything from this instace. the information
         // will be lazily computed by the new instance when needed.
-        newtr = new DirectoryTaxonomyReader(r2, taxoWriter, null, null, null, null);
+        newtr = new DirectoryTaxonomyReader(r2, taxoWriter, null, null, null);
       } else {
-        newtr = new DirectoryTaxonomyReader(r2, taxoWriter, ordinalCache, categoryCache, parentArray, childrenArrays);
+        newtr = new DirectoryTaxonomyReader(r2, taxoWriter, ordinalCache, categoryCache, taxoArrays);
       }
       
       success = true;
@@ -265,16 +263,12 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   }
 
   @Override
-  public ChildrenArrays getChildrenArrays() throws IOException {
+  public ParallelTaxonomyArrays getParallelTaxonomyArrays() throws IOException {
     ensureOpen();
-    if (childrenArrays == null) {
-      synchronized (this) {
-        if (childrenArrays == null) {
-          childrenArrays = new ChildrenArrays(getParentArray());
-        }
-      }      
+    if (taxoArrays == null) {
+      initTaxoArrays();
     }
-    return childrenArrays;
+    return taxoArrays;
   }
 
   @Override
@@ -330,26 +324,12 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     return ret;
   }
 
-  // TODO: move to a ParentInfo class? (see TODO for parentArray)
   @Override
   public int getParent(int ordinal) throws IOException {
     ensureOpen();
-    return getParentArray()[ordinal];
+    return getParallelTaxonomyArrays().parents()[ordinal];
   }
 
-  @Override
-  public int[] getParentArray() throws IOException {
-    ensureOpen();
-    if (parentArray == null) {
-      synchronized (this) {
-        if (parentArray == null) {
-          parentArray = new ParentArray(indexReader);
-        }
-      }
-    }
-    return parentArray.getArray();
-  }
-  
   @Override
   public CategoryPath getPath(int ordinal) throws IOException {
     ensureOpen();
