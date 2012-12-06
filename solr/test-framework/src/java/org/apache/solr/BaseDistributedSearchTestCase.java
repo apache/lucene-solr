@@ -33,6 +33,7 @@ import java.util.Set;
 import junit.framework.Assert;
 
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -64,6 +65,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void initialize() {
+    assumeFalse("SOLR-4147: ibm 64bit has jvm bugs!", Constants.JRE_IS_64BIT && Constants.JAVA_VENDOR.startsWith("IBM"));
     r = new Random(random().nextLong());
   }
 
