@@ -30,7 +30,7 @@ import org.apache.lucene.facet.taxonomy.writercache.cl2o.Cl2oTaxonomyWriterCache
 import org.apache.lucene.facet.taxonomy.writercache.lru.LruTaxonomyWriterCache;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.CorruptIndexException; // javadocs
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -45,7 +45,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.LockObtainFailedException; // javadocs
 import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.util.BytesRef;
