@@ -33,6 +33,7 @@ public class Lucene41BinaryDocValuesConsumer extends BinaryDocValuesConsumer {
   
   private final IndexOutput dataOut;
   private final IndexOutput indexOut;
+  // nocommit: remove buffering!
   private final AppendingLongBuffer buffer;
   private long offset = 0;
   private long prevOffset = 0;
