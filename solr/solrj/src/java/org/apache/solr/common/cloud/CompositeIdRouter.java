@@ -123,6 +123,16 @@ public class CompositeIdRouter extends HashBasedRouter {
     int lowerBound = upperBits;
     int upperBound = upperBits | m2;
 
+    if (m1 == 0) {
+      // no bits used from first part of key.. the code above will produce 0x000000000->0xffffffff which only works on unsigned space, but we're using signed space.
+      lowerBound = Integer.MIN_VALUE;
+      upperBound = Integer.MAX_VALUE;
+    }
+
+    if (lowerBound > upperBound) {
+      // nocommit
+      throw new RuntimeException("WHAAAT?");
+    }
     // lowerBound will be greater than upperBound if we are in the negatives
     Range completeRange = new Range(lowerBound, upperBound);
 

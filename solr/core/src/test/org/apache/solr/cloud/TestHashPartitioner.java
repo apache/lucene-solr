@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +33,7 @@ import org.apache.solr.common.cloud.DocRouter.Range;
 import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.Hash;
+import org.apache.solr.common.util.StrUtils;
 
 public class TestHashPartitioner extends SolrTestCaseJ4 {
   
@@ -95,17 +97,31 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
   }
 
   public void doId(DocCollection coll, String id, String expectedShard) {
+    doIndex(coll, id, expectedShard);
+    doQuery(coll, id, expectedShard);
+  }
+
+  public void doIndex(DocCollection coll, String id, String expectedShard) {
     DocRouter router = coll.getRouter();
     Slice target = router.getTargetSlice(id, null, null, coll);
     assertEquals(expectedShard, target.getName());
-
-    Collection<Slice> slices = router.getSearchSlices(id, null, coll);
-
-    assertEquals(1, slices.size());
-    target = slices.iterator().next();
-    assertEquals(expectedShard, target.getName());
   }
 
+  public void doQuery(DocCollection coll, String id, String expectedShards) {
+    DocRouter router = coll.getRouter();
+    Collection<Slice> slices = router.getSearchSlices(id, null, coll);
+
+    List<String> expectedShardStr = StrUtils.splitSmart(expectedShards, ",", true);
+
+    HashSet<String> expectedSet = new HashSet<String>(expectedShardStr);
+    HashSet<String> obtainedSet = new HashSet<String>();
+    for (Slice slice : slices) {
+      obtainedSet.add(slice.getName());
+    }
+
+    assertEquals(slices.size(), obtainedSet.size());  // make sure no repeated slices
+    assertEquals(expectedSet, obtainedSet);
+  }
 
   public void testCompositeHashCodes() throws Exception {
     DocRouter router = DocRouter.getDocRouter(CompositeIdRouter.NAME);
@@ -122,7 +138,8 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
     doId(coll, "d!baz", "shard3");
     doId(coll, "e!qux", "shard4");
 
-    // syntax to specify bits.  Anything over 2 should give the same results as above (since only top 2 bits
+    // syntax to specify bits.
+    // Anything over 2 bits should give the same results as above (since only top 2 bits
     // affect our 4 slice collection).
     doId(coll, "b/2!foo", "shard1");
     doId(coll, "c/2!bar", "shard2");
@@ -133,6 +150,18 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
     doId(coll, "c/32!bar", "shard2");
     doId(coll, "d/32!baz", "shard3");
     doId(coll, "e/32!qux", "shard4");
+
+    // no bits allocated to the first part (kind of odd why anyone would do that though)
+    doIndex(coll, "foo/0!b", "shard1");
+    doIndex(coll, "foo/0!c", "shard2");
+    doIndex(coll, "foo/0!d", "shard3");
+    doIndex(coll, "foo/0!e", "shard4");
+
+    // means cover whole range on the query side
+    doQuery(coll, "foo/0!", "shard1,shard2,shard3,shard4");
+
+    doQuery(coll, "b/1!", "shard1,shard2");   // top bit of hash(b)==1, so shard1 and shard2
+    doQuery(coll, "d/1!", "shard3,shard4");   // top bit of hash(b)==0, so shard3 and shard4
   }
 
   /***
