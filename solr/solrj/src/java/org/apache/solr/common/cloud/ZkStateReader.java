@@ -186,7 +186,7 @@ public class ZkStateReader {
           if (EventType.None.equals(event.getType())) {
             return;
           }
-          log.info("A cluster state change has occurred - updating... ({})", ZkStateReader.this.clusterState == null ? 0 : ZkStateReader.this.clusterState.getLiveNodes().size());
+          log.info("A cluster state change: {}, has occurred - updating... ({})", (event) , ZkStateReader.this.clusterState == null ? 0 : ZkStateReader.this.clusterState.getLiveNodes().size());
           try {
             
             // delayed approach
