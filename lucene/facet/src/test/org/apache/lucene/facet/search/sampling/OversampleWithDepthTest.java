@@ -52,7 +52,7 @@ import org.junit.Test;
 public class OversampleWithDepthTest extends LuceneTestCase {
   
   @Test
-  public void testCountWithdepthUsingSamping() throws Exception, IOException {
+  public void testCountWithdepthUsingSampling() throws Exception, IOException {
     Directory indexDir = newDirectory();
     Directory taxoDir = newDirectory();
     

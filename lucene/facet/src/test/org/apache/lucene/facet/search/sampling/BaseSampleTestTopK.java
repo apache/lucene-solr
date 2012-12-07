@@ -68,7 +68,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
    * Lots of randomly generated data is being indexed, and later on a "90% docs" faceted search
    * is performed. The results are compared to non-sampled ones.
    */
-  public void testCountUsingSamping() throws Exception {
+  public void testCountUsingSampling() throws Exception {
     boolean useRandomSampler = random().nextBoolean();
     for (int partitionSize : partitionSizes) {
       try {
