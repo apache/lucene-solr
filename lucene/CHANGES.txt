@@ -219,6 +219,9 @@ Bug Fixes
   In addition, it wasn't possible to index a shape representing the entire
   globe.
 
+* LUCENE--4595: EnwikiContentSource had a thread safety problem (NPE) in 
+  'forever' mode (Doron Cohen)
+
 Optimizations
 
 * LUCENE-2221: oal.util.BitUtil was modified to use Long.bitCount and
