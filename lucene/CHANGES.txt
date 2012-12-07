@@ -1,10 +1,23 @@
+
 Lucene Change Log
 
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
-For "contrib" changes prior to 4.0, please see:
-http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib/CHANGES.txt
+======================= Lucene 5.0.0 =======================
+
+Changes in backwards compatibility policy
+
+* LUCENE-4535: oal.util.FilterIterator is now an internal API.
+  (Adrien Grand)
+
+* LUCENE-3312: The API of oal.document was restructured to
+  differentiate between stored documents and indexed documents.
+  IndexReader.document(int) now returns StoredDocument
+  instead of Document. In most cases a simple replacement
+  of the return type is enough to upgrade (see MIGRATE.txt).
+  (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
+  Robert Muir)
 
 ======================= Lucene 4.1.0 =======================
 
@@ -159,6 +172,9 @@ Bug Fixes
   romaji even for out-of-vocabulary kana cases (e.g. half-width forms).
   (Robert Muir)
 
+* LUCENE-4504: Fix broken sort comparator in ValueSource.getSortField,
+  used when sorting by a function query.  (Tom Shally via Robert Muir)
+
 * LUCENE-4511: TermsFilter might return wrong results if a field is not 
   indexed or doesn't exist in the index. (Simon Willnauer)
 
@@ -203,12 +219,12 @@ Bug Fixes
   In addition, it wasn't possible to index a shape representing the entire
   globe.
 
-Changes in Runtime Behavior
+* LUCENE-4595: EnwikiContentSource had a thread safety problem (NPE) in 
+  'forever' mode (Doron Cohen)
 
-* LUCENE-4586: Change default ResultMode of FacetRequest to PER_NODE_IN_TREE.
-  This only affects requests with depth>1. If you execute such requests and
-  rely on the facet results being returned flat (i.e. no hierarchy), you should
-  set the ResultMode to GLOBAL_FLAT. (Shai Erera, Gilad Barkai)
+* LUCENE-4587: fix WordBreakSpellChecker to not throw AIOOBE when presented
+  with 2-char codepoints, and to correctly break/combine terms containing
+  non-latin characters. (James Dyer, Andreas Hubold)
 
 Optimizations
 
@@ -262,9 +278,6 @@ Optimizations
   Users of this API can now simply obtain an instance via DocValues#getDirectSource per thread.
   (Simon Willnauer)
 
-* LUCENE-4580: DrillDown.query variants return a ConstantScoreQuery with boost set to 0.0f
-  so that documents scores are not affected by running a drill-down query. (Shai Erera)
-
 Documentation
 
 * LUCENE-4483: Refer to BytesRef.deepCopyOf in Term's constructor that takes BytesRef.
@@ -279,10 +292,6 @@ Build
 * LUCENE-4451: Memory leak per unique thread caused by 
   RandomizedContext.contexts static map. Upgrade randomized testing
   to version 2.0.2 (Mike McCandless, Dawid Weiss)
-
-* LUCENE-4589: Upgraded benchmark module's Nekohtml dependency to version
-  1.9.17, removing the workaround in Lucene's HTML parser for the
-  Turkish locale.  (Uwe Schindler)
 
   
 ======================= Lucene 4.0.0 =======================
@@ -502,6 +511,10 @@ Build
 * LUCENE-3985: Upgrade to randomizedtesting 2.0.0. Added support for 
   thread leak detection. Added support for suite timeouts. (Dawid Weiss)
 
+* LUCENE-4354: Corrected maven dependencies to be consistent with
+  the licenses/ folder and the binary release. Some had different
+  versions or additional unnecessary dependencies. (selckin via Robert Muir)
+
 * LUCENE-4340: Move all non-default codec, postings format and terms
   dictionary implementations to lucene/codecs. (Adrien Grand)
 
@@ -517,10 +530,10 @@ New features
 * LUCENE-4249: Changed the explanation of the PayloadTermWeight to use the
   underlying PayloadFunction's explanation as the explanation
   for the payload score. (Scott Smerchek via Robert Muir)
-
+  
 * LUCENE-4069: Added BloomFilteringPostingsFormat for use with low-frequency terms
-  such as primary keys (Mark Harwood, Mike McCandless)
-
+  such as primary keys (Mark Harwood, Mike McCandless) 
+  
 * LUCENE-4201: Added JapaneseIterationMarkCharFilter to normalize Japanese
   iteration marks. (Robert Muir, Christian Moen)
 
@@ -725,9 +738,13 @@ Documentation
   org.apache.lucene.codecs (Alan Woodward via Robert Muir)
 
 ======================= Lucene 4.0.0-ALPHA =======================
+
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
    https://wiki.apache.org/lucene-java/Lucene4.0
+
+For "contrib" changes prior to 4.0, please see:
+http://svn.apache.org/repos/asf/lucene/dev/tags/lucene_solr_3_6_0/lucene/contrib/CHANGES.txt
 
 Changes in backwards compatibility policy
 
@@ -1621,7 +1638,7 @@ New features
 
 * LUCENE-4043: Added scoring support via score mode for query time joining.
   (Martijn van Groningen, Mike McCandless)
-
+  
 * LUCENE-3523: Added oal.search.spell.WordBreakSpellChecker, which 
     generates suggestions by combining two or more terms and/or 
     breaking terms into multiple words.  See Javadocs for usage. (James Dyer)
@@ -1629,8 +1646,8 @@ New features
 * LUCENE-4019: Added improved parsing of Hunspell Dictionaries so those
   rules missing the required number of parameters either ignored or 
   cause a ParseException (depending on whether strict parsing is enabled).
-  (Luca Cavanna via Chris Male)
-   
+  (Luca Cavanna via Chris Male) 
+
 * LUCENE-3440: Add ordered fragments feature with IDF-weighted terms for FVH.
   (Sebastian Lutze via Koji Sekiguchi)
 
