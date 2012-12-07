@@ -180,35 +180,32 @@ public class WordBreakSpellChecker {
         queueInitialCapacity, queueComparator);
     
     int thisTimeEvaluations = 0;
-    BytesRef reuse = new BytesRef();
     for (int i = 0; i < terms.length - 1; i++) {
       if (terms[i].equals(SEPARATOR_TERM)) {
         continue;
-      }
-      
-      int byteLength = terms[i].bytes().length;
-      if (byteLength > maxCombineWordLength) {
-        continue;
-      }
-      
-      reuse.grow(byteLength);
-      reuse.length = byteLength;
-      System.arraycopy(terms[i].bytes().bytes, terms[i].bytes().offset,
-          reuse.bytes, 0, byteLength);
-      
+      }      
+      String leftTermText = terms[i].text();
+      int leftTermLength = leftTermText.codePointCount(0, leftTermText.length());
+      if (leftTermLength > maxCombineWordLength) {
+       continue;
+      } 
       int maxFreq = 0;
       int minFreq = Integer.MAX_VALUE;
       if (origFreqs != null) {
         maxFreq = origFreqs[i];
         minFreq = origFreqs[i];
-      }
-      
+      } 
+      String combinedTermText = leftTermText;
+      int combinedLength = leftTermLength;
       for (int j = i + 1; j < terms.length && j - i <= maxChanges; j++) {
         if (terms[j].equals(SEPARATOR_TERM)) {
           break;
         }
-        byteLength += terms[j].bytes().length;
-        if (byteLength > maxCombineWordLength) {
+        String rightTermText = terms[j].text();
+        int rightTermLength = rightTermText.codePointCount(0, rightTermText.length());
+        combinedTermText += rightTermText;
+        combinedLength +=rightTermLength;
+        if (combinedLength > maxCombineWordLength) {
           break;
         }
         
@@ -216,13 +213,8 @@ public class WordBreakSpellChecker {
           maxFreq = Math.max(maxFreq, origFreqs[j]);
           minFreq = Math.min(minFreq, origFreqs[j]);
         }
-        
-        reuse.grow(byteLength);
-        System.arraycopy(terms[j].bytes().bytes, terms[j].bytes().offset,
-            reuse.bytes, reuse.length, terms[j].bytes().length);
-        reuse.length = byteLength;
-        
-        Term combinedTerm = new Term(terms[0].field(), reuse);
+                
+        Term combinedTerm = new Term(terms[0].field(), combinedTermText);
         int combinedTermFreq = ir.docFreq(combinedTerm);
         
         if (suggestMode != SuggestMode.SUGGEST_MORE_POPULAR
@@ -268,24 +260,25 @@ public class WordBreakSpellChecker {
       SuggestWord[] prefix, Queue<SuggestWordArrayWrapper> suggestions,
       int totalEvaluations, BreakSuggestionSortMethod sortMethod)
       throws IOException {
-    int termLength = term.bytes().length;
+    String termText = term.text();
+    int termLength = termText.codePointCount(0, termText.length());
     int useMinBreakWordLength = minBreakWordLength;
     if (useMinBreakWordLength < 1) {
       useMinBreakWordLength = 1;
     }
-    if (termLength <= (useMinBreakWordLength * 2)) {
+    if (termLength < (useMinBreakWordLength * 2)) {
       return 0;
-    }
+    }    
     
     int thisTimeEvaluations = 0;
-    BytesRef termBytes = term.bytes().clone();
-    for (int i = useMinBreakWordLength; i < (termLength - useMinBreakWordLength); i++) {
-      SuggestWord leftWord = generateSuggestWord(ir, termBytes, 0, i, term
-          .field());
+    for (int i = useMinBreakWordLength; i <= (termLength - useMinBreakWordLength); i++) {
+      int end = termText.offsetByCodePoints(0, i);
+      String leftText = termText.substring(0, end);
+      String rightText = termText.substring(end);
+      SuggestWord leftWord = generateSuggestWord(ir, term.field(), leftText);
       
       if (leftWord.freq >= useMinSuggestionFrequency) {
-        SuggestWord rightWord = generateSuggestWord(ir, termBytes, i,
-            termLength - i, term.field());
+        SuggestWord rightWord = generateSuggestWord(ir, term.field(), rightText);
         if (rightWord.freq >= useMinSuggestionFrequency) {
           SuggestWordArrayWrapper suggestion = new SuggestWordArrayWrapper(
               newSuggestion(prefix, leftWord, rightWord));
@@ -293,8 +286,7 @@ public class WordBreakSpellChecker {
           if (suggestions.size() > maxSuggestions) {
             suggestions.poll();
           }
-        }
-        
+        }        
         int newNumberBreaks = numberBreaks + 1;
         if (newNumberBreaks <= maxChanges) {
           int evaluations = generateBreakUpSuggestions(new Term(term.field(),
@@ -304,6 +296,7 @@ public class WordBreakSpellChecker {
           totalEvaluations += evaluations;
         }
       }
+      
       thisTimeEvaluations++;
       totalEvaluations++;
       if (totalEvaluations >= maxEvaluations) {
@@ -338,16 +331,13 @@ public class WordBreakSpellChecker {
     return newSuggestion;
   }
   
-  private SuggestWord generateSuggestWord(IndexReader ir, BytesRef bytes,
-      int offset, int length, String fieldname) throws IOException {
-    bytes.offset = offset;
-    bytes.length = length;
-    Term term = new Term(fieldname, bytes);
+  private SuggestWord generateSuggestWord(IndexReader ir, String fieldname, String text) throws IOException {
+    Term term = new Term(fieldname, text);
     int freq = ir.docFreq(term);
     SuggestWord word = new SuggestWord();
     word.freq = freq;
     word.score = 1;
-    word.string = term.text();
+    word.string = text;
     return word;
   }
   

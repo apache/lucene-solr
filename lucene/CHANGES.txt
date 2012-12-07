@@ -219,8 +219,12 @@ Bug Fixes
   In addition, it wasn't possible to index a shape representing the entire
   globe.
 
-* LUCENE--4595: EnwikiContentSource had a thread safety problem (NPE) in 
+* LUCENE-4595: EnwikiContentSource had a thread safety problem (NPE) in 
   'forever' mode (Doron Cohen)
+
+* LUCENE-4587: fix WordBreakSpellChecker to not throw AIOOBE when presented
+  with 2-char codepoints, and to correctly break/combine terms containing
+  non-latin characters. (James Dyer, Andreas Hubold)
 
 Optimizations
 
