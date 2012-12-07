@@ -18,22 +18,17 @@ package org.apache.lucene.codecs.lucene41.values;
  */
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.store.CompoundFileDirectory;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
 
@@ -41,78 +36,61 @@ import org.apache.lucene.util.IOUtils;
 public class Lucene41DocValuesProducer extends SimpleDVProducer {
   
   private final CompoundFileDirectory cfs;
+  // nocommit: remove this
   private final SegmentInfo info;
-  private final Map<String,DocValuesFactory<NumericDocValues>> numeric = new HashMap<String,DocValuesFactory<NumericDocValues>>();
-  private final Map<String,DocValuesFactory<BinaryDocValues>> binary = new HashMap<String,DocValuesFactory<BinaryDocValues>>();
-  private final Map<String,DocValuesFactory<SortedDocValues>> sorted = new HashMap<String,DocValuesFactory<SortedDocValues>>();
+  private final IOContext context;
   
-  public Lucene41DocValuesProducer(Directory dir, SegmentInfo segmentInfo,
-      FieldInfos fieldInfos, IOContext context) throws IOException {
-    this.cfs = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(
-        segmentInfo.name, Lucene41DocValuesConsumer.DV_SEGMENT_SUFFIX,
-        IndexFileNames.COMPOUND_FILE_EXTENSION), context, false);
-    this.info = segmentInfo;
-    for (FieldInfo fieldInfo : fieldInfos) {
-      if (fieldInfo.hasDocValues()) {
-        if (DocValues.isNumber(fieldInfo.getDocValuesType())
-            || DocValues.isFloat(fieldInfo.getDocValuesType())) {
-          numeric.put(fieldInfo.name, new Lucene41NumericDocValues.Factory(
-              this.cfs, this.info, fieldInfo, context));
-        } else if (DocValues.isBytes(fieldInfo.getDocValuesType())) {
-          binary.put(fieldInfo.name, new Lucene41BinaryDocValues.Factory(
-              this.cfs, this.info, fieldInfo, context));
-        } else {
-          assert DocValues.isSortedBytes(fieldInfo.getDocValuesType());
-          sorted.put(fieldInfo.name, new Lucene41SortedDocValues.Factory(
-              this.cfs, this.info, fieldInfo, context));
-        }
-      }
+  public Lucene41DocValuesProducer(SegmentReadState state) throws IOException {
+    final String suffix;
+    if (state.segmentSuffix.length() == 0) {
+      suffix = Lucene41DocValuesConsumer.DV_SEGMENT_SUFFIX;
+    } else {
+      suffix = state.segmentSuffix + "_" + Lucene41DocValuesConsumer.DV_SEGMENT_SUFFIX;
     }
+    String cfsFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, suffix,
+                                                        IndexFileNames.COMPOUND_FILE_EXTENSION);
+    this.cfs = new CompoundFileDirectory(state.directory, cfsFileName, state.context, false);
+    this.info = state.segmentInfo;
+    this.context = state.context;
   }
   
   @Override
   public void close() throws IOException {
-    try {
-      List<Closeable> closeables = new ArrayList<Closeable>(numeric.values());
-      closeables.addAll(binary.values());
-      closeables.addAll(sorted.values());
-      IOUtils.close(closeables);
-    } finally {
-      IOUtils.close(cfs);
-    }
+    IOUtils.close(cfs);
   }
 
   @Override
   public SimpleDVProducer clone() {
-    // nocommit todo
-    return null;
+    return this; // nocommit ? actually safe since we open new each time from cfs?
   }
   
   @Override
   public NumericDocValues getNumeric(FieldInfo field) throws IOException {
-    return valueOrNull(numeric, field);
+    if (DocValues.isNumber(field.getDocValuesType()) || DocValues.isFloat(field.getDocValuesType())) {
+      return new Lucene41NumericDocValues.Factory(this.cfs, this.info, field, context).getDirect();
+    } else {
+      return null;
+    }
   }
   
   @Override
   public BinaryDocValues getBinary(FieldInfo field) throws IOException {
-    return valueOrNull(binary, field);
-    
+    if (DocValues.isBytes(field.getDocValuesType()) || DocValues.isSortedBytes(field.getDocValuesType())) {
+      return new Lucene41BinaryDocValues.Factory(this.cfs, this.info, field, context).getDirect();
+    } else {
+      return null;
+    }
   }
   
   @Override
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
-    return valueOrNull(sorted, field);
-  }
-  
-  private static <T> T valueOrNull(Map<String,DocValuesFactory<T>> map,
-      FieldInfo field) throws IOException {
-    final DocValuesFactory<T> docValuesFactory = map.get(field.name);
-    if (docValuesFactory != null) {
-      return docValuesFactory.getDirect();
+    if (DocValues.isSortedBytes(field.getDocValuesType())) {
+      return new Lucene41SortedDocValues.Factory(this.cfs, this.info, field, context).getDirect();
+    } else {
+      return null;
     }
-    return null;
   }
-  
+    
   public static abstract class DocValuesFactory<T> implements Closeable {
     
     public abstract T getDirect() throws IOException;

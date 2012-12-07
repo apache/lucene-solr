@@ -34,13 +34,13 @@ public class Lucene41DocValuesFormat extends SimpleDocValuesFormat {
   @Override
   public SimpleDVConsumer fieldsConsumer(SegmentWriteState state)
       throws IOException {
-    return new Lucene41DocValuesConsumer(state.directory, state.segmentInfo, state.context);
+    return new Lucene41DocValuesConsumer(state);
   }
   
   @Override
   public SimpleDVProducer fieldsProducer(SegmentReadState state)
       throws IOException {
-    return new Lucene41DocValuesProducer(state.directory, state.segmentInfo, state.fieldInfos, state.context);
+    return new Lucene41DocValuesProducer(state);
   }
   
 }

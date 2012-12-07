@@ -25,6 +25,7 @@ import org.apache.lucene.codecs.SortedDocValuesConsumer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -50,19 +51,27 @@ public class Lucene41DocValuesConsumer extends SimpleDVConsumer {
   private final Directory dir;
   private Directory cfs;
   private final IOContext context;
+  private final String segmentSuffix;
   
-  Lucene41DocValuesConsumer(Directory dir, SegmentInfo si, IOContext context)
-      throws IOException {
-    this.dir = dir;
-    this.info = si;
-    this.context = context;
+  Lucene41DocValuesConsumer(SegmentWriteState state) throws IOException {
+    this.dir = state.directory;
+    this.info = state.segmentInfo;
+    this.context = state.context;
+    this.segmentSuffix = state.segmentSuffix;
   }
   
   private synchronized Directory getDirectory() throws IOException {
     if (cfs == null) {
-      cfs = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(info.name, DV_SEGMENT_SUFFIX,
-          IndexFileNames.COMPOUND_FILE_EXTENSION), context, true);
-      
+      final String suffix;
+      if (segmentSuffix.length() == 0) {
+        suffix = Lucene41DocValuesConsumer.DV_SEGMENT_SUFFIX;
+      } else {
+        suffix = segmentSuffix + "_" + Lucene41DocValuesConsumer.DV_SEGMENT_SUFFIX;
+      }
+      String fileName = IndexFileNames.segmentFileName(info.name, 
+                                                       suffix, 
+                                                       IndexFileNames.COMPOUND_FILE_EXTENSION);
+      cfs = new CompoundFileDirectory(dir, fileName, context, true);
     }
     return cfs;
   }
@@ -113,6 +122,7 @@ public class Lucene41DocValuesConsumer extends SimpleDVConsumer {
     }
   }
   
+  // nocommit: bogus to put segmentName in here. think about copySegmentAsIs!!!!!!
   static String getDocValuesFileName(SegmentInfo info, FieldInfo field, String extension) {
     return IndexFileNames.segmentFileName(info.name + "_"
         + field.number, DV_SEGMENT_SUFFIX, extension);
