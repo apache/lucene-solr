@@ -248,7 +248,7 @@ enumeration APIs.  Here are the major changes:
       import org.apache.lucene.index.MultiFields;
 
       Bits liveDocs = MultiFields.getLiveDocs(indexReader);
-      if (!liveDocs.get(docID)) {
+      if (liveDocs != null && !liveDocs.get(docID)) {
         // document is deleted...
       }
     
