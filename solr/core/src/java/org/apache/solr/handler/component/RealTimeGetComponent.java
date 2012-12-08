@@ -38,6 +38,8 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -356,23 +358,23 @@ public class RealTimeGetComponent extends SearchComponent
       CloudDescriptor cloudDescriptor = rb.req.getCore().getCoreDescriptor().getCloudDescriptor();
 
       String collection = cloudDescriptor.getCollectionName();
-
       ClusterState clusterState = zkController.getClusterState();
-      
-      Map<String, List<String>> shardToId = new HashMap<String, List<String>>();
-      for (String id : allIds) {
-        int hash = Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
-        String shard = clusterState.getShard(hash,  collection);
+      DocCollection coll = clusterState.getCollection(collection);
 
-        List<String> idsForShard = shardToId.get(shard);
+
+      Map<String, List<String>> sliceToId = new HashMap<String, List<String>>();
+      for (String id : allIds) {
+        Slice slice = coll.getRouter().getTargetSlice(id, null, params, coll);
+
+        List<String> idsForShard = sliceToId.get(slice.getName());
         if (idsForShard == null) {
           idsForShard = new ArrayList<String>(2);
-          shardToId.put(shard, idsForShard);
+          sliceToId.put(slice.getName(), idsForShard);
         }
         idsForShard.add(id);
       }
 
-      for (Map.Entry<String,List<String>> entry : shardToId.entrySet()) {
+      for (Map.Entry<String,List<String>> entry : sliceToId.entrySet()) {
         String shard = entry.getKey();
         String shardIdList = StrUtils.join(entry.getValue(), ',');
 

@@ -212,23 +212,6 @@ public class ClusterState implements JSONWriter.Writable {
     return rangeInfo;
   }
 
-  /**
-   * Get shard id for hash. This is used when determining which Slice the
-   * document is to be submitted to.
-   */
-  public String getShard(int hash, String collection) {
-    RangeInfo rangInfo = getRanges(collection);
-    
-    int cnt = 0;
-    for (Range range : rangInfo.ranges) {
-      if (range.includes(hash)) {
-        return rangInfo.shardList.get(cnt);
-      }
-      cnt++;
-    }
-    
-    throw new IllegalStateException("The DocRouter failed");
-  }
 
   @Override
   public String toString() {

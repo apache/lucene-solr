@@ -136,6 +136,14 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     doAddDoc("c!doc2");
     doAddDoc("d!doc3");
     doAddDoc("e!doc4");
+
+    doRTG("b!doc1");
+    doRTG("c!doc2");
+    doRTG("d!doc3");
+    doRTG("e!doc4");
+    doRTG("b!doc1,c!doc2");
+    doRTG("d!doc3,e!doc4");
+
     commit();
 
     doQuery("b!doc1,c!doc2,d!doc3,e!doc4", "q","*:*");
@@ -170,6 +178,20 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     Set<String> expectedIds = new HashSet<String>( StrUtils.splitSmart(expectedDocs, ",", true) );
 
     QueryResponse rsp = cloudClient.query(params(queryParams));
+    Set<String> obtainedIds = new HashSet<String>();
+    for (SolrDocument doc : rsp.getResults()) {
+      obtainedIds.add((String) doc.get("id"));
+    }
+
+    assertEquals(expectedIds, obtainedIds);
+  }
+
+  void doRTG(String ids) throws Exception {
+    cloudClient.query(params("qt","/get", "ids",ids));
+
+    Set<String> expectedIds = new HashSet<String>( StrUtils.splitSmart(ids, ",", true) );
+
+    QueryResponse rsp = cloudClient.query(params("qt","/get", "ids",ids));
     Set<String> obtainedIds = new HashSet<String>();
     for (SolrDocument doc : rsp.getResults()) {
       obtainedIds.add((String) doc.get("id"));
