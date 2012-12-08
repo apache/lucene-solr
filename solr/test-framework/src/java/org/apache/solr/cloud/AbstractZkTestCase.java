@@ -102,9 +102,10 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     zkClient.makePath("/collections/control_collection", ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, true);
     zkClient.makePath("/collections/control_collection/shards", CreateMode.PERSISTENT, true);
 
-    putConfig(zkClient, solrhome, config);
-    putConfig(zkClient, solrhome, schema);
-    putConfig(zkClient, solrhome, "solrconfig.xml");
+    // for now, always upload the config and schema to the canonical names
+    putConfig(zkClient, solrhome, config, "solrconfig.xml");
+    putConfig(zkClient, solrhome, schema, "schema.xml");
+
     putConfig(zkClient, solrhome, "stopwords.txt");
     putConfig(zkClient, solrhome, "protwords.txt");
     putConfig(zkClient, solrhome, "currency.xml");
@@ -118,16 +119,21 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   private static void putConfig(SolrZkClient zkClient, File solrhome, final String name)
       throws Exception {
-    String path = "/configs/conf1/" + name;
+    putConfig(zkClient, solrhome, name, name);
+  }
+
+  private static void putConfig(SolrZkClient zkClient, File solrhome, final String srcName, String destName)
+      throws Exception {
     File file = new File(solrhome, "collection1"
-        + File.separator + "conf" + File.separator + name);
+        + File.separator + "conf" + File.separator + srcName);
     if (!file.exists()) {
       log.info("skipping " + file.getAbsolutePath() + " because it doesn't exist");
       return;
     }
-    
-    log.info("put " + file.getAbsolutePath() + " to " + path);
-    zkClient.makePath(path, file, false, true);  
+
+    String destPath = "/configs/conf1/" + destName;
+    log.info("put " + file.getAbsolutePath() + " to " + destPath);
+    zkClient.makePath(destPath, file, false, true);
   }
 
   @Override
