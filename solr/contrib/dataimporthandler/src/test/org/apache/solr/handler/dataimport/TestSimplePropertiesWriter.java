@@ -50,8 +50,12 @@ public class TestSimplePropertiesWriter extends AbstractDIHJdbcTestCase {
   }
   @After
   public void spwAfter() throws Exception {
-    new File(fileLocation + File.separatorChar + fileName).delete();
-    new File(fileLocation).delete();
+    //If an Assume was tripped while setting up the test, 
+    //the file might not ever have been created...
+    if(fileLocation!=null) {
+      new File(fileLocation + File.separatorChar + fileName).delete();
+      new File(fileLocation).delete();
+    }
   }  
   @Test
   public void testSimplePropertiesWriter() throws Exception { 
