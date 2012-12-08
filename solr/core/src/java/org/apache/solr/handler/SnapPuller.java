@@ -36,10 +36,7 @@ import static org.apache.solr.handler.ReplicationHandler.NAME;
 import static org.apache.solr.handler.ReplicationHandler.OFFSET;
 import static org.apache.solr.handler.ReplicationHandler.SIZE;
 
-import java.io.EOFException;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -99,6 +96,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
+import org.apache.solr.util.PropertiesInputStream;
+import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -522,9 +521,9 @@ public class SnapPuller {
   /**
    * Helper method to record the last replication's details so that we can show them on the statistics page across
    * restarts.
+   * @throws IOException on IO error
    */
-  private void logReplicationTimeAndConfFiles(Collection<Map<String, Object>> modifiedConfFiles, boolean successfulInstall) {
-    FileOutputStream outFile = null;
+  private void logReplicationTimeAndConfFiles(Collection<Map<String, Object>> modifiedConfFiles, boolean successfulInstall) throws IOException {
     List<String> confFiles = new ArrayList<String>();
     if (modifiedConfFiles != null && !modifiedConfFiles.isEmpty())
       for (Map<String, Object> map1 : modifiedConfFiles)
@@ -533,7 +532,10 @@ public class SnapPuller {
     Properties props = replicationHandler.loadReplicationProperties();
     long replicationTime = System.currentTimeMillis();
     long replicationTimeTaken = (replicationTime - getReplicationStartTime()) / 1000;
+    Directory dir = null;
     try {
+      dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), solrCore.getSolrConfig().indexConfig.lockType);
+      
       int indexCount = 1, confFilesCount = 1;
       if (props.containsKey(TIMES_INDEX_REPLICATED)) {
         indexCount = Integer.valueOf(props.getProperty(TIMES_INDEX_REPLICATED)) + 1;
@@ -563,15 +565,20 @@ public class SnapPuller {
         sb = readToStringBuffer(replicationTime, props.getProperty(REPLICATION_FAILED_AT_LIST));
         props.setProperty(REPLICATION_FAILED_AT_LIST, sb.toString());
       }
-      File f = new File(solrCore.getDataDir(), REPLICATION_PROPERTIES);
-      outFile = new FileOutputStream(f);
-      props.store(outFile, "Replication details");
-      outFile.close();
+
+      final IndexOutput out = dir.createOutput(REPLICATION_PROPERTIES, IOContext.DEFAULT);
+      OutputStream outFile = new PropertiesOutputStream(out);
+      try {
+        props.store(outFile, "Replication details");
+      } finally {
+        IOUtils.closeQuietly(outFile);
+      }
     } catch (Exception e) {
       LOG.warn("Exception while updating statistics", e);
-    }
-    finally {
-      IOUtils.closeQuietly(outFile);
+    } finally {
+      if (dir != null) {
+        solrCore.getDirectoryFactory().release(dir);
+      }
     }
   }
 
@@ -836,26 +843,7 @@ public class SnapPuller {
       if (dir.fileExists("index.properties")){
         final IndexInput input = dir.openInput("index.properties", IOContext.DEFAULT);
   
-        final InputStream is = new InputStream() {
-          
-          @Override
-          public int read() throws IOException {
-            byte next;
-            try {
-              next = input.readByte();
-            } catch (EOFException e) {
-              return -1;
-            }
-            return next;
-          }
-          
-          @Override
-          public void close() throws IOException {
-            super.close();
-            input.close();
-          }
-        };
-        
+        final InputStream is = new PropertiesInputStream(input);
         try {
           p.load(is);
         } catch (Exception e) {
@@ -873,19 +861,7 @@ public class SnapPuller {
       p.put("index", tmpIdxDirName);
       OutputStream os = null;
       try {
-        os = new OutputStream() {
-          
-          @Override
-          public void write(int b) throws IOException {
-            out.writeByte((byte) b);
-          }
-          
-          @Override
-          public void close() throws IOException {
-            super.close();
-            out.close();
-          }
-        };
+        os = new PropertiesOutputStream(out);
         p.store(os, "index properties");
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -893,7 +869,7 @@ public class SnapPuller {
       } finally {
         IOUtils.closeQuietly(os);
       }
-        return true;
+      return true;
 
     } catch (IOException e1) {
       throw new RuntimeException(e1);
