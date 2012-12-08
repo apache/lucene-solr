@@ -129,10 +129,6 @@ public class CompositeIdRouter extends HashBasedRouter {
       upperBound = Integer.MAX_VALUE;
     }
 
-    if (lowerBound > upperBound) {
-      throw new RuntimeException("WHAAAT?");
-    }
-    // lowerBound will be greater than upperBound if we are in the negatives
     Range completeRange = new Range(lowerBound, upperBound);
 
     List<Slice> targetSlices = new ArrayList<Slice>(1);
