@@ -1881,7 +1881,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <!-- PEGDOWN macro: Before using depend on the target "resolve-pegdown" -->
   
   <target name="resolve-pegdown" unless="pegdown.loaded" depends="ivy-availability-check,ivy-fail,ivy-configure">
-    <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.1.0"
+    <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.2.0"
       inline="true" conf="default" type="jar" transitive="true" pathid="pegdown.classpath"/>
     <property name="pegdown.loaded" value="true"/>
   </target>
