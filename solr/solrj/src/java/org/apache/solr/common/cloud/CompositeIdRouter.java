@@ -130,7 +130,6 @@ public class CompositeIdRouter extends HashBasedRouter {
     }
 
     if (lowerBound > upperBound) {
-      // nocommit
       throw new RuntimeException("WHAAAT?");
     }
     // lowerBound will be greater than upperBound if we are in the negatives
