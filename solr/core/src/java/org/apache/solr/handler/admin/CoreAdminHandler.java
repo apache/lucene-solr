@@ -1015,7 +1015,12 @@ public class CoreAdminHandler extends RequestHandlerBase {
     Directory dir;
     long size = 0;
     try {
-      dir = core.getDirectoryFactory().get(core.getIndexDir(), core.getSolrConfig().indexConfig.lockType);
+      if (!core.getDirectoryFactory().exists(core.getIndexDir())) {
+        dir = core.getDirectoryFactory().get(core.getNewIndexDir(), core.getSolrConfig().indexConfig.lockType);
+      } else {
+        dir = core.getDirectoryFactory().get(core.getIndexDir(), core.getSolrConfig().indexConfig.lockType); 
+      }
+
       try {
         size = DirectoryFactory.sizeOfDirectory(dir);
       } finally {
