@@ -613,7 +613,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
           public void postClose(SolrCore core) {
             Directory dir = null;
             try {
-              dir = core.getDirectoryFactory().get(core.getIndexDir(), null);
+              dir = core.getDirectoryFactory().get(core.getIndexDir(), core.getSolrConfig().indexConfig.lockType);
               core.getDirectoryFactory().remove(dir);
               core.getDirectoryFactory().doneWithDirectory(dir);
             } catch (IOException e) {
@@ -1015,7 +1015,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     Directory dir;
     long size = 0;
     try {
-      dir = core.getDirectoryFactory().get(core.getIndexDir(), null);
+      dir = core.getDirectoryFactory().get(core.getIndexDir(), core.getSolrConfig().indexConfig.lockType);
       try {
         size = DirectoryFactory.sizeOfDirectory(dir);
       } finally {

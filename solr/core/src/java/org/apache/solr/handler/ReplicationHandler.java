@@ -361,7 +361,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       // use a set to workaround possible Lucene bug which returns same file
       // name multiple times
       Collection<String> files = new HashSet<String>(commit.getFileNames());
-      dir = core.getDirectoryFactory().get(core.getNewIndexDir(), null);
+      dir = core.getDirectoryFactory().get(core.getNewIndexDir(), core.getSolrConfig().indexConfig.lockType);
       try {
         
         for (String fileName : files) {
@@ -467,7 +467,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     Directory dir;
     long size = 0;
     try {
-      dir = core.getDirectoryFactory().get(core.getNewIndexDir(), null);
+      dir = core.getDirectoryFactory().get(core.getNewIndexDir(), core.getSolrConfig().indexConfig.lockType);
       try {
         size = DirectoryFactory.sizeOfDirectory(dir);
       } finally {

@@ -235,7 +235,7 @@ public final class SolrCore implements SolrInfoMBean {
     Properties p = new Properties();
     Directory dir = null;
     try {
-      dir = getDirectoryFactory().get(getDataDir(), null);
+      dir = getDirectoryFactory().get(getDataDir(), getSolrConfig().indexConfig.lockType);
       if (dir.fileExists("index.properties")){
         final IndexInput input = dir.openInput("index.properties", IOContext.DEFAULT);
   

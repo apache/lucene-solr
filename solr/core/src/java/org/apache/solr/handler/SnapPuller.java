@@ -371,10 +371,10 @@ public class SnapPuller {
       String tmpIdxDirName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
       tmpIndex = createTempindexDir(core, tmpIdxDirName);
 
-      tmpIndexDir = core.getDirectoryFactory().get(tmpIndex, null);
+      tmpIndexDir = core.getDirectoryFactory().get(tmpIndex, core.getSolrConfig().indexConfig.lockType);
       
       // make sure it's the newest known index dir...
-      indexDir = core.getDirectoryFactory().get(core.getNewIndexDir(), null);
+      indexDir = core.getDirectoryFactory().get(core.getNewIndexDir(), core.getSolrConfig().indexConfig.lockType);
       Directory oldDirectory = null;
 
       try {
@@ -709,7 +709,7 @@ public class SnapPuller {
     String indexDir = solrCore.getIndexDir();
     
     // it's okay to use null for lock factory since we know this dir will exist
-    Directory dir = solrCore.getDirectoryFactory().get(indexDir, null);
+    Directory dir = solrCore.getDirectoryFactory().get(indexDir, solrCore.getSolrConfig().indexConfig.lockType);
     try {
       for (Map<String,Object> file : filesToDownload) {
         if (!dir.fileExists((String) file.get(NAME)) || downloadCompleteIndex) {
@@ -832,7 +832,7 @@ public class SnapPuller {
     Properties p = new Properties();
     Directory dir = null;
     try {
-      dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), null);
+      dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), solrCore.getSolrConfig().indexConfig.lockType);
       if (dir.fileExists("index.properties")){
         final IndexInput input = dir.openInput("index.properties", IOContext.DEFAULT);
   
