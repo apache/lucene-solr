@@ -234,6 +234,9 @@ Bug Fixes
   with 2-char codepoints, and to correctly break/combine terms containing
   non-latin characters. (James Dyer, Andreas Hubold)
 
+* LUCENE-4596: fix a concurrency bug in DirectoryTaxonomyWriter.
+  (Shai Erera)
+
 Changes in Runtime Behavior
   
 * LUCENE-4586: Change default ResultMode of FacetRequest to PER_NODE_IN_TREE.

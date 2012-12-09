@@ -35,7 +35,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-// TODO: remove this suppress after we fix the TaxoWriter Codec to a non-default (see todo in DirTW)
+// TODO: remove this suppress if we fix the TaxoWriter Codec to a non-default (see todo in DirTW)
 @SuppressCodecs("SimpleText")
 public class TestTaxonomyCombined extends LuceneTestCase {
 

@@ -182,7 +182,7 @@ public class ParallelTaxonomyArrays {
    */
   ParallelTaxonomyArrays add(int ordinal, int parentOrdinal) {
     if (ordinal >= parents.length) {
-      int[] newarray = ArrayUtil.grow(parents);
+      int[] newarray = ArrayUtil.grow(parents, ordinal + 1);
       newarray[ordinal] = parentOrdinal;
       return new ParallelTaxonomyArrays(newarray);
     }

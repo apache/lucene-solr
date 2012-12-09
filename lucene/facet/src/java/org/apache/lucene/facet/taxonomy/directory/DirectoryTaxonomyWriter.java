@@ -425,14 +425,18 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     DirectoryReader reader = readerManager.acquire();
     try {
       final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter));
+      TermsEnum termsEnum = null; // reuse
+      DocsEnum docs = null; // reuse
       for (AtomicReaderContext ctx : reader.leaves()) {
         Terms terms = ctx.reader().terms(Consts.FULL);
         if (terms != null) {
-          TermsEnum termsEnum = terms.iterator(null);
+          termsEnum = terms.iterator(termsEnum);
           if (termsEnum.seekExact(catTerm, true)) {
-            // TODO: is it really ok that null is passed here as liveDocs?
-            DocsEnum docs = termsEnum.docs(null, null, 0);
+            // liveDocs=null because the taxonomy has no deletes
+            docs = termsEnum.docs(null, docs, 0 /* freqs not required */);
+            // if the term was found, we know it has exactly one document.
             doc = docs.nextDoc() + ctx.docBase;
+            break;
           }
         }
       }
@@ -592,10 +596,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // added a category document, mark that ReaderManager is not up-to-date
     shouldRefreshReaderManager = true;
     
-    addToCache(categoryPath, length, id);
-    
     // also add to the parent array
     taxoArrays = getTaxoArrays().add(id, parent);
+
+    // NOTE: this line must be executed last, or else the cache gets updated
+    // before the parents array (LUCENE-4596)
+    addToCache(categoryPath, length, id);
 
     return id;
   }
@@ -832,7 +838,10 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     if (ordinal >= nextID) {
       throw new ArrayIndexOutOfBoundsException("requested ordinal is bigger than the largest ordinal in the taxonomy");
     }
-    return getTaxoArrays().parents()[ordinal];
+    
+    int[] parents = getTaxoArrays().parents();
+    assert ordinal < parents.length : "requested ordinal (" + ordinal + "); parents.length (" + parents.length + ") !";
+    return parents[ordinal];
   }
   
   /**
