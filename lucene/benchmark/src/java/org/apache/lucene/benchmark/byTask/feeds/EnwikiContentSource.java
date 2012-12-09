@@ -178,23 +178,25 @@ public class EnwikiContentSource extends ContentSource {
         reader.setErrorHandler(this);
         while(!stopped){
           final InputStream localFileIS = is;
-          try {
-            // To work around a bug in XERCES (XERCESJ-1257), we assume the XML is always UTF8, so we simply provide reader.
-            CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
-                .onMalformedInput(CodingErrorAction.REPORT)
-                .onUnmappableCharacter(CodingErrorAction.REPORT);
-            reader.parse(new InputSource(new BufferedReader(new InputStreamReader(localFileIS, decoder))));
-          } catch (IOException ioe) {
-            synchronized(EnwikiContentSource.this) {
-              if (localFileIS != is) {
-                // fileIS was closed on us, so, just fall through
-              } else
-                // Exception is real
-                throw ioe;
+          if (localFileIS != null) { // null means fileIS was closed on us 
+            try {
+              // To work around a bug in XERCES (XERCESJ-1257), we assume the XML is always UTF8, so we simply provide reader.
+              CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+                  .onMalformedInput(CodingErrorAction.REPORT)
+                  .onUnmappableCharacter(CodingErrorAction.REPORT);
+              reader.parse(new InputSource(new BufferedReader(new InputStreamReader(localFileIS, decoder))));
+            } catch (IOException ioe) {
+              synchronized(EnwikiContentSource.this) {
+                if (localFileIS != is) {
+                  // fileIS was closed on us, so, just fall through
+                } else
+                  // Exception is real
+                  throw ioe;
+              }
             }
           }
           synchronized(this) {
-            if (!forever) {
+            if (stopped || !forever) {
               nmde = new NoMoreDataException();
               notify();
               return;
@@ -291,11 +293,11 @@ public class EnwikiContentSource extends ContentSource {
   @Override
   public void close() throws IOException {
     synchronized (EnwikiContentSource.this) {
+      parser.stop();
       if (is != null) {
         is.close();
         is = null;
       }
-      parser.stop();
     }
   }
   
