@@ -213,6 +213,9 @@ Bug Fixes
 * LUCENE-4009: Improve TermsFilter.toString (Tim Costermans via Chris
   Male, Mike McCandless)
 
+* LUCENE-4588: Benchmark's EnwikiContentSource was discarding last wiki 
+  document and had leaking threads in 'forever' mode. (Doron Cohen)   
+
 * LUCENE-4585: Spatial RecursivePrefixTreeFilter had some bugs that only
   occurred when shapes were indexed.  In what appears to be rare circumstances,
   documents with shapes near a query shape were erroneously considered a match.
@@ -226,6 +229,13 @@ Bug Fixes
   with 2-char codepoints, and to correctly break/combine terms containing
   non-latin characters. (James Dyer, Andreas Hubold)
 
+Changes in Runtime Behavior
+  
+* LUCENE-4586: Change default ResultMode of FacetRequest to PER_NODE_IN_TREE.
+  This only affects requests with depth>1. If you execute such requests and
+  rely on the facet results being returned flat (i.e. no hierarchy), you should
+  set the ResultMode to GLOBAL_FLAT. (Shai Erera, Gilad Barkai) 
+  
 Optimizations
 
 * LUCENE-2221: oal.util.BitUtil was modified to use Long.bitCount and
@@ -277,6 +287,9 @@ Optimizations
 * LUCENE-4538: DocValues now caches direct sources in a ThreadLocal exposed via SourceCache. 
   Users of this API can now simply obtain an instance via DocValues#getDirectSource per thread.
   (Simon Willnauer)
+  
+* LUCENE-4580: DrillDown.query variants return a ConstantScoreQuery with boost set to 0.0f
+  so that documents scores are not affected by running a drill-down query. (Shai Erera)  
 
 Documentation
 
@@ -293,6 +306,10 @@ Build
   RandomizedContext.contexts static map. Upgrade randomized testing
   to version 2.0.2 (Mike McCandless, Dawid Weiss)
 
+* LUCENE-4589: Upgraded benchmark module's Nekohtml dependency to version
+  1.9.17, removing the workaround in Lucene's HTML parser for the
+  Turkish locale.  (Uwe Schindler)
+  
   
 ======================= Lucene 4.0.0 =======================
 
