@@ -62,6 +62,7 @@ public abstract class HashBasedRouter extends DocRouter {
     }
 
     // use the shardKey as an id for plain hashing
-    return Collections.singletonList(getTargetSlice(shardKey, null, params, collection));
+    Slice slice = getTargetSlice(shardKey, null, params, collection);
+    return slice == null ? Collections.<Slice>emptyList() : Collections.singletonList(slice);
   }
 }

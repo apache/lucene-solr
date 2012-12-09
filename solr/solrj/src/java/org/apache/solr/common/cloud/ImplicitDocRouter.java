@@ -48,6 +48,7 @@ public class ImplicitDocRouter extends DocRouter {
       if (slice == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No _shard_=" + shard + " in " + collection);
       }
+      return slice;
     }
 
     return null;  // no shard specified... use default.

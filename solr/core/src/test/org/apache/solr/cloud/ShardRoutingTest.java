@@ -150,10 +150,16 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     doQuery("b!doc1,c!doc2,d!doc3,e!doc4", "q","*:*", "shards","shard1,shard2,shard3,shard4");
     doQuery("b!doc1,c!doc2,d!doc3,e!doc4", "q","*:*", shardKeys,"b!,c!,d!,e!");
     doQuery("b!doc1", "q","*:*", shardKeys,"b!");
-    doQuery("b!doc1", "q","*:*", "shards",bucket1);
     doQuery("c!doc2", "q","*:*", shardKeys,"c!");
     doQuery("d!doc3", "q","*:*", shardKeys,"d!");
     doQuery("e!doc4", "q","*:*", shardKeys,"e!");
+
+    // try using shards parameter
+    doQuery("b!doc1", "q","*:*", "shards",bucket1);
+    doQuery("c!doc2", "q","*:*", "shards",bucket2);
+    doQuery("d!doc3", "q","*:*", "shards",bucket3);
+    doQuery("e!doc4", "q","*:*", "shards",bucket4);
+
 
     doQuery("b!doc1,c!doc2", "q","*:*", shardKeys,"b!,c!");
     doQuery("b!doc1,e!doc4", "q","*:*", shardKeys,"b!,e!");
@@ -167,6 +173,7 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
 
     doQuery("b!doc1,c!doc2,d!doc3,e!doc4", "q","*:*", shardKeys,"foo/0!");
 
+    // test targeting deleteByQuery at only certain shards
     doDBQ("*:*", shardKeys,"b!");
     commit();
     doQuery("c!doc2,d!doc3,e!doc4", "q","*:*");
@@ -187,6 +194,10 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     doQuery("b!doc1,c!doc2", "q","*:*");
     doAddDoc("d!doc3");
     doAddDoc("e!doc4");
+
+    commit();
+
+
   }
 
   void doAddDoc(String id) throws Exception {

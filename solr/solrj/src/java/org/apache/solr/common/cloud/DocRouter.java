@@ -154,7 +154,7 @@ public abstract class DocRouter {
     return ranges;
   }
 
-
+  /** Returns the Slice that the document should reside on, or null if there is not enough information */
   public abstract Slice getTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, DocCollection collection);
 
   /** This method is consulted to determine what slices should be queried for a request when
