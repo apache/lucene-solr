@@ -145,7 +145,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
     samplingParams.setMaxSampleSize((int) (10000 * retryFactor));
     samplingParams.setOversampleFactor(5.0 * retryFactor);
 
-    samplingParams.setSampingThreshold(11000); //force sampling 
+    samplingParams.setSamplingThreshold(11000); //force sampling 
     Sampler sampler = useRandomSampler ? 
         new RandomSampler(samplingParams, new Random(random().nextLong())) :
           new RepeatableSampler(samplingParams);

@@ -125,7 +125,7 @@ public class SamplingParams {
    * Set a sampling-threshold
    * @see #getSamplingThreshold()
    */
-  public void setSampingThreshold(int samplingThreshold) {
+  public void setSamplingThreshold(int samplingThreshold) {
     this.samplingThreshold = samplingThreshold;
   }
 
