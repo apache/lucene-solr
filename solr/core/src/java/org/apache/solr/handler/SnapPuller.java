@@ -110,6 +110,8 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  */
 public class SnapPuller {
+  private static final String INDEX_PEROPERTIES = "index.peroperties";
+
   private static final Logger LOG = LoggerFactory.getLogger(SnapPuller.class.getName());
 
   private final String masterUrl;
@@ -570,6 +572,7 @@ public class SnapPuller {
       OutputStream outFile = new PropertiesOutputStream(out);
       try {
         props.store(outFile, "Replication details");
+        dir.sync(Collections.singleton(REPLICATION_PROPERTIES));
       } finally {
         IOUtils.closeQuietly(outFile);
       }
@@ -863,6 +866,7 @@ public class SnapPuller {
       try {
         os = new PropertiesOutputStream(out);
         p.store(os, "index properties");
+        dir.sync(Collections.singleton(INDEX_PEROPERTIES));
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Unable to write index.properties", e);
