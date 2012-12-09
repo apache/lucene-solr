@@ -158,7 +158,7 @@ public class CoreContainer
   protected LogWatcher logging = null;
   private String zkHost;
   private Map<SolrCore,String> coreToOrigName = new ConcurrentHashMap<SolrCore,String>();
-  private String leaderVoteWait;
+  private String leaderVoteWait = LEADER_VOTE_WAIT;
   protected int swappableCacheSize = Integer.MAX_VALUE; // Use as a flag too, if swappableCacheSize set in solr.xml this will be changed
   private int coreLoadThreads;
   
