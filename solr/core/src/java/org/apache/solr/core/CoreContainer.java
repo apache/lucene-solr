@@ -154,7 +154,7 @@ public class CoreContainer
   protected LogWatcher logging = null;
   private String zkHost;
   private Map<SolrCore,String> coreToOrigName = new ConcurrentHashMap<SolrCore,String>();
-  private String leaderVoteWait;
+  private String leaderVoteWait = LEADER_VOTE_WAIT;
   private int coreLoadThreads;
   
   {

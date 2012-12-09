@@ -264,6 +264,9 @@ Bug Fixes
   not consider it's last published state when deciding if it can be the new 
   leader. (Mark Miller)
 
+* SOLR-4158: When a core is registering in ZooKeeper it may not wait long 
+  enough to find the leader due to how long the potential leader waits to see 
+  replicas. (Mark Miller, Alain Rogister)
 
 Other Changes
 ----------------------

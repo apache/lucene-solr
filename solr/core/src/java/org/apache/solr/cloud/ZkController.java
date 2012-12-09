@@ -139,14 +139,6 @@ public final class ZkController {
 
   private int clientTimeout;
 
-
-  public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
-      String localHostContext, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
-      TimeoutException, IOException {
-    this(cc, zkServerAddress, zkClientTimeout, zkClientConnectTimeout, localHost, locaHostPort, localHostContext, null, registerOnReconnect);
-  }
-  
-
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
       String localHostContext, String leaderVoteWait, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
@@ -600,7 +592,10 @@ public final class ZkController {
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
     
-    String leaderUrl = getLeader(cloudDesc);
+
+    // in this case, we want to wait for the leader as long as the leader might 
+    // wait for a vote, at least
+    String leaderUrl = getLeader(cloudDesc, Integer.parseInt(leaderVoteWait) + 1000);
     
     String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
     log.info("We are " + ourUrl + " and leader is " + leaderUrl);
@@ -652,7 +647,9 @@ public final class ZkController {
     return shardId;
   }
 
-  private String getLeader(final CloudDescriptor cloudDesc) {
+  // timeoutms is the timeout for the first call to get the leader - there is then
+  // a longer wait to make sure that leader matches our local state
+  private String getLeader(final CloudDescriptor cloudDesc, int timeoutms) {
     
     String collection = cloudDesc.getCollectionName();
     String shardId = cloudDesc.getShardId();
@@ -661,7 +658,7 @@ public final class ZkController {
     // cluster state node that won't be updated for a moment
     String leaderUrl;
     try {
-      leaderUrl = getLeaderProps(collection, cloudDesc.getShardId())
+      leaderUrl = getLeaderProps(collection, cloudDesc.getShardId(), timeoutms)
           .getCoreUrl();
       
       // now wait until our currently cloud state contains the latest leader
@@ -679,7 +676,7 @@ public final class ZkController {
         tries++;
         clusterStateLeader = zkStateReader.getLeaderUrl(collection, shardId,
             30000);
-        leaderUrl = getLeaderProps(collection, cloudDesc.getShardId())
+        leaderUrl = getLeaderProps(collection, cloudDesc.getShardId(), timeoutms)
             .getCoreUrl();
       }
       
@@ -695,8 +692,8 @@ public final class ZkController {
    * Get leader props directly from zk nodes.
    */
   public ZkCoreNodeProps getLeaderProps(final String collection,
-      final String slice) throws InterruptedException {
-    return getLeaderProps(collection, slice, false);
+      final String slice, int timeoutms) throws InterruptedException {
+    return getLeaderProps(collection, slice, timeoutms, false);
   }
   
   /**
@@ -705,8 +702,8 @@ public final class ZkController {
    * @return leader props
    */
   public ZkCoreNodeProps getLeaderProps(final String collection,
-      final String slice, boolean failImmediatelyOnExpiration) throws InterruptedException {
-    int iterCount = 60;
+      final String slice, int timeoutms, boolean failImmediatelyOnExpiration) throws InterruptedException {
+    int iterCount = timeoutms / 1000;
     Exception exp = null;
     while (iterCount-- > 0) {
       try {
@@ -723,10 +720,10 @@ public final class ZkController {
           throw new RuntimeException("Session has expired - could not get leader props", exp);
         }
         exp = e;
-        Thread.sleep(500);
+        Thread.sleep(1000);
       }  catch (Exception e) {
         exp = e;
-        Thread.sleep(500);
+        Thread.sleep(1000);
       }
       if (cc.isShutDown()) {
         throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "CoreContainer is shutdown");
@@ -804,6 +801,7 @@ public final class ZkController {
    * Publish core state to overseer.
    */
   public void publish(final CoreDescriptor cd, final String state, boolean updateLastState) throws KeeperException, InterruptedException {
+    log.info("publishing core={} state={}", cd.getName(), state);
     //System.out.println(Thread.currentThread().getStackTrace()[3]);
     Integer numShards = cd.getCloudDescriptor().getNumShards();
     if (numShards == null) { //XXX sys prop hack
@@ -1094,7 +1092,7 @@ public final class ZkController {
     for (int i = 0; i < retries; i++) {
       try {
         // go straight to zk, not the cloud state - we must have current info
-        leaderProps = getLeaderProps(collection, shard);
+        leaderProps = getLeaderProps(collection, shard, 30000);
         break;
       } catch (Exception e) {
         SolrException.log(log, "There was a problem finding the leader in zk", e);
