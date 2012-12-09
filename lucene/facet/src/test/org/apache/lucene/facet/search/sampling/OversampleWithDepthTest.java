@@ -77,7 +77,7 @@ public class OversampleWithDepthTest extends LuceneTestCase {
     params.setMinSampleSize(2);
     params.setMaxSampleSize(50);
     params.setOversampleFactor(5);
-    params.setSampingThreshold(60);
+    params.setSamplingThreshold(60);
     params.setSampleRatio(0.1);
     
     FacetResult res = searchWithFacets(r, tr, fsp, params);
