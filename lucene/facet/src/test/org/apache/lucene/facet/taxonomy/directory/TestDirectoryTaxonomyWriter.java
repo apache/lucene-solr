@@ -237,7 +237,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     final int range = ncats * 3; // affects the categories selection
     final AtomicInteger numCats = new AtomicInteger(ncats);
     final Directory dir = newDirectory();
-    final ConcurrentHashMap<Integer,Integer> values = new ConcurrentHashMap<Integer,Integer>();
+    final ConcurrentHashMap<String,String> values = new ConcurrentHashMap<String,String>();
     final double d = random().nextDouble();
     final TaxonomyWriterCache cache;
     if (d < 0.7) {
@@ -261,8 +261,18 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
           while (numCats.decrementAndGet() > 0) {
             try {
               int value = random.nextInt(range);
-              tw.addCategory(new CategoryPath("a", Integer.toString(value)));
-              values.put(value, value);
+              CategoryPath cp = new CategoryPath(Integer.toString(value / 1000), Integer.toString(value / 10000),
+                  Integer.toString(value / 100000), Integer.toString(value));
+              int ord = tw.addCategory(cp);
+              assertTrue("invalid parent for ordinal " + ord + ", category " + cp, tw.getParent(ord) != -1);
+              String l1 = cp.toString('/', 1);
+              String l2 = cp.toString('/', 2);
+              String l3 = cp.toString('/', 3);
+              String l4 = cp.toString('/', 4);
+              values.put(l1, l1);
+              values.put(l2, l2);
+              values.put(l3, l3);
+              values.put(l4, l4);
             } catch (IOException e) {
               throw new RuntimeException(e);
             }
@@ -276,9 +286,20 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     tw.close();
     
     DirectoryTaxonomyReader dtr = new DirectoryTaxonomyReader(dir);
-    assertEquals("mismatch number of categories", values.size() + 2, dtr.getSize()); // +2 for root category + "a"
-    for (Integer value : values.keySet()) {
-      assertTrue("category not found a/" + value, dtr.getOrdinal(new CategoryPath("a", value.toString())) > 0);
+    assertEquals("mismatch number of categories", values.size() + 1, dtr.getSize()); // +1 for root category
+    int[] parents = dtr.getParallelTaxonomyArrays().parents();
+    for (String cat : values.keySet()) {
+      CategoryPath cp = new CategoryPath(cat, '/');
+      assertTrue("category not found " + cp, dtr.getOrdinal(cp) > 0);
+      int level = cp.length();
+      int parentOrd = 0; // for root, parent is always virtual ROOT (ord=0)
+      CategoryPath path = new CategoryPath();
+      for (int i = 0; i < level; i++) {
+        path.add(cp.getComponent(i));
+        int ord = dtr.getOrdinal(path);
+        assertEquals("invalid parent for cp=" + path, parentOrd, parents[ord]);
+        parentOrd = ord; // next level should have this parent
+      }
     }
     dtr.close();
     
