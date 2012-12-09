@@ -260,6 +260,11 @@ Bug Fixes
 * SOLR-2890: Fixed a bug that prevented omitNorms and omitTermFreqAndPositions 
   options from being respected in some <fieldType/> declarations (hossman)
 
+* SOLR-4159: When we are starting a shard from rest, a potential leader should 
+  not consider it's last published state when deciding if it can be the new 
+  leader. (Mark Miller)
+
+
 Other Changes
 ----------------------
 
