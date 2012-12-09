@@ -163,7 +163,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       }
       
       // should I be leader?
-      if (weAreReplacement && !shouldIBeLeader(leaderProps, core)) {
+      if (weAreReplacement && !shouldIBeLeader(leaderProps, core, weAreReplacement)) {
         rejoinLeaderElection(leaderSeqPath, core);
         return;
       }
@@ -351,12 +351,18 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     leaderElector.joinElection(this, true);
   }
 
-  private boolean shouldIBeLeader(ZkNodeProps leaderProps, SolrCore core) {
+  private boolean shouldIBeLeader(ZkNodeProps leaderProps, SolrCore core, boolean weAreReplacement) {
     log.info("Checking if I should try and be the leader.");
     
     if (isClosed) {
       log.info("Bailing on leader process because we have been closed");
       return false;
+    }
+    
+    if (!weAreReplacement) {
+      // we are the first node starting in the shard - there is a configurable wait
+      // to make sure others participate in sync and leader election, we can be leader
+      return true;
     }
     
     if (core.getCoreDescriptor().getCloudDescriptor().getLastPublished()
