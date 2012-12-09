@@ -54,7 +54,7 @@ public class ImplicitDocRouter extends DocRouter {
   }
 
   @Override
-  public Collection<Slice> getSearchSlices(String shardKey, SolrParams params, DocCollection collection) {
+  public Collection<Slice> getSearchSlicesSingle(String shardKey, SolrParams params, DocCollection collection) {
     if (shardKey == null) {
       return collection.getSlices();
     }

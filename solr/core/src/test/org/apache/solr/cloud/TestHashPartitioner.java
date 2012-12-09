@@ -23,11 +23,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.http.impl.client.RoutedRequest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.DocRouter.Range;
 import org.apache.solr.common.cloud.PlainIdRouter;

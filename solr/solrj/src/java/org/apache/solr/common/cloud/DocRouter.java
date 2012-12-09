@@ -22,11 +22,13 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Hash;
+import org.apache.solr.common.util.StrUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -157,9 +159,29 @@ public abstract class DocRouter {
 
   /** This method is consulted to determine what slices should be queried for a request when
    *  an explicit shards parameter was not used.
-   *  shardKey (normally from shard.keys) and params may be null.
+   *  This method only accepts a single shard key (or null).  If you have a comma separated list of shard keys,
+   *  call getSearchSlices
    **/
-  public abstract Collection<Slice> getSearchSlices(String shardKey, SolrParams params, DocCollection collection);
+  public abstract Collection<Slice> getSearchSlicesSingle(String shardKey, SolrParams params, DocCollection collection);
+
+
+  /** This method is consulted to determine what slices should be queried for a request when
+   *  an explicit shards parameter was not used.
+   *  This method accepts a multi-valued shardKeys parameter (normally comma separated from the shard.keys request parameter)
+   *  and aggregates the slices returned by getSearchSlicesSingle for each shardKey.
+   **/
+  public Collection<Slice> getSearchSlices(String shardKeys, SolrParams params, DocCollection collection) {
+    if (shardKeys == null || shardKeys.indexOf(',') < 0) {
+      return getSearchSlicesSingle(shardKeys, params, collection);
+    }
+
+    List<String> shardKeyList = StrUtils.splitSmart(shardKeys, ",", true);
+    HashSet<Slice> allSlices = new HashSet<Slice>();
+    for (String shardKey : shardKeyList) {
+      allSlices.addAll( getSearchSlicesSingle(shardKey, params, collection) );
+    }
+    return allSlices;
+  }
 
 }
 

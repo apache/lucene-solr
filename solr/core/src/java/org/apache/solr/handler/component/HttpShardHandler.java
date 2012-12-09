@@ -41,7 +41,6 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -407,16 +406,8 @@ public class HttpShardHandler extends ShardHandler {
 
   private void addSlices(Map<String,Slice> target, ClusterState state, SolrParams params, String collectionName, String shardKeys, boolean multiCollection) {
     DocCollection coll = state.getCollection(collectionName);
-    if (shardKeys != null) {
-      List<String> shardKeyList = StrUtils.splitSmart(shardKeys, ",", true);
-      for (String oneShardKey : shardKeyList) {
-        Collection<Slice> someSlices =  coll.getRouter().getSearchSlices(oneShardKey, params, coll);
-        ClientUtils.addSlices(target, collectionName, someSlices, multiCollection);
-      }
-    } else {
-      Collection<Slice> someSlices =  coll.getRouter().getSearchSlices(null, params, coll);
-      ClientUtils.addSlices(target, collectionName, someSlices, multiCollection);
-    }
+    Collection<Slice> slices = coll.getRouter().getSearchSlices(shardKeys, params , coll);
+    ClientUtils.addSlices(target, collectionName, slices, multiCollection);
   }
 
 

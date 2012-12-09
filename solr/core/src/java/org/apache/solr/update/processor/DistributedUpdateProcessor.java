@@ -20,6 +20,7 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,11 +42,11 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
@@ -761,22 +762,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (zkEnabled && DistribPhase.NONE == phase) {
       boolean leaderForAnyShard = false;  // start off by assuming we are not a leader for any shard
 
-      Map<String,Slice> slices = zkController.getClusterState().getSlicesMap(collection);
-      if (slices == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-            "Cannot find collection:" + collection + " in "
-                + zkController.getClusterState().getCollections());
-      }
+      ModifiableSolrParams outParams = new ModifiableSolrParams(filterParams(req.getParams()));
+      outParams.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
 
-      ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-      params.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
+      DocCollection coll = zkController.getClusterState().getCollection(collection);
+      SolrParams params = req.getParams();
+      Collection<Slice> slices = coll.getRouter().getSearchSlices(params.get(ShardParams.SHARD_KEYS), params, coll);
 
       List<Node> leaders =  new ArrayList<Node>(slices.size());
-      for (Map.Entry<String,Slice> sliceEntry : slices.entrySet()) {
-        String sliceName = sliceEntry.getKey();
-        ZkNodeProps leaderProps;
+      for (Slice slice : slices) {
+        String sliceName = slice.getName();
+        Replica leader;
         try {
-          leaderProps = zkController.getZkStateReader().getLeaderProps(collection, sliceName);
+          leader = zkController.getZkStateReader().getLeaderProps(collection, sliceName);
         } catch (InterruptedException e) {
           throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + sliceName, e);
         }
@@ -785,7 +783,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // should we send out slice-at-a-time and if a node returns "hey, I'm not a leader" (or we get an error because it went down) then look up the new leader?
 
         // Am I the leader for this slice?
-        ZkCoreNodeProps coreLeaderProps = new ZkCoreNodeProps(leaderProps);
+        ZkCoreNodeProps coreLeaderProps = new ZkCoreNodeProps(leader);
         String leaderNodeName = coreLeaderProps.getCoreNodeName();
         String coreName = req.getCore().getName();
         String coreNodeName = zkController.getNodeName() + "_" + coreName;
@@ -799,8 +797,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       }
 
-      params.remove("commit"); // this will be distributed from the local commit
-      cmdDistrib.distribDelete(cmd, leaders, params);
+      outParams.remove("commit"); // this will be distributed from the local commit
+      cmdDistrib.distribDelete(cmd, leaders, outParams);
 
       if (!leaderForAnyShard) {
         return;

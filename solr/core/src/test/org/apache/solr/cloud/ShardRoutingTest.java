@@ -165,8 +165,28 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
 
     doQuery("b!doc1,c!doc2", "q","*:*", shardKeys,"b!,c!");
 
-
     doQuery("b!doc1,c!doc2,d!doc3,e!doc4", "q","*:*", shardKeys,"foo/0!");
+
+    doDBQ("*:*", shardKeys,"b!");
+    commit();
+    doQuery("c!doc2,d!doc3,e!doc4", "q","*:*");
+    doAddDoc("b!doc1");
+
+    doDBQ("*:*", shardKeys,"c!");
+    commit();
+    doQuery("b!doc1,d!doc3,e!doc4", "q","*:*");
+    doAddDoc("c!doc2");
+
+    doDBQ("*:*", shardKeys,"c!");
+    commit();
+    doQuery("b!doc1,d!doc3,e!doc4", "q","*:*");
+    doAddDoc("c!doc2");
+
+    doDBQ("*:*", shardKeys,"d!,e!");
+    commit();
+    doQuery("b!doc1,c!doc2", "q","*:*");
+    doAddDoc("d!doc3");
+    doAddDoc("e!doc4");
   }
 
   void doAddDoc(String id) throws Exception {
@@ -174,6 +194,7 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     // todo - target diff servers and use cloud clients as well as non-cloud clients
   }
 
+  // TODO: refactor some of this stuff up into a base class for use by other tests
   void doQuery(String expectedDocs, String... queryParams) throws Exception {
     Set<String> expectedIds = new HashSet<String>( StrUtils.splitSmart(expectedDocs, ",", true) );
 
@@ -198,6 +219,14 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     }
 
     assertEquals(expectedIds, obtainedIds);
+  }
+
+  // TODO: refactor some of this stuff into the SolrJ client... it should be easier to use
+  void doDBQ(String q, String... reqParams) throws Exception {
+    UpdateRequest req = new UpdateRequest();
+    req.deleteByQuery(q);
+    req.setParams(params(reqParams));
+    req.process(cloudClient);
   }
 
   @Override

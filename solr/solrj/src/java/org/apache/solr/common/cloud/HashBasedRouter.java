@@ -54,7 +54,7 @@ public abstract class HashBasedRouter extends DocRouter {
 
 
   @Override
-  public Collection<Slice> getSearchSlices(String shardKey, SolrParams params, DocCollection collection) {
+  public Collection<Slice> getSearchSlicesSingle(String shardKey, SolrParams params, DocCollection collection) {
     if (shardKey == null) {
       // search across whole collection
       // TODO: this may need modification in the future when shard splitting could cause an overlap
