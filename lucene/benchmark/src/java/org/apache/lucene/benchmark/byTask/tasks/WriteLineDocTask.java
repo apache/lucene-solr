@@ -83,18 +83,20 @@ public class WriteLineDocTask extends PerfTask {
   public static final String DEFAULT_SUFFICIENT_FIELDS = DocMaker.TITLE_FIELD +',' + DocMaker.BODY_FIELD;
   
   private int docSize = 0;
-  private PrintWriter lineFileOut = null;
-  private DocMaker docMaker;
-  private ThreadLocal<StringBuilder> threadBuffer = new ThreadLocal<StringBuilder>();
-  private ThreadLocal<Matcher> threadNormalizer = new ThreadLocal<Matcher>();
-  private final String[] fieldsToWrite;;
+  protected final String fname;
+  private final PrintWriter lineFileOut;
+  private final DocMaker docMaker;
+  private final ThreadLocal<StringBuilder> threadBuffer = new ThreadLocal<StringBuilder>();
+  private final ThreadLocal<Matcher> threadNormalizer = new ThreadLocal<Matcher>();
+  private final String[] fieldsToWrite;
   private final boolean[] sufficientFields;
   private final boolean checkSufficientFields;
+
   
   public WriteLineDocTask(PerfRunData runData) throws Exception {
     super(runData);
     Config config = runData.getConfig();
-    String fname = config.get("line.file.out", null);
+    fname = config.get("line.file.out", null);
     if (fname == null) {
       throw new IllegalArgumentException("line.file.out must be set");
     }
@@ -128,13 +130,13 @@ public class WriteLineDocTask extends PerfTask {
       }
     }
     
-    writeHeader();
+    writeHeader(lineFileOut);
   }
 
   /**
-   * Write a header to the lines file - indicating how to read the file later 
+   * Write header to the lines file - indicating how to read the file later.
    */
-  private void writeHeader() {
+  protected void writeHeader(PrintWriter out) {
     StringBuilder sb = threadBuffer.get();
     if (sb == null) {
       sb = new StringBuilder();
@@ -145,7 +147,7 @@ public class WriteLineDocTask extends PerfTask {
     for (String f : fieldsToWrite) {
       sb.append(SEP).append(f);
     }
-    lineFileOut.println(sb.toString());
+    out.println(sb.toString());
   }
 
   @Override
@@ -180,10 +182,18 @@ public class WriteLineDocTask extends PerfTask {
     if (sufficient) {
       sb.setLength(sb.length()-1); // remove redundant last separator
       // lineFileOut is a PrintWriter, which synchronizes internally in println.
-      lineFileOut.println(sb.toString());
+      lineFileOut(doc).println(sb.toString());
     }
 
     return 1;
+  }
+
+  /**
+   * Selects output line file by written doc.
+   * Default: original output line file.
+   */
+  protected PrintWriter lineFileOut(Document doc) {
+    return lineFileOut;
   }
 
   @Override

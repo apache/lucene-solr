@@ -188,7 +188,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     }
   }
 
-  private void assertHeaderLine(String line) {
+  static void assertHeaderLine(String line) {
     assertTrue("First line should be a header line",line.startsWith(WriteLineDocTask.FIELDS_HEADER_INDICATOR));
   }
   
