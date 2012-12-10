@@ -47,11 +47,6 @@ public class TestSearchAfter extends LuceneTestCase {
   private IndexReader reader;
   private IndexSearcher searcher;
 
-  private static SortField useDocValues(SortField field) {
-    field.setUseIndexValues(true);
-    return field;
-  }
-
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -125,11 +120,11 @@ public class TestSearchAfter extends LuceneTestCase {
       assertQuery(query, filter, new Sort(new SortField[] {new SortField("double", SortField.Type.DOUBLE, reversed)}));
       assertQuery(query, filter, new Sort(new SortField[] {new SortField("bytes", SortField.Type.STRING, reversed)}));
       assertQuery(query, filter, new Sort(new SortField[] {new SortField("bytesval", SortField.Type.STRING_VAL, reversed)}));
-      assertQuery(query, filter, new Sort(new SortField[] {useDocValues(new SortField("intdocvalues", SortField.Type.INT, reversed))}));
-      assertQuery(query, filter, new Sort(new SortField[] {useDocValues(new SortField("floatdocvalues", SortField.Type.FLOAT, reversed))}));
-      assertQuery(query, filter, new Sort(new SortField[] {useDocValues(new SortField("sortedbytesdocvalues", SortField.Type.STRING, reversed))}));
-      assertQuery(query, filter, new Sort(new SortField[] {useDocValues(new SortField("sortedbytesdocvaluesval", SortField.Type.STRING_VAL, reversed))}));
-      assertQuery(query, filter, new Sort(new SortField[] {useDocValues(new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, reversed))}));
+      assertQuery(query, filter, new Sort(new SortField[] {new SortField("intdocvalues", SortField.Type.INT, reversed)}));
+      assertQuery(query, filter, new Sort(new SortField[] {new SortField("floatdocvalues", SortField.Type.FLOAT, reversed)}));
+      assertQuery(query, filter, new Sort(new SortField[] {new SortField("sortedbytesdocvalues", SortField.Type.STRING, reversed)}));
+      assertQuery(query, filter, new Sort(new SortField[] {new SortField("sortedbytesdocvaluesval", SortField.Type.STRING_VAL, reversed)}));
+      assertQuery(query, filter, new Sort(new SortField[] {new SortField("straightbytesdocvalues", SortField.Type.STRING_VAL, reversed)}));
     }
   }
 

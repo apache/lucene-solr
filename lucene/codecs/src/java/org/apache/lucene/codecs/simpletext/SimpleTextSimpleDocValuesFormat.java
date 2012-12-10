@@ -167,6 +167,8 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     @Override
     public NumericDocValuesConsumer addNumericField(FieldInfo field, final long minValue, long maxValue) throws IOException {
       assert fieldSeen(field.name);
+      assert (field.getDocValuesType() == null || DocValues.isNumber(field.getDocValuesType()) || DocValues.isFloat(field.getDocValuesType())) &&
+        (field.getNormType() == null || DocValues.isNumber(field.getNormType()) || DocValues.isFloat(field.getNormType()));
       writeFieldEntry(field);
       
       // write our minimum value to the .dat, all entries are deltas from that
@@ -224,6 +226,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     @Override
     public BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, final int maxLength) throws IOException {
       assert fieldSeen(field.name);
+      assert DocValues.isBytes(field.getDocValuesType());
       assert !isNorms;
       writeFieldEntry(field);
       // write fixedlength
@@ -278,6 +281,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     @Override
     public SortedDocValuesConsumer addSortedField(FieldInfo field, final int valueCount, boolean fixedLength, final int maxLength) throws IOException {
       assert fieldSeen(field.name);
+      assert DocValues.isSortedBytes(field.getDocValuesType());
       assert !isNorms;
       writeFieldEntry(field);
       // write numValues
@@ -662,7 +666,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
             }
             in.seek(field.dataStartFilePointer + ord * (9 + field.pattern.length() + field.maxLength));
             SimpleTextUtil.readLine(in, scratch);
-            assert StringHelper.startsWith(scratch, LENGTH);
+            assert StringHelper.startsWith(scratch, LENGTH): "got " + scratch.utf8ToString() + " in=" + in;
             int len;
             try {
               len = decoder.parse(new String(scratch.bytes, scratch.offset + LENGTH.length, scratch.length - LENGTH.length, "UTF-8")).intValue();

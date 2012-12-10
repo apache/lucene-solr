@@ -518,8 +518,6 @@ public abstract class DocValues implements Closeable {
     switch(type) {
     case BYTES_VAR_SORTED:
     case BYTES_FIXED_SORTED:
-    case BYTES_VAR_DEREF:
-    case BYTES_FIXED_DEREF:
       return true;
     default:
       return false;
@@ -529,6 +527,8 @@ public abstract class DocValues implements Closeable {
   // nocommit nuke
   public static boolean isBytes(Type type) {
     switch(type) {
+    case BYTES_VAR_DEREF:
+    case BYTES_FIXED_DEREF:
     case BYTES_VAR_STRAIGHT:
     case BYTES_FIXED_STRAIGHT:
       return true;

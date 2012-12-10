@@ -49,32 +49,22 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
   public void addField(int docID, StorableField field, FieldInfo fieldInfo) {
     final DocValues.Type dvType = field.fieldType().docValueType();
     if (dvType != null) {
-      switch(dvType) {
-      case BYTES_VAR_STRAIGHT:
-      case BYTES_FIXED_STRAIGHT:
+      if (DocValues.isBytes(dvType)) {
         addBinaryField(fieldInfo, docID, field.binaryValue());
-        break;
-      case BYTES_VAR_SORTED:
-      case BYTES_FIXED_SORTED:
-      case BYTES_VAR_DEREF:
-      case BYTES_FIXED_DEREF:
+      } else if (DocValues.isSortedBytes(dvType)) {
         addSortedField(fieldInfo, docID, field.binaryValue());
-        break;
-      case VAR_INTS:
-      case FIXED_INTS_8:
-      case FIXED_INTS_16:
-      case FIXED_INTS_32:
-      case FIXED_INTS_64:
+      } else if (DocValues.isFloat(dvType)) {
+        if (dvType == DocValues.Type.FLOAT_32) {
+          addNumericField(fieldInfo, docID, field.numericValue().floatValue());
+        } else if (dvType == DocValues.Type.FLOAT_64) {
+          addNumericField(fieldInfo, docID, field.numericValue().doubleValue());
+        } else {
+          assert false;
+        }
+      } else if (DocValues.isNumber(dvType)) {
         addNumericField(fieldInfo, docID, field.numericValue().longValue());
-        break;
-      case FLOAT_32:
-        addNumericField(fieldInfo, docID, field.numericValue().floatValue());
-        break;
-      case FLOAT_64:
-        addNumericField(fieldInfo, docID, field.numericValue().doubleValue());
-        break;
-      default:
-        break;
+      } else {
+        assert false: "unrecognized DocValues.Type: " + dvType;
       }
     }
   }
