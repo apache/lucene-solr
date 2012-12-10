@@ -167,8 +167,8 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     @Override
     public NumericDocValuesConsumer addNumericField(FieldInfo field, final long minValue, long maxValue) throws IOException {
       assert fieldSeen(field.name);
-      assert (field.getDocValuesType() == null || DocValues.isNumber(field.getDocValuesType()) || DocValues.isFloat(field.getDocValuesType())) &&
-        (field.getNormType() == null || DocValues.isNumber(field.getNormType()) || DocValues.isFloat(field.getNormType()));
+      assert (field.getDocValuesType() != null && (DocValues.isNumber(field.getDocValuesType()) || DocValues.isFloat(field.getDocValuesType()))) ||
+        (field.getNormType() != null && (DocValues.isNumber(field.getNormType()) || DocValues.isFloat(field.getNormType())));
       writeFieldEntry(field);
       
       // write our minimum value to the .dat, all entries are deltas from that
