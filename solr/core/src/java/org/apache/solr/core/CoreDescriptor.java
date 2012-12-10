@@ -31,6 +31,7 @@ public class CoreDescriptor {
   protected String name;
   protected String instanceDir;
   protected String dataDir;
+  protected String ulogDir;
   protected String configName;
   protected String propertiesName;
   protected String schemaName;
@@ -224,5 +225,13 @@ public class CoreDescriptor {
 
   public void setSwappable(boolean swappable) {
     this.swappable = swappable;
+  }
+
+  public String getUlogDir() {
+    return ulogDir;
+  }
+
+  public void setUlogDir(String ulogDir) {
+    this.ulogDir = ulogDir;
   }
 }
