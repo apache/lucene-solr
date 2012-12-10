@@ -322,6 +322,8 @@ Other Changes
 * SOLR-4062: The update log location in solrconfig.xml should default to 
   ${solr.ulog.dir} rather than ${solr.data.dir:} (Mark Miller)
 
+* SOLR-4155: Upgrade Jetty to 8.1.8. (Robert Muir)
+
 ==================  4.0.0 ==================
 
 Versions of Major Components
