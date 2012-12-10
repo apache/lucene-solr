@@ -70,7 +70,7 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
         // called?
         simpleNormsWriter.addValue(docState.docID, norm);
       }
-    }    
+    }
   }
   
   Type flush(SegmentWriteState state, SimpleDVConsumer normsConsumer) throws IOException {
@@ -97,6 +97,9 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
     if (consumer == null) {
       if (fieldInfo.getNormType() != null && fieldInfo.getNormType() != type) {
         throw new IllegalArgumentException("cannot change Norm type from " + fieldInfo.getNormType() + " to " + type + " for field \"" + fieldInfo.name + "\"");
+      }
+      if (!DocValues.isNumber(type) && !DocValues.isFloat(type)) {
+        throw new IllegalArgumentException("Norm type must be numeric (got type " + type + " for field \"" + fieldInfo.name + "\"");
       }
       fieldInfo.setNormValueType(type);
       consumer = parent.newConsumer(docState.docWriter.newPerDocWriteState(""), fieldInfo, type);
