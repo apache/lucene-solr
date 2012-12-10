@@ -681,6 +681,7 @@ public class CheckIndex {
         if (info.hasNorms()) {
           DocValues dv = reader.normValues(info.name);
           checkDocValues(dv, info.name, info.getNormType(), reader.maxDoc());
+          checkSimpleNorms(info, reader, infoStream);
           ++status.totFields;
         } else {
           if (reader.normValues(info.name) != null) {
@@ -1373,7 +1374,7 @@ public class CheckIndex {
     return status;
   }
   
-  private static void checkBinaryDocValues(FieldInfo fi, AtomicReader reader, BinaryDocValues dv) {
+  private static void checkBinaryDocValues(String fieldName, AtomicReader reader, BinaryDocValues dv) {
     // nocommit remove this:
     if (dv == null) {
       return;
@@ -1393,19 +1394,19 @@ public class CheckIndex {
       }
     }
     if (fixed != fixed2) {
-      throw new RuntimeException("dv for field: " + fi.name + " reports fixed=" + fixed + " but this is not the case!");
+      throw new RuntimeException("dv for field: " + fieldName + " reports fixed=" + fixed + " but this is not the case!");
     }
     if (maxLength != maxLength2) {
-      throw new RuntimeException("dv for field: " + fi.name + " reports maxLength=" + maxLength + " but this is not the case: " + maxLength2);
+      throw new RuntimeException("dv for field: " + fieldName + " reports maxLength=" + maxLength + " but this is not the case: " + maxLength2);
     }
   }
   
-  private static void checkSortedDocValues(FieldInfo fi, AtomicReader reader, SortedDocValues dv) {
+  private static void checkSortedDocValues(String fieldName, AtomicReader reader, SortedDocValues dv) {
     // nocommit remove this:
     if (dv == null) {
       return;
     }
-    checkBinaryDocValues(fi, reader, dv);
+    checkBinaryDocValues(fieldName, reader, dv);
     final int maxOrd = dv.getValueCount()-1;
     FixedBitSet seenOrds = new FixedBitSet(dv.getValueCount());
     int maxOrd2 = -1;
@@ -1418,10 +1419,10 @@ public class CheckIndex {
       seenOrds.set(ord);
     }
     if (maxOrd != maxOrd2) {
-      throw new RuntimeException("dv for field: " + fi.name + " reports wrong maxOrd=" + maxOrd + " but this is not the case: " + maxOrd2);
+      throw new RuntimeException("dv for field: " + fieldName + " reports wrong maxOrd=" + maxOrd + " but this is not the case: " + maxOrd2);
     }
     if (seenOrds.cardinality() != dv.getValueCount()) {
-      throw new RuntimeException("dv for field: " + fi.name + " has holes in its ords, valueCount=" + dv.getValueCount() + " but only used: " + seenOrds.cardinality());
+      throw new RuntimeException("dv for field: " + fieldName + " has holes in its ords, valueCount=" + dv.getValueCount() + " but only used: " + seenOrds.cardinality());
     }
     BytesRef lastValue = null;
     BytesRef scratch = new BytesRef();
@@ -1429,14 +1430,14 @@ public class CheckIndex {
       dv.lookupOrd(i, scratch);
       if (lastValue != null) {
         if (scratch.compareTo(lastValue) <= 0) {
-          throw new RuntimeException("dv for field: " + fi.name + " has ords out of order: " + lastValue + " >=" + scratch);
+          throw new RuntimeException("dv for field: " + fieldName + " has ords out of order: " + lastValue + " >=" + scratch);
         }
       }
       lastValue = BytesRef.deepCopyOf(scratch);
     }
   }
   
-  private static void checkNumericDocValues(FieldInfo fi, AtomicReader reader, NumericDocValues ndv) {
+  private static void checkNumericDocValues(String fieldName, AtomicReader reader, NumericDocValues ndv) {
     // nocommit remove this:
     if (ndv == null) {
       return;
@@ -1451,10 +1452,10 @@ public class CheckIndex {
       maxValue2 = Math.max(maxValue2, value);
     }
     if (minValue != minValue2) {
-      throw new RuntimeException("dv for field: " + fi.name + " reports minValue=" + minValue + " but this is not the case: " + minValue2);
+      throw new RuntimeException("dv for field: " + fieldName + " reports minValue=" + minValue + " but this is not the case: " + minValue2);
     }
     if (maxValue != maxValue2) {
-      throw new RuntimeException("dv for field: " + fi.name + " reports maxValue=" + maxValue + " but this is not the case: " + maxValue2);
+      throw new RuntimeException("dv for field: " + fieldName + " reports maxValue=" + maxValue + " but this is not the case: " + maxValue2);
     }
   }
   
@@ -1470,11 +1471,11 @@ public class CheckIndex {
       case BYTES_VAR_SORTED:
       case BYTES_FIXED_DEREF:
       case BYTES_VAR_DEREF:
-        checkSortedDocValues(fi, reader, reader.getSortedDocValues(fi.name));
+        checkSortedDocValues(fi.name, reader, reader.getSortedDocValues(fi.name));
         break;
       case BYTES_FIXED_STRAIGHT:
       case BYTES_VAR_STRAIGHT:
-        checkBinaryDocValues(fi, reader, reader.getBinaryDocValues(fi.name));
+        checkBinaryDocValues(fi.name, reader, reader.getBinaryDocValues(fi.name));
         break;
       case FLOAT_32:
       case FLOAT_64:
@@ -1483,10 +1484,27 @@ public class CheckIndex {
       case FIXED_INTS_32:
       case FIXED_INTS_64:
       case FIXED_INTS_8:
-        checkNumericDocValues(fi, reader, reader.getNumericDocValues(fi.name));
+        checkNumericDocValues(fi.name, reader, reader.getNumericDocValues(fi.name));
         break;
       default:
         throw new AssertionError();
+    }
+  }
+  
+  // nocommit
+  public static void checkSimpleNorms(FieldInfo fi, AtomicReader reader, PrintStream infoStream) throws IOException {
+    switch(fi.getNormType()) {
+      case FLOAT_32:
+      case FLOAT_64:
+      case VAR_INTS:
+      case FIXED_INTS_16:
+      case FIXED_INTS_32:
+      case FIXED_INTS_64:
+      case FIXED_INTS_8:
+        checkNumericDocValues(fi.name, reader, reader.simpleNormValues(fi.name));
+        break;
+      default:
+        throw new AssertionError("wtf: " + fi.getNormType());
     }
   }
 
