@@ -38,11 +38,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util._TestUtil;
 
-// nocommit make TestCodecHoldsOpenFiles, ie remove files
-// after opening reader, then run check index (need to
-// change CI to pass in atomic reader ... robert has patch
-// LUCENE-4294)
-
 public class TestSameScoresWithThreads extends LuceneTestCase {
 
   public void test() throws Exception {
