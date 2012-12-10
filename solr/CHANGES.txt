@@ -112,6 +112,9 @@ New Features
 
 * SOLR-4124: You should be able to set the update log directory with the
   CoreAdmin API the same way as the data directory. (Mark Miller)
+  
+* SOLR-4028: When using ZK chroot, it would be nice if Solr would create the 
+  initial path when it doesn't exist. (Tomas Fernandez Lobbe via Mark Miller)
 
 Optimizations
 ----------------------
