@@ -84,8 +84,12 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       
       while (pauseWriter) {
         try {
-          writerPauseLock.wait();
+          writerPauseLock.wait(100);
         } catch (InterruptedException e) {}
+        
+        if (closed) {
+          throw new RuntimeException("Already closed");
+        }
       }
       
       if (indexWriter == null) {
@@ -128,8 +132,12 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
       log.info("Waiting until IndexWriter is unused... core=" + coreName);
       while (!writerFree) {
         try {
-          writerPauseLock.wait();
+          writerPauseLock.wait(100);
         } catch (InterruptedException e) {}
+        
+        if (closed) {
+          throw new RuntimeException("Already closed");
+        }
       }
 
       try {
