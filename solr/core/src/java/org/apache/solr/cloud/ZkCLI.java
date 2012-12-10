@@ -123,12 +123,12 @@ public class ZkCLI {
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp(ZK_CLI_NAME, options);
         System.out.println("Examples:");
-        System.out.println("zkcli.sh -cmd " + BOOTSTRAP + " -" + SOLRHOME + " /opt/solr");
-        System.out.println("zkcli.sh -cmd " + UPCONFIG + " -" + CONFDIR + " /opt/solr/collection1/conf" + " -" + CONFNAME + " myconf");
-        System.out.println("zkcli.sh -cmd " + DOWNCONFIG + " -" + CONFDIR + " /opt/solr/collection1/conf" + " -" + CONFNAME + " myconf");
-        System.out.println("zkcli.sh -cmd " + LINKCONFIG + " -" + COLLECTION + " collection1" + " -" + CONFNAME + " myconf");
-        System.out.println("zkcli.sh -cmd " + MAKEPATH + " /apache/solr");
-        System.out.println("zkcli.sh -cmd " + CLEAR + " /solr");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + BOOTSTRAP + " -" + SOLRHOME + " /opt/solr");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + UPCONFIG + " -" + CONFDIR + " /opt/solr/collection1/conf" + " -" + CONFNAME + " myconf");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + DOWNCONFIG + " -" + CONFDIR + " /opt/solr/collection1/conf" + " -" + CONFNAME + " myconf");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + LINKCONFIG + " -" + COLLECTION + " collection1" + " -" + CONFNAME + " myconf");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + MAKEPATH + " /apache/solr");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLEAR + " /solr");
         return;
       }
       
