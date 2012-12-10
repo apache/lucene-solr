@@ -301,6 +301,10 @@ Bug Fixes
   enough to find the leader due to how long the potential leader waits to see 
   replicas. (Mark Miller, Alain Rogister)
 
+* SOLR-4162: ZkCli usage examples are not correct because the zkhost parameter 
+  is not present and it is mandatory for all commands. 
+  (Tomas Fernandez Lobbe via Mark Miller)
+
 Other Changes
 ----------------------
 
