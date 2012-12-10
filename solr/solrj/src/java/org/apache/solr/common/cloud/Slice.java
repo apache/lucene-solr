@@ -35,7 +35,7 @@ public class Slice extends ZkNodeProps {
 
   private final String name;
   private final DocRouter.Range range;
-  private final Integer replicationFactor;
+  private final Integer replicationFactor;      // FUTURE: optional per-slice override of the collection replicationFactor
   private final Map<String,Replica> replicas;
   private final Replica leader;
 

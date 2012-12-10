@@ -174,11 +174,11 @@ public class OverseerCollectionProcessor implements Runnable {
       // look at the replication factor and see if it matches reality
       // if it does not, find best nodes to create more cores
       
-      int numReplica = msgStrToInt(message, REPLICATION_FACTOR, 0);
+      int repFactor = msgStrToInt(message, REPLICATION_FACTOR, 1);
       int numSlices = msgStrToInt(message, NUM_SLICES, 0);
       int maxShardsPerNode = msgStrToInt(message, MAX_SHARDS_PER_NODE, 1);
       
-      if (numReplica < 0) {
+      if (repFactor <= 0) {
         SolrException.log(log, REPLICATION_FACTOR + " must be > 0");
         return false;
       }
@@ -208,12 +208,11 @@ public class OverseerCollectionProcessor implements Runnable {
         return false;
       }
       
-      int numShardsPerSlice = numReplica + 1;
-      if (numShardsPerSlice > nodeList.size()) {
+      if (repFactor > nodeList.size()) {
         log.warn("Specified "
             + REPLICATION_FACTOR
             + " of "
-            + numReplica
+            + repFactor
             + " on collection "
             + collectionName
             + " is higher than or equal to the number of Solr instances currently live ("
@@ -222,21 +221,21 @@ public class OverseerCollectionProcessor implements Runnable {
       }
       
       int maxShardsAllowedToCreate = maxShardsPerNode * nodeList.size();
-      int requestedShardsToCreate = numSlices * numShardsPerSlice;
+      int requestedShardsToCreate = numSlices * repFactor;
       if (maxShardsAllowedToCreate < requestedShardsToCreate) {
         log.error("Cannot create collection " + collectionName + ". Value of "
             + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
             + ", and the number of live nodes is " + nodeList.size()
             + ". This allows a maximum of " + maxShardsAllowedToCreate
             + " to be created. Value of " + NUM_SLICES + " is " + numSlices
-            + " and value of " + REPLICATION_FACTOR + " is " + numReplica
+            + " and value of " + REPLICATION_FACTOR + " is " + repFactor
             + ". This requires " + requestedShardsToCreate
             + " shards to be created (higher than the allowed number)");
         return false;
       }
       
       for (int i = 1; i <= numSlices; i++) {
-        for (int j = 1; j <= numShardsPerSlice; j++) {
+        for (int j = 1; j <= repFactor; j++) {
           String nodeName = nodeList.get(((i - 1) + (j - 1)) % nodeList.size());
           String sliceName = "shard" + i;
           String shardName = collectionName + "_" + sliceName + "_replica" + j;

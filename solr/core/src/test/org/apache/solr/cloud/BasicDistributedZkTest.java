@@ -739,9 +739,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     for (int i = 0; i < cnt; i++) {
       int numShards = _TestUtil.nextInt(random(), 0, shardCount) + 1;
-      int numReplica = _TestUtil.nextInt(random(), 0, 3) + 1;
-      int maxShardsPerNode = (((numShards * (numReplica + 1)) / getCommonCloudSolrServer().getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
-      createCollection(collectionInfos, i, numShards, numReplica, maxShardsPerNode);
+      int replicationFactor = _TestUtil.nextInt(random(), 0, 3) + 2;
+      int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrServer().getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
+      createCollection(collectionInfos, i, numShards, replicationFactor, maxShardsPerNode);
     }
     
     Set<Entry<String,List<Integer>>> collectionInfosEntrySet = collectionInfos.entrySet();
@@ -844,7 +844,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     params.set("action", CollectionAction.CREATE.toString());
 
     params.set("numShards", 1);
-    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, 1);
+    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, 2);
     collectionName = "acollectionafterbaddelete";
 
     params.set("name", collectionName);
@@ -854,7 +854,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     List<Integer> list = new ArrayList<Integer> (2);
     list.add(1);
-    list.add(1);
+    list.add(2);
     checkForCollection(collectionName, list);
     
     url = getUrlFromZk(collectionName);
@@ -871,10 +871,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     // test maxShardsPerNode
     int liveNodes = getCommonCloudSolrServer().getZkStateReader().getClusterState().getLiveNodes().size();
     int numShards = (liveNodes/2) + 1;
-    int numReplica = 1;
+    int replicationFactor = 2;
     int maxShardsPerNode = 1;
     collectionInfos = new HashMap<String,List<Integer>>();
-    createCollection(collectionInfos, cnt, numShards, numReplica, maxShardsPerNode);
+    createCollection(collectionInfos, cnt, numShards, replicationFactor, maxShardsPerNode);
     
     // TODO: enable this check after removing the 60 second wait in it
     //checkCollectionIsNotCreated(collectionInfos.keySet().iterator().next());
@@ -1030,7 +1030,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     
     int expectedSlices = numShardsNumReplicaList.get(0);
     // The Math.min thing is here, because we expect replication-factor to be reduced to if there are not enough live nodes to spread all shards of a collection over different nodes
-    int expectedShardsPerSlice = numShardsNumReplicaList.get(1) + 1;
+    int expectedShardsPerSlice = numShardsNumReplicaList.get(1);
     int expectedTotalShards = expectedSlices * expectedShardsPerSlice;
     
       Map<String,DocCollection> collections = clusterState

@@ -176,7 +176,7 @@ public class CollectionsHandler extends RequestHandlerBase {
   private void handleCreateAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws InterruptedException, KeeperException {
     log.info("Creating Collection : " + req.getParamString());
-    Integer numReplicas = req.getParams().getInt(OverseerCollectionProcessor.REPLICATION_FACTOR, 0);
+    Integer numReplicas = req.getParams().getInt(OverseerCollectionProcessor.REPLICATION_FACTOR, 1);
     String name = req.getParams().required().get("name");
     String configName = req.getParams().get("collection.configName");
     String numShards = req.getParams().get(OverseerCollectionProcessor.NUM_SLICES);
