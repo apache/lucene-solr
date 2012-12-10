@@ -320,6 +320,9 @@ Build
 * LUCENE-4589: Upgraded benchmark module's Nekohtml dependency to version
   1.9.17, removing the workaround in Lucene's HTML parser for the
   Turkish locale.  (Uwe Schindler)
+
+* LUCENE-4601: Fix ivy availability check to use typefound, so it works
+  if called from another build file.  (Ryan Ernst via Robert Muir)
   
   
 ======================= Lucene 4.0.0 =======================
