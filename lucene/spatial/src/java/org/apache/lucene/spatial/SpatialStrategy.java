@@ -26,6 +26,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.query.SpatialArgs;
 
 /**
@@ -108,7 +109,7 @@ public abstract class SpatialStrategy {
   public abstract ValueSource makeDistanceValueSource(Point queryPoint);
 
   /**
-   * Make a (ConstantScore) Query based principally on {@link org.apache.lucene.spatial.query.SpatialOperation}
+   * Make a Query based principally on {@link org.apache.lucene.spatial.query.SpatialOperation}
    * and {@link Shape} from the supplied {@code args}.
    * The default implementation is
    * <pre>return new ConstantScoreQuery(makeFilter(args));</pre>
@@ -117,7 +118,7 @@ public abstract class SpatialStrategy {
    * @throws org.apache.lucene.spatial.query.UnsupportedSpatialOperation If the strategy does not support the {@link
    * org.apache.lucene.spatial.query.SpatialOperation} in {@code args}.
    */
-  public ConstantScoreQuery makeQuery(SpatialArgs args) {
+  public Query makeQuery(SpatialArgs args) {
     return new ConstantScoreQuery(makeFilter(args));
   }
 
