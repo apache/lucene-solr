@@ -27,7 +27,7 @@
 
   <path id="classpath">
     <pathelement path="${analyzers-common.jar}"/>
-    <pathelement path="lib/commons-codec-1.7.jar"/>
+    <fileset dir="lib"/>
     <path refid="base.classpath"/>
   </path>
 
