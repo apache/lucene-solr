@@ -313,6 +313,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
         final int fieldNumber = globalFieldNumbers.addOrGet(name, preferredFieldNumber, docValues);
         fi = addInternal(name, fieldNumber, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
       } else {
+        fi.update(isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
+
         if (docValues != null) {
           DocValues.Type currentDVType = fi.getDocValuesType();
           if (currentDVType == null) {
@@ -320,12 +322,16 @@ public class FieldInfos implements Iterable<FieldInfo> {
           } else if (currentDVType != docValues) {
             throw new IllegalArgumentException("cannot change DocValues type from " + currentDVType + " to " + docValues + " for field \"" + name + "\"");
           }
-        }
-        fi.update(isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
-        if (docValues != null) {
           fi.setDocValuesType(docValues);
         }
+
         if (!fi.omitsNorms() && normType != null) {
+          DocValues.Type currentDVType = fi.getNormType();
+          if (currentDVType == null) {
+            fi.setNormValueType(docValues);
+          } else if (currentDVType != normType) {
+            throw new IllegalArgumentException("cannot change Norm type from " + currentDVType + " to " + normType + " for field \"" + name + "\"");
+          }
           fi.setNormValueType(normType);
         }
       }

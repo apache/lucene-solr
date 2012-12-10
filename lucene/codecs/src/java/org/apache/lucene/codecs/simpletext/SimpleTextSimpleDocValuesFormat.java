@@ -168,7 +168,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     public NumericDocValuesConsumer addNumericField(FieldInfo field, final long minValue, long maxValue) throws IOException {
       assert fieldSeen(field.name);
       assert (field.getDocValuesType() != null && (DocValues.isNumber(field.getDocValuesType()) || DocValues.isFloat(field.getDocValuesType()))) ||
-        (field.getNormType() != null && (DocValues.isNumber(field.getNormType()) || DocValues.isFloat(field.getNormType())));
+        (field.getNormType() != null && (DocValues.isNumber(field.getNormType()) || DocValues.isFloat(field.getNormType()))): "field=" + field.name;
       writeFieldEntry(field);
       
       // write our minimum value to the .dat, all entries are deltas from that
@@ -505,16 +505,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     @Override
     public NumericDocValues getNumeric(FieldInfo fieldInfo) throws IOException {
       final OneField field = fields.get(fieldInfo.name);
-
-      // This can happen, in exceptional cases, where the
-      // only doc containing a field hit a non-aborting
-      // exception.  The field then appears in FieldInfos,
-      // marked as indexed and !omitNorms, and then merging
-      // will try to retrieve it:
-      // nocommit can we somehow avoid this ...?
-      if (field == null) {
-        return null;
-      }
+      assert field != null;
 
       // SegmentCoreReaders already verifies this field is
       // valid:

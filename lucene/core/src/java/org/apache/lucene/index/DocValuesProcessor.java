@@ -49,6 +49,12 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
   public void addField(int docID, StorableField field, FieldInfo fieldInfo) {
     final DocValues.Type dvType = field.fieldType().docValueType();
     if (dvType != null) {
+      DocValues.Type currentDVType = fieldInfo.getDocValuesType();
+      if (currentDVType == null) {
+        fieldInfo.setDocValuesType(dvType);
+      } else if (currentDVType != dvType) {
+        throw new IllegalArgumentException("cannot change DocValues type from " + currentDVType + " to " + dvType + " for field \"" + fieldInfo.name + "\"");
+      }
       if (DocValues.isBytes(dvType)) {
         addBinaryField(fieldInfo, docID, field.binaryValue());
       } else if (DocValues.isSortedBytes(dvType)) {

@@ -28,8 +28,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.PerDocConsumer;
-import org.apache.lucene.codecs.SimpleDVConsumer;
-import org.apache.lucene.codecs.SimpleDocValuesFormat;
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
 import org.apache.lucene.index.TypePromoter.TypeCompatibility;
 import org.apache.lucene.store.IOContext;
@@ -381,9 +379,6 @@ final class DocFieldProcessor extends DocConsumer {
       }
     }
     DocValuesConsumer docValuesConsumer = perDocConsumer.addValuesField(valueType, fieldInfo);
-    assert fieldInfo.getDocValuesType() == null || fieldInfo.getDocValuesType() == valueType;
-    fieldInfo.setDocValuesType(valueType);
-
     docValuesConsumerAndDocID = new DocValuesConsumerHolder(docValuesConsumer);
     docValuesConsumerAndDocID.docID = docState.docID;
     docValues.put(fieldInfo.name, docValuesConsumerAndDocID);
