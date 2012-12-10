@@ -299,6 +299,9 @@ Optimizations
 * LUCENE-4580: DrillDown.query variants return a ConstantScoreQuery with boost set to 0.0f
   so that documents scores are not affected by running a drill-down query. (Shai Erera)  
 
+* LUCENE-4598: PayloadIterator no longer uses top-level IndexReader to iterate on the
+  posting's payload. (Shai Erera, Michael McCandless)
+  
 Documentation
 
 * LUCENE-4483: Refer to BytesRef.deepCopyOf in Term's constructor that takes BytesRef.

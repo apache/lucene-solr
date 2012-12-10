@@ -52,12 +52,10 @@ public class EnhancementsPayloadIterator extends PayloadIterator {
    *            The category term to iterate.
    * @throws IOException If there is a low-level I/O error.
    */
-  public EnhancementsPayloadIterator(
-      List<CategoryEnhancement> enhancementsList,
+  public EnhancementsPayloadIterator(List<CategoryEnhancement> enhancementsList,
       IndexReader indexReader, Term term) throws IOException {
     super(indexReader, term);
-    EnhancedCategories = enhancementsList
-        .toArray(new CategoryEnhancement[enhancementsList.size()]);
+    EnhancedCategories = enhancementsList.toArray(new CategoryEnhancement[enhancementsList.size()]);
     enhancementLength = new int[EnhancedCategories.length];
     enhancementStart = new int[EnhancedCategories.length];
   }
@@ -69,10 +67,10 @@ public class EnhancementsPayloadIterator extends PayloadIterator {
     }
 
     // read header - number of enhancements and their lengths
-    Position position = new Position();
-    nEnhancements = Vint8.decode(buffer, position);
+    Position position = new Position(data.offset);
+    nEnhancements = Vint8.decode(data.bytes, position);
     for (int i = 0; i < nEnhancements; i++) {
-      enhancementLength[i] = Vint8.decode(buffer, position);
+      enhancementLength[i] = Vint8.decode(data.bytes, position);
     }
 
     // set enhancements start points
@@ -96,7 +94,7 @@ public class EnhancementsPayloadIterator extends PayloadIterator {
   public Object getCategoryData(CategoryEnhancement enhancedCategory) {
     for (int i = 0; i < nEnhancements; i++) {
       if (enhancedCategory.equals(EnhancedCategories[i])) {
-        return enhancedCategory.extractCategoryTokenData(buffer,
+        return enhancedCategory.extractCategoryTokenData(data.bytes,
             enhancementStart[i], enhancementLength[i]);
       }
     }
