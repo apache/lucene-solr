@@ -93,13 +93,13 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
   @Override
   public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si,
       FieldInfos fn, IOContext context) throws IOException {
-    return new CompressingStoredFieldsReader(directory, si, fn, context, formatName, compressionMode);
+    return new CompressingStoredFieldsReader(directory, si, "", fn, context, formatName, compressionMode);
   }
 
   @Override
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si,
       IOContext context) throws IOException {
-    return new CompressingStoredFieldsWriter(directory, si, context,
+    return new CompressingStoredFieldsWriter(directory, si, "", context,
         formatName, compressionMode, chunkSize);
   }
 

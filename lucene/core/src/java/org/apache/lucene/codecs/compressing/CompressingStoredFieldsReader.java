@@ -54,7 +54,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
-final class CompressingStoredFieldsReader extends StoredFieldsReader {
+/**
+ * {@link StoredFieldsReader} impl for {@link CompressingStoredFieldsFormat}.
+ * @lucene.experimental
+ */
+public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
   private final FieldInfos fieldInfos;
   private final CompressingStoredFieldsIndexReader indexReader;
@@ -79,7 +83,8 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
     this.closed = false;
   }
 
-  public CompressingStoredFieldsReader( Directory d, SegmentInfo si, FieldInfos fn,
+  /** Sole constructor. */
+  public CompressingStoredFieldsReader(Directory d, SegmentInfo si, String segmentSuffix, FieldInfos fn,
       IOContext context, String formatName, CompressionMode compressionMode) throws IOException {
     this.compressionMode = compressionMode;
     final String segment = si.name;
@@ -88,8 +93,8 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
     numDocs = si.getDocCount();
     IndexInput indexStream = null;
     try {
-      fieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION), context);
-      final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION);
+      fieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION), context);
+      final String indexStreamFN = IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION);
       indexStream = d.openInput(indexStreamFN, context);
 
       final String codecNameIdx = formatName + CODEC_SFX_IDX;
@@ -123,6 +128,9 @@ final class CompressingStoredFieldsReader extends StoredFieldsReader {
     }
   }
 
+  /** 
+   * Close the underlying {@link IndexInput}s.
+   */
   @Override
   public void close() throws IOException {
     if (!closed) {

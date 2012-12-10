@@ -47,7 +47,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
-final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
+/**
+ * {@link StoredFieldsWriter} impl for {@link CompressingStoredFieldsFormat}.
+ * @lucene.experimental
+ */
+public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   static final int         STRING = 0x00;
   static final int       BYTE_ARR = 0x01;
@@ -79,7 +83,8 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   private int docBase; // doc ID at the beginning of the chunk
   private int numBufferedDocs; // docBase + numBufferedDocs == current doc ID
 
-  public CompressingStoredFieldsWriter(Directory directory, SegmentInfo si, IOContext context,
+  /** Sole constructor. */
+  public CompressingStoredFieldsWriter(Directory directory, SegmentInfo si, String segmentSuffix, IOContext context,
       String formatName, CompressionMode compressionMode, int chunkSize) throws IOException {
     assert directory != null;
     this.directory = directory;
@@ -94,9 +99,9 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     this.numBufferedDocs = 0;
 
     boolean success = false;
-    IndexOutput indexStream = directory.createOutput(IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION), context);
+    IndexOutput indexStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION), context);
     try {
-      fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION), context);
+      fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION), context);
 
       final String codecNameIdx = formatName + CODEC_SFX_IDX;
       final String codecNameDat = formatName + CODEC_SFX_DAT;

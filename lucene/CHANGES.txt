@@ -155,6 +155,9 @@ API Changes
 * LUCENE-4537: RateLimiter is now separated from FSDirectory and exposed via
   RateLimitingDirectoryWrapper. Any Directory can now be rate-limited.
   (Simon Willnauer)  
+
+* LUCENE-4591: CompressingStoredFields{Writer,Reader} now accept a segment
+  suffix as a constructor parameter. (Renaud Delbru via Adrien Grand)
   
 Bug Fixes
 
