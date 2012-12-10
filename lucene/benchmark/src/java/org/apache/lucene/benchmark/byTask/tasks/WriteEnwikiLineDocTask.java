@@ -46,7 +46,7 @@ public class WriteEnwikiLineDocTask extends WriteLineDocTask {
   }
 
   /** Compose categories line file out of original line file */
-  static File categoriesLineFile(File f) {
+  public static File categoriesLineFile(File f) {
     File dir = f.getParentFile();
     String categoriesName = "categories-"+f.getName();
     return dir==null ? new File(categoriesName) :  new File(dir,categoriesName);
