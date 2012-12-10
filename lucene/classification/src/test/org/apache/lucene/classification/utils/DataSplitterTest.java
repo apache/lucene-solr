@@ -92,7 +92,7 @@ public class DataSplitterTest extends LuceneTestCase {
 
   @Test
   public void testSplitOnAllFields() throws Exception {
-    assertSplit(originalIndex, 0.1, 0.1, null);
+    assertSplit(originalIndex, 0.1, 0.1);
   }
 
 
