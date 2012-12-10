@@ -242,6 +242,14 @@ public class CoreContainer
         } else {
           log.info("Zookeeper client=" + zookeeperHost);          
         }
+        String confDir = System.getProperty("bootstrap_confdir");
+        boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");  
+        
+        if(!ZkController.checkChrootPath(zookeeperHost, (confDir!=null) || boostrapConf)) {
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "A chroot was specified in ZkHost but the znode doesn't exist. ");
+        }
+        
         zkController = new ZkController(this, zookeeperHost, zkClientTimeout, zkClientConnectTimeout, host, hostPort, hostContext, leaderVoteWait, new CurrentCoreDescriptorProvider() {
           
           @Override
@@ -254,8 +262,7 @@ public class CoreContainer
           }
         });        
 
-        String confDir = System.getProperty("bootstrap_confdir");
-        boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
+        
         
         if (zkRun != null && zkServer.getServers().size() > 1 && confDir == null && boostrapConf == false) {
           // we are part of an ensemble and we are not uploading the config - pause to give the config time

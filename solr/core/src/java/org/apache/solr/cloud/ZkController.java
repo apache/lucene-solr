@@ -462,6 +462,37 @@ public final class ZkController {
 
   }
 
+  /**
+   * Validates if the chroot exists in zk (or if it is successfully created). Optionally, if create is set to true this method will create the path
+   * in case it doesn't exist
+   * @return true if the path exists or is created
+   * false if the path doesn't exist and 'create' = false
+   */
+  public static boolean checkChrootPath(String zkHost, boolean create) throws KeeperException, InterruptedException {
+    if(!containsChroot(zkHost)) {
+      return true;
+    }
+    log.info("zkHost includes chroot");
+    String chrootPath = zkHost.substring(zkHost.indexOf("/"), zkHost.length());
+    SolrZkClient tmpClient = new SolrZkClient(zkHost.substring(0, zkHost.indexOf("/")), 60*1000);
+    boolean exists = tmpClient.exists(chrootPath, true);
+    if(!exists && create) {
+      tmpClient.makePath(chrootPath, false, true);
+      exists = true;
+    }
+    tmpClient.close();
+    return exists;
+  }
+
+
+  /**
+   * Validates if zkHost contains a chroot. See http://zookeeper.apache.org/doc/r3.2.2/zookeeperProgrammers.html#ch_zkSessions
+   */
+  private static boolean containsChroot(String zkHost) {
+    return zkHost.contains("/");
+  }
+
+
   public boolean isConnected() {
     return zkClient.isConnected();
   }

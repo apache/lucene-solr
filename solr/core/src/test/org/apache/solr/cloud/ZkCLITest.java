@@ -94,10 +94,22 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     
     assertTrue(zkClient.exists(ZkController.CONFIGS_ZKNODE + "/core0", true));
     assertTrue(zkClient.exists(ZkController.CONFIGS_ZKNODE + "/core1", true));
-    
-
   }
   
+  @Test
+  public void testBootstrapWithChroot() throws Exception {
+    String chroot = "/foo/bar";
+    assertFalse(zkClient.exists(chroot, true));
+    
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress() + chroot,
+        "-cmd", "bootstrap", "-solrhome", ExternalPaths.EXAMPLE_HOME};
+    
+    ZkCLI.main(args);
+    
+    assertTrue(zkClient.exists(chroot + ZkController.CONFIGS_ZKNODE
+        + "/collection1", true));
+  }
+
   @Test
   public void testMakePath() throws Exception {
     // test bootstrap_conf
