@@ -32,8 +32,6 @@ public class TestCodecHoldsOpenFiles extends LuceneTestCase {
     int numDocs = atLeast(100);
     for(int i=0;i<numDocs;i++) {
       Document doc = new Document();
-      // nocommit do we randomly turn on term vectors / doc
-      // values...?
       doc.add(newField("foo", "bar", TextField.TYPE_NOT_STORED));
       w.addDocument(doc);
     }
