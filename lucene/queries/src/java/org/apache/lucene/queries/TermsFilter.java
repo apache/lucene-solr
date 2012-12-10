@@ -253,17 +253,21 @@ public final class TermsFilter extends Filter {
   public String toString() {
     StringBuilder builder = new StringBuilder();
     BytesRef spare = new BytesRef(termsBytes);
+    boolean first = true;
     for (int i = 0; i < termsAndFields.length; i++) {
       TermsAndField current = termsAndFields[i];
       for (int j = current.start; j < current.end; j++) {
         spare.offset = offsets[j];
         spare.length = offsets[j+1] - offsets[j];
+        if (!first) {
+          builder.append(' ');
+        }
+        first = false;
         builder.append(current.field).append(':');
         builder.append(spare.utf8ToString());
-        builder.append(' ');
       }
-
     }
+
     return builder.toString();
   }
   

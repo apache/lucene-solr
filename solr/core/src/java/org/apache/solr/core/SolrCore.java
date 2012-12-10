@@ -17,6 +17,40 @@
 
 package org.apache.solr.core;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Writer;
+import java.lang.reflect.Constructor;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.StringTokenizer;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
+
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
@@ -67,16 +101,17 @@ import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.update.DefaultSolrCoreState;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrCoreState;
+import org.apache.solr.update.SolrCoreState.IndexWriterCloser;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.VersionInfo;
-import org.apache.solr.update.SolrCoreState.IndexWriterCloser;
 import org.apache.solr.update.processor.DistributedUpdateProcessorFactory;
 import org.apache.solr.update.processor.LogUpdateProcessorFactory;
 import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
@@ -84,41 +119,6 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
-
-import javax.xml.parsers.ParserConfigurationException;
-
-import java.io.EOFException;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Writer;
-import java.lang.reflect.Constructor;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -235,30 +235,11 @@ public final class SolrCore implements SolrInfoMBean {
     Properties p = new Properties();
     Directory dir = null;
     try {
-      dir = getDirectoryFactory().get(getDataDir(), null);
+      dir = getDirectoryFactory().get(getDataDir(), getSolrConfig().indexConfig.lockType);
       if (dir.fileExists("index.properties")){
         final IndexInput input = dir.openInput("index.properties", IOContext.DEFAULT);
   
-        final InputStream is = new InputStream() {
-          
-          @Override
-          public int read() throws IOException {
-            byte next;
-            try {
-              next = input.readByte();
-            } catch (EOFException e) {
-              return -1;
-            }
-            return next;
-          }
-          
-          @Override
-          public void close() throws IOException {
-            super.close();
-            input.close();
-          }
-        };
-        
+        final InputStream is = new PropertiesInputStream(input);
         try {
           p.load(is);
           

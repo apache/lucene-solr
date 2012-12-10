@@ -43,13 +43,18 @@ import org.w3c.dom.Element;
 public class DIHConfiguration {
   // TODO - remove from here and add it to entity
   private final String deleteQuery;
+  
   private final List<Entity> entities;
   private final String onImportStart;
   private final String onImportEnd;
   private final List<Map<String, String>> functions;
   private final Script script;
   private final Map<String, Map<String,String>> dataSources;
-  public DIHConfiguration(Element element, DataImporter di, List<Map<String, String>> functions, Script script, Map<String, Map<String,String>> dataSources) {
+  private final PropertyWriter propertyWriter;
+  
+  public DIHConfiguration(Element element, DataImporter di,
+      List<Map<String,String>> functions, Script script,
+      Map<String,Map<String,String>> dataSources, PropertyWriter pw) {
     this.deleteQuery = ConfigParseUtil.getStringAttribute(element, "deleteQuery", null);
     this.onImportStart = ConfigParseUtil.getStringAttribute(element, "onImportStart", null);
     this.onImportEnd = ConfigParseUtil.getStringAttribute(element, "onImportEnd", null);
@@ -73,6 +78,7 @@ public class DIHConfiguration {
     this.functions = Collections.unmodifiableList(modFunc);
     this.script = script;
     this.dataSources = Collections.unmodifiableMap(dataSources);
+    this.propertyWriter = pw;
   }
   public String getDeleteQuery() {
     return deleteQuery;
@@ -94,5 +100,8 @@ public class DIHConfiguration {
   }
   public Script getScript() {
     return script;
+  }
+  public PropertyWriter getPropertyWriter() {
+    return propertyWriter;
   }
 }

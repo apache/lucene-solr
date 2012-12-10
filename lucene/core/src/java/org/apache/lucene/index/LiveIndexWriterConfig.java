@@ -555,7 +555,7 @@ public class LiveIndexWriterConfig {
     sb.append("commit=").append(commit == null ? "null" : commit).append("\n");
     sb.append("openMode=").append(getOpenMode()).append("\n");
     sb.append("similarity=").append(getSimilarity().getClass().getName()).append("\n");
-    sb.append("mergeScheduler=").append(getMergeScheduler().getClass().getName()).append("\n");
+    sb.append("mergeScheduler=").append(getMergeScheduler()).append("\n");
     sb.append("default WRITE_LOCK_TIMEOUT=").append(IndexWriterConfig.WRITE_LOCK_TIMEOUT).append("\n");
     sb.append("writeLockTimeout=").append(getWriteLockTimeout()).append("\n");
     sb.append("codec=").append(getCodec()).append("\n");

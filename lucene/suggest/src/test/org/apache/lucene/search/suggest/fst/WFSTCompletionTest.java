@@ -209,4 +209,12 @@ public class WFSTCompletionTest extends LuceneTestCase {
           new TermFreq(key2, 50),
         }));
   }
+
+  public void testEmpty() throws Exception {
+    WFSTCompletionLookup suggester = new WFSTCompletionLookup(false);
+
+    suggester.build(new TermFreqArrayIterator(new TermFreq[0]));
+    List<LookupResult> result = suggester.lookup("a", false, 20);
+    assertTrue(result.isEmpty());
+  }
 }

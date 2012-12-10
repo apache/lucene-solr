@@ -19,7 +19,8 @@ package org.apache.solr.common.cloud;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.nio.channels.SelectionKey;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -60,11 +61,12 @@ public class SolrZooKeeper extends ZooKeeper {
               sendThreadFld.setAccessible(true);
               Object sendThread = sendThreadFld.get(cnxn);
               if (sendThread != null) {
-                final Field sockKeyFld = sendThread.getClass().getDeclaredField("sockKey");
-                sockKeyFld.setAccessible(true);
-                final SelectionKey sockKey = (SelectionKey) sockKeyFld.get(sendThread);
-                if (sockKey != null) {
-                  sockKey.channel().close();
+                Method method = sendThread.getClass().getDeclaredMethod("testableCloseSocket");
+                method.setAccessible(true);
+                try {
+                  method.invoke(sendThread);
+                } catch (InvocationTargetException e) {
+                  // is fine
                 }
               }
             } catch (Exception e) {

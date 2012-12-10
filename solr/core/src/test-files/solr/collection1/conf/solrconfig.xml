@@ -90,7 +90,7 @@
     -->
     
     <updateLog enable="${enable.update.log:false}">
-  	  <str name="dir">${solr.data.dir:}</str>
+  	  <str name="dir">${solr.ulog.dir:}</str>
     </updateLog> 
 
   </updateHandler>

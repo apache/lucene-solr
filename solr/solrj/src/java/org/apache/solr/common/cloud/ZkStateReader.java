@@ -186,7 +186,7 @@ public class ZkStateReader {
           if (EventType.None.equals(event.getType())) {
             return;
           }
-          log.info("A cluster state change has occurred - updating... ({})", ZkStateReader.this.clusterState.getLiveNodes().size());
+          log.info("A cluster state change: {}, has occurred - updating... (live nodes size: {})", (event) , ZkStateReader.this.clusterState == null ? 0 : ZkStateReader.this.clusterState.getLiveNodes().size());
           try {
             
             // delayed approach
@@ -397,19 +397,22 @@ public class ZkStateReader {
   }
   
   /**
-   * Get shard leader properties.
+   * Get shard leader properties, with retry if none exist.
    */
-  public ZkNodeProps getLeaderProps(String collection, String shard) throws InterruptedException {
+  public Replica getLeaderProps(String collection, String shard) throws InterruptedException {
     return getLeaderProps(collection, shard, 1000);
   }
-  
-  public ZkNodeProps getLeaderProps(String collection, String shard, int timeout) throws InterruptedException {
+
+  /**
+   * Get shard leader properties, with retry if none exist.
+   */
+  public Replica getLeaderProps(String collection, String shard, int timeout) throws InterruptedException {
     long timeoutAt = System.currentTimeMillis() + timeout;
     while (System.currentTimeMillis() < timeoutAt) {
       if (clusterState != null) {    
-        final ZkNodeProps nodeProps = clusterState.getLeader(collection, shard);
-        if (nodeProps != null) {
-          return nodeProps;
+        Replica replica = clusterState.getLeader(collection, shard);
+        if (replica != null && getClusterState().liveNodesContain(replica.getNodeName())) {
+          return replica;
         }
       }
       Thread.sleep(50);
@@ -450,7 +453,7 @@ public class ZkStateReader {
     if (clusterState == null) {
       return null;
     }
-    Map<String,Slice> slices = clusterState.getSlices(collection);
+    Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     if (slices == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
           "Could not find collection in zk: " + collection + " "

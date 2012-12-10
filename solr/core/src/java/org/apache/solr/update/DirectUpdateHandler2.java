@@ -37,7 +37,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -57,6 +56,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.FunctionRangeQuery;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
@@ -317,7 +317,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
       return q;
 
-    } catch (ParseException e) {
+    } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }
@@ -449,8 +449,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         final Map<String,String> commitData = new HashMap<String,String>();
         commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY,
             String.valueOf(System.currentTimeMillis()));
-
-        iw.get().prepareCommit(commitData);
+        iw.get().setCommitData(commitData);
+        iw.get().prepareCommit();
       } finally {
         iw.decref();
       }
@@ -525,7 +525,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           final Map<String,String> commitData = new HashMap<String,String>();
           commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY,
               String.valueOf(System.currentTimeMillis()));
-          writer.commit(commitData);
+          writer.setCommitData(commitData);
+          writer.commit();
           // SolrCore.verbose("writer.commit() end");
           numDocsPending.set(0);
           callPostCommitCallbacks();
@@ -707,7 +708,8 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
           // todo: refactor this shared code (or figure out why a real CommitUpdateCommand can't be used)
           final Map<String,String> commitData = new HashMap<String,String>();
           commitData.put(SolrIndexWriter.COMMIT_TIME_MSEC_KEY, String.valueOf(System.currentTimeMillis()));
-          writer.commit(commitData);
+          writer.setCommitData(commitData);
+          writer.commit();
 
           synchronized (solrCoreState.getUpdateLock()) {
             ulog.postCommit(cmd);

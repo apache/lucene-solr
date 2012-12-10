@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -32,6 +31,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.SyntaxError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -670,7 +670,7 @@ public class FacetComponent extends SearchComponent
       this.facetStr = facetStr;
       try {
         this.localParams = QueryParsing.getLocalParams(facetStr, rb.req.getParams());
-      } catch (ParseException e) {
+      } catch (SyntaxError e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
       this.facetOn = facetStr;

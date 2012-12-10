@@ -202,7 +202,6 @@ class CSVWriter extends TextResponseWriter {
       // be escaped.
       strat.setUnicodeEscapeInterpretation(true);
     }
-
     printer = new CSVPrinter(writer, strategy);
     
 
@@ -261,7 +260,6 @@ class CSVWriter extends TextResponseWriter {
        if (!returnFields.wantsField(field)) {
          continue;
        }
-
       if (field.equals("score")) {
         CSVField csvField = new CSVField();
         csvField.name = "score";
@@ -284,6 +282,11 @@ class CSVWriter extends TextResponseWriter {
       sep = params.get("f." + field + '.' + CSV_SEPARATOR);
       encapsulator = params.get("f." + field + '.' + CSV_ENCAPSULATOR);
       escape = params.get("f." + field + '.' + CSV_ESCAPE);
+     
+      // if polyfield and no escape is provided, add "\\" escape by default
+      if (sf.isPolyField()) {
+        escape = (escape==null)?"\\":escape;
+      }
 
       CSVSharedBufPrinter csvPrinter = csvPrinterMV;
       if (sep != null || encapsulator != null || escape != null) {
@@ -309,7 +312,6 @@ class CSVWriter extends TextResponseWriter {
         }        
         csvPrinter = new CSVSharedBufPrinter(mvWriter, strat);
       }
-
 
       CSVField csvField = new CSVField();
       csvField.name = field;
@@ -407,7 +409,19 @@ class CSVWriter extends TextResponseWriter {
           Collection values = (Collection)val;
           val = values.iterator().next();
         }
-        writeVal(csvField.name, val);
+        // if field is polyfield, use the multi-valued printer to apply appropriate escaping
+        if (csvField.sf != null && csvField.sf.isPolyField()) {
+          mvWriter.reset();
+          csvField.mvPrinter.reset();
+          CSVPrinter tmp = printer;
+          printer = csvField.mvPrinter;
+          writeVal(csvField.name, val);
+          printer = tmp;
+          mvWriter.freeze();
+          printer.print(mvWriter.getFrozenBuf(), 0, mvWriter.getFrozenSize(), true);
+        } else {
+          writeVal(csvField.name, val);
+        }
       }
     }
 

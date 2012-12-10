@@ -134,6 +134,15 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     assertEquals(50, results.get(0).value, 0.01F);
   }
 
+  public void testEmpty() throws Exception {
+    Analyzer standard = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET, false);
+    AnalyzingSuggester suggester = new AnalyzingSuggester(standard);
+    suggester.build(new TermFreqArrayIterator(new TermFreq[0]));
+
+    List<LookupResult> result = suggester.lookup("a", false, 20);
+    assertTrue(result.isEmpty());
+  }
+
   public void testNoSeps() throws Exception {
     TermFreq[] keys = new TermFreq[] {
       new TermFreq("ab cd", 0),
@@ -447,6 +456,11 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
         return 0;
       }
     }
+
+    @Override
+    public String toString() {
+      return surfaceForm + "/" + weight;
+    }
   }
 
   static boolean isStopChar(char ch, int numStopChars) {
@@ -525,6 +539,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     }
   }
 
+  private static char SEP = '\uFFFF';
+
   public void testRandom() throws Exception {
 
     int numQueries = atLeast(1000);
@@ -561,13 +577,13 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
               if (token > 0) {
                 key += " ";
               }
-              if (preserveSep && analyzedKey.length() > 0 && analyzedKey.charAt(analyzedKey.length()-1) != ' ') {
-                analyzedKey += " ";
+              if (preserveSep && analyzedKey.length() > 0 && analyzedKey.charAt(analyzedKey.length()-1) != SEP) {
+                analyzedKey += SEP;
               }
               key += s;
               if (s.length() == 1 && isStopChar(s.charAt(0), numStopChars)) {
                 if (preserveSep && preserveHoles) {
-                  analyzedKey += '\u0000';
+                  analyzedKey += SEP;
                 }
               } else {
                 analyzedKey += s;
@@ -577,7 +593,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           }
         }
 
-        analyzedKey = analyzedKey.replaceAll("(^| )\u0000$", "");
+        analyzedKey = analyzedKey.replaceAll("(^|" + SEP + ")" + SEP + "$", "");
 
         // Don't add same surface form more than once:
         if (!seen.contains(key)) {
@@ -602,7 +618,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       List<TermFreq2> sorted = new ArrayList<TermFreq2>(slowCompletor);
       Collections.sort(sorted);
       for(TermFreq2 ent : sorted) {
-        System.out.println("  surface='" + ent.surfaceForm + " analyzed='" + ent.analyzedForm + "' weight=" + ent.weight);
+        System.out.println("  surface='" + ent.surfaceForm + "' analyzed='" + ent.analyzedForm + "' weight=" + ent.weight);
       }
     }
 
@@ -621,20 +637,20 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       List<LookupResult> r = suggester.lookup(_TestUtil.stringToCharSequence(prefix, random()), false, topN);
 
       // 2. go thru whole set to find suggestions:
-      List<LookupResult> matches = new ArrayList<LookupResult>();
+      List<TermFreq2> matches = new ArrayList<TermFreq2>();
 
       // "Analyze" the key:
       String[] tokens = prefix.split(" ");
       StringBuilder builder = new StringBuilder();
       for(int i=0;i<tokens.length;i++) {
         String token = tokens[i];
-        if (preserveSep && builder.length() > 0 && !builder.toString().endsWith(" ")) {
-          builder.append(' ');
+        if (preserveSep && builder.length() > 0 && !builder.toString().endsWith(""+SEP)) {
+          builder.append(SEP);
         }
 
         if (token.length() == 1 && isStopChar(token.charAt(0), numStopChars)) {
           if (preserveSep && preserveHoles) {
-            builder.append("\u0000");
+            builder.append(SEP);
           }
         } else {
           builder.append(token);
@@ -647,8 +663,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       // not tell us any trailing holes, yet ... there is an
       // issue open for this):
       while (true) {
-        String s = analyzedKey.replaceAll("(^| )\u0000$", "");
-        s = s.replaceAll("\\s+$", "");
+        String s = analyzedKey.replaceAll(SEP + "$", "");
         if (s.equals(analyzedKey)) {
           break;
         }
@@ -668,18 +683,18 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
       // TODO: could be faster... but its slowCompletor for a reason
       for (TermFreq2 e : slowCompletor) {
         if (e.analyzedForm.startsWith(analyzedKey)) {
-          matches.add(new LookupResult(e.surfaceForm, e.weight));
+          matches.add(e);
         }
       }
 
       assertTrue(numStopChars > 0 || matches.size() > 0);
 
       if (matches.size() > 1) {
-        Collections.sort(matches, new Comparator<LookupResult>() {
-            public int compare(LookupResult left, LookupResult right) {
-              int cmp = Float.compare(right.value, left.value);
+        Collections.sort(matches, new Comparator<TermFreq2>() {
+            public int compare(TermFreq2 left, TermFreq2 right) {
+              int cmp = Float.compare(right.weight, left.weight);
               if (cmp == 0) {
-                return left.compareTo(right);
+                return left.analyzedForm.compareTo(right.analyzedForm);
               } else {
                 return cmp;
               }
@@ -693,8 +708,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
       if (VERBOSE) {
         System.out.println("  expected:");
-        for(LookupResult lr : matches) {
-          System.out.println("    key=" + lr.key + " weight=" + lr.value);
+        for(TermFreq2 lr : matches) {
+          System.out.println("    key=" + lr.surfaceForm + " weight=" + lr.weight);
         }
 
         System.out.println("  actual:");
@@ -707,8 +722,8 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
       for(int hit=0;hit<r.size();hit++) {
         //System.out.println("  check hit " + hit);
-        assertEquals(matches.get(hit).key.toString(), r.get(hit).key.toString());
-        assertEquals(matches.get(hit).value, r.get(hit).value, 0f);
+        assertEquals(matches.get(hit).surfaceForm.toString(), r.get(hit).key.toString());
+        assertEquals(matches.get(hit).weight, r.get(hit).value, 0f);
       }
     }
   }
@@ -809,7 +824,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
           new TermFreq("a c b", 1),
         }));
 
-    List<LookupResult> results = suggester.lookup("a", false, 4);
+    suggester.lookup("a", false, 4);
   }
 
   public void testExactFirstMissingResult() throws Exception {

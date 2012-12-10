@@ -25,8 +25,7 @@ import org.junit.Test;
 /**
  * Test with various combinations of parameters, child entites, transformers.
  */
-@Ignore("Investigate failures on Policeman Jenkins Linux")
-public class TestSqlEntityProcessorDelta extends AbstractDIHJdbcTestCase {
+public class TestSqlEntityProcessorDelta extends AbstractSqlEntityProcessorTestCase {
   private boolean delta = false;
   private boolean useParentDeltaQueryParam = false;
   private IntChanges personChanges = null;
@@ -40,35 +39,50 @@ public class TestSqlEntityProcessorDelta extends AbstractDIHJdbcTestCase {
   }
   @Test
   public void testSingleEntity() throws Exception {
+    log.debug("testSingleEntity full-import...");
     singleEntity(1);
+    logPropertiesFile();
     changeStuff();
     int c = calculateDatabaseCalls();
+    log.debug("testSingleEntity delta-import (" + c + " database calls expected)...");
     singleEntity(c);
     validateChanges();
   }
   @Test
   public void testWithSimpleTransformer() throws Exception {
-    simpleTransform(1);  
+    log.debug("testWithSimpleTransformer full-import...");    
+    simpleTransform(1); 
+    logPropertiesFile(); 
     changeStuff();
-    simpleTransform(calculateDatabaseCalls());  
+    int c = calculateDatabaseCalls();
+    simpleTransform(c);
+    log.debug("testWithSimpleTransformer delta-import (" + c + " database calls expected)...");
     validateChanges(); 
   }
   @Test
   public void testWithComplexTransformer() throws Exception {
+    log.debug("testWithComplexTransformer full-import...");     
     complexTransform(1, 0);
+    logPropertiesFile();
     changeStuff();
-    complexTransform(calculateDatabaseCalls(), personChanges.deletedKeys.length);
+    int c = calculateDatabaseCalls();
+    log.debug("testWithComplexTransformer delta-import (" + c + " database calls expected)...");
+    complexTransform(c, personChanges.deletedKeys.length);
     validateChanges();  
   }
   @Test
   public void testChildEntities() throws Exception {
+    log.debug("testChildEntities full-import...");
     useParentDeltaQueryParam = random().nextBoolean();
+    log.debug("using parent delta? " + useParentDeltaQueryParam);
     withChildEntities(false, true);
+    logPropertiesFile();
     changeStuff();
+    log.debug("testChildEntities delta-import...");
     withChildEntities(false, false);
     validateChanges();
   }
-  
+    
   
   private int calculateDatabaseCalls() {
     //The main query generates 1
@@ -111,7 +125,7 @@ public class TestSqlEntityProcessorDelta extends AbstractDIHJdbcTestCase {
           personChanges = modifySomePeople();
           break;
         case 1:
-          countryChanges = modifySomeCountries();
+          countryChanges = modifySomeCountries();  
           break;
         case 2:
           personChanges = modifySomePeople();
@@ -121,13 +135,34 @@ public class TestSqlEntityProcessorDelta extends AbstractDIHJdbcTestCase {
     } else {
       personChanges = modifySomePeople();
     }
+    countryChangesLog();
+    personChangesLog();
     delta = true;
-  }    
+  }
+  private void countryChangesLog() 
+  {
+    if(countryChanges!=null) {
+      StringBuilder sb = new StringBuilder();
+      sb.append("country changes { ");
+      for(String s : countryChanges) {
+        sb.append(s).append(" ");
+      }
+      sb.append(" }");    
+      log.debug(sb.toString());
+    }
+  }
+  private void personChangesLog()
+  {
+    if(personChanges!=null) {
+    log.debug("person changes { " + personChanges.toString() + " } ");
+    }
+  }
+  @Override
   protected LocalSolrQueryRequest generateRequest() {
     return lrf.makeRequest("command", (delta ? "delta-import" : "full-import"), "dataConfig", generateConfig(), 
         "clean", (delta ? "false" : "true"), "commit", "true", "synchronous", "true", "indent", "true");
   }
-  
+  @Override
   protected String deltaQueriesPersonTable() {
     return 
         "deletedPkQuery=''SELECT ID FROM PEOPLE WHERE DELETED='Y' AND last_modified &gt;='${dih.last_index_time}' '' " +

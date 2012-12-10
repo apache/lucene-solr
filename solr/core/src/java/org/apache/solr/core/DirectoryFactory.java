@@ -158,7 +158,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   
   public static long sizeOf(Directory directory, String file) throws IOException {
     if (!directory.fileExists(file)) {
-      throw new IllegalArgumentException(file + " does not exist");
+      return 0;
     }
     
     return directory.fileLength(file);

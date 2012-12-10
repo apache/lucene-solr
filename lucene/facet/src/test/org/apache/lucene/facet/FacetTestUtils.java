@@ -131,7 +131,7 @@ public class FacetTestUtils {
 
   public static class IndexTaxonomyReaderPair {
     public DirectoryReader indexReader;
-    public TaxonomyReader taxReader;
+    public DirectoryTaxonomyReader taxReader;
     public IndexSearcher indexSearcher;
 
     public void close() throws IOException {

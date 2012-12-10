@@ -263,8 +263,14 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals("wi fi network is fast", results.get(1).key);
     assertEquals(10, results.get(1).value);
   }
-  
-  
+
+  public void testEmpty() throws Exception {
+    FuzzySuggester suggester = new FuzzySuggester(new MockAnalyzer(random(), MockTokenizer.KEYWORD, false));
+    suggester.build(new TermFreqArrayIterator(new TermFreq[0]));
+
+    List<LookupResult> result = suggester.lookup("a", false, 20);
+    assertTrue(result.isEmpty());
+  }
 
   public void testInputPathRequired() throws Exception {
 
@@ -816,6 +822,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
     assertEquals("[barbazfoo/10]", suggester.lookup("bar baz foo", false, 5).toString());
   }
   
+  @SuppressWarnings("fallthrough")
   private static String addRandomEdit(String string, int prefixLength) {
     char[] input = string.toCharArray();
     StringBuilder builder = new StringBuilder();

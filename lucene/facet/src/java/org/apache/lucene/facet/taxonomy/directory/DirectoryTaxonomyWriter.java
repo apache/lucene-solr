@@ -30,7 +30,7 @@ import org.apache.lucene.facet.taxonomy.writercache.cl2o.Cl2oTaxonomyWriterCache
 import org.apache.lucene.facet.taxonomy.writercache.lru.LruTaxonomyWriterCache;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.CorruptIndexException; // javadocs
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -45,7 +45,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.LockObtainFailedException; // javadocs
 import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.util.BytesRef;
@@ -112,6 +112,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   private int cacheMissesUntilFill = 11;
   private boolean shouldFillCache = true;
   
+  // even though lazily initialized, not volatile so that access to it is
+  // faster. we keep a volatile boolean init instead.
+  private ReaderManager readerManager;
+  private volatile boolean initializedReaderManager = false;
+  private volatile boolean shouldRefreshReaderManager;
+  
   /**
    * We call the cache "complete" if we know that every category in our
    * taxonomy is in the cache. When the cache is <B>not</B> complete, and
@@ -123,10 +129,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * that some of the cached data was cleared).
    */
   private volatile boolean cacheIsComplete;
-  private volatile ReaderManager readerManager;
-  private volatile boolean shouldRefreshReaderManager;
   private volatile boolean isClosed = false;
-  private volatile ParentArray parentArray;
+  private volatile ParallelTaxonomyArrays taxoArrays;
   private volatile int nextID;
 
   /** Reads the commit data from a Directory. */
@@ -294,6 +298,9 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * @param openMode see {@link OpenMode}
    */
   protected IndexWriterConfig createIndexWriterConfig(OpenMode openMode) {
+    // TODO: should we use a more optimized Codec, e.g. Pulsing (or write custom)?
+    // The taxonomy has a unique structure, where each term is associated with one document
+ 
     // Make sure we use a MergePolicy which always merges adjacent segments and thus
     // keeps the doc IDs ordered as well (this is crucial for the taxonomy index).
     return new IndexWriterConfig(Version.LUCENE_50,
@@ -303,13 +310,14 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   
   /** Opens a {@link ReaderManager} from the internal {@link IndexWriter}. */
   private void initReaderManager() throws IOException {
-    if (readerManager == null) {
+    if (!initializedReaderManager) {
       synchronized (this) {
         // verify that the taxo-writer hasn't been closed on us.
         ensureOpen();
-        if (readerManager == null) {
+        if (!initializedReaderManager) {
           readerManager = new ReaderManager(indexWriter, false);
           shouldRefreshReaderManager = false;
+          initializedReaderManager = true;
         }
       }
     }
@@ -336,8 +344,6 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     return new Cl2oTaxonomyWriterCache(1024, 0.15f, 3);
   }
 
-  // convenience constructors:
-
   public DirectoryTaxonomyWriter(Directory d) throws IOException {
     this(d, OpenMode.CREATE_OR_APPEND);
   }
@@ -350,7 +356,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   @Override
   public synchronized void close() throws IOException {
     if (!isClosed) {
-      indexWriter.commit(combinedCommitData(null));
+      indexWriter.setCommitData(combinedCommitData(indexWriter.getCommitData()));
+      indexWriter.commit();
       doClose();
     }
   }
@@ -369,9 +376,10 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * <code>super.closeResources()</code> call in your implementation.
    */
   protected synchronized void closeResources() throws IOException {
-    if (readerManager != null) {
+    if (initializedReaderManager) {
       readerManager.close();
       readerManager = null;
+      initializedReaderManager = false;
     }
     if (cache != null) {
       cache.close();
@@ -417,14 +425,18 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     DirectoryReader reader = readerManager.acquire();
     try {
       final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter));
+      TermsEnum termsEnum = null; // reuse
+      DocsEnum docs = null; // reuse
       for (AtomicReaderContext ctx : reader.leaves()) {
         Terms terms = ctx.reader().terms(Consts.FULL);
         if (terms != null) {
-          TermsEnum termsEnum = terms.iterator(null);
+          termsEnum = terms.iterator(termsEnum);
           if (termsEnum.seekExact(catTerm, true)) {
-            // TODO: is it really ok that null is passed here as liveDocs?
-            DocsEnum docs = termsEnum.docs(null, null, 0);
+            // liveDocs=null because the taxonomy has no deletes
+            docs = termsEnum.docs(null, docs, 0 /* freqs not required */);
+            // if the term was found, we know it has exactly one document.
             doc = docs.nextDoc() + ctx.docBase;
+            break;
           }
         }
       }
@@ -461,15 +473,19 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     int doc = -1;
     DirectoryReader reader = readerManager.acquire();
     try {
+      TermsEnum termsEnum = null; // reuse
+      DocsEnum docs = null; // reuse
       final BytesRef catTerm = new BytesRef(categoryPath.toString(delimiter, prefixLen));
       for (AtomicReaderContext ctx : reader.leaves()) {
         Terms terms = ctx.reader().terms(Consts.FULL);
         if (terms != null) {
-          TermsEnum termsEnum = terms.iterator(null);
+          termsEnum = terms.iterator(termsEnum);
           if (termsEnum.seekExact(catTerm, true)) {
-            // TODO: is it really ok that null is passed here as liveDocs?
-            DocsEnum docs = termsEnum.docs(null, null, 0);
+            // liveDocs=null because the taxonomy has no deletes
+            docs = termsEnum.docs(null, docs, 0 /* freqs not required */);
+            // if the term was found, we know it has exactly one document.
             doc = docs.nextDoc() + ctx.docBase;
+            break;
           }
         }
       }
@@ -580,10 +596,12 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // added a category document, mark that ReaderManager is not up-to-date
     shouldRefreshReaderManager = true;
     
-    addToCache(categoryPath, length, id);
-    
     // also add to the parent array
-    getParentArray().add(id, parent);
+    taxoArrays = getTaxoArrays().add(id, parent);
+
+    // NOTE: this line must be executed last, or else the cache gets updated
+    // before the parents array (LUCENE-4596)
+    addToCache(categoryPath, length, id);
 
     return id;
   }
@@ -651,45 +669,37 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     // NOTE: since this method is sync'ed, it can call maybeRefresh, instead of
     // maybeRefreshBlocking. If ever this is changed, make sure to change the
     // call too.
-    if (shouldRefreshReaderManager && readerManager != null) {
+    if (shouldRefreshReaderManager && initializedReaderManager) {
       readerManager.maybeRefresh();
       shouldRefreshReaderManager = false;
     }
   }
   
-  /**
-   * Calling commit() ensures that all the categories written so far are
-   * visible to a reader that is opened (or reopened) after that call.
-   * When the index is closed(), commit() is also implicitly done.
-   * See {@link TaxonomyWriter#commit()}
-   */ 
   @Override
   public synchronized void commit() throws IOException {
     ensureOpen();
-    indexWriter.commit(combinedCommitData(null));
+    indexWriter.setCommitData(combinedCommitData(indexWriter.getCommitData()));
+    indexWriter.commit();
   }
 
-  /**
-   * Combine original user data with that of the taxonomy creation time
-   */
-  private Map<String,String> combinedCommitData(Map<String,String> userData) {
+  /** Combine original user data with the taxonomy epoch. */
+  private Map<String,String> combinedCommitData(Map<String,String> commitData) {
     Map<String,String> m = new HashMap<String, String>();
-    if (userData != null) {
-      m.putAll(userData);
+    if (commitData != null) {
+      m.putAll(commitData);
     }
     m.put(INDEX_EPOCH, Long.toString(indexEpoch));
     return m;
   }
   
-  /**
-   * Like commit(), but also store properties with the index. These properties
-   * are retrievable by {@link DirectoryTaxonomyReader#getCommitUserData}.
-   * See {@link TaxonomyWriter#commit(Map)}. 
-   */
   @Override
-  public synchronized void commit(Map<String,String> commitUserData) throws IOException {
-    ensureOpen();
-    indexWriter.commit(combinedCommitData(commitUserData));
+  public void setCommitData(Map<String,String> commitUserData) {
+    indexWriter.setCommitData(combinedCommitData(commitUserData));
+  }
+  
+  @Override
+  public Map<String,String> getCommitData() {
+    return combinedCommitData(indexWriter.getCommitData());
   }
   
   /**
@@ -699,17 +709,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   @Override
   public synchronized void prepareCommit() throws IOException {
     ensureOpen();
-    indexWriter.prepareCommit(combinedCommitData(null));
-  }
-
-  /**
-   * Like above, and also prepares to store user data with the index.
-   * See {@link IndexWriter#prepareCommit(Map)}
-   */
-  @Override
-  public synchronized void prepareCommit(Map<String,String> commitUserData) throws IOException {
-    ensureOpen();
-    indexWriter.prepareCommit(combinedCommitData(commitUserData));
+    indexWriter.setCommitData(combinedCommitData(indexWriter.getCommitData()));
+    indexWriter.prepareCommit();
   }
   
   @Override
@@ -802,26 +803,30 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         // initReaderManager called in parallel.
         readerManager.close();
         readerManager = null;
+        initializedReaderManager = false;
       }
     }
   }
 
-  private ParentArray getParentArray() throws IOException {
-    if (parentArray == null) {
+  private ParallelTaxonomyArrays getTaxoArrays() throws IOException {
+    if (taxoArrays == null) {
       synchronized (this) {
-        if (parentArray == null) {
+        if (taxoArrays == null) {
           initReaderManager();
-          parentArray = new ParentArray();
           DirectoryReader reader = readerManager.acquire();
           try {
-            parentArray.refresh(reader);
+            // according to Java Concurrency, this might perform better on some
+            // JVMs, since the object initialization doesn't happen on the
+            // volatile member.
+            ParallelTaxonomyArrays tmpArrays = new ParallelTaxonomyArrays(reader);
+            taxoArrays = tmpArrays;
           } finally {
             readerManager.release(reader);
           }
         }
       }
     }
-    return parentArray;
+    return taxoArrays;
   }
   
   @Override
@@ -833,7 +838,10 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     if (ordinal >= nextID) {
       throw new ArrayIndexOutOfBoundsException("requested ordinal is bigger than the largest ordinal in the taxonomy");
     }
-    return getParentArray().getArray()[ordinal];
+    
+    int[] parents = getTaxoArrays().parents();
+    assert ordinal < parents.length : "requested ordinal (" + ordinal + "); parents.length (" + parents.length + ") !";
+    return parents[ordinal];
   }
   
   /**
@@ -1035,5 +1043,21 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   public Directory getDirectory() {
     return dir;
   }
-
+  
+  /**
+   * Used by {@link DirectoryTaxonomyReader} to support NRT.
+   * <p>
+   * <b>NOTE:</b> you should not use the obtained {@link IndexWriter} in any
+   * way, other than opening an IndexReader on it, or otherwise, the taxonomy
+   * index may become corrupt!
+   */
+  final IndexWriter getInternalIndexWriter() {
+    return indexWriter;
+  }
+  
+  /** Used by {@link DirectoryTaxonomyReader} to support NRT. */
+  final long getTaxonomyEpoch() {
+    return indexEpoch;
+  }
+  
 }

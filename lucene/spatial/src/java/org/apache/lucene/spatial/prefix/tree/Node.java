@@ -44,11 +44,14 @@ public abstract class Node implements Comparable<Node> {
 
   private String token;//this is the only part of equality
 
-  protected SpatialRelation shapeRel;//set in getSubCells(filter), and via setLeaf().
-  private SpatialPrefixTree spatialPrefixTree;
+  /** When set via getSubCells(filter), it is the relationship between this
+   * cell and the given shape filter.  If set via setLeaf() (to WITHIN), it is
+   * meant to indicate no further sub-cells are going to be provided because
+   * maxLevels or a detailLevel is hit. It's always null for points.
+   */
+  protected SpatialRelation shapeRel;
 
-  protected Node(SpatialPrefixTree spatialPrefixTree, String token) {
-    this.spatialPrefixTree = spatialPrefixTree;
+  protected Node(String token) {
     this.token = token;
     if (token.length() > 0 && token.charAt(token.length() - 1) == (char) LEAF_BYTE) {
       this.token = token.substring(0, token.length() - 1);
@@ -59,8 +62,7 @@ public abstract class Node implements Comparable<Node> {
       getShape();//ensure any lazy instantiation completes to make this threadsafe
   }
 
-  protected Node(SpatialPrefixTree spatialPrefixTree, byte[] bytes, int off, int len) {
-    this.spatialPrefixTree = spatialPrefixTree;
+  protected Node(byte[] bytes, int off, int len) {
     this.bytes = bytes;
     this.b_off = off;
     this.b_len = len;
@@ -78,10 +80,9 @@ public abstract class Node implements Comparable<Node> {
   }
 
   private void b_fixLeaf() {
+    //note that non-point shapes always have the maxLevels cell set with setLeaf
     if (bytes[b_off + b_len - 1] == LEAF_BYTE) {
       b_len--;
-      setLeaf();
-    } else if (getLevel() == spatialPrefixTree.getMaxLevels()) {
       setLeaf();
     }
   }
@@ -90,6 +91,10 @@ public abstract class Node implements Comparable<Node> {
     return shapeRel;
   }
 
+  /**
+   * For points, this is always false.  Otherwise this is true if there are no
+   * further cells with this prefix for the shape (always true at maxLevels).
+   */
   public boolean isLeaf() {
     return shapeRel == SpatialRelation.WITHIN;
   }
@@ -133,8 +138,14 @@ public abstract class Node implements Comparable<Node> {
   //public Cell getParent();
 
   /**
-   * Like {@link #getSubCells()} but with the results filtered by a shape. If that shape is a {@link com.spatial4j.core.shape.Point} then it
-   * must call {@link #getSubCell(com.spatial4j.core.shape.Point)};
+   * Like {@link #getSubCells()} but with the results filtered by a shape. If
+   * that shape is a {@link com.spatial4j.core.shape.Point} then it
+   * must call {@link #getSubCell(com.spatial4j.core.shape.Point)}.
+   * The returned cells should have their {@link Node#shapeRel} set to their
+   * relation with {@code shapeFilter} for non-point. As such,
+   * {@link org.apache.lucene.spatial.prefix.tree.Node#isLeaf()} should be
+   * accurate.
+   * <p/>
    * Precondition: Never called when getLevel() == maxLevel.
    *
    * @param shapeFilter an optional filter for the returned cells.

@@ -29,11 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.solr.common.SolrException;
@@ -108,7 +106,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
           }
         }
       }
-    } catch (ParseException e) {
+    } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
@@ -300,8 +298,10 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       mlt.setAnalyzer( searcher.getSchema().getAnalyzer() );
       
       // configurable params
+      
       mlt.setMinTermFreq(       params.getInt(MoreLikeThisParams.MIN_TERM_FREQ,         MoreLikeThis.DEFAULT_MIN_TERM_FREQ));
       mlt.setMinDocFreq(        params.getInt(MoreLikeThisParams.MIN_DOC_FREQ,          MoreLikeThis.DEFAULT_MIN_DOC_FREQ));
+      mlt.setMaxDocFreq(        params.getInt(MoreLikeThisParams.MAX_DOC_FREQ,          MoreLikeThis.DEFAULT_MAX_DOC_FREQ));
       mlt.setMinWordLen(        params.getInt(MoreLikeThisParams.MIN_WORD_LEN,          MoreLikeThis.DEFAULT_MIN_WORD_LENGTH));
       mlt.setMaxWordLen(        params.getInt(MoreLikeThisParams.MAX_WORD_LEN,          MoreLikeThis.DEFAULT_MAX_WORD_LENGTH));
       mlt.setMaxQueryTerms(     params.getInt(MoreLikeThisParams.MAX_QUERY_TERMS,       MoreLikeThis.DEFAULT_MAX_QUERY_TERMS));

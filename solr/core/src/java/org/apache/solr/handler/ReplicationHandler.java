@@ -361,7 +361,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       // use a set to workaround possible Lucene bug which returns same file
       // name multiple times
       Collection<String> files = new HashSet<String>(commit.getFileNames());
-      dir = core.getDirectoryFactory().get(core.getNewIndexDir(), null);
+      dir = core.getDirectoryFactory().get(core.getNewIndexDir(), core.getSolrConfig().indexConfig.lockType);
       try {
         
         for (String fileName : files) {
@@ -467,7 +467,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     Directory dir;
     long size = 0;
     try {
-      dir = core.getDirectoryFactory().get(core.getIndexDir(), null);
+      dir = core.getDirectoryFactory().get(core.getNewIndexDir(), core.getSolrConfig().indexConfig.lockType);
       try {
         size = DirectoryFactory.sizeOfDirectory(dir);
       } finally {
@@ -1062,7 +1062,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         while (true) {
           offset = offset == -1 ? 0 : offset;
           int read = (int) Math.min(buf.length, filelen - offset);
-          in.readBytes(buf, offset == -1 ? 0 : (int) offset, read);
+          in.readBytes(buf, 0, read);
           
           fos.writeInt((int) read);
           if (useChecksum) {
@@ -1082,6 +1082,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             fos.close();
             break;
           }
+          offset += read;
+          in.seek(offset);
         }
       } catch (IOException e) {
         LOG.warn("Exception while writing response for params: " + params, e);

@@ -20,6 +20,7 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,14 +38,15 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.Hash;
@@ -175,30 +177,50 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-  private List<Node> setupRequest(int hash) {
+
+  private List<Node> setupRequest(String id, SolrInputDocument doc) {
     List<Node> nodes = null;
 
     // if we are in zk mode...
     if (zkEnabled) {
-      // set num nodes
-      numNodes = zkController.getClusterState().getLiveNodes().size();
-      
-      String shardId = getShard(hash, collection, zkController.getClusterState()); // get the right shard based on the hash...
+
+      String coreName = req.getCore().getName();
+      String coreNodeName = zkController.getNodeName() + "_" + coreName;
+
+      ClusterState cstate = zkController.getClusterState();
+      numNodes = cstate.getLiveNodes().size();
+      DocCollection coll = cstate.getCollection(collection);
+      Slice slice = coll.getRouter().getTargetSlice(id, doc, req.getParams(), coll);
+
+      if (slice == null) {
+        // No slice found.  Most strict routers will have already thrown an exception, so a null return is
+        // a signal to use the slice of this core.
+        // TODO: what if this core is not in the targeted collection?
+        String shardId = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
+        slice = coll.getSlice(shardId);
+        if (slice == null) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "No shard " + shardId + " in " + coll);
+        }
+      }
+
+
+      String shardId = slice.getName();
 
       try {
+        // Not equivalent to getLeaderProps, which does retries to find a leader.
+        // Replica leader = slice.getLeader();
+
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderProps(
             collection, shardId));
-        
+
         String leaderNodeName = leaderProps.getCoreNodeName();
-        String coreName = req.getCore().getName();
-        String coreNodeName = zkController.getNodeName() + "_" + coreName;
         isLeader = coreNodeName.equals(leaderNodeName);
-        
-        DistribPhase phase = 
+
+        DistribPhase phase =
             DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
-       
+
         doDefensiveChecks(shardId, phase);
-     
+
 
         if (DistribPhase.FROMLEADER == phase) {
           // we are coming from the leader, just go local - add no urls
@@ -219,7 +241,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               skipListSet = new HashSet<String>(skipList.length);
               skipListSet.addAll(Arrays.asList(skipList));
             }
-            
+
             for (ZkCoreNodeProps props : replicaProps) {
               if (skipList != null) {
                 if (!skipListSet.contains(props.getCoreUrl())) {
@@ -230,14 +252,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               }
             }
           }
-          
+
         } else {
           // I need to forward onto the leader...
           nodes = new ArrayList<Node>(1);
           nodes.add(new RetryNode(leaderProps, zkController.getZkStateReader(), collection, shardId));
           forwardToLeader = true;
         }
-        
+
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
@@ -247,6 +269,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     return nodes;
   }
+
 
   private void doDefensiveChecks(String shardId, DistribPhase phase) {
     String from = req.getParams().get("distrib.from");
@@ -263,13 +286,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
-
-  private String getShard(int hash, String collection, ClusterState clusterState) {
-    // ranges should be part of the cloud state and eventually gotten from zk
-
-    // get the shard names
-    return clusterState.getShard(hash, collection);
-  }
 
   // used for deleteByQuery to get the list of nodes this leader should forward to
   private List<Node> setupRequest() {
@@ -310,12 +326,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    // TODO: check for id field?
-    int hash = 0;
     if (zkEnabled) {
       zkCheck();
-      hash = hash(cmd);
-      nodes = setupRequest(hash);
+      nodes = setupRequest(cmd.getHashableId(), cmd.getSolrInputDocument());
     } else {
       isLeader = getNonZkLeaderAssumption(req);
     }
@@ -668,11 +681,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
 
-    int hash = 0;
     if (zkEnabled) {
       zkCheck();
-      hash = hash(cmd);
-      nodes = setupRequest(hash);
+      nodes = setupRequest(cmd.getId(), null);
     } else {
       isLeader = getNonZkLeaderAssumption(req);
     }
@@ -751,22 +762,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     if (zkEnabled && DistribPhase.NONE == phase) {
       boolean leaderForAnyShard = false;  // start off by assuming we are not a leader for any shard
 
-      Map<String,Slice> slices = zkController.getClusterState().getSlices(collection);
-      if (slices == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-            "Cannot find collection:" + collection + " in "
-                + zkController.getClusterState().getCollections());
-      }
+      ModifiableSolrParams outParams = new ModifiableSolrParams(filterParams(req.getParams()));
+      outParams.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
 
-      ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-      params.set(DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
+      DocCollection coll = zkController.getClusterState().getCollection(collection);
+      SolrParams params = req.getParams();
+      Collection<Slice> slices = coll.getRouter().getSearchSlices(params.get(ShardParams.SHARD_KEYS), params, coll);
 
       List<Node> leaders =  new ArrayList<Node>(slices.size());
-      for (Map.Entry<String,Slice> sliceEntry : slices.entrySet()) {
-        String sliceName = sliceEntry.getKey();
-        ZkNodeProps leaderProps;
+      for (Slice slice : slices) {
+        String sliceName = slice.getName();
+        Replica leader;
         try {
-          leaderProps = zkController.getZkStateReader().getLeaderProps(collection, sliceName);
+          leader = zkController.getZkStateReader().getLeaderProps(collection, sliceName);
         } catch (InterruptedException e) {
           throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + sliceName, e);
         }
@@ -775,7 +783,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // should we send out slice-at-a-time and if a node returns "hey, I'm not a leader" (or we get an error because it went down) then look up the new leader?
 
         // Am I the leader for this slice?
-        ZkCoreNodeProps coreLeaderProps = new ZkCoreNodeProps(leaderProps);
+        ZkCoreNodeProps coreLeaderProps = new ZkCoreNodeProps(leader);
         String leaderNodeName = coreLeaderProps.getCoreNodeName();
         String coreName = req.getCore().getName();
         String coreNodeName = zkController.getNodeName() + "_" + coreName;
@@ -789,8 +797,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         }
       }
 
-      params.remove("commit"); // this will be distributed from the local commit
-      cmdDistrib.distribDelete(cmd, leaders, params);
+      outParams.remove("commit"); // this will be distributed from the local commit
+      cmdDistrib.distribDelete(cmd, leaders, outParams);
 
       if (!leaderForAnyShard) {
         return;
@@ -1058,7 +1066,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     ClusterState clusterState = req.getCore().getCoreDescriptor()
         .getCoreContainer().getZkController().getClusterState();
     List<Node> urls = new ArrayList<Node>();
-    Map<String,Slice> slices = clusterState.getSlices(collection);
+    Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     if (slices == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
           "Could not find collection in zk: " + clusterState);
@@ -1079,19 +1087,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return null;
     }
     return urls;
-  }
-  
-  // TODO: move this to AddUpdateCommand/DeleteUpdateCommand and cache it? And
-  // make the hash pluggable of course.
-  // The hash also needs to be pluggable
-  private int hash(AddUpdateCommand cmd) {
-    String hashableId = cmd.getHashableId();
-    
-    return Hash.murmurhash3_x86_32(hashableId, 0, hashableId.length(), 0);
-  }
-  
-  private int hash(DeleteUpdateCommand cmd) {
-    return Hash.murmurhash3_x86_32(cmd.getId(), 0, cmd.getId().length(), 0);
   }
   
   // RetryNodes are used in the case of 'forward to leader' where we want

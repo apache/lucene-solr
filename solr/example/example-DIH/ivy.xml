@@ -21,6 +21,7 @@
 
     <dependencies>
       <dependency org="hsqldb" name="hsqldb" rev="1.8.0.10" transitive="false"/>
+      <dependency org="org.apache.derby" name="derby" rev="10.9.1.0" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

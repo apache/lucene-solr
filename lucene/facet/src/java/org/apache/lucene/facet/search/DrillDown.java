@@ -2,6 +2,7 @@ package org.apache.lucene.facet.search;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -29,7 +30,14 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  */
 
 /**
- * Creation of drill down term or query.
+ * Utility class for creating drill-down {@link Query queries} or {@link Term
+ * terms} over {@link CategoryPath}. This can be used to e.g. narrow down a
+ * user's search to selected categories.
+ * <p>
+ * <b>NOTE:</b> if you choose to create your own {@link Query} by calling
+ * {@link #term}, it is recommended to wrap it with {@link ConstantScoreQuery}
+ * and set the {@link ConstantScoreQuery#setBoost(float) boost} to {@code 0.0f},
+ * so that it does not affect the scores of the documents.
  * 
  * @lucene.experimental
  */
@@ -42,9 +50,7 @@ public final class DrillDown {
     return term(sParams.getFacetIndexingParams(), path);
   }
 
-  /**
-   * Return a term for drilling down into a category.
-   */
+  /** Return a drill-down {@link Term} for a category. */
   public static final Term term(FacetIndexingParams iParams, CategoryPath path) {
     CategoryListParams clp = iParams.getCategoryListParams(path);
     char[] buffer = new char[path.charsNeededForFullPath()];
@@ -53,58 +59,51 @@ public final class DrillDown {
   }
   
   /**
-   * Return a query for drilling down into all given categories (AND).
-   * @see #term(FacetSearchParams, CategoryPath)
-   * @see #query(FacetSearchParams, Query, CategoryPath...)
-   */
-  public static final Query query(FacetIndexingParams iParams, CategoryPath... paths) {
-    if (paths==null || paths.length==0) {
-      throw new IllegalArgumentException("Empty category path not allowed for drill down query!");
-    }
-    if (paths.length==1) {
-      return new TermQuery(term(iParams, paths[0]));
-    }
-    BooleanQuery res = new BooleanQuery();
-    for (CategoryPath cp : paths) {
-      res.add(new TermQuery(term(iParams, cp)), Occur.MUST);
-    }
-    return res;
-  }
-  
-  /**
-   * Return a query for drilling down into all given categories (AND).
-   * @see #term(FacetSearchParams, CategoryPath)
-   * @see #query(FacetSearchParams, Query, CategoryPath...)
-   */
-  public static final Query query(FacetSearchParams sParams, CategoryPath... paths) {
-    return query(sParams.getFacetIndexingParams(), paths);
-  }
-
-  /**
-   * Turn a base query into a drilling-down query for all given category paths (AND).
-   * @see #query(FacetIndexingParams, CategoryPath...)
+   * Wraps a given {@link Query} as a drill-down query over the given
+   * categories, assuming all are required (e.g. {@code AND}). You can construct
+   * a query with different modes (such as {@code OR} or {@code AND} of
+   * {@code ORs}) by creating a {@link BooleanQuery} and call this method
+   * several times. Make sure to wrap the query in that case by
+   * {@link ConstantScoreQuery} and set the boost to 0.0f, so that it doesn't
+   * affect scoring.
+   * <p>
+   * <b>NOTE:</b> {@code baseQuery} can be {@code null}, in which case only the
+   * {@link Query} over the categories will is returned.
    */
   public static final Query query(FacetIndexingParams iParams, Query baseQuery, CategoryPath... paths) {
-    BooleanQuery res = new BooleanQuery();
-    res.add(baseQuery, Occur.MUST);
-    res.add(query(iParams, paths), Occur.MUST);
-    return res;
+    if (paths == null || paths.length == 0) {
+      throw new IllegalArgumentException("Empty category path not allowed for drill down query!");
+    }
+    
+    final Query q;
+    if (paths.length == 1) {
+      q = new TermQuery(term(iParams, paths[0]));
+    } else {
+      BooleanQuery bq = new BooleanQuery(true); // disable coord
+      for (CategoryPath cp : paths) {
+        bq.add(new TermQuery(term(iParams, cp)), Occur.MUST);
+      }
+      q = bq;
+    }
+
+    final ConstantScoreQuery drillDownQuery = new ConstantScoreQuery(q);
+    drillDownQuery.setBoost(0.0f);
+
+    if (baseQuery == null) {
+      return drillDownQuery;
+    } else {
+      BooleanQuery res = new BooleanQuery(true);
+      res.add(baseQuery, Occur.MUST);
+      res.add(drillDownQuery, Occur.MUST);
+      return res;
+    }
   }
 
   /**
-   * Turn a base query into a drilling-down query for all given category paths (AND).
-   * @see #query(FacetSearchParams, CategoryPath...)
+   * @see #query(FacetIndexingParams, Query, CategoryPath...)
    */
   public static final Query query(FacetSearchParams sParams, Query baseQuery, CategoryPath... paths) {
     return query(sParams.getFacetIndexingParams(), baseQuery, paths);
-  }
-
-  /**
-   * Turn a base query into a drilling-down query using the default {@link FacetSearchParams}  
-   * @see #query(FacetSearchParams, Query, CategoryPath...)
-   */
-  public static final Query query(Query baseQuery, CategoryPath... paths) {
-    return query(new FacetSearchParams(), baseQuery, paths);
   }
 
 }

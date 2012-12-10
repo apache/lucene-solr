@@ -40,7 +40,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   private static final String COLLECTION_NAME = "collection1";
 
-  static final int TIMEOUT = 1000;
+  static final int TIMEOUT = 10000;
 
   private static final boolean DEBUG = false;
   
@@ -82,7 +82,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       cc = getCoreContainer();
       
       ZkController zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, 10000,
-          "127.0.0.1", "8983", "solr", new CurrentCoreDescriptorProvider() {
+          "127.0.0.1", "8983", "solr", "0", new CurrentCoreDescriptorProvider() {
             
             @Override
             public List<CoreDescriptor> getCurrentDescriptors() {
@@ -122,7 +122,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       cc = getCoreContainer();
       
       zkController = new ZkController(cc, server.getZkAddress(),
-          TIMEOUT, 10000, "127.0.0.1", "8983", "solr", new CurrentCoreDescriptorProvider() {
+          TIMEOUT, 10000, "127.0.0.1", "8983", "solr", "0", new CurrentCoreDescriptorProvider() {
             
             @Override
             public List<CoreDescriptor> getCurrentDescriptors() {
@@ -166,10 +166,5 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     super.tearDown();
   }
-  
-  @AfterClass
-  public static void afterClass() throws InterruptedException {
-    // wait just a bit for any zk client threads to outlast timeout
-    Thread.sleep(2000);
-  }
+
 }

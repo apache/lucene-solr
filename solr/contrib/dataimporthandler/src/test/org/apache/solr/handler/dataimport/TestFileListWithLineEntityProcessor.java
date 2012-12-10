@@ -33,9 +33,9 @@ public class TestFileListWithLineEntityProcessor extends AbstractDataImportHandl
     tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
-    createFile(tmpdir, "a.txt", "a line one\na line two\na line three".getBytes(), false);
-    createFile(tmpdir, "b.txt", "b line one\nb line two".getBytes(), false);
-    createFile(tmpdir, "c.txt", "c line one\nc line two\nc line three\nc line four".getBytes(), false);
+    createFile(tmpdir, "a.txt", "a line one\na line two\na line three".getBytes("UTF-8"), false);
+    createFile(tmpdir, "b.txt", "b line one\nb line two".getBytes("UTF-8"), false);
+    createFile(tmpdir, "c.txt", "c line one\nc line two\nc line three\nc line four".getBytes("UTF-8"), false);
     
     String config = generateConfig(tmpdir);
     LocalSolrQueryRequest request = lrf.makeRequest(

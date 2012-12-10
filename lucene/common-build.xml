@@ -59,8 +59,6 @@
   <property name="common.classpath.excludes" value="**/*.txt,**/*.template,**/*.sha1" />
 
   <property name="ivy.bootstrap.version" value="2.2.0" />
-  <property name="ivy.resource" value="org/apache/ivy/ant/antlib.xml" />
-  <available resource="${ivy.resource}" property="ivy.available" />
   <property name="ivy.default.configuration" value="*"/>
   <property name="ivy.sync" value="true"/>
 
@@ -82,7 +80,11 @@
   <property name="args" value=""/>
 
   <property name="tests.seed" value="" />
+
+  <!-- This is a hack to be able to override the JVM count for special modules that don't like parallel tests: -->
   <property name="tests.jvms" value="auto" />
+  <property name="tests.jvms.override" value="${tests.jvms}" />
+
   <property name="tests.multiplier" value="1" />
   <property name="tests.codec" value="random" />
   <property name="tests.postingsformat" value="random" />
@@ -309,7 +311,7 @@
     <!-- <property name="ivy.settings.uptodate" value="true"/> -->
   </target>
 
-  <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
+  <target name="resolve" depends="ivy-availability-check,ivy-configure">
     <!-- todo, make this a property or something. 
          only special cases need bundles -->
     <ivy:retrieve type="jar,bundle" log="download-only" 
@@ -323,6 +325,13 @@
   <property name="ivy_checksum_sha1" value="f9d1e83e82fc085093510f7d2e77d81d52bc2081"/>
 
   <target name="ivy-availability-check" unless="ivy.available">
+    <condition property="ivy.available">
+      <typefound uri="antlib:org.apache.ivy.ant" name="configure" />
+    </condition>
+    <antcall target="ivy-fail" />
+  </target>
+
+  <target name="ivy-fail" unless="ivy.available">
    <echo>
      This build requires Ivy and Ivy could not be found in your ant classpath.
 
@@ -356,10 +365,9 @@
      ant config to allow the user lib to be loaded.  See the wiki for more details:
        http://wiki.apache.org/lucene-java/HowToContribute#antivy
     </echo>
-  </target>
-  <target name="ivy-fail" unless="ivy.available">
     <fail>Ivy is not available</fail>
   </target>
+
   <target name="ivy-bootstrap" description="Download and install Ivy in the users ant lib dir" depends="ivy-bootstrap1,ivy-bootstrap2,ivy-checksum"/>
 
   <!-- try to download from repo1.maven.org -->
@@ -1084,7 +1092,7 @@ ant test -Dtests.dups=N ...
 ant -Dtests.nightly=[false]   - nightly test group (@Nightly)
 ant -Dtests.weekly=[false]    - weekly tests (@Weekly)
 ant -Dtests.awaitsfix=[false] - known issue (@AwaitsFix)
-ant -Dtests.slow=[false]      - slow tests (@Slow)
+ant -Dtests.slow=[true]       - slow tests (@Slow)
 
 #
 # Load balancing and caches. --------------------------------------
@@ -1160,7 +1168,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
        jars so we just order it after compile-test to ensure that -->
   <target name="test" depends="clover,compile-test,install-junit4-taskdef,validate" description="Runs unit tests">
     <mkdir dir="${junit.output.dir}"/>
-    <test-macro threadNum="${tests.jvms}" />
+    <test-macro threadNum="${tests.jvms.override}" />
   </target>
 
   <!--
@@ -1276,7 +1284,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   	<fail message="You must redefine the javadocs task to do something!!!!!"/>
   </target>
 
-  <target name="install-maven-tasks" unless="maven-tasks.uptodate" depends="ivy-availability-check,ivy-fail,ivy-configure">
+  <target name="install-maven-tasks" unless="maven-tasks.uptodate" depends="ivy-availability-check,ivy-configure">
     <property name="maven-tasks.uptodate" value="true"/>
     <ivy:cachepath organisation="org.apache.maven" module="maven-ant-tasks" revision="2.1.3"
              inline="true" conf="master" type="jar" pathid="maven-ant-tasks.classpath"/>
@@ -1534,7 +1542,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </ecj-macro>
   </target>
   
-  <target name="-ecj-resolve" unless="ecj.loaded" depends="ivy-availability-check,ivy-fail,ivy-configure">
+  <target name="-ecj-resolve" unless="ecj.loaded" depends="ivy-availability-check,ivy-configure">
     <ivy:cachepath organisation="org.eclipse.jdt.core.compiler" module="ecj" revision="3.7.2"
      inline="true" conf="master" type="jar" pathid="ecj.classpath" />
     <componentdef classname="org.eclipse.jdt.core.JDTCompilerAdapter"
@@ -1868,7 +1876,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   </macrodef>
   
   <!-- GROOVY scripting engine for ANT tasks -->
-  <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-fail,ivy-configure">
+  <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-configure">
     <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.0.4"
       inline="true" conf="default" type="jar" transitive="true" pathid="groovy.classpath"/>
     <property name="groovy.loaded" value="true"/>
@@ -1876,8 +1884,8 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   
   <!-- PEGDOWN macro: Before using depend on the target "resolve-pegdown" -->
   
-  <target name="resolve-pegdown" unless="pegdown.loaded" depends="ivy-availability-check,ivy-fail,ivy-configure">
-    <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.1.0"
+  <target name="resolve-pegdown" unless="pegdown.loaded" depends="ivy-availability-check,ivy-configure">
+    <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.2.1"
       inline="true" conf="default" type="jar" transitive="true" pathid="pegdown.classpath"/>
     <property name="pegdown.loaded" value="true"/>
   </target>

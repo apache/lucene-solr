@@ -18,6 +18,7 @@ package org.apache.solr.handler.dataimport;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Map;
 import java.util.Properties;
 
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -25,7 +26,13 @@ import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ZKPropertiesWriter implements DIHPropertiesWriter {
+/**
+ * <p>
+ *  A SolrCloud-friendly extension of {@link SimplePropertiesWriter}.  
+ *  This implementation ignores the "directory" parameter, saving
+ *  the properties file under /configs/[solrcloud collection name]/
+ */
+public class ZKPropertiesWriter extends SimplePropertiesWriter {
   
   private static final Logger log = LoggerFactory
       .getLogger(ZKPropertiesWriter.class);
@@ -34,16 +41,11 @@ public class ZKPropertiesWriter implements DIHPropertiesWriter {
   private SolrZkClient zkClient;
   
   @Override
-  public void init(DataImporter dataImporter) {
+  public void init(DataImporter dataImporter, Map<String, String> params) {
+    super.init(dataImporter, params);
     String collection = dataImporter.getCore().getCoreDescriptor()
         .getCloudDescriptor().getCollectionName();
-    String persistFilename;
-    if(dataImporter.getHandlerName() != null){
-      persistFilename = dataImporter.getHandlerName() + ".properties";
-    } else {
-      persistFilename = SimplePropertiesWriter.IMPORTER_PROPERTIES;
-    }
-    path = "/configs/" + collection + "/" + persistFilename;
+    path = "/configs/" + collection + "/" + filename;
     zkClient = dataImporter.getCore().getCoreDescriptor().getCoreContainer()
         .getZkController().getZkClient();
   }
@@ -54,9 +56,9 @@ public class ZKPropertiesWriter implements DIHPropertiesWriter {
   }
   
   @Override
-  public void persist(Properties props) {
-    Properties existing = readIndexerProperties();
-    existing.putAll(props);
+  public void persist(Map<String, Object> propObjs) {
+    Properties existing = mapToProperties(readIndexerProperties());
+    existing.putAll(mapToProperties(propObjs));
     ByteArrayOutputStream output = new ByteArrayOutputStream();
     try {
       existing.store(output, "");
@@ -78,7 +80,7 @@ public class ZKPropertiesWriter implements DIHPropertiesWriter {
   }
   
   @Override
-  public Properties readIndexerProperties() {
+  public Map<String, Object> readIndexerProperties() {
     Properties props = new Properties();
     try {
       byte[] data = zkClient.getData(path, null, null, false);
@@ -90,6 +92,6 @@ public class ZKPropertiesWriter implements DIHPropertiesWriter {
       log.warn(
           "Could not read DIH properties from " + path + " :" + e.getClass(), e);
     }
-    return props;
+    return propertiesToMap(props);
   }
 }

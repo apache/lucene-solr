@@ -64,6 +64,93 @@
     <str name="queryAnalyzerFieldType">phrase_suggest</str>
   </searchComponent>
   
+  <!-- FuzzyLookup suggest component (default)-->
+  <searchComponent class="solr.SpellCheckComponent" name="fuzzy_suggest_analyzing">
+    <lst name="spellchecker">
+      <str name="name">fuzzy_suggest_analyzing</str>
+      <str name="classname">org.apache.solr.spelling.suggest.Suggester</str>
+      <str name="lookupImpl">org.apache.solr.spelling.suggest.fst.FuzzyLookupFactory</str>
+      <str name="storeDir">fuzzy_suggest_analyzing</str>
+      <str name="buildOnCommit">false</str>
+
+      <!-- Suggester properties -->
+      <bool name="exactMatchFirst">true</bool>
+      <str name="suggestAnalyzerFieldType">text</str>
+      <bool name="preserveSep">false</bool>
+      
+      <str name="sourceLocation">fuzzysuggest.txt</str>
+    </lst>
+    
+    <!-- specify a fieldtype using keywordtokenizer + lowercase + cleanup -->
+    <str name="queryAnalyzerFieldType">phrase_suggest</str>
+  </searchComponent>
+  
+  <!-- FuzzyLookup suggest component with max edit 2-->
+  <searchComponent class="solr.SpellCheckComponent" name="fuzzy_suggest_analyzing_with_max_edit_2">
+    <lst name="spellchecker">
+      <str name="name">fuzzy_suggest_analyzing_with_max_edit_2</str>
+      <str name="classname">org.apache.solr.spelling.suggest.Suggester</str>
+      <str name="lookupImpl">org.apache.solr.spelling.suggest.fst.FuzzyLookupFactory</str>
+      <str name="storeDir">fuzzy_suggest_analyzing_with_max_edit_2</str>
+      <str name="buildOnCommit">false</str>
+
+      <!-- Suggester properties -->
+      <bool name="exactMatchFirst">true</bool>
+      <str name="suggestAnalyzerFieldType">text</str>
+      <bool name="preserveSep">false</bool>
+      <int name="maxEdits">2</int>      
+      
+      <str name="sourceLocation">fuzzysuggest.txt</str>
+    </lst>
+    
+    <!-- specify a fieldtype using keywordtokenizer + lowercase + cleanup -->
+    <str name="queryAnalyzerFieldType">phrase_suggest</str>
+  </searchComponent>
+  
+  <!-- FuzzyLookup suggest component with 4 non_fuzzy_prefix -->
+  <searchComponent class="solr.SpellCheckComponent" name="fuzzy_suggest_analyzing_with_non_fuzzy_prefix_4">
+    <lst name="spellchecker">
+      <str name="name">fuzzy_suggest_analyzing_with_non_fuzzy_prefix_4</str>
+      <str name="classname">org.apache.solr.spelling.suggest.Suggester</str>
+      <str name="lookupImpl">org.apache.solr.spelling.suggest.fst.FuzzyLookupFactory</str>
+      <str name="storeDir">fuzzy_suggest_analyzing_with_non_fuzzy_prefix_4</str>
+      <str name="buildOnCommit">false</str>
+
+      <!-- Suggester properties -->
+      <bool name="exactMatchFirst">true</bool>
+      <str name="suggestAnalyzerFieldType">text</str>
+      <bool name="preserveSep">false</bool>
+      <int name="nonFuzzyPrefix">4</int>      
+      
+      <str name="sourceLocation">fuzzysuggest.txt</str>
+    </lst>
+    
+    <!-- specify a fieldtype using keywordtokenizer + lowercase + cleanup -->
+    <str name="queryAnalyzerFieldType">phrase_suggest</str>
+  </searchComponent>
+  
+  <!-- FuzzyLookup suggest component with 2 min_fuzzy_length -->
+  <searchComponent class="solr.SpellCheckComponent" name="fuzzy_suggest_analyzing_with_min_fuzzy_length_2">
+    <lst name="spellchecker">
+      <str name="name">fuzzy_suggest_analyzing_with_min_fuzzy_length_2</str>
+      <str name="classname">org.apache.solr.spelling.suggest.Suggester</str>
+      <str name="lookupImpl">org.apache.solr.spelling.suggest.fst.FuzzyLookupFactory</str>
+      <str name="storeDir">fuzzy_suggest_analyzing_with_min_fuzzy_length_2</str>
+      <str name="buildOnCommit">false</str>
+
+      <!-- Suggester properties -->
+      <bool name="exactMatchFirst">true</bool>
+      <str name="suggestAnalyzerFieldType">text</str>
+      <bool name="preserveSep">false</bool>
+      <int name="minFuzzyLength">2</int>      
+      
+      <str name="sourceLocation">fuzzysuggest.txt</str>
+    </lst>
+ 
+    <!-- specify a fieldtype using keywordtokenizer + lowercase + cleanup -->
+    <str name="queryAnalyzerFieldType">phrase_suggest</str>
+  </searchComponent>
+  
   <!-- is this thing just configured globally or wtf is going on here?! -->
   <queryConverter name="queryConverter" class="org.apache.solr.spelling.SuggestQueryConverter"/>
   
@@ -95,4 +182,59 @@
     </arr>
   </requestHandler>
   
+  <!--  Fuzzy analyzing handler with 1 max edit -->
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/fuzzy_suggest_analyzing">
+    <lst name="defaults">
+      <str name="spellcheck">true</str>
+      <str name="spellcheck.dictionary">fuzzy_suggest_analyzing</str>
+      <str name="spellcheck.collate">false</str>
+      <!-- NOTE: if this is false, results are alpha-ordered, not by weight! -->
+      <str name="spellcheck.onlyMorePopular">true</str>
+    </lst>
+    <arr name="components">
+      <str>fuzzy_suggest_analyzing</str>
+    </arr>
+  </requestHandler>
+  
+  <!--  Fuzzy analyzing handler with 2 max edit -->
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/fuzzy_suggest_analyzing_with_max_edit_2">
+    <lst name="defaults">
+      <str name="spellcheck">true</str>
+      <str name="spellcheck.dictionary">fuzzy_suggest_analyzing_with_max_edit_2</str>
+      <str name="spellcheck.collate">false</str>
+      <!-- NOTE: if this is false, results are alpha-ordered, not by weight! -->
+      <str name="spellcheck.onlyMorePopular">true</str>
+    </lst>
+    <arr name="components">
+      <str>fuzzy_suggest_analyzing_with_max_edit_2</str>
+    </arr>
+  </requestHandler>
+  
+  <!--  Fuzzy analyzing handler with 4 non_fuzzy_prefix -->
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/fuzzy_suggest_analyzing_with_non_fuzzy_prefix_4">
+    <lst name="defaults">
+      <str name="spellcheck">true</str>
+      <str name="spellcheck.dictionary">fuzzy_suggest_analyzing_with_non_fuzzy_prefix_4</str>
+      <str name="spellcheck.collate">false</str>
+      <!-- NOTE: if this is false, results are alpha-ordered, not by weight! -->
+      <str name="spellcheck.onlyMorePopular">true</str>
+    </lst>
+    <arr name="components">
+      <str>fuzzy_suggest_analyzing_with_non_fuzzy_prefix_4</str>
+    </arr>
+  </requestHandler>
+  
+  <!--  Fuzzy analyzing handler with 2 min_fuzzy_length -->
+  <requestHandler class="org.apache.solr.handler.component.SearchHandler" name="/fuzzy_suggest_analyzing_with_min_fuzzy_length_2">
+    <lst name="defaults">
+      <str name="spellcheck">true</str>
+      <str name="spellcheck.dictionary">fuzzy_suggest_analyzing_with_min_fuzzy_length_2</str>
+      <str name="spellcheck.collate">false</str>
+      <!-- NOTE: if this is false, results are alpha-ordered, not by weight! -->
+      <str name="spellcheck.onlyMorePopular">true</str>
+    </lst>
+    <arr name="components">
+      <str>fuzzy_suggest_analyzing_with_min_fuzzy_length_2</str>
+    </arr>
+  </requestHandler>
 </config>

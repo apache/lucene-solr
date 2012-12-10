@@ -4,16 +4,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.util.PriorityQueue;
-
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest.SortOrder;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
-import org.apache.lucene.facet.search.results.MutableFacetResultNode;
 import org.apache.lucene.facet.search.results.IntermediateFacetResult;
+import org.apache.lucene.facet.search.results.MutableFacetResultNode;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader.ChildrenArrays;
+import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
+import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.collections.IntIterator;
 import org.apache.lucene.util.collections.IntToObjectMap;
 
@@ -141,9 +140,9 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
     }
 
     int endOffset = offset + partitionSize; // one past the largest ordinal in the partition
-    ChildrenArrays childrenArray = taxonomyReader.getChildrenArrays();
-    int[] youngestChild = childrenArray.getYoungestChildArray();
-    int[] olderSibling = childrenArray.getOlderSiblingArray();
+    ParallelTaxonomyArrays childrenArray = taxonomyReader.getParallelTaxonomyArrays();
+    int[] children = childrenArray.children();
+    int[] siblings = childrenArray.siblings();
     int totalNumOfDescendantsConsidered = 0; // total number of facets with value != 0, 
     // in the tree. These include those selected as top K in each node, and all the others that
     // were not. Not including rootNode
@@ -217,7 +216,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
      * we can continue to the older sibling of rootNode once the localDepth goes down, before we verify that 
      * it went that down)
      */
-    ordinalStack[++localDepth] = youngestChild[rootNode];
+    ordinalStack[++localDepth] = children[rootNode];
     siblingExplored[localDepth] = Integer.MAX_VALUE;  // we have not verified position wrt current partition
     siblingExplored[0] = -1; // as if rootNode resides to the left of current position
 
@@ -238,7 +237,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
         // its child, now just removed, would not have been pushed on it.
         // so the father is either inside the partition, or smaller ordinal
         if (siblingExplored[localDepth] < 0 ) {
-          ordinalStack[localDepth] = olderSibling[ordinalStack[localDepth]];
+          ordinalStack[localDepth] = siblings[ordinalStack[localDepth]];
           continue;
         } 
         // in this point, siblingExplored[localDepth] between 0 and number of bestSiblings
@@ -264,7 +263,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
         //tosOrdinal was not examined yet for its position relative to current partition
         // and the best K of current partition, among its siblings, have not been determined yet
         while (tosOrdinal >= endOffset) {
-          tosOrdinal = olderSibling[tosOrdinal];
+          tosOrdinal = siblings[tosOrdinal];
         }
         // now it is inside. Run it and all its siblings inside the partition through a heap
         // and in doing so, count them, find best K, and sum into residue
@@ -297,12 +296,12 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
               // update totalNumOfDescendants by the now excluded node and all its descendants
               totalNumOfDescendantsConsidered--; // reduce the 1 earned when the excluded node entered the heap
               // and now return it and all its descendants. These will never make it to FacetResult
-              totalNumOfDescendantsConsidered += countOnly (ac.ordinal, youngestChild, 
-                  olderSibling, arrays, partitionSize, offset, endOffset, localDepth, depth);
+              totalNumOfDescendantsConsidered += countOnly (ac.ordinal, children, 
+                  siblings, arrays, partitionSize, offset, endOffset, localDepth, depth);
               reusables[++tosReuslables] = ac;
             }
           }
-          tosOrdinal = olderSibling[tosOrdinal];  
+          tosOrdinal = siblings[tosOrdinal];  
         }
         // now pq has best K children of ordinals that belong to the given partition.   
         // Populate a new AACO with them.
@@ -343,7 +342,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
         ordinalStack[++localDepth] = TaxonomyReader.INVALID_ORDINAL;
         continue;
       }
-      ordinalStack[++localDepth] = youngestChild[tosOrdinal];
+      ordinalStack[++localDepth] = children[tosOrdinal];
       siblingExplored[localDepth] = Integer.MAX_VALUE;
     } // endof loop while stack is not empty
 
@@ -592,7 +591,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
     
     @Override
     protected boolean leftGoesNow (int ord1, double val1, int ord2, double val2) {
-      return (val1 < val2);
+      return (val1 == val2) ? (ord1 < ord2) : (val1 < val2);
     }
   }
 
@@ -602,7 +601,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
     
     @Override
     protected boolean leftGoesNow (int ord1, double val1, int ord2, double val2) {
-      return (val1 > val2);
+      return (val1 == val2) ? (ord1 > ord2) : (val1 > val2);
     }
   }
 
@@ -656,6 +655,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
       this.totalNumOfFacetsConsidered = 0;
     }
 
+    @Override
     public FacetRequest getFacetRequest() {
       return this.facetRequest;
     }

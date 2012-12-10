@@ -17,7 +17,6 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -41,14 +40,14 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
     _func = null;
   }
 
-  Query getQuery(String query) throws ParseException {
+  Query getQuery(String query) throws SyntaxError {
     _func.setString(query);
     return _func.parse();
   }
 
   // This is actually also tested by the tests for val_d1 below, but the bug was reported against geodist()...
   @Test
-  public void testGeodistSource() throws ParseException {
+  public void testGeodistSource() throws SyntaxError {
     Query q_home = getQuery("geodist(home_ll, 45.0, 43.0)");
     Query q_work = getQuery("geodist(work_ll, 45.0, 43.0)");
     Query q_home2 = getQuery("geodist(home_ll, 45.0, 43.0)");
@@ -57,7 +56,7 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testNumerics() throws ParseException {
+  public void testNumerics() throws SyntaxError {
     String[] templates = new String[]{
         "sum(#v0, #n0)",
         "product(pow(#v0,#n0),#v1,#n1)",
@@ -94,7 +93,7 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
 
   // This test should will fail because q1 and q3 evaluate as equal unless
   // fixes for bug 2829 are in place.
-  void tryQuerySameTypes(String template, String numbers, String type) throws ParseException {
+  void tryQuerySameTypes(String template, String numbers, String type) throws SyntaxError {
     String s1 = template;
     String s2 = template;
     String s3 = template;
@@ -120,7 +119,7 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
 
   // These should always and forever fail, and would have failed without the fixes for 2829, but why not make
   // some more tests just in case???
-  void tryQueryDiffTypes(String template, String numbers, String[] types) throws ParseException {
+  void tryQueryDiffTypes(String template, String numbers, String[] types) throws SyntaxError {
     String s1 = template;
     String s2 = template;
 

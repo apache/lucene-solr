@@ -428,12 +428,13 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     // commit to "first"
     Map<String,String> commitData = new HashMap<String,String>();
     commitData.put("tag", "first");
-    w.commit(commitData);
+    w.setCommitData(commitData);
+    w.commit();
 
     // commit to "second"
     w.addDocument(doc);
     commitData.put("tag", "second");
-    w.commit(commitData);
+    w.setCommitData(commitData);
     w.close();
 
     // open "first" with IndexWriter
@@ -454,7 +455,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     // commit IndexWriter to "third"
     w.addDocument(doc);
     commitData.put("tag", "third");
-    w.commit(commitData);
+    w.setCommitData(commitData);
     w.close();
 
     // make sure "second" commit is still there
@@ -635,7 +636,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       TestIndexWriter.addDoc(w);
     Map<String,String> data = new HashMap<String,String>();
     data.put("label", "test1");
-    w.commit(data);
+    w.setCommitData(data);
     w.close();
 
     r = DirectoryReader.open(dir);

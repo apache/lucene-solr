@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -31,7 +32,6 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenStreamToAutomaton;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.search.spell.TermFreqIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.fst.Sort;
@@ -73,12 +73,22 @@ import org.apache.lucene.util.fst.Util;
  * This can result in powerful suggester functionality.  For
  * example, if you use an analyzer removing stop words, 
  * then the partial text "ghost chr..." could see the
- * suggestion "The Ghost of Christmas Past".  If
- * SynonymFilter is used to map wifi and wireless network to
+ * suggestion "The Ghost of Christmas Past". Note that
+ * your {@code StopFilter} instance must NOT preserve
+ * position increments for this example to work, so you should call
+ * {@code setEnablePositionIncrements(false)} on it.
+ *
+ * <p>
+ * If SynonymFilter is used to map wifi and wireless network to
  * hotspot then the partial text "wirele..." could suggest
  * "wifi router".  Token normalization like stemmers, accent
  * removal, etc., would allow suggestions to ignore such
  * variations.
+ *
+ * <p>
+ * When two matching suggestions have the same weight, they
+ * are tie-broken by the analyzed form.  If their analyzed
+ * form is the same then the order is undefined.
  *
  * <p>
  * There are some limitations:
@@ -526,6 +536,10 @@ public class AnalyzingSuggester extends Lookup {
   public boolean store(OutputStream output) throws IOException {
     DataOutput dataOut = new OutputStreamDataOutput(output);
     try {
+      if (fst == null) {
+        return false;
+      }
+
       fst.save(dataOut);
       dataOut.writeVInt(maxAnalyzedPathsForOneInput);
     } finally {
@@ -552,6 +566,9 @@ public class AnalyzingSuggester extends Lookup {
 
     if (onlyMorePopular) {
       throw new IllegalArgumentException("this suggester only works with onlyMorePopular=false");
+    }
+    if (fst == null) {
+      return Collections.emptyList();
     }
 
     //System.out.println("lookup key=" + key + " num=" + num);

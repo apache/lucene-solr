@@ -74,7 +74,7 @@ public class SolrIndexConfig {
     maxMergeDocs = -1;
     maxIndexingThreads = IndexWriterConfig.DEFAULT_MAX_THREAD_STATES;
     mergeFactor = -1;
-    ramBufferSizeMB = 32;
+    ramBufferSizeMB = 100;
     writeLockTimeout = -1;
     lockType = LOCK_TYPE_NATIVE;
     termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;

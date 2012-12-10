@@ -34,18 +34,18 @@ public class TestDateFormatTransformer extends AbstractDataImportHandlerTestCase
   @Test
   @SuppressWarnings("unchecked")
   public void testTransformRow_SingleRow() throws Exception {
-    List fields = new ArrayList();
+    List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
     fields.add(createMap(DataImporter.COLUMN, "lastModified"));
     fields.add(createMap(DataImporter.COLUMN,
             "dateAdded", RegexTransformer.SRC_COL_NAME, "lastModified",
             DateFormatTransformer.DATE_TIME_FMT, "MM/dd/yyyy"));
 
-    SimpleDateFormat format = new SimpleDateFormat("MM/dd/yyyy");
+    SimpleDateFormat format = new SimpleDateFormat("MM/dd/yyyy", Locale.ROOT);
     Date now = format.parse(format.format(new Date()));
 
-    Map row = createMap("lastModified", format.format(now));
+    Map<String,Object> row = createMap("lastModified", format.format(now));
 
-    VariableResolverImpl resolver = new VariableResolverImpl();
+    VariableResolver resolver = new VariableResolver();
     resolver.addNamespace("e", row);
 
     Context context = getContext(null, resolver,
@@ -57,29 +57,29 @@ public class TestDateFormatTransformer extends AbstractDataImportHandlerTestCase
   @Test
   @SuppressWarnings("unchecked")
   public void testTransformRow_MultipleRows() throws Exception {
-    List fields = new ArrayList();
+    List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
     fields.add(createMap(DataImporter.COLUMN, "lastModified"));
     fields.add(createMap(DataImporter.COLUMN,
             "dateAdded", RegexTransformer.SRC_COL_NAME, "lastModified",
             DateFormatTransformer.DATE_TIME_FMT, "MM/dd/yyyy hh:mm:ss.SSS"));
 
-    SimpleDateFormat format = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss.SSS");
+    SimpleDateFormat format = new SimpleDateFormat("MM/dd/yyyy hh:mm:ss.SSS", Locale.ROOT);
     Date now1 = format.parse(format.format(new Date()));
     Date now2 = format.parse(format.format(new Date()));
 
-    Map row = new HashMap();
-    List list = new ArrayList();
+    Map<String,Object> row = new HashMap<String,Object>();
+    List<String> list = new ArrayList<String>();
     list.add(format.format(now1));
     list.add(format.format(now2));
     row.put("lastModified", list);
 
-    VariableResolverImpl resolver = new VariableResolverImpl();
+    VariableResolver resolver = new VariableResolver();
     resolver.addNamespace("e", row);
 
     Context context = getContext(null, resolver,
             null, Context.FULL_DUMP, fields, null);
     new DateFormatTransformer().transformRow(row, context);
-    List output = new ArrayList();
+    List<Object> output = new ArrayList<Object>();
     output.add(now1);
     output.add(now2);
     assertEquals(output, row.get("dateAdded"));

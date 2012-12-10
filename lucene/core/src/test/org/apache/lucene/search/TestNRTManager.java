@@ -32,7 +32,6 @@ import org.apache.lucene.index.IndexDocument;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
@@ -409,6 +408,27 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     }
     w.close();
     other.close();
+    dir.close();
+  }
+
+  public void testListenerCalled() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    final AtomicBoolean afterRefreshCalled = new AtomicBoolean(false);
+    NRTManager sm = new NRTManager(new NRTManager.TrackingIndexWriter(iw),new SearcherFactory());
+    sm.addListener(new ReferenceManager.RefreshListener() {
+      @Override
+      public void afterRefresh() {
+        afterRefreshCalled.set(true);
+      }
+    });
+    iw.addDocument(new Document());
+    iw.commit();
+    assertFalse(afterRefreshCalled.get());
+    sm.maybeRefreshBlocking();
+    assertTrue(afterRefreshCalled.get());
+    sm.close();
+    iw.close();
     dir.close();
   }
 }

@@ -64,7 +64,7 @@ public abstract class FacetRequest implements Cloneable {
    * Default result mode
    * @see #getResultMode()
    */
-  public static final ResultMode DEFAULT_RESULT_MODE = ResultMode.GLOBAL_FLAT;
+  public static final ResultMode DEFAULT_RESULT_MODE = ResultMode.PER_NODE_IN_TREE;
 
   private final CategoryPath categoryPath;
   private final int numResults;

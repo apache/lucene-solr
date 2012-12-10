@@ -20,8 +20,6 @@ package org.apache.solr.search;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -39,6 +37,7 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.parser.QueryParser;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -95,12 +94,12 @@ public class QueryParsing {
   }
 
   // note to self: something needs to detect infinite recursion when parsing queries
-  public static int parseLocalParams(String txt, int start, Map<String, String> target, SolrParams params) throws ParseException {
+  public static int parseLocalParams(String txt, int start, Map<String, String> target, SolrParams params) throws SyntaxError {
     return parseLocalParams(txt, start, target, params, LOCALPARAM_START, LOCALPARAM_END);
   }
 
 
-  public static int parseLocalParams(String txt, int start, Map<String, String> target, SolrParams params, String startString, char endChar) throws ParseException {
+  public static int parseLocalParams(String txt, int start, Map<String, String> target, SolrParams params, String startString, char endChar) throws SyntaxError {
     int off = start;
     if (!txt.startsWith(startString, off)) return start;
     StrParser p = new StrParser(txt, start, txt.length());
@@ -109,7 +108,7 @@ public class QueryParsing {
     for (; ;) {
       /*
       if (p.pos>=txt.length()) {
-        throw new ParseException("Missing '}' parsing local params '" + txt + '"');
+        throw new SyntaxError("Missing '}' parsing local params '" + txt + '"');
       }
       */
       char ch = p.peek();
@@ -119,7 +118,7 @@ public class QueryParsing {
 
       String id = p.getId();
       if (id.length() == 0) {
-        throw new ParseException("Expected ending character '" + endChar + "' parsing local params '" + txt + '"');
+        throw new SyntaxError("Expected ending character '" + endChar + "' parsing local params '" + txt + '"');
 
       }
       String val = null;
@@ -148,7 +147,7 @@ public class QueryParsing {
           int valStart = p.pos;
           for (; ;) {
             if (p.pos >= p.end) {
-              throw new ParseException("Missing end to unquoted value starting at " + valStart + " str='" + txt + "'");
+              throw new SyntaxError("Missing end to unquoted value starting at " + valStart + " str='" + txt + "'");
             }
             char c = p.val.charAt(p.pos);
             if (c == endChar || Character.isWhitespace(c)) {
@@ -202,7 +201,7 @@ public class QueryParsing {
    * "{!prefix f=myfield}yes" returns type="prefix",f="myfield",v="yes"
    * "{!prefix f=myfield v=$p}" returns type="prefix",f="myfield",v=params.get("p")
    */
-  public static SolrParams getLocalParams(String txt, SolrParams params) throws ParseException {
+  public static SolrParams getLocalParams(String txt, SolrParams params) throws SyntaxError {
     if (txt == null || !txt.startsWith(LOCALPARAM_START)) {
       return null;
     }
@@ -352,7 +351,7 @@ public class QueryParsing {
         }
       }
 
-    } catch (ParseException e) {
+    } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "error in sort: " + sortSpec, e);
     }
 
@@ -536,6 +535,11 @@ public class QueryParsing {
     } else if (query instanceof ConstantScoreQuery) {
       out.append(query.toString());
       writeBoost = false;
+    } else if (query instanceof WrappedQuery) {
+      WrappedQuery q = (WrappedQuery)query;
+      out.append(q.getOptions());
+      toString(q.getWrappedQuery(), schema, out, flags);
+      writeBoost = false; // we don't use the boost on wrapped queries
     } else {
       out.append(query.getClass().getSimpleName()
               + '(' + query.toString() + ')');
@@ -623,13 +627,13 @@ public class QueryParsing {
     }
 
 
-    void expect(String s) throws ParseException {
+    void expect(String s) throws SyntaxError {
       eatws();
       int slen = s.length();
       if (val.regionMatches(pos, s, 0, slen)) {
         pos += slen;
       } else {
-        throw new ParseException("Expected '" + s + "' at position " + pos + " in '" + val + "'");
+        throw new SyntaxError("Expected '" + s + "' at position " + pos + " in '" + val + "'");
       }
     }
 
@@ -718,11 +722,11 @@ public class QueryParsing {
     }
 
 
-    String getId() throws ParseException {
+    String getId() throws SyntaxError {
       return getId("Expected identifier");
     }
 
-    String getId(String errMessage) throws ParseException {
+    String getId(String errMessage) throws SyntaxError {
       eatws();
       int id_start = pos;
       char ch;
@@ -740,12 +744,12 @@ public class QueryParsing {
       }
 
       if (errMessage != null) {
-        throw new ParseException(errMessage + " at pos " + pos + " str='" + val + "'");
+        throw new SyntaxError(errMessage + " at pos " + pos + " str='" + val + "'");
       }
       return null;
     }
 
-    public String getGlobbedId(String errMessage) throws ParseException {
+    public String getGlobbedId(String errMessage) throws SyntaxError {
       eatws();
       int id_start = pos;
       char ch;
@@ -762,7 +766,7 @@ public class QueryParsing {
       }
 
       if (errMessage != null) {
-        throw new ParseException(errMessage + " at pos " + pos + " str='" + val + "'");
+        throw new SyntaxError(errMessage + " at pos " + pos + " str='" + val + "'");
       }
       return null;
     }
@@ -788,7 +792,7 @@ public class QueryParsing {
      * sort direction. (True is desc, False is asc).  
      * Position is advanced to after the comma (or end) when result is non null 
      */
-    Boolean getSortDirection() throws ParseException {
+    Boolean getSortDirection() throws SyntaxError {
       final int startPos = pos;
       final String order = getId(null);
 
@@ -818,7 +822,7 @@ public class QueryParsing {
     }
 
     // return null if not a string
-    String getQuotedString() throws ParseException {
+    String getQuotedString() throws SyntaxError {
       eatws();
       char delim = peekChar();
       if (!(delim == '\"' || delim == '\'')) {
@@ -828,7 +832,7 @@ public class QueryParsing {
       StringBuilder sb = new StringBuilder(); // needed for escaping
       for (; ;) {
         if (pos >= end) {
-          throw new ParseException("Missing end quote for string at pos " + (val_start - 1) + " str='" + val + "'");
+          throw new SyntaxError("Missing end quote for string at pos " + (val_start - 1) + " str='" + val + "'");
         }
         char ch = val.charAt(pos);
         if (ch == '\\') {
@@ -853,7 +857,7 @@ public class QueryParsing {
               break;
             case 'u':
               if (pos + 4 >= end) {
-                throw new ParseException("bad unicode escape \\uxxxx at pos" + (val_start - 1) + " str='" + val + "'");
+                throw new SyntaxError("bad unicode escape \\uxxxx at pos" + (val_start - 1) + " str='" + val + "'");
               }
               ch = (char) Integer.parseInt(val.substring(pos + 1, pos + 5), 16);
               pos += 4;

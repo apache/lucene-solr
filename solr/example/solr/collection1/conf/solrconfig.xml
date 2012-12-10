@@ -154,7 +154,7 @@
          before flushing.
          If both ramBufferSizeMB and maxBufferedDocs is set, then
          Lucene will flush based on whichever limit is hit first.  -->
-    <!-- <ramBufferSizeMB>32</ramBufferSizeMB> -->
+    <!-- <ramBufferSizeMB>100</ramBufferSizeMB> -->
     <!-- <maxBufferedDocs>1000</maxBufferedDocs> -->
 
     <!-- Expert: Merge Policy 
@@ -374,7 +374,7 @@
          "dir" - the target directory for transaction logs, defaults to the
             solr data directory.  --> 
     <updateLog>
-      <str name="dir">${solr.data.dir:}</str>
+      <str name="dir">${solr.ulog.dir:}</str>
     </updateLog>
    
 

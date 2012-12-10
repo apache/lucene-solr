@@ -227,5 +227,29 @@ public class GroupingSearchTest extends LuceneTestCase {
 
     return groupingSearch;
   }
-  
+
+  public void testSetAllGroups() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(
+        random(),
+        dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT,
+            new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    Document doc = new Document();
+    doc.add(newField("group", "foo", StringField.TYPE_NOT_STORED));
+    w.addDocument(doc);
+
+    IndexSearcher indexSearcher = new IndexSearcher(w.getReader());
+    w.close();
+
+    GroupingSearch gs = new GroupingSearch("group");
+    gs.setAllGroups(true);
+    TopGroups<?> groups = gs.search(indexSearcher, null, new TermQuery(new Term("group", "foo")), 0, 10);
+    assertEquals(1, groups.totalHitCount);
+    //assertEquals(1, groups.totalGroupCount.intValue());
+    assertEquals(1, groups.totalGroupedHitCount);
+    assertEquals(1, gs.getAllMatchingGroups().size());
+    indexSearcher.getIndexReader().close();
+    dir.close();
+  }
 }

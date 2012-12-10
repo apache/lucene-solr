@@ -101,7 +101,7 @@ public class SnapShooter {
       Collection<String> files = indexCommit.getFileNames();
       FileCopier fileCopier = new FileCopier();
       
-      Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), null);
+      Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), solrCore.getSolrConfig().indexConfig.lockType);
       try {
         fileCopier.copyFiles(dir, files, snapShotDir);
       } finally {

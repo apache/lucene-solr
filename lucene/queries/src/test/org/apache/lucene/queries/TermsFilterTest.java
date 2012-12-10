@@ -320,4 +320,11 @@ public class TermsFilterTest extends LuceneTestCase {
       fail("must fail - no terms!");
     } catch (IllegalArgumentException e) {}
   }
+
+  public void testToString() {
+    TermsFilter termsFilter = new TermsFilter(new Term("field1", "a"),
+                                              new Term("field1", "b"),
+                                              new Term("field1", "c"));
+    assertEquals("field1:a field1:b field1:c", termsFilter.toString());
+  }
 }

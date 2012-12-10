@@ -432,4 +432,9 @@
     <delete dir="${dest}/web" includes="**/*" failonerror="false"/>
     <contrib-crawl target="add-to-war"/>
   </target>
+  
+  <!-- hack for now to disable *all* Solr tests on Jenkins when "tests.disable-solr" property is set -->
+  <target name="test" unless="tests.disable-solr">
+    <antcall target="common.test" inheritrefs="true" inheritall="true"/>
+  </target>
 </project>

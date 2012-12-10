@@ -17,7 +17,6 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -476,7 +475,7 @@ public class PackedInts {
   /**
    * Run-once iterator interface, to decode previously saved PackedInts.
    */
-  public static interface ReaderIterator extends Closeable {
+  public static interface ReaderIterator {
     /** Returns next value */
     long next() throws IOException;
     /** Returns at least 1 and at most <code>count</code> next values,
@@ -520,13 +519,6 @@ public class PackedInts {
     @Override
     public int size() {
       return valueCount;
-    }
-
-    @Override
-    public void close() throws IOException {
-      if (in instanceof Closeable) {
-        ((Closeable) in).close();
-      }
     }
   }
 

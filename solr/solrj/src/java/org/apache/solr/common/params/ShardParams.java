@@ -45,4 +45,7 @@ public interface ShardParams {
 
   /** Should things fail if there is an error? (true/false) */
   public static final String SHARDS_TOLERANT = "shards.tolerant";
+
+  /** Should things fail if there is an error? (true/false) */
+  public static final String SHARD_KEYS = "shard.keys";
 }

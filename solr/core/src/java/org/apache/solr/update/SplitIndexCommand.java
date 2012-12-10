@@ -17,7 +17,7 @@
 
 package org.apache.solr.update;
 
-import org.apache.solr.common.cloud.HashPartitioner;
+import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -33,10 +33,10 @@ public class SplitIndexCommand extends UpdateCommand {
   // public List<Directory> dirs;
   public List<String> paths;
   public List<SolrCore> cores;  // either paths or cores should be specified
-  public List<HashPartitioner.Range> ranges;
+  public List<DocRouter.Range> ranges;
   // TODO: allow specification of custom hash function
 
-  public SplitIndexCommand(SolrQueryRequest req, List<String> paths,  List<SolrCore> cores, List<HashPartitioner.Range> ranges) {
+  public SplitIndexCommand(SolrQueryRequest req, List<String> paths,  List<SolrCore> cores, List<DocRouter.Range> ranges) {
     super(req);
     this.paths = paths;
     this.cores = cores;

@@ -554,13 +554,15 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
       writer.addDocument(doc);
       Map<String,String> data = new HashMap<String,String>();
       data.put("index", i+"");
-      writer.commit(data);
+      writer.setCommitData(data);
+      writer.commit();
     }
     for(int i=0;i<4;i++) {
       writer.deleteDocuments(new Term("id", ""+i));
       Map<String,String> data = new HashMap<String,String>();
       data.put("index", (4+i)+"");
-      writer.commit(data);
+      writer.setCommitData(data);
+      writer.commit();
     }
     writer.close();
 

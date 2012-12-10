@@ -77,11 +77,6 @@ public class MockIndexOutputWrapper extends IndexOutput {
   public void writeBytes(byte[] b, int offset, int len) throws IOException {
     long freeSpace = dir.maxSize == 0 ? 0 : dir.maxSize - dir.sizeInBytes();
     long realUsage = 0;
-
-    if (dir.rateLimiter != null && len >= 1000) {
-      dir.rateLimiter.pause(len);
-    }
-
     // If MockRAMDir crashed since we were opened, then
     // don't write anything:
     if (dir.crashed)

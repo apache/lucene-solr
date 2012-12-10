@@ -89,6 +89,11 @@ public final class FuzzySuggester extends AnalyzingSuggester {
    * suggestions.
    */
   public static final int DEFAULT_MAX_EDITS = 1;
+  
+  /**
+   * The default transposition value passed to {@link LevenshteinAutomata}
+   */
+  public static final boolean DEFAULT_TRANSPOSITIONS = true;
 
   /**
    * Creates a {@link FuzzySuggester} instance initialized with default values.
@@ -108,7 +113,7 @@ public final class FuzzySuggester extends AnalyzingSuggester {
    *           Analyzer that will be used for analyzing query text during lookup
    */
   public FuzzySuggester(Analyzer indexAnalyzer, Analyzer queryAnalyzer) {
-    this(indexAnalyzer, queryAnalyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1, DEFAULT_MAX_EDITS, true,
+    this(indexAnalyzer, queryAnalyzer, EXACT_FIRST | PRESERVE_SEP, 256, -1, DEFAULT_MAX_EDITS, DEFAULT_TRANSPOSITIONS,
          DEFAULT_NON_FUZZY_PREFIX, DEFAULT_MIN_FUZZY_LENGTH);
   }
 

@@ -19,6 +19,7 @@ package org.apache.solr.handler.dataimport;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -151,19 +152,19 @@ public class FileListEntityProcessor extends EntityProcessorBase {
     } else  {
       dateStr = context.replaceTokens(dateStr);
     }
-    m = EvaluatorBag.IN_SINGLE_QUOTES.matcher(dateStr);
+    m = Evaluator.IN_SINGLE_QUOTES.matcher(dateStr);
     if (m.find()) {
       String expr = null;
       expr = m.group(1).replaceAll("NOW", "");
       try {
-        return EvaluatorBag.dateMathParser.parseMath(expr);
+        return DateFormatEvaluator.getDateMathParser(Locale.ROOT).parseMath(expr);
       } catch (ParseException exp) {
         throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
                 "Invalid expression for date", exp);
       }
     }
     try {
-      return DataImporter.DATE_TIME_FORMAT.get().parse(dateStr);
+      return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).parse(dateStr);
     } catch (ParseException exp) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
               "Invalid expression for date", exp);

@@ -138,6 +138,8 @@ public class SimpleSearcher {
   public static List<FacetResult> searchWithDrillDown(IndexReader indexReader,
       TaxonomyReader taxoReader) throws Exception {
 
+    final FacetIndexingParams indexingParams = new DefaultFacetIndexingParams();
+    
     // base query the user is interested in
     Query baseQuery = new TermQuery(new Term(SimpleUtils.TEXT, "white"));
 
@@ -145,7 +147,7 @@ public class SimpleSearcher {
     CountFacetRequest facetRequest = new CountFacetRequest(new CategoryPath("root","a"), 10);
     
     // initial search - all docs matching the base query will contribute to the accumulation 
-    List<FacetResult> res1 = searchWithRequest(indexReader, taxoReader, null, facetRequest);
+    List<FacetResult> res1 = searchWithRequest(indexReader, taxoReader, indexingParams, facetRequest);
     
     // a single result (because there was a single request) 
     FacetResult fres = res1.get(0);
@@ -157,12 +159,12 @@ public class SimpleSearcher {
     CategoryPath categoryOfInterest = resIterator.next().getLabel();
     
     // drill-down preparation: turn the base query into a drill-down query for the category of interest
-    Query q2 = DrillDown.query(baseQuery, categoryOfInterest);
+    Query q2 = DrillDown.query(indexingParams, baseQuery, categoryOfInterest);
     
     // that's it - search with the new query and we're done!
     // only documents both matching the base query AND containing the 
     // category of interest will contribute to the new accumulation
-    return searchWithRequestAndQuery(q2, indexReader, taxoReader, null, facetRequest);
+    return searchWithRequestAndQuery(q2, indexReader, taxoReader, indexingParams, facetRequest);
   }
   
 }

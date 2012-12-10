@@ -39,6 +39,8 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     assertU(adoc("id","1", "foo_i","-1", "foo_s","hi", "foo_l","12345678987654321", "foo_b","false", "foo_f","1.414","foo_d","-1.0E300","foo_dt","2000-01-02T03:04:05Z"));
     assertU(adoc("id","2", "v_ss","hi",  "v_ss","there", "v2_ss","nice", "v2_ss","output", "shouldbeunstored","foo"));
     assertU(adoc("id","3", "shouldbeunstored","foo"));
+    assertU(adoc("id","4", "amount_c", "1.50,EUR"));
+    assertU(adoc("id","5", "store", "12.434,-134.1"));
     assertU(commit());
   }
 
@@ -69,6 +71,13 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     assertEquals("2,hi|there,nice:output\n"
     , h.query(req("q","id:2", "wt","csv", "csv.header","false", "csv.mv.separator","|", "f.v2_ss.csv.separator",":", "fl","id,v_ss,v2_ss")));
 
+    // test csv field for polyfield (currency) SOLR-3959
+    assertEquals("4,\"1.50\\,EUR\"\n"
+    , h.query(req("q","id:4", "wt","csv", "csv.header","false", "fl","id,amount_c")));
+ 
+    // test csv field for polyfield (latlon) SOLR-3959
+    assertEquals("5,\"12.434\\,-134.1\"\n"
+    , h.query(req("q","id:5", "wt","csv", "csv.header","false", "fl","id,store")) );
     // test retrieving fields from index
     String result = h.query(req("q","*:*", "wt","csv", "csv.header","true", "fl","*,score"));
     for (String field : "id,foo_s,foo_i,foo_l,foo_b,foo_f,foo_d,foo_dt,v_ss,v2_ss,score".split(",")) {
@@ -100,7 +109,7 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     , h.query(req("q","id:[1 TO 2]", "wt","csv", "csv.header","false", "fl","id,v_ss,foo_s")));
 
     // test SOLR-2970 not returning non-stored fields by default. Compare sorted list
-    assertEquals(sortHeader("v_ss,foo_b,v2_ss,foo_f,foo_i,foo_d,foo_s,foo_dt,id,foo_l\n")
+    assertEquals(sortHeader("amount_c,store,v_ss,foo_b,v2_ss,foo_f,foo_i,foo_d,foo_s,foo_dt,id,foo_l\n")
     , sortHeader(h.query(req("q","id:3", "wt","csv", "csv.header","true", "fl","*", "rows","0"))));
 
 

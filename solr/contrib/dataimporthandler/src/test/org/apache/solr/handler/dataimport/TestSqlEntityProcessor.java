@@ -21,9 +21,9 @@ import org.junit.Test;
  */
 
 /**
- * Test with various combinations of parameters, child entites, caches, transformers.
+ * Test with various combinations of parameters, child entities, caches, transformers.
  */
-public class TestSqlEntityProcessor extends AbstractDIHJdbcTestCase { 
+public class TestSqlEntityProcessor extends AbstractSqlEntityProcessorTestCase { 
    
   @Test
   public void testSingleEntity() throws Exception {

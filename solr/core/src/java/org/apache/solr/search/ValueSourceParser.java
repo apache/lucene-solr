@@ -26,7 +26,6 @@ import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.*;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SortField;
@@ -61,7 +60,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   /**
    * Parse the user input into a ValueSource.
    */
-  public abstract ValueSource parse(FunctionQParser fp) throws ParseException;
+  public abstract ValueSource parse(FunctionQParser fp) throws SyntaxError;
 
   /* standard functions */
   public static Map<String, ValueSourceParser> standardValueSourceParsers = new HashMap<String, ValueSourceParser>();
@@ -87,33 +86,33 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   static {
     addParser("testfunc", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         final ValueSource source = fp.parseValueSource();
         return new TestValueSource(source);
       }
     });
     addParser("ord", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         String field = fp.parseId();
         return new OrdFieldSource(field);
       }
     });
     addParser("literal", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         return new LiteralValueSource(fp.parseArg());
       }
     });
     addParser("threadid", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         return new LongConstValueSource(Thread.currentThread().getId());
       }
     });
     addParser("sleep", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         int ms = fp.parseInt();
         ValueSource source = fp.parseValueSource();
         try {
@@ -126,14 +125,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
     addParser("rord", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         String field = fp.parseId();
         return new ReverseOrdFieldSource(field);
       }
     });
     addParser("top", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         // top(vs) is now a no-op
         ValueSource source = fp.parseValueSource();
         return source;
@@ -141,7 +140,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
     addParser("linear", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource source = fp.parseValueSource();
         float slope = fp.parseFloat();
         float intercept = fp.parseFloat();
@@ -150,7 +149,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
     addParser("recip", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource source = fp.parseValueSource();
         float m = fp.parseFloat();
         float a = fp.parseFloat();
@@ -160,7 +159,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
     addParser("scale", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource source = fp.parseValueSource();
         float min = fp.parseFloat();
         float max = fp.parseFloat();
@@ -169,7 +168,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
     addParser("div", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource a = fp.parseValueSource();
         ValueSource b = fp.parseValueSource();
         return new DivFloatFunction(a, b);
@@ -177,7 +176,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
     addParser("mod", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource a = fp.parseValueSource();
         ValueSource b = fp.parseValueSource();
         return new DualFloatFunction(a, b) {
@@ -194,7 +193,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
     addParser("map", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource source = fp.parseValueSource();
         float min = fp.parseFloat();
         float max = fp.parseFloat();
@@ -206,7 +205,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("abs", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource source = fp.parseValueSource();
         return new SimpleFloatFunction(source) {
           @Override
@@ -223,7 +222,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
     addParser("sum", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         List<ValueSource> sources = fp.parseValueSourceList();
         return new SumFloatFunction(sources.toArray(new ValueSource[sources.size()]));
       }
@@ -232,7 +231,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("product", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         List<ValueSource> sources = fp.parseValueSourceList();
         return new ProductFloatFunction(sources.toArray(new ValueSource[sources.size()]));
       }
@@ -241,7 +240,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("sub", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource a = fp.parseValueSource();
         ValueSource b = fp.parseValueSource();
         return new DualFloatFunction(a, b) {
@@ -259,14 +258,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
     addParser("vector", new ValueSourceParser(){
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException{
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         return new VectorValueSource(fp.parseValueSourceList());
       }
     });
     addParser("query", new ValueSourceParser() {
       // boost(query($q),rating)
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         Query q = fp.parseNestedQuery();
         float defVal = 0.0f;
         if (fp.hasMoreArguments()) {
@@ -277,7 +276,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
     addParser("boost", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         Query q = fp.parseNestedQuery();
         ValueSource vs = fp.parseValueSource();
         BoostedQuery bq = new BoostedQuery(q, vs);
@@ -286,7 +285,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
     addParser("joindf", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         String f0 = fp.parseArg();
         String qf = fp.parseArg();
         return new JoinDocFreqValueSource( f0, qf );
@@ -297,7 +296,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("hsin", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
 
         double radius = fp.parseDouble();
         //SOLR-2114, make the convert flag required, since the parser doesn't support much in the way of lookahead or the ability to convert a String into a ValueSource
@@ -338,7 +337,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("ghhsin", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         double radius = fp.parseDouble();
 
         ValueSource gh1 = fp.parseValueSource();
@@ -350,7 +349,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("geohash", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
 
         ValueSource lat = fp.parseValueSource();
         ValueSource lon = fp.parseValueSource();
@@ -360,7 +359,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
     addParser("strdist", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
 
         ValueSource str1 = fp.parseValueSource();
         ValueSource str2 = fp.parseValueSource();
@@ -385,7 +384,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
     addParser("field", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
 
         String fieldName = fp.parseArg();
         SchemaField f = fp.getReq().getSchema().getField(fieldName);
@@ -527,21 +526,21 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     });
     addParser("max", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         List<ValueSource> sources = fp.parseValueSourceList();
         return new MaxFloatFunction(sources.toArray(new ValueSource[sources.size()]));
       }
     });
     addParser("min", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         List<ValueSource> sources = fp.parseValueSourceList();
         return new MinFloatFunction(sources.toArray(new ValueSource[sources.size()]));
       }
     });
     addParser("sqedist", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         List<ValueSource> sources = fp.parseValueSourceList();
         MVResult mvr = getMultiValueSources(sources);
 
@@ -551,7 +550,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("dist", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         float power = fp.parseFloat();
         List<ValueSource> sources = fp.parseValueSourceList();
         MVResult mvr = getMultiValueSources(sources);
@@ -577,7 +576,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("docfreq", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         TInfo tinfo = parseTerm(fp);
         return new DocFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
       }
@@ -585,7 +584,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("totaltermfreq", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         TInfo tinfo = parseTerm(fp);
         return new TotalTermFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
       }
@@ -594,7 +593,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("sumtotaltermfreq", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         String field = fp.parseArg();
         return new SumTotalTermFreqValueSource(field);
       }
@@ -603,7 +602,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("idf", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         TInfo tinfo = parseTerm(fp);
         return new IDFValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
       }
@@ -611,7 +610,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("termfreq", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         TInfo tinfo = parseTerm(fp);
         return new TermFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
       }
@@ -619,7 +618,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("tf", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         TInfo tinfo = parseTerm(fp);
         return new TFValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
       }
@@ -627,7 +626,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("norm", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         String field = fp.parseArg();
         return new NormValueSource(field);
       }
@@ -663,7 +662,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("exists", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource vs = fp.parseValueSource();
         return new SimpleBoolFunction(vs) {
           @Override
@@ -680,7 +679,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("not", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource vs = fp.parseValueSource();
         return new SimpleBoolFunction(vs) {
           @Override
@@ -698,7 +697,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("and", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         List<ValueSource> sources = fp.parseValueSourceList();
         return new MultiBoolFunction(sources) {
           @Override
@@ -717,7 +716,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("or", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         List<ValueSource> sources = fp.parseValueSourceList();
         return new MultiBoolFunction(sources) {
           @Override
@@ -736,7 +735,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("xor", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         List<ValueSource> sources = fp.parseValueSourceList();
         return new MultiBoolFunction(sources) {
           @Override
@@ -758,7 +757,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("if", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         ValueSource ifValueSource = fp.parseValueSource();
         ValueSource trueValueSource = fp.parseValueSource();
         ValueSource falseValueSource = fp.parseValueSource();
@@ -769,14 +768,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("def", new ValueSourceParser() {
       @Override
-      public ValueSource parse(FunctionQParser fp) throws ParseException {
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         return new DefFunction(fp.parseValueSourceList());
       }
     });
 
   }
 
-  private static TInfo parseTerm(FunctionQParser fp) throws ParseException {
+  private static TInfo parseTerm(FunctionQParser fp) throws SyntaxError {
     TInfo tinfo = new TInfo();
 
     tinfo.indexedField = tinfo.field = fp.parseArg();
@@ -888,7 +887,7 @@ class DateValueSourceParser extends ValueSourceParser {
   }
 
   @Override
-  public ValueSource parse(FunctionQParser fp) throws ParseException {
+  public ValueSource parse(FunctionQParser fp) throws SyntaxError {
     String first = fp.parseArg();
     String second = fp.parseArg();
     if (first == null) first = "NOW";
@@ -1079,7 +1078,7 @@ abstract class DoubleParser extends NamedParser {
   public abstract double func(int doc, FunctionValues vals);
 
   @Override
-  public ValueSource parse(FunctionQParser fp) throws ParseException {
+  public ValueSource parse(FunctionQParser fp) throws SyntaxError {
     return new Function(fp.parseValueSource());
   }
 
@@ -1119,7 +1118,7 @@ abstract class Double2Parser extends NamedParser {
   public abstract double func(int doc, FunctionValues a, FunctionValues b);
 
   @Override
-  public ValueSource parse(FunctionQParser fp) throws ParseException {
+  public ValueSource parse(FunctionQParser fp) throws SyntaxError {
     return new Function(fp.parseValueSource(), fp.parseValueSource());
   }
 

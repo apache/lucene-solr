@@ -250,7 +250,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
 
   @Override
   public void write(TextResponseWriter writer, String name, StorableField field) throws IOException {
-    writer.writeStr(name, field.stringValue(), false);
+    writer.writeStr(name, field.stringValue(), true);
   }
 
   public ExchangeRateProvider getProvider() {

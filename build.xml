@@ -298,7 +298,7 @@
     <antcall>
       <param name="run.clover" value="true"/>
       <!-- must be 1, as clover does not like parallel test runs: -->
-      <param name="tests.jvms" value="1"/>
+      <param name="tests.jvms.override" value="1"/>
       <!-- Also override some other props to be fast: -->
       <param name="tests.multiplier" value="1"/>
       <param name="tests.nightly" value="false"/>

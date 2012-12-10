@@ -211,7 +211,7 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery implements Extend
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {
-    return "ConstantScore(" + filter.toString()
+    return ExtendedQueryBase.getOptionsString(this) + "ConstantScore(" + filter.toString()
       + (getBoost()==1.0 ? ")" : "^" + getBoost());
   }
 

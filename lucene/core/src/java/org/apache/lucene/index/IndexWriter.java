@@ -540,13 +540,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   /**
-   * Used internally to throw an {@link
-   * AlreadyClosedException} if this IndexWriter has been
-   * closed.
-   * @throws AlreadyClosedException if this IndexWriter is closed
+   * Used internally to throw an {@link AlreadyClosedException} if this
+   * IndexWriter has been closed or is in the process of closing.
+   * 
+   * @param failIfClosing
+   *          if true, also fail when {@code IndexWriter} is in the process of
+   *          closing ({@code closing=true}) but not yet done closing (
+   *          {@code closed=false})
+   * @throws AlreadyClosedException
+   *           if this IndexWriter is closed or in the process of closing
    */
-  protected final void ensureOpen(boolean includePendingClose) throws AlreadyClosedException {
-    if (closed || (includePendingClose && closing)) {
+  protected final void ensureOpen(boolean failIfClosing) throws AlreadyClosedException {
+    if (closed || (failIfClosing && closing)) {
       throw new AlreadyClosedException("this IndexWriter is closed");
     }
   }
@@ -554,7 +559,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   /**
    * Used internally to throw an {@link
    * AlreadyClosedException} if this IndexWriter has been
-   * closed.
+   * closed ({@code closed=true}) or is in the process of
+   * closing ({@code closing=true}).
    * <p>
    * Calls {@link #ensureOpen(boolean) ensureOpen(true)}.
    * @throws AlreadyClosedException if this IndexWriter is closed
@@ -943,7 +949,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       }
 
       if (doFlush) {
-        commitInternal(null);
+        commitInternal();
       }
 
       if (infoStream.isEnabled("IW")) {
@@ -1407,7 +1413,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   public void updateDocument(Term term, IndexDocument doc) throws IOException {
     ensureOpen();
-    updateDocument(term, doc, getAnalyzer());
+    updateDocument(term, doc, analyzer);
   }
 
   /**
@@ -1880,6 +1886,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   }
 
   /**
+   * Expert: returns true if there are merges waiting to be scheduled.
+   * 
+   * @lucene.experimental
+   */
+  public synchronized boolean hasPendingMerges() {
+    return pendingMerges.size() != 0;
+  }
+
+  /**
    * Close the <code>IndexWriter</code> without committing
    * any changes that have occurred since the last commit
    * (or since it was opened, if commit hasn't been called).
@@ -2063,7 +2078,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
       // they are aborted.
       while(runningMerges.size() > 0) {
         if (infoStream.isEnabled("IW")) {
-          infoStream.message("IW", "now wait for " + runningMerges.size() + " running merge to abort");
+          infoStream.message("IW", "now wait for " + runningMerges.size() + " running merge/s to abort");
         }
         doWait();
       }
@@ -2537,20 +2552,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    */
   protected void doBeforeFlush() throws IOException {}
 
-  /** Expert: prepare for commit.
-   *
-   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
-   * you should immediately close the writer.  See <a
-   * href="#OOME">above</a> for details.</p>
-   *
-   * @see #prepareCommit(Map) */
-  public final void prepareCommit() throws IOException {
-    ensureOpen();
-    prepareCommit(null);
-  }
-
-  /** <p>Expert: prepare for commit, specifying
-   *  commitUserData Map (String -> String).  This does the
+  /** <p>Expert: prepare for commit.  This does the
    *  first phase of 2-phase commit. This method does all
    *  steps necessary to commit changes since this writer
    *  was opened: flushes pending added and deleted docs,
@@ -2560,29 +2562,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  #rollback()} to revert the commit and undo all changes
    *  done since the writer was opened.</p>
    *
-   *  <p>You can also just call {@link #commit(Map)} directly
+   * <p>You can also just call {@link #commit()} directly
    *  without prepareCommit first in which case that method
    *  will internally call prepareCommit.
    *
    *  <p><b>NOTE</b>: if this method hits an OutOfMemoryError
    *  you should immediately close the writer.  See <a
    *  href="#OOME">above</a> for details.</p>
-   *
-   *  @param commitUserData Opaque Map (String->String)
-   *  that's recorded into the segments file in the index,
-   *  and retrievable by {@link
-   *  IndexCommit#getUserData}.  Note that when
-   *  IndexWriter commits itself during {@link #close}, the
-   *  commitUserData is unchanged (just carried over from
-   *  the prior commit).  If this is null then the previous
-   *  commitUserData is kept.  Also, the commitUserData will
-   *  only "stick" if there are actually changes in the
-   *  index to commit.
    */
-  public final void prepareCommit(Map<String,String> commitUserData) throws IOException {
-    ensureOpen(false);
+  public final void prepareCommit() throws IOException {
+    ensureOpen();
+    prepareCommitInternal();
+  }
 
+  private void prepareCommitInternal() throws IOException {
     synchronized(commitLock) {
+      ensureOpen(false);
       if (infoStream.isEnabled("IW")) {
         infoStream.message("IW", "prepareCommit: flush");
         infoStream.message("IW", "  index before flush " + segString());
@@ -2672,10 +2667,33 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
       }
 
-      startCommit(toCommit, commitUserData);
+      startCommit(toCommit);
     }
   }
-
+  
+  /**
+   * Sets the commit user data map. That method is considered a transaction by
+   * {@link IndexWriter} and will be {@link #commit() committed} even if no other
+   * changes were made to the writer instance. Note that you must call this method
+   * before {@link #prepareCommit()}, or otherwise it won't be included in the
+   * follow-on {@link #commit()}.
+   * <p>
+   * <b>NOTE:</b> the map is cloned internally, therefore altering the map's
+   * contents after calling this method has no effect.
+   */
+  public final synchronized void setCommitData(Map<String,String> commitUserData) {
+    segmentInfos.setUserData(new HashMap<String,String>(commitUserData));
+    ++changeCount;
+  }
+  
+  /**
+   * Returns the commit user data map that was last committed, or the one that
+   * was set on {@link #setCommitData(Map)}.
+   */
+  public final synchronized Map<String,String> getCommitData() {
+    return segmentInfos.getUserData();
+  }
+  
   // Used only by commit and prepareCommit, below; lock
   // order is commitLock -> IW
   private final Object commitLock = new Object();
@@ -2708,29 +2726,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * href="#OOME">above</a> for details.</p>
    *
    * @see #prepareCommit
-   * @see #commit(Map)
    */
   public final void commit() throws IOException {
-    commit(null);
-  }
-
-  /** Commits all changes to the index, specifying a
-   *  commitUserData Map (String -> String).  This just
-   *  calls {@link #prepareCommit(Map)} (if you didn't
-   *  already call it) and then {@link #commit}.
-   *
-   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
-   * you should immediately close the writer.  See <a
-   * href="#OOME">above</a> for details.</p>
-   */
-  public final void commit(Map<String,String> commitUserData) throws IOException {
-
     ensureOpen();
-
-    commitInternal(commitUserData);
+    commitInternal();
   }
 
-  private final void commitInternal(Map<String,String> commitUserData) throws IOException {
+  private final void commitInternal() throws IOException {
 
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "commit: start");
@@ -2747,7 +2749,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: now prepare");
         }
-        prepareCommit(commitUserData);
+        prepareCommitInternal();
       } else {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: already prepared");
@@ -2771,7 +2773,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
         lastCommitChangeCount = pendingCommitChangeCount;
         segmentInfos.updateGeneration(pendingCommit);
-        segmentInfos.setUserData(pendingCommit.getUserData());
         rollbackSegments = pendingCommit.createBackupSegmentInfos();
         deleter.checkpoint(pendingCommit, true);
       } finally {
@@ -3890,7 +3891,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  if it wasn't already.  If that succeeds, then we
    *  prepare a new segments_N file but do not fully commit
    *  it. */
-  private void startCommit(final SegmentInfos toSync, final Map<String,String> commitUserData) throws IOException {
+  private void startCommit(final SegmentInfos toSync) throws IOException {
 
     assert testPoint("startStartCommit");
     assert pendingCommit == null;
@@ -3923,10 +3924,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         }
 
         assert filesExist(toSync);
-
-        if (commitUserData != null) {
-          toSync.setUserData(commitUserData);
-        }
       }
 
       assert testPoint("midStartCommit");

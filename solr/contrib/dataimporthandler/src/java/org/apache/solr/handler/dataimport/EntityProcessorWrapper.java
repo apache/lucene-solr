@@ -48,7 +48,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
   private boolean initalized;
   private String onError;
   private Context context;
-  private VariableResolverImpl resolver;
+  private VariableResolver resolver;
   private String entityName;
 
   protected List<Transformer> transformers;
@@ -65,7 +65,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
   public void init(Context context) {
     rowcache = null;
     this.context = context;
-    resolver = (VariableResolverImpl) context.getVariableResolver();
+    resolver = (VariableResolver) context.getVariableResolver();
     if (entityName == null) {
       onError = resolver.replaceTokens(context.getEntityAttribute(ON_ERROR));
       if (onError == null) onError = ABORT;
@@ -171,7 +171,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
     Map<String, Object> transformedRow = row;
     List<Map<String, Object>> rows = null;
     boolean stopTransform = checkStopTransform(row);
-    VariableResolverImpl resolver = (VariableResolverImpl) context.getVariableResolver();
+    VariableResolver resolver = (VariableResolver) context.getVariableResolver();
     for (Transformer t : transformers) {
       if (stopTransform) break;
       try {
@@ -288,8 +288,8 @@ public class EntityProcessorWrapper extends EntityProcessor {
     delegate.destroy();
   }
 
-  public VariableResolverImpl getVariableResolver() {
-    return (VariableResolverImpl) context.getVariableResolver();
+  public VariableResolver getVariableResolver() {
+    return (VariableResolver) context.getVariableResolver();
   }
 
   public Context getContext() {

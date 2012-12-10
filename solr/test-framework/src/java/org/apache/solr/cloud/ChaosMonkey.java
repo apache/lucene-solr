@@ -263,7 +263,7 @@ public class ChaosMonkey {
   }
 
   private String getRandomSlice() {
-    Map<String,Slice> slices = zkStateReader.getClusterState().getSlices(collection);
+    Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(collection);
     
     List<String> sliceKeyList = new ArrayList<String>(slices.size());
     sliceKeyList.addAll(slices.keySet());
@@ -292,7 +292,7 @@ public class ChaosMonkey {
       // get latest cloud state
       zkStateReader.updateClusterState(true);
       
-      Slice theShards = zkStateReader.getClusterState().getSlices(collection)
+      Slice theShards = zkStateReader.getClusterState().getSlicesMap(collection)
           .get(slice);
       
       ZkNodeProps props = theShards.getReplicasMap().get(cloudJetty.coreNodeName);

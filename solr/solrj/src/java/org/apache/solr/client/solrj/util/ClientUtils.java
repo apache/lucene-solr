@@ -242,15 +242,13 @@ public class ClientUtils
     catch (IOException e) {throw new RuntimeException(e);}  // can't happen
     return sb.toString();
   }
-  
-  public static void appendMap(String collection, Map<String,Slice> map1, Map<String,Slice> map2) {
-    if (map1==null)
-      map1 = new HashMap<String,Slice>();
-    if (map2!=null) {
-      Set<Entry<String,Slice>> entrySet = map2.entrySet();
-      for (Entry<String,Slice> entry : entrySet) {
-        map1.put(collection + "_" + entry.getKey(), entry.getValue());
-      }
+
+  /** Constructs a slices map from a collection of slices and handles disambiguation if multiple collections are being queried simultaneously */
+  public static void addSlices(Map<String,Slice> target, String collectionName, Collection<Slice> slices, boolean multiCollection) {
+    for (Slice slice : slices) {
+      String key = slice.getName();
+      if (multiCollection) key = collectionName + "_" + key;
+      target.put(key, slice);
     }
   }
 }

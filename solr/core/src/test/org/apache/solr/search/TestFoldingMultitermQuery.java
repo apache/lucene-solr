@@ -186,23 +186,34 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testFuzzy() throws Exception {
+    assertQ(req("q", "content:ZiLLx~1"),
+            "//result[@numFound='1']");
+    assertQ(req("q", "content_straight:ZiLLx~1"),      // case preserving field shouldn't match
+           "//result[@numFound='0']");
+    assertQ(req("q", "content_folding:ZiLLx~1"),       // case preserving field shouldn't match
+           "//result[@numFound='0']");
+  }
+
+  @Test
   public void testRegex() throws Exception {
     assertQ(req("q", "content:/Zill[a-z]/"),
-            "//result[@numFound='1']");
+        "//result[@numFound='1']");
     assertQ(req("q", "content:/Zill[A-Z]/"),   // everything in the regex gets lowercased?
-            "//result[@numFound='1']");
+        "//result[@numFound='1']");
     assertQ(req("q", "content_keyword:/.*Zill[A-Z]/"),
-            "//result[@numFound='1']");
+        "//result[@numFound='1']");
 
     assertQ(req("q", "content_straight:/Zill[a-z]/"),      // case preserving field shouldn't match
-           "//result[@numFound='0']");
+        "//result[@numFound='0']");
     assertQ(req("q", "content_folding:/Zill[a-z]/"),       // case preserving field shouldn't match
-           "//result[@numFound='0']");
+        "//result[@numFound='0']");
 
     assertQ(req("q", "content_keyword:/Abcdefg1 Finger/"), // test spaces
-           "//result[@numFound='1']");
+        "//result[@numFound='1']");
 
   }
+
 
 
   @Test

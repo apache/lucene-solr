@@ -34,11 +34,57 @@ Changes in backwards compatibility policy
   Override lengthNorm and/or encode/decodeNormValue to change the specifics,
   like Lucene 3.x. (Robert Muir)
 
+* LUCENE-3441: The facet module now supports NRT. As a result, the following
+  changes were made:
+  - DirectoryTaxonomyReader has a new constructor which takes a 
+    DirectoryTaxonomyWriter. You should use that constructor in order to get
+    the NRT support (or the old one for non-NRT).
+  - TaxonomyReader.refresh() removed in exchange for TaxonomyReader.openIfChanged
+    static method. Similar to DirectoryReader, the method either returns null
+    if no changes were made to the taxonomy, or a new TR instance otherwise.
+    Instead of calling refresh(), you should write similar code to how you reopen
+    a regular DirectoryReader.
+  - TaxonomyReader.openIfChanged (previously refresh()) no longer throws
+    IncosistentTaxonomyException, and supports recreate. InconsistentTaxoEx
+    was removed.
+  - ChildrenArrays was pulled out of TaxonomyReader into a top-level class.
+  - TaxonomyReader was made an abstract class (instead of an interface), with
+    methods such as close() and reference counting management pulled from
+    DirectoryTaxonomyReader, and made final. The rest of the methods, remained
+    abstract.
+    (Shai Erera, Gilad Barkai)
+
+* LUCENE-4576: Remove CachingWrapperFilter(Filter, boolean). This recacheDeletes
+  option gave less than 1% speedup at the expense of cache churn (filters were
+  invalidated on reopen if even a single delete was posted against the segment).
+  (Robert Muir)
+
+* LUCENE-4575: Replace IndexWriter's commit/prepareCommit versions that take
+  commitData with setCommitData(). That allows committing changes to IndexWriter
+  even if the commitData is the only thing that changes.
+  (Shai Erera, Michael McCandless)
+
+* LUCENE-4565: TaxonomyReader.getParentArray and .getChildrenArrays consolidated
+  into one getParallelTaxonomyArrays(). You can obtain the 3 arrays that the
+  previous two methods returned by calling parents(), children() or siblings()
+  on the returned ParallelTaxonomyArrays. (Shai Erera)
+  
+* LUCENE-4585: Spatial PrefixTree based Strategies (either TermQuery or
+  RecursivePrefix based) MAY want to re-index if used for point data. If a
+  re-index is not done, then an indexed point is ~1/2 the smallest grid cell
+  larger and as such is slightly more likely to match a query shape.
+  (David Smiley)
+
+* LUCENE-4604: DefaultOrdinalPolicy removed in favor of OrdinalPolicy.ALL_PARENTS.
+  Same for DefaultPathPolicy (now PathPolicy.ALL_CATEGORIES). In addition, you
+  can use OrdinalPolicy.NO_PARENTS to never write any parent category ordinal
+  to the fulltree posting payload (but note that you need a special 
+  FacetsAccumulator - see javadocs). (Shai Erera)
+    
 New Features
 
-* LUCENE-4226: New experimental StoredFieldsFormat (in lucene/codecs) that
-  compresses chunks of documents together in order to improve the compression
-  ratio. (Adrien Grand)
+* LUCENE-4226: New experimental StoredFieldsFormat that compresses chunks of
+  documents together in order to improve the compression ratio. (Adrien Grand)
 
 * LUCENE-4426: New ValueSource implementations (in lucene/queries) for
   DocValues fields. (Adrien Grand)
@@ -77,6 +123,22 @@ New Features
   you only need a few bits per-document, or where you might want exact
   document length, and so on.  (Robert Muir)
 
+* LUCENE-4489: Added consumeAllTokens option to LimitTokenCountFilter
+  (hossman, Robert Muir)
+
+* LUCENE-4566: Add NRT/SearcherManager.RefreshListener/addListener to
+  be notified whenever a new searcher was opened. (selckin via Shai
+  Erera, Mike McCandless)
+
+* SOLR-4123: Add per-script customizability to ICUTokenizerFactory via
+  rule files in the ICU RuleBasedBreakIterator format.
+  (Shawn Heisey, Robert Muir, Steve Rowe)
+
+* LUCENE-4590: Added WriteEnwikiLineDocTask - a benchmark task for writing
+  Wikipedia category pages and non-category pages into separate line files.
+  extractWikipedia.alg was changed to use this task, so now it creates two
+  files. (Doron Cohen)
+  
 API Changes
 
 * LUCENE-4399: Deprecated AppendingCodec. Lucene's term dictionaries
@@ -95,7 +157,14 @@ API Changes
 
 * LUCENE-4520: ValueSource.getSortField no longer throws IOExceptions
   (Alan Woodward)
+  
+* LUCENE-4537: RateLimiter is now separated from FSDirectory and exposed via
+  RateLimitingDirectoryWrapper. Any Directory can now be rate-limited.
+  (Simon Willnauer)  
 
+* LUCENE-4591: CompressingStoredFields{Writer,Reader} now accept a segment
+  suffix as a constructor parameter. (Renaud Delbru via Adrien Grand)
+  
 Bug Fixes
 
 * LUCENE-1822: BaseFragListBuilder hard-coded 6 char margin is too naive.
@@ -140,7 +209,59 @@ Bug Fixes
   not synced. Instead, it now tracks an 'epoch' version, which is incremented
   whenever the taxonomy is re-created, or replaced. (Shai Erera)
 
+* LUCENE-4544: Fixed off-by-1 in ConcurrentMergeScheduler that would
+  allow 1+maxMergeCount merges threads to be created, instead of just
+  maxMergeCount (Radim Kolar, Mike McCandless)
+
+* LUCENE-4567: Fixed NullPointerException in analzying, fuzzy, and
+  WFST suggesters when no suggestions were added (selckin via Mike
+  McCandless)
+
+* LUCENE-4568: Fixed integer overflow in
+  PagedBytes.PagedBytesData{In,Out}put.getPosition. (Adrien Grand)
+
+* LUCENE-4581: GroupingSearch.setAllGroups(true) was failing to
+  actually compute allMatchingGroups (dizh@neusoft.com via Mike
+  McCandless)
+
+* LUCENE-4009: Improve TermsFilter.toString (Tim Costermans via Chris
+  Male, Mike McCandless)
+
+* LUCENE-4588: Benchmark's EnwikiContentSource was discarding last wiki 
+  document and had leaking threads in 'forever' mode. (Doron Cohen)   
+
+* LUCENE-4585: Spatial RecursivePrefixTreeFilter had some bugs that only
+  occurred when shapes were indexed.  In what appears to be rare circumstances,
+  documents with shapes near a query shape were erroneously considered a match.
+  In addition, it wasn't possible to index a shape representing the entire
+  globe.
+
+* LUCENE-4595: EnwikiContentSource had a thread safety problem (NPE) in 
+  'forever' mode (Doron Cohen)
+
+* LUCENE-4587: fix WordBreakSpellChecker to not throw AIOOBE when presented
+  with 2-char codepoints, and to correctly break/combine terms containing
+  non-latin characters. (James Dyer, Andreas Hubold)
+
+* LUCENE-4596: fix a concurrency bug in DirectoryTaxonomyWriter.
+  (Shai Erera)
+
+Changes in Runtime Behavior
+  
+* LUCENE-4586: Change default ResultMode of FacetRequest to PER_NODE_IN_TREE.
+  This only affects requests with depth>1. If you execute such requests and
+  rely on the facet results being returned flat (i.e. no hierarchy), you should
+  set the ResultMode to GLOBAL_FLAT. (Shai Erera, Gilad Barkai) 
+  
 Optimizations
+
+* LUCENE-2221: oal.util.BitUtil was modified to use Long.bitCount and
+  Long.numberOfTrailingZeros (which are intrinsics since Java 6u18) instead of
+  pure java bit twiddling routines in order to improve performance on modern
+  JVMs/hardware. (Dawid Weiss, Adrien Grand)
+
+* LUCENE-4509: Enable stored fields compression by default in the Lucene 4.1
+  default codec. (Adrien Grand)
 
 * LUCENE-4536: PackedInts on-disk format is now byte-aligned (it used to be
   long-aligned), saving up to 7 bytes per array of values.
@@ -183,13 +304,22 @@ Optimizations
 * LUCENE-4538: DocValues now caches direct sources in a ThreadLocal exposed via SourceCache. 
   Users of this API can now simply obtain an instance via DocValues#getDirectSource per thread.
   (Simon Willnauer)
+  
+* LUCENE-4580: DrillDown.query variants return a ConstantScoreQuery with boost set to 0.0f
+  so that documents scores are not affected by running a drill-down query. (Shai Erera)  
 
+* LUCENE-4598: PayloadIterator no longer uses top-level IndexReader to iterate on the
+  posting's payload. (Shai Erera, Michael McCandless)
+  
 Documentation
 
 * LUCENE-4483: Refer to BytesRef.deepCopyOf in Term's constructor that takes BytesRef.
   (Paul Elschot via Robert Muir)
 
 Build
+
+* LUCENE-4603: Upgrade randomized testing to version 2.0.5: print forked
+  JVM PIDs on heartbeat from hung tests (Dawid Weiss)
 
 * Upgrade randomized testing to version 2.0.4: avoid hangs on shutdown
   hooks hanging forever by calling Runtime.halt() in addition to 
@@ -199,6 +329,13 @@ Build
   RandomizedContext.contexts static map. Upgrade randomized testing
   to version 2.0.2 (Mike McCandless, Dawid Weiss)
 
+* LUCENE-4589: Upgraded benchmark module's Nekohtml dependency to version
+  1.9.17, removing the workaround in Lucene's HTML parser for the
+  Turkish locale.  (Uwe Schindler)
+
+* LUCENE-4601: Fix ivy availability check to use typefound, so it works
+  if called from another build file.  (Ryan Ernst via Robert Muir)
+  
   
 ======================= Lucene 4.0.0 =======================
 

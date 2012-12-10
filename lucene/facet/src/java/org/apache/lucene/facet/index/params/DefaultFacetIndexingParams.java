@@ -3,8 +3,6 @@ package org.apache.lucene.facet.index.params;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.facet.index.categorypolicy.DefaultOrdinalPolicy;
-import org.apache.lucene.facet.index.categorypolicy.DefaultPathPolicy;
 import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
 import org.apache.lucene.facet.index.categorypolicy.PathPolicy;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
@@ -82,7 +80,7 @@ public class DefaultFacetIndexingParams implements FacetIndexingParams {
    * @see #getOrdinalPolicy()
    */
   protected OrdinalPolicy fixedOrdinalPolicy() {
-    return new DefaultOrdinalPolicy();
+    return OrdinalPolicy.ALL_PARENTS;
   }
   
   /**
@@ -90,7 +88,7 @@ public class DefaultFacetIndexingParams implements FacetIndexingParams {
    * @see #getPathPolicy()
    */
   protected PathPolicy fixedPathPolicy() {
-    return new DefaultPathPolicy();
+    return PathPolicy.ALL_CATEGORIES;
   }
   
   public final int getPartitionSize() {

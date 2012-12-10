@@ -46,6 +46,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -226,18 +227,22 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
     System.setProperty("collection", "control_collection");
     String numShards = System.getProperty(ZkStateReader.NUM_SHARDS_PROP);
-    System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
-    
+
+    // we want hashes by default, so set to 1 shard as opposed to leaving unset
+    // System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
+    System.setProperty(ZkStateReader.NUM_SHARDS_PROP, "1");
+
     File controlJettyDir = new File(TEMP_DIR,
             getClass().getName() + "-controljetty-" + System.currentTimeMillis());
     org.apache.commons.io.FileUtils.copyDirectory(new File(getSolrHome()), controlJettyDir);
 
-    controlJetty = createJetty(controlJettyDir, testDir + "/control/data",
-        "control_shard");
+    controlJetty = createJetty(controlJettyDir, testDir + "/control/data");  // don't pass shard name... let it default to "shard1"
     System.clearProperty("collection");
     if(numShards != null) {
       System.setProperty(ZkStateReader.NUM_SHARDS_PROP, numShards);
-    } 
+    } else {
+      System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
+    }
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
     
     initCloud();
@@ -337,9 +342,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return jettys;
   }
 
-  protected int getNumShards(String defaultCollection) {
+  protected int getNumShards(String collection) {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    Map<String,Slice> slices = zkStateReader.getClusterState().getSlices(defaultCollection);
+    Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(collection);
+    if (slices == null) {
+      throw new IllegalArgumentException("Could not find collection:" + collection);
+    }
     int cnt = 0;
     for (Map.Entry<String,Slice> entry : slices.entrySet()) {
       cnt += entry.getValue().getReplicasMap().size();
@@ -368,30 +376,24 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     shardToJetty.clear();
     
     ClusterState clusterState = zkStateReader.getClusterState();
-    Map<String,Slice> slices = clusterState.getSlices(DEFAULT_COLLECTION);
-    
-    if (slices == null) {
-      throw new RuntimeException("No slices found for collection "
-          + DEFAULT_COLLECTION + " in " + clusterState.getCollections());
-    }
-    
+    DocCollection coll = clusterState.getCollection(DEFAULT_COLLECTION);
+
     List<CloudSolrServerClient> theClients = new ArrayList<CloudSolrServerClient>();
     for (SolrServer client : clients) {
       // find info for this client in zk 
       nextClient:
-      // we find ou state by simply matching ports...
-      for (Map.Entry<String,Slice> slice : slices.entrySet()) {
-        Map<String,Replica> theShards = slice.getValue().getReplicasMap();
-        for (Map.Entry<String,Replica> shard : theShards.entrySet()) {
+      // we find out state by simply matching ports...
+      for (Slice slice : coll.getSlices()) {
+        for (Replica replica : slice.getReplicas()) {
           int port = new URI(((HttpSolrServer) client).getBaseURL())
               .getPort();
           
-          if (shard.getKey().contains(":" + port + "_")) {
+          if (replica.getName().contains(":" + port + "_")) {
             CloudSolrServerClient csc = new CloudSolrServerClient();
             csc.solrClient = client;
             csc.port = port;
-            csc.shardName = shard.getValue().getStr(ZkStateReader.NODE_NAME_PROP);
-            csc.info = shard.getValue();
+            csc.shardName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
+            csc.info = replica;
             
             theClients .add(csc);
             
@@ -408,27 +410,25 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
       
       nextJetty:
-      for (Map.Entry<String,Slice> slice : slices.entrySet()) {
-        Map<String,Replica> theShards = slice.getValue().getReplicasMap();
-        for (Map.Entry<String,Replica> shard : theShards.entrySet()) {
-          if (shard.getKey().contains(":" + port + "_")) {
-            List<CloudJettyRunner> list = shardToJetty.get(slice.getKey());
+      for (Slice slice : coll.getSlices()) {
+        for (Replica replica : slice.getReplicas()) {
+          if (replica.getName().contains(":" + port + "_")) {
+            List<CloudJettyRunner> list = shardToJetty.get(slice.getName());
             if (list == null) {
               list = new ArrayList<CloudJettyRunner>();
-              shardToJetty.put(slice.getKey(), list);
+              shardToJetty.put(slice.getName(), list);
             }
-            boolean isLeader = shard.getValue().containsKey(
-                ZkStateReader.LEADER_PROP);
+            boolean isLeader = slice.getLeader() == replica;
             CloudJettyRunner cjr = new CloudJettyRunner();
             cjr.jetty = jetty;
-            cjr.info = shard.getValue();
-            cjr.nodeName = shard.getValue().getStr(ZkStateReader.NODE_NAME_PROP);
-            cjr.coreNodeName = shard.getKey();
-            cjr.url = shard.getValue().getStr(ZkStateReader.BASE_URL_PROP) + "/" + shard.getValue().getStr(ZkStateReader.CORE_NAME_PROP);
+            cjr.info = replica;
+            cjr.nodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
+            cjr.coreNodeName = replica.getName();
+            cjr.url = replica.getStr(ZkStateReader.BASE_URL_PROP) + "/" + replica.getStr(ZkStateReader.CORE_NAME_PROP);
             cjr.client = findClientByPort(port, theClients);
             list.add(cjr);
             if (isLeader) {
-              shardToLeaderJetty.put(slice.getKey(), cjr);
+              shardToLeaderJetty.put(slice.getName(), cjr);
             }
             cloudJettys.add(cjr);
             break nextJetty;
@@ -440,12 +440,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     // # of jetties may not match replicas in shard here, because we don't map
     // jetties that are not running - every shard should have at least one
     // running jetty though
-    for (Map.Entry<String,Slice> slice : slices.entrySet()) {
+    for (Slice slice : coll.getSlices()) {
       // check that things look right
-      List<CloudJettyRunner> jetties = shardToJetty.get(slice.getKey());
-      assertNotNull("Test setup problem: We found no jetties for shard: " + slice.getKey()
+      List<CloudJettyRunner> jetties = shardToJetty.get(slice.getName());
+      assertNotNull("Test setup problem: We found no jetties for shard: " + slice.getName()
           + " just:" + shardToJetty.keySet(), jetties);
-      assertEquals(slice.getValue().getReplicasMap().size(), jetties.size());
+      assertEquals(slice.getReplicas().size(), jetties.size());
     }
   }
   
@@ -940,7 +940,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     try {
       zk.createClusterStateWatchersAndUpdate();
       clusterState = zk.getClusterState();
-      slices = clusterState.getSlices(DEFAULT_COLLECTION);
+      slices = clusterState.getSlicesMap(DEFAULT_COLLECTION);
     } finally {
       zk.close();
     }

@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
+import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
@@ -65,7 +66,7 @@ public class TestTopKResultsHandler extends BaseTestTopK {
   }
   
   /**
-   * Strait forward test: Adding specific documents with specific facets and
+   * Straightforward test: Adding specific documents with specific facets and
    * counting them in the most basic form.
    */
   @Test
@@ -79,6 +80,8 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       sParams.addFacetRequest(new CountFacetRequest(new CategoryPath("a"), 100));
       CountFacetRequest cfra = new CountFacetRequest(new CategoryPath("a"), 100);
       cfra.setDepth(3);
+      // makes it easier to check the results in the test.
+      cfra.setResultMode(ResultMode.GLOBAL_FLAT);
       sParams.addFacetRequest(cfra);
       sParams.addFacetRequest(new CountFacetRequest(new CategoryPath("a", "b"), 100));
       sParams.addFacetRequest(new CountFacetRequest(new CategoryPath("a", "b", "1"), 100));

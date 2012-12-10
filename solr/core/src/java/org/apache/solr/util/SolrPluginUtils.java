@@ -17,12 +17,8 @@
 
 package org.apache.solr.util;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.solr.common.SolrDocument;
@@ -30,7 +26,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -38,13 +33,12 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.highlight.SolrHighlighter;
+import org.apache.solr.parser.QueryParser;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.*;
-import org.apache.solr.update.DocumentBuilder;
-import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.*;
@@ -386,7 +380,7 @@ public class SolrPluginUtils {
 
     DocList results = req.getSearcher().getDocList(query,(DocSet)null, sort, start, limit);
     return results;
-    } catch (ParseException e) {
+    } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing query: " + qs);
     }
 
@@ -604,8 +598,6 @@ public class SolrPluginUtils {
 
   /**
    * Escapes all special characters except '"', '-', and '+'
-   *
-   * @see QueryParser#escape
    */
   public static CharSequence partialEscape(CharSequence s) {
     StringBuilder sb = new StringBuilder();
@@ -726,7 +718,7 @@ public class SolrPluginUtils {
      */
     @Override
     protected Query getFieldQuery(String field, String queryText, boolean quoted)
-      throws ParseException {
+      throws SyntaxError {
 
       if (aliases.containsKey(field)) {
 
@@ -798,7 +790,7 @@ public class SolrPluginUtils {
    * @return null if no queries are generated
    */
   public static List<Query> parseQueryStrings(SolrQueryRequest req,
-                                              String[] queries) throws ParseException {
+                                              String[] queries) throws SyntaxError {
     if (null == queries || 0 == queries.length) return null;
     List<Query> out = new ArrayList<Query>(queries.length);
     for (String q : queries) {

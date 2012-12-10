@@ -163,7 +163,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       }
       
       // should I be leader?
-      if (weAreReplacement && !shouldIBeLeader(leaderProps, core)) {
+      if (weAreReplacement && !shouldIBeLeader(leaderProps, core, weAreReplacement)) {
         rejoinLeaderElection(leaderSeqPath, core);
         return;
       }
@@ -249,7 +249,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         core.getCoreDescriptor().getCloudDescriptor().isLeader = false;
         
         // we could not publish ourselves as leader - rejoin election
-        rejoinLeaderElection(coreName, core);
+        rejoinLeaderElection(leaderSeqPath, core);
       } finally {
         if (core != null) {
           core.close();
@@ -263,7 +263,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       ZkNodeProps leaderProps, String collection, String shardId) {
     ClusterState clusterState = zkController.getZkStateReader()
         .getClusterState();
-    Map<String,Slice> slices = clusterState.getSlices(collection);
+    Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     Slice slice = slices.get(shardId);
     Map<String,Replica> replicasMap = slice.getReplicasMap();
     for (Map.Entry<String,Replica> shard : replicasMap.entrySet()) {
@@ -293,7 +293,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     final String shardsElectZkPath = electionPath + LeaderElector.ELECTION_NODE;
     
     Slice slices = zkController.getClusterState().getSlice(collection, shardId);
-    
+    int cnt = 0;
     while (true && !isClosed) {
       // wait for everyone to be up
       if (slices != null) {
@@ -310,9 +310,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           log.info("Enough replicas found to continue.");
           return;
         } else {
-          log.info("Waiting until we see more replicas up: total="
+          if (cnt % 40 == 0) {
+            log.info("Waiting until we see more replicas up: total="
               + slices.getReplicasMap().size() + " found=" + found
               + " timeoutin=" + (timeoutAt - System.currentTimeMillis()));
+          }
         }
         
         if (System.currentTimeMillis() > timeoutAt) {
@@ -323,6 +325,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       
       Thread.sleep(500);
       slices = zkController.getClusterState().getSlice(collection, shardId);
+      // System.out.println("###### waitForReplicasToComeUp  : slices=" + slices + " all=" + zkController.getClusterState().getCollectionStates() );
+      cnt++;
     }
   }
 
@@ -347,12 +351,18 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
     leaderElector.joinElection(this, true);
   }
 
-  private boolean shouldIBeLeader(ZkNodeProps leaderProps, SolrCore core) {
+  private boolean shouldIBeLeader(ZkNodeProps leaderProps, SolrCore core, boolean weAreReplacement) {
     log.info("Checking if I should try and be the leader.");
     
     if (isClosed) {
       log.info("Bailing on leader process because we have been closed");
       return false;
+    }
+    
+    if (!weAreReplacement) {
+      // we are the first node starting in the shard - there is a configurable wait
+      // to make sure others participate in sync and leader election, we can be leader
+      return true;
     }
     
     if (core.getCoreDescriptor().getCloudDescriptor().getLastPublished()

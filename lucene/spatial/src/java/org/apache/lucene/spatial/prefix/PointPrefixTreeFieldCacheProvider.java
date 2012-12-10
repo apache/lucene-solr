@@ -45,6 +45,8 @@ public class PointPrefixTreeFieldCacheProvider extends ShapeFieldCacheProvider<P
   @Override
   protected Point readShape(BytesRef term) {
     scanCell = grid.getNode(term.bytes, term.offset, term.length, scanCell);
-    return scanCell.isLeaf() ? scanCell.getShape().getCenter() : null;
+    if (scanCell.getLevel() == grid.getMaxLevels() && !scanCell.isLeaf())
+      return scanCell.getCenter();
+    return null;
   }
 }

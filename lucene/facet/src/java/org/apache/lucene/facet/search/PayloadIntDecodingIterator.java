@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnsafeByteArrayInputStream;
 import org.apache.lucene.util.encoding.IntDecoder;
 
@@ -61,14 +61,8 @@ public class PayloadIntDecodingIterator implements CategoryListIterator {
   private final PayloadIterator pi;
   private final int hashCode;
   
-  public PayloadIntDecodingIterator(IndexReader indexReader, Term term, IntDecoder decoder)
-      throws IOException {
-    this(indexReader, term, decoder, new byte[1024]);
-  }
-
-  public PayloadIntDecodingIterator(IndexReader indexReader, Term term, IntDecoder decoder,
-                                    byte[] buffer) throws IOException {
-    pi = new PayloadIterator(indexReader, term, buffer);
+  public PayloadIntDecodingIterator(IndexReader indexReader, Term term, IntDecoder decoder) throws IOException {
+    pi = new PayloadIterator(indexReader, term);
     ubais = new UnsafeByteArrayInputStream();
     this.decoder = decoder;
     hashCode = indexReader.hashCode() ^ term.hashCode();
@@ -95,21 +89,25 @@ public class PayloadIntDecodingIterator implements CategoryListIterator {
     return hashCode;
   }
 
+  @Override
   public boolean init() throws IOException {
     return pi.init();
   }
   
+  @Override
   public long nextCategory() throws IOException {
     return decoder.decode();
   }
 
+  @Override
   public boolean skipTo(int docId) throws IOException {
     if (!pi.setdoc(docId)) {
       return false;
     }
 
     // Initializing the decoding mechanism with the new payload data
-    ubais.reInit(pi.getBuffer(), 0, pi.getPayloadLength());
+    BytesRef data = pi.getPayload();
+    ubais.reInit(data.bytes, data.offset, data.length + data.offset);
     decoder.reInit(ubais);
     return true;
   }

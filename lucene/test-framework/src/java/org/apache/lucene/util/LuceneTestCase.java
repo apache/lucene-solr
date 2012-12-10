@@ -37,6 +37,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.search.QueryUtils.FCInvisibleMultiReader;
 import org.apache.lucene.store.*;
+import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.junit.*;
@@ -947,6 +948,27 @@ public abstract class LuceneTestCase extends Assert {
     if (rarely(random)) {
       directory = new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
     }
+    
+    if (rarely(random)) { 
+      final double maxMBPerSec = 10 + 5*(random.nextDouble()-0.5);
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("LuceneTestCase: will rate limit output IndexOutput to " + maxMBPerSec + " MB/sec");
+      }
+      final RateLimitedDirectoryWrapper rateLimitedDirectoryWrapper = new RateLimitedDirectoryWrapper(directory);
+      switch (random.nextInt(10)) {
+        case 3: // sometimes rate limit on flush
+          rateLimitedDirectoryWrapper.setMaxWriteMBPerSec(maxMBPerSec, Context.FLUSH);
+          break;
+        case 2: // sometimes rate limit flush & merge
+          rateLimitedDirectoryWrapper.setMaxWriteMBPerSec(maxMBPerSec, Context.FLUSH);
+          rateLimitedDirectoryWrapper.setMaxWriteMBPerSec(maxMBPerSec, Context.MERGE);
+          break;
+        default:
+          rateLimitedDirectoryWrapper.setMaxWriteMBPerSec(maxMBPerSec, Context.MERGE);
+      }
+      directory =  rateLimitedDirectoryWrapper;
+      
+    }
 
     if (bare) {
       BaseDirectoryWrapper base = new BaseDirectoryWrapper(directory);
@@ -954,6 +976,7 @@ public abstract class LuceneTestCase extends Assert {
       return base;
     } else {
       MockDirectoryWrapper mock = new MockDirectoryWrapper(random, directory);
+      
       mock.setThrottling(TEST_THROTTLING);
       closeAfterSuite(new CloseableDirectory(mock, suiteFailureMarker));
       return mock;

@@ -1,7 +1,6 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import java.util.Map;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,44 +30,6 @@ public final class TwoPhaseCommitTool {
   /** No instance */
   private TwoPhaseCommitTool() {}
 
-  /**
-   * A wrapper of a {@link TwoPhaseCommit}, which delegates all calls to the
-   * wrapped object, passing the specified commitData. This object is useful for
-   * use with {@link TwoPhaseCommitTool#execute(TwoPhaseCommit...)} if one would
-   * like to store commitData as part of the commit.
-   */
-  public static final class TwoPhaseCommitWrapper implements TwoPhaseCommit {
-
-    private final TwoPhaseCommit tpc;
-    private  final Map<String, String> commitData;
-
-    /** Sole constructor. */
-    public TwoPhaseCommitWrapper(TwoPhaseCommit tpc, Map<String, String> commitData) {
-      this.tpc = tpc;
-      this.commitData = commitData;
-    }
-
-    public void prepareCommit() throws IOException {
-      prepareCommit(commitData);
-    }
-
-    public void prepareCommit(Map<String, String> commitData) throws IOException {
-      tpc.prepareCommit(this.commitData);
-    }
-
-    public void commit() throws IOException {
-      commit(commitData);
-    }
-
-    public void commit(Map<String, String> commitData) throws IOException {
-      tpc.commit(this.commitData);
-    }
-
-    public void rollback() throws IOException {
-      tpc.rollback();
-    }
-  }
-  
   /**
    * Thrown by {@link TwoPhaseCommitTool#execute(TwoPhaseCommit...)} when an
    * object fails to prepareCommit().

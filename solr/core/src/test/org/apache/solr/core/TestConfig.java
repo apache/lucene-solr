@@ -94,7 +94,7 @@ public class TestConfig extends SolrTestCaseJ4 {
   @Test
   public void testLucene23Upgrades() throws Exception {
     double bufferSize = solrConfig.indexConfig.ramBufferSizeMB;
-    assertTrue(bufferSize + " does not equal: " + 32, bufferSize == 32);
+    assertTrue(bufferSize + " does not equal: " + 100, bufferSize == 100);
     String mergePolicy = solrConfig.indexConfig.mergePolicyInfo.className;
     assertEquals(TieredMergePolicy.class.getName(), mergePolicy);
     String mergeSched = solrConfig.indexConfig.mergeSchedulerInfo.className;
@@ -140,7 +140,7 @@ public class TestConfig extends SolrTestCaseJ4 {
   public void testDefaults() throws Exception {
     SolrConfig sc = new SolrConfig(new SolrResourceLoader("solr/collection1"), "solrconfig-basic.xml", null);
     SolrIndexConfig sic = sc.indexConfig;
-    assertTrue("default ramBufferSizeMB should be 32", sic.ramBufferSizeMB == 32);
+    assertTrue("default ramBufferSizeMB should be 100", sic.ramBufferSizeMB == 100);
     assertTrue("default useCompoundFile should be false", sic.useCompoundFile == false);
     assertTrue("default LockType should be native", sic.lockType.equals(SolrIndexConfig.LOCK_TYPE_NATIVE));
   }
