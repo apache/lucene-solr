@@ -110,6 +110,8 @@ New Features
   will be a total of 3 replicas (one of which will normally be
   designated as the leader.) (yonik)
 
+* SOLR-4124: You should be able to set the update log directory with the
+  CoreAdmin API the same way as the data directory. (Mark Miller)
 
 Optimizations
 ----------------------

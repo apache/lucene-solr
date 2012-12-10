@@ -478,6 +478,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
       opts = params.get(CoreAdminParams.DATA_DIR);
       if (opts != null)
         dcore.setDataDir(opts);
+      
+      opts = params.get(CoreAdminParams.ULOG_DIR);
+      if (opts != null)
+        dcore.setUlogDir(opts);
 
       CloudDescriptor cd = dcore.getCloudDescriptor();
       if (cd != null) {
