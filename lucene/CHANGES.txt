@@ -80,6 +80,11 @@ Changes in backwards compatibility policy
   can use OrdinalPolicy.NO_PARENTS to never write any parent category ordinal
   to the fulltree posting payload (but note that you need a special 
   FacetsAccumulator - see javadocs). (Shai Erera)
+
+* LUCENE-4594: Spatial PrefixTreeStrategy no longer indexes center points of
+  non-point shapes.  If you want to call makeDistanceValueSource() based on
+  shape centers, you need to do this yourself in another spatial field.
+  (David Smiley)
     
 New Features
 
@@ -245,6 +250,13 @@ Bug Fixes
 
 * LUCENE-4596: fix a concurrency bug in DirectoryTaxonomyWriter.
   (Shai Erera)
+
+* LUCENE-4594: Spatial PrefixTreeStrategy would index center-points in addition
+  to the shape to index if it was non-point, in the same field.  But sometimes
+  the center-point isn't actually in the shape (consider a LineString), and for
+  highly precise shapes it could cause makeDistanceValueSource's cache to load
+  parts of the shape's boundary erroneously too.  So center points aren't
+  indexed any more; you should use another spatial field. (David Smiley)
 
 Changes in Runtime Behavior
   
