@@ -46,7 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <h4>Characteristics:</h4>
  * <ul>
  * <li>Can index any shape; however only {@link RecursivePrefixTreeStrategy}
- * can effectively search non-point shapes. <em>Not tested.</em></li>
+ * can effectively search non-point shapes.</li>
  * <li>Can index a variable number of shapes per field value. This strategy
  * can do it via multiple calls to {@link #createIndexableFields(com.spatial4j.core.shape.Shape)}
  * for a document or by giving it some sort of Shape aggregate (e.g. JTS
@@ -58,8 +58,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * is supported.  If only points are indexed then this is effectively equivalent
  * to IsWithin.</li>
  * <li>The strategy supports {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point)}
- * even for multi-valued data.  However, <em>it will likely be removed in the
- * future</em> in lieu of using another strategy with a more scalable
+ * even for multi-valued data, so long as the indexed data is all points; the
+ * behavior is undefined otherwise.  However, <em>it will likely be removed in
+ * the future</em> in lieu of using another strategy with a more scalable
  * implementation.  Use of this call is the only
  * circumstance in which a cache is used.  The cache is simple but as such
  * it doesn't scale to large numbers of points nor is it real-time-search
@@ -124,20 +125,12 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   public Field[] createIndexableFields(Shape shape, double distErr) {
     int detailLevel = grid.getLevelForDistance(distErr);
     List<Node> cells = grid.getNodes(shape, detailLevel, true);//true=intermediates cells
-    //If shape isn't a point, add a full-resolution center-point so that
-    // PointPrefixTreeFieldCacheProvider has the center-points.
-    //TODO index each point of a multi-point or other aggregate.
-    //TODO remove this once support for a distance ValueSource is removed.
-    if (!(shape instanceof Point)) {
-      Point ctr = shape.getCenter();
-      //TODO should be smarter; don't index 2 tokens for this in CellTokenStream. Harmless though.
-      cells.add(grid.getNodes(ctr,grid.getMaxLevels(),false).get(0));
-    }
 
     //TODO is CellTokenStream supposed to be re-used somehow? see Uwe's comments:
     //  http://code.google.com/p/lucene-spatial-playground/issues/detail?id=4
 
-    Field field = new Field(getFieldName(), new CellTokenStream(cells.iterator()), FIELD_TYPE);
+    Field field = new Field(getFieldName(),
+        new CellTokenStream(cells.iterator()), FIELD_TYPE);
     return new Field[]{field};
   }
 
