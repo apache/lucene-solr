@@ -69,7 +69,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     r = new Random(random().nextLong());
   }
 
-  protected int shardCount = 4;
+  protected int shardCount = 4;      // the actual number of solr cores that will be created in the cluster
 
   /**
    * Sub classes can set this flag in their constructor to true if they
