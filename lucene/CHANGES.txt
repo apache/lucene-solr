@@ -74,7 +74,13 @@ Changes in backwards compatibility policy
   re-index is not done, then an indexed point is ~1/2 the smallest grid cell
   larger and as such is slightly more likely to match a query shape.
   (David Smiley)
-  
+
+* LUCENE-4604: DefaultOrdinalPolicy removed in favor of OrdinalPolicy.ALL_PARENTS.
+  Same for DefaultPathPolicy (now PathPolicy.ALL_CATEGORIES). In addition, you
+  can use OrdinalPolicy.NO_PARENTS to never write any parent category ordinal
+  to the fulltree posting payload (but note that you need a special 
+  FacetsAccumulator - see javadocs). (Shai Erera)
+    
 New Features
 
 * LUCENE-4226: New experimental StoredFieldsFormat that compresses chunks of
