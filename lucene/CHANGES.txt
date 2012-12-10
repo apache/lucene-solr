@@ -306,6 +306,9 @@ Documentation
 
 Build
 
+* LUCENE-4603: Upgrade randomized testing to version 2.0.5: print forked
+  JVM PIDs on heartbeat from hung tests (Dawid Weiss)
+
 * Upgrade randomized testing to version 2.0.4: avoid hangs on shutdown
   hooks hanging forever by calling Runtime.halt() in addition to 
   Runtime.exit() after a short delay to allow graceful shutdown (Dawid Weiss)
