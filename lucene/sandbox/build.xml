@@ -24,7 +24,7 @@
   <import file="../module-build.xml"/>
 
   <path id="classpath">
-    <pathelement path="lib/jakarta-regexp-1.4.jar"/>
+    <fileset dir="lib"/>
     <path refid="base.classpath"/>
   </path>
 

@@ -64,7 +64,7 @@
   </target>
 
   <path id="tools.dependencies">
-    <fileset dir="../icu/lib" includes="icu4j-49.1.jar"/>
+    <fileset dir="../icu/lib"/>
   </path>
 
   <path id="tools.classpath">
