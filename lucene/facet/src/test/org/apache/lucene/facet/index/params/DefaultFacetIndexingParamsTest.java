@@ -1,20 +1,14 @@
 package org.apache.lucene.facet.index.params;
 
-import org.apache.lucene.index.Term;
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.index.categorypolicy.DefaultOrdinalPolicy;
-import org.apache.lucene.facet.index.categorypolicy.DefaultPathPolicy;
 import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
 import org.apache.lucene.facet.index.categorypolicy.PathPolicy;
-import org.apache.lucene.facet.index.params.CategoryListParams;
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.DrillDown;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.util.PartitionsUtils;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -84,13 +78,10 @@ public class DefaultFacetIndexingParamsTest extends LuceneTestCase {
   @Test
   public void testCategoryPolicies() {
     FacetIndexingParams dfip = new DefaultFacetIndexingParams();
-    long seed = System.currentTimeMillis();
     // check path policy
     CategoryPath cp = new CategoryPath();
-    PathPolicy pathPolicy = new DefaultPathPolicy();
-    assertEquals("path policy does not match default for root" + "(seed "
-        + seed + ")", pathPolicy.shouldAdd(cp), dfip.getPathPolicy()
-        .shouldAdd(cp));
+    PathPolicy pathPolicy = PathPolicy.ALL_CATEGORIES;
+    assertEquals("path policy does not match default for root", pathPolicy.shouldAdd(cp), dfip.getPathPolicy().shouldAdd(cp));
     for (int i = 0; i < 30; i++) {
       int nComponents = random().nextInt(10);
       String[] components = new String[nComponents];
@@ -98,21 +89,19 @@ public class DefaultFacetIndexingParamsTest extends LuceneTestCase {
         components[j] = (Integer.valueOf(random().nextInt(30))).toString();
       }
       cp = new CategoryPath(components);
-      assertEquals("path policy does not match default for "
-          + cp.toString('/') + "(seed " + seed + ")", pathPolicy
-          .shouldAdd(cp), dfip.getPathPolicy().shouldAdd(cp));
+      assertEquals("path policy does not match default for " + cp.toString('/'), 
+          pathPolicy.shouldAdd(cp), dfip.getPathPolicy().shouldAdd(cp));
     }
 
     // check ordinal policy
-    OrdinalPolicy ordinalPolicy = new DefaultOrdinalPolicy();
-    assertEquals("ordinal policy does not match default for root"
-        + "(seed " + seed + ")", ordinalPolicy
-        .shouldAdd(TaxonomyReader.ROOT_ORDINAL), dfip
-        .getOrdinalPolicy().shouldAdd(TaxonomyReader.ROOT_ORDINAL));
+    OrdinalPolicy ordinalPolicy = OrdinalPolicy.ALL_PARENTS;
+    assertEquals("ordinal policy does not match default for root", 
+        ordinalPolicy.shouldAdd(TaxonomyReader.ROOT_ORDINAL), 
+        dfip.getOrdinalPolicy().shouldAdd(TaxonomyReader.ROOT_ORDINAL));
     for (int i = 0; i < 30; i++) {
       int ordinal = random().nextInt();
-      assertEquals("ordinal policy does not match default for " + ordinal
-          + "(seed " + seed + ")", ordinalPolicy.shouldAdd(ordinal),
+      assertEquals("ordinal policy does not match default for " + ordinal, 
+          ordinalPolicy.shouldAdd(ordinal),
           dfip.getOrdinalPolicy().shouldAdd(ordinal));
     }
   }

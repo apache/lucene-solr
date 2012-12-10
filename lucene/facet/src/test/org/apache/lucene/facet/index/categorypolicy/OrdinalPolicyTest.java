@@ -1,16 +1,12 @@
 package org.apache.lucene.facet.index.categorypolicy;
 
-import org.apache.lucene.store.Directory;
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.index.categorypolicy.DefaultOrdinalPolicy;
-import org.apache.lucene.facet.index.categorypolicy.NonTopLevelOrdinalPolicy;
-import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -34,7 +30,7 @@ public class OrdinalPolicyTest extends LuceneTestCase {
   @Test
   public void testDefaultOrdinalPolicy() {
     // check ordinal policy
-    OrdinalPolicy ordinalPolicy = new DefaultOrdinalPolicy();
+    OrdinalPolicy ordinalPolicy = OrdinalPolicy.ALL_PARENTS;
     assertFalse("default ordinal policy should not match root", ordinalPolicy
         .shouldAdd(TaxonomyReader.ROOT_ORDINAL));
     for (int i = 0; i < 300; i++) {

@@ -1,15 +1,11 @@
 package org.apache.lucene.facet.index.categorypolicy;
 
-import org.apache.lucene.store.Directory;
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.index.categorypolicy.DefaultPathPolicy;
-import org.apache.lucene.facet.index.categorypolicy.NonTopLevelPathPolicy;
-import org.apache.lucene.facet.index.categorypolicy.PathPolicy;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -34,7 +30,7 @@ public class PathPolicyTest extends LuceneTestCase {
   public void testDefaultPathPolicy() {
     // check path policy
     CategoryPath cp = new CategoryPath();
-    PathPolicy pathPolicy = new DefaultPathPolicy();
+    PathPolicy pathPolicy = PathPolicy.ALL_CATEGORIES;
     assertFalse("default path policy should not accept root", 
         pathPolicy.shouldAdd(cp));
     for (int i = 0; i < 300; i++) {
