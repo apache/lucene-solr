@@ -18,6 +18,8 @@ package org.apache.solr.handler.admin;
  */
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -26,6 +28,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerCollectionProcessor;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -182,9 +185,24 @@ public class CollectionsHandler extends RequestHandlerBase {
     String numShards = req.getParams().get(OverseerCollectionProcessor.NUM_SLICES);
     String maxShardsPerNode = req.getParams().get(OverseerCollectionProcessor.MAX_SHARDS_PER_NODE);
     
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-        OverseerCollectionProcessor.CREATECOLLECTION, OverseerCollectionProcessor.REPLICATION_FACTOR, numReplicas.toString(), "name", name,
-        "collection.configName", configName, OverseerCollectionProcessor.NUM_SLICES, numShards, OverseerCollectionProcessor.MAX_SHARDS_PER_NODE, maxShardsPerNode);
+    if (name == null) {
+      log.error("Collection name is required to create a new collection");
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "Collection name is required to create a new collection");
+    }
+    
+    Map<String,Object> props = new HashMap<String,Object>();
+    props.put(Overseer.QUEUE_OPERATION,
+        OverseerCollectionProcessor.CREATECOLLECTION);
+    props.put(OverseerCollectionProcessor.REPLICATION_FACTOR, numReplicas.toString());
+    props.put("name", name);
+    if (configName != null) {
+      props.put("collection.configName", configName);
+    }
+    props.put(OverseerCollectionProcessor.NUM_SLICES, numShards);
+    props.put(OverseerCollectionProcessor.MAX_SHARDS_PER_NODE, maxShardsPerNode);
+    
+    ZkNodeProps m = new ZkNodeProps(props);
 
     // TODO: what if you want to block until the collection is available?
     coreContainer.getZkController().getOverseerCollectionQueue().offer(ZkStateReader.toJSON(m));
