@@ -122,6 +122,9 @@ New Features
 * SOLR-4030: Allow rate limiting Directory IO based on the IO context.
   (Mark Miller, Radim Kolar)
 
+* SOLR-4166: LBHttpSolrServer ignores ResponseParser passed in constructor.
+  (Steve Molloy via Mark Miller)
+
 Optimizations
 ----------------------
 
