@@ -22,6 +22,14 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <dataDir>${solr.data.dir:}</dataDir>
 
+  <!-- an update processor the explicitly excludes distrib to test
+       clean errors when people attempt atomic updates w/o it
+  -->
+  <updateRequestProcessorChain name="nodistrib" >
+   <processor class="solr.NoOpDistributingUpdateProcessorFactory" />
+   <processor class="solr.RunUpdateProcessorFactory" />
+ </updateRequestProcessorChain>
+
   <requestHandler name="standard" class="solr.StandardRequestHandler">
   </requestHandler>
 
