@@ -457,9 +457,20 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   private boolean versionAdd(AddUpdateCommand cmd) throws IOException {
     BytesRef idBytes = cmd.getIndexedId();
 
-    if (vinfo == null || idBytes == null) {
+    if (idBytes == null) {
       super.processAdd(cmd);
       return false;
+    }
+
+    if (vinfo == null) {
+      if (isAtomicUpdate(cmd)) {
+        throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+           "Atomic document updates are not supported unless <updateLog/> is configured");
+      } else {
+        super.processAdd(cmd);
+        return false;
+      }
     }
 
     // This is only the hash for the bucket, and must be based only on the uniqueKey (i.e. do not use a pluggable hash here)
@@ -580,21 +591,26 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return false;
   }
 
+  /**
+   * Utility method that examines the SolrInputDocument in an AddUpdateCommand
+   * and returns true if the documents contains atomic update instructions.
+   */
+  public static boolean isAtomicUpdate(final AddUpdateCommand cmd) {
+    SolrInputDocument sdoc = cmd.getSolrInputDocument();
+    for (SolrInputField sif : sdoc.values()) {
+      if (sif.getValue() instanceof Map) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   // TODO: may want to switch to using optimistic locking in the future for better concurrency
   // that's why this code is here... need to retry in a loop closely around/in versionAdd
   boolean getUpdatedDocument(AddUpdateCommand cmd, long versionOnUpdate) throws IOException {
+    if (!isAtomicUpdate(cmd)) return false;
+
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
-    boolean update = false;
-    for (SolrInputField sif : sdoc.values()) {
-      if (sif.getValue() instanceof Map) {
-        update = true;
-        break;
-      }
-    }
-
-    if (!update) return false;
-
     BytesRef id = cmd.getIndexedId();
     SolrInputDocument oldDoc = RealTimeGetComponent.getInputDocument(cmd.getReq().getCore(), id);
 

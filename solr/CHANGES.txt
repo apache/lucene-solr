@@ -312,6 +312,9 @@ Bug Fixes
   same way as on startup when collection.configName is not explicitly passed.
   (Po Rui, Mark Miller)
 
+* SOLR-4127: Added explicit error message if users attempt Atomic document 
+  updates with either updateLog or DistribUpdateProcessor. (hossman)
+
 Other Changes
 ----------------------
 
