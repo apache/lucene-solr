@@ -93,6 +93,7 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
     return proto;
   }
 
+  @Override
   public void inform(IndexSchema schema) {
     //Can't do this until here b/c the Dynamic Fields are not initialized until here.
     if (subType != null) {

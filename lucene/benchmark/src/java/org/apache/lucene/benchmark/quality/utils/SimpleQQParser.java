@@ -59,6 +59,7 @@ public class SimpleQQParser implements QualityQueryParser {
   /* (non-Javadoc)
    * @see org.apache.lucene.benchmark.quality.QualityQueryParser#parse(org.apache.lucene.benchmark.quality.QualityQuery)
    */
+  @Override
   public Query parse(QualityQuery qq) throws ParseException {
     QueryParser qp = queryParser.get();
     if (qp==null) {

@@ -103,6 +103,7 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
   }
 
   /** Signed int order comparison */
+  @Override
   public int compareTo(IntsRef other) {
     if (this == other) return 0;
 

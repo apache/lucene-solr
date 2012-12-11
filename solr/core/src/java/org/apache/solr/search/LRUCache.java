@@ -56,6 +56,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   private Map<K,V> map;
   private String description="LRU Cache";
 
+  @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
     super.init(args, regenerator);
     String str = (String)args.get("size");
@@ -102,12 +103,14 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     return description;
   }
 
+  @Override
   public int size() {
     synchronized(map) {
       return map.size();
     }
   }
 
+  @Override
   public V put(K key, V value) {
     synchronized (map) {
       if (getState() == State.LIVE) {
@@ -121,6 +124,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     }
   }
 
+  @Override
   public V get(K key) {
     synchronized (map) {
       V val = map.get(key);
@@ -137,12 +141,14 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     }
   }
 
+  @Override
   public void clear() {
     synchronized(map) {
       map.clear();
     }
   }
 
+  @Override
   public void warm(SolrIndexSearcher searcher, SolrCache<K,V> old) {
     if (regenerator==null) return;
     long warmingStartTime = System.currentTimeMillis();
@@ -192,6 +198,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   }
 
 
+  @Override
   public void close() {
   }
 
@@ -199,18 +206,22 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
 
+  @Override
   public String getName() {
     return LRUCache.class.getName();
   }
 
+  @Override
   public String getDescription() {
      return description;
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public NamedList getStatistics() {
     NamedList lst = new SimpleOrderedMap();
     synchronized (map) {

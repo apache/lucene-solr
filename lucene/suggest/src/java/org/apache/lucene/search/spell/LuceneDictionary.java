@@ -41,6 +41,7 @@ public class LuceneDictionary implements Dictionary {
     this.field = field;
   }
 
+  @Override
   public final BytesRefIterator getWordsIterator() throws IOException {
     final Terms terms = MultiFields.getTerms(reader, field);
     if (terms != null) {

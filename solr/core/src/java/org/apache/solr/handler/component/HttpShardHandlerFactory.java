@@ -87,6 +87,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
   /**
    * Get {@link ShardHandler} that uses the default http client.
    */
+  @Override
   public ShardHandler getShardHandler() {
     return getShardHandler(defaultClient);
   }
@@ -98,6 +99,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
     return new HttpShardHandler(this, httpClient);
   }
 
+  @Override
   public void init(PluginInfo info) {
     NamedList args = info.initArgs;
     this.soTimeout = getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT, soTimeout);

@@ -152,6 +152,7 @@ public abstract class DVGroupFacetCollector extends AbstractGroupFacetCollector 
         super(groupField, groupDvType, groupDiskResident, facetField, facetDvType, diskResident, facetPrefix, initialSize);
       }
 
+      @Override
       public void collect(int doc) throws IOException {
         int facetOrd = facetFieldSource.ord(doc);
         if (facetOrd < startFacetOrd || facetOrd >= endFacetOrd) {
@@ -176,6 +177,7 @@ public abstract class DVGroupFacetCollector extends AbstractGroupFacetCollector 
         );
       }
 
+      @Override
       public void setNextReader(AtomicReaderContext context) throws IOException {
         if (segmentFacetCounts != null) {
           segmentResults.add(createSegmentResult());
@@ -218,6 +220,7 @@ public abstract class DVGroupFacetCollector extends AbstractGroupFacetCollector 
         }
       }
 
+      @Override
       protected SegmentResult createSegmentResult() throws IOException {
         if (startFacetOrd == 0 && facetFieldSource.getByOrd(startFacetOrd, facetSpare).length == 0) {
           int missing = segmentFacetCounts[0];

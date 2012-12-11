@@ -658,6 +658,7 @@ public class QueryComponent extends SearchComponent
 
     EndResultTransformer.SolrDocumentSource solrDocumentSource = new EndResultTransformer.SolrDocumentSource() {
 
+      @Override
       public SolrDocument retrieve(ScoreDoc doc) {
         ShardDoc solrDoc = (ShardDoc) doc;
         return rb.retrievedDocuments.get(solrDoc.id);

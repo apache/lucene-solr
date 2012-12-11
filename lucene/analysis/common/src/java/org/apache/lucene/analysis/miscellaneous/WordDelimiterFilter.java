@@ -202,6 +202,7 @@ public final class WordDelimiterFilter extends TokenFilter {
     this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, configurationFlags, protWords);
   }
 
+  @Override
   public boolean incrementToken() throws IOException {
     while (true) {
       if (!hasSavedState) {

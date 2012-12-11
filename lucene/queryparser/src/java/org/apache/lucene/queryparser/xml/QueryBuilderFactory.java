@@ -31,6 +31,7 @@ public class QueryBuilderFactory implements QueryBuilder {
 
   HashMap<String, QueryBuilder> builders = new HashMap<String, QueryBuilder>();
 
+  @Override
   public Query getQuery(Element n) throws ParserException {
     QueryBuilder builder = builders.get(n.getNodeName());
     if (builder == null) {

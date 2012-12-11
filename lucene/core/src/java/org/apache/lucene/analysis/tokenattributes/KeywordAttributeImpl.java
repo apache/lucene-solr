@@ -53,10 +53,12 @@ public final class KeywordAttributeImpl extends AttributeImpl implements
     return keyword == other.keyword;
   }
 
+  @Override
   public boolean isKeyword() {
     return keyword;
   }
 
+  @Override
   public void setKeyword(boolean isKeyword) {
     keyword = isKeyword;
   }

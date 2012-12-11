@@ -99,6 +99,7 @@ public final class ByteBlockPool {
       this.bytesUsed = bytesUsed;
     }
 
+    @Override
     public byte[] getByteBlock() {
       bytesUsed.addAndGet(blockSize);
       return new byte[blockSize];

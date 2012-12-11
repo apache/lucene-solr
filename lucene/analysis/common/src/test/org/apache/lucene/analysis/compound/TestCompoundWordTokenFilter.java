@@ -275,9 +275,11 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     public void clear() {
       retain = false;
     }
+    @Override
     public boolean getRetain() {
       return retain;
     }
+    @Override
     public void setRetain(boolean retain) {
       this.retain = retain;
     }

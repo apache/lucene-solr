@@ -42,6 +42,7 @@ import org.apache.lucene.analysis.util.*;
 public class CommonGramsFilterFactory extends TokenFilterFactory implements
     ResourceLoaderAware {
 
+  @Override
   public void inform(ResourceLoader loader) throws IOException {
     String commonWordFiles = args.get("words");
     ignoreCase = getBoolean("ignoreCase", false);
@@ -69,6 +70,7 @@ public class CommonGramsFilterFactory extends TokenFilterFactory implements
     return commonWords;
   }
 
+  @Override
   public CommonGramsFilter create(TokenStream input) {
     CommonGramsFilter commonGrams = new CommonGramsFilter(luceneMatchVersion, input, commonWords);
     return commonGrams;

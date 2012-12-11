@@ -53,6 +53,7 @@ public class BooleanQueryNode extends QueryNodeImpl {
     return sb.toString();
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     if (getChildren() == null || getChildren().size() == 0)
       return "";

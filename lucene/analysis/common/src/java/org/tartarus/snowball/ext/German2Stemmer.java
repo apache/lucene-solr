@@ -678,6 +678,7 @@ private static final long serialVersionUID = 1L;
                     return true;
                 }
 
+                @Override
                 public boolean stem() {
             int v_1;
             int v_2;
@@ -729,10 +730,12 @@ private static final long serialVersionUID = 1L;
                     return true;
                 }
 
+        @Override
         public boolean equals( Object o ) {
             return o instanceof German2Stemmer;
         }
 
+        @Override
         public int hashCode() {
             return German2Stemmer.class.getName().hashCode();
         }

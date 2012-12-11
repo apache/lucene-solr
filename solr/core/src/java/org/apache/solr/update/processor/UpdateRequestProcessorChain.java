@@ -81,6 +81,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
    * @see RunUpdateProcessorFactory
    * @see DistributedUpdateProcessorFactory
    */
+  @Override
   public void init(PluginInfo info) {
     final String infomsg = "updateRequestProcessorChain \"" + 
       (null != info.name ? info.name : "") + "\"" + 

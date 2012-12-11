@@ -82,6 +82,7 @@ public class ReversedWildcardFilterFactory extends TokenFilterFactory {
   }
 
 
+  @Override
   public TokenStream create(TokenStream input) {
     return new ReversedWildcardFilter(input, withOriginal, markerChar);
   }

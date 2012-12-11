@@ -45,9 +45,11 @@ import java.util.*;
 
 public class CSVResponseWriter implements QueryResponseWriter {
 
+  @Override
   public void init(NamedList n) {
   }
 
+  @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     CSVWriter w = new CSVWriter(writer, req, rsp);
     try {
@@ -57,6 +59,7 @@ public class CSVResponseWriter implements QueryResponseWriter {
     }
   }
 
+  @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     // using the text/plain allows this to be viewed in the browser easily
     return CONTENT_TYPE_TEXT_UTF8;
@@ -352,12 +355,14 @@ class CSVWriter extends TextResponseWriter {
   public void writeNamedList(String name, NamedList val) throws IOException {
   }
 
+  @Override
   public void writeStartDocumentList(String name, 
       long start, int size, long numFound, Float maxScore) throws IOException
   {
     // nothing
   }
 
+  @Override
   public void writeEndDocumentList() throws IOException
   {
     // nothing

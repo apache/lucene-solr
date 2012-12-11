@@ -38,6 +38,7 @@ public abstract class ClassificationTestBase extends LuceneTestCase {
   private String classFieldName;
   private Directory dir;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -47,6 +48,7 @@ public abstract class ClassificationTestBase extends LuceneTestCase {
     classFieldName = "cat";
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();

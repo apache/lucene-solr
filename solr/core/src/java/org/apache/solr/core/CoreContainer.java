@@ -611,6 +611,7 @@ public class CoreContainer
           if (!p.isSwappable() && p.isLoadOnStartup()) { // Just like current
                                                          // case.
             Callable<SolrCore> task = new Callable<SolrCore>() {
+              @Override
               public SolrCore call() {
                 SolrCore c = null;
                 try {

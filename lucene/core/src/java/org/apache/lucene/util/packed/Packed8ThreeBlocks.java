@@ -112,6 +112,7 @@ final class Packed8ThreeBlocks extends PackedInts.MutableImpl {
     Arrays.fill(blocks, (byte) 0);
   }
 
+  @Override
   public long ramBytesUsed() {
     return RamUsageEstimator.sizeOf(blocks);
   }

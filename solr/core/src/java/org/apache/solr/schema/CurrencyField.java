@@ -192,6 +192,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
    *
    * @param indexSchema The index schema.
    */
+  @Override
   public void inform(IndexSchema indexSchema) {
     createDynamicCurrencyField(FIELD_SUFFIX_CURRENCY,   fieldTypeCurrency);
     createDynamicCurrencyField(FIELD_SUFFIX_AMOUNT_RAW, fieldTypeAmountRaw);
@@ -202,6 +203,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
    *
    * @param resourceLoader The resource loader.
    */
+  @Override
   public void inform(ResourceLoader resourceLoader) {
     provider.inform(resourceLoader);
     boolean reloaded = provider.reload();
@@ -275,6 +277,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
       amountValues = amountField.getType().getValueSource(amountField, parser);
     }
 
+    @Override
     public FunctionValues getValues(Map context, AtomicReaderContext reader) throws IOException {
       final FunctionValues amounts = amountValues.getValues(context, reader);
       final FunctionValues currencies = currencyValues.getValues(context, reader);
@@ -310,6 +313,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
           }
         }
 
+        @Override
         public long longVal(int doc) {
           if (!initializedCache) {
             for (int i = 0; i < fractionDigitCache.length; i++) {
@@ -356,22 +360,27 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
           return CurrencyValue.convertAmount(exchangeRate, sourceFractionDigits, amount, targetFractionDigits);
         }
 
+        @Override
         public int intVal(int doc) {
           return (int) longVal(doc);
         }
 
+        @Override
         public double doubleVal(int doc) {
           return (double) longVal(doc);
         }
 
+        @Override
         public float floatVal(int doc) {
           return (float) longVal(doc);
         }
 
+        @Override
         public String strVal(int doc) {
           return Long.toString(longVal(doc));
         }
 
+        @Override
         public String toString(int doc) {
           return name() + '(' + amounts.toString(doc) + ',' + currencies.toString(doc) + ')';
         }
@@ -433,6 +442,7 @@ class FileExchangeRateProvider implements ExchangeRateProvider {
    * @return The exchange rate.
    * @throws SolrException if the requested currency pair cannot be found
    */
+  @Override
   public double getExchangeRate(String sourceCurrencyCode, String targetCurrencyCode) {
     if (sourceCurrencyCode == null || targetCurrencyCode == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot get exchange rate; currency was null.");
@@ -508,6 +518,7 @@ class FileExchangeRateProvider implements ExchangeRateProvider {
     return rates != null ? rates.hashCode() : 0;
   }
 
+  @Override
   public String toString() {
     return "["+this.getClass().getName()+" : " + rates.size() + " rates.]";
   }
@@ -776,6 +787,7 @@ class CurrencyValue {
     return new CurrencyValue(convertAmount(exchangeRates, this.getCurrencyCode(), this.getAmount(), targetCurrencyCode), targetCurrencyCode);
   }
 
+  @Override
   public String toString() {
     return String.valueOf(amount) + "," + currencyCode;
   }

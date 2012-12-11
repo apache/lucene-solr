@@ -125,6 +125,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
   // keep track of deletes only... this is not updated on an add
   private LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
+    @Override
     protected boolean removeEldestEntry(Map.Entry eldest) {
       return size() > numDeletesToKeep;
     }
@@ -167,6 +168,7 @@ public class UpdateLog implements PluginInfoInitialized {
       this.version = version;
     }
 
+    @Override
     public String toString() {
       return "LogPtr(" + pointer + ")";
     }
@@ -177,6 +179,7 @@ public class UpdateLog implements PluginInfoInitialized {
     return versionInfo;
   }
 
+  @Override
   public void init(PluginInfo info) {
     dataDir = (String)info.initArgs.get("dir");
     defaultSyncLevel = SyncLevel.getSyncLevel((String)info.initArgs.get("syncLevel"));
@@ -318,6 +321,7 @@ public class UpdateLog implements PluginInfoInitialized {
   public static String[] getLogList(File directory) {
     final String prefix = TLOG_NAME+'.';
     String[] names = directory.list(new FilenameFilter() {
+      @Override
       public boolean accept(File dir, String name) {
         return name.startsWith(prefix);
       }
@@ -1103,6 +1107,7 @@ public class UpdateLog implements PluginInfoInitialized {
     return state;
   }
 
+  @Override
   public String toString() {
     return "FSUpdateLog{state="+getState()+", tlog="+tlog+"}";
   }

@@ -37,6 +37,7 @@ public class SpanOrBuilder extends SpanBuilderBase {
     this.factory = factory;
   }
 
+  @Override
   public SpanQuery getSpanQuery(Element e) throws ParserException {
     List<SpanQuery> clausesList = new ArrayList<SpanQuery>();
     for (Node kid = e.getFirstChild(); kid != null; kid = kid.getNextSibling()) {

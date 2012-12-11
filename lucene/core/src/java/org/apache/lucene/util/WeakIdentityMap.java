@@ -202,10 +202,12 @@ public final class WeakIdentityMap<K,V> {
       hash = System.identityHashCode(obj);
     }
 
+    @Override
     public int hashCode() {
       return hash;
     }
 
+    @Override
     public boolean equals(Object o) {
       if (this == o) {
         return true;

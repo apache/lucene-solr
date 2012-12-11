@@ -58,6 +58,7 @@ public class SpatialFilterQParserPlugin extends QParserPlugin {
     return new SpatialFilterQParser(qstr, localParams, params, req, false);
   }
 
+  @Override
   public void init(NamedList args) {
 
   }

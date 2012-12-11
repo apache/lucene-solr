@@ -37,6 +37,7 @@ public class IdentityEncoder extends AbstractEncoder implements PayloadEncoder{
     this.charset = charset;
   }
 
+  @Override
   public BytesRef encode(char[] buffer, int offset, int length) {
     final ByteBuffer bb = charset.encode(CharBuffer.wrap(buffer, offset, length));
     if (bb.hasArray()) {

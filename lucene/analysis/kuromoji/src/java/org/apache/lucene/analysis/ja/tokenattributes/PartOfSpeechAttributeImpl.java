@@ -28,10 +28,12 @@ import org.apache.lucene.util.AttributeReflector;
 public class PartOfSpeechAttributeImpl extends AttributeImpl implements PartOfSpeechAttribute, Cloneable {
   private Token token;
   
+  @Override
   public String getPartOfSpeech() {
     return token == null ? null : token.getPartOfSpeech();
   }
   
+  @Override
   public void setToken(Token token) {
     this.token = token;
   }

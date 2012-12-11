@@ -765,6 +765,7 @@ public final class IndexSchema {
      * as this object is less than, equal to, or greater than
      * the specified object.
      */
+    @Override
     public int compareTo(DynamicReplacement other) {
       return other.regex.length() - regex.length();
     }

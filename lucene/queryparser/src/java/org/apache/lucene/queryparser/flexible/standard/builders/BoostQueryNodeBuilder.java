@@ -35,6 +35,7 @@ public class BoostQueryNodeBuilder implements StandardQueryBuilder {
     // empty constructor
   }
 
+  @Override
   public Query build(QueryNode queryNode) throws QueryNodeException {
     BoostQueryNode boostNode = (BoostQueryNode) queryNode;
     QueryNode child = boostNode.getChild();

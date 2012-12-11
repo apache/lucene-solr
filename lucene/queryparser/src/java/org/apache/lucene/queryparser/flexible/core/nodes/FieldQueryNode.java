@@ -80,6 +80,7 @@ public class FieldQueryNode extends QueryNodeImpl implements FieldValuePairQuery
     return escaper.escape(this.text, Locale.getDefault(), EscapeQuerySyntax.Type.STRING);
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escaper) {
     if (isDefaultField(this.field)) {
       return getTermEscaped(escaper);
@@ -132,10 +133,12 @@ public class FieldQueryNode extends QueryNodeImpl implements FieldValuePairQuery
     this.end = end;
   }
 
+  @Override
   public CharSequence getField() {
     return this.field;
   }
 
+  @Override
   public void setField(CharSequence field) {
     this.field = field;
   }
@@ -153,6 +156,7 @@ public class FieldQueryNode extends QueryNodeImpl implements FieldValuePairQuery
    * 
    * @return The "original" form of the term.
    */
+  @Override
   public CharSequence getText() {
     return this.text;
   }
@@ -161,6 +165,7 @@ public class FieldQueryNode extends QueryNodeImpl implements FieldValuePairQuery
    * @param text
    *          the text to set
    */
+  @Override
   public void setText(CharSequence text) {
     this.text = text;
   }
@@ -179,10 +184,12 @@ public class FieldQueryNode extends QueryNodeImpl implements FieldValuePairQuery
 
   }
 
+  @Override
   public CharSequence getValue() {
     return getText();
   }
 
+  @Override
   public void setValue(CharSequence value) {
     setText(value);
   }

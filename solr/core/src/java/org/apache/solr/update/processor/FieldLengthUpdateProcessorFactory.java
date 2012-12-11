@@ -68,6 +68,7 @@ public final class FieldLengthUpdateProcessorFactory extends FieldMutatingUpdate
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
     return new FieldValueMutatingUpdateProcessor(getSelector(), next) {
+      @Override
       protected Object mutateValue(final Object src) {
         if (src instanceof CharSequence) {
           return new Integer(((CharSequence)src).length());

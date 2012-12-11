@@ -41,10 +41,12 @@ public class FilterCollector extends Collector {
     this.delegate = delegate;
   }
 
+  @Override
   public void setScorer(Scorer scorer) throws IOException {
     delegate.setScorer(scorer);
   }
 
+  @Override
   public void collect(int doc) throws IOException {
     matches++;
     if (filter.exists(doc + docBase)) {
@@ -52,11 +54,13 @@ public class FilterCollector extends Collector {
     }
   }
 
+  @Override
   public void setNextReader(AtomicReaderContext context) throws IOException {
     this.docBase = context.docBase;
     delegate.setNextReader(context);
   }
 
+  @Override
   public boolean acceptsDocsOutOfOrder() {
     return delegate.acceptsDocsOutOfOrder();
   }

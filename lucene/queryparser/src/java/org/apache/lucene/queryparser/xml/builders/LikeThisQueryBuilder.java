@@ -54,6 +54,7 @@ public class LikeThisQueryBuilder implements QueryBuilder {
   /* (non-Javadoc)
     * @see org.apache.lucene.xmlparser.QueryObjectBuilder#process(org.w3c.dom.Element)
     */
+  @Override
   public Query getQuery(Element e) throws ParserException {
     String fieldsList = e.getAttribute("fieldNames"); //a comma-delimited list of fields
     String fields[] = defaultFieldNames;

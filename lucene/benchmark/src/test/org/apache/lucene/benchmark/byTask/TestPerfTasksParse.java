@@ -94,14 +94,17 @@ public class TestPerfTasksParse extends LuceneTestCase {
   }
   
   public static class MockContentSource extends ContentSource {
+    @Override
     public DocData getNextDocData(DocData docData)
         throws NoMoreDataException, IOException {
       return docData;
     }
+    @Override
     public void close() throws IOException { }
   }
 
   public static class MockQueryMaker extends AbstractQueryMaker {
+    @Override
     protected Query[] prepareQueries() throws Exception {
       return new Query[0];
     }
@@ -113,6 +116,7 @@ public class TestPerfTasksParse extends LuceneTestCase {
     boolean foundFiles = false;
     final File examplesDir = new File(ConfLoader.class.getResource(".").toURI());
     for (File algFile : examplesDir.listFiles(new FileFilter() {
+      @Override
       public boolean accept(File pathname) { return pathname.isFile() && pathname.getName().endsWith(".alg"); }
     })) {
       try {

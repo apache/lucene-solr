@@ -56,6 +56,7 @@ public final class TrimFieldUpdateProcessorFactory extends FieldMutatingUpdatePr
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
     return new FieldValueMutatingUpdateProcessor(getSelector(), next) {
+      @Override
       protected Object mutateValue(final Object src) {
         if (src instanceof CharSequence) {
           return ((CharSequence)src).toString().trim();

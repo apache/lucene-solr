@@ -58,6 +58,7 @@ public class FSTCompletion {
     }
 
     /** @see BytesRef#compareTo(BytesRef) */
+    @Override
     public int compareTo(Completion o) {
       return this.utf8.compareTo(o.utf8);
     }

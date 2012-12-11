@@ -65,6 +65,7 @@ public class PatternReplaceFilterFactory extends TokenFilterFactory {
     }
 
   }
+  @Override
   public PatternReplaceFilter create(TokenStream input) {
     return new PatternReplaceFilter(input, p, replacement, all);
   }

@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * @since solr 1.4
  */
 public class ReverseStringFilterFactory extends TokenFilterFactory {
+  @Override
   public ReverseStringFilter create(TokenStream in) {
     assureMatchVersion();
     return new ReverseStringFilter(luceneMatchVersion,in);

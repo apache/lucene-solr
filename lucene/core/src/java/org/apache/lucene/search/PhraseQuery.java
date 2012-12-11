@@ -159,6 +159,7 @@ public class PhraseQuery extends Query {
       }
     }
 
+    @Override
     public int compareTo(PostingsAndFreq other) {
       if (docFreq != other.docFreq) {
         return docFreq - other.docFreq;

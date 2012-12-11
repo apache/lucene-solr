@@ -823,6 +823,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *
    * @throws IOException if there is a low-level IO error
    */
+  @Override
   public void close() throws IOException {
     close(true);
   }
@@ -1916,6 +1917,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * call to {@link #prepareCommit}.
    * @throws IOException if there is a low-level IO error
    */
+  @Override
   public void rollback() throws IOException {
     ensureOpen();
 
@@ -2577,6 +2579,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  you should immediately close the writer.  See <a
    *  href="#OOME">above</a> for details.</p>
    */
+  @Override
   public final void prepareCommit() throws IOException {
     ensureOpen();
     prepareCommitInternal();
@@ -2734,6 +2737,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *
    * @see #prepareCommit
    */
+  @Override
   public final void commit() throws IOException {
     ensureOpen();
     commitInternal();

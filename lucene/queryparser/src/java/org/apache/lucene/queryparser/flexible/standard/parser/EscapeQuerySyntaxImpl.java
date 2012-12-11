@@ -186,6 +186,7 @@ public class EscapeQuerySyntaxImpl implements EscapeQuerySyntax {
     return buffer;
   }
 
+  @Override
   public CharSequence escape(CharSequence text, Locale locale, Type type) {
     if (text == null || text.length() == 0)
       return text;

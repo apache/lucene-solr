@@ -25,6 +25,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * Factory for plugging in a custom {@link Codec}
  */
 public abstract class CodecFactory implements NamedListInitializedPlugin {
+  @Override
   public void init(NamedList args) {  
   }
   

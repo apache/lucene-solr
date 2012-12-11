@@ -131,6 +131,7 @@ public class BooleanFilter extends Filter implements Iterable<FilterClause> {
    * make it possible to do:
    * <pre class="prettyprint">for (FilterClause clause : booleanFilter) {}</pre>
    */
+  @Override
   public final Iterator<FilterClause> iterator() {
     return clauses().iterator();
   }

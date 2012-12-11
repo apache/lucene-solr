@@ -207,6 +207,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       suss = new ConcurrentUpdateSolrServer(
           ((HttpSolrServer) clients.get(0)).getBaseURL(), httpClient, 8,
           2) {
+        @Override
         public void handleError(Throwable ex) {
           log.warn("suss error", ex);
         }
@@ -275,6 +276,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         suss = new ConcurrentUpdateSolrServer(
             ((HttpSolrServer) clients.get(clientIndex)).getBaseURL(),
             httpClient, 30, 3) {
+          @Override
           public void handleError(Throwable ex) {
             log.warn("suss error", ex);
           }
@@ -282,12 +284,14 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       }
     }
     
+    @Override
     public void safeStop() {
       stop = true;
       suss.shutdownNow();
       httpClient.getConnectionManager().shutdown();
     }
 
+    @Override
     public int getFails() {
       return fails.get();
     }
@@ -296,6 +300,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   
   
   // skip the randoms - they can deadlock...
+  @Override
   protected void indexr(Object... fields) throws Exception {
     SolrInputDocument doc = getDoc(fields);
     indexDoc(doc);

@@ -488,6 +488,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
 
     NavigableSet<String> uniqueFacetValues = new TreeSet<String>(new Comparator<String>() {
 
+      @Override
       public int compare(String a, String b) {
         if (a == b) {
           return 0;
@@ -636,6 +637,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
 
     Collections.sort(entries, new Comparator<TermGroupFacetCollector.FacetEntry>() {
 
+      @Override
       public int compare(TermGroupFacetCollector.FacetEntry a, TermGroupFacetCollector.FacetEntry b) {
         if (orderByCount) {
           int cmp = b.getCount() - a.getCount();

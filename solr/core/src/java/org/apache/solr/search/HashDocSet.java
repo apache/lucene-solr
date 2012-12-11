@@ -96,6 +96,7 @@ public final class HashDocSet extends DocSetBase {
     table[s]=doc;
   }
 
+  @Override
   public boolean exists(int doc) {
     int s = doc & mask;
     for(;;) {
@@ -108,24 +109,29 @@ public final class HashDocSet extends DocSetBase {
   }
 
 
+  @Override
   public int size() {
     return size;
   }
 
+  @Override
   public DocIterator iterator() {
     return new DocIterator() {
       int pos=0;
       int doc;
       { goNext(); }
 
+      @Override
       public boolean hasNext() {
         return pos < table.length;
       }
 
+      @Override
       public Integer next() {
         return nextDoc();
       }
 
+      @Override
       public void remove() {
       }
 
@@ -134,6 +140,7 @@ public final class HashDocSet extends DocSetBase {
       }
 
       // modify to return -1 at end of iteration?
+      @Override
       public int nextDoc() {
         int doc = table[pos];
         pos++;
@@ -141,12 +148,14 @@ public final class HashDocSet extends DocSetBase {
         return doc;
       }
 
+      @Override
       public float score() {
         return 0.0f;
       }
     };
   }
 
+  @Override
   public long memSize() {
     return (table.length<<2) + 20;
   }

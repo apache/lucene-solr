@@ -86,6 +86,7 @@ public class SearchGroupsFieldCommand implements Command<Pair<Integer, Collectio
     this.includeGroupCount = includeGroupCount;
   }
 
+  @Override
   public List<Collector> create() throws IOException {
     List<Collector> collectors = new ArrayList<Collector>();
     if (topNGroups > 0) {
@@ -99,6 +100,7 @@ public class SearchGroupsFieldCommand implements Command<Pair<Integer, Collectio
     return collectors;
   }
 
+  @Override
   public Pair<Integer, Collection<SearchGroup<BytesRef>>> result() {
     final Collection<SearchGroup<BytesRef>> topGroups;
     if (topNGroups > 0) {
@@ -115,14 +117,17 @@ public class SearchGroupsFieldCommand implements Command<Pair<Integer, Collectio
     return new Pair<Integer, Collection<SearchGroup<BytesRef>>>(groupCount, topGroups);
   }
 
+  @Override
   public Sort getSortWithinGroup() {
     return null;
   }
 
+  @Override
   public Sort getGroupSort() {
     return groupSort;
   }
 
+  @Override
   public String getKey() {
     return field.getName();
   }

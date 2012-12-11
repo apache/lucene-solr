@@ -58,6 +58,7 @@ class TakmiSampleFixer implements SampleFixer {
     this.searchParams = searchParams;
   }
 
+  @Override
   public void fixResult(ScoredDocIDs origDocIds, FacetResult fres)
       throws IOException {
     FacetResultNode topRes = fres.getFacetResultNode();

@@ -144,6 +144,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   /** Sorts {@link MergeThread}s; larger merges come first. */
   protected static final Comparator<MergeThread> compareByMergeDocCount = new Comparator<MergeThread>() {
+    @Override
     public int compare(MergeThread t1, MergeThread t2) {
       final MergePolicy.OneMerge m1 = t1.getCurrentMerge();
       final MergePolicy.OneMerge m2 = t2.getCurrentMerge();

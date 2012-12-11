@@ -69,6 +69,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     this.solrCore = solrCore;
   }
 
+  @Override
   public void init(PluginInfo info) {
     formatters.clear();
     encoders.clear();
@@ -515,6 +516,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     // sort such that the fragments with the highest score come first
      if(!preserveMulti){
         Collections.sort(frags, new Comparator<TextFragment>() {
+                @Override
                 public int compare(TextFragment arg0, TextFragment arg1) {
                  return Math.round(arg1.getScore() - arg0.getScore());
         }

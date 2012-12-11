@@ -211,6 +211,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
 
     createIndex(15, new DocProcessor() {
+      @Override
       public void process(SolrInputDocument doc) {
         addInt(doc, l,u, fields);
       }

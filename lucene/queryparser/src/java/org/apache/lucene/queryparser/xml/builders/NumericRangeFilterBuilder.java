@@ -112,6 +112,7 @@ public class NumericRangeFilterBuilder implements FilterBuilder {
     this.strictMode = strictMode;
   }
 
+  @Override
   public Filter getFilter(Element e) throws ParserException {
     String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     String lowerTerm = DOMUtils.getAttributeOrFail(e, "lowerTerm");

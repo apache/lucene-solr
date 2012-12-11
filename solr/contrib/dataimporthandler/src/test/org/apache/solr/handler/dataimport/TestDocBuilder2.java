@@ -285,6 +285,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   public static class StartEventListener implements EventListener {
     public static boolean executed = false;
 
+    @Override
     public void onEvent(Context ctx) {
       executed = true;
     }
@@ -293,6 +294,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   public static class EndEventListener implements EventListener {
     public static boolean executed = false;
 
+    @Override
     public void onEvent(Context ctx) {
       executed = true;
     }

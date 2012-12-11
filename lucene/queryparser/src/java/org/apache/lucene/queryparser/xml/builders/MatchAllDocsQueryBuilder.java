@@ -27,6 +27,7 @@ import org.w3c.dom.Element;
  */
 public class MatchAllDocsQueryBuilder implements QueryBuilder {
   
+  @Override
   public Query getQuery(Element e) throws ParserException {
     return new MatchAllDocsQuery();
   }

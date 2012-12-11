@@ -28,28 +28,34 @@ import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 
 public class CategoryEnhancementDummy1 implements CategoryEnhancement {
 
+  @Override
   public boolean generatesCategoryList() {
     return false;
   }
 
+  @Override
   public String getCategoryListTermText() {
     return null;
   }
 
+  @Override
   public CategoryListTokenizer getCategoryListTokenizer(
       TokenStream tokenizer, EnhancementsIndexingParams indexingParams,
       TaxonomyWriter taxonomyWriter) {
     return null;
   }
 
+  @Override
   public byte[] getCategoryTokenBytes(CategoryAttribute categoryAttribute) {
     return null;
   }
 
+  @Override
   public Object extractCategoryTokenData(byte[] buffer, int offset, int length) {
     return null;
   }
 
+  @Override
   public Class<? extends CategoryProperty> getRetainableProperty() {
     return null;
   }

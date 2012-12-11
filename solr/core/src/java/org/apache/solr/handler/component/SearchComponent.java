@@ -74,6 +74,7 @@ public abstract class SearchComponent implements SolrInfoMBean, NamedListInitial
 
 
   //////////////////////// NamedListInitializedPlugin methods //////////////////////
+  @Override
   public void init( NamedList args )
   {
     // By default do nothing
@@ -81,25 +82,32 @@ public abstract class SearchComponent implements SolrInfoMBean, NamedListInitial
   
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
+  @Override
   public String getName() {
     return this.getClass().getName();
   }
 
+  @Override
   public abstract String getDescription();
+  @Override
   public abstract String getSource();
   
+  @Override
   public String getVersion() {
     return getClass().getPackage().getSpecificationVersion();
   }
   
+  @Override
   public Category getCategory() {
     return Category.OTHER;
   }
 
+  @Override
   public URL[] getDocs() {
     return null;  // this can be overridden, but not required
   }
 
+  @Override
   public NamedList getStatistics() {
     return null;
   }

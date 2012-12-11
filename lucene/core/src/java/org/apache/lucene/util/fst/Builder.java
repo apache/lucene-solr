@@ -511,6 +511,7 @@ public class Builder<T> {
 
   static final class CompiledNode implements Node {
     int node;
+    @Override
     public boolean isCompiled() {
       return true;
     }
@@ -547,6 +548,7 @@ public class Builder<T> {
       this.depth = depth;
     }
 
+    @Override
     public boolean isCompiled() {
       return false;
     }

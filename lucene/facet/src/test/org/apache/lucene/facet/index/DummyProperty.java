@@ -37,6 +37,7 @@ public class DummyProperty implements CategoryProperty {
     return super.hashCode();
   }
   
+  @Override
   public void merge(CategoryProperty other) {
     throw new UnsupportedOperationException(
         "Merging dummy attribute is prohibited");

@@ -1025,6 +1025,7 @@ public class CategoryPath implements Serializable, Cloneable, Comparable<Categor
    * CategoryPath lexicographically precedes, equals to, or lexicographically follows 
    * the other CategoryPath.
    */
+  @Override
   public int compareTo(CategoryPath other) {
     int minlength = (this.length() < other.length()) ? this.length() : other.length();
     int ch = 0;

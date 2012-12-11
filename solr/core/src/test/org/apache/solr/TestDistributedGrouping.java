@@ -43,6 +43,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
   String tdate_b = "b_n_tdt";
   String oddField="oddField_s";
 
+  @Override
   public void doTest() throws Exception {
     del("*:*");
     commit();

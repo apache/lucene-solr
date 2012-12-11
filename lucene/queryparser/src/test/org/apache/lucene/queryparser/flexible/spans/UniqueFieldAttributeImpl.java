@@ -42,10 +42,12 @@ public class UniqueFieldAttributeImpl extends AttributeImpl implements
     this.uniqueField = "";
   }
 
+  @Override
   public void setUniqueField(CharSequence uniqueField) {
     this.uniqueField = uniqueField;
   }
 
+  @Override
   public CharSequence getUniqueField() {
     return this.uniqueField;
   }

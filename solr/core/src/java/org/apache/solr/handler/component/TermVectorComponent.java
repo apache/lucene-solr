@@ -462,6 +462,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     this.initParams = args;
   }
 
+  @Override
   public void inform(SolrCore core) {
 
   }

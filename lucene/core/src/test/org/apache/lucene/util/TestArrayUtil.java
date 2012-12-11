@@ -211,6 +211,7 @@ public class TestArrayUtil extends LuceneTestCase {
       this.order = order;
     }
     
+    @Override
     public int compareTo(Item other) {
       return this.order - other.order;
     }

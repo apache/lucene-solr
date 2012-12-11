@@ -81,6 +81,7 @@ public class DataImportHandler extends RequestHandlerBase implements
     super.init(args);
   }
 
+  @Override
   @SuppressWarnings("unchecked")
   public void inform(SolrCore core) {
     try {

@@ -32,6 +32,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class PrefixQParserPlugin extends QParserPlugin {
   public static String NAME = "prefix";
 
+  @Override
   public void init(NamedList args) {
   }
 

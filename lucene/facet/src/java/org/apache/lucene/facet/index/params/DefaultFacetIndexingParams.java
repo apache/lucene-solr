@@ -59,10 +59,12 @@ public class DefaultFacetIndexingParams implements FacetIndexingParams {
     partitionSize = fixedPartitionSize();
   }
 
+  @Override
   public CategoryListParams getCategoryListParams(CategoryPath category) {
     return clpParams;
   }
 
+  @Override
   public int drillDownTermText(CategoryPath path, char[] buffer) {
     return path.copyToCharArray(buffer, 0, -1, getFacetDelimChar());
   }
@@ -91,6 +93,7 @@ public class DefaultFacetIndexingParams implements FacetIndexingParams {
     return PathPolicy.ALL_CATEGORIES;
   }
   
+  @Override
   public final int getPartitionSize() {
     return partitionSize;
   }
@@ -102,16 +105,19 @@ public class DefaultFacetIndexingParams implements FacetIndexingParams {
    * org.apache.lucene.facet.index.params.FacetIndexingParams#getAllCategoryListParams
    * ()
    */
+  @Override
   public Iterable<CategoryListParams> getAllCategoryListParams() {
     List<CategoryListParams> res = new ArrayList<CategoryListParams>();
     res.add(clpParams);
     return res;
   }
 
+  @Override
   public final OrdinalPolicy getOrdinalPolicy() {
     return ordinalPolicy;
   }
 
+  @Override
   public final PathPolicy getPathPolicy() {
     return pathPolicy;
   }
@@ -187,6 +193,7 @@ public class DefaultFacetIndexingParams implements FacetIndexingParams {
   /**
    * Use {@link #DEFAULT_FACET_DELIM_CHAR} as the delimiter.
    */
+  @Override
   public char getFacetDelimChar() {
     return DEFAULT_FACET_DELIM_CHAR;
   }

@@ -139,6 +139,7 @@ public class ZkStateReader {
         // on reconnect, reload cloud info
         new OnReconnect() {
 
+          @Override
           public void command() {
             try {
               ZkStateReader.this.createClusterStateWatchersAndUpdate();
@@ -317,6 +318,7 @@ public class ZkStateReader {
       clusterStateUpdateScheduled = true;
       updateCloudExecutor.schedule(new Runnable() {
         
+        @Override
         public void run() {
           log.info("Updating cluster state from ZooKeeper...");
           synchronized (getUpdateLock()) {

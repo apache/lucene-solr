@@ -54,6 +54,7 @@ import org.apache.solr.util.SolrPluginUtils;
 public class ExtendedDismaxQParserPlugin extends QParserPlugin {
   public static final String NAME = "edismax";
 
+  @Override
   public void init(NamedList args) {
   }
 
@@ -1375,10 +1376,12 @@ class ExtendedDismaxQParser extends QParser {
      * as this object is less than, equal to, or greater than
      * the specified object.
      */
+    @Override
     public int compareTo(DynamicField other) {
       return other.wildcard.length() - wildcard.length();
     }
     
+    @Override
     public String toString() {
       return this.wildcard;
     }

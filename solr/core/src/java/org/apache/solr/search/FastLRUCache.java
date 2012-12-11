@@ -51,6 +51,7 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   private ConcurrentLRUCache<K,V> cache;
   private int showItems = 0;
 
+  @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
     super.init(args, regenerator);
     String str = (String) args.get("size");
@@ -113,27 +114,33 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
     return description;
   }
 
+  @Override
   public int size() {
     return cache.size();
   }
 
+  @Override
   public V put(K key, V value) {
     return cache.put(key, value);
   }
 
+  @Override
   public V get(K key) {
     return cache.get(key);
   }
 
+  @Override
   public void clear() {
     cache.clear();
   }
 
+  @Override
   public void setState(State state) {
     super.setState(state);
     cache.setAlive(state == State.LIVE);
   }
 
+  @Override
   public void warm(SolrIndexSearcher searcher, SolrCache old) {
     if (regenerator == null) return;
     long warmingStartTime = System.currentTimeMillis();
@@ -162,6 +169,7 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   }
 
 
+  @Override
   public void close() {
     // add the stats to the cumulative stats object (the first in the statsList)
     statsList.get(0).add(cache.getStats());
@@ -170,19 +178,23 @@ public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
+  @Override
   public String getName() {
     return FastLRUCache.class.getName();
   }
 
+  @Override
   public String getDescription() {
     return description;
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
 
+  @Override
   public NamedList getStatistics() {
     NamedList<Serializable> lst = new SimpleOrderedMap<Serializable>();
     if (cache == null)  return lst;

@@ -145,6 +145,7 @@ class MultiThreadTermVectorsReader implements Runnable {
     return t.isAlive();
   }
   
+  @Override
   public void run() {
       try {
         // run the test 100 times

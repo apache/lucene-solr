@@ -57,6 +57,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     return hl==null ? null: hl.getHighlighter();    
   }
 
+  @Override
   public void init(PluginInfo info) {
     this.info = info;
   }
@@ -78,6 +79,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     }
   }
 
+  @Override
   public void inform(SolrCore core) {
     List<PluginInfo> children = info.getChildren("highlighting");
     if(children.isEmpty()) {

@@ -163,6 +163,7 @@ public final class ZkController {
         // on reconnect, reload cloud info
         new OnReconnect() {
 
+          @Override
           public void command() {
             try {
               markAllAsNotLeader(registerOnReconnect);

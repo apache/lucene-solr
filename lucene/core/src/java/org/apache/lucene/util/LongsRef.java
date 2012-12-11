@@ -102,6 +102,7 @@ public final class LongsRef implements Comparable<LongsRef>, Cloneable {
   }
 
   /** Signed int order comparison */
+  @Override
   public int compareTo(LongsRef other) {
     if (this == other) return 0;
 

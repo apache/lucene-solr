@@ -43,6 +43,7 @@ public class EnglishPossessiveFilterFactory extends TokenFilterFactory {
     assureMatchVersion();
   }
   
+  @Override
   public TokenStream create(TokenStream input) {
     return new EnglishPossessiveFilter(luceneMatchVersion, input);
   }

@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.standard.ClassicFilter;
  *
  */
 public class ClassicFilterFactory extends TokenFilterFactory {
+  @Override
   public TokenFilter create(TokenStream input) {
     return new ClassicFilter(input);
   }

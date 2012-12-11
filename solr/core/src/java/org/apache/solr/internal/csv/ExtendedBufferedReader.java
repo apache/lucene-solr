@@ -75,6 +75,7 @@ class ExtendedBufferedReader extends BufferedReader  {
    * Reads the next char from the input stream.
    * @return the next char or END_OF_STREAM if end of stream has been reached.
    */
+  @Override
   public int read() throws IOException {
     // initalize the lookahead
     if (lookaheadChar == UNDEFINED) {
@@ -113,6 +114,7 @@ class ExtendedBufferedReader extends BufferedReader  {
    * 
    * @return nof chars actually read or END_OF_STREAM
    */
+  @Override
   public int read(char[] buf, int off, int len) throws IOException {
     // do not claim if len == 0
     if (len == 0) {
@@ -178,6 +180,7 @@ class ExtendedBufferedReader extends BufferedReader  {
   *         including any line-termination characters, or null 
   *         if the end of the stream has been reached
   */
+  @Override
   public String readLine() throws IOException {
     
     if (lookaheadChar == UNDEFINED) {
@@ -223,6 +226,7 @@ class ExtendedBufferedReader extends BufferedReader  {
    * 
    * @return nof skiped chars
    */
+  @Override
   public long skip(long n) throws IllegalArgumentException, IOException  {
     
     if (lookaheadChar == UNDEFINED) {
@@ -300,6 +304,7 @@ class ExtendedBufferedReader extends BufferedReader  {
       return -1;
     }
   }
+  @Override
   public boolean markSupported() {
     /* note uh: marking is not supported, cause we cannot
      *          see into the future...

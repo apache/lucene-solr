@@ -144,6 +144,7 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
       super(groupField, valueType, diskResident, new TreeSet<Long>());
     }
 
+    @Override
     public void collect(int doc) throws IOException {
       long value = source.getInt(doc);
       if (!groups.contains(value)) {
@@ -151,10 +152,12 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
       }
     }
 
+    @Override
     public Collection<Long> getGroups() {
       return groups;
     }
 
+    @Override
     protected void setDocValuesSources(DocValues.Source source, AtomicReaderContext readerContext) {
       this.source = source;
     }
@@ -169,6 +172,7 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
       super(groupField, valueType, diskResident, new TreeSet<Double>());
     }
 
+    @Override
     public void collect(int doc) throws IOException {
       double value = source.getFloat(doc);
       if (!groups.contains(value)) {
@@ -176,10 +180,12 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
       }
     }
 
+    @Override
     public Collection<Double> getGroups() {
       return groups;
     }
 
+    @Override
     protected void setDocValuesSources(DocValues.Source source, AtomicReaderContext readerContext) {
       this.source = source;
     }
@@ -196,6 +202,7 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
       super(groupField, valueType, diskResident, new TreeSet<BytesRef>());
     }
 
+    @Override
     public void collect(int doc) throws IOException {
       BytesRef value = source.getBytes(doc, spare);
       if (!groups.contains(value)) {
@@ -203,10 +210,12 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
       }
     }
 
+    @Override
     public Collection<BytesRef> getGroups() {
       return groups;
     }
 
+    @Override
     protected void setDocValuesSources(DocValues.Source source, AtomicReaderContext readerContext) {
       this.source = source;
     }
@@ -225,6 +234,7 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
       ordSet = new SentinelIntSet(initialSize, -1);
     }
 
+    @Override
     public void collect(int doc) throws IOException {
       int ord = source.ord(doc);
       if (!ordSet.exists(ord)) {
@@ -234,10 +244,12 @@ public abstract class DVAllGroupsCollector<GROUP_VALUE_TYPE> extends AbstractAll
       }
     }
 
+    @Override
     public Collection<BytesRef> getGroups() {
       return groups;
     }
 
+    @Override
     protected void setDocValuesSources(DocValues.Source source, AtomicReaderContext readerContext) {
       this.source = source.asSortedSource();
 

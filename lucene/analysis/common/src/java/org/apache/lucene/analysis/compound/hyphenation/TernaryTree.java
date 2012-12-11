@@ -515,6 +515,7 @@ public class TernaryTree implements Cloneable {
       run();
     }
 
+    @Override
     public String nextElement() {
       String res = new String(curkey);
       cur = up();
@@ -529,6 +530,7 @@ public class TernaryTree implements Cloneable {
       return 0;
     }
 
+    @Override
     public boolean hasMoreElements() {
       return (cur != -1);
     }

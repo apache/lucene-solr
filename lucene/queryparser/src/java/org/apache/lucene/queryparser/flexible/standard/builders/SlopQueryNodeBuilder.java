@@ -37,6 +37,7 @@ public class SlopQueryNodeBuilder implements StandardQueryBuilder {
     // empty constructor
   }
 
+  @Override
   public Query build(QueryNode queryNode) throws QueryNodeException {
     SlopQueryNode phraseSlopNode = (SlopQueryNode) queryNode;
 

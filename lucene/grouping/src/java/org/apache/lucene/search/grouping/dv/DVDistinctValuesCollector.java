@@ -99,10 +99,12 @@ public abstract class DVDistinctValuesCollector<GC extends AbstractDistinctValue
       super(groupField, countField, diskResident, valueType);
     }
 
+    @Override
     public List<GroupCount> getGroups() {
       return new ArrayList<GroupCount>(groupMap.values());
     }
 
+    @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
       groupFieldSource = retrieveSource(groupField, context);
       countFieldSource = retrieveSource(countField, context);
@@ -126,6 +128,7 @@ public abstract class DVDistinctValuesCollector<GC extends AbstractDistinctValue
         }
       }
 
+      @Override
       public void collect(int doc) throws IOException {
         GroupCount groupCount = groupMap.get(groupFieldSource.getFloat(doc));
         if (groupCount != null) {
@@ -144,6 +147,7 @@ public abstract class DVDistinctValuesCollector<GC extends AbstractDistinctValue
         }
       }
 
+      @Override
       public void collect(int doc) throws IOException {
         GroupCount groupCount = groupMap.get(groupFieldSource.getInt(doc));
         if (groupCount != null) {
@@ -164,6 +168,7 @@ public abstract class DVDistinctValuesCollector<GC extends AbstractDistinctValue
         }
       }
 
+      @Override
       public void collect(int doc) throws IOException {
         GroupCount groupCount = groupMap.get(groupFieldSource.getBytes(doc, spare));
         if (groupCount != null) {
@@ -202,10 +207,12 @@ public abstract class DVDistinctValuesCollector<GC extends AbstractDistinctValue
       groupCounts = new GroupCount[ordSet.keys.length];
     }
 
+    @Override
     public List<GroupCount> getGroups() {
       return groups;
     }
 
+    @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
       groupFieldSource = retrieveSortedSource(groupField, context);
       countFieldSource = retrieveSortedSource(countField, context);
@@ -232,6 +239,7 @@ public abstract class DVDistinctValuesCollector<GC extends AbstractDistinctValue
         }
       }
 
+      @Override
       public void collect(int doc) throws IOException {
         int slot = ordSet.find(groupFieldSource.ord(doc));
         if (slot < 0) {

@@ -252,6 +252,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    *
    * In particular, the underlying reader and any cache's in use are closed.
    */
+  @Override
   public void close() throws IOException {
     if (debug) {
       if (cachingEnabled) {
@@ -331,6 +332,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     if (solrConfig.fieldValueCacheConfig != null && solrConfig.fieldValueCacheConfig.getRegenerator() == null) {
       solrConfig.fieldValueCacheConfig.setRegenerator(
               new CacheRegenerator() {
+                @Override
                 public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache, Object oldKey, Object oldVal) throws IOException {
                   if (oldVal instanceof UnInvertedField) {
                     UnInvertedField.getUnInvertedField((String)oldKey, newSearcher);
@@ -344,6 +346,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     if (solrConfig.filterCacheConfig != null && solrConfig.filterCacheConfig.getRegenerator() == null) {
       solrConfig.filterCacheConfig.setRegenerator(
               new CacheRegenerator() {
+                @Override
                 public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache, Object oldKey, Object oldVal) throws IOException {
                   newSearcher.cacheDocSet((Query)oldKey, null, false);
                   return true;
@@ -356,6 +359,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       final int queryResultWindowSize = solrConfig.queryResultWindowSize;
       solrConfig.queryResultCacheConfig.setRegenerator(
               new CacheRegenerator() {
+                @Override
                 public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache, Object oldKey, Object oldVal) throws IOException {
                   QueryResultKey key = (QueryResultKey)oldKey;
                   int nDocs=1;
@@ -438,6 +442,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       lazyDoc = new LazyDocument(reader, docID);
     }
 
+    @Override
     public Status needsField(FieldInfo fieldInfo) {
       if (fieldsToLoad.contains(fieldInfo.name)) {
         return Status.YES;
@@ -1953,30 +1958,37 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   // SolrInfoMBean stuff: Statistics and Module Info
   /////////////////////////////////////////////////////////////////////
 
+  @Override
   public String getName() {
     return SolrIndexSearcher.class.getName();
   }
 
+  @Override
   public String getVersion() {
     return SolrCore.version;
   }
 
+  @Override
   public String getDescription() {
     return "index searcher";
   }
 
+  @Override
   public Category getCategory() {
     return Category.CORE;
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public URL[] getDocs() {
     return null;
   }
 
+  @Override
   public NamedList<Object> getStatistics() {
     NamedList<Object> lst = new SimpleOrderedMap<Object>();
     lst.add("searcherName", name);

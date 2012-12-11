@@ -225,6 +225,7 @@ public class FileListEntityProcessor extends EntityProcessorBase {
     // Rather we make use of the fileDetails array which is populated as
     // a side affect of the accept method.
     dir.list(new FilenameFilter() {
+      @Override
       public boolean accept(File dir, String name) {
         File fileObj = new File(dir, name);
         if (fileObj.isDirectory()) {

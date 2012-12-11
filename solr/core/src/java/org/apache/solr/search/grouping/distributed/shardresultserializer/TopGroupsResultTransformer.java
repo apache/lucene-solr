@@ -60,6 +60,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
   /**
    * {@inheritDoc}
    */
+  @Override
   public NamedList transform(List<Command> data) throws IOException {
     NamedList<NamedList> result = new NamedList<NamedList>();
     for (Command command : data) {
@@ -83,6 +84,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
   /**
    * {@inheritDoc}
    */
+  @Override
   public Map<String, ?> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard) {
     Map<String, Object> result = new HashMap<String, Object>();
 

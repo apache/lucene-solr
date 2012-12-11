@@ -61,6 +61,7 @@ public class SimpleSpanFragmenter implements Fragmenter {
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.Fragmenter#isNewFragment()
    */
+  @Override
   public boolean isNewFragment() {
     position += posIncAtt.getPositionIncrement();
 
@@ -97,6 +98,7 @@ public class SimpleSpanFragmenter implements Fragmenter {
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.Fragmenter#start(java.lang.String, org.apache.lucene.analysis.TokenStream)
    */
+  @Override
   public void start(String originalText, TokenStream tokenStream) {
     position = -1;
     currentNumFrags = 1;

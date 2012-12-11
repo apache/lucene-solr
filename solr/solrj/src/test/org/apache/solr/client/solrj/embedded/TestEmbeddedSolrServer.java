@@ -45,6 +45,7 @@ public class TestEmbeddedSolrServer extends AbstractEmbeddedSolrServerTestCase {
 
   protected static Logger log = LoggerFactory.getLogger(TestEmbeddedSolrServer.class);
 
+  @Override
   protected EmbeddedSolrServer getSolrCore1() {
     return new EmbeddedSolrServer(cores, "core1");
   }

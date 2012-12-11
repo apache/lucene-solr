@@ -966,6 +966,7 @@ public void testFilesOpenClose() throws IOException {
     final DirectoryReader reader = writer.getReader();
     final int[] closeCount = new int[1];
     final IndexReader.ReaderClosedListener listener = new IndexReader.ReaderClosedListener() {
+      @Override
       public void onClose(IndexReader reader) {
         closeCount[0]++;
       }

@@ -110,6 +110,7 @@ public class XMLLoader extends ContentStreamLoader {
     return this;
   }
 
+  @Override
   public String getDefaultWT() {
     return "xml";
   }

@@ -85,6 +85,7 @@ public abstract class DocRouter {
       return includes(other.min) || includes(other.max) || isSubsetOf(other);
     }
 
+    @Override
     public String toString() {
       return Integer.toHexString(min) + '-' + Integer.toHexString(max);
     }

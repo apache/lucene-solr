@@ -48,6 +48,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
   /**
    * {@inheritDoc}
    */
+  @Override
   @SuppressWarnings("unchecked")
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
     Sort groupSort = rb.getGroupingSpec().getGroupSort();

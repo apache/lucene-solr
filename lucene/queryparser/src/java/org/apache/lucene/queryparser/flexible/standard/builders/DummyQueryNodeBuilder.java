@@ -44,6 +44,7 @@ public class DummyQueryNodeBuilder implements StandardQueryBuilder {
    * 
    * return <code>null</code>
    */
+  @Override
   public TermQuery build(QueryNode queryNode) throws QueryNodeException {
     return null;
   }

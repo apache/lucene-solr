@@ -128,5 +128,6 @@ public interface CategoryEnhancement {
    * used in
    * {@link EnhancementsPayloadIterator#getCategoryData(CategoryEnhancement)}.
    */
+  @Override
   public boolean equals(Object o);
 }

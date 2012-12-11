@@ -130,6 +130,7 @@ abstract class DirectSource extends Source {
       throw new UnsupportedOperationException("ints are not supported");
     }
 
+    @Override
     double toDouble(IndexInput input) throws IOException {
       return Float.intBitsToFloat(input.readInt());
     }
@@ -141,6 +142,7 @@ abstract class DirectSource extends Source {
       throw new UnsupportedOperationException("ints are not supported");
     }
 
+    @Override
     double toDouble(IndexInput input) throws IOException {
       return Double.longBitsToDouble(input.readLong());
     }
@@ -153,6 +155,7 @@ abstract class DirectSource extends Source {
       return input.readLong();
     }
 
+    @Override
     double toDouble(IndexInput input) {
       throw new UnsupportedOperationException("doubles are not supported");
     }

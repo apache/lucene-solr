@@ -32,6 +32,7 @@ import java.io.File;
 
 public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

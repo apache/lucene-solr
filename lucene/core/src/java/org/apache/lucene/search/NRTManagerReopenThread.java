@@ -113,6 +113,7 @@ public class NRTManagerReopenThread extends Thread implements NRTManager.Waiting
     manager.addWaitingListener(this);
   }
 
+  @Override
   public synchronized void close() {
     //System.out.println("NRT: set finish");
     manager.removeWaitingListener(this);
@@ -125,6 +126,7 @@ public class NRTManagerReopenThread extends Thread implements NRTManager.Waiting
     }
   }
 
+  @Override
   public synchronized void waiting(long targetGen) {
     waitingGen = Math.max(waitingGen, targetGen);
     notify();

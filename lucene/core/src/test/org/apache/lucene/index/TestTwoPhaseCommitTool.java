@@ -39,6 +39,7 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
       this.failOnRollback = failOnRollback;
     }
 
+    @Override
     public void prepareCommit() throws IOException {
       prepareCommit(null);
     }
@@ -51,6 +52,7 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
       }
     }
 
+    @Override
     public void commit() throws IOException {
       commit(null);
     }
@@ -63,6 +65,7 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
       }
     }
 
+    @Override
     public void rollback() throws IOException {
       rollbackCalled = true;
       if (failOnRollback) {

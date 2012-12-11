@@ -297,6 +297,7 @@ abstract public class AbstractFirstPassGroupingCollector<GROUP_VALUE_TYPE> exten
 
   private void buildSortedSet() {
     final Comparator<CollectedSearchGroup<?>> comparator = new Comparator<CollectedSearchGroup<?>>() {
+      @Override
       public int compare(CollectedSearchGroup<?> o1, CollectedSearchGroup<?> o2) {
         for (int compIDX = 0;; compIDX++) {
           FieldComparator<?> fc = comparators[compIDX];

@@ -65,10 +65,12 @@ public class ArrayHashMap<K,V> implements Iterable<V> {
       }
     }
 
+    @Override
     public boolean hasNext() {
       return index != 0;
     }
 
+    @Override
     public int next() {
       // Save the last index visited
       lastIndex = index;
@@ -86,6 +88,7 @@ public class ArrayHashMap<K,V> implements Iterable<V> {
       return lastIndex;
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public void remove() {
       ArrayHashMap.this.remove((K) keys[lastIndex]);
@@ -99,15 +102,18 @@ public class ArrayHashMap<K,V> implements Iterable<V> {
 
     KeyIterator() { }
 
+    @Override
     public boolean hasNext() {
       return iterator.hasNext();
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public K next() {
       return (K) keys[iterator.next()];
     }
 
+    @Override
     public void remove() {
       iterator.remove();
     }
@@ -119,15 +125,18 @@ public class ArrayHashMap<K,V> implements Iterable<V> {
 
     ValueIterator() { }
 
+    @Override
     public boolean hasNext() {
       return iterator.hasNext();
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public V next() {
       return (V) values[iterator.next()];
     }
 
+    @Override
     public void remove() {
       iterator.remove();
     }
@@ -378,6 +387,7 @@ public class ArrayHashMap<K,V> implements Iterable<V> {
   }
 
   /** Returns an iterator on the mapped objects. */
+  @Override
   public Iterator<V> iterator() {
     return new ValueIterator();
   }

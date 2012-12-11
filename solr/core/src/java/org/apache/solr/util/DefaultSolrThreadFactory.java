@@ -35,6 +35,7 @@ public class DefaultSolrThreadFactory implements ThreadFactory {
                      "-thread-";
     }
 
+    @Override
     public Thread newThread(Runnable r) {
         Thread t = new Thread(group, r,
                               prefix + threadNumber.getAndIncrement(),

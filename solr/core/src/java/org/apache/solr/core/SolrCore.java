@@ -281,6 +281,7 @@ public final class SolrCore implements SolrInfoMBean {
     return indexReaderFactory;
   }
   
+  @Override
   public String getName() {
     return name;
   }
@@ -729,6 +730,7 @@ public final class SolrCore implements SolrInfoMBean {
       // until after inform() has been called for all components.
       // searchExecutor must be single-threaded for this to work
       searcherExecutor.submit(new Callable() {
+        @Override
         public Object call() throws Exception {
           latch.await();
           return null;
@@ -1570,6 +1572,7 @@ public final class SolrCore implements SolrInfoMBean {
       if (currSearcher != null) {
         future = searcherExecutor.submit(
             new Callable() {
+              @Override
               public Object call() throws Exception {
                 try {
                   newSearcher.warm(currSearcher);
@@ -1585,6 +1588,7 @@ public final class SolrCore implements SolrInfoMBean {
       if (currSearcher==null && firstSearcherListeners.size() > 0) {
         future = searcherExecutor.submit(
             new Callable() {
+              @Override
               public Object call() throws Exception {
                 try {
                   for (SolrEventListener listener : firstSearcherListeners) {
@@ -1602,6 +1606,7 @@ public final class SolrCore implements SolrInfoMBean {
       if (currSearcher!=null && newSearcherListeners.size() > 0) {
         future = searcherExecutor.submit(
             new Callable() {
+              @Override
               public Object call() throws Exception {
                 try {
                   for (SolrEventListener listener : newSearcherListeners) {
@@ -1622,6 +1627,7 @@ public final class SolrCore implements SolrInfoMBean {
       if (!alreadyRegistered) {
         future = searcherExecutor.submit(
             new Callable() {
+              @Override
               public Object call() throws Exception {
                 try {
                   // registerSearcher will decrement onDeckSearchers and
@@ -2165,26 +2171,32 @@ public final class SolrCore implements SolrInfoMBean {
   // SolrInfoMBean stuff: Statistics and Module Info
   /////////////////////////////////////////////////////////////////////
 
+  @Override
   public String getVersion() {
     return SolrCore.version;
   }
 
+  @Override
   public String getDescription() {
     return "SolrCore";
   }
 
+  @Override
   public Category getCategory() {
     return Category.CORE;
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public URL[] getDocs() {
     return null;
   }
 
+  @Override
   public NamedList getStatistics() {
     NamedList<Object> lst = new SimpleOrderedMap<Object>();
     lst.add("coreName", name==null ? "(null)" : name);

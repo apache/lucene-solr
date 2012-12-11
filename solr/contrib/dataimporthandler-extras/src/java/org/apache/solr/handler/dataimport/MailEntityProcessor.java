@@ -323,10 +323,12 @@ public class MailEntityProcessor extends EntityProcessorBase {
       getTopLevelFolders(mailBox);
     }
 
+    @Override
     public boolean hasNext() {
       return !folders.isEmpty();
     }
 
+    @Override
     public Folder next() {
       try {
         boolean hasMessages = false;
@@ -370,6 +372,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       return null;
     }
 
+    @Override
     public void remove() {
       throw new UnsupportedOperationException("Its read only mode...");
     }
@@ -461,6 +464,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       LOG.info("Messages in this batch  : " + messagesInCurBatch.length);
     }
 
+    @Override
     public boolean hasNext() {
       boolean hasMore = current < messagesInCurBatch.length;
       if (!hasMore && doBatching
@@ -477,10 +481,12 @@ public class MailEntityProcessor extends EntityProcessorBase {
       return hasMore;
     }
 
+    @Override
     public Message next() {
       return hasNext() ? messagesInCurBatch[current++] : null;
     }
 
+    @Override
     public void remove() {
       throw new UnsupportedOperationException("Its read only mode...");
     }
@@ -510,6 +516,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       since = date;
     }
 
+    @Override
     public SearchTerm getCustomSearch(Folder folder) {
       return new ReceivedDateTerm(ComparisonTerm.GE, since);
     }

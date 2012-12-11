@@ -81,6 +81,7 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
     this.flags = flags;
   }
   
+  @Override
   public RegexCapabilities.RegexMatcher compile(String regex) {
     return new JakartaRegexMatcher(regex, flags);
   }
@@ -115,18 +116,22 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
     private final CharsRef utf16 = new CharsRef(10);
     private final CharacterIterator utf16wrapper = new CharacterIterator() {
 
+      @Override
       public char charAt(int pos) {
         return utf16.chars[pos];
       }
 
+      @Override
       public boolean isEnd(int pos) {
         return pos >= utf16.length;
       }
 
+      @Override
       public String substring(int beginIndex) {
         return substring(beginIndex, utf16.length);
       }
 
+      @Override
       public String substring(int beginIndex, int endIndex) {
         return new String(utf16.chars, beginIndex, endIndex - beginIndex);
       }
@@ -137,11 +142,13 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
       regexp = new RE(regex, flags);
     }
     
+    @Override
     public boolean match(BytesRef term) {
       UnicodeUtil.UTF8toUTF16(term.bytes, term.offset, term.length, utf16);
       return regexp.match(utf16wrapper, 0);
     }
 
+    @Override
     public String prefix() {
       try {
         final char[] prefix;

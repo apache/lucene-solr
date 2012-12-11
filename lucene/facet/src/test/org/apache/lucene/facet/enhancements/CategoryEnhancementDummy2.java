@@ -31,24 +31,29 @@ public class CategoryEnhancementDummy2 implements CategoryEnhancement {
 
   public static byte[] CATEGORY_TOKEN_BYTES = new byte[] { 3, 0, 7 };
 
+  @Override
   public boolean generatesCategoryList() {
     return false;
   }
 
+  @Override
   public String getCategoryListTermText() {
     return null;
   }
 
+  @Override
   public CategoryListTokenizer getCategoryListTokenizer(
       TokenStream tokenizer, EnhancementsIndexingParams indexingParams,
       TaxonomyWriter taxonomyWriter) {
     return null;
   }
 
+  @Override
   public byte[] getCategoryTokenBytes(CategoryAttribute categoryAttribute) {
     return CATEGORY_TOKEN_BYTES;
   }
 
+  @Override
   public Object extractCategoryTokenData(byte[] buffer, int offset, int length) {
     if (length != CATEGORY_TOKEN_BYTES.length) {
       throw new IllegalArgumentException("unexpected data length "
@@ -59,6 +64,7 @@ public class CategoryEnhancementDummy2 implements CategoryEnhancement {
     return ret;
   }
 
+  @Override
   public Class<? extends CategoryProperty> getRetainableProperty() {
     return DummyProperty.class;
   }

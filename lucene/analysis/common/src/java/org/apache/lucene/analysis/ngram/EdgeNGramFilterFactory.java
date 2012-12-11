@@ -57,6 +57,7 @@ public class EdgeNGramFilterFactory extends TokenFilterFactory {
     }
   }
 
+  @Override
   public EdgeNGramTokenFilter create(TokenStream input) {
     return new EdgeNGramTokenFilter(input, side, minGramSize, maxGramSize);
   }

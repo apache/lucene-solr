@@ -61,6 +61,7 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory extends
   protected SolrParams appends;
   protected SolrParams invariants;
 
+  @Override
   public void inform(SolrCore core) {
   }
 
@@ -69,6 +70,7 @@ public class LangDetectLanguageIdentifierUpdateProcessorFactory extends
    * to a RequestHandler, with defaults, appends and invariants.
    * @param args a NamedList with the configuration parameters 
    */
+  @Override
   @SuppressWarnings("rawtypes")
   public void init( NamedList args )
   {

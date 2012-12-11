@@ -52,6 +52,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     initCore("solrconfig-basic.xml", "schema-spatial.xml");
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

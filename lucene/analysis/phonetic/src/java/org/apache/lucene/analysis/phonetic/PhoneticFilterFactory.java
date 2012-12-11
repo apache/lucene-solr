@@ -148,6 +148,7 @@ public class PhoneticFilterFactory extends TokenFilterFactory
     }
   }
 
+  @Override
   public PhoneticFilter create(TokenStream input) {
     return new PhoneticFilter(input, getEncoder(), inject);
   }

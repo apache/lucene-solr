@@ -152,6 +152,7 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
       attr.clear();
     }
     
+    @Override
     public String toString() {
       return "tok='" + token + "',attr=" + attr;
     }
@@ -451,6 +452,7 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
     return resState;
   }
 
+  @Override
   public String toFormattedString(Field f) throws IOException {
     StringBuilder sb = new StringBuilder();
     sb.append(VERSION + " ");

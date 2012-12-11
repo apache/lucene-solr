@@ -886,12 +886,15 @@ public class TestCategoryPath extends LuceneTestCase {
       this.ca = new char[s.length()];
       s.getChars(0, s.length(), this.ca, 0);
     }
+    @Override
     public char charAt(int index) {
       return this.ca[index];
     }
+    @Override
     public int length() {
       return this.ca.length;
     }
+    @Override
     public CharSequence subSequence(int start, int end) {
       return null; // not used.
     }

@@ -98,6 +98,7 @@ public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProce
   /** 
    * @see FieldMutatingUpdateProcessor#SELECT_NO_FIELDS
    */
+  @Override
   protected FieldMutatingUpdateProcessor.FieldNameSelector 
     getDefaultSelector(final SolrCore core) {
 
@@ -110,6 +111,7 @@ public final class RegexReplaceProcessorFactory extends FieldMutatingUpdateProce
                                             SolrQueryResponse response,
                                             UpdateRequestProcessor next) {
     return new FieldValueMutatingUpdateProcessor(getSelector(), next) {
+      @Override
       protected Object mutateValue(final Object src) {
         if (src instanceof CharSequence) {
           CharSequence txt = (CharSequence)src;

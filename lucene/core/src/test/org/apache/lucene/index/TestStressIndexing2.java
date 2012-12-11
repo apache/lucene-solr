@@ -134,6 +134,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   static Term idTerm = new Term("id","");
   IndexingThread[] threads;
   static Comparator<GeneralField> fieldNameComparator = new Comparator<GeneralField>() {
+    @Override
     public int compare(GeneralField o1, GeneralField o2) {
       return o1.name().compareTo(o2.name());
     }

@@ -490,6 +490,7 @@ public class TestSpellChecker extends LuceneTestCase {
       this.reader = reader;
     }
     
+    @Override
     public void run() {
       try {
         while (true) {

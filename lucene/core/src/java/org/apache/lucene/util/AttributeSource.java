@@ -175,10 +175,12 @@ public class AttributeSource {
       return new Iterator<AttributeImpl>() {
         private State state = initState;
       
+        @Override
         public void remove() {
           throw new UnsupportedOperationException();
         }
         
+        @Override
         public AttributeImpl next() {
           if (state == null)
             throw new NoSuchElementException();
@@ -187,6 +189,7 @@ public class AttributeSource {
           return att;
         }
         
+        @Override
         public boolean hasNext() {
           return state != null;
         }
@@ -425,6 +428,7 @@ public class AttributeSource {
   public final String reflectAsString(final boolean prependAttClass) {
     final StringBuilder buffer = new StringBuilder();
     reflectWith(new AttributeReflector() {
+      @Override
       public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
         if (buffer.length() > 0) {
           buffer.append(',');

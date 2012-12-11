@@ -40,26 +40,31 @@ public final class RateLimitedDirectoryWrapper extends Directory {
     this.delegate = wrapped;
   }
   
+  @Override
   public String[] listAll() throws IOException {
     ensureOpen();
     return delegate.listAll();
   }
   
+  @Override
   public boolean fileExists(String name) throws IOException {
     ensureOpen();
     return delegate.fileExists(name);
   }
   
+  @Override
   public void deleteFile(String name) throws IOException {
     ensureOpen();
     delegate.deleteFile(name);
   }
   
+  @Override
   public long fileLength(String name) throws IOException {
     ensureOpen();
     return delegate.fileLength(name);
   }
   
+  @Override
   public IndexOutput createOutput(String name, IOContext context)
       throws IOException {
     ensureOpen();
@@ -71,22 +76,26 @@ public final class RateLimitedDirectoryWrapper extends Directory {
     return output;
   }
   
+  @Override
   public void sync(Collection<String> names) throws IOException {
     ensureOpen();
     delegate.sync(names);
   }
   
+  @Override
   public IndexInput openInput(String name, IOContext context)
       throws IOException {
     ensureOpen();
     return delegate.openInput(name, context);
   }
   
+  @Override
   public void close() throws IOException {
     isOpen = false;
     delegate.close();
   }
   
+  @Override
   public IndexInputSlicer createSlicer(String name, IOContext context)
       throws IOException {
     ensureOpen();

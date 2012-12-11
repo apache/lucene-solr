@@ -182,6 +182,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
     this.name = name;
   }
 
+  @Override
   @SuppressWarnings("unchecked")
   public Iterator<Object> iterator() {
     if( value instanceof Collection ) {
@@ -190,15 +191,18 @@ public class SolrInputField implements Iterable<Object>, Serializable
     return new Iterator<Object>() {
       boolean nxt = (value!=null);
       
+      @Override
       public boolean hasNext() {
         return nxt;
       }
 
+      @Override
       public Object next() {
         nxt = false;
         return value;
       }
 
+      @Override
       public void remove() {
         throw new UnsupportedOperationException();
       }

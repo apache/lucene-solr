@@ -82,6 +82,7 @@ public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdate
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
     return new FieldMutatingUpdateProcessor(getSelector(), next) {
+      @Override
       protected SolrInputField mutate(final SolrInputField src) {
         if (src.getValueCount() <= 1) return src;
 
@@ -99,6 +100,7 @@ public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdate
 
     final IndexSchema schema = core.getSchema();
     return new FieldMutatingUpdateProcessor.FieldNameSelector() {
+      @Override
       public boolean shouldMutate(final String fieldName) {
 
         // first check type since it should be fastest

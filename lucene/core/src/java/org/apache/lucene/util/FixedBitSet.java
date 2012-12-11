@@ -99,6 +99,7 @@ public final class FixedBitSet extends DocIdSet implements Bits {
     return (int) BitUtil.pop_array(bits, 0, bits.length);
   }
 
+  @Override
   public boolean get(int index) {
     assert index >= 0 && index < numBits: "index=" + index;
     int i = index >> 6;               // div 64

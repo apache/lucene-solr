@@ -153,10 +153,12 @@ public final class NumericTokenStream extends TokenStream {
      */
     public NumericTermAttributeImpl() {}
 
+    @Override
     public BytesRef getBytesRef() {
       return bytes;
     }
     
+    @Override
     public int fillBytesRef() {
       try {
         assert valueSize == 64 || valueSize == 32;
@@ -170,15 +172,21 @@ public final class NumericTokenStream extends TokenStream {
       }
     }
 
+    @Override
     public int getShift() { return shift; }
+    @Override
     public void setShift(int shift) { this.shift = shift; }
+    @Override
     public int incShift() {
       return (shift += precisionStep);
     }
 
+    @Override
     public long getRawValue() { return value  & ~((1L << shift) - 1L); }
+    @Override
     public int getValueSize() { return valueSize; }
 
+    @Override
     public void init(long value, int valueSize, int precisionStep, int shift) {
       this.value = value;
       this.valueSize = valueSize;

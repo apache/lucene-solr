@@ -34,6 +34,7 @@ public class ScoringAggregator implements Aggregator {
     this.hashCode = scoreArray == null ? 0 : scoreArray.hashCode();
   }
 
+  @Override
   public void aggregate(int ordinal) {
     scoreArray[ordinal] += score;
   }
@@ -52,6 +53,7 @@ public class ScoringAggregator implements Aggregator {
     return hashCode;
   }
 
+  @Override
   public void setNextDoc(int docid, float score) {
     this.score = score;
   }

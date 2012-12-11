@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *
  */
 public class FrenchMinimalStemFilterFactory extends TokenFilterFactory {
+  @Override
   public TokenStream create(TokenStream input) {
     return new FrenchMinimalStemFilter(input);
   }

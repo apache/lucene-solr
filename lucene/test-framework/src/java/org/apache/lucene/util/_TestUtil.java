@@ -711,6 +711,7 @@ public class _TestUtil {
   public static <T> void assertAttributeReflection(final AttributeImpl att, Map<String,T> reflectedValues) {
     final Map<String,Object> map = new HashMap<String,Object>();
     att.reflectWith(new AttributeReflector() {
+      @Override
       public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
         map.put(attClass.getName() + '#' + key, value);
       }

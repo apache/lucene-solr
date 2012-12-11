@@ -26,10 +26,12 @@ import org.apache.lucene.search.BooleanQuery;
 final class TestRuleSetupAndRestoreInstanceEnv extends AbstractBeforeAfterRule {
   private int savedBoolMaxClauseCount;
 
+  @Override
   protected void before() {
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
   }
 
+  @Override
   protected void after() {
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
   }

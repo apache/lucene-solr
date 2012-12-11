@@ -46,6 +46,7 @@ public class AssociationFloatSumAggregator implements Aggregator {
     this.sumArray = sumArray;
   }
 
+  @Override
   public void aggregate(int ordinal) {
     long association = associationsPayloadIterator.getAssociation(ordinal);
     if (association != AssociationsPayloadIterator.NO_ASSOCIATION) {
@@ -67,6 +68,7 @@ public class AssociationFloatSumAggregator implements Aggregator {
     return field.hashCode();
   }
 
+  @Override
   public void setNextDoc(int docid, float score) throws IOException {
     associationsPayloadIterator.setNextDoc(docid);
   }

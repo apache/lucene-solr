@@ -37,6 +37,7 @@ public class SpanNearBuilder extends SpanBuilderBase {
     this.factory = factory;
   }
 
+  @Override
   public SpanQuery getSpanQuery(Element e) throws ParserException {
     String slopString = DOMUtils.getAttributeOrFail(e, "slop");
     int slop = Integer.parseInt(slopString);

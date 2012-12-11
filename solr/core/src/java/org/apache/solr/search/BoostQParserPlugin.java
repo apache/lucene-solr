@@ -40,6 +40,7 @@ public class BoostQParserPlugin extends QParserPlugin {
   public static String NAME = "boost";
   public static String BOOSTFUNC = "b";
 
+  @Override
   public void init(NamedList args) {
   }
 

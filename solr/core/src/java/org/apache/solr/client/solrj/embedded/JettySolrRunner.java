@@ -148,12 +148,15 @@ public class JettySolrRunner {
     root.setHandler(new GzipHandler());
     server.addLifeCycleListener(new LifeCycle.Listener() {
 
+      @Override
       public void lifeCycleStopping(LifeCycle arg0) {
         System.clearProperty("hostPort");
       }
 
+      @Override
       public void lifeCycleStopped(LifeCycle arg0) {}
 
+      @Override
       public void lifeCycleStarting(LifeCycle arg0) {
         synchronized (JettySolrRunner.this) {
           waitOnSolr = true;
@@ -161,6 +164,7 @@ public class JettySolrRunner {
         }
       }
 
+      @Override
       public void lifeCycleStarted(LifeCycle arg0) {
         lastPort = getFirstConnectorPort();
         System.setProperty("hostPort", Integer.toString(lastPort));
@@ -176,6 +180,7 @@ public class JettySolrRunner {
         System.clearProperty("solr.solr.home");
       }
 
+      @Override
       public void lifeCycleFailure(LifeCycle arg0, Throwable arg1) {
         System.clearProperty("hostPort");
       }
@@ -338,17 +343,21 @@ class NoLog implements Logger {
     this.name = name == null ? "" : name;
   }
 
+  @Override
   public boolean isDebugEnabled() {
     return debug;
   }
 
+  @Override
   public void setDebugEnabled(boolean enabled) {
     debug = enabled;
   }
 
+  @Override
   public void debug(String msg, Throwable th) {
   }
 
+  @Override
   public Logger getLogger(String name) {
     if ((name == null && this.name == null)
         || (name != null && name.equals(this.name)))

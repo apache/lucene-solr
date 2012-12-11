@@ -137,6 +137,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     this.initArgs = SolrParams.toSolrParams(args);
   }
 
+  @Override
   public void inform(SolrCore core) {
     String a = initArgs.get(FIELD_TYPE);
     if (a != null) {

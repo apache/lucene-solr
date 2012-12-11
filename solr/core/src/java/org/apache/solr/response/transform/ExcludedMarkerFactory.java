@@ -49,6 +49,7 @@ class ExcludedTransformer extends BaseEditorialTransformer {
     super(name, idFieldName, ft);
   }
 
+  @Override
   protected Set<String> getIdSet() {
     return (Set<String>)context.req.getContext().get(QueryElevationComponent.EXCLUDED);
   }

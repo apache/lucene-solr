@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
  */
 public class WikipediaTokenizerFactory extends TokenizerFactory {
   // TODO: add support for WikipediaTokenizer's advanced options.
+  @Override
   public Tokenizer create(Reader input) {
     return new WikipediaTokenizer(input);
   }

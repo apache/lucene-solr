@@ -261,12 +261,14 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
     return idToSnapshot.containsKey(id);
   }
 
+  @Override
   public synchronized void onCommit(List<? extends IndexCommit> commits)
       throws IOException {
     primary.onCommit(wrapCommits(commits));
     lastCommit = commits.get(commits.size() - 1);
   }
 
+  @Override
   public synchronized void onInit(List<? extends IndexCommit> commits)
       throws IOException {
     primary.onInit(wrapCommits(commits));

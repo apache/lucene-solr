@@ -36,6 +36,7 @@ public class IteratorChain<E> implements Iterator<E> {
     iterators.add(it);
   }
   
+  @Override
   public boolean hasNext() {
     if(itit==null) itit = iterators.iterator();
     return recursiveHasNext();
@@ -66,6 +67,7 @@ public class IteratorChain<E> implements Iterator<E> {
   /** hasNext() must ALWAYS be called before calling this
    *  otherwise it's a bit hard to keep track of what's happening
    */
+  @Override
   public E next() {
     if(current==null) { 
       throw new RuntimeException("For an IteratorChain, hasNext() MUST be called before calling next()");
@@ -73,6 +75,7 @@ public class IteratorChain<E> implements Iterator<E> {
     return current.next();
   }
 
+  @Override
   public void remove() {
     // we just need this class 
     // to iterate in readonly mode

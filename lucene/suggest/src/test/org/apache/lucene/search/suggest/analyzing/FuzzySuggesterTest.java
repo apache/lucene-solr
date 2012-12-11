@@ -745,6 +745,7 @@ public class FuzzySuggesterTest extends LuceneTestCase {
 
       if (matches.size() > 1) {
         Collections.sort(matches, new Comparator<LookupResult>() {
+            @Override
             public int compare(LookupResult left, LookupResult right) {
               int cmp = Float.compare(right.value, left.value);
               if (cmp == 0) {

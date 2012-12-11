@@ -47,10 +47,12 @@ public interface Bits {
       this.len = len;
     }
 
+    @Override
     public boolean get(int index) {
       return true;
     }
 
+    @Override
     public int length() {
       return len;
     }
@@ -66,10 +68,12 @@ public interface Bits {
       this.len = len;
     }
 
+    @Override
     public boolean get(int index) {
       return false;
     }
 
+    @Override
     public int length() {
       return len;
     }

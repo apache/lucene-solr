@@ -111,6 +111,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();
@@ -935,6 +936,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   
       File[] files = dataDir.listFiles(new FilenameFilter() {
         
+          @Override
           public boolean accept(File dir, String name) {
             if(name.startsWith("snapshot")) {
               return true;

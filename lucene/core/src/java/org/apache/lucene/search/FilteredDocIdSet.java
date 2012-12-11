@@ -60,10 +60,12 @@ public abstract class FilteredDocIdSet extends DocIdSet {
   public Bits bits() throws IOException {
     final Bits bits = _innerSet.bits();
     return (bits == null) ? null : new Bits() {
+      @Override
       public boolean get(int docid) {
         return bits.get(docid) && FilteredDocIdSet.this.match(docid);
       }
 
+      @Override
       public int length() {
         return bits.length();
       }

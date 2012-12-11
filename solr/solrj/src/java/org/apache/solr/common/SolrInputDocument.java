@@ -48,6 +48,7 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
   /**
    * Remove all fields and boosts from the document
    */
+  @Override
   public void clear()
   {
     if( _fields != null ) {
@@ -166,6 +167,7 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
     return _fields.get( field );
   }
 
+  @Override
   public Iterator<SolrInputField> iterator() {
     return _fields.values().iterator();
   }
@@ -198,46 +200,57 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
   // MAP interface
   //---------------------------------------------------
 
+  @Override
   public boolean containsKey(Object key) {
     return _fields.containsKey(key);
   }
 
+  @Override
   public boolean containsValue(Object value) {
     return _fields.containsValue(value);
   }
 
+  @Override
   public Set<Entry<String, SolrInputField>> entrySet() {
     return _fields.entrySet();
   }
 
+  @Override
   public SolrInputField get(Object key) {
     return _fields.get(key);
   }
 
+  @Override
   public boolean isEmpty() {
     return _fields.isEmpty();
   }
 
+  @Override
   public Set<String> keySet() {
     return _fields.keySet();
   }
 
+  @Override
   public SolrInputField put(String key, SolrInputField value) {
     return _fields.put(key, value);
   }
 
+  @Override
   public void putAll(Map<? extends String, ? extends SolrInputField> t) {
     _fields.putAll( t );
   }
 
+  @Override
   public SolrInputField remove(Object key) {
     return _fields.remove(key);
   }
 
+  @Override
   public int size() {
     return _fields.size();
   }
 
+  @Override
   public Collection<SolrInputField> values() {
     return _fields.values();
   }

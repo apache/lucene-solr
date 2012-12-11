@@ -37,6 +37,7 @@ public class NonTopLevelPathPolicy implements PathPolicy {
    * Filters out (returns false) CategoryPaths equal or less than
    * {@link TaxonomyReader#ROOT_ORDINAL}. true otherwise.
    */
+  @Override
   public boolean shouldAdd(CategoryPath categoryPath) {
     return categoryPath.length() >= DEFAULT_MINIMAL_SUBPATH_LENGTH;
   }

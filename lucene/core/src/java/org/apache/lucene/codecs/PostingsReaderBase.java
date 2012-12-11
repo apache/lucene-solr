@@ -66,6 +66,7 @@ public abstract class PostingsReaderBase implements Closeable {
   public abstract DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, BlockTermState state, Bits skipDocs, DocsAndPositionsEnum reuse,
                                                         int flags) throws IOException;
 
+  @Override
   public abstract void close() throws IOException;
 
   /** Reads data for all terms in the next block; this

@@ -64,10 +64,12 @@ public class IntHashSet {
       }
     }
 
+    @Override
     public boolean hasNext() {
       return (index != 0);
     }
 
+    @Override
     public int next() {
       // Save the last index visited
       lastIndex = index;
@@ -85,6 +87,7 @@ public class IntHashSet {
       return lastIndex;
     }
 
+    @Override
     public void remove() {
       IntHashSet.this.remove(keys[lastIndex]);
     }
@@ -99,14 +102,17 @@ public class IntHashSet {
 
     KeyIterator() { }
     
+    @Override
     public boolean hasNext() {
       return iterator.hasNext();
     }
 
+    @Override
     public int next() {
       return keys[iterator.next()];
     }
 
+    @Override
     public void remove() {
       iterator.remove();
     }

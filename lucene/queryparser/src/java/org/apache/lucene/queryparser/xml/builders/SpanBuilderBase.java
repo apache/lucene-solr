@@ -26,6 +26,7 @@ import org.w3c.dom.Element;
  */
 public abstract class SpanBuilderBase implements SpanQueryBuilder {
   
+  @Override
   public Query getQuery(Element e) throws ParserException {
     return getSpanQuery(e);
   }

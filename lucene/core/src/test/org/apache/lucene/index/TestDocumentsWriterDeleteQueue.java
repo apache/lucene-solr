@@ -155,6 +155,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     ReentrantLock lock = (ReentrantLock) field.get(queue);
     lock.lock();
     Thread t = new Thread() {
+      @Override
       public void run() {
         queue.addDelete(new Term("foo", "bar"));
       }

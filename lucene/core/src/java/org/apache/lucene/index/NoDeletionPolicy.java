@@ -33,8 +33,10 @@ public final class NoDeletionPolicy implements IndexDeletionPolicy {
     // keep private to avoid instantiation
   }
   
+  @Override
   public void onCommit(List<? extends IndexCommit> commits) {}
 
+  @Override
   public void onInit(List<? extends IndexCommit> commits) {}
   
 }

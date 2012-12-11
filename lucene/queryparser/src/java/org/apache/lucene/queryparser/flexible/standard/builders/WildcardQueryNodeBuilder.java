@@ -35,6 +35,7 @@ public class WildcardQueryNodeBuilder implements StandardQueryBuilder {
     // empty constructor
   }
 
+  @Override
   public WildcardQuery build(QueryNode queryNode) throws QueryNodeException {
     WildcardQueryNode wildcardNode = (WildcardQueryNode) queryNode;
 

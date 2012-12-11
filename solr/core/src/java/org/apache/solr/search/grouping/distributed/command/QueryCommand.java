@@ -123,6 +123,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
     this.queryString = queryString;
   }
 
+  @Override
   public List<Collector> create() throws IOException {
     if (sort == null || sort == Sort.RELEVANCE) {
       collector = TopScoreDocCollector.create(docsToCollect, true);
@@ -133,18 +134,22 @@ public class QueryCommand implements Command<QueryCommandResult> {
     return Arrays.asList((Collector) filterCollector);
   }
 
+  @Override
   public QueryCommandResult result() {
     return new QueryCommandResult(collector.topDocs(), filterCollector.getMatches());
   }
 
+  @Override
   public String getKey() {
     return queryString != null ? queryString : query.toString();
   }
 
+  @Override
   public Sort getGroupSort() {
     return sort;
   }
 
+  @Override
   public Sort getSortWithinGroup() {
     return null;
   }

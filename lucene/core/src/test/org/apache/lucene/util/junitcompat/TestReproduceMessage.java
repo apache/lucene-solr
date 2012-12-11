@@ -52,6 +52,7 @@ public class TestReproduceMessage extends WithNestedTests {
       @Override
       public Statement apply(final Statement base, Description description) {
         return new Statement() {
+          @Override
           public void evaluate() throws Throwable {
             triggerOn(SorePoint.RULE);
             base.evaluate();

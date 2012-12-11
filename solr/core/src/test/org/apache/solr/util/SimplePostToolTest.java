@@ -38,6 +38,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
   SimplePostTool t_file, t_file_auto, t_file_rec, t_web, t_test;
   PageFetcher pf;
   
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

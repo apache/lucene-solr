@@ -85,6 +85,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
   }
 
   /** @return An {@code Iterator<Query>} over the disjuncts */
+  @Override
   public Iterator<Query> iterator() {
     return disjuncts.iterator();
   }

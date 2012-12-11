@@ -99,6 +99,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   }
 
   // make sure any threads stop retrying
+  @Override
   public void close() {
     close = true;
     log.warn("Stopping recovery for zkNodeName=" + coreZkNodeName + "core=" + coreName );
@@ -532,6 +533,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     return future;
   }
 
+  @Override
   public boolean isClosed() {
     return close;
   }

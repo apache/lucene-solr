@@ -62,6 +62,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     for (int i = 0; i < stallThreads.length; i++) {
       final int stallProbability = 1 +random().nextInt(10);
       stallThreads[i] = new Thread() {
+        @Override
         public void run() {
 
           int iters = atLeast(1000);
@@ -220,6 +221,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
       this.exceptions = exceptions;
     }
     
+    @Override
     public void run() {
       try {
         while (!stop.get()) {
@@ -261,6 +263,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
       this.exceptions = exceptions;
     }
     
+    @Override
     public void run() {
       try {
        
@@ -318,6 +321,7 @@ public class TestDocumentsWriterStallControl extends LuceneTestCase {
     Thread[] array = new Thread[num];
     for (int i = 0; i < array.length; i++) {
       array[i] = new Thread() {
+        @Override
         public void run() {
           ctrl.waitIfStalled();
         }

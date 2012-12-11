@@ -799,6 +799,7 @@ public class AnalyzingSuggester extends Lookup {
   }
    
   static final Comparator<Pair<Long,BytesRef>> weightComparator = new Comparator<Pair<Long,BytesRef>> () {
+    @Override
     public int compare(Pair<Long,BytesRef> left, Pair<Long,BytesRef> right) {
       return left.output1.compareTo(right.output1);
     }

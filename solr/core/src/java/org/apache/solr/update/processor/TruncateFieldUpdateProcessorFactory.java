@@ -88,6 +88,7 @@ public final class TruncateFieldUpdateProcessorFactory
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
     return new FieldValueMutatingUpdateProcessor(getSelector(), next) {
+      @Override
       protected Object mutateValue(final Object src) {
         if (src instanceof CharSequence) {
           CharSequence s = (CharSequence)src;

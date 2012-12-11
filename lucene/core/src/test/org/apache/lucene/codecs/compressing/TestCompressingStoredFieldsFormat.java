@@ -66,6 +66,7 @@ public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
   IndexWriterConfig iwConf;
   private RandomIndexWriter iw;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
@@ -75,6 +76,7 @@ public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
     iw = new RandomIndexWriter(random(), dir, iwConf);
   }
 
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
     IOUtils.close(iw, dir);

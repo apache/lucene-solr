@@ -447,6 +447,7 @@ public class HunspellDictionary {
     /**
      * {@inheritDoc}
      */
+    @Override
     public char[] parseFlags(String rawFlags) {
       return rawFlags.toCharArray();
     }
@@ -460,6 +461,7 @@ public class HunspellDictionary {
     /**
      * {@inheritDoc}
      */
+    @Override
     public char[] parseFlags(String rawFlags) {
       String[] rawFlagParts = rawFlags.trim().split(",");
       char[] flags = new char[rawFlagParts.length];
@@ -484,6 +486,7 @@ public class HunspellDictionary {
     /**
      * {@inheritDoc}
      */
+    @Override
     public char[] parseFlags(String rawFlags) {
       if (rawFlags.length() == 0) {
         return new char[0];

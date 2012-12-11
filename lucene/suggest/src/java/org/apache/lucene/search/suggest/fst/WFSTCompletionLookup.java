@@ -278,6 +278,7 @@ public class WFSTCompletionLookup extends Lookup {
   }
   
   static final Comparator<Long> weightComparator = new Comparator<Long> () {
+    @Override
     public int compare(Long left, Long right) {
       return left.compareTo(right);
     }  

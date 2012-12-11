@@ -35,6 +35,7 @@ public class OpenExchangeRatesOrgProviderTest extends SolrTestCaseJ4 {
   private final Map<String,String> emptyParams = new HashMap<String,String>();
   private Map<String,String> mockParams;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

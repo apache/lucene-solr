@@ -110,6 +110,7 @@ public final class NamedSPILoader<S extends NamedSPILoader.NamedSPI> implements 
     return services.keySet();
   }
   
+  @Override
   public Iterator<S> iterator() {
     return services.values().iterator();
   }

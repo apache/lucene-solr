@@ -63,6 +63,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * 
    * @throws IOException If there is a low-level I/O error.
    */
+  @Override
   public abstract void close() throws IOException;
   
   /**

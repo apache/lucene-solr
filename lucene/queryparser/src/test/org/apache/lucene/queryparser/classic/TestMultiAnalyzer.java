@@ -180,6 +180,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
       }
     }
 
+    @Override
     public void reset() throws IOException {
       super.reset();
       this.prevType = null;

@@ -46,6 +46,7 @@ public class SimpleFragmenter implements Fragmenter {
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.Fragmenter#start(java.lang.String, org.apache.lucene.analysis.TokenStream)
    */
+  @Override
   public void start(String originalText, TokenStream stream) {
     offsetAtt = stream.addAttribute(OffsetAttribute.class);
     currentNumFrags = 1;
@@ -55,6 +56,7 @@ public class SimpleFragmenter implements Fragmenter {
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.Fragmenter#isNewFragment()
    */
+  @Override
   public boolean isNewFragment() {
     boolean isNewFrag = offsetAtt.endOffset() >= (fragmentSize * currentNumFrags);
     if (isNewFrag) {

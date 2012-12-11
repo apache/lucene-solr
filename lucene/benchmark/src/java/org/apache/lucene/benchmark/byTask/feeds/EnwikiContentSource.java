@@ -170,6 +170,7 @@ public class EnwikiContentSource extends ContentSource {
       }
     }
 
+    @Override
     public void run() {
 
       try {

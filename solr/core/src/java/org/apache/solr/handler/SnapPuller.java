@@ -213,6 +213,7 @@ public class SnapPuller {
 
   private void startExecutorService() {
     Runnable task = new Runnable() {
+      @Override
       public void run() {
         if (pollDisabled.get()) {
           LOG.info("Poll disabled");
@@ -1102,6 +1103,7 @@ public class SnapPuller {
         cleanup();
         //if cleanup suceeds . The file is downloaded fully. do an fsync
         fsyncService.submit(new Runnable(){
+          @Override
           public void run() {
             try {
               copy2Dir.sync(Collections.singleton(saveAs));
@@ -1363,6 +1365,7 @@ public class SnapPuller {
         cleanup();
         //if cleanup suceeds . The file is downloaded fully. do an fsync
         fsyncService.submit(new Runnable(){
+          @Override
           public void run() {
             try {
               FileUtils.sync(file);

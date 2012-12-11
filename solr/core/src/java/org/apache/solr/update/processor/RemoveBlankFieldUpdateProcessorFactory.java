@@ -57,6 +57,7 @@ public final class RemoveBlankFieldUpdateProcessorFactory extends FieldMutatingU
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
     return new FieldValueMutatingUpdateProcessor(getSelector(), next) {
+      @Override
       protected Object mutateValue(final Object src) {
         if (src instanceof CharSequence 
             && 0 == ((CharSequence)src).length()) {

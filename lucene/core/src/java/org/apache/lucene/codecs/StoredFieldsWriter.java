@@ -118,5 +118,6 @@ public abstract class StoredFieldsWriter implements Closeable {
     }
   }
 
+  @Override
   public abstract void close() throws IOException;
 }

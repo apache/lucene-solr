@@ -386,6 +386,7 @@ public class SimpleFacets {
 
 
   static final Executor directExecutor = new Executor() {
+    @Override
     public void execute(Runnable r) {
       r.run();
     }
@@ -1248,6 +1249,7 @@ public class SimpleFacets {
       CountPair<?,?> that = (CountPair<?,?>) o;
       return (this.key.equals(that.key) && this.val.equals(that.val));
     }
+    @Override
     public int compareTo(CountPair<K,V> o) {
       int vc = o.val.compareTo(val);
       return (0 != vc ? vc : key.compareTo(o.key));

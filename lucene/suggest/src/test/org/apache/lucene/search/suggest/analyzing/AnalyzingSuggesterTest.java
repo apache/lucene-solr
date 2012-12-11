@@ -691,6 +691,7 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
       if (matches.size() > 1) {
         Collections.sort(matches, new Comparator<TermFreq2>() {
+            @Override
             public int compare(TermFreq2 left, TermFreq2 right) {
               int cmp = Float.compare(right.weight, left.weight);
               if (cmp == 0) {

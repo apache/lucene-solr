@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *
  */
 public class BrazilianStemFilterFactory extends TokenFilterFactory {
+  @Override
   public BrazilianStemFilter create(TokenStream in) {
     return new BrazilianStemFilter(in);
   }

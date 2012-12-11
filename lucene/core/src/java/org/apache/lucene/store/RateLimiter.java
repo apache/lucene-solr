@@ -64,6 +64,7 @@ public abstract class RateLimiter {
     /**
      * Sets an updated mb per second rate limit.
      */
+    @Override
     public void setMbPerSec(double mbPerSec) {
       this.mbPerSec = mbPerSec;
       nsPerByte = 1000000000. / (1024*1024*mbPerSec);
@@ -73,6 +74,7 @@ public abstract class RateLimiter {
     /**
      * The current mb per second rate limit.
      */
+    @Override
     public double getMbPerSec() {
       return this.mbPerSec;
     }
@@ -86,6 +88,7 @@ public abstract class RateLimiter {
      *  with a biggish count, not one byte at a time.
      *  @return the pause time in nano seconds 
      * */
+    @Override
     public long pause(long bytes) {
       if (bytes == 1) {
         return 0;

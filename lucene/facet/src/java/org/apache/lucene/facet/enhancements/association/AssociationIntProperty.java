@@ -52,6 +52,7 @@ public class AssociationIntProperty extends AssociationProperty {
     return "AssociationIntProperty".hashCode() * 31 + (int) association;
   }
 
+  @Override
   public void merge(CategoryProperty other) {
     AssociationIntProperty o = (AssociationIntProperty) other;
     this.association += o.association;

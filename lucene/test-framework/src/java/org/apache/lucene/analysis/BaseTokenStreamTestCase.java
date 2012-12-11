@@ -72,6 +72,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   public static final class CheckClearAttributesAttributeImpl extends AttributeImpl implements CheckClearAttributesAttribute {
     private boolean clearCalled = false;
     
+    @Override
     public boolean getAndResetClearCalled() {
       try {
         return clearCalled;

@@ -53,6 +53,7 @@ public class MultiPhraseQueryNode extends QueryNodeImpl implements
     return sb.toString();
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     if (getChildren() == null || getChildren().size() == 0)
       return "";
@@ -76,6 +77,7 @@ public class MultiPhraseQueryNode extends QueryNodeImpl implements
     return clone;
   }
 
+  @Override
   public CharSequence getField() {
     List<QueryNode> children = getChildren();
 
@@ -88,6 +90,7 @@ public class MultiPhraseQueryNode extends QueryNodeImpl implements
 
   }
 
+  @Override
   public void setField(CharSequence fieldName) {
     List<QueryNode> children = getChildren();
 

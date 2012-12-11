@@ -60,6 +60,7 @@ public final class CategoryAttributeImpl extends AttributeImpl implements
     setCategoryPath(categoryPath);
   }
 
+  @Override
   public void set(CategoryAttribute other) {
     ((CategoryAttributeImpl) other).copyTo(this);
   }
@@ -70,14 +71,17 @@ public final class CategoryAttributeImpl extends AttributeImpl implements
    * @return The category path last assigned to this attribute, or null if
    *         none has been assigned.
    */
+  @Override
   public CategoryPath getCategoryPath() {
     return categoryPath;
   }
 
+  @Override
   public void setCategoryPath(CategoryPath cp) {
     categoryPath = cp;
   }
 
+  @Override
   public void addProperty(CategoryProperty property)
       throws UnsupportedOperationException {
     if (properties == null) {
@@ -91,6 +95,7 @@ public final class CategoryAttributeImpl extends AttributeImpl implements
     }
   }
 
+  @Override
   public CategoryProperty getProperty(
       Class<? extends CategoryProperty> propertyClass) {
     if (properties == null) {
@@ -99,6 +104,7 @@ public final class CategoryAttributeImpl extends AttributeImpl implements
     return properties.get(propertyClass);
   }
 
+  @Override
   public CategoryProperty getProperty(
       Collection<Class<? extends CategoryProperty>> propertyClasses) {
     if (properties == null) {
@@ -139,6 +145,7 @@ public final class CategoryAttributeImpl extends AttributeImpl implements
     clearProperties();
   }
 
+  @Override
   public void clearProperties() {
     if (properties != null) {
       properties.clear();
@@ -178,6 +185,7 @@ public final class CategoryAttributeImpl extends AttributeImpl implements
     return hashCode;
   }
 
+  @Override
   public Set<Class<? extends CategoryProperty>> getPropertyClasses() {
     if (properties == null || properties.isEmpty()) {
       return null;
@@ -185,6 +193,7 @@ public final class CategoryAttributeImpl extends AttributeImpl implements
     return properties.keySet();
   }
 
+  @Override
   public void remove(Class<? extends CategoryProperty> propertyClass) {
     properties.remove(propertyClass);
   }

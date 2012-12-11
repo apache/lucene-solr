@@ -44,5 +44,6 @@ public abstract class TermVectorsReader implements Cloneable, Closeable {
 
   /** Create a clone that one caller at a time may use to
    *  read term vectors. */
+  @Override
   public abstract TermVectorsReader clone();
 }

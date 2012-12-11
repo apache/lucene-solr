@@ -45,6 +45,7 @@ public class JSONResponseWriter implements QueryResponseWriter {
 
   private String contentType = CONTENT_TYPE_JSON_UTF8;
 
+  @Override
   public void init(NamedList namedList) {
     String contentType = (String) namedList.get("content-type");
     if (contentType != null) {
@@ -52,6 +53,7 @@ public class JSONResponseWriter implements QueryResponseWriter {
     }
   }
 
+  @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     JSONWriter w = new JSONWriter(writer, req, rsp);
     try {
@@ -61,6 +63,7 @@ public class JSONResponseWriter implements QueryResponseWriter {
     }
   }
 
+  @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return contentType;
   }

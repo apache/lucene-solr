@@ -103,6 +103,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
    *
    * See also the example solrconfig.xml located in the Solr codebase (example/solr/conf).
    */
+  @Override
   public void init(NamedList args) {
     initArgs = args;
 
@@ -135,6 +136,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   
   public abstract void handleRequestBody( SolrQueryRequest req, SolrQueryResponse rsp ) throws Exception;
 
+  @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     numRequests.inc();
     TimerContext timer = requestTimes.time();
@@ -178,25 +180,32 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
+  @Override
   public String getName() {
     return this.getClass().getName();
   }
 
+  @Override
   public abstract String getDescription();
+  @Override
   public abstract String getSource();
   
+  @Override
   public String getVersion() {
     return getClass().getPackage().getSpecificationVersion();
   }
   
+  @Override
   public Category getCategory() {
     return Category.QUERYHANDLER;
   }
 
+  @Override
   public URL[] getDocs() {
     return null;  // this can be overridden, but not required
   }
 
+  @Override
   public NamedList<Object> getStatistics() {
     NamedList<Object> lst = new SimpleOrderedMap<Object>();
     lst.add("handlerStart",handlerStart);

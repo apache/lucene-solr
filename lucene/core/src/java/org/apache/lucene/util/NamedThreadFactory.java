@@ -57,6 +57,7 @@ public class NamedThreadFactory implements ThreadFactory {
    * 
    * @see java.util.concurrent.ThreadFactory#newThread(java.lang.Runnable)
    */
+  @Override
   public Thread newThread(Runnable r) {
     final Thread t = new Thread(group, r, String.format(Locale.ROOT, "%s-%d",
         this.threadNamePrefix, threadNumber.getAndIncrement()), 0);

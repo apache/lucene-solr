@@ -128,6 +128,7 @@ public class CloseableThreadLocal<T> implements Closeable {
     }
   }
 
+  @Override
   public void close() {
     // Clear the hard refs; then, the only remaining refs to
     // all values we were storing are weak (unless somewhere

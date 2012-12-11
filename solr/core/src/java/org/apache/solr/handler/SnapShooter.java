@@ -164,6 +164,7 @@ public class SnapShooter {
         }
       }
     }
+    @Override
     public int compareTo(OldBackupDirectory that) {
       return that.timestamp.compareTo(this.timestamp);
     }

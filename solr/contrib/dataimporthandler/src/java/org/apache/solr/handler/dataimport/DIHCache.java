@@ -77,6 +77,7 @@ public interface DIHCache extends Iterable<Map<String,Object>> {
    * in key, then insertion, order.
    * </p>
    */
+  @Override
   public Iterator<Map<String,Object>> iterator();
   
   /**

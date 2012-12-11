@@ -50,6 +50,7 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
   /**
    * {@inheritDoc}
    */
+  @Override
   public ShardRequest[] constructRequest(ResponseBuilder rb) {
     // If we have a group.query we need to query all shards... Or we move this to the group first phase queries
     boolean containsGroupByQuery = rb.getGroupingSpec().getQueries().length > 0;

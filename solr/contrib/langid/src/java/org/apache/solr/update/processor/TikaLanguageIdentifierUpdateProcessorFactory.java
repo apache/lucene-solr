@@ -49,6 +49,7 @@ public class TikaLanguageIdentifierUpdateProcessorFactory extends
   protected SolrParams appends;
   protected SolrParams invariants;
 
+  @Override
   public void inform(SolrCore core) {
   }
 
@@ -57,6 +58,7 @@ public class TikaLanguageIdentifierUpdateProcessorFactory extends
    * to a RequestHandler, with defaults, appends and invariants.
    * @param args a NamedList with the configuration parameters 
    */
+  @Override
   @SuppressWarnings("rawtypes")
   public void init( NamedList args )
   {

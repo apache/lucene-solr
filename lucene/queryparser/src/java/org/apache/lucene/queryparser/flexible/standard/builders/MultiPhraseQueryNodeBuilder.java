@@ -40,6 +40,7 @@ public class MultiPhraseQueryNodeBuilder implements StandardQueryBuilder {
     // empty constructor
   }
 
+  @Override
   public MultiPhraseQuery build(QueryNode queryNode) throws QueryNodeException {
     MultiPhraseQueryNode phraseNode = (MultiPhraseQueryNode) queryNode;
 

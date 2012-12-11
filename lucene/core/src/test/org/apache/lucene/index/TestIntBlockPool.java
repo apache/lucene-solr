@@ -116,6 +116,7 @@ public class TestIntBlockPool extends LuceneTestCase {
       this.bytesUsed = bytesUsed;
     }
     
+    @Override
     public int[] getIntBlock() {
       bytesUsed.addAndGet(blockSize * RamUsageEstimator.NUM_BYTES_INT);
       return new int[blockSize];

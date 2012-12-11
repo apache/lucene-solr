@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *
  */
 public class RemoveDuplicatesTokenFilterFactory extends TokenFilterFactory {
+  @Override
   public RemoveDuplicatesTokenFilter create(TokenStream input) {
     return new RemoveDuplicatesTokenFilter(input);
   }

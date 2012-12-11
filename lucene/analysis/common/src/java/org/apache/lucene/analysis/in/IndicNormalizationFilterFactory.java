@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *
  */
 public class IndicNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+  @Override
   public TokenStream create(TokenStream input) {
     return new IndicNormalizationFilter(input);
   }

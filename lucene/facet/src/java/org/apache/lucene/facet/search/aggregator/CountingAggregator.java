@@ -28,10 +28,12 @@ public class CountingAggregator implements Aggregator {
 
   protected int[] counterArray;
 
+  @Override
   public void aggregate(int ordinal) {
     ++counterArray[ordinal];
   }
 
+  @Override
   public void setNextDoc(int docid, float score) {
     // There's nothing for us to do here since we only increment the count by 1
     // in this aggregator.

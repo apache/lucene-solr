@@ -232,6 +232,7 @@ interface SolrRequestParser
  */
 class SimpleRequestParser implements SolrRequestParser
 {
+  @Override
   public SolrParams parseParamsAndFillStreams( 
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {
@@ -259,6 +260,7 @@ class HttpRequestContentStream extends ContentStreamBase
     }
   }
 
+  @Override
   public InputStream getStream() throws IOException {
     return req.getInputStream();
   }
@@ -281,6 +283,7 @@ class FileItemContentStream extends ContentStreamBase
     size = item.getSize();
   }
     
+  @Override
   public InputStream getStream() throws IOException {
     return item.getInputStream();
   }
@@ -291,6 +294,7 @@ class FileItemContentStream extends ContentStreamBase
  */
 class RawRequestParser implements SolrRequestParser
 {
+  @Override
   public SolrParams parseParamsAndFillStreams( 
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {
@@ -320,6 +324,7 @@ class MultipartRequestParser implements SolrRequestParser
     uploadLimitKB = limit;
   }
   
+  @Override
   public SolrParams parseParamsAndFillStreams( 
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {
@@ -376,6 +381,7 @@ class StandardRequestParser implements SolrRequestParser
     this.raw = raw;
   }
   
+  @Override
   public SolrParams parseParamsAndFillStreams( 
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {

@@ -94,6 +94,7 @@ public class QueryTermScorer implements Scorer {
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.Scorer#init(org.apache.lucene.analysis.TokenStream)
    */
+  @Override
   public TokenStream init(TokenStream tokenStream) {
     termAtt = tokenStream.addAttribute(CharTermAttribute.class);
     return null;
@@ -106,6 +107,7 @@ public class QueryTermScorer implements Scorer {
    * org.apache.lucene.search.highlight.FragmentScorer#startFragment(org.apache
    * .lucene.search.highlight.TextFragment)
    */
+  @Override
   public void startFragment(TextFragment newFragment) {
     uniqueTermsInFragment = new HashSet<String>();
     currentTextFragment = newFragment;
@@ -117,6 +119,7 @@ public class QueryTermScorer implements Scorer {
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.Scorer#getTokenScore()
    */
+  @Override
   public float getTokenScore() {
     String termText = termAtt.toString();
 
@@ -137,6 +140,7 @@ public class QueryTermScorer implements Scorer {
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.Scorer#getFragmentScore()
    */
+  @Override
   public float getFragmentScore() {
     return totalScore;
   }

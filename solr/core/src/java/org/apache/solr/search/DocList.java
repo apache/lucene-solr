@@ -36,6 +36,7 @@ public interface DocList extends DocSet {
   /**
    * Returns the number of ids in this list.
    */
+  @Override
   public int size();
 
   /**
@@ -76,6 +77,7 @@ public interface DocList extends DocSet {
    * </p>
    * @see #hasScores
    */
+  @Override
   public DocIterator iterator();
     
   /** True if scores were retained */

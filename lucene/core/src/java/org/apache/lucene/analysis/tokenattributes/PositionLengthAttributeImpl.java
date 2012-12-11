@@ -26,6 +26,7 @@ public class PositionLengthAttributeImpl extends AttributeImpl implements Positi
   /** Initializes this attribute with position length of 1. */
   public PositionLengthAttributeImpl() {}
   
+  @Override
   public void setPositionLength(int positionLength) {
     if (positionLength < 1) {
       throw new IllegalArgumentException
@@ -34,6 +35,7 @@ public class PositionLengthAttributeImpl extends AttributeImpl implements Positi
     this.positionLength = positionLength;
   }
 
+  @Override
   public int getPositionLength() {
     return positionLength;
   }

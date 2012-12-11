@@ -91,9 +91,12 @@ public class SolrParamTest extends LuceneTestCase
     }
     
     // Malformed params: These should throw a 400
-    assertEquals( 400, getReturnCode( new Runnable() { public void run() { params.getInt(   "f.bad.int" ); } } ) );
-    assertEquals( 400, getReturnCode( new Runnable() { public void run() { params.getBool(  "f.bad.bool" ); } } ) );
-    assertEquals( 400, getReturnCode( new Runnable() { public void run() { params.getFloat( "f.bad.float" ); } } ) );
+    assertEquals( 400, getReturnCode( new Runnable() { @Override
+    public void run() { params.getInt(   "f.bad.int" ); } } ) );
+    assertEquals( 400, getReturnCode( new Runnable() { @Override
+    public void run() { params.getBool(  "f.bad.bool" ); } } ) );
+    assertEquals( 400, getReturnCode( new Runnable() { @Override
+    public void run() { params.getFloat( "f.bad.float" ); } } ) );
     
     // Ask for params that arent there
     assertNull( params.get( "asagdsaga" ) );
@@ -130,15 +133,24 @@ public class SolrParamTest extends LuceneTestCase
     assertEquals( pfloat , required.getFieldFloat( "fakefield", "float" ) );
     
     // Required params which are missing: These should throw a 400
-    assertEquals( 400, getReturnCode( new Runnable() { public void run() { required.get( "aaaa" ); } } ) );
-    assertEquals( 400, getReturnCode( new Runnable() { public void run() { required.getInt(   "f.bad.int" ); } } ) );
-    assertEquals( 400, getReturnCode( new Runnable() { public void run() { required.getBool(  "f.bad.bool" ); } } ) );
-    assertEquals( 400, getReturnCode( new Runnable() { public void run() { required.getFloat( "f.bad.float" ); } } ) );
-    assertEquals( 400, getReturnCode( new Runnable() { public void run() { required.getInt(   "aaa" ); } } ) );
-    assertEquals( 400, getReturnCode( new Runnable() { public void run() { required.getBool(  "aaa" ); } } ) );
-    assertEquals( 400, getReturnCode( new Runnable() { public void run() { required.getFloat( "aaa" ); } } ) );
-    assertEquals( 400, getReturnCode( new Runnable() { public void run() { params.getFieldBool(  "bad", "bool" ); } } ) );
-    assertEquals( 400, getReturnCode( new Runnable() { public void run() { params.getFieldInt(   "bad", "int"  ); } } ) );
+    assertEquals( 400, getReturnCode( new Runnable() { @Override
+    public void run() { required.get( "aaaa" ); } } ) );
+    assertEquals( 400, getReturnCode( new Runnable() { @Override
+    public void run() { required.getInt(   "f.bad.int" ); } } ) );
+    assertEquals( 400, getReturnCode( new Runnable() { @Override
+    public void run() { required.getBool(  "f.bad.bool" ); } } ) );
+    assertEquals( 400, getReturnCode( new Runnable() { @Override
+    public void run() { required.getFloat( "f.bad.float" ); } } ) );
+    assertEquals( 400, getReturnCode( new Runnable() { @Override
+    public void run() { required.getInt(   "aaa" ); } } ) );
+    assertEquals( 400, getReturnCode( new Runnable() { @Override
+    public void run() { required.getBool(  "aaa" ); } } ) );
+    assertEquals( 400, getReturnCode( new Runnable() { @Override
+    public void run() { required.getFloat( "aaa" ); } } ) );
+    assertEquals( 400, getReturnCode( new Runnable() { @Override
+    public void run() { params.getFieldBool(  "bad", "bool" ); } } ) );
+    assertEquals( 400, getReturnCode( new Runnable() { @Override
+    public void run() { params.getFieldInt(   "bad", "int"  ); } } ) );
 
     // Fields with default use their parent value:
     assertEquals(

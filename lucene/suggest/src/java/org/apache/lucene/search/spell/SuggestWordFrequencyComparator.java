@@ -31,6 +31,7 @@ public class SuggestWordFrequencyComparator implements Comparator<SuggestWord> {
    */
   public SuggestWordFrequencyComparator() {}
 
+  @Override
   public int compare(SuggestWord first, SuggestWord second) {
     // first criteria: the frequency
     if (first.freq > second.freq) {

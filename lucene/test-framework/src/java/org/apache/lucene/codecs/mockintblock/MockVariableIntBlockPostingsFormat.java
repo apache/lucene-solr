@@ -91,7 +91,9 @@ public final class MockVariableIntBlockPostingsFormat extends PostingsFormat {
         @Override
         protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) {
           return new BlockReader() {
+            @Override
             public void seek(long pos) {}
+            @Override
             public int readBlock() throws IOException {
               buffer[0] = in.readVInt();
               final int count = buffer[0] <= 3 ? baseBlockSize-1 : 2*baseBlockSize-1;
