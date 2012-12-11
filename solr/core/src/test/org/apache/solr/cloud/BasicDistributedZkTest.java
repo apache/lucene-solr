@@ -19,11 +19,13 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -36,6 +38,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
+import javax.management.ObjectName;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util._TestUtil;
@@ -71,6 +77,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoMBean.Category;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrCmdDistributor.Request;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -876,8 +884,11 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     collectionInfos = new HashMap<String,List<Integer>>();
     createCollection(collectionInfos, cnt, numShards, replicationFactor, maxShardsPerNode);
     
-    // TODO: enable this check after removing the 60 second wait in it
-    //checkCollectionIsNotCreated(collectionInfos.keySet().iterator().next());
+    // TODO: REMOVE THE SLEEP IN THE METHOD CALL WHEN WE HAVE COLLECTION API 
+    // RESPONSES
+    checkCollectionIsNotCreated(collectionInfos.keySet().iterator().next());
+    
+    checkNoTwoShardsUseTheSameIndexDir();
   }
 
 
@@ -1076,8 +1087,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void checkCollectionIsNotCreated(String collectionName)
     throws Exception {
-    // TODO: this method not called because of below sleep
-    Thread.sleep(60000);
+    // TODO: REMOVE THIS SLEEP WHEN WE HAVE COLLECTION API RESPONSES
+    Thread.sleep(10000);
     assertFalse(collectionName + " not supposed to exist", getCommonCloudSolrServer().getZkStateReader().getClusterState().getCollections().contains(collectionName));
   }
   
@@ -1497,6 +1508,44 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     assertEquals(collection1Docs, found);
     
     assertEquals(collection3Docs, collection2Docs - 1);
+  }
+  
+  private void checkNoTwoShardsUseTheSameIndexDir() throws Exception {
+    Map<String, Set<String>> indexDirToShardNamesMap = new HashMap<String, Set<String>>();
+    
+    List<MBeanServer> servers = new LinkedList<MBeanServer>();
+    servers.add(ManagementFactory.getPlatformMBeanServer());
+    servers.addAll(MBeanServerFactory.findMBeanServer(null));
+    for (final MBeanServer server : servers) {
+      Set<ObjectName> mbeans = new HashSet<ObjectName>();
+      mbeans.addAll(server.queryNames(null, null));
+      for (final ObjectName mbean : mbeans) {
+        Object value;
+        Object indexDir;
+        Object name;
+        try {
+          if (((value = server.getAttribute(mbean, "category")) != null && value.toString().equals(Category.CORE.toString())) &&
+              ((value = server.getAttribute(mbean, "source")) != null && value.toString().contains(SolrCore.class.getSimpleName())) &&
+              ((indexDir = server.getAttribute(mbean, "indexDir")) != null) &&
+              ((name = server.getAttribute(mbean, "name")) != null)) {
+              if (!indexDirToShardNamesMap.containsKey(indexDir.toString())) {
+                indexDirToShardNamesMap.put(indexDir.toString(), new HashSet<String>());
+              }
+              indexDirToShardNamesMap.get(indexDir.toString()).add(name.toString());
+          }
+        } catch (Exception e) {
+          // ignore, just continue - probably a "category" or "source" attribute not found
+        }
+      }
+    }
+    
+    assertTrue("Something is broken in the assert for no shards using the same indexDir - probably something was changed in the attributes published in the MBean of " + SolrCore.class.getSimpleName(), indexDirToShardNamesMap.size() > 0);
+    for (Entry<String, Set<String>> entry : indexDirToShardNamesMap.entrySet()) {
+      if (entry.getValue().size() > 1) {
+        fail("We have shards using the same indexDir. E.g. shards " + entry.getValue().toString() + " all use indexDir " + entry.getKey());
+      }
+    }
+    
   }
   
   protected SolrInputDocument getDoc(Object... fields) throws Exception {

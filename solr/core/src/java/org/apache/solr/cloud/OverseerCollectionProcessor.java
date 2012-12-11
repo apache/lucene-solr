@@ -77,11 +77,15 @@ public class OverseerCollectionProcessor implements Runnable {
   private boolean isClosed;
   
   public OverseerCollectionProcessor(ZkStateReader zkStateReader, String myId, ShardHandler shardHandler, String adminPath) {
+    this(zkStateReader, myId, shardHandler, adminPath, Overseer.getCollectionQueue(zkStateReader.getZkClient()));
+  }
+
+  protected OverseerCollectionProcessor(ZkStateReader zkStateReader, String myId, ShardHandler shardHandler, String adminPath, DistributedQueue workQueue) {
     this.zkStateReader = zkStateReader;
     this.myId = myId;
     this.shardHandler = shardHandler;
     this.adminPath = adminPath;
-    workQueue = Overseer.getCollectionQueue(zkStateReader.getZkClient());
+    this.workQueue = workQueue;
   }
   
   @Override
@@ -130,7 +134,7 @@ public class OverseerCollectionProcessor implements Runnable {
     isClosed = true;
   }
   
-  private boolean amILeader() {
+  protected boolean amILeader() {
     try {
       ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(
           "/overseer_elect/leader", null, null, true));

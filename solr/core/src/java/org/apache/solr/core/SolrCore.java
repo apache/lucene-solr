@@ -2203,6 +2203,7 @@ public final class SolrCore implements SolrInfoMBean {
     lst.add("coreName", name==null ? "(null)" : name);
     lst.add("startTime", new Date(startTime));
     lst.add("refCount", getOpenCount());
+    lst.add("indexDir", getIndexDir());
 
     CoreDescriptor cd = getCoreDescriptor();
     if (cd != null) {
