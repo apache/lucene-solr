@@ -146,4 +146,39 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     ir.close();
     dir.close();
   }
+
+  public void testUserFailedToIndexOffsets() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    Field body = new Field("body", "", offsetsType);
+    Document doc = new Document();
+    doc.add(body);
+    
+    body.setStringValue("This is a test. Just a test highlighting from postings. Feel free to ignore.");
+    iw.addDocument(doc);
+    body.setStringValue("This test is another test. Not a good sentence. Test test test test.");
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter("body");
+    Query query = new TermQuery(new Term("body", "test"));
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(2, topDocs.totalHits);
+    try {
+      highlighter.highlight(query, searcher, topDocs, 2);
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    ir.close();
+    dir.close();
+  }
 }
