@@ -24,6 +24,7 @@ import org.apache.lucene.util.BytesRef;
 
 /** Also iterates through positions. */
 public abstract class DocsAndPositionsEnum extends DocsEnum {
+  
   /** Flag to pass to {@link TermsEnum#docsAndPositions(Bits,DocsAndPositionsEnum,int)}
    *  if you require offsets in the returned enum. */
   public static final int FLAG_OFFSETS = 0x1;

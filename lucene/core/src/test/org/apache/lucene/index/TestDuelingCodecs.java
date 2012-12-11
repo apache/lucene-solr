@@ -349,11 +349,11 @@ public class TestDuelingCodecs extends LuceneTestCase {
             true);
 
         // w/o freqs:
-        assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(null, rightDocs, 0),
+        assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs, DocsEnum.FLAG_NONE),
+            rightDocs = rightTermsEnum.docs(null, rightDocs, DocsEnum.FLAG_NONE),
             false);
-        assertDocsEnum(leftDocs = leftTermsEnum.docs(randomBits, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, 0),
+        assertDocsEnum(leftDocs = leftTermsEnum.docs(randomBits, leftDocs, DocsEnum.FLAG_NONE),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, DocsEnum.FLAG_NONE),
             false);
         
         // with freqs:
@@ -368,12 +368,12 @@ public class TestDuelingCodecs extends LuceneTestCase {
 
         // w/o freqs:
         assertDocsSkipping(leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.docs(null, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(null, rightDocs, 0),
+            leftDocs = leftTermsEnum.docs(null, leftDocs, DocsEnum.FLAG_NONE),
+            rightDocs = rightTermsEnum.docs(null, rightDocs, DocsEnum.FLAG_NONE),
             false);
         assertDocsSkipping(leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.docs(randomBits, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, 0),
+            leftDocs = leftTermsEnum.docs(randomBits, leftDocs, DocsEnum.FLAG_NONE),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, DocsEnum.FLAG_NONE),
             false);
       }
     }

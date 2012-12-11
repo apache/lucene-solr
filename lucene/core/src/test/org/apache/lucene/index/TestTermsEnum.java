@@ -332,7 +332,7 @@ public class TestTermsEnum extends LuceneTestCase {
           }
           assertEquals(expected, actual);
           assertEquals(1, te.docFreq());
-          docsEnum = _TestUtil.docs(random(), te, null, docsEnum, 0);
+          docsEnum = _TestUtil.docs(random(), te, null, docsEnum, DocsEnum.FLAG_NONE);
           final int docID = docsEnum.nextDoc();
           assertTrue(docID != DocIdSetIterator.NO_MORE_DOCS);
           assertEquals(docIDToID[docID], termToID.get(expected).intValue());
@@ -747,25 +747,25 @@ public class TestTermsEnum extends LuceneTestCase {
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
     TermsEnum te = terms.intersect(ca, null);
     assertEquals("aaa", te.next().utf8ToString());
-    assertEquals(0, te.docs(null, null, 0).nextDoc());
+    assertEquals(0, te.docs(null, null, DocsEnum.FLAG_NONE).nextDoc());
     assertEquals("bbb", te.next().utf8ToString());
-    assertEquals(1, te.docs(null, null, 0).nextDoc());
+    assertEquals(1, te.docs(null, null, DocsEnum.FLAG_NONE).nextDoc());
     assertEquals("ccc", te.next().utf8ToString());
-    assertEquals(2, te.docs(null, null, 0).nextDoc());
+    assertEquals(2, te.docs(null, null, DocsEnum.FLAG_NONE).nextDoc());
     assertNull(te.next());
 
     te = terms.intersect(ca, new BytesRef("abc"));
     assertEquals("bbb", te.next().utf8ToString());
-    assertEquals(1, te.docs(null, null, 0).nextDoc());
+    assertEquals(1, te.docs(null, null, DocsEnum.FLAG_NONE).nextDoc());
     assertEquals("ccc", te.next().utf8ToString());
-    assertEquals(2, te.docs(null, null, 0).nextDoc());
+    assertEquals(2, te.docs(null, null, DocsEnum.FLAG_NONE).nextDoc());
     assertNull(te.next());
 
     te = terms.intersect(ca, new BytesRef("aaa"));
     assertEquals("bbb", te.next().utf8ToString());
-    assertEquals(1, te.docs(null, null, 0).nextDoc());
+    assertEquals(1, te.docs(null, null, DocsEnum.FLAG_NONE).nextDoc());
     assertEquals("ccc", te.next().utf8ToString());
-    assertEquals(2, te.docs(null, null, 0).nextDoc());
+    assertEquals(2, te.docs(null, null, DocsEnum.FLAG_NONE).nextDoc());
     assertNull(te.next());
 
     r.close();
