@@ -19,14 +19,14 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.File;
 
-import org.apache.derby.iapi.services.io.FileUtil;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.FileUtils;
+import org.apache.commons.io.FileUtils;
 import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +38,8 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   protected static Logger log = LoggerFactory.getLogger(TestCoreAdmin.class);
   
   private static final String SOLR_XML = "solr.xml";
+
+  private static String tempDirProp;
   
   @Override
   protected File getSolrXml() throws Exception {
@@ -70,7 +72,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
         + System.currentTimeMillis() + "-" + "instance");
     
     File instanceDir = new File(cores.getSolrHome());
-    FileUtil.copyDirectory(instanceDir, new File(newCoreInstanceDir,
+    FileUtils.copyDirectory(instanceDir, new File(newCoreInstanceDir,
         "newcore"));
 
     CoreAdminRequest.Create req = new CoreAdminRequest.Create();
@@ -92,10 +94,21 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     
   }
   
+  @BeforeClass
+  public static void before() {
+    // wtf?
+    if (System.getProperty("tempDir") != null)
+      tempDirProp = System.getProperty("tempDir");
+  }
+  
   @After
   public void after() {
     // wtf?
-    System.setProperty("tempDir", ".");
+    if (tempDirProp != null) {
+      System.setProperty("tempDir", tempDirProp);
+    } else {
+      System.clearProperty("tempDir");
+    }
     
     System.clearProperty("solr.solr.home");
   }
