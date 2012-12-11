@@ -68,6 +68,7 @@ import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.handler.SnapPuller;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.component.DebugComponent;
 import org.apache.solr.handler.component.FacetComponent;
@@ -236,8 +237,8 @@ public final class SolrCore implements SolrInfoMBean {
     Directory dir = null;
     try {
       dir = getDirectoryFactory().get(getDataDir(), getSolrConfig().indexConfig.lockType);
-      if (dir.fileExists("index.properties")){
-        final IndexInput input = dir.openInput("index.properties", IOContext.DEFAULT);
+      if (dir.fileExists(SnapPuller.INDEX_PROPERTIES)){
+        final IndexInput input = dir.openInput(SnapPuller.INDEX_PROPERTIES, IOContext.DEFAULT);
   
         final InputStream is = new PropertiesInputStream(input);
         try {
@@ -249,7 +250,7 @@ public final class SolrCore implements SolrInfoMBean {
           }
           
         } catch (Exception e) {
-          log.error("Unable to load index.properties", e);
+          log.error("Unable to load " + SnapPuller.INDEX_PROPERTIES, e);
         } finally {
           IOUtils.closeQuietly(is);
         }

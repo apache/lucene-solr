@@ -111,7 +111,7 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  */
 public class SnapPuller {
-  private static final String INDEX_PEROPERTIES = "index.peroperties";
+  public static final String INDEX_PROPERTIES = "index.properties";
 
   private static final Logger LOG = LoggerFactory.getLogger(SnapPuller.class.getName());
 
@@ -845,33 +845,33 @@ public class SnapPuller {
     Directory dir = null;
     try {
       dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), solrCore.getSolrConfig().indexConfig.lockType);
-      if (dir.fileExists("index.properties")){
-        final IndexInput input = dir.openInput("index.properties", DirectoryFactory.IOCONTEXT_NO_CACHE);
+      if (dir.fileExists(SnapPuller.INDEX_PROPERTIES)){
+        final IndexInput input = dir.openInput(SnapPuller.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
   
         final InputStream is = new PropertiesInputStream(input);
         try {
           p.load(is);
         } catch (Exception e) {
-          LOG.error("Unable to load index.properties", e);
+          LOG.error("Unable to load " + SnapPuller.INDEX_PROPERTIES, e);
         } finally {
           IOUtils.closeQuietly(is);
         }
       }
       try {
-        dir.deleteFile("index.properties");
+        dir.deleteFile(SnapPuller.INDEX_PROPERTIES);
       } catch (IOException e) {
         // no problem
       }
-      final IndexOutput out = dir.createOutput("index.properties", DirectoryFactory.IOCONTEXT_NO_CACHE);
+      final IndexOutput out = dir.createOutput(SnapPuller.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
       p.put("index", tmpIdxDirName);
       OutputStream os = null;
       try {
         os = new PropertiesOutputStream(out);
-        p.store(os, "index properties");
-        dir.sync(Collections.singleton(INDEX_PEROPERTIES));
+        p.store(os, SnapPuller.INDEX_PROPERTIES);
+        dir.sync(Collections.singleton(INDEX_PROPERTIES));
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Unable to write index.properties", e);
+            "Unable to write " + SnapPuller.INDEX_PROPERTIES, e);
       } finally {
         IOUtils.closeQuietly(os);
       }
