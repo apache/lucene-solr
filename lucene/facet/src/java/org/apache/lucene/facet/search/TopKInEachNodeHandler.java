@@ -119,7 +119,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
     // this will grow into the returned IntermediateFacetResult
     IntToObjectMap<AACO> AACOsOfOnePartition = new IntToObjectMap<AACO>();
 
-    int partitionSize = arrays.getArraysLength(); // all partitions, except, possibly, the last,
+    int partitionSize = arrays.arrayLength; // all partitions, except, possibly, the last,
     // have the same length. Hence modulo is OK.
 
     int depth = facetRequest.getDepth();

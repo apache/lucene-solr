@@ -62,8 +62,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
 
   private static final Logger logger = Logger.getLogger(StandardFacetsAccumulator.class.getName());
 
-  protected final IntArrayAllocator intArrayAllocator;
-  protected final FloatArrayAllocator floatArrayAllocator;
+  protected final FacetArrays facetArrays;
 
   protected int partitionSize;
   protected int maxPartitions;
@@ -74,20 +73,14 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
   private Object accumulateGuard;
 
   public StandardFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader,
-      TaxonomyReader taxonomyReader, IntArrayAllocator intArrayAllocator,
-      FloatArrayAllocator floatArrayAllocator) {
-    
+      TaxonomyReader taxonomyReader, FacetArrays facetArrays) {
     super(searchParams,indexReader,taxonomyReader);
-    int realPartitionSize = intArrayAllocator == null || floatArrayAllocator == null 
-              ? PartitionsUtils.partitionSize(searchParams, taxonomyReader) : -1; // -1 if not needed.
-    this.intArrayAllocator = intArrayAllocator != null 
-        ? intArrayAllocator
-        // create a default one if null was provided
-        : new IntArrayAllocator(realPartitionSize, 1);
-    this.floatArrayAllocator = floatArrayAllocator != null 
-        ? floatArrayAllocator
-        // create a default one if null provided
-        : new FloatArrayAllocator(realPartitionSize, 1);
+    
+    if (facetArrays == null) {
+      throw new IllegalArgumentException("facetArrays cannot be null");
+    }
+    
+    this.facetArrays = facetArrays;
     // can only be computed later when docids size is known
     isUsingComplements = false;
     partitionSize = PartitionsUtils.partitionSize(searchParams, taxonomyReader);
@@ -95,10 +88,10 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
     accumulateGuard = new Object();
   }
 
-  public StandardFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader,
-      TaxonomyReader taxonomyReader) {
-    
-    this(searchParams, indexReader, taxonomyReader, null, null);
+  public StandardFacetsAccumulator(FacetSearchParams searchParams,
+      IndexReader indexReader, TaxonomyReader taxonomyReader) {
+    this(searchParams, indexReader, taxonomyReader, new FacetArrays(
+        PartitionsUtils.partitionSize(searchParams, taxonomyReader)));
   }
 
   @Override
@@ -151,8 +144,6 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
       }
 
       docids = actualDocsToAccumulate(docids);
-
-      FacetArrays facetArrays = new FacetArrays(intArrayAllocator, floatArrayAllocator);
 
       HashMap<FacetRequest, IntermediateFacetResult> fr2tmpRes = new HashMap<FacetRequest, IntermediateFacetResult>();
 
