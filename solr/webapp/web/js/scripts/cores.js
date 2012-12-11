@@ -199,6 +199,9 @@ sammy.get
 
                 $( '.maxDoc dd', index_data_element )
                   .html( core_data.index.maxDoc );
+                
+                $( '.deletedDocs dd', index_data_element )
+                  .html( core_data.index.deletedDocs );
 
                 $( '.optimized dd', index_data_element )
                   .addClass( !core_data.index.hasDeletions ? 'ico-1' : 'ico-0' );

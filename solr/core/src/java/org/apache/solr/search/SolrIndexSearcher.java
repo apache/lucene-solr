@@ -1983,6 +1983,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     lst.add("caching", cachingEnabled);
     lst.add("numDocs", reader.numDocs());
     lst.add("maxDoc", reader.maxDoc());
+    lst.add("deletedDocs", reader.maxDoc() - reader.numDocs());
     lst.add("reader", reader.toString());
     lst.add("readerDir", reader.directory());
     lst.add("indexVersion", reader.getVersion());
