@@ -116,6 +116,9 @@ New Features
 * SOLR-4028: When using ZK chroot, it would be nice if Solr would create the 
   initial path when it doesn't exist. (Tomas Fernandez Lobbe via Mark Miller)
 
+* SOLR-3948: Calculate/display deleted documents in admin interface.
+  (Shawn Heisey via Mark Miller)
+
 Optimizations
 ----------------------
 

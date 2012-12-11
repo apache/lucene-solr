@@ -547,6 +547,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     indexInfo.add("numDocs", reader.numDocs());
     indexInfo.add("maxDoc", reader.maxDoc());
+    indexInfo.add("deletedDocs", reader.maxDoc() - reader.numDocs());
 
     indexInfo.add("version", reader.getVersion());  // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
     indexInfo.add("segmentCount", reader.leaves().size());
