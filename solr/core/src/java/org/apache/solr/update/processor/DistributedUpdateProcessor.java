@@ -210,7 +210,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // Not equivalent to getLeaderProps, which does retries to find a leader.
         // Replica leader = slice.getLeader();
 
-        ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderProps(
+        ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderRetry(
             collection, shardId));
 
         String leaderNodeName = leaderProps.getCoreNodeName();
@@ -294,7 +294,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     try {
 
-      ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderProps(
+      ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(zkController.getZkStateReader().getLeaderRetry(
           collection, shardId));
 
       String leaderNodeName = leaderProps.getCoreNodeName();
@@ -774,7 +774,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         String sliceName = slice.getName();
         Replica leader;
         try {
-          leader = zkController.getZkStateReader().getLeaderProps(collection, sliceName);
+          leader = zkController.getZkStateReader().getLeaderRetry(collection, sliceName);
         } catch (InterruptedException e) {
           throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + sliceName, e);
         }
@@ -1113,7 +1113,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     public boolean checkRetry() {
       ZkCoreNodeProps leaderProps;
       try {
-        leaderProps = new ZkCoreNodeProps(zkStateReader.getLeaderProps(
+        leaderProps = new ZkCoreNodeProps(zkStateReader.getLeaderRetry(
             collection, shardId));
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();

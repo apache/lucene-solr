@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.params.CoreConnectionPNames;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.BaseDistributedSearchTestCase.RandVal;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -53,12 +52,10 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -323,7 +320,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
       // also make sure we have a leader for each shard
       for (int i = 1; i <= sliceCount; i++) {
-        zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard" + i, 10000);
+        zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + i, 10000);
       }
     }
 

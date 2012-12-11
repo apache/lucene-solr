@@ -86,7 +86,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
       // make sure we have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
-        zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard" + j, 10000);
+        zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
       }      // make sure we again have leaders for each shard
       
       waitForRecoveriesToFinish(false);
@@ -156,7 +156,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       
       // make sure we again have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
-        zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard" + j, 10000);
+        zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
       }
       
       commit();

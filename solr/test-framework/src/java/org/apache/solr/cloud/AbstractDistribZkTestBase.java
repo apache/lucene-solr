@@ -111,7 +111,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       ZkStateReader zkStateReader = ((SolrDispatchFilter) jettys.get(0)
           .getDispatchFilter().getFilter()).getCores().getZkController()
           .getZkStateReader();
-      zkStateReader.getLeaderProps("collection1", "shard" + (i + 2), 15000);
+      zkStateReader.getLeaderRetry("collection1", "shard" + (i + 2), 15000);
     }
   }
   

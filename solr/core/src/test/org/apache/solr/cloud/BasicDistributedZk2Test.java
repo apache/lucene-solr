@@ -110,7 +110,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       // TODO: bring this to it's own method?
       // try indexing to a leader that has no replicas up
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-      ZkNodeProps leaderProps = zkStateReader.getLeaderProps(
+      ZkNodeProps leaderProps = zkStateReader.getLeaderRetry(
           DEFAULT_COLLECTION, SHARD2);
       
       String nodeName = leaderProps.getStr(ZkStateReader.NODE_NAME_PROP);

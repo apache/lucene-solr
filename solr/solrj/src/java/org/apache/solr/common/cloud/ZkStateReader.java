@@ -393,7 +393,7 @@ public class ZkStateReader {
   
   public String getLeaderUrl(String collection, String shard, int timeout)
       throws InterruptedException, KeeperException {
-    ZkCoreNodeProps props = new ZkCoreNodeProps(getLeaderProps(collection,
+    ZkCoreNodeProps props = new ZkCoreNodeProps(getLeaderRetry(collection,
         shard, timeout));
     return props.getCoreUrl();
   }
@@ -401,14 +401,14 @@ public class ZkStateReader {
   /**
    * Get shard leader properties, with retry if none exist.
    */
-  public Replica getLeaderProps(String collection, String shard) throws InterruptedException {
-    return getLeaderProps(collection, shard, 1000);
+  public Replica getLeaderRetry(String collection, String shard) throws InterruptedException {
+    return getLeaderRetry(collection, shard, 1000);
   }
 
   /**
    * Get shard leader properties, with retry if none exist.
    */
-  public Replica getLeaderProps(String collection, String shard, int timeout) throws InterruptedException {
+  public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException {
     long timeoutAt = System.currentTimeMillis() + timeout;
     while (System.currentTimeMillis() < timeoutAt) {
       if (clusterState != null) {    

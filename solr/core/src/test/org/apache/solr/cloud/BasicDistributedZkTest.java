@@ -165,7 +165,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     // make sure we have leaders for each shard
     for (int j = 1; j < sliceCount; j++) {
-      zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard" + j, 10000);
+      zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
     }      // make sure we again have leaders for each shard
     
     waitForRecoveriesToFinish(false);
@@ -530,7 +530,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
     
     // ensure there is a leader
-    zkStateReader.getLeaderProps("unloadcollection", "shard1", 15000);
+    zkStateReader.getLeaderRetry("unloadcollection", "shard1", 15000);
     
     addClient = new HttpSolrServer(url2 + "/unloadcollection2");
     // add a few docs while the leader is down
@@ -572,7 +572,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       }
     }
     
-    zkStateReader.getLeaderProps("unloadcollection", "shard1", 15000);
+    zkStateReader.getLeaderRetry("unloadcollection", "shard1", 15000);
     
     
     // set this back
@@ -677,7 +677,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     ChaosMonkey.start(cloudJettys.get(0).jetty);
     cloudClient.getZkStateReader().updateClusterState(true);
     try {
-      cloudClient.getZkStateReader().getLeaderProps("multiunload2", "shard1", 30000);
+      cloudClient.getZkStateReader().getLeaderRetry("multiunload2", "shard1", 30000);
     } catch (SolrException e) {
       printLayout();
       throw e;

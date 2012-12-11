@@ -132,7 +132,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
 
   private void testThatCantForwardToLeaderFails() throws Exception {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    ZkNodeProps props = zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard1");
+    ZkNodeProps props = zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard1");
     
     chaosMonkey.stopShard("shard1");
 
