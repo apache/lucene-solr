@@ -39,6 +39,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
   // TODO: maybe pass this Logger to the template for logging from there?
 //  private static final Logger log = LoggerFactory.getLogger(VelocityResponseWriter.class);
 
+  @Override
   public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
     VelocityEngine engine = getEngine(request);  // TODO: have HTTP headers available for configuring engine
 
@@ -246,6 +247,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     return template;
   }
 
+  @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return request.getParams().get("v.contentType", "text/html;charset=UTF-8");
   }
@@ -260,6 +262,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     return "{\"result\":\"" + replaced + "\"}";
   }
 
+  @Override
   public void init(NamedList args) {
   }
 }

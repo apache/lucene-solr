@@ -176,6 +176,7 @@ public abstract class TokenStream extends AttributeSource implements Closeable {
   public void reset() throws IOException {}
   
   /** Releases resources associated with this stream. */
+  @Override
   public void close() throws IOException {}
   
 }

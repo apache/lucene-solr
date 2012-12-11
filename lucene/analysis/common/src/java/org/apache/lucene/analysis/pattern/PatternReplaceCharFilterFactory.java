@@ -58,6 +58,7 @@ public class PatternReplaceCharFilterFactory extends CharFilterFactory {
     blockDelimiters = args.get( "blockDelimiters" );
   }
 
+  @Override
   public CharFilter create(Reader input) {
     return new PatternReplaceCharFilter( p, replacement, maxBlockChars, blockDelimiters, input );
   }

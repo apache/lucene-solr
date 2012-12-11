@@ -36,6 +36,7 @@ public abstract class FieldValueMutatingUpdateProcessor
   
   
   public static final Object DELETE_VALUE_SINGLETON = new Object() {
+      @Override
       public String toString() { 
         return "!!Singleton Object Triggering Value Deletion!!";
       }
@@ -58,6 +59,7 @@ public abstract class FieldValueMutatingUpdateProcessor
    */
   protected abstract Object mutateValue(final Object src);
   
+  @Override
   protected final SolrInputField mutate(final SolrInputField src) {
     SolrInputField result = new SolrInputField(src.getName());
     for (final Object srcVal : src.getValues()) {

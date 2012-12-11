@@ -37,6 +37,7 @@ public abstract class FieldValueSubsetUpdateProcessorFactory extends FieldMutati
                                                   SolrQueryResponse rsp,
                                                   UpdateRequestProcessor next) {
     return new FieldMutatingUpdateProcessor(getSelector(), next) {
+      @Override
       protected SolrInputField mutate(final SolrInputField src) {
         if (src.getValueCount() <= 1) return src;
 

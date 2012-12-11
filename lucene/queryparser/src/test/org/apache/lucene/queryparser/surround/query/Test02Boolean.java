@@ -39,6 +39,7 @@ public class Test02Boolean extends LuceneTestCase {
     "a c e a b c"
   };
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     db1 = new SingleFieldTestDb(random(), docs1, fieldName);

@@ -72,10 +72,12 @@ public class IntToDoubleMap {
       }
     }
 
+    @Override
     public boolean hasNext() {
       return (index != 0);
     }
 
+    @Override
     public int next() {
       // Save the last index visited
       lastIndex = index;
@@ -93,6 +95,7 @@ public class IntToDoubleMap {
       return lastIndex;
     }
 
+    @Override
     public void remove() {
       IntToDoubleMap.this.remove(keys[lastIndex]);
     }
@@ -107,14 +110,17 @@ public class IntToDoubleMap {
 
     KeyIterator() { }
     
+    @Override
     public boolean hasNext() {
       return iterator.hasNext();
     }
 
+    @Override
     public int next() {
       return keys[iterator.next()];
     }
 
+    @Override
     public void remove() {
       iterator.remove();
     }
@@ -129,14 +135,17 @@ public class IntToDoubleMap {
 
     ValueIterator() { }
     
+    @Override
     public boolean hasNext() {
       return iterator.hasNext();
     }
 
+    @Override
     public double next() {
       return values[iterator.next()];
     }
 
+    @Override
     public void remove() {
       iterator.remove();
     }

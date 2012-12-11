@@ -134,12 +134,14 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
   private String healthFileName = null;
   private File healthcheck = null;
 
+  @Override
   public void init(NamedList args) {
     super.init(args);
     Object tmp = args.get(HEALTHCHECK_FILE_PARAM);
     healthFileName = (null == tmp ? null : tmp.toString());
   }
 
+  @Override
   public void inform( SolrCore core ) {
     if (null != healthFileName) {
       healthcheck = new File(healthFileName);

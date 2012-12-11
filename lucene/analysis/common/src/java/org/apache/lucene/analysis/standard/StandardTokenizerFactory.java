@@ -47,6 +47,7 @@ public class StandardTokenizerFactory extends TokenizerFactory {
                             StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
   }
 
+  @Override
   public StandardTokenizer create(Reader input) {
     StandardTokenizer tokenizer
       = new StandardTokenizer(luceneMatchVersion, input); 

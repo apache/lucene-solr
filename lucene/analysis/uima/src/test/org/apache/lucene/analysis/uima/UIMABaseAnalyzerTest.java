@@ -44,12 +44,14 @@ public class UIMABaseAnalyzerTest extends BaseTokenStreamTestCase {
 
   private UIMABaseAnalyzer analyzer;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
     analyzer = new UIMABaseAnalyzer("/uima/AggregateSentenceAE.xml", "org.apache.uima.TokenAnnotation");
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     analyzer.close();

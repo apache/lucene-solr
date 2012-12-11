@@ -131,6 +131,7 @@ public class SolrDocumentTest extends LuceneTestCase
     assertEquals( 0, doc.getFieldNames().size() );
     
     Iterable iter = new Iterable() {
+      @Override
       public Iterator iterator() {
         return c0.iterator();
       }

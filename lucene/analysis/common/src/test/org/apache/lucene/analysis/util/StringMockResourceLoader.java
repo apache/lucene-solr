@@ -29,6 +29,7 @@ public class StringMockResourceLoader implements ResourceLoader {
     this.text = text;
   }
 
+  @Override
   public <T> T newInstance(String cname, Class<T> expectedType) {
     try {
       Class<? extends T> clazz = Class.forName(cname).asSubclass(expectedType);
@@ -38,6 +39,7 @@ public class StringMockResourceLoader implements ResourceLoader {
     }
   }
 
+  @Override
   public InputStream openResource(String resource) throws IOException {
     return new ByteArrayInputStream(text.getBytes("UTF-8"));
   }

@@ -182,6 +182,7 @@ public class PathQueryNode extends QueryNodeImpl {
     return path.toString();
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escaper) {
     StringBuilder path = new StringBuilder();
     path.append("/").append(getFirstPathElement());

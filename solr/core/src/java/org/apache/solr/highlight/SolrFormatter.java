@@ -30,6 +30,7 @@ public interface SolrFormatter extends SolrInfoMBean, NamedListInitializedPlugin
    * may be specified when declaring a request handler in
    * solrconfig.xml
    */
+  @Override
   public void init(NamedList args);
 
   /**

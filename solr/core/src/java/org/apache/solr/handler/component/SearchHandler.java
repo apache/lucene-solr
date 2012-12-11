@@ -72,6 +72,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
     return names;
   }
 
+  @Override
   public void init(PluginInfo info) {
     init(info.initArgs);
     for (PluginInfo child : info.children) {
@@ -87,6 +88,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
    * then the {@link DebugComponent} will always occur last.  If this is not desired, then one must explicitly declare all components using
    * the <code>INIT_COMPONENTS</code> syntax.
    */
+  @Override
   @SuppressWarnings("unchecked")
   public void inform(SolrCore core)
   {

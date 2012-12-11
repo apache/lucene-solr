@@ -635,6 +635,7 @@ public class SpellChecker implements java.io.Closeable {
    * @throws IOException if the close operation causes an {@link IOException}
    * @throws AlreadyClosedException if the {@link SpellChecker} is already closed
    */
+  @Override
   public void close() throws IOException {
     synchronized (searcherLock) {
       ensureOpen();

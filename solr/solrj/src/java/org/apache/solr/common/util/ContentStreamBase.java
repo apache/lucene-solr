@@ -186,6 +186,7 @@ public abstract class ContentStreamBase implements ContentStream
    * Base reader implementation.  If the contentType declares a 
    * charset use it, otherwise use "utf-8".
    */
+  @Override
   public Reader getReader() throws IOException {
     String charset = getCharsetFromContentType( getContentType() );
     return charset == null 
@@ -197,6 +198,7 @@ public abstract class ContentStreamBase implements ContentStream
   // Getters / Setters for overrideable attributes
   //------------------------------------------------------------------
 
+  @Override
   public String getContentType() {
     return contentType;
   }
@@ -205,6 +207,7 @@ public abstract class ContentStreamBase implements ContentStream
     this.contentType = contentType;
   }
 
+  @Override
   public String getName() {
     return name;
   }
@@ -213,6 +216,7 @@ public abstract class ContentStreamBase implements ContentStream
     this.name = name;
   }
 
+  @Override
   public Long getSize() {
     return size;
   }
@@ -221,6 +225,7 @@ public abstract class ContentStreamBase implements ContentStream
     this.size = size;
   }
 
+  @Override
   public String getSourceInfo() {
     return sourceInfo;
   }

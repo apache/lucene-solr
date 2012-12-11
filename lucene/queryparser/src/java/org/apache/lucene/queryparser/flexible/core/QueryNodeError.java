@@ -66,6 +66,7 @@ public class QueryNodeError extends Error implements NLSException {
    * 
    * @see org.apache.lucene.messages.NLSException#getMessageObject()
    */
+  @Override
   public Message getMessageObject() {
     return this.message;
   }

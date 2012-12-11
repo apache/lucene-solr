@@ -64,14 +64,17 @@ FieldableNode {
     return clone;
   }
 
+  @Override
   public CharSequence getText() {
     return text;
   }
 
+  @Override
   public void setText(CharSequence text) {
     this.text = text;
   }
 
+  @Override
   public CharSequence getField() {
     return field;
   }
@@ -80,10 +83,12 @@ FieldableNode {
     return field.toString();
   }
 
+  @Override
   public void setField(CharSequence field) {
     this.field = field;
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     return isDefaultField(field)? "/"+text+"/": field + ":/" + text + "/";
   }

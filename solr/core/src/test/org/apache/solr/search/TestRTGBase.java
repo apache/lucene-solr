@@ -89,6 +89,7 @@ public class TestRTGBase extends SolrTestCaseJ4 {
       this.val = val;
     }
 
+    @Override
     public String toString() {
       return "{version="+version+",val="+val+"}";
     }

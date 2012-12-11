@@ -34,6 +34,7 @@ public abstract class MutableValue implements Comparable<MutableValue> {
     return exists;
   }
 
+  @Override
   public int compareTo(MutableValue other) {
     Class<? extends MutableValue> c1 = this.getClass();
     Class<? extends MutableValue> c2 = other.getClass();

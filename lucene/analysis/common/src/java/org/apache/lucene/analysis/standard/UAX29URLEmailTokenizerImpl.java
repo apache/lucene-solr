@@ -4033,6 +4033,7 @@ public final class UAX29URLEmailTokenizerImpl implements StandardTokenizerInterf
   
   public static final int URL_TYPE = UAX29URLEmailTokenizer.URL;
 
+  @Override
   public final int yychar()
   {
     return yychar;
@@ -4041,6 +4042,7 @@ public final class UAX29URLEmailTokenizerImpl implements StandardTokenizerInterf
   /**
    * Fills CharTermAttribute with the current token text.
    */
+  @Override
   public final void getText(CharTermAttribute t) {
     t.copyBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
   }
@@ -4155,6 +4157,7 @@ public final class UAX29URLEmailTokenizerImpl implements StandardTokenizerInterf
    *
    * @param reader   the new input stream 
    */
+  @Override
   public final void yyreset(java.io.Reader reader) {
     zzReader = reader;
     zzAtBOL  = true;
@@ -4214,6 +4217,7 @@ public final class UAX29URLEmailTokenizerImpl implements StandardTokenizerInterf
   /**
    * Returns the length of the matched text region.
    */
+  @Override
   public final int yylength() {
     return zzMarkedPos-zzStartRead;
   }
@@ -4269,6 +4273,7 @@ public final class UAX29URLEmailTokenizerImpl implements StandardTokenizerInterf
    * @return      the next token
    * @exception   java.io.IOException  if any I/O-Error occurs
    */
+  @Override
   public int getNextToken() throws java.io.IOException {
     int zzInput;
     int zzAction;

@@ -43,6 +43,7 @@ import java.util.regex.Pattern;
   Set<String> escapedTags = null;
   Pattern TAG_NAME_PATTERN = Pattern.compile("[^\\s,]+");
 
+  @Override
   public HTMLStripCharFilter create(Reader input) {
     HTMLStripCharFilter charFilter;
     if (null == escapedTags) {

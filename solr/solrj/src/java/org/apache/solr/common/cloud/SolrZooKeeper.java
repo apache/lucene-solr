@@ -52,6 +52,7 @@ public class SolrZooKeeper extends ZooKeeper {
    */
   public void pauseCnxn(final long ms) {
     final Thread t = new Thread() {
+      @Override
       public void run() {
         try {
           final ClientCnxn cnxn = getConnection();

@@ -379,6 +379,7 @@ public abstract class MergePolicy implements java.io.Closeable, Cloneable {
   /**
    * Release all resources for the policy.
    */
+  @Override
   public abstract void close();
   
   

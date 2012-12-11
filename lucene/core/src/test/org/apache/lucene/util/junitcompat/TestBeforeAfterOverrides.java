@@ -37,6 +37,7 @@ public class TestBeforeAfterOverrides extends WithNestedTests {
   }
   public static class Before2 extends Before1 {}
   public static class Before3 extends Before2 {
+    @Override
     @Before
     public void before() {}
   }

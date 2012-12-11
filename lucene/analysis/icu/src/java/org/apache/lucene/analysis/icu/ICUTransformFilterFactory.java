@@ -64,6 +64,7 @@ public class ICUTransformFilterFactory extends TokenFilterFactory implements Mul
     transliterator = Transliterator.getInstance(id, dir);
   }
 
+  @Override
   public TokenStream create(TokenStream input) {
     return new ICUTransformFilter(input, transliterator);
   }

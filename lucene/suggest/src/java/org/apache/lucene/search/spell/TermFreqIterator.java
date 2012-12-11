@@ -46,10 +46,12 @@ public interface TermFreqIterator extends BytesRefIterator {
       this.wrapped = wrapped;
     }
 
+    @Override
     public long weight() {
       return 1;
     }
 
+    @Override
     public BytesRef next() throws IOException {
       return wrapped.next();
     }

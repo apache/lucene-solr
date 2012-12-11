@@ -44,26 +44,33 @@ public abstract class HighlightingPluginBase implements SolrInfoMBean
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
+  @Override
   public String getName() {
     return this.getClass().getName();
   }
 
+  @Override
   public abstract String getDescription();
+  @Override
   public abstract String getSource();
   
+  @Override
   public String getVersion() {
     return getClass().getPackage().getSpecificationVersion();
   }
   
+  @Override
   public Category getCategory()
   {
     return Category.HIGHLIGHTING;
   }
 
+  @Override
   public URL[] getDocs() {
     return null;  // this can be overridden, but not required
   }
 
+  @Override
   public NamedList getStatistics() {
     NamedList<Long> lst = new SimpleOrderedMap<Long>();
     lst.add("requests", numRequests);

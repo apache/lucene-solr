@@ -46,6 +46,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
   private Automaton termsAutomaton; // automata of the same
   int numIterations;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     // we generate aweful regexps: good for testing.
@@ -76,6 +77,7 @@ public class TestTermsEnum2 extends LuceneTestCase {
     writer.close();
   }
   
+  @Override
   public void tearDown() throws Exception {
     reader.close();
     dir.close();

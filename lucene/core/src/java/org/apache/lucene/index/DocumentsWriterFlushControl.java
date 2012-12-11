@@ -384,14 +384,17 @@ final class DocumentsWriterFlushControl  {
     return new Iterator<ThreadState>() {
       int i = 0;
 
+      @Override
       public boolean hasNext() {
         return i < upto;
       }
 
+      @Override
       public ThreadState next() {
         return perThreadPool.getThreadState(i++);
       }
 
+      @Override
       public void remove() {
         throw new UnsupportedOperationException("remove() not supported.");
       }

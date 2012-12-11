@@ -220,6 +220,7 @@ public abstract class FSDirectory extends Directory {
 
     // Exclude subdirs
     String[] result = dir.list(new FilenameFilter() {
+        @Override
         public boolean accept(File dir, String file) {
           return !new File(dir, file).isDirectory();
         }

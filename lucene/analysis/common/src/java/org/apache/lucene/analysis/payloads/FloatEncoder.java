@@ -27,6 +27,7 @@ import org.apache.lucene.util.BytesRef;
  **/
 public class FloatEncoder extends AbstractEncoder implements PayloadEncoder {
 
+  @Override
   public BytesRef encode(char[] buffer, int offset, int length) {
     float payload = Float.parseFloat(new String(buffer, offset, length));//TODO: improve this so that we don't have to new Strings
     byte[] bytes = PayloadHelper.encodeFloat(payload);

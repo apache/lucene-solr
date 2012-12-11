@@ -67,27 +67,33 @@ public class BinaryRequestWriter extends RequestWriter {
     new JavaBinUpdateRequestCodec().marshal(request, baos);
     
     return new ContentStream() {
+      @Override
       public String getName() {
         return null;
       }
 
+      @Override
       public String getSourceInfo() {
         return "javabin";
       }
 
+      @Override
       public String getContentType() {
         return "application/javabin";
       }
 
+      @Override
       public Long getSize() // size if we know it, otherwise null
       {
         return new Long(baos.size());
       }
 
+      @Override
       public InputStream getStream() {
         return new ByteArrayInputStream(baos.getbuf(), 0, baos.size());
       }
 
+      @Override
       public Reader getReader() {
         throw new RuntimeException("No reader available . this is a binarystream");
       }

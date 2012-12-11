@@ -353,6 +353,7 @@ final class SloppyPhraseScorer extends Scorer {
   private void sortRptGroups(ArrayList<ArrayList<PhrasePositions>> rgs) {
     rptGroups = new PhrasePositions[rgs.size()][];
     Comparator<PhrasePositions> cmprtr = new Comparator<PhrasePositions>() {
+      @Override
       public int compare(PhrasePositions pp1, PhrasePositions pp2) {
         return pp1.offset - pp2.offset;
       }

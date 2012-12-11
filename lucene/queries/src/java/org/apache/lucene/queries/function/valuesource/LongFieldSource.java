@@ -145,6 +145,7 @@ public class LongFieldSource extends FieldCacheSource {
     return new MutableValueLong();  
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o.getClass() != this.getClass()) return false;
     LongFieldSource other = (LongFieldSource) o;
@@ -153,6 +154,7 @@ public class LongFieldSource extends FieldCacheSource {
           this.parser.getClass() == other.parser.getClass());
   }
 
+  @Override
   public int hashCode() {
     int h = parser == null ? this.getClass().hashCode() : parser.getClass().hashCode();
     h += super.hashCode();

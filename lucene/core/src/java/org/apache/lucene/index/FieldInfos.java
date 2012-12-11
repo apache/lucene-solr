@@ -131,6 +131,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
    * ordered by ascending field number
    */
   // TODO: what happens if in fact a different order is used?
+  @Override
   public Iterator<FieldInfo> iterator() {
     return values.iterator();
   }

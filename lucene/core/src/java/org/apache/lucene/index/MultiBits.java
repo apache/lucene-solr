@@ -48,6 +48,7 @@ final class MultiBits implements Bits {
     return true;
   }
 
+  @Override
   public boolean get(int doc) {
     final int reader = ReaderUtil.subIndex(doc, starts);
     assert reader != -1;
@@ -109,6 +110,7 @@ final class MultiBits implements Bits {
     return subResult;
   }
 
+  @Override
   public int length() {
     return starts[starts.length-1];
   }

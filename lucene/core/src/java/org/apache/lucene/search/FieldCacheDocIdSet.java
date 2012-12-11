@@ -57,18 +57,22 @@ public abstract class FieldCacheDocIdSet extends DocIdSet {
   @Override
   public final Bits bits() {
     return (acceptDocs == null) ? new Bits() {
+      @Override
       public boolean get(int docid) {
         return matchDoc(docid);
       }
 
+      @Override
       public int length() {
         return maxDoc;
       }
     } : new Bits() {
+      @Override
       public boolean get(int docid) {
         return matchDoc(docid) && acceptDocs.get(docid);
       }
 
+      @Override
       public int length() {
         return maxDoc;
       }

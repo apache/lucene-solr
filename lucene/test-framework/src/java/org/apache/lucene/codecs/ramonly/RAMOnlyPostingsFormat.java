@@ -63,6 +63,7 @@ public final class RAMOnlyPostingsFormat extends PostingsFormat {
   // sorted, and basic things still work -- this comparator
   // sorts in reversed unicode code point order:
   private static final Comparator<BytesRef> reverseUnicodeComparator = new Comparator<BytesRef>() {
+      @Override
       public int compare(BytesRef t1, BytesRef t2) {
         byte[] b1 = t1.bytes;
         byte[] b2 = t2.bytes;

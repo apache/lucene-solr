@@ -98,6 +98,7 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     //query("q", "*:*", "sort", "id desc");
   }
   
+  @Override
   protected void indexDoc(SolrInputDocument doc) throws IOException,
       SolrServerException {
     controlClient.add(doc);
@@ -123,6 +124,7 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
   }
   
   // skip the randoms - they can deadlock...
+  @Override
   protected void indexr(Object... fields) throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     addFields(doc, fields);

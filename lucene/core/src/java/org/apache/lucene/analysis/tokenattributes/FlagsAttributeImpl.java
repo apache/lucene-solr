@@ -26,10 +26,12 @@ public class FlagsAttributeImpl extends AttributeImpl implements FlagsAttribute,
   /** Initialize this attribute with no bits set */
   public FlagsAttributeImpl() {}
   
+  @Override
   public int getFlags() {
     return flags;
   }
 
+  @Override
   public void setFlags(int flags) {
     this.flags = flags;
   }

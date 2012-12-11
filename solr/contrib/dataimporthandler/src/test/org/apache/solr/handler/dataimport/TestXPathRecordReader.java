@@ -139,6 +139,7 @@ public class TestXPathRecordReader extends AbstractDataImportHandlerTestCase {
     final List<Map<String, Object>> a = new ArrayList<Map<String, Object>>();
     final List<Map<String, Object>> x = new ArrayList<Map<String, Object>>();
     rr.streamRecords(new StringReader(xml), new XPathRecordReader.Handler() {
+      @Override
       public void handle(Map<String, Object> record, String xpath) {
         if (record == null) return;
         if (xpath.equals("/root/a")) a.add(record);

@@ -39,6 +39,7 @@ public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
    * when declaring an indexReaderFactory in solrconfig.xml
    *
    */
+  @Override
   public void init(NamedList args) {
     Integer v = (Integer)args.get("setTermIndexDivisor");
     if (v != null) {

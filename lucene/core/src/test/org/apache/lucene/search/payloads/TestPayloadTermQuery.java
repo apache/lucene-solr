@@ -295,10 +295,12 @@ public class TestPayloadTermQuery extends LuceneTestCase {
 
   static class BoostingSimilarity extends DefaultSimilarity {
 
+    @Override
     public float queryNorm(float sumOfSquaredWeights) {
       return 1;
     }
     
+    @Override
     public float coord(int overlap, int maxOverlap) {
       return 1;
     }

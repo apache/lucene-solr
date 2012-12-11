@@ -38,6 +38,7 @@ public class NoOpDistributingUpdateProcessorFactory
 
   /** Returns null 
    */
+  @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, 
                                             SolrQueryResponse rsp, 
                                             UpdateRequestProcessor next ) {

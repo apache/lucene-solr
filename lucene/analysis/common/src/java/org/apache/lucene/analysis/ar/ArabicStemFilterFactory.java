@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 public class ArabicStemFilterFactory extends TokenFilterFactory {
 
 
+  @Override
   public ArabicStemFilter create(TokenStream input) {
     return new ArabicStemFilter(input);
   }

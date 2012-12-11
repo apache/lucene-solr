@@ -453,6 +453,7 @@ public class RandomIndexWriter implements Closeable {
    * Close this writer.
    * @see IndexWriter#close()
    */
+  @Override
   public void close() throws IOException {
     // if someone isn't using getReader() API, we want to be sure to
     // forceMerge since presumably they might open a reader on the dir.

@@ -64,6 +64,7 @@ public class DefaultEnhancementsIndexingParams extends
     addCategoryEnhancements(enhancements);
   }
 
+  @Override
   public void addCategoryEnhancements(CategoryEnhancement... enhancements) {
     if (enhancedCategories == null) {
       enhancedCategories = new ArrayList<CategoryEnhancement>();
@@ -73,6 +74,7 @@ public class DefaultEnhancementsIndexingParams extends
     }
   }
 
+  @Override
   public List<CategoryEnhancement> getCategoryEnhancements() {
     if (enhancedCategories == null || enhancedCategories.isEmpty()) {
       return null;
@@ -80,6 +82,7 @@ public class DefaultEnhancementsIndexingParams extends
     return enhancedCategories;
   }
 
+  @Override
   public List<Class<? extends CategoryProperty>> getRetainableProperties() {
     if (enhancedCategories == null) {
       return null;

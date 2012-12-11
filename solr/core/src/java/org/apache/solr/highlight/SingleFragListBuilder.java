@@ -23,6 +23,7 @@ import org.apache.solr.common.params.SolrParams;
 public class SingleFragListBuilder extends HighlightingPluginBase implements
     SolrFragListBuilder {
 
+  @Override
   public FragListBuilder getFragListBuilder(SolrParams params) {
     // NOTE: This class (currently) makes no use of params
     // If that ever changes, it should wrap them with defaults...

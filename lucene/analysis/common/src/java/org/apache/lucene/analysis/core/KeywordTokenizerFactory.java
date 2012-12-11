@@ -33,6 +33,7 @@ import java.io.Reader;
  *
  */
 public class KeywordTokenizerFactory extends TokenizerFactory {
+  @Override
   public KeywordTokenizer create(Reader input) {
     return new KeywordTokenizer(input);
   }

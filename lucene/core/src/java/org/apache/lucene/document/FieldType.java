@@ -102,6 +102,7 @@ public class FieldType implements IndexableFieldType {
    * The default is <code>false</code>.
    * @see #setIndexed(boolean)
    */
+  @Override
   public boolean indexed() {
     return this.indexed;
   }
@@ -124,6 +125,7 @@ public class FieldType implements IndexableFieldType {
    * The default is <code>false</code>.
    * @see #setStored(boolean)
    */
+  @Override
   public boolean stored() {
     return this.stored;
   }
@@ -146,6 +148,7 @@ public class FieldType implements IndexableFieldType {
    * The default is <code>true</code>.
    * @see #setTokenized(boolean)
    */
+  @Override
   public boolean tokenized() {
     return this.tokenized;
   }
@@ -169,6 +172,7 @@ public class FieldType implements IndexableFieldType {
    * The default is <code>false</code>. 
    * @see #setStoreTermVectors(boolean)
    */
+  @Override
   public boolean storeTermVectors() {
     return this.storeTermVectors;
   }
@@ -192,6 +196,7 @@ public class FieldType implements IndexableFieldType {
    * The default is <code>false</code>.
    * @see #setStoreTermVectorOffsets(boolean)
    */
+  @Override
   public boolean storeTermVectorOffsets() {
     return this.storeTermVectorOffsets;
   }
@@ -215,6 +220,7 @@ public class FieldType implements IndexableFieldType {
    * The default is <code>false</code>.
    * @see #setStoreTermVectorPositions(boolean)
    */
+  @Override
   public boolean storeTermVectorPositions() {
     return this.storeTermVectorPositions;
   }
@@ -238,6 +244,7 @@ public class FieldType implements IndexableFieldType {
    * The default is <code>false</code>.
    * @see #setStoreTermVectorPayloads(boolean) 
    */
+  @Override
   public boolean storeTermVectorPayloads() {
     return this.storeTermVectorPayloads;
   }
@@ -261,6 +268,7 @@ public class FieldType implements IndexableFieldType {
    * The default is <code>false</code>.
    * @see #setOmitNorms(boolean)
    */
+  @Override
   public boolean omitNorms() {
     return this.omitNorms;
   }
@@ -283,6 +291,7 @@ public class FieldType implements IndexableFieldType {
    * The default is {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS}.
    * @see #setIndexOptions(org.apache.lucene.index.FieldInfo.IndexOptions)
    */
+  @Override
   public IndexOptions indexOptions() {
     return this.indexOptions;
   }

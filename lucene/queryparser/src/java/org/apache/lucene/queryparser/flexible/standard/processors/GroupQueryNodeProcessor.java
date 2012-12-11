@@ -65,6 +65,7 @@ public class GroupQueryNodeProcessor implements QueryNodeProcessor {
     // empty constructor
   }
 
+  @Override
   public QueryNode process(QueryNode queryTree) throws QueryNodeException {
     Operator defaultOperator = getQueryConfigHandler().get(ConfigurationKeys.DEFAULT_OPERATOR);
     
@@ -208,10 +209,12 @@ public class GroupQueryNodeProcessor implements QueryNodeProcessor {
 
   }
 
+  @Override
   public QueryConfigHandler getQueryConfigHandler() {
     return this.queryConfig;
   }
 
+  @Override
   public void setQueryConfigHandler(QueryConfigHandler queryConfigHandler) {
     this.queryConfig = queryConfigHandler;
   }

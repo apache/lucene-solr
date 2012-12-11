@@ -100,10 +100,12 @@ public class Test2BTerms extends LuceneTestCase {
     }
 
     private final static class MyTermAttributeImpl extends AttributeImpl implements TermToBytesRefAttribute {
+      @Override
       public int fillBytesRef() {
         return bytes.hashCode();
       }
       
+      @Override
       public BytesRef getBytesRef() {
         return bytes;
       }

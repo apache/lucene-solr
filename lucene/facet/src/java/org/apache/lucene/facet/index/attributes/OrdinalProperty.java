@@ -63,6 +63,7 @@ public class OrdinalProperty implements CategoryProperty {
     return this.ordinal;
   }
 
+  @Override
   public void merge(CategoryProperty other) {
     throw new UnsupportedOperationException(
     "Merging ordinal attributes is prohibited");

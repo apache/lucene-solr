@@ -414,6 +414,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
    * case characters, in this case a class for letter 'a', for example, should
    * be defined as "aA", the first character being the normalization char.
    */
+  @Override
   public void addClass(String chargroup) {
     if (chargroup.length() > 0) {
       char equivChar = chargroup.charAt(0);
@@ -435,6 +436,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
    * @param hyphenatedword a vector of alternating strings and
    *        {@link Hyphen hyphen} objects.
    */
+  @Override
   public void addException(String word, ArrayList<Object> hyphenatedword) {
     stoplist.put(word, hyphenatedword);
   }
@@ -449,6 +451,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer {
    *        priority of hyphenating at a given point within the pattern. It
    *        should contain only digit characters. (i.e. '0' to '9').
    */
+  @Override
   public void addPattern(String pattern, String ivalue) {
     int k = ivalues.find(ivalue);
     if (k <= 0) {

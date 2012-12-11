@@ -26,6 +26,7 @@ import org.apache.solr.common.params.SolrParams;
  */
 public class HtmlFormatter extends HighlightingPluginBase implements SolrFormatter 
 {
+  @Override
   public Formatter getFormatter(String fieldName, SolrParams params ) 
   {
     numRequests++;

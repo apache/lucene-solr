@@ -35,6 +35,7 @@ public class StoredFieldsShardResponseProcessor implements ShardResponseProcesso
   /**
    * {@inheritDoc}
    */
+  @Override
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
     boolean returnScores = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0;
     ShardResponse srsp = shardRequest.responses.get(0);

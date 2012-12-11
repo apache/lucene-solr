@@ -637,6 +637,7 @@ class DocumentsWriterPerThread {
     }
     
     /* Allocate another int[] from the shared pool */
+    @Override
     public int[] getIntBlock() {
       int[] b = new int[IntBlockPool.INT_BLOCK_SIZE];
       bytesUsed.addAndGet(IntBlockPool.INT_BLOCK_SIZE
@@ -644,6 +645,7 @@ class DocumentsWriterPerThread {
       return b;
     }
     
+    @Override
     public void recycleIntBlocks(int[][] blocks, int offset, int length) {
       bytesUsed.addAndGet(-(length * (IntBlockPool.INT_BLOCK_SIZE * RamUsageEstimator.NUM_BYTES_INT)));
     }

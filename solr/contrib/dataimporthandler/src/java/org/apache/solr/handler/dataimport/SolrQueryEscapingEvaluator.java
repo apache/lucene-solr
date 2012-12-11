@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.util.ClientUtils;
  */
 
 public class SolrQueryEscapingEvaluator extends Evaluator {
+  @Override
   public String evaluate(String expression, Context context) {
     List<Object> l = parseParams(expression, context.getVariableResolver());
     if (l.size() != 1) {

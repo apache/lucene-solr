@@ -148,6 +148,7 @@ public class CategoryContainer implements Iterable<CategoryAttribute>, Serializa
     return map.get(categoryPath);
   }
 
+  @Override
   public Iterator<CategoryAttribute> iterator() {
     return map.values().iterator();
   }

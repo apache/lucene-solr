@@ -525,6 +525,7 @@ public class SolrCmdDistributor {
       return true;
     }
 
+    @Override
     public ZkCoreNodeProps getNodeProps() {
       return nodeProps;
     }

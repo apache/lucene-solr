@@ -119,6 +119,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
     this.needMaxScore = needMaxScore;
   }
 
+  @Override
   public List<Collector> create() throws IOException {
     if (firstPhaseGroups.isEmpty()) {
       return Collections.emptyList();
@@ -132,6 +133,7 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
     return collectors;
   }
 
+  @Override
   @SuppressWarnings("unchecked")
   public TopGroups<BytesRef> result() {
     if (firstPhaseGroups.isEmpty()) {
@@ -141,14 +143,17 @@ public class TopGroupsFieldCommand implements Command<TopGroups<BytesRef>> {
     return secondPassCollector.getTopGroups(0);
   }
 
+  @Override
   public String getKey() {
     return field.getName();
   }
 
+  @Override
   public Sort getGroupSort() {
     return groupSort;
   }
 
+  @Override
   public Sort getSortWithinGroup() {
     return sortWithinGroup;
   }

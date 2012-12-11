@@ -197,6 +197,7 @@ public class CloneFieldUpdateProcessorFactory
     super.init(args);
   }
 
+  @Override
   public void inform(final SolrCore core) {
     
     final IndexSchema schema = core.getSchema();

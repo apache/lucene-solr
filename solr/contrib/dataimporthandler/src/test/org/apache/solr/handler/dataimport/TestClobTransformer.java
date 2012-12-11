@@ -46,6 +46,7 @@ public class TestClobTransformer extends AbstractDataImportHandlerTestCase {
     Transformer t = new ClobTransformer();
     Map<String, Object> row = new HashMap<String, Object>();
     Clob clob = (Clob) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[]{Clob.class}, new InvocationHandler() {
+      @Override
       public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         if (method.getName().equals("getCharacterStream")) {
           return new StringReader("hello!");

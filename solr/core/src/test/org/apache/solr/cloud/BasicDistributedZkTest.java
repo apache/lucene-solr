@@ -1383,6 +1383,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       List<SolrServer> collectionClients, final String baseUrl, final int num,
       final String shardId) {
     Callable call = new Callable() {
+      @Override
       public Object call() {
         HttpSolrServer server;
         try {
@@ -1507,6 +1508,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
                   - DEFAULT_COLLECTION.length() -1);
       final int frozeUnique = unique;
       Callable call = new Callable() {
+        @Override
         public Object call() {
           HttpSolrServer server;
           try {

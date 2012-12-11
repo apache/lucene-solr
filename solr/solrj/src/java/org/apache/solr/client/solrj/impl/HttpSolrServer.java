@@ -563,16 +563,19 @@ public class HttpSolrServer extends SolrServer {
     UpdateRequest req = new UpdateRequest();
     req.setDocIterator(new Iterator<SolrInputDocument>() {
       
+      @Override
       public boolean hasNext() {
         return beanIterator.hasNext();
       }
       
+      @Override
       public SolrInputDocument next() {
         Object o = beanIterator.next();
         if (o == null) return null;
         return getBinder().toSolrInputDocument(o);
       }
       
+      @Override
       public void remove() {
         beanIterator.remove();
       }

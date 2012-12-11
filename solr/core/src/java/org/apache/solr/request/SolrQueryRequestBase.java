@@ -52,32 +52,38 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
     this.params = this.origParams = params;
   }
 
+  @Override
   public Map<Object,Object> getContext() {
     // SolrQueryRequest as a whole isn't thread safe, and this isn't either.
     if (context==null) context = new HashMap<Object,Object>();
     return context;
   }
 
+  @Override
   public SolrParams getParams() {
     return params;
   }
 
+  @Override
   public SolrParams getOriginalParams() {
     return origParams;
   }
 
+  @Override
   public void setParams(SolrParams params) {
     this.params = params;
   }
 
   protected final long startTime=System.currentTimeMillis();
   // Get the start time of this request in milliseconds
+  @Override
   public long getStartTime() {
     return startTime;
   }
 
   // The index searcher associated with this request
   protected RefCounted<SolrIndexSearcher> searcherHolder;
+  @Override
   public SolrIndexSearcher getSearcher() {
     if(core == null) return null;//a request for a core admin will no have a core
     // should this reach out and get a searcher from the core singleton, or
@@ -92,11 +98,13 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   }
 
   // The solr core (coordinator, etc) associated with this request
+  @Override
   public SolrCore getCore() {
     return core;
   }
 
   // The index schema associated with this request
+  @Override
   public IndexSchema getSchema() {
     //a request for a core admin will no have a core
     return core == null? null: core.getSchema();
@@ -106,6 +114,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
    * Frees resources associated with this request, this method <b>must</b>
    * be called when the object is no longer in use.
    */
+  @Override
   public void close() {
     if (searcherHolder!=null) {
       searcherHolder.decref();
@@ -115,6 +124,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
 
   /** A Collection of ContentStreams passed to the request
    */
+  @Override
   public Iterable<ContentStream> getContentStreams() {
     return streams; 
   }
@@ -123,6 +133,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
     streams = s; 
   }
 
+  @Override
   public String getParamString() {
     return origParams.toString();
   }

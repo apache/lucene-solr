@@ -38,6 +38,7 @@ public class ElisionFilterFactory extends TokenFilterFactory implements Resource
 
   private CharArraySet articles;
 
+  @Override
   public void inform(ResourceLoader loader) throws IOException {
     String articlesFile = args.get("articles");
     boolean ignoreCase = getBoolean("ignoreCase", false);
@@ -50,6 +51,7 @@ public class ElisionFilterFactory extends TokenFilterFactory implements Resource
     }
   }
 
+  @Override
   public ElisionFilter create(TokenStream input) {
     return new ElisionFilter(input, articles);
   }

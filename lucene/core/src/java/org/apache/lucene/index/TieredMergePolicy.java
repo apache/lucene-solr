@@ -269,6 +269,7 @@ public class TieredMergePolicy extends MergePolicy {
   }
 
   private class SegmentByteSizeDescending implements Comparator<SegmentInfoPerCommit> {
+    @Override
     public int compare(SegmentInfoPerCommit o1, SegmentInfoPerCommit o2) {
       try {
         final long sz1 = size(o1);

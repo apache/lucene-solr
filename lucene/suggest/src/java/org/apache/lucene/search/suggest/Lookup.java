@@ -56,6 +56,7 @@ public abstract class Lookup {
     }
 
     /** Compare alphabetically. */
+    @Override
     public int compareTo(LookupResult o) {
       return CHARSEQUENCE_COMPARATOR.compare(key, o.key);
     }

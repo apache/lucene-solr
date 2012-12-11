@@ -111,6 +111,7 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
    *  String -> String. */
   public abstract Map<String,String> getUserData() throws IOException;
   
+  @Override
   public int compareTo(IndexCommit commit) {
     if (getDirectory() != commit.getDirectory()) {
       throw new UnsupportedOperationException("cannot compare IndexCommits from different Directory instances");

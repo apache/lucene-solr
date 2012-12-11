@@ -39,6 +39,7 @@ public class TestExceptionInBeforeClassHooks extends WithNestedTests {
     @BeforeClass
     public static void beforeClass() throws Exception {
       Thread t = new Thread() {
+        @Override
         public void run() {
           throw new RuntimeException("foobar");
         }
@@ -53,6 +54,7 @@ public class TestExceptionInBeforeClassHooks extends WithNestedTests {
   public static class Nested2 extends WithNestedTests.AbstractNestedTest {
     public void test1() throws Exception {
       Thread t = new Thread() {
+        @Override
         public void run() {
           throw new RuntimeException("foobar1");
         }
@@ -63,6 +65,7 @@ public class TestExceptionInBeforeClassHooks extends WithNestedTests {
 
     public void test2() throws Exception {
       Thread t = new Thread() {
+        @Override
         public void run() {
           throw new RuntimeException("foobar2");
         }
@@ -73,6 +76,7 @@ public class TestExceptionInBeforeClassHooks extends WithNestedTests {
     
     public void test3() throws Exception {
       Thread t = new Thread() {
+        @Override
         public void run() {
           throw new RuntimeException("foobar3");
         }
@@ -86,6 +90,7 @@ public class TestExceptionInBeforeClassHooks extends WithNestedTests {
     @Before
     public void runBeforeTest() throws Exception {
       Thread t = new Thread() {
+        @Override
         public void run() {
           throw new RuntimeException("foobar");
         }

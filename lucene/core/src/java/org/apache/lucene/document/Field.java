@@ -264,6 +264,7 @@ public class Field implements IndexableField {
    * binary value is used. Exactly one of stringValue(), readerValue(), and
    * getBinaryValue() must be set.
    */
+  @Override
   public String stringValue() {
     if (fieldsData instanceof String || fieldsData instanceof Number) {
       return fieldsData.toString();
@@ -277,6 +278,7 @@ public class Field implements IndexableField {
    * binary value is used. Exactly one of stringValue(), readerValue(), and
    * getBinaryValue() must be set.
    */
+  @Override
   public Reader readerValue() {
     return fieldsData instanceof Reader ? (Reader) fieldsData : null;
   }
@@ -429,6 +431,7 @@ public class Field implements IndexableField {
     this.tokenStream = tokenStream;
   }
   
+  @Override
   public String name() {
     return name;
   }
@@ -439,6 +442,7 @@ public class Field implements IndexableField {
    * The default value is <code>1.0f</code> (no boost).
    * @see #setBoost(float)
    */
+  @Override
   public float boost() {
     return boost;
   }
@@ -458,6 +462,7 @@ public class Field implements IndexableField {
     this.boost = boost;
   }
 
+  @Override
   public Number numericValue() {
     if (fieldsData instanceof Number) {
       return (Number) fieldsData;
@@ -466,6 +471,7 @@ public class Field implements IndexableField {
     }
   }
 
+  @Override
   public BytesRef binaryValue() {
     if (fieldsData instanceof BytesRef) {
       return (BytesRef) fieldsData;
@@ -492,10 +498,12 @@ public class Field implements IndexableField {
   }
   
   /** Returns the {@link FieldType} for this field. */
+  @Override
   public FieldType fieldType() {
     return type;
   }
 
+  @Override
   public TokenStream tokenStream(Analyzer analyzer) throws IOException {
     if (!fieldType().indexed()) {
       return null;

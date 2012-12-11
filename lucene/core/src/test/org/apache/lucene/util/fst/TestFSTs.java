@@ -1187,6 +1187,7 @@ public class TestFSTs extends LuceneTestCase {
   }
   
   static final Comparator<Long> minLongComparator = new Comparator<Long> () {
+    @Override
     public int compare(Long left, Long right) {
       return left.compareTo(right);
     }  
@@ -1225,6 +1226,7 @@ public class TestFSTs extends LuceneTestCase {
   
   // compares just the weight side of the pair
   static final Comparator<Pair<Long,Long>> minPairWeightComparator = new Comparator<Pair<Long,Long>> () {
+    @Override
     public int compare(Pair<Long,Long> left, Pair<Long,Long> right) {
       return left.output1.compareTo(right.output1);
     }  

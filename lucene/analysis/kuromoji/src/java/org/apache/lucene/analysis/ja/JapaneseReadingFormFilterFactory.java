@@ -45,6 +45,7 @@ public class JapaneseReadingFormFilterFactory extends TokenFilterFactory {
     useRomaji = getBoolean(ROMAJI_PARAM, false);
   }
 
+  @Override
   public TokenStream create(TokenStream input) {
     return new JapaneseReadingFormFilter(input, useRomaji);
   }

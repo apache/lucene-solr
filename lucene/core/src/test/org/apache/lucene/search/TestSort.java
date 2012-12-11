@@ -598,6 +598,7 @@ public class TestSort extends LuceneTestCase {
 
 
     sort.setSort (new SortField ("parser", new FieldCache.IntParser(){
+      @Override
       public final int parseInt(final BytesRef term) {
         return (term.bytes[term.offset]-'A') * 123456;
       }
@@ -607,6 +608,7 @@ public class TestSort extends LuceneTestCase {
     fc.purgeAllCaches();
 
     sort.setSort (new SortField ("parser", new FieldCache.FloatParser(){
+      @Override
       public final float parseFloat(final BytesRef term) {
         return (float) Math.sqrt( term.bytes[term.offset] );
       }
@@ -616,6 +618,7 @@ public class TestSort extends LuceneTestCase {
     fc.purgeAllCaches();
 
     sort.setSort (new SortField ("parser", new FieldCache.LongParser(){
+      @Override
       public final long parseLong(final BytesRef term) {
         return (term.bytes[term.offset]-'A') * 1234567890L;
       }
@@ -625,6 +628,7 @@ public class TestSort extends LuceneTestCase {
     fc.purgeAllCaches();
 
     sort.setSort (new SortField ("parser", new FieldCache.DoubleParser(){
+      @Override
       public final double parseDouble(final BytesRef term) {
         return Math.pow( term.bytes[term.offset], (term.bytes[term.offset]-'A') );
       }
@@ -634,6 +638,7 @@ public class TestSort extends LuceneTestCase {
     fc.purgeAllCaches();
 
     sort.setSort (new SortField ("parser", new FieldCache.ByteParser(){
+      @Override
       public final byte parseByte(final BytesRef term) {
         return (byte) (term.bytes[term.offset]-'A');
       }
@@ -643,6 +648,7 @@ public class TestSort extends LuceneTestCase {
     fc.purgeAllCaches();
 
     sort.setSort (new SortField ("parser", new FieldCache.ShortParser(){
+      @Override
       public final short parseShort(final BytesRef term) {
         return (short) (term.bytes[term.offset]-'A');
       }
@@ -719,6 +725,7 @@ public class TestSort extends LuceneTestCase {
     }
 
     private static final FieldCache.IntParser testIntParser = new FieldCache.IntParser() {
+      @Override
       public final int parseInt(final BytesRef term) {
         return (term.bytes[term.offset]-'A') * 123456;
       }

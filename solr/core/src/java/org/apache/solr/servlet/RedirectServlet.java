@@ -35,6 +35,7 @@ public class RedirectServlet extends HttpServlet{
   String destination;
   int code = HttpServletResponse.SC_MOVED_PERMANENTLY;
   
+  @Override
   public void init(ServletConfig config) throws ServletException {
     super.init(config);
     
@@ -53,6 +54,7 @@ public class RedirectServlet extends HttpServlet{
     }
   }
   
+  @Override
   public void doGet(HttpServletRequest req, HttpServletResponse res)
           throws ServletException,IOException {
       
@@ -60,6 +62,7 @@ public class RedirectServlet extends HttpServlet{
     res.setHeader("Location", destination);
   }
 
+  @Override
   public void doPost(HttpServletRequest req, HttpServletResponse res)
           throws ServletException,IOException {
     doGet(req,res);

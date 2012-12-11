@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class ArabicNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
 
+  @Override
   public ArabicNormalizationFilter create(TokenStream input) {
     return new ArabicNormalizationFilter(input);
   }

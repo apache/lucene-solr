@@ -34,6 +34,7 @@ public class ICUFoldingFilterFactory extends TokenFilterFactory implements Multi
     return new ICUFoldingFilter(input);
   }
 
+  @Override
   public AbstractAnalysisFactory getMultiTermComponent() {
     return this;
   }

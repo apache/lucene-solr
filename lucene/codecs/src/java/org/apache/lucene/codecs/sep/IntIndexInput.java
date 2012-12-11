@@ -31,6 +31,7 @@ public abstract class IntIndexInput implements Closeable {
 
   public abstract Reader reader() throws IOException;
 
+  @Override
   public abstract void close() throws IOException;
 
   public abstract Index index() throws IOException;

@@ -225,6 +225,7 @@ public final class RequestHandlers {
     /**
      * In normal use, this function will not be called
      */
+    @Override
     public void init(NamedList args) {
       // do nothing
     }
@@ -232,6 +233,7 @@ public final class RequestHandlers {
     /**
      * Wait for the first request before initializing the wrapped handler 
      */
+    @Override
     public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp)  {
       SolrRequestHandler handler = _handler;
       if (handler == null) {
@@ -266,10 +268,12 @@ public final class RequestHandlers {
     
     //////////////////////// SolrInfoMBeans methods //////////////////////
 
+    @Override
     public String getName() {
       return "Lazy["+_className+"]";
     }
 
+    @Override
     public String getDescription()
     {
       if( _handler == null ) {
@@ -278,6 +282,7 @@ public final class RequestHandlers {
       return _handler.getDescription();
     }
     
+    @Override
     public String getVersion() {
       if( _handler != null ) {
         return _handler.getVersion();
@@ -285,6 +290,7 @@ public final class RequestHandlers {
       return null;
     }
 
+    @Override
     public String getSource() {
       String rev = "$URL$";
       if( _handler != null ) {
@@ -293,6 +299,7 @@ public final class RequestHandlers {
       return rev;
     }
       
+    @Override
     public URL[] getDocs() {
       if( _handler == null ) {
         return null;
@@ -300,11 +307,13 @@ public final class RequestHandlers {
       return _handler.getDocs();
     }
 
+    @Override
     public Category getCategory()
     {
       return Category.QUERYHANDLER;
     }
 
+    @Override
     public NamedList getStatistics() {
       if( _handler != null ) {
         return _handler.getStatistics();

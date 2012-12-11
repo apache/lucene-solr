@@ -54,6 +54,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     int pos;
     int startOffset;
     int endOffset;
+    @Override
     public int compareTo(TestToken other) {
       return pos - other.pos;
     }

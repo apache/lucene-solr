@@ -42,6 +42,7 @@ public abstract class SimpleTerm
   /** @deprecated (March 2011) Not normally used, to be removed from Lucene 4.0.
    *   This class implementing Comparable is to be removed at the same time.
    */
+  @Override
   @Deprecated
   public int compareTo(SimpleTerm ost) {
     /* for ordering terms and prefixes before using an index, not used */
@@ -87,6 +88,7 @@ public abstract class SimpleTerm
           sncf.getIndexReader(),
           sncf.getFieldName(),
           new MatchingTermVisitor() {
+            @Override
             public void visitMatchingTerm(Term term) throws IOException {
               sncf.addTermWeighted(term, getWeight());
             }

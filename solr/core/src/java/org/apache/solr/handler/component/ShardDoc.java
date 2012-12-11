@@ -218,6 +218,7 @@ class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
       return lst.get(shardDoc.orderInShard);
     }
 
+    @Override
     public int compare(Object o1, Object o2) {
       return 0;
     }
@@ -225,6 +226,7 @@ class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
 
   static Comparator comparatorScore(final String fieldName) {
     return new Comparator() {
+      @Override
       public final int compare(final Object o1, final Object o2) {
         ShardDoc e1 = (ShardDoc) o1;
         ShardDoc e2 = (ShardDoc) o2;

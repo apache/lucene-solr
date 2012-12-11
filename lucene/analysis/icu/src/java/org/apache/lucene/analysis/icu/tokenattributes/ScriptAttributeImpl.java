@@ -33,18 +33,22 @@ public class ScriptAttributeImpl extends AttributeImpl implements ScriptAttribut
   /** Initializes this attribute with <code>UScript.COMMON</code> */
   public ScriptAttributeImpl() {}
   
+  @Override
   public int getCode() {
     return code;
   }
   
+  @Override
   public void setCode(int code) {
     this.code = code;
   }
 
+  @Override
   public String getName() {
     return UScript.getName(code);
   }
 
+  @Override
   public String getShortName() {
     return UScript.getShortName(code);
   }

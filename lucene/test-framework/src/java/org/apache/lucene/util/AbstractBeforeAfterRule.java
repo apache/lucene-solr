@@ -37,6 +37,7 @@ abstract class AbstractBeforeAfterRule implements TestRule {
   @Override
   public Statement apply(final Statement s, final Description d) {
     return new Statement() {
+      @Override
       public void evaluate() throws Throwable {
         final ArrayList<Throwable> errors = new ArrayList<Throwable>();
 

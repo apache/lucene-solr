@@ -95,6 +95,7 @@ public class TestSort extends LuceneTestCase {
   }
   
   static final Comparator<byte[]> unsignedByteOrderComparator = new Comparator<byte[]>() {
+    @Override
     public int compare(byte[] left, byte[] right) {
       final int max = Math.min(left.length, right.length);
       for (int i = 0, j = 0; i < max; i++, j++) {

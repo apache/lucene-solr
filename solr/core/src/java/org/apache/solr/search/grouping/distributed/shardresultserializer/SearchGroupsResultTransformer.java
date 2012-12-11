@@ -47,6 +47,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
   /**
    * {@inheritDoc}
    */
+  @Override
   public NamedList transform(List<Command> data) throws IOException {
     NamedList<NamedList> result = new NamedList<NamedList>();
     for (Command command : data) {
@@ -74,6 +75,7 @@ public class SearchGroupsResultTransformer implements ShardResultTransformer<Lis
   /**
    * {@inheritDoc}
    */
+  @Override
   public Map<String, Pair<Integer, Collection<SearchGroup<BytesRef>>>> transformToNative(NamedList<NamedList> shardResponse, Sort groupSort, Sort sortWithinGroup, String shard) {
     Map<String, Pair<Integer, Collection<SearchGroup<BytesRef>>>> result = new HashMap<String, Pair<Integer, Collection<SearchGroup<BytesRef>>>>();
     for (Map.Entry<String, NamedList> command : shardResponse) {

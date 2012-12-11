@@ -47,6 +47,7 @@ import org.apache.lucene.util.automaton.Transition;
 public class TestDuelingAnalyzers extends LuceneTestCase {
   private CharacterRunAutomaton jvmLetter;
   
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     // build an automaton matching this jvm's letter definition

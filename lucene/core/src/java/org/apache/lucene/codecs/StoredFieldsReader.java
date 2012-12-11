@@ -38,5 +38,6 @@ public abstract class StoredFieldsReader implements Cloneable, Closeable {
   /** Visit the stored fields for document <code>n</code> */
   public abstract void visitDocument(int n, StoredFieldVisitor visitor) throws IOException;
 
+  @Override
   public abstract StoredFieldsReader clone();
 }

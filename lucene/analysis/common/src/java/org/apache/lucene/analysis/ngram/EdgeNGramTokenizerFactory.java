@@ -55,6 +55,7 @@ public class EdgeNGramTokenizerFactory extends TokenizerFactory {
     }
   }
   
+  @Override
   public EdgeNGramTokenizer create(Reader input) {
     return new EdgeNGramTokenizer(input, side, minGramSize, maxGramSize);
   }

@@ -50,6 +50,7 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
   private String mapping;
 
   // TODO: this should use inputstreams from the loader, not File!
+  @Override
   public void inform(ResourceLoader loader) throws IOException {
     mapping = args.get("mapping");
 
@@ -77,6 +78,7 @@ public class MappingCharFilterFactory extends CharFilterFactory implements
     }
   }
 
+  @Override
   public Reader create(Reader input) {
     // if the map is null, it means there's actually no mappings... just return the original stream
     // as there is nothing to do here.

@@ -197,6 +197,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
 
   }
 
+  @Override
   public void inform(final SolrCore core) {
     
     final IndexSchema schema = core.getSchema();

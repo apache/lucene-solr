@@ -687,6 +687,7 @@ public class IndexSearcher {
       this.slice = slice;
     }
 
+    @Override
     public TopDocs call() throws IOException {
       final TopDocs docs = searcher.search(Arrays.asList(slice.leaves), weight, after, nDocs);
       final ScoreDoc[] scoreDocs = docs.scoreDocs;
@@ -774,6 +775,7 @@ public class IndexSearcher {
 
     private final FakeScorer fakeScorer = new FakeScorer();
 
+    @Override
     public TopFieldDocs call() throws IOException {
       assert slice.leaves.length == 1;
       final TopFieldDocs docs = searcher.search(Arrays.asList(slice.leaves),
@@ -816,6 +818,7 @@ public class IndexSearcher {
       this.service = new ExecutorCompletionService<T>(executor);
     }
 
+    @Override
     public boolean hasNext() {
       return numTasks > 0;
     }
@@ -825,6 +828,7 @@ public class IndexSearcher {
       ++numTasks;
     }
 
+    @Override
     public T next() {
       if(!this.hasNext()) 
         throw new NoSuchElementException("next() is called but hasNext() returned false");
@@ -839,10 +843,12 @@ public class IndexSearcher {
       }
     }
 
+    @Override
     public void remove() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public Iterator<T> iterator() {
       // use the shortcut here - this is only used in a private context
       return this;

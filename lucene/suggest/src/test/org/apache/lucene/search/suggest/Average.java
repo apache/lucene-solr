@@ -45,6 +45,7 @@ final class Average
         this.stddev = stddev;
     }
 
+    @Override
     public String toString()
     {
         return String.format(Locale.ROOT, "%.0f [+- %.2f]", 

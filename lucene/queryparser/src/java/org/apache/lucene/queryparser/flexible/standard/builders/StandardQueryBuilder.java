@@ -32,6 +32,7 @@ import org.apache.lucene.search.Query;
  */
 public interface StandardQueryBuilder extends QueryBuilder {
 
+  @Override
   public Query build(QueryNode queryNode) throws QueryNodeException;
 
 }

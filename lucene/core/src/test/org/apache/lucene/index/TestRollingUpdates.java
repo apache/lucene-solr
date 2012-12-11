@@ -193,6 +193,7 @@ public class TestRollingUpdates extends LuceneTestCase {
       this.num = num;
     }
 
+    @Override
     public void run() {
       try {
         DirectoryReader open = null;

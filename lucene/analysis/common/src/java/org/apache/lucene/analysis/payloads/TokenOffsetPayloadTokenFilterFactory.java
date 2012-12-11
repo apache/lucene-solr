@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *
  */
 public class TokenOffsetPayloadTokenFilterFactory extends TokenFilterFactory {
+  @Override
   public TokenOffsetPayloadTokenFilter create(TokenStream input) {
     return new TokenOffsetPayloadTokenFilter(input);
   }

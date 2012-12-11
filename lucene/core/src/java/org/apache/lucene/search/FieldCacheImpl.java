@@ -71,16 +71,19 @@ class FieldCacheImpl implements FieldCache {
     caches.put(DocsWithFieldCache.class, new DocsWithFieldCache(this));
   }
 
+  @Override
   public synchronized void purgeAllCaches() {
     init();
   }
 
+  @Override
   public synchronized void purge(AtomicReader r) {
     for(Cache c : caches.values()) {
       c.purge(r);
     }
   }
   
+  @Override
   public synchronized CacheEntry[] getCacheEntries() {
     List<CacheEntry> result = new ArrayList<CacheEntry>(17);
     for(final Map.Entry<Class<?>,Cache> cacheEntry: caches.entrySet()) {
@@ -319,11 +322,13 @@ class FieldCacheImpl implements FieldCache {
   }
 
   // inherit javadocs
+  @Override
   public byte[] getBytes (AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
     return getBytes(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
+  @Override
   public byte[] getBytes(AtomicReader reader, String field, ByteParser parser, boolean setDocsWithField)
       throws IOException {
     return (byte[]) caches.get(Byte.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
@@ -391,11 +396,13 @@ class FieldCacheImpl implements FieldCache {
   }
   
   // inherit javadocs
+  @Override
   public short[] getShorts (AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
     return getShorts(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
+  @Override
   public short[] getShorts(AtomicReader reader, String field, ShortParser parser, boolean setDocsWithField)
       throws IOException {
     return (short[]) caches.get(Short.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
@@ -485,11 +492,13 @@ class FieldCacheImpl implements FieldCache {
   }
   
   // inherit javadocs
+  @Override
   public int[] getInts (AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
     return getInts(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
+  @Override
   public int[] getInts(AtomicReader reader, String field, IntParser parser, boolean setDocsWithField)
       throws IOException {
     return (int[]) caches.get(Integer.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
@@ -572,6 +581,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
   
+  @Override
   public Bits getDocsWithField(AtomicReader reader, String field)
       throws IOException {
     return (Bits) caches.get(DocsWithFieldCache.class).get(reader, new Entry(field, null), false);
@@ -633,12 +643,14 @@ class FieldCacheImpl implements FieldCache {
   }
 
   // inherit javadocs
+  @Override
   public float[] getFloats (AtomicReader reader, String field, boolean setDocsWithField)
     throws IOException {
     return getFloats(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
+  @Override
   public float[] getFloats(AtomicReader reader, String field, FloatParser parser, boolean setDocsWithField)
     throws IOException {
 
@@ -723,11 +735,13 @@ class FieldCacheImpl implements FieldCache {
   }
 
 
+  @Override
   public long[] getLongs(AtomicReader reader, String field, boolean setDocsWithField) throws IOException {
     return getLongs(reader, field, null, setDocsWithField);
   }
   
   // inherit javadocs
+  @Override
   public long[] getLongs(AtomicReader reader, String field, FieldCache.LongParser parser, boolean setDocsWithField)
       throws IOException {
     return (long[]) caches.get(Long.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
@@ -811,12 +825,14 @@ class FieldCacheImpl implements FieldCache {
   }
 
   // inherit javadocs
+  @Override
   public double[] getDoubles(AtomicReader reader, String field, boolean setDocsWithField)
     throws IOException {
     return getDoubles(reader, field, null, setDocsWithField);
   }
 
   // inherit javadocs
+  @Override
   public double[] getDoubles(AtomicReader reader, String field, FieldCache.DoubleParser parser, boolean setDocsWithField)
       throws IOException {
     return (double[]) caches.get(Double.TYPE).get(reader, new Entry(field, parser), setDocsWithField);
@@ -984,6 +1000,7 @@ class FieldCacheImpl implements FieldCache {
         }
       }
 
+      @Override
       public void seekExact(long ord) throws IOException {
         assert(ord >= 0 && ord <= numOrd);
         // TODO: if gap is small, could iterate from current position?  Or let user decide that?
@@ -1071,10 +1088,12 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
+  @Override
   public DocTermsIndex getTermsIndex(AtomicReader reader, String field) throws IOException {
     return getTermsIndex(reader, field, PackedInts.FAST);
   }
 
+  @Override
   public DocTermsIndex getTermsIndex(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException {
     return (DocTermsIndex) caches.get(DocTermsIndex.class).get(reader, new Entry(field, acceptableOverheadRatio), false);
   }
@@ -1210,10 +1229,12 @@ class FieldCacheImpl implements FieldCache {
 
   // TODO: this if DocTermsIndex was already created, we
   // should share it...
+  @Override
   public DocTerms getTerms(AtomicReader reader, String field) throws IOException {
     return getTerms(reader, field, PackedInts.FAST);
   }
 
+  @Override
   public DocTerms getTerms(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException {
     return (DocTerms) caches.get(DocTerms.class).get(reader, new Entry(field, acceptableOverheadRatio), false);
   }
@@ -1293,6 +1314,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
+  @Override
   public DocTermOrds getDocTermOrds(AtomicReader reader, String field) throws IOException {
     return (DocTermOrds) caches.get(DocTermOrds.class).get(reader, new Entry(field, null), false);
   }
@@ -1311,10 +1333,12 @@ class FieldCacheImpl implements FieldCache {
 
   private volatile PrintStream infoStream;
 
+  @Override
   public void setInfoStream(PrintStream stream) {
     infoStream = stream;
   }
 
+  @Override
   public PrintStream getInfoStream() {
     return infoStream;
   }

@@ -65,6 +65,7 @@ public class TestDirectory extends LuceneTestCase {
         this.name = name;
       }
       
+      @Override
       public void run() {
         for (int i = 0; i < 3000; i++) {
           String fileName = this.name + i;
@@ -87,6 +88,7 @@ public class TestDirectory extends LuceneTestCase {
         this.name = name;
       }
       
+      @Override
       public void run() {
         for (int i = 0; i < 10000; i++) {
           try {

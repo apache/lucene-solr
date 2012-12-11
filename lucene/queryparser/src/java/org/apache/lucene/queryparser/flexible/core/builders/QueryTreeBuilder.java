@@ -213,6 +213,7 @@ public class QueryTreeBuilder implements QueryBuilder {
    *         {@link QueryNodeException} or if there is a node which had no
    *         builder associated to it
    */
+  @Override
   public Object build(QueryNode queryNode) throws QueryNodeException {
     process(queryNode);
 

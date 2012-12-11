@@ -21,6 +21,7 @@ import java.io.IOException;
 
 public class TestFastDecompressionMode extends AbstractTestLZ4CompressionMode {
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     mode = CompressionMode.FAST_DECOMPRESSION;

@@ -37,6 +37,7 @@ public class CategoryAttributesIterable implements Iterable<CategoryAttribute> {
     this.inputIterable = inputIterable;
   }
 
+  @Override
   public Iterator<CategoryAttribute> iterator() {
     return new CategoryAttributesIterator(this.inputIterable);
   }
@@ -51,16 +52,19 @@ public class CategoryAttributesIterable implements Iterable<CategoryAttribute> {
       this.categoryAttributeImpl = new CategoryAttributeImpl();
     }
 
+    @Override
     public boolean hasNext() {
       return this.internalIterator.hasNext();
     }
 
+    @Override
     public CategoryAttribute next() {
       this.categoryAttributeImpl.setCategoryPath(this.internalIterator
           .next());
       return this.categoryAttributeImpl;
     }
 
+    @Override
     public void remove() {
       this.internalIterator.remove();
     }

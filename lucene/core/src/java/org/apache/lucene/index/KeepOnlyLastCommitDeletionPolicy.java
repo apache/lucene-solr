@@ -35,6 +35,7 @@ public final class KeepOnlyLastCommitDeletionPolicy implements IndexDeletionPoli
   /**
    * Deletes all commits except the most recent one.
    */
+  @Override
   public void onInit(List<? extends IndexCommit> commits) {
     // Note that commits.size() should normally be 1:
     onCommit(commits);
@@ -43,6 +44,7 @@ public final class KeepOnlyLastCommitDeletionPolicy implements IndexDeletionPoli
   /**
    * Deletes all commits except the most recent one.
    */
+  @Override
   public void onCommit(List<? extends IndexCommit> commits) {
     // Note that commits.size() should normally be 2 (if not
     // called by onInit above):

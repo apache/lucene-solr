@@ -133,6 +133,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     super(BLOOM_CODEC_NAME);
   }
   
+  @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state)
       throws IOException {
     if (delegatePostingsFormat == null) {
@@ -144,6 +145,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
         delegatePostingsFormat);
   }
   
+  @Override
   public FieldsProducer fieldsProducer(SegmentReadState state)
       throws IOException {
     return new BloomFilteredFieldsProducer(state);
@@ -188,14 +190,17 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
     }
     
+    @Override
     public Iterator<String> iterator() {
       return delegateFieldsProducer.iterator();
     }
     
+    @Override
     public void close() throws IOException {
       delegateFieldsProducer.close();
     }
     
+    @Override
     public Terms terms(String field) throws IOException {
       FuzzySet filter = bloomsByFieldName.get(field);
       if (filter == null) {
@@ -209,6 +214,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
     }
     
+    @Override
     public int size() {
       return delegateFieldsProducer.size();
     }
@@ -464,10 +470,12 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       this.bloomFilter = bloomFilter;
     }
     
+    @Override
     public PostingsConsumer startTerm(BytesRef text) throws IOException {
       return delegateTermsConsumer.startTerm(text);
     }
     
+    @Override
     public void finishTerm(BytesRef text, TermStats stats) throws IOException {
       
       // Record this term in our BloomFilter
@@ -477,11 +485,13 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       delegateTermsConsumer.finishTerm(text, stats);
     }
     
+    @Override
     public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount)
         throws IOException {
       delegateTermsConsumer.finish(sumTotalTermFreq, sumDocFreq, docCount);
     }
     
+    @Override
     public Comparator<BytesRef> getComparator() throws IOException {
       return delegateTermsConsumer.getComparator();
     }

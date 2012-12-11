@@ -91,20 +91,24 @@ public class AssociationEnhancement implements CategoryEnhancement {
     return false;
   }
   
+  @Override
   public boolean generatesCategoryList() {
     return true;
   }
 
+  @Override
   public String getCategoryListTermText() {
     return CATEGORY_LIST_TERM_TEXT;
   }
 
+  @Override
   public CategoryListTokenizer getCategoryListTokenizer(
       TokenStream tokenizer, EnhancementsIndexingParams indexingParams,
       TaxonomyWriter taxonomyWriter) {
     return new AssociationListTokenizer(tokenizer, indexingParams, this);
   }
 
+  @Override
   public byte[] getCategoryTokenBytes(CategoryAttribute categoryAttribute) {
     
     AssociationProperty property = getAssociationProperty(categoryAttribute);
@@ -138,6 +142,7 @@ public class AssociationEnhancement implements CategoryEnhancement {
     return property;
   }
 
+  @Override
   public Object extractCategoryTokenData(byte[] buffer, int offset, int length) {
     if (length == 0) {
       return null;
@@ -146,6 +151,7 @@ public class AssociationEnhancement implements CategoryEnhancement {
     return i;
   }
 
+  @Override
   public Class<? extends CategoryProperty> getRetainableProperty() {
     return null;
   }

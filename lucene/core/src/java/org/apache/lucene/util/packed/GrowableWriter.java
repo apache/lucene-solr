@@ -40,14 +40,17 @@ public class GrowableWriter implements PackedInts.Mutable {
     currentMaxValue = PackedInts.maxValue(current.getBitsPerValue());
   }
 
+  @Override
   public long get(int index) {
     return current.get(index);
   }
 
+  @Override
   public int size() {
     return current.size();
   }
 
+  @Override
   public int getBitsPerValue() {
     return current.getBitsPerValue();
   }
@@ -79,11 +82,13 @@ public class GrowableWriter implements PackedInts.Mutable {
     currentMaxValue = PackedInts.maxValue(current.getBitsPerValue());
   }
 
+  @Override
   public void set(int index, long value) {
     ensureCapacity(value);
     current.set(index, value);
   }
 
+  @Override
   public void clear() {
     current.clear();
   }
@@ -95,6 +100,7 @@ public class GrowableWriter implements PackedInts.Mutable {
     return next;
   }
 
+  @Override
   public int get(int index, long[] arr, int off, int len) {
     return current.get(index, arr, off, len);
   }

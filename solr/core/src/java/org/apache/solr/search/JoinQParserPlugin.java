@@ -47,11 +47,14 @@ import java.util.Set;
 public class JoinQParserPlugin extends QParserPlugin {
   public static String NAME = "join";
 
+  @Override
   public void init(NamedList args) {
   }
 
+  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
+      @Override
       public Query parse() throws SyntaxError {
         String fromField = getParam("from");
         String fromIndex = getParam("fromIndex");
@@ -121,6 +124,7 @@ class JoinQuery extends Query {
   public void extractTerms(Set terms) {
   }
 
+  @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new JoinQueryWeight((SolrIndexSearcher)searcher);
   }
@@ -191,6 +195,7 @@ class JoinQuery extends Query {
       this.toSearcher = searcher;
     }
 
+    @Override
     public Query getQuery() {
       return JoinQuery.this;
     }

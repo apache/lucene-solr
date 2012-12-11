@@ -135,6 +135,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   }
   
   // skip the randoms - they can deadlock...
+  @Override
   protected void indexr(Object... fields) throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     addFields(doc, fields);

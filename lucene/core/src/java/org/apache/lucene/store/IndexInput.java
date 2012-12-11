@@ -50,6 +50,7 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
   }
 
   /** Closes the stream to further operations. */
+  @Override
   public abstract void close() throws IOException;
 
   /** Returns the current position in this file, where the next read will

@@ -45,6 +45,7 @@ public class TermsQueryBuilder implements QueryBuilder {
     this.analyzer = analyzer;
   }
 
+  @Override
   public Query getQuery(Element e) throws ParserException {
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     String text = DOMUtils.getNonBlankTextOrFail(e);

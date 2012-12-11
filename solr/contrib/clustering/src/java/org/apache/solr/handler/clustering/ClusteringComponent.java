@@ -187,6 +187,7 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     this.initParams = args;
   }
 
+  @Override
   public void inform(SolrCore core) {
     if (initParams != null) {
       log.info("Initializing Clustering Engines");

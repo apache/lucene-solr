@@ -31,6 +31,7 @@ public class FooQParserPlugin extends QParserPlugin {
     return new FooQParser(qstr, localParams, params, req);
   }
 
+  @Override
   public void init(NamedList args) {
   }
 }

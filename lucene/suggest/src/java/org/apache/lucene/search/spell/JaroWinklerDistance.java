@@ -92,6 +92,7 @@ public class JaroWinklerDistance implements StringDistance {
     return new int[] { matches, transpositions / 2, prefix, max.length() };
   }
 
+  @Override
   public float getDistance(String s1, String s2) {
     int[] mtp = matches(s1, s2);
     float m = mtp[0];

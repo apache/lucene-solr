@@ -457,6 +457,7 @@ public abstract class IndexReader implements Closeable {
    * No other methods should be called after this has been called.
    * @throws IOException if there is a low-level IO error
    */
+  @Override
   public final synchronized void close() throws IOException {
     if (!closed) {
       decRef();

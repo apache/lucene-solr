@@ -114,6 +114,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
   class Runner implements Runnable {
     final Lock runnerLock = new ReentrantLock();
 
+    @Override
     public void run() {
       runnerLock.lock();
 
@@ -136,6 +137,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
 
             EntityTemplate template = new EntityTemplate(new ContentProducer() {
 
+              @Override
               public void writeTo(OutputStream out) throws IOException {
                 try {
                   if (isXml) {
@@ -243,6 +245,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
     }
   }
 
+  @Override
   public NamedList<Object> request(final SolrRequest request)
       throws SolrServerException, IOException {
     if (!(request instanceof UpdateRequest)) {

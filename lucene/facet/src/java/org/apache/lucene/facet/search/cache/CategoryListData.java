@@ -112,10 +112,12 @@ public class CategoryListData {
       dpc = docPartitionCategories;
     }
 
+    @Override
     public boolean init() throws IOException {
       return dpc!=null && dpc.length>part;
     }
 
+    @Override
     public long nextCategory() throws IOException {
       if (nextCategoryIndex >= dpc[currDoc][part].length) {
         return 1L+Integer.MAX_VALUE;
@@ -123,6 +125,7 @@ public class CategoryListData {
       return dpc[currDoc][part][nextCategoryIndex++]; 
     }
 
+    @Override
     public boolean skipTo(int docId) throws IOException {
       final boolean res = dpc.length>docId && dpc[docId]!=null && dpc[docId][part]!=null;
       if (res) {

@@ -36,6 +36,7 @@ public class SimpleEndResultTransformer implements EndResultTransformer {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
     NamedList<Object> commands = new SimpleOrderedMap<Object>();
     for (Map.Entry<String, ?> entry : result.entrySet()) {

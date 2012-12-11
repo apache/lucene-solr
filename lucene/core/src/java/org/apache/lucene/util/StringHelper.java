@@ -60,6 +60,7 @@ public abstract class StringHelper {
   }
   
   private static Comparator<String> versionComparator = new Comparator<String>() {
+    @Override
     public int compare(String a, String b) {
       StringTokenizer aTokens = new StringTokenizer(a, ".");
       StringTokenizer bTokens = new StringTokenizer(b, ".");

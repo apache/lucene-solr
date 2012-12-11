@@ -458,6 +458,7 @@ public class DirectSpellChecker {
     public String termAsString;
     public float score;
     
+    @Override
     public int compareTo(ScoreTerm other) {
       if (term.bytesEquals(other.term))
         return 0; // consistent with equals

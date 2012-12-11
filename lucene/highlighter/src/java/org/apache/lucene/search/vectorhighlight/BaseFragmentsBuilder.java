@@ -89,12 +89,14 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
 
   private static final Encoder NULL_ENCODER = new DefaultEncoder();
 
+  @Override
   public String createFragment( IndexReader reader, int docId,
       String fieldName, FieldFragList fieldFragList ) throws IOException {
     return createFragment( reader, docId, fieldName, fieldFragList,
         preTags, postTags, NULL_ENCODER );
   }
 
+  @Override
   public String[] createFragments( IndexReader reader, int docId,
       String fieldName, FieldFragList fieldFragList, int maxNumFragments )
       throws IOException {
@@ -102,6 +104,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
         preTags, postTags, NULL_ENCODER );
   }
   
+  @Override
   public String createFragment( IndexReader reader, int docId,
       String fieldName, FieldFragList fieldFragList, String[] preTags, String[] postTags,
       Encoder encoder ) throws IOException {
@@ -111,6 +114,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     return fragments[0];
   }
 
+  @Override
   public String[] createFragments( IndexReader reader, int docId,
       String fieldName, FieldFragList fieldFragList, int maxNumFragments,
       String[] preTags, String[] postTags, Encoder encoder ) throws IOException {
@@ -284,6 +288,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     }
     Collections.sort(result, new Comparator<WeightedFragInfo>() {
 
+      @Override
       public int compare(FieldFragList.WeightedFragInfo info1, FieldFragList.WeightedFragInfo info2) {
         return info1.getStartOffset() - info2.getStartOffset();
       }

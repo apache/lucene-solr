@@ -47,6 +47,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     public int refCnt = 1;
     public String path;
     public boolean doneWithDir = false;
+    @Override
     public String toString() {
       return "CachedDir<<" + directory.toString() + ";refCount=" + refCnt + ";path=" + path + ";done=" + doneWithDir + ">>";
     }
@@ -158,6 +159,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     }
   }
   
+  @Override
   protected abstract Directory create(String path) throws IOException;
   
   @Override
@@ -242,6 +244,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
    * org.apache.solr.core.DirectoryFactory#incRef(org.apache.lucene.store.Directory
    * )
    */
+  @Override
   public void incRef(Directory directory) {
     synchronized (this) {
       CacheValue cacheValue = byDirectoryCache.get(directory);
@@ -253,6 +256,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     }
   }
   
+  @Override
   public void init(NamedList args) {}
   
   /*

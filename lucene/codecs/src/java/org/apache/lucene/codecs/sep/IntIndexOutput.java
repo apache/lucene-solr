@@ -56,5 +56,6 @@ public abstract class IntIndexOutput implements Closeable {
    *  this and interact with the returned IndexWriter. */
   public abstract Index index() throws IOException;
 
+  @Override
   public abstract void close() throws IOException;
 }

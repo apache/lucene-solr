@@ -55,6 +55,7 @@ public class AssociationFloatProperty extends AssociationProperty {
     return "AssociationFloatProperty".hashCode() * 31 + (int) association;
   }
 
+  @Override
   public void merge(CategoryProperty other) {
     AssociationFloatProperty o = (AssociationFloatProperty) other;
     this.association = Float.floatToIntBits(Float

@@ -70,6 +70,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   
   // TODO: for now we redefine this method so that it pulls from the above
   // we don't get helpful override behavior due to the method being static
+  @Override
   protected void createServers(int numShards) throws Exception {
     controlJetty = createJetty(new File(getSolrHome()), testDir + "/control/data", null, getSolrConfigFile(), getSchemaFile());
 

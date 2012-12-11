@@ -128,6 +128,7 @@ public abstract class Directory implements Closeable {
   }
 
   /** Closes the store. */
+  @Override
   public abstract void close()
        throws IOException;
 

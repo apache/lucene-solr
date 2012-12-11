@@ -119,6 +119,7 @@ public abstract class SolrQueryParserBase {
       this.field = field;
       this.subParser = subParser;
     }
+    @Override
     public String toString() {
       return field;
     }

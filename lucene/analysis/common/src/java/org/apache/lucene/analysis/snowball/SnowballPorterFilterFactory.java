@@ -64,6 +64,7 @@ public class SnowballPorterFilterFactory extends TokenFilterFactory implements R
     }
   }
 
+  @Override
   public TokenFilter create(TokenStream input) {
     SnowballProgram program;
     try {

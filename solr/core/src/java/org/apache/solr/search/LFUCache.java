@@ -59,6 +59,7 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
   private int showItems = 0;
   private Boolean timeDecay = true;
 
+  @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
     state = State.CREATED;
     this.regenerator = regenerator;
@@ -124,36 +125,44 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
     return statsList;
   }
 
+  @Override
   public String name() {
     return name;
   }
 
+  @Override
   public int size() {
     return cache.size();
 
   }
 
+  @Override
   public V put(K key, V value) {
     return cache.put(key, value);
   }
 
+  @Override
   public V get(K key) {
     return cache.get(key);
   }
 
+  @Override
   public void clear() {
     cache.clear();
   }
 
+  @Override
   public void setState(State state) {
     this.state = state;
     cache.setAlive(state == State.LIVE);
   }
 
+  @Override
   public State getState() {
     return state;
   }
 
+  @Override
   public void warm(SolrIndexSearcher searcher, SolrCache old) {
     if (regenerator == null) return;
     long warmingStartTime = System.currentTimeMillis();
@@ -182,6 +191,7 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
   }
 
 
+  @Override
   public void close() {
     // add the stats to the cumulative stats object (the first in the statsList)
     statsList.get(0).add(cache.getStats());
@@ -190,26 +200,32 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
+  @Override
   public String getName() {
     return LFUCache.class.getName();
   }
 
+  @Override
   public String getVersion() {
     return SolrCore.version;
   }
 
+  @Override
   public String getDescription() {
     return description;
   }
 
+  @Override
   public Category getCategory() {
     return Category.CACHE;
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public URL[] getDocs() {
     return null;
   }
@@ -223,6 +239,7 @@ public class LFUCache<K, V> implements SolrCache<K, V> {
     return "0." + hundredths;
   }
 
+  @Override
   public NamedList getStatistics() {
     NamedList<Serializable> lst = new SimpleOrderedMap<Serializable>();
     if (cache == null) return lst;

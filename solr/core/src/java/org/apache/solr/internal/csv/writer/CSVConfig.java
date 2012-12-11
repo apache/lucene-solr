@@ -246,6 +246,7 @@ public class CSVConfig {
      * TODO..
      * @see java.lang.Object#equals(java.lang.Object)
      */
+    @Override
     public boolean equals(Object obj) {
         if (obj == null && !(obj instanceof CSVConfig)) {
             return false;

@@ -85,6 +85,7 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
     onlyLongestMatch = getBoolean("onlyLongestMatch", false);
   }
   
+  @Override
   public void inform(ResourceLoader loader) throws IOException {
     InputStream stream = null;
     try {
@@ -102,6 +103,7 @@ public class HyphenationCompoundWordTokenFilterFactory extends TokenFilterFactor
     }
   }
   
+  @Override
   public HyphenationCompoundWordTokenFilter create(TokenStream input) {
     return new HyphenationCompoundWordTokenFilter(luceneMatchVersion, input, hyphenator, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
   }

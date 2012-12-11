@@ -46,6 +46,7 @@ public class FilteredQueryBuilder implements QueryBuilder {
   /* (non-Javadoc)
     * @see org.apache.lucene.xmlparser.QueryObjectBuilder#process(org.w3c.dom.Element)
     */
+  @Override
   public Query getQuery(Element e) throws ParserException {
     Element filterElement = DOMUtils.getChildByTagOrFail(e, "Filter");
     filterElement = DOMUtils.getFirstChildOrFail(filterElement);

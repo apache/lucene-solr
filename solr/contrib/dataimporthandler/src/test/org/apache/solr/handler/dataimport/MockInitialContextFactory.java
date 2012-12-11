@@ -39,6 +39,7 @@ public class MockInitialContextFactory implements InitialContextFactory {
     try {
       EasyMock.expect(context.lookup((String) EasyMock.anyObject())).andAnswer(
           new IAnswer<Object>() {
+            @Override
             public Object answer() throws Throwable {
               return objects.get(EasyMock.getCurrentArguments()[0]);
             }
@@ -51,6 +52,7 @@ public class MockInitialContextFactory implements InitialContextFactory {
     mockControl.replay();
   }
 
+  @Override
   @SuppressWarnings("unchecked")
   public javax.naming.Context getInitialContext(Hashtable env) {
     return context;

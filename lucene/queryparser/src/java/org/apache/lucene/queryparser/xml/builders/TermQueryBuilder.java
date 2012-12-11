@@ -29,6 +29,7 @@ import org.w3c.dom.Element;
  */
 public class TermQueryBuilder implements QueryBuilder {
 
+  @Override
   public Query getQuery(Element e) throws ParserException {
     String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     String value = DOMUtils.getNonBlankTextOrFail(e);

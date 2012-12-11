@@ -110,9 +110,11 @@ public class TestCategoryListCache extends FacetTestBase {
       public CategoryListIterator iterator(int partition)  throws IOException {
         final CategoryListIterator it = cld.iterator(partition);
         return new CategoryListIterator() {              
+          @Override
           public boolean skipTo(int docId) throws IOException {
             return it.skipTo(docId);
           }
+          @Override
           public long nextCategory() throws IOException {
             long res = it.nextCategory();
             if (res>Integer.MAX_VALUE) {
@@ -120,6 +122,7 @@ public class TestCategoryListCache extends FacetTestBase {
             }
             return res>1 ? res-1 : res+1;
           }
+          @Override
           public boolean init() throws IOException {
             return it.init();
           }

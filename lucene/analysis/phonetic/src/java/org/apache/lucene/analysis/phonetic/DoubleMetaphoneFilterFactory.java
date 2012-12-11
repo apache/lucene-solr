@@ -61,6 +61,7 @@ public class DoubleMetaphoneFilterFactory extends TokenFilterFactory
     }
   }
 
+  @Override
   public DoubleMetaphoneFilter create(TokenStream input) {
     return new DoubleMetaphoneFilter(input, maxCodeLength, inject);
   }

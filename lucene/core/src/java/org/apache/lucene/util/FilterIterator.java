@@ -37,10 +37,12 @@ public abstract class FilterIterator<T> implements Iterator<T> {
     this.iterator = baseIterator;
   }
   
+  @Override
   public final boolean hasNext() {
     return nextIsSet || setNext();
   }
   
+  @Override
   public final T next() {
     if (!hasNext()) {
       throw new NoSuchElementException();
@@ -54,6 +56,7 @@ public abstract class FilterIterator<T> implements Iterator<T> {
     }
   }
   
+  @Override
   public final void remove() {
     throw new UnsupportedOperationException();
   }

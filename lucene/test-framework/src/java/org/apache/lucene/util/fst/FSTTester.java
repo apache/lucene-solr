@@ -171,6 +171,7 @@ public class FSTTester<T> {
       this.output = output;
     }
 
+    @Override
     public int compareTo(InputOutput<T> other) {
       if (other instanceof InputOutput) {
         return input.compareTo((other).input);

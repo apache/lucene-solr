@@ -126,11 +126,13 @@ public class HttpShardHandler extends ShardHandler {
   }
 
 
+  @Override
   public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
     // do this outside of the callable for thread safety reasons
     final List<String> urls = getURLs(shard);
 
     Callable<ShardResponse> task = new Callable<ShardResponse>() {
+      @Override
       public ShardResponse call() throws Exception {
 
         ShardResponse srsp = new ShardResponse();
@@ -193,6 +195,7 @@ public class HttpShardHandler extends ShardHandler {
   /** returns a ShardResponse of the last response correlated with a ShardRequest.  This won't 
    * return early if it runs into an error.  
    **/
+  @Override
   public ShardResponse takeCompletedIncludingErrors() {
     return take(false);
   }
@@ -201,6 +204,7 @@ public class HttpShardHandler extends ShardHandler {
   /** returns a ShardResponse of the last response correlated with a ShardRequest,
    * or immediately returns a ShardResponse if there was an error detected
    */
+  @Override
   public ShardResponse takeCompletedOrError() {
     return take(true);
   }
@@ -233,6 +237,7 @@ public class HttpShardHandler extends ShardHandler {
   }
 
 
+  @Override
   public void cancelAll() {
     for (Future<ShardResponse> future : pending) {
       // TODO: any issues with interrupting?  shouldn't be if
@@ -240,6 +245,7 @@ public class HttpShardHandler extends ShardHandler {
       future.cancel(true);
     }
   }
+  @Override
   public void checkDistributed(ResponseBuilder rb) {
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();

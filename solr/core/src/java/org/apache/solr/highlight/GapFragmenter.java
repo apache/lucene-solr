@@ -27,6 +27,7 @@ import org.apache.solr.common.params.SolrParams;
 
 public class GapFragmenter extends HighlightingPluginBase implements SolrFragmenter
 {
+  @Override
   public Fragmenter getFragmenter(String fieldName, SolrParams params )
   {
     numRequests++;

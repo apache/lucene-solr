@@ -32,6 +32,7 @@ public class FuzzyQueryNodeBuilder implements StandardQueryBuilder {
     // empty constructor
   }
 
+  @Override
   public FuzzyQuery build(QueryNode queryNode) throws QueryNodeException {
     FuzzyQueryNode fuzzyNode = (FuzzyQueryNode) queryNode;
     String text = fuzzyNode.getTextAsString();

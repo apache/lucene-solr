@@ -176,6 +176,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
           }
         }
         
+        @Override
         public Integer call() {
           SolrCore core = null;
           int r = 0;
@@ -243,6 +244,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 class ClosingRequestHandler extends EmptyRequestHandler implements SolrCoreAware {
   boolean closed = false;
 
+  @Override
   public void inform(SolrCore core) {
     core.addCloseHook( new CloseHook() {
       @Override

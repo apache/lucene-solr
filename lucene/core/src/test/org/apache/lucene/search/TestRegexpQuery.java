@@ -102,6 +102,7 @@ public class TestRegexpQuery extends LuceneTestCase {
           BasicAutomata.makeString("brown"),
           BasicAutomata.makeString("bob")));
       
+      @Override
       public Automaton getAutomaton(String name) {
         if (name.equals("quickBrown")) return quickBrownAutomaton;
         else return null;

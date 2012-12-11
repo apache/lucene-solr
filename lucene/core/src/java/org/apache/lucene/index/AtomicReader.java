@@ -103,6 +103,7 @@ public abstract class AtomicReader extends IndexReader {
    * field does not exists.  This method does not take into
    * account deleted documents that have not yet been merged
    * away. */
+  @Override
   public final long totalTermFreq(Term term) throws IOException {
     final Fields fields = fields();
     if (fields == null) {

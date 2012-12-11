@@ -72,6 +72,7 @@ public class JavaUtilRegexCapabilities implements RegexCapabilities {
     this.flags = flags;
   }
   
+  @Override
   public RegexCapabilities.RegexMatcher compile(String regex) {
     return new JavaUtilRegexMatcher(regex, flags);
   }
@@ -110,11 +111,13 @@ public class JavaUtilRegexCapabilities implements RegexCapabilities {
       this.matcher = this.pattern.matcher(utf16);
     }
     
+    @Override
     public boolean match(BytesRef term) {
       UnicodeUtil.UTF8toUTF16(term.bytes, term.offset, term.length, utf16);
       return matcher.reset().matches();
     }
 
+    @Override
     public String prefix() {
       return null;
     }

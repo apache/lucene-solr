@@ -38,6 +38,7 @@ public class OrQuery extends ComposedQuery implements DistanceSubQuery {
       makeLuceneSubQueriesField(fieldName, qf), BooleanClause.Occur.SHOULD);
   }
   
+  @Override
   public String distanceSubQueryNotAllowed() {
     Iterator sqi = getSubQueriesIterator();
     while (sqi.hasNext()) {
@@ -54,6 +55,7 @@ public class OrQuery extends ComposedQuery implements DistanceSubQuery {
     return null;
   }
     
+  @Override
   public void addSpanQueries(SpanNearClauseFactory sncf) throws IOException {
     Iterator sqi = getSubQueriesIterator();
     while (sqi.hasNext()) {

@@ -142,6 +142,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
    /**
    * @return Returns the analyzer.
    */
+  @Override
   public Analyzer getAnalyzer() {
     return analyzer;
   }
@@ -176,6 +177,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
    /**
    * Get the minimal similarity for fuzzy queries.
    */
+  @Override
   public float getFuzzyMinSim() {
       return fuzzyMinSim;
   }
@@ -184,6 +186,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
    * Set the minimum similarity for fuzzy queries.
    * Default is 2f.
    */
+  @Override
   public void setFuzzyMinSim(float fuzzyMinSim) {
       this.fuzzyMinSim = fuzzyMinSim;
   }
@@ -192,6 +195,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
    * Get the prefix length for fuzzy queries.
    * @return Returns the fuzzyPrefixLength.
    */
+  @Override
   public int getFuzzyPrefixLength() {
     return fuzzyPrefixLength;
   }
@@ -200,6 +204,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
    * Set the prefix length for fuzzy queries. Default is 0.
    * @param fuzzyPrefixLength The fuzzyPrefixLength to set.
    */
+  @Override
   public void setFuzzyPrefixLength(int fuzzyPrefixLength) {
     this.fuzzyPrefixLength = fuzzyPrefixLength;
   }
@@ -208,6 +213,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
    * Sets the default slop for phrases.  If zero, then exact phrase matches
    * are required.  Default value is zero.
    */
+  @Override
   public void setPhraseSlop(int phraseSlop) {
     this.phraseSlop = phraseSlop;
   }
@@ -215,6 +221,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
   /**
    * Gets the default slop for phrases.
    */
+  @Override
   public int getPhraseSlop() {
     return phraseSlop;
   }
@@ -230,6 +237,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
    * <p>
    * Default: false.
    */
+  @Override
   public void setAllowLeadingWildcard(boolean allowLeadingWildcard) {
     this.allowLeadingWildcard = allowLeadingWildcard;
   }
@@ -237,6 +245,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
   /**
    * @see #setAllowLeadingWildcard(boolean)
    */
+  @Override
   public boolean getAllowLeadingWildcard() {
     return allowLeadingWildcard;
   }
@@ -251,6 +260,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
    * <p>
    * Default: true.
    */
+  @Override
   public void setEnablePositionIncrements(boolean enable) {
     this.enablePositionIncrements = enable;
   }
@@ -258,6 +268,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
   /**
    * @see #setEnablePositionIncrements(boolean)
    */
+  @Override
   public boolean getEnablePositionIncrements() {
     return enablePositionIncrements;
   }
@@ -288,6 +299,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
    * Whether terms of wildcard, prefix, fuzzy and range queries are to be automatically
    * lower-cased or not.  Default is <code>true</code>.
    */
+  @Override
   public void setLowercaseExpandedTerms(boolean lowercaseExpandedTerms) {
     this.lowercaseExpandedTerms = lowercaseExpandedTerms;
   }
@@ -295,6 +307,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
   /**
    * @see #setLowercaseExpandedTerms(boolean)
    */
+  @Override
   public boolean getLowercaseExpandedTerms() {
     return lowercaseExpandedTerms;
   }
@@ -309,6 +322,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
    * points are not relevant then use this to change
    * the rewrite method.
    */
+  @Override
   public void setMultiTermRewriteMethod(MultiTermQuery.RewriteMethod method) {
     multiTermRewriteMethod = method;
   }
@@ -317,6 +331,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
   /**
    * @see #setMultiTermRewriteMethod
    */
+  @Override
   public MultiTermQuery.RewriteMethod getMultiTermRewriteMethod() {
     return multiTermRewriteMethod;
   }
@@ -325,6 +340,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
    * Set locale used by date range parsing, lowercasing, and other
    * locale-sensitive operations.
    */
+  @Override
   public void setLocale(Locale locale) {
     this.locale = locale;
   }
@@ -332,14 +348,17 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
   /**
    * Returns current locale, allowing access by subclasses.
    */
+  @Override
   public Locale getLocale() {
     return locale;
   }
   
+  @Override
   public void setTimeZone(TimeZone timeZone) {
     this.timeZone = timeZone;
   }
   
+  @Override
   public TimeZone getTimeZone() {
     return timeZone;
   }
@@ -351,6 +370,7 @@ public abstract class QueryParserBase implements CommonQueryParserConfiguration 
    *
    * @param dateResolution the default date resolution to set
    */
+  @Override
   public void setDateResolution(DateTools.Resolution dateResolution) {
     this.dateResolution = dateResolution;
   }

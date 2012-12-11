@@ -31,6 +31,7 @@ public class SpanQueryBuilderFactory implements SpanQueryBuilder {
 
   private final Map<String, SpanQueryBuilder> builders = new HashMap<String, SpanQueryBuilder>();
 
+  @Override
   public Query getQuery(Element e) throws ParserException {
     return getSpanQuery(e);
   }
@@ -39,6 +40,7 @@ public class SpanQueryBuilderFactory implements SpanQueryBuilder {
     builders.put(nodeName, builder);
   }
 
+  @Override
   public SpanQuery getSpanQuery(Element e) throws ParserException {
     SpanQueryBuilder builder = builders.get(e.getNodeName());
     if (builder == null) {

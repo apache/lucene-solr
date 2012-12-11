@@ -85,6 +85,7 @@ public class SortableFloatField extends PrimitiveFieldType {
     return NumberUtils.SortableStr2floatStr(indexedForm);
   }
 
+  @Override
   public CharsRef indexedToReadable(BytesRef input, CharsRef charsRef) {
     // TODO: this could be more efficient, but the sortable types should be deprecated instead
     UnicodeUtil.UTF8toUTF16(input, charsRef);

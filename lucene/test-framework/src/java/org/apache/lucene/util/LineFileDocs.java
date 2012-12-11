@@ -67,6 +67,7 @@ public class LineFileDocs implements Closeable {
     this(random, LuceneTestCase.TEST_LINE_DOCS_FILE, useDocValues);
   }
 
+  @Override
   public synchronized void close() throws IOException {
     if (reader != null) {
       reader.close();

@@ -239,10 +239,12 @@ public class CollisionMap {
       this.index = i;
     }
 
+    @Override
     public boolean hasNext() {
       return this.next != null;
     }
 
+    @Override
     public Entry next() { 
       Entry e = this.next;
       if (e == null) throw new NoSuchElementException();
@@ -258,6 +260,7 @@ public class CollisionMap {
       return  e;
     }
 
+    @Override
     public void remove() {
       throw new UnsupportedOperationException();
     }

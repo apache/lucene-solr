@@ -27,10 +27,12 @@ import org.apache.lucene.util.AttributeReflector;
 public class BaseFormAttributeImpl extends AttributeImpl implements BaseFormAttribute, Cloneable {
   private Token token;
   
+  @Override
   public String getBaseForm() {
     return token == null ? null : token.getBaseForm();
   }
   
+  @Override
   public void setToken(Token token) {
     this.token = token;
   }

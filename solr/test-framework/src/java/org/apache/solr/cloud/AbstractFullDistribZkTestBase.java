@@ -510,6 +510,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     ureq.process(cloudClient);
   }
   
+  @Override
   protected void index_specific(int serverNumber, Object... fields)
       throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
@@ -543,6 +544,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     controlClient.add(doc);
   }
   
+  @Override
   protected void del(String q) throws Exception {
     controlClient.deleteByQuery(q);
     cloudClient.deleteByQuery(q);
@@ -1074,6 +1076,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           + " deletes:" + numDeletes);
     }
     
+    @Override
     public void safeStop() {
       stop = true;
     }
@@ -1123,6 +1126,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       System.err.println("num searches done:" + numSearches + " with " + fails + " fails");
     }
     
+    @Override
     public void safeStop() {
       stop = true;
     }
@@ -1183,11 +1187,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     System.clearProperty("numShards");
   }
   
+  @Override
   protected void commit() throws Exception {
     controlClient.commit();
     cloudClient.commit();
   }
   
+  @Override
   protected void destroyServers() throws Exception {
     ChaosMonkey.stop(controlJetty);
     for (JettySolrRunner jetty : jettys) {
@@ -1201,6 +1207,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     jettys.clear();
   }
   
+  @Override
   protected SolrServer createNewSolrServer(int port) {
     try {
       // setup the server...

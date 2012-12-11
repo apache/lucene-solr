@@ -124,6 +124,7 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
   /**
    * Internal use for Lucene... do not explicitly call.
    */
+  @Override
   public void onInit(List list) throws IOException {
     List<IndexCommitWrapper> wrapperList = wrap(list);
     deletionPolicy.onInit(wrapperList);
@@ -134,6 +135,7 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
   /**
    * Internal use for Lucene... do not explicitly call.
    */
+  @Override
   public void onCommit(List list) throws IOException {
     List<IndexCommitWrapper> wrapperList = wrap(list);
     deletionPolicy.onCommit(wrapperList);

@@ -32,10 +32,12 @@ class StringMockSolrResourceLoader implements ResourceLoader {
     this.text = text;
   }
 
+  @Override
   public <T> T newInstance(String cname, Class<T> expectedType) {
     return null;
   }
 
+  @Override
   public InputStream openResource(String resource) throws IOException {
     return new ByteArrayInputStream(text.getBytes("UTF-8"));
   }

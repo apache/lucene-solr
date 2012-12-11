@@ -305,6 +305,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
       // callback object to set a random setMinimumNumberShouldMatch
       TestBoolean2.Callback minNrCB = new TestBoolean2.Callback() {
+        @Override
         public void postCreate(BooleanQuery q) {
           BooleanClause[] c =q.getClauses();
           int opt=0;

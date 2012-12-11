@@ -39,6 +39,7 @@ final class TestRuleThreadAndTestName implements TestRule {
   @Override
   public Statement apply(final Statement base, final Description description) {
     return new Statement() {
+      @Override
       public void evaluate() throws Throwable {
         try {
           Thread current = Thread.currentThread();

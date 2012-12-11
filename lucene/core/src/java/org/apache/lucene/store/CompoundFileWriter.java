@@ -129,6 +129,7 @@ final class CompoundFileWriter implements Closeable{
    *           if close() had been called before or if no file has been added to
    *           this object
    */
+  @Override
   public void close() throws IOException {
     if (closed) {
       return;

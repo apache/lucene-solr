@@ -73,6 +73,7 @@ public class SignatureUpdateProcessorFactory
     }
   }
 
+  @Override
   public void inform(SolrCore core) {
     final SchemaField field = core.getSchema().getFieldOrNull(getSignatureField());
     if (null == field) {

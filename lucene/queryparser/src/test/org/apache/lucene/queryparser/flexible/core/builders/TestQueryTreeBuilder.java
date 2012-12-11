@@ -39,6 +39,7 @@ public class TestQueryTreeBuilder extends LuceneTestCase {
   
   private static class DummyBuilder implements QueryBuilder {
 
+    @Override
     public Object build(QueryNode queryNode) throws QueryNodeException {
       return "OK";
     }

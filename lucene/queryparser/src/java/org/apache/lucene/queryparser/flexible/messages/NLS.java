@@ -189,6 +189,7 @@ public class NLS {
       field.setAccessible(true);
     } else {
       AccessController.doPrivileged(new PrivilegedAction<Void>() {
+        @Override
         public Void run() {
           field.setAccessible(true);
           return null;

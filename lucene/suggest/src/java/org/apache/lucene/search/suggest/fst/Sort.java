@@ -344,6 +344,7 @@ public final class Sort {
     ByteSequencesWriter out = new ByteSequencesWriter(outputFile);
 
     PriorityQueue<FileAndTop> queue = new PriorityQueue<FileAndTop>(merges.size()) {
+      @Override
       protected boolean lessThan(FileAndTop a, FileAndTop b) {
         return comparator.compare(a.current, b.current) < 0;
       }

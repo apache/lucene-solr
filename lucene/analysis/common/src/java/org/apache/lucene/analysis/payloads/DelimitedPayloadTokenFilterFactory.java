@@ -49,6 +49,7 @@ public class DelimitedPayloadTokenFilterFactory extends TokenFilterFactory imple
   private PayloadEncoder encoder;
   private char delimiter = '|';
 
+  @Override
   public DelimitedPayloadTokenFilter create(TokenStream input) {
     return new DelimitedPayloadTokenFilter(input, delimiter, encoder);
   }
@@ -58,6 +59,7 @@ public class DelimitedPayloadTokenFilterFactory extends TokenFilterFactory imple
     super.init(args);
   }
 
+  @Override
   public void inform(ResourceLoader loader) {
     String encoderClass = args.get(ENCODER_ATTR);
     if (encoderClass == null) {

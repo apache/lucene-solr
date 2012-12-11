@@ -1285,10 +1285,12 @@ public final class FST<T> {
       }
     }
 
+    @Override
     public void skip(int count) {
       pos -= count;
     }
 
+    @Override
     public void skip(int base, int count) {
       pos = base - count;
     }
@@ -1313,10 +1315,12 @@ public final class FST<T> {
       pos += len;
     }
 
+    @Override
     public void skip(int count) {
       pos += count;
     }
 
+    @Override
     public void skip(int base, int count) {
       pos = base + count;
     }

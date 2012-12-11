@@ -54,6 +54,7 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
 @Deprecated
 public class LegacyHTMLStripCharFilterFactory extends CharFilterFactory {
 
+  @Override
   public LegacyHTMLStripCharFilter create(Reader input) {
     return new LegacyHTMLStripCharFilter(input);
   }

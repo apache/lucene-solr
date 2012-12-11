@@ -167,6 +167,7 @@ public class SearchGroup<GROUP_VALUE_TYPE> {
       }
     }
 
+    @Override
     @SuppressWarnings({"unchecked","rawtypes"})
     public int compare(MergedGroup<T> group, MergedGroup<T> other) {
       if (group == other) {

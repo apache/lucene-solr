@@ -35,6 +35,7 @@ public class MainEndResultTransformer implements EndResultTransformer {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
     Object value = result.get(rb.getGroupingSpec().getFields()[0]);
     if (TopGroups.class.isInstance(value)) {

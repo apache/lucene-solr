@@ -104,9 +104,11 @@ public abstract class AbstractGroupFacetCollector extends Collector {
 
   protected abstract SegmentResult createSegmentResult() throws IOException;
 
+  @Override
   public void setScorer(Scorer scorer) throws IOException {
   }
 
+  @Override
   public boolean acceptsDocsOutOfOrder() {
     return true;
   }
@@ -118,6 +120,7 @@ public abstract class AbstractGroupFacetCollector extends Collector {
 
     private final static Comparator<FacetEntry> orderByCountAndValue = new Comparator<FacetEntry>() {
 
+      @Override
       public int compare(FacetEntry a, FacetEntry b) {
         int cmp = b.count - a.count; // Highest count first!
         if (cmp != 0) {
@@ -130,6 +133,7 @@ public abstract class AbstractGroupFacetCollector extends Collector {
 
     private final static Comparator<FacetEntry> orderByValue = new Comparator<FacetEntry>() {
 
+      @Override
       public int compare(FacetEntry a, FacetEntry b) {
         return a.value.compareTo(b.value);
       }
@@ -307,6 +311,7 @@ public abstract class AbstractGroupFacetCollector extends Collector {
       super(maxSize);
     }
 
+    @Override
     protected boolean lessThan(SegmentResult a, SegmentResult b) {
       return a.mergeTerm.compareTo(b.mergeTerm) < 0;
     }

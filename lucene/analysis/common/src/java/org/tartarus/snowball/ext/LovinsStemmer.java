@@ -1870,6 +1870,7 @@ private static final long serialVersionUID = 1L;
                     return true;
                 }
 
+                @Override
                 public boolean stem() {
             int v_1;
             int v_2;
@@ -1911,10 +1912,12 @@ private static final long serialVersionUID = 1L;
                     cursor = limit_backward;                    return true;
                 }
 
+        @Override
         public boolean equals( Object o ) {
             return o instanceof LovinsStemmer;
         }
 
+        @Override
         public int hashCode() {
             return LovinsStemmer.class.getName().hashCode();
         }

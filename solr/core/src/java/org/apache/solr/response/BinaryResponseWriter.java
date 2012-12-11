@@ -41,6 +41,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   private static final Logger LOG = LoggerFactory.getLogger(BinaryResponseWriter.class);
   public static final Set<Class> KNOWN_TYPES = new HashSet<Class>();
 
+  @Override
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
     Resolver resolver = new Resolver(req, response.getReturnFields());
     Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
@@ -49,14 +50,17 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     codec.marshal(response.getValues(), out);
   }
 
+  @Override
   public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
     throw new RuntimeException("This is a binary writer , Cannot write to a characterstream");
   }
 
+  @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return "application/octet-stream";
   }
 
+  @Override
   public void init(NamedList args) {
     /* NOOP */
   }
@@ -76,6 +80,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       this.returnFields = returnFields;
     }
 
+    @Override
     public Object resolve(Object o, JavaBinCodec codec) throws IOException {
       if (o instanceof ResultContext) {
         writeResults((ResultContext) o, codec);

@@ -41,10 +41,12 @@ import org.apache.solr.search.ReturnFields;
 public class PHPSerializedResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_PHP_UTF8="text/x-php-serialized;charset=UTF-8";
 
+  @Override
   public void init(NamedList n) {
   }
   
- public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+ @Override
+public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     PHPSerializedWriter w = new PHPSerializedWriter(writer, req, rsp);
     try {
       w.writeResponse();
@@ -53,6 +55,7 @@ public class PHPSerializedResponseWriter implements QueryResponseWriter {
     }
   }
 
+  @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return CONTENT_TYPE_TEXT_UTF8;
   }
@@ -82,6 +85,7 @@ class PHPSerializedWriter extends JSONWriter {
   
   
 
+  @Override
   public void writeStartDocumentList(String name, 
       long start, int size, long numFound, Float maxScore) throws IOException
   {
@@ -99,6 +103,7 @@ class PHPSerializedWriter extends JSONWriter {
     writeArrayOpener(size);
   }
 
+  @Override
   public void writeEndDocumentList() throws IOException
   {
     writeArrayCloser(); // doc list

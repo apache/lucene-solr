@@ -288,6 +288,7 @@ public class VariableGapTermsIndexWriter extends TermsIndexWriterBase {
     }
   }
 
+  @Override
   public void close() throws IOException {
     try {
     final long dirStart = out.getFilePointer();

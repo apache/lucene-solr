@@ -28,6 +28,7 @@ import org.w3c.dom.Element;
  */
 public class SpanTermBuilder extends SpanBuilderBase {
 
+  @Override
   public SpanQuery getSpanQuery(Element e) throws ParserException {
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     String value = DOMUtils.getNonBlankTextOrFail(e);

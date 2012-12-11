@@ -95,6 +95,7 @@ public class SolrDispatchFilter implements Filter
     }
   }
 
+  @Override
   public void init(FilterConfig config) throws ServletException
   {
     log.info("SolrDispatchFilter.init()");
@@ -125,6 +126,7 @@ public class SolrDispatchFilter implements Filter
     return new CoreContainer.Initializer();
   }
   
+  @Override
   public void destroy() {
     if (cores != null) {
       cores.shutdown();
@@ -132,6 +134,7 @@ public class SolrDispatchFilter implements Filter
     }    
   }
 
+  @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
     if( abortErrorMessage != null ) {
       ((HttpServletResponse)response).sendError( 500, abortErrorMessage );

@@ -46,6 +46,7 @@ public class BasicQueryFactory {
   public int getNrQueriesMade() {return queriesMade;}
   public int getMaxBasicQueries() {return maxBasicQueries;}
   
+  @Override
   public String toString() {
     return getClass().getName()
     + "(maxBasicQueries: " + maxBasicQueries

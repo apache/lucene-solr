@@ -163,6 +163,7 @@ public abstract class DocValues implements Closeable {
    * by the creator of this {@link DocValues} instance. API users should not
    * close {@link DocValues} instances.
    */
+  @Override
   public void close() throws IOException {
     cache.close(this);
   }
@@ -784,6 +785,7 @@ public abstract class DocValues implements Closeable {
       public DirectSourceCache() {
       }
 
+      @Override
       public synchronized Source load(DocValues values) throws IOException {
         if (ref == null) {
           ref = values.loadSource();
@@ -791,6 +793,7 @@ public abstract class DocValues implements Closeable {
         return ref;
       }
 
+      @Override
       public synchronized void invalidate(DocValues values) {
         ref = null;
         directSourceCache.close();

@@ -97,6 +97,7 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
   }
 
   private static final Comparator<Token> tokenComparator = new Comparator<Token>() {
+    @Override
     public int compare(final Token o1, final Token o2) {
       return o1.getPositionIncrement() - o2.getPositionIncrement();
     }

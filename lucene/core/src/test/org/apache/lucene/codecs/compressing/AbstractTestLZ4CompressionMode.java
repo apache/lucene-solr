@@ -23,6 +23,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
 public abstract class AbstractTestLZ4CompressionMode extends AbstractTestCompressionMode {
 
+  @Override
   public byte[] test(byte[] decompressed) throws IOException {
     final byte[] compressed = super.test(decompressed);
     int off = 0;

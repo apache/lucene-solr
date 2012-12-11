@@ -64,6 +64,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
    * @return The exchange rate.
    * @throws SolrException if the requested currency pair cannot be found
    */
+  @Override
   public double getExchangeRate(String sourceCurrencyCode, String targetCurrencyCode) {
     if (rates == null) {
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Rates not initialized.");
@@ -105,6 +106,7 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
     return rates != null ? rates.hashCode() : 0;
   }
 
+  @Override
   public String toString() {
     return "["+this.getClass().getName()+" : " + rates.getRates().size() + " rates.]";
   }

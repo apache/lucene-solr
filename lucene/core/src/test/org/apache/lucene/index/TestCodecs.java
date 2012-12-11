@@ -101,6 +101,7 @@ public class TestCodecs extends LuceneTestCase {
       Arrays.sort(terms);
     }
 
+    @Override
     public int compareTo(final FieldData other) {
       return fieldInfo.name.compareTo(other.fieldInfo.name);
     }
@@ -146,6 +147,7 @@ public class TestCodecs extends LuceneTestCase {
       this.positions = positions;
     }
 
+    @Override
     public int compareTo(final TermData o) {
       return text.compareTo(o.text);
     }

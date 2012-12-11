@@ -74,6 +74,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
       final int base = threadNum * docsPerThread;
 
       threads[threadNum] = new Thread("add-thread"+i) {
+        @Override
         public void run(){
           try {
             indexDocs(base, docsPerThread, maxSleep);

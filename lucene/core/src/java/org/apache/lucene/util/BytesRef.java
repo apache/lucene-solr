@@ -226,6 +226,7 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
   }
 
   /** Unsigned byte order comparison */
+  @Override
   public int compareTo(BytesRef other) {
     return utf8SortedAsUnicodeSortOrder.compare(this, other);
   }
@@ -240,6 +241,7 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
     // Only singleton
     private UTF8SortedAsUnicodeComparator() {};
 
+    @Override
     public int compare(BytesRef a, BytesRef b) {
       final byte[] aBytes = a.bytes;
       int aUpto = a.offset;
@@ -278,6 +280,7 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
     // Only singleton
     private UTF8SortedAsUTF16Comparator() {};
 
+    @Override
     public int compare(BytesRef a, BytesRef b) {
 
       final byte[] aBytes = a.bytes;

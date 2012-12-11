@@ -34,6 +34,7 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin
 {
   protected String defaultUserArgs = null;
 
+  @Override
   public void init(NamedList args) {
     defaultUserArgs = (String)args.get( "args" );
   }

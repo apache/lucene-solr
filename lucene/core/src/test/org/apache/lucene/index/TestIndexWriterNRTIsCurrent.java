@@ -86,6 +86,7 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
       this.latch = latch;
     }
 
+    @Override
     public void run() {
       DirectoryReader currentReader = null;
       Random random = LuceneTestCase.random();
@@ -158,6 +159,7 @@ public class TestIndexWriterNRTIsCurrent extends LuceneTestCase {
       this.latch = latch;
     }
 
+    @Override
     public void run() {
       try {
         latch.await();

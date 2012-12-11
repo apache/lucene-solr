@@ -26,11 +26,13 @@ import org.apache.solr.request.SolrQueryRequest;
 public class PHPResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_PHP_UTF8="text/x-php;charset=UTF-8";
 
+  @Override
   public void init(NamedList n) {
     /* NOOP */
   }
   
- public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+ @Override
+public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     PHPWriter w = new PHPWriter(writer, req, rsp);
     try {
       w.writeResponse();
@@ -39,6 +41,7 @@ public class PHPResponseWriter implements QueryResponseWriter {
     }
   }
 
+  @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return CONTENT_TYPE_TEXT_UTF8;
   }

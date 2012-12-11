@@ -66,6 +66,7 @@ public final class IgnoreFieldUpdateProcessorFactory extends FieldMutatingUpdate
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
     return new FieldMutatingUpdateProcessor(getSelector(), next) {
+      @Override
       protected SolrInputField mutate(final SolrInputField src) {
         return null;
       }
@@ -78,6 +79,7 @@ public final class IgnoreFieldUpdateProcessorFactory extends FieldMutatingUpdate
 
     final IndexSchema schema = core.getSchema();
     return new FieldMutatingUpdateProcessor.FieldNameSelector() {
+      @Override
       public boolean shouldMutate(final String fieldName) {
 
         FieldType type = schema.getFieldTypeNoEx(fieldName);

@@ -52,6 +52,7 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
     writer.write(utf8);
   }
   
+  @Override
   public BytesRefIterator iterator() throws IOException {
     if (sorted == null) {
       closeWriter();

@@ -79,10 +79,12 @@ public class ICUNormalizer2FilterFactory extends TokenFilterFactory implements M
     }
   }
   
+  @Override
   public TokenStream create(TokenStream input) {
     return new ICUNormalizer2Filter(input, normalizer);
   }
 
+  @Override
   public AbstractAnalysisFactory getMultiTermComponent() {
     return this;
   }

@@ -224,8 +224,11 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     // finally use a completely custom CharSequence that is not catched by instanceof checks
     final String longTestString = "012345678901234567890123456789";
     t.append(new CharSequence() {
+      @Override
       public char charAt(int i) { return longTestString.charAt(i); }
+      @Override
       public int length() { return longTestString.length(); }
+      @Override
       public CharSequence subSequence(int start, int end) { return longTestString.subSequence(start, end); }
       @Override
       public String toString() { return longTestString; }

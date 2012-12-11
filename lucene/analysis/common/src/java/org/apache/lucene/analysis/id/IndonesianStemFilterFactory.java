@@ -44,6 +44,7 @@ public class IndonesianStemFilterFactory extends TokenFilterFactory {
     stemDerivational = getBoolean("stemDerivational", true);
   }
 
+  @Override
   public TokenStream create(TokenStream input) {
     return new IndonesianStemFilter(input, stemDerivational);
   }
