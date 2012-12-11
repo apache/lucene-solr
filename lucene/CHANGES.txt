@@ -85,7 +85,11 @@ Changes in backwards compatibility policy
   non-point shapes.  If you want to call makeDistanceValueSource() based on
   shape centers, you need to do this yourself in another spatial field.
   (David Smiley)
-    
+
+* LUCENE-4615: Replace IntArrayAllocator and FloatArrayAllocator by ArraysPool.
+  FacetArrays no longer takes those allocators; if you need to reuse the arrays,
+  you should use ReusingFacetArrays. (Shai Erera, Gilad Barkai)
+
 New Features
 
 * LUCENE-4226: New experimental StoredFieldsFormat that compresses chunks of

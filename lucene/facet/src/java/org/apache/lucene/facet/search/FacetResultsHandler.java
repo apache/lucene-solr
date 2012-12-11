@@ -154,7 +154,7 @@ public abstract class FacetResultsHandler {
    *          offset in input arrays where partition starts
    */
   protected boolean isSelfPartition (int ordinal, FacetArrays facetArrays, int offset) {
-    int partitionSize = facetArrays.getArraysLength();
+    int partitionSize = facetArrays.arrayLength;
     return ordinal / partitionSize == offset / partitionSize;
   }
 

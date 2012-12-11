@@ -59,7 +59,7 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
     if (ordinal != TaxonomyReader.INVALID_ORDINAL) {
       double value = 0;  
       if (isSelfPartition(ordinal, facetArrays, offset)) {
-        int partitionSize = facetArrays.getArraysLength();
+        int partitionSize = facetArrays.arrayLength;
         value = facetRequest.getValueOf(facetArrays, ordinal % partitionSize);
       }
       
@@ -121,7 +121,7 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
    */
   private int heapDescendants(int ordinal, Heap<FacetResultNode> pq,
       MutableFacetResultNode parentResultNode, FacetArrays facetArrays, int offset) throws IOException {
-    int partitionSize = facetArrays.getArraysLength();
+    int partitionSize = facetArrays.arrayLength;
     int endOffset = offset + partitionSize;
     ParallelTaxonomyArrays childrenArray = taxonomyReader.getParallelTaxonomyArrays();
     int[] children = childrenArray.children();
