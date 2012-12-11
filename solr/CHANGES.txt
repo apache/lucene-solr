@@ -289,6 +289,10 @@ Bug Fixes
   is not present and it is mandatory for all commands. 
   (Tomas Fernandez Lobbe via Mark Miller)
 
+* SOLR-4071: Validate that name is pass to Collections API create, and behave the
+  same way as on startup when collection.configName is not explicitly passed.
+  (Po Rui, Mark Miller)
+
 Other Changes
 ----------------------
 
