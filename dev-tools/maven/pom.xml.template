@@ -368,7 +368,8 @@
       <dependency>
         <groupId>org.easymock</groupId>
         <artifactId>easymock</artifactId>
-        <version>2.2</version>
+        <version>3.0</version>
+        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
