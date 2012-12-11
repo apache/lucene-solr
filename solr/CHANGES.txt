@@ -349,6 +349,9 @@ Other Changes
 
 * SOLR-4155: Upgrade Jetty to 8.1.8. (Robert Muir)
 
+* SOLR-2986: Add MoreLikeThis to warning about features that require uniqueKey.
+  Also, change the warning to warn log level. (Shawn Heisey via Mark Miller)
+
 ==================  4.0.0 ==================
 
 Versions of Major Components
