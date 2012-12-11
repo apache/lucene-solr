@@ -104,7 +104,7 @@ public final class PostingsHighlighter {
   }
   
   public PostingsHighlighter(String field, int maxLength) {
-    this(field, DEFAULT_MAX_LENGTH, BreakIterator.getSentenceInstance(Locale.ROOT), new PassageScorer(), new PassageFormatter());
+    this(field, maxLength, BreakIterator.getSentenceInstance(Locale.ROOT), new PassageScorer(), new PassageFormatter());
   }
   
   public PostingsHighlighter(String field, int maxLength, BreakIterator breakIterator, PassageScorer scorer, PassageFormatter formatter) {
@@ -201,7 +201,7 @@ public final class PostingsHighlighter {
       if (leaf != lastLeaf) {
         termsEnum = t.iterator(null);
         postings = new DocsAndPositionsEnum[terms.size()];
-      };
+      }
       Passage passages[] = highlightDoc(termTexts, termContexts, subContext.ord, weights, content.length(), bi, doc - subContext.docBase, termsEnum, postings, maxPassages);
       if (passages.length > 0) {
         // otherwise a null snippet
@@ -354,7 +354,7 @@ public final class PostingsHighlighter {
         if (off == otherOff) {
           return id - other.id;
         } else {
-          return off - otherOff;
+          return Long.signum(((long)off) - otherOff);
         }
       } catch (IOException e) {
         throw new RuntimeException(e);
