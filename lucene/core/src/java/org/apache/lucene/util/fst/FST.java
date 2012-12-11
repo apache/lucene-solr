@@ -275,7 +275,7 @@ public final class FST<T> {
       inCounts = null;
     }
     
-    writer = new BytesWriter();
+    writer = new DefaultBytesWriter();
 
     emptyOutput = null;
     packed = false;
@@ -360,8 +360,8 @@ public final class FST<T> {
     if (this.startNode != -1) {
       throw new IllegalStateException("already finished");
     }
-    byte[] finalBytes = new byte[writer.posWrite];
-    System.arraycopy(bytes, 0, finalBytes, 0, writer.posWrite);
+    byte[] finalBytes = new byte[writer.getPosition()];
+    System.arraycopy(bytes, 0, finalBytes, 0, writer.getPosition());
     bytes = finalBytes;
     this.startNode = startNode;
 
@@ -415,23 +415,23 @@ public final class FST<T> {
 
     // TODO: this is messy -- replace with sillyBytesWriter; maybe make
     // bytes private
-    final int posSave = writer.posWrite;
+    final int posSave = writer.getPosition();
     outputs.writeFinalOutput(emptyOutput, writer);
-    emptyOutputBytes = new byte[writer.posWrite-posSave];
+    emptyOutputBytes = new byte[writer.getPosition()-posSave];
 
     if (!packed) {
       // reverse
-      final int stopAt = (writer.posWrite - posSave)/2;
+      final int stopAt = (writer.getPosition() - posSave)/2;
       int upto = 0;
       while(upto < stopAt) {
         final byte b = bytes[posSave + upto];
-        bytes[posSave+upto] = bytes[writer.posWrite-upto-1];
-        bytes[writer.posWrite-upto-1] = b;
+        bytes[posSave+upto] = bytes[writer.getPosition()-upto-1];
+        bytes[writer.getPosition()-upto-1] = b;
         upto++;
       }
     }
-    System.arraycopy(bytes, posSave, emptyOutputBytes, 0, writer.posWrite-posSave);
-    writer.posWrite = posSave;
+    System.arraycopy(bytes, posSave, emptyOutputBytes, 0, writer.getPosition()-posSave);
+    writer.setPosition(posSave);
   }
 
   public void save(DataOutput out) throws IOException {
@@ -562,7 +562,7 @@ public final class FST<T> {
       }
     }
 
-    int startAddress = writer.posWrite;
+    int startAddress = writer.getPosition();
     //System.out.println("  startAddr=" + startAddress);
 
     final boolean doFixedArray = shouldExpand(nodeIn);
@@ -578,7 +578,7 @@ public final class FST<T> {
       // of bytes per arc (int) here:
       // TODO: we could make this a vInt instead
       writer.writeInt(0);
-      fixedArrayStart = writer.posWrite;
+      fixedArrayStart = writer.getPosition();
       //System.out.println("  do fixed arcs array arcsStart=" + fixedArrayStart);
     } else {
       fixedArrayStart = 0;
@@ -588,7 +588,7 @@ public final class FST<T> {
     
     final int lastArc = nodeIn.numArcs-1;
 
-    int lastArcStart = writer.posWrite;
+    int lastArcStart = writer.getPosition();
     int maxBytesPerArc = 0;
     for(int arcIdx=0;arcIdx<nodeIn.numArcs;arcIdx++) {
       final Builder.Arc<T> arc = nodeIn.arcs[arcIdx];
@@ -653,8 +653,8 @@ public final class FST<T> {
       // but record how many bytes each one took, and max
       // byte size:
       if (doFixedArray) {
-        bytesPerArc[arcIdx] = writer.posWrite - lastArcStart;
-        lastArcStart = writer.posWrite;
+        bytesPerArc[arcIdx] = writer.getPosition() - lastArcStart;
+        lastArcStart = writer.getPosition();
         maxBytesPerArc = Math.max(maxBytesPerArc, bytesPerArc[arcIdx]);
         //System.out.println("    bytes=" + bytesPerArc[arcIdx]);
       }
@@ -681,9 +681,9 @@ public final class FST<T> {
       bytes[fixedArrayStart-1] = (byte) maxBytesPerArc;
 
       // expand the arcs in place, backwards
-      int srcPos = writer.posWrite;
+      int srcPos = writer.getPosition();
       int destPos = fixedArrayStart + nodeIn.numArcs*maxBytesPerArc;
-      writer.posWrite = destPos;
+      writer.setPosition(destPos);
       for(int arcIdx=nodeIn.numArcs-1;arcIdx>=0;arcIdx--) {
         //System.out.println("  repack arcIdx=" + arcIdx + " srcPos=" + srcPos + " destPos=" + destPos);
         destPos -= maxBytesPerArc;
@@ -698,7 +698,7 @@ public final class FST<T> {
     // reverse bytes in-place; we do this so that the
     // "BIT_TARGET_NEXT" opto can work, ie, it reads the
     // node just before the current one
-    final int endAddress = writer.posWrite - 1;
+    final int endAddress = writer.getPosition() - 1;
 
     int left = startAddress;
     int right = endAddress;
@@ -908,17 +908,18 @@ public final class FST<T> {
 
     if (arc.label == END_LABEL) {
       //System.out.println("    nextArc fake " + arc.nextArc);
-      in.pos = getNodeAddress(arc.nextArc);
-      final byte b = bytes[in.pos];
+      int pos = in.pos = getNodeAddress(arc.nextArc);
+      final byte b = in.readByte();
       if (b == ARCS_AS_FIXED_ARRAY) {
         //System.out.println("    nextArc fake array");
-        in.skip(1);
         in.readVInt();
         if (packed) {
           in.readVInt();
         } else {
           in.readInt();
         }
+      } else {
+        in.pos = pos;
       }
     } else {
       if (arc.bytesPerArc != 0) {
@@ -1183,12 +1184,17 @@ public final class FST<T> {
       ((node.depth <= FIXED_ARRAY_SHALLOW_DISTANCE && node.numArcs >= FIXED_ARRAY_NUM_ARCS_SHALLOW) || 
        node.numArcs >= FIXED_ARRAY_NUM_ARCS_DEEP);
   }
+  
+  static abstract class BytesWriter extends DataOutput {
+    public abstract void setPosition(int posWrite);
+    public abstract int getPosition();
+  }
 
   // Non-static: writes to FST's byte[]
-  class BytesWriter extends DataOutput {
+  class DefaultBytesWriter extends BytesWriter {
     int posWrite;
 
-    public BytesWriter() {
+    public DefaultBytesWriter() {
       // pad: ensure no node gets address 0 which is reserved to mean
       // the stop state w/ no arcs
       posWrite = 1;
@@ -1205,7 +1211,13 @@ public final class FST<T> {
       bytes[posWrite++] = b;
     }
 
-    public void setPosWrite(int posWrite) {
+    @Override
+    public int getPosition() {
+      return posWrite;
+    }
+
+    @Override
+    public void setPosition(int posWrite) {
       this.posWrite = posWrite;
       if (bytes.length < posWrite) {
         assert bytes.length < Integer.MAX_VALUE: "FST too large (> 2.1 GB)";
@@ -1436,7 +1448,7 @@ public final class FST<T> {
     this.nodeRefToAddress = nodeRefToAddress;
     this.outputs = outputs;
     NO_OUTPUT = outputs.getNoOutput();
-    writer = new BytesWriter();
+    writer = new DefaultBytesWriter();
   }
 
   /** Expert: creates an FST by packing this one.  This
@@ -1529,7 +1541,7 @@ public final class FST<T> {
       // for assert:
       boolean negDelta = false;
 
-      writer.posWrite = 0;
+      writer.setPosition(0);
       // Skip 0 byte since 0 is reserved target:
       writer.writeByte((byte) 0);
 
@@ -1550,7 +1562,7 @@ public final class FST<T> {
       // unchanged:
       for(int node=nodeCount;node>=1;node--) {
         fst.nodeCount++;
-        final int address = writer.posWrite;
+        final int address = writer.getPosition();
         //System.out.println("  node: " + node + " address=" + address);
         if (address != newNodeAddress.get(node)) {
           addressError = address - (int) newNodeAddress.get(node);
@@ -1592,7 +1604,7 @@ public final class FST<T> {
           while(true) {  // iterate over all arcs for this node
 
             //System.out.println("    arc label=" + arc.label + " target=" + arc.target + " pos=" + writer.posWrite);
-            final int arcStartPos = writer.posWrite;
+            final int arcStartPos = writer.getPosition();
             nodeArcCount++;
 
             byte flags = 0;
@@ -1639,7 +1651,7 @@ public final class FST<T> {
                 absPtr = topNodeMap.size() + (int) newNodeAddress.get(arc.target) + addressError;
               }
 
-              int delta = (int) newNodeAddress.get(arc.target) + addressError - writer.posWrite - 2;
+              int delta = (int) newNodeAddress.get(arc.target) + addressError - writer.getPosition() - 2;
               if (delta < 0) {
                 //System.out.println("neg: " + delta);
                 anyNegDelta = true;
@@ -1669,7 +1681,7 @@ public final class FST<T> {
 
             if (doWriteTarget) {
 
-              int delta = (int) newNodeAddress.get(arc.target) + addressError - writer.posWrite;
+              int delta = (int) newNodeAddress.get(arc.target) + addressError - writer.getPosition();
               if (delta < 0) {
                 anyNegDelta = true;
                 //System.out.println("neg: " + delta);
@@ -1702,7 +1714,7 @@ public final class FST<T> {
             }
 
             if (useArcArray) {
-              final int arcBytes = writer.posWrite - arcStartPos;
+              final int arcBytes = writer.getPosition() - arcStartPos;
               //System.out.println("  " + arcBytes + " bytes");
               maxBytesPerArc = Math.max(maxBytesPerArc, arcBytes);
               // NOTE: this may in fact go "backwards", if
@@ -1712,7 +1724,7 @@ public final class FST<T> {
               // will retry (below) so it's OK to ovewrite
               // bytes:
               //wasted += bytesPerArc - arcBytes;
-              writer.setPosWrite(arcStartPos + bytesPerArc);
+              writer.setPosition(arcStartPos + bytesPerArc);
             }
 
             if (arc.isLast()) {
@@ -1737,7 +1749,7 @@ public final class FST<T> {
 
           // Retry:
           bytesPerArc = maxBytesPerArc;
-          writer.posWrite = address;
+          writer.setPosition(address);
           nodeArcCount = 0;
           retry = true;
           anyNegDelta = false;
@@ -1784,9 +1796,9 @@ public final class FST<T> {
     assert fst.arcCount == arcCount;
     assert fst.arcWithOutputCount == arcWithOutputCount: "fst.arcWithOutputCount=" + fst.arcWithOutputCount + " arcWithOutputCount=" + arcWithOutputCount;
     
-    final byte[] finalBytes = new byte[writer.posWrite];
+    final byte[] finalBytes = new byte[writer.getPosition()];
     //System.out.println("resize " + fst.bytes.length + " down to " + writer.posWrite);
-    System.arraycopy(fst.bytes, 0, finalBytes, 0, writer.posWrite);
+    System.arraycopy(fst.bytes, 0, finalBytes, 0, writer.getPosition());
     fst.bytes = finalBytes;
     fst.cacheRootArcs();
 
