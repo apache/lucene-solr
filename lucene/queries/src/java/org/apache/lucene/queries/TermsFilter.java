@@ -194,7 +194,7 @@ public final class TermsFilter extends Filter {
           spare.offset = offsets[i];
           spare.length = offsets[i+1] - offsets[i];
           if (termsEnum.seekExact(spare, false)) { // don't use cache since we could pollute the cache here easily
-            docs = termsEnum.docs(acceptDocs, docs, 0); // no freq since we don't need them
+            docs = termsEnum.docs(acceptDocs, docs, DocsEnum.FLAG_NONE); // no freq since we don't need them
             if (result == null) {
               if (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
                 result = new FixedBitSet(reader.maxDoc());

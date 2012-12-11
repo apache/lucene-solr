@@ -987,7 +987,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     w.addDocument(doc);
     SegmentReader r = getOnlySegmentReader(DirectoryReader.open(w, true));
     try {
-      _TestUtil.docs(random(), r, "f", new BytesRef("val"), null, null, 0);
+      _TestUtil.docs(random(), r, "f", new BytesRef("val"), null, null, DocsEnum.FLAG_NONE);
       fail("should have failed to seek since terms index was not loaded.");
     } catch (IllegalStateException e) {
       // expected - we didn't load the term index

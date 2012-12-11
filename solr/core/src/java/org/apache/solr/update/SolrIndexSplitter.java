@@ -151,7 +151,7 @@ public class SolrIndexSplitter {
       // TODO: hook in custom hashes (or store hashes)
       int hash = Hash.murmurhash3_x86_32(term.bytes, term.offset, term.length, 0);
 
-      docsEnum = termsEnum.docs(liveDocs, docsEnum, 0x0);
+      docsEnum = termsEnum.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
       for (;;) {
         int doc = docsEnum.nextDoc();
         if (doc == DocsEnum.NO_MORE_DOCS) break;

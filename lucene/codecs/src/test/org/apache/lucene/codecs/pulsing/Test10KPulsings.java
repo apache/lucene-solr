@@ -87,7 +87,7 @@ public class Test10KPulsings extends LuceneTestCase {
     for (int i = 0; i < 10050; i++) {
       String expected = df.format(i);
       assertEquals(expected, te.next().utf8ToString());
-      de = _TestUtil.docs(random(), te, null, de, 0);
+      de = _TestUtil.docs(random(), te, null, de, DocsEnum.FLAG_NONE);
       assertTrue(de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, de.nextDoc());
     }
@@ -145,7 +145,7 @@ public class Test10KPulsings extends LuceneTestCase {
     for (int i = 0; i < 10050; i++) {
       String expected = df.format(i);
       assertEquals(expected, te.next().utf8ToString());
-      de = _TestUtil.docs(random(), te, null, de, 0);
+      de = _TestUtil.docs(random(), te, null, de, DocsEnum.FLAG_NONE);
       assertTrue(de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, de.nextDoc());
     }

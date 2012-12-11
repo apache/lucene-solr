@@ -27,6 +27,14 @@ import org.apache.lucene.util.Bits; // javadocs
  *  NOTE: you must first call {@link #nextDoc} before using
  *  any of the per-doc methods. */
 public abstract class DocsEnum extends DocIdSetIterator {
+  
+  /**
+   * Flag to pass to {@link TermsEnum#docs(Bits,DocsEnum,int)} if you don't
+   * require term frequencies in the returned enum. When passed to
+   * {@link TermsEnum#docsAndPositions(Bits,DocsAndPositionsEnum,int)} means
+   * that no offsets and payloads will be returned.
+   */
+  public static final int FLAG_NONE = 0x0;
 
   /** Flag to pass to {@link TermsEnum#docs(Bits,DocsEnum,int)}
    *  if you require term frequencies in the returned enum. */

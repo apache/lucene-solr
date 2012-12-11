@@ -597,7 +597,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     if (!termsEnum.seekExact(termBytes, false)) {
       return -1;
     }
-    DocsEnum docs = termsEnum.docs(atomicReader.getLiveDocs(), null, 0);
+    DocsEnum docs = termsEnum.docs(atomicReader.getLiveDocs(), null, DocsEnum.FLAG_NONE);
     if (docs == null) return -1;
     int id = docs.nextDoc();
     return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
@@ -619,7 +619,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       
       TermsEnum te = terms.iterator(null);
       if (te.seekExact(idBytes, true)) {
-        DocsEnum docs = te.docs(reader.getLiveDocs(), null, 0);
+        DocsEnum docs = te.docs(reader.getLiveDocs(), null, DocsEnum.FLAG_NONE);
         int id = docs.nextDoc();
         if (id == DocIdSetIterator.NO_MORE_DOCS) continue;
         assert docs.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
@@ -923,7 +923,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     int bitsSet = 0;
     OpenBitSet obs = null;
 
-    DocsEnum docsEnum = deState.termsEnum.docs(deState.liveDocs, deState.docsEnum, 0);
+    DocsEnum docsEnum = deState.termsEnum.docs(deState.liveDocs, deState.docsEnum, DocsEnum.FLAG_NONE);
     if (deState.docsEnum == null) {
       deState.docsEnum = docsEnum;
     }
@@ -1001,7 +1001,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
           if (terms != null) {
             final TermsEnum termsEnum = terms.iterator(null);
             if (termsEnum.seekExact(termBytes, false)) {
-              docsEnum = termsEnum.docs(liveDocs, null, 0);
+              docsEnum = termsEnum.docs(liveDocs, null, DocsEnum.FLAG_NONE);
             }
           }
 

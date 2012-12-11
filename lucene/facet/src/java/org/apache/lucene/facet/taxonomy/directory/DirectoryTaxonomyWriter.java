@@ -777,7 +777,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
               // 'validation' checks.
               cp.clear();
               cp.add(t.utf8ToString(), delimiter);
-              docsEnum = termsEnum.docs(null, docsEnum, 0);
+              docsEnum = termsEnum.docs(null, docsEnum, DocsEnum.FLAG_NONE);
               boolean res = cache.put(cp, docsEnum.nextDoc() + ctx.docBase);
               assert !res : "entries should not have been evicted from the cache";
             } else {
@@ -870,7 +870,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
           cp.clear();
           cp.add(value, Consts.DEFAULT_DELIMITER);
           final int ordinal = addCategory(cp);
-          docs = te.docs(null, docs, 0);
+          docs = te.docs(null, docs, DocsEnum.FLAG_NONE);
           ordinalMap.addMapping(docs.nextDoc() + base, ordinal);
         }
         base += ar.maxDoc(); // no deletions, so we're ok

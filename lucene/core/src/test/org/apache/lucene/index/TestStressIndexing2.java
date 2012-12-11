@@ -337,7 +337,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       Bits liveDocs = MultiFields.getLiveDocs(r1);
       DocsEnum docs = null;
       while(termsEnum.next() != null) {
-        docs = _TestUtil.docs(random(), termsEnum, liveDocs, docs, 0);
+        docs = _TestUtil.docs(random(), termsEnum, liveDocs, docs, DocsEnum.FLAG_NONE);
         while(docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           fail("r1 is not empty but r2 is");
         }
@@ -357,9 +357,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
         break;
       }
 
-      termDocs1 = _TestUtil.docs(random(), termsEnum, liveDocs1, termDocs1, 0);
+      termDocs1 = _TestUtil.docs(random(), termsEnum, liveDocs1, termDocs1, DocsEnum.FLAG_NONE);
       if (termsEnum2.seekExact(term, false)) {
-        termDocs2 = _TestUtil.docs(random(), termsEnum2, liveDocs2, termDocs2, 0);
+        termDocs2 = _TestUtil.docs(random(), termsEnum2, liveDocs2, termDocs2, DocsEnum.FLAG_NONE);
       } else {
         termDocs2 = null;
       }

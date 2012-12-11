@@ -479,7 +479,7 @@ public final class MultiTermsEnum extends TermsEnum {
         subDocsAndPositions[upto].slice = entry.subSlice;
         upto++;
       } else {
-        if (entry.terms.docs(b, null, 0) != null) {
+        if (entry.terms.docs(b, null, DocsEnum.FLAG_NONE) != null) {
           // At least one of our subs does not store
           // offsets or positions -- we can't correctly
           // produce a MultiDocsAndPositions enum
