@@ -31,16 +31,17 @@ import java.util.regex.Pattern;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * <p/> Provides functionality equivalent to the snapshooter script </p>
+ * This is no longer used in standard replication.
  *
  *
  * @since solr 1.4
@@ -200,7 +201,7 @@ public class SnapShooter {
         throw new IOException(message);
       }
 
-      sourceDir.copy(destDir, indexFile, indexFile, IOContext.DEFAULT);
+      sourceDir.copy(destDir, indexFile, indexFile, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
   }
   

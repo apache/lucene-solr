@@ -88,6 +88,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
+import org.apache.solr.core.NRTCachingDirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler.FileInfo;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -568,7 +569,7 @@ public class SnapPuller {
         props.setProperty(REPLICATION_FAILED_AT_LIST, sb.toString());
       }
 
-      final IndexOutput out = dir.createOutput(REPLICATION_PROPERTIES, IOContext.DEFAULT);
+      final IndexOutput out = dir.createOutput(REPLICATION_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
       OutputStream outFile = new PropertiesOutputStream(out);
       try {
         props.store(outFile, "Replication details");
@@ -771,7 +772,7 @@ public class SnapPuller {
       return false;
     }
     try {
-      solrCore.getDirectoryFactory().move(tmpIdxDir, indexDir, fname);
+      solrCore.getDirectoryFactory().move(tmpIdxDir, indexDir, fname, DirectoryFactory.IOCONTEXT_NO_CACHE);
       success = true;
     } catch (IOException e) {
       SolrException.log(LOG, "Could not move file", e);
@@ -844,7 +845,7 @@ public class SnapPuller {
     try {
       dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), solrCore.getSolrConfig().indexConfig.lockType);
       if (dir.fileExists("index.properties")){
-        final IndexInput input = dir.openInput("index.properties", IOContext.DEFAULT);
+        final IndexInput input = dir.openInput("index.properties", DirectoryFactory.IOCONTEXT_NO_CACHE);
   
         final InputStream is = new PropertiesInputStream(input);
         try {
@@ -860,7 +861,7 @@ public class SnapPuller {
       } catch (IOException e) {
         // no problem
       }
-      final IndexOutput out = dir.createOutput("index.properties", IOContext.DEFAULT);
+      final IndexOutput out = dir.createOutput("index.properties", DirectoryFactory.IOCONTEXT_NO_CACHE);
       p.put("index", tmpIdxDirName);
       OutputStream os = null;
       try {
@@ -1071,7 +1072,7 @@ public class SnapPuller {
 
       indexGen = latestGen;
       
-      outStream = copy2Dir.createOutput(saveAs, IOContext.DEFAULT);
+      outStream = copy2Dir.createOutput(saveAs, DirectoryFactory.IOCONTEXT_NO_CACHE);
 
       if (includeChecksum)
         checksum = new Adler32();

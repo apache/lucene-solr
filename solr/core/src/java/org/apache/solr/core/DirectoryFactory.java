@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
@@ -34,7 +35,13 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     Closeable {
-  
+
+  // Estimate 10M docs, 100GB size, to avoid caching by NRTCachingDirectory
+  // Stayed away from upper bounds of the int/long in case any other code tried to aggregate these numbers.
+  // A large estimate should currently have no other side effects.
+  public static final IOContext IOCONTEXT_NO_CACHE = new IOContext(new FlushInfo(10*1000*1000, 100L*1000*1000*1000));
+
+
   private static final Logger log = LoggerFactory.getLogger(DirectoryFactory.class.getName());
   
   /**
@@ -85,8 +92,8 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * 
    * @throws IOException If there is a low-level I/O error.
    */
-  public void move(Directory fromDir, Directory toDir, String fileName) throws IOException {
-    fromDir.copy(toDir, fileName, fileName, IOContext.DEFAULT);
+  public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext) throws IOException {
+    fromDir.copy(toDir, fileName, fileName, ioContext);
     fromDir.deleteFile(fileName);
   }
   
