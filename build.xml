@@ -368,7 +368,7 @@
   <!-- Jenkins tasks -->
   <target name="jenkins-hourly" depends="clean,test-with-heapdumps,validate,documentation-lint,jar-checksums,check-svn-working-copy"/>
   
-  <target name="jenkins-maven-nightly" depends="clean,remove-maven-artifacts,run-maven-build,generate-maven-artifacts,validate-maven-dependencies"/>
+  <target name="jenkins-maven-nightly" depends="clean,remove-maven-artifacts,generate-maven-artifacts,run-maven-build,validate-maven-dependencies"/>
   
   <target name="jenkins-clover" depends="run-clover"/>
 </project>
