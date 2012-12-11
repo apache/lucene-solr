@@ -21,20 +21,22 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext.Context;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RateLimitedDirectoryWrapper;
 import org.apache.lucene.util.English;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -55,8 +57,6 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.RefCounted;
-
-
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -126,15 +126,28 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     clearIndex();
 
     // test merge factor picked up
+    // and for rate limited settings
     SolrCore core = h.getCore();
 
-    RefCounted<IndexWriter> iw = ((DirectUpdateHandler2) core
+    RefCounted<IndexWriter> iwr = ((DirectUpdateHandler2) core
         .getUpdateHandler()).getSolrCoreState().getIndexWriter(core);
     try {
-      assertEquals("Mergefactor was not picked up", 8, ((LogMergePolicy) iw
-          .get().getConfig().getMergePolicy()).getMergeFactor());
+      IndexWriter iw = iwr.get();
+      assertEquals("Mergefactor was not picked up", 8, ((LogMergePolicy) iw.getConfig().getMergePolicy()).getMergeFactor());
+      
+      Directory dir = iw.getDirectory();
+      
+      if (dir instanceof MockDirectoryWrapper) {
+        dir = ((MockDirectoryWrapper)dir).getDelegate();
+      }
+      
+      assertTrue(dir.getClass().getName(), dir instanceof RateLimitedDirectoryWrapper);
+      assertEquals(Double.valueOf(1000000), ((RateLimitedDirectoryWrapper)dir).getMaxWriteMBPerSec(Context.DEFAULT));
+      assertEquals(Double.valueOf(2000000), ((RateLimitedDirectoryWrapper)dir).getMaxWriteMBPerSec(Context.FLUSH));
+      assertEquals(Double.valueOf(3000000), ((RateLimitedDirectoryWrapper)dir).getMaxWriteMBPerSec(Context.MERGE));
+      assertEquals(Double.valueOf(4000000), ((RateLimitedDirectoryWrapper)dir).getMaxWriteMBPerSec(Context.READ));
     } finally {
-      iw.decref();
+      iwr.decref();
     }
     // test stats call
     NamedList stats = core.getStatistics();

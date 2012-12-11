@@ -130,6 +130,9 @@ New Features
 
 * SOLR-3948: Calculate/display deleted documents in admin interface.
   (Shawn Heisey via Mark Miller)
+  
+* SOLR-4030: Allow rate limiting Directory IO based on the IO context.
+  (Mark Miller, Radim Kolar)
 
 Optimizations
 ----------------------
