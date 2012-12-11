@@ -141,4 +141,58 @@ public class CompositeIdRouter extends HashBasedRouter {
 
     return targetSlices;
   }
+
+
+  @Override
+  public List<Range> partitionRange(int partitions, Range range) {
+    int min = range.min;
+    int max = range.max;
+
+    assert max >= min;
+    if (partitions == 0) return Collections.EMPTY_LIST;
+    long rangeSize = (long)max - (long)min;
+    long rangeStep = Math.max(1, rangeSize / partitions);
+
+    List<Range> ranges = new ArrayList<Range>(partitions);
+
+    long start = min;
+    long end = start;
+
+    // keep track of the idealized target to avoid accumulating rounding errors
+    long targetStart = min;
+    long targetEnd = targetStart;
+
+    // Round to avoid splitting hash domains across ranges if such rounding is not significant.
+    // With default bits==16, one would need to create more than 4000 shards before this
+    // becomes false by default.
+    boolean round = rangeStep >= (1<<bits)*16;
+
+    while (end < max) {
+      targetEnd = targetStart + rangeStep;
+      end = targetEnd;
+
+      if (round && ((end & mask2) != mask2)) {
+        // round up or down?
+        int increment = 1 << bits;  // 0x00010000
+        long roundDown = (end | mask2) - increment ;
+        long roundUp = (end | mask2) + increment;
+        if (end - roundDown < roundUp - end && roundDown > start) {
+          end = roundDown;
+        } else {
+          end = roundUp;
+        }
+      }
+
+      // make last range always end exactly on MAX_VALUE
+      if (ranges.size() == partitions - 1) {
+        end = max;
+      }
+      ranges.add(new Range((int)start, (int)end));
+      start = end + 1L;
+      targetStart = targetEnd + 1L;
+    }
+
+    return ranges;
+  }
+
 }
