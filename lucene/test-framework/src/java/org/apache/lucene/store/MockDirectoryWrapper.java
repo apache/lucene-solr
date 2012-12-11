@@ -120,6 +120,10 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     this.lockFactory = new MockLockFactoryWrapper(this, delegate.getLockFactory());
     init();
   }
+  
+  public Directory getDelegate() {
+    return this.delegate;
+  }
 
   public int getInputCloneCount() {
     return inputCloneCount.get();
