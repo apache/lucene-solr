@@ -334,6 +334,9 @@ Bug Fixes
 * SOLR-4168: Ensure we are using the absolute latest index dir when getting
   list of files for replication. (Mark Miller)
 
+* SOLR-4171: CachingDirectoryFactory should not return any directories after it
+  has been closed. (Mark Miller)
+
 Other Changes
 ----------------------
 
