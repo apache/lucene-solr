@@ -48,8 +48,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   
   private static final String SOLR_CONFIG = "dataimport-solrconfig.xml";
   private static final String SOLR_SCHEMA = "dataimport-schema.xml";
-  private static final String SOLR_HOME = getFile("dih/solr").getAbsolutePath();
-  private static final String CONF_DIR = SOLR_HOME + File.separator + "collection1" + File.separator + "conf" + File.separator;
+  private static final String SOURCE_CONF_DIR = "dih" + File.separator + "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
   
   private static final String DEAD_SOLR_SERVER = "http://[ff01::114]:33332/solr";
   
@@ -120,7 +119,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   public void setUp() throws Exception {
     super.setUp();
     // destination solr core
-    initCore(SOLR_CONFIG, SOLR_SCHEMA, SOLR_HOME);
+    initCore(SOLR_CONFIG, SOLR_SCHEMA);
     // data source solr instance
     instance = new SolrInstance();
     instance.setUp();
@@ -282,7 +281,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     }
     
     public String getSchemaFile() {
-      return CONF_DIR + "dataimport-schema.xml";
+      return SOURCE_CONF_DIR + "dataimport-schema.xml";
     }
     
     public String getDataDir() {
@@ -290,7 +289,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     }
     
     public String getSolrConfigFile() {
-      return CONF_DIR + "dataimport-solrconfig.xml";
+      return SOURCE_CONF_DIR + "dataimport-solrconfig.xml";
     }
     
     public void setUp() throws Exception {
@@ -312,7 +311,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       
       FileUtils.copyFile(getFile(getSchemaFile()), f);
       f = new File(confDir, "data-config.xml");
-      FileUtils.copyFile(getFile(CONF_DIR + "dataconfig-contentstream.xml"), f);
+      FileUtils.copyFile(getFile(SOURCE_CONF_DIR + "dataconfig-contentstream.xml"), f);
     }
     
     public void tearDown() throws Exception {
