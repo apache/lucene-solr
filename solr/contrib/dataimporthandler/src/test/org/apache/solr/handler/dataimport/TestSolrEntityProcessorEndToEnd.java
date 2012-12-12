@@ -47,11 +47,11 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   
   private static Logger LOG = LoggerFactory.getLogger(TestSolrEntityProcessorEndToEnd.class);
   
-  //rivate static final String SOLR_SOURCE_URL = "http://127.0.0.1:8983/solr";
+  //private static final String SOLR_SOURCE_URL = "http://127.0.0.1:8983/solr";
   private static final String SOLR_CONFIG = "dataimport-solrconfig.xml";
   private static final String SOLR_SCHEMA = "dataimport-schema.xml";
-  private static final String SOLR_HOME = "dih/solr";
-  private static final String CONF_DIR = "dih" + File.separator + "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
+  private static final String SOLR_HOME = getFile("dih/solr").getAbsolutePath();
+  private static final String CONF_DIR = SOLR_HOME + File.separator + "collection1" + File.separator + "conf" + File.separator;
   
   private static final List<Map<String,Object>> DB_DOCS = new ArrayList<Map<String,Object>>();
   private static final List<Map<String,Object>> SOLR_DOCS = new ArrayList<Map<String,Object>>();
