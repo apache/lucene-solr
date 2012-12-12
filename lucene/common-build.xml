@@ -475,6 +475,10 @@
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
       <parent-poms/>
       <artifact:pom id="maven.project" file="@{pom.xml}"/>
+      <artifact:install file="@{jar.file}">
+        <artifact-attachments/>
+        <pom refid="maven.project"/>
+      </artifact:install>
       <artifact:deploy file="@{jar.file}">
         <artifact-attachments/>
         <remoteRepository id="${m2.repository.id}" url="${m2.repository.url}">

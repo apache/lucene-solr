@@ -368,7 +368,19 @@
   <!-- Jenkins tasks -->
   <target name="jenkins-hourly" depends="clean,test-with-heapdumps,validate,documentation-lint,jar-checksums,check-svn-working-copy"/>
   
-  <target name="jenkins-maven-nightly" depends="clean,remove-maven-artifacts,generate-maven-artifacts,run-maven-build"/>
+  <target name="jenkins-maven-nightly" depends="clean">
+    <!-- step 1: build, install, deploy, and validate ANT-generated maven artifacts: -->
+    <antcall>
+      <target name="remove-maven-artifacts"/>
+      <!-- this implicitely publishes the maven artifacts: -->
+      <target name="validate-maven-dependencies"/>
+    </antcall>
+    <!-- step 2: run the maven build to check that the pom templates also work to drive "mvn": -->
+    <antcall>
+      <target name="remove-maven-artifacts"/>
+      <target name="run-maven-build"/>
+    </antcall>
+  </target>
   
   <target name="jenkins-clover" depends="run-clover"/>
 </project>
