@@ -366,6 +366,11 @@ public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
   
   @Test(expected=IllegalArgumentException.class)
   public void testDeletePartiallyWrittenFilesIfAbort() throws IOException {
+    // disable CFS because this test checks file names
+    iwConf.setMergePolicy(newLogMergePolicy(false));
+    iw.close();
+    iw = new RandomIndexWriter(random(), dir, iwConf);
+
     final Document validDoc = new Document();
     validDoc.add(new IntField("id", 0, Store.YES));
     iw.addDocument(validDoc);
