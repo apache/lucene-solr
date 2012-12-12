@@ -142,7 +142,7 @@ public class Builder<T> {
    * @param doPackFST Pass true to create a packed FST.
    * 
    * @param acceptableOverheadRatio How to trade speed for space when building the FST. This option
-   *    is only relevant when willPackFST is true. @see PackedInts#getMutable(int, int, float)
+   *    is only relevant when doPackFST is true. @see PackedInts#getMutable(int, int, float)
    */
   public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
                  boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
