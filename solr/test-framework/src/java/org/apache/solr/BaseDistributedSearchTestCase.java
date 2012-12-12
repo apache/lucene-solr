@@ -109,9 +109,11 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         // NOOP: don't try to add a subdir to nothing (ie "//" is bad)
       }
     }
+    // paranoia, we *really* don't want to ever get "//" in a path...
+    final String hc = hostContext.toString().replaceAll("\\/+","/");
 
-    log.info("Setting hostContext system property: " + hostContext.toString());
-    System.setProperty("hostContext", hostContext.toString());
+    log.info("Setting hostContext system property: " + hc);
+    System.setProperty("hostContext", hc);
   }
 
   /**
