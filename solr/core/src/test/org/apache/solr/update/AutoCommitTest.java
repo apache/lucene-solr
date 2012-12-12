@@ -331,7 +331,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     // now make the call 10 times really fast and make sure it 
     // only commits once
     req.setContentStreams( toContentStreams(
-        adoc(1000, "id", "500" ), null ) );
+        adoc(2000, "id", "500" ), null ) );
     for( int i=0;i<10; i++ ) {
       handler.handleRequest( req, rsp );
     }
