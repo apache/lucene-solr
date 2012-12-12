@@ -179,6 +179,12 @@ API Changes
   
 * LUCENE-4605: Added DocsEnum.FLAG_NONE which can be passed instead of 0 as
   the flag to .docs() and .docsAndPositions(). (Shai Erera)
+
+* LUCENE-4617: Remove FST.pack() method. Previously to make a packed FST,
+  you had to make a Builder with willPackFST=true (telling it you will later pack it),
+  create your fst with finish(), and then call pack() to get another FST.
+  Instead just pass true for doPackFST to Builder and finish() returns a packed FST.
+  (Robert Muir)
   
 Bug Fixes
 

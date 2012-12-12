@@ -232,7 +232,7 @@ public abstract class BinaryDictionaryWriter {
    * Write dictionary in file
    * Dictionary format is:
    * [Size of dictionary(int)], [entry:{left id(short)}{right id(short)}{word cost(short)}{length of pos info(short)}{pos info(char)}], [entry...], [entry...].....
-   * @throws IOException
+   * @throws IOException if an I/O error occurs writing the dictionary files
    */
   public void write(String baseDir) throws IOException {
     final String baseName = getBaseFileName(baseDir);

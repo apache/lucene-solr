@@ -337,21 +337,6 @@ public class FSTTester<T> {
       verifyPruned(inputMode, fst, prune1, prune2);
     }
 
-    if (willRewrite && fst != null) {
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("TEST: now rewrite");
-      }
-      final FST<T> packed = fst.pack(_TestUtil.nextInt(random, 1, 10), _TestUtil.nextInt(random, 0, 10000000), random.nextFloat());
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("TEST: now verify packed FST");
-      }
-      if (prune1 == 0 && prune2 == 0) {
-        verifyUnPruned(inputMode, packed);
-      } else {
-        verifyPruned(inputMode, packed, prune1, prune2);
-      }
-    }
-
     return fst;
   }
 

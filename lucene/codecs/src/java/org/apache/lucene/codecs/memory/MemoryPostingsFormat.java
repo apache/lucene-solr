@@ -269,9 +269,6 @@ public final class MemoryPostingsFormat extends PostingsFormat {
         out.writeVLong(sumDocFreq);
         out.writeVInt(docCount);
         FST<BytesRef> fst = builder.finish();
-        if (doPackFST) {
-          fst = fst.pack(3, Math.max(10, fst.getNodeCount()/4), acceptableOverheadRatio);
-        }
         fst.save(out);
         //System.out.println("finish field=" + field.name + " fp=" + out.getFilePointer());
       }
