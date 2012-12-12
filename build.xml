@@ -368,7 +368,7 @@
   <!-- Jenkins tasks -->
   <target name="jenkins-hourly" depends="clean,test-with-heapdumps,validate,documentation-lint,jar-checksums,check-svn-working-copy"/>
   
-  <target name="jenkins-maven-nightly" depends="clean">
+  <target name="jenkins-maven-nightly" depends="clean,clean-maven-build">
     <!-- step 1: build, install, deploy, and validate ANT-generated maven artifacts: -->
     <antcall>
       <target name="remove-maven-artifacts"/>
