@@ -35,6 +35,7 @@ import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -61,6 +62,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   private ShardHandler shardHandlerMock;
   private ZkStateReader zkStateReaderMock;
   private ClusterState clusterStateMock;
+  private SolrZkClient solrZkClientMock;
   
   private Thread thread;
   private Queue<byte[]> queue = new BlockingArrayQueue<byte[]>();
@@ -88,6 +90,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     shardHandlerMock = createMock(ShardHandler.class);
     zkStateReaderMock = createMock(ZkStateReader.class);
     clusterStateMock = createMock(ClusterState.class);
+    solrZkClientMock = createMock(SolrZkClient.class);
     underTest = new OverseerCollectionProcessorToBeTested(zkStateReaderMock,
         "1234", shardHandlerMock, ADMIN_PATH, workQueueMock);
   }
@@ -129,6 +132,15 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
       }
     }).anyTimes();
     
+    zkStateReaderMock.getZkClient();
+    expectLastCall().andAnswer(new IAnswer<Object>() {
+      @Override
+      public Object answer() throws Throwable {
+        return solrZkClientMock;
+      }
+    }).anyTimes();
+    
+    
     clusterStateMock.getCollections();
     expectLastCall().andAnswer(new IAnswer<Object>() {
       @Override
@@ -138,7 +150,19 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     }).anyTimes();
     final Set<String> liveNodes = new HashSet<String>();
     for (int i = 0; i < liveNodesCount; i++) {
-      liveNodes.add("localhost:" + (8963 + i) + "_solr");
+      final String address = "localhost:" + (8963 + i) + "_solr";
+      liveNodes.add(address);
+      
+      solrZkClientMock.getBaseUrlForNodeName(address);
+      expectLastCall().andAnswer(new IAnswer<Object>() {
+        @Override
+        public Object answer() throws Throwable {
+          // This works as long as this test does not use a 
+          // webapp context with an underscore in it
+          return address.replaceAll("_", "/");
+        }
+      }).anyTimes();
+      
     }
     clusterStateMock.getLiveNodes();
     expectLastCall().andAnswer(new IAnswer<Object>() {
@@ -336,6 +360,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     }
     
     replay(workQueueMock);
+    replay(solrZkClientMock);
     replay(zkStateReaderMock);
     replay(clusterStateMock);
     replay(shardHandlerMock);

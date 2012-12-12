@@ -356,7 +356,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   public JettySolrRunner createJetty(String dataDir, String shardList,
       String solrConfigOverride) throws Exception {
     
-    JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), "/solr", 0,
+    JettySolrRunner jetty = new JettySolrRunner(getSolrHome(), context, 0,
         solrConfigOverride, null, false);
     jetty.setShards(shardList);
     jetty.setDataDir(dataDir);

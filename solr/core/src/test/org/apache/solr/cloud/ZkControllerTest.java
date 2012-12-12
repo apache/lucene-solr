@@ -49,6 +49,62 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     initCore();
   }
 
+  public void testNodeNameUrlConversion() throws Exception {
+
+    // nodeName from parts
+    assertEquals("localhost:8888_solr",
+                 ZkController.generateNodeName("localhost", "8888", "solr"));
+    assertEquals("localhost:8888_", // root context
+                 ZkController.generateNodeName("localhost", "8888", ""));
+    assertEquals("foo-bar:77_solr%2Fsub_dir",
+                 ZkController.generateNodeName("foo-bar", "77", "solr/sub_dir"));
+
+    // setup a SolrZkClient to do some getBaseUrlForNodeName testing
+    String zkDir = dataDir.getAbsolutePath() + File.separator
+        + "zookeeper/server1/data";
+
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+
+      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
+      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
+
+      SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
+      try {
+
+        // getBaseUrlForNodeName
+        assertEquals("http://zzz.xxx:1234/solr",
+                     zkClient.getBaseUrlForNodeName("zzz.xxx:1234_solr"));
+        assertEquals("http://xxx:99/",
+                     zkClient.getBaseUrlForNodeName("xxx:99_"));
+        assertEquals("http://foo-bar.baz.org:9999/some_dir",
+                     zkClient.getBaseUrlForNodeName("foo-bar.baz.org:9999_some_dir"));
+        assertEquals("http://foo-bar.baz.org:9999/solr/sub_dir",
+                     zkClient.getBaseUrlForNodeName("foo-bar.baz.org:9999_solr%2Fsub_dir"));
+        
+        
+        // generateNodeName + getBaseUrlForNodeName
+        assertEquals("http://foo:9876/solr",
+                     zkClient.getBaseUrlForNodeName
+                     (ZkController.generateNodeName("foo","9876","solr")));
+        assertEquals("http://foo.bar.com:9876/solr/sub_dir",
+                     zkClient.getBaseUrlForNodeName
+                     (ZkController.generateNodeName("foo.bar.com","9876","solr/sub_dir")));
+        assertEquals("http://foo-bar:9876/",
+                     zkClient.getBaseUrlForNodeName
+                     (ZkController.generateNodeName("foo-bar","9876","")));
+        assertEquals("http://foo-bar.com:80/some_dir",
+                     zkClient.getBaseUrlForNodeName
+                     (ZkController.generateNodeName("foo-bar.com","80","some_dir")));
+      } finally {
+        zkClient.close();
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
   @Test
   public void testReadConfigName() throws Exception {
     String zkDir = dataDir.getAbsolutePath() + File.separator

@@ -40,6 +40,12 @@ Upgrading from Solr 4.0.0-BETA
 Custom java parsing plugins need to migrade from throwing the internal
 ParseException to throwing SyntaxError.
 
+BaseDistributedSearchTestCase now randomizes the servlet context it uses when 
+creating Jetty instances.  Subclasses that assume a hard coded context of 
+"/solr" should either be fixed to use the "String context" variable, or should 
+take advantage of the new BaseDistributedSearchTestCase(String) constructor
+to explicitly specify a fixed servlet context path.  See SOLR-4136 for details.
+
 
 Detailed Change List
 ----------------------
@@ -320,6 +326,10 @@ Bug Fixes
 
 * SOLR-4127: Added explicit error message if users attempt Atomic document 
   updates with either updateLog or DistribUpdateProcessor. (hossman)
+
+* SOLR-4136: Fix SolrCloud behavior when using "hostContext" containing "_" 
+  or"/" characters.  This fix also makes SolrCloud more accepting of 
+  hostContext values with leading/trailing slashes. (hossman)
 
 Other Changes
 ----------------------

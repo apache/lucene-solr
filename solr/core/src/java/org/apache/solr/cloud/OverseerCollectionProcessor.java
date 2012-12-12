@@ -260,9 +260,8 @@ public class OverseerCollectionProcessor implements Runnable {
           ShardRequest sreq = new ShardRequest();
           params.set("qt", adminPath);
           sreq.purpose = 1;
-          // TODO: this does not work if original url had _ in it
-          // We should have a master list
-          String replica = nodeName.replaceAll("_", "/");
+          String replica = zkStateReader.getZkClient()
+            .getBaseUrlForNodeName(nodeName);
           if (replica.startsWith("http://")) replica = replica.substring(7);
           sreq.shards = new String[] {replica};
           sreq.actualShards = sreq.shards;

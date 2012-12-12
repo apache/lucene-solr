@@ -19,7 +19,9 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
+import java.net.URLEncoder;
 import java.net.NetworkInterface;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -145,18 +147,31 @@ public final class ZkController {
       TimeoutException, IOException {
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
     this.cc = cc;
-    if (localHostContext.contains("/")) {
-      throw new IllegalArgumentException("localHostContext ("
-          + localHostContext + ") should not contain a /");
+    if (localHostContext.startsWith("/")) {
+      // be forgiving and strip this off
+      // this allows us to support users specifying hostContext="/" in 
+      // solr.xml to indicate the root context, instead of hostContext="" 
+      // which means the default of "solr"
+      localHostContext = localHostContext.substring(1);
     }
+    if (localHostContext.endsWith("/")) {
+      // be extra nice
+      localHostContext = localHostContext.substring(0,localHostContext.length()-1);
+    }
+    
     
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
     this.localHostContext = localHostContext;
     this.localHost = getHostAddress(localHost);
+    this.baseURL = this.localHost + ":" + this.localHostPort + 
+      (this.localHostContext.isEmpty() ? "" : ("/" + this.localHostContext));
+
     this.hostName = getHostNameFromAddress(this.localHost);
-    this.nodeName = this.hostName + ':' + this.localHostPort + '_' + this.localHostContext;
-    this.baseURL = this.localHost + ":" + this.localHostPort + "/" + this.localHostContext;
+    this.nodeName = generateNodeName(this.hostName, 
+                                     this.localHostPort, 
+                                     this.localHostContext);
+
     this.leaderVoteWait = leaderVoteWait;
     this.clientTimeout = zkClientTimeout;
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
@@ -1275,4 +1290,23 @@ public final class ZkController {
     return cmdDistribExecutor;
   }
 
+  /**
+   * Returns the nodeName that should be used based on the specified properties.
+   *
+   * @param hostName - must not be the empty string
+   * @param hostPort - must consist only of digits, must not be the empty string
+   * @param hostContext - should not begin or end with a slash, may be the empty string to denote the root context
+   * @lucene.experimental
+   * @see SolrZkClient#getBaseUrlForNodeName
+   */
+  static String generateNodeName(final String hostName,
+                                 final String hostPort,
+                                 final String hostContext) {
+    try {
+      return hostName + ':' + hostPort + '_' + 
+        URLEncoder.encode(hostContext, "UTF-8");
+    } catch (UnsupportedEncodingException e) {
+      throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
+    }
+  }
 }
