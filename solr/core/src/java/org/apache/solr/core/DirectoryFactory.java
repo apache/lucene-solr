@@ -89,6 +89,16 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public abstract void remove(Directory dir) throws IOException;
   
   /**
+   * This remove is special in that it may be called even after
+   * the factory has been closed. Remove only makes sense for
+   * peristent directory factories.
+   * 
+   * @param path to remove
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public abstract void remove(String path) throws IOException;
+  
+  /**
    * Override for more efficient moves.
    * 
    * @throws IOException If there is a low-level I/O error.

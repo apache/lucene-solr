@@ -614,26 +614,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
           
           @Override
           public void postClose(SolrCore core) {
-            Directory dir = null;
             try {
-              dir = core.getDirectoryFactory().get(core.getIndexDir(), core.getSolrConfig().indexConfig.lockType);
-              core.getDirectoryFactory().remove(dir);
-              core.getDirectoryFactory().doneWithDirectory(dir);
+              core.getDirectoryFactory().remove(core.getIndexDir());
             } catch (IOException e) {
               throw new RuntimeException(e);
-            } finally {
-              if (dir != null) {
-                try {
-                  core.getDirectoryFactory().release(dir);
-                } catch (IOException e) {
-                  log.error("IOException trying to release directory", e);
-                }
-              }
-            }
-            try {
-              core.getDirectoryFactory().remove(dir);
-            } catch (IOException e) {
-              log.error("IOException trying to remove directory", e);
             }
           }
         });

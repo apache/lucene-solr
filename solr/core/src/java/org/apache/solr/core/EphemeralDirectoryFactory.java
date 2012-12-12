@@ -50,6 +50,11 @@ public abstract class EphemeralDirectoryFactory extends CachingDirectoryFactory 
   }
   
   @Override
+  public void remove(String path) throws IOException {
+    // ram dir does not persist its dir anywhere
+  }
+  
+  @Override
   public String normalize(String path) throws IOException {
     return path;
   }

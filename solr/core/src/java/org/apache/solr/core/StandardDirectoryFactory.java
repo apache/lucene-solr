@@ -48,9 +48,17 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
   public void remove(Directory dir) throws IOException {
     CacheValue val = byDirectoryCache.get(dir);
     if (val == null) {
-      throw new NullPointerException("Unknown directory " + dir);
+      throw new IllegalArgumentException("Unknown directory " + dir);
     }
     File dirFile = new File(val.path);
+    FileUtils.deleteDirectory(dirFile);
+  }
+  
+
+  @Override
+  public void remove(String path) throws IOException {
+    String fullPath = new File(path).getAbsolutePath();
+    File dirFile = new File(fullPath);
     FileUtils.deleteDirectory(dirFile);
   }
   
@@ -76,4 +84,5 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
     super.move(fromDir, toDir, fileName, ioContext);
   }
+
 }
