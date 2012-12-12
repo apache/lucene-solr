@@ -378,7 +378,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       Collection<String> files = new HashSet<String>(commit.getFileNames());
       for (String fileName : files) {
         if(fileName.endsWith(".lock")) continue;
-        File file = new File(core.getIndexDir(), fileName);
+        File file = new File(core.getNewIndexDir(), fileName);
         Map<String, Object> fileMeta = getFileInfo(file);
         result.add(fileMeta);
       }

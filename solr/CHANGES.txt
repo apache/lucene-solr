@@ -302,6 +302,9 @@ Bug Fixes
 * SOLR-4127: Added explicit error message if users attempt Atomic document 
   updates with either updateLog or DistribUpdateProcessor. (hossman)
 
+* SOLR-4168: Ensure we are using the absolute latest index dir when getting
+  list of files for replication. (Mark Miller)
+
 Other Changes
 ----------------------
 
