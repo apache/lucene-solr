@@ -48,15 +48,29 @@ import org.apache.lucene.store.IOContext;
 public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
 
   private final String formatName;
+  private final String segmentSuffix;
   private final CompressionMode compressionMode;
   private final int chunkSize;
 
+  /**
+   * Create a new {@link CompressingStoredFieldsFormat} with an empty segment 
+   * suffix.
+   * 
+   * @see CompressingStoredFieldsFormat#CompressingStoredFieldsFormat(String, String, CompressionMode, int)
+   */
+  public CompressingStoredFieldsFormat(String formatName, CompressionMode compressionMode, int chunkSize) {
+    this(formatName, "", compressionMode, chunkSize);
+  }
+  
   /**
    * Create a new {@link CompressingStoredFieldsFormat}.
    * <p>
    * <code>formatName</code> is the name of the format. This name will be used
    * in the file formats to perform
    * {@link CodecUtil#checkHeader(org.apache.lucene.store.DataInput, String, int, int) codec header checks}.
+   * <p>
+   * <code>segmentSuffix</code> is the segment suffix. This suffix is added to 
+   * the result file name only if it's not the empty string.
    * <p>
    * The <code>compressionMode</code> parameter allows you to choose between
    * compression algorithms that have various compression and decompression
@@ -81,25 +95,29 @@ public class CompressingStoredFieldsFormat extends StoredFieldsFormat {
    * @param chunkSize the minimum number of bytes of a single chunk of stored documents
    * @see CompressionMode
    */
-  public CompressingStoredFieldsFormat(String formatName, CompressionMode compressionMode, int chunkSize) {
+  public CompressingStoredFieldsFormat(String formatName, String segmentSuffix, 
+                                       CompressionMode compressionMode, int chunkSize) {
     this.formatName = formatName;
+    this.segmentSuffix = segmentSuffix;
     this.compressionMode = compressionMode;
     if (chunkSize < 1) {
       throw new IllegalArgumentException("chunkSize must be >= 1");
     }
     this.chunkSize = chunkSize;
+    
   }
 
   @Override
   public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si,
       FieldInfos fn, IOContext context) throws IOException {
-    return new CompressingStoredFieldsReader(directory, si, "", fn, context, formatName, compressionMode);
+    return new CompressingStoredFieldsReader(directory, si, segmentSuffix, fn, 
+        context, formatName, compressionMode);
   }
 
   @Override
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si,
       IOContext context) throws IOException {
-    return new CompressingStoredFieldsWriter(directory, si, "", context,
+    return new CompressingStoredFieldsWriter(directory, si, segmentSuffix, context,
         formatName, compressionMode, chunkSize);
   }
 

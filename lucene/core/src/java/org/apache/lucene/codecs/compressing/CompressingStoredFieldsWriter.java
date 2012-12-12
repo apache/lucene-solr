@@ -70,6 +70,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   private final Directory directory;
   private final String segment;
+  private final String segmentSuffix;
   private CompressingStoredFieldsIndexWriter indexWriter;
   private IndexOutput fieldsStream;
 
@@ -89,6 +90,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     assert directory != null;
     this.directory = directory;
     this.segment = si.name;
+    this.segmentSuffix = segmentSuffix;
     this.compressionMode = compressionMode;
     this.compressor = compressionMode.newCompressor();
     this.chunkSize = chunkSize;
@@ -287,8 +289,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   public void abort() {
     IOUtils.closeWhileHandlingException(this);
     IOUtils.deleteFilesIgnoringExceptions(directory,
-        IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION),
-        IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION));
+        IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION),
+        IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION));
   }
 
   @Override
