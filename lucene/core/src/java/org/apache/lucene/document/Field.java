@@ -347,7 +347,7 @@ public class Field implements IndexableField, StorableField {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to BytesRef");
     }
     if (type.indexed()) {
-      throw new IllegalArgumentException("cannot set a Reader value on an indexed field");
+      throw new IllegalArgumentException("cannot set a BytesRef value on an indexed field");
     }
     fieldsData = value;
   }
