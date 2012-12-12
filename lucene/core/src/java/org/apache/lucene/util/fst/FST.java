@@ -1467,7 +1467,7 @@ public final class FST<T> {
    *  However, this is not a strict implementation of the
    *  algorithms described in this paper.
    */
-  public FST<T> pack(int minInCountDeref, int maxDerefNodes, float acceptableOverheadRatio) throws IOException {
+  FST<T> pack(int minInCountDeref, int maxDerefNodes, float acceptableOverheadRatio) throws IOException {
 
     // TODO: other things to try
     //   - renumber the nodes to get more next / better locality?

@@ -162,7 +162,7 @@ public class TokenInfoDictionaryBuilder {
       offset = next;
     }
     
-    final FST<Long> fst = fstBuilder.finish().pack(2, 100000, PackedInts.DEFAULT);
+    final FST<Long> fst = fstBuilder.finish();
     
     System.out.print("  " + fst.getNodeCount() + " nodes, " + fst.getArcCount() + " arcs, " + fst.sizeInBytes() + " bytes...  ");
     dictionary.setFST(fst);

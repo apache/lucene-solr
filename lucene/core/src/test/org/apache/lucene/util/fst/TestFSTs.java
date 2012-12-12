@@ -369,61 +369,52 @@ public class TestFSTs extends LuceneTestCase {
 
       if (ord > 0) {
         final Random random = new Random(random().nextLong());
-        for(int rewriteIter=0;rewriteIter<2;rewriteIter++) {
-          if (rewriteIter == 1) {
-            if (doRewrite) {
-              // Verify again, with packed FST:
-              fst = fst.pack(_TestUtil.nextInt(random, 1, 10), _TestUtil.nextInt(random, 0, 10000000), random.nextFloat());
-            } else {
-              break;
-            }
+        // Now confirm BytesRefFSTEnum and TermsEnum act the
+        // same:
+        final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst);
+        int num = atLeast(1000);
+        for(int iter=0;iter<num;iter++) {
+          final BytesRef randomTerm = new BytesRef(getRandomString(random));
+          
+          if (VERBOSE) {
+            System.out.println("TEST: seek non-exist " + randomTerm.utf8ToString() + " " + randomTerm);
           }
-          // Now confirm BytesRefFSTEnum and TermsEnum act the
-          // same:
-          final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst);
-          int num = atLeast(1000);
-          for(int iter=0;iter<num;iter++) {
-            final BytesRef randomTerm = new BytesRef(getRandomString(random));
-        
-            if (VERBOSE) {
-              System.out.println("TEST: seek non-exist " + randomTerm.utf8ToString() + " " + randomTerm);
-            }
-
-            final TermsEnum.SeekStatus seekResult = termsEnum.seekCeil(randomTerm);
-            final InputOutput<Long> fstSeekResult = fstEnum.seekCeil(randomTerm);
-
-            if (seekResult == TermsEnum.SeekStatus.END) {
-              assertNull("got " + (fstSeekResult == null ? "null" : fstSeekResult.input.utf8ToString()) + " but expected null", fstSeekResult);
-            } else {
-              assertSame(termsEnum, fstEnum, storeOrd);
-              for(int nextIter=0;nextIter<10;nextIter++) {
+          
+          final TermsEnum.SeekStatus seekResult = termsEnum.seekCeil(randomTerm);
+          final InputOutput<Long> fstSeekResult = fstEnum.seekCeil(randomTerm);
+          
+          if (seekResult == TermsEnum.SeekStatus.END) {
+            assertNull("got " + (fstSeekResult == null ? "null" : fstSeekResult.input.utf8ToString()) + " but expected null", fstSeekResult);
+          } else {
+            assertSame(termsEnum, fstEnum, storeOrd);
+            for(int nextIter=0;nextIter<10;nextIter++) {
+              if (VERBOSE) {
+                System.out.println("TEST: next");
+                if (storeOrd) {
+                  System.out.println("  ord=" + termsEnum.ord());
+                }
+              }
+              if (termsEnum.next() != null) {
                 if (VERBOSE) {
-                  System.out.println("TEST: next");
-                  if (storeOrd) {
-                    System.out.println("  ord=" + termsEnum.ord());
-                  }
+                  System.out.println("  term=" + termsEnum.term().utf8ToString());
                 }
-                if (termsEnum.next() != null) {
-                  if (VERBOSE) {
-                    System.out.println("  term=" + termsEnum.term().utf8ToString());
-                  }
-                  assertNotNull(fstEnum.next());
-                  assertSame(termsEnum, fstEnum, storeOrd);
-                } else {
-                  if (VERBOSE) {
-                    System.out.println("  end!");
-                  }
-                  BytesRefFSTEnum.InputOutput<Long> nextResult = fstEnum.next();
-                  if (nextResult != null) {
-                    System.out.println("expected null but got: input=" + nextResult.input.utf8ToString() + " output=" + outputs.outputToString(nextResult.output));
-                    fail();
-                  }
-                  break;
+                assertNotNull(fstEnum.next());
+                assertSame(termsEnum, fstEnum, storeOrd);
+              } else {
+                if (VERBOSE) {
+                  System.out.println("  end!");
                 }
+                BytesRefFSTEnum.InputOutput<Long> nextResult = fstEnum.next();
+                if (nextResult != null) {
+                  System.out.println("expected null but got: input=" + nextResult.input.utf8ToString() + " output=" + outputs.outputToString(nextResult.output));
+                  fail();
+                }
+                break;
               }
             }
           }
         }
+        
       }
     }
 
@@ -513,12 +504,6 @@ public class TestFSTs extends LuceneTestCase {
           System.out.println("Wrote FST to out.dot");
         }
 
-        if (doPack) {
-          System.out.println("Pack...");
-          fst = fst.pack(4, 100000000, random().nextFloat());
-          System.out.println("New size " + fst.sizeInBytes() + " bytes");
-        }
-        
         Directory dir = FSDirectory.open(new File(dirOut));
         IndexOutput out = dir.createOutput("fst.bin", IOContext.DEFAULT);
         fst.save(out);
@@ -1102,13 +1087,11 @@ public class TestFSTs extends LuceneTestCase {
     Util.toDot(fst, w, false, false);
     w.close();
     //System.out.println(w.toString());
-    final String expected;
-    if (willRewrite) {
-      expected = "4 -> 3 [label=\"t\" style=\"bold\"";
-    } else {
-      expected = "8 -> 6 [label=\"t\" style=\"bold\"";
-    }
-    assertTrue(w.toString().indexOf(expected) != -1);
+    
+    // check for accept state at label t
+    assertTrue(w.toString().indexOf("[label=\"t\" style=\"bold\"") != -1);
+    // check for accept state at label n
+    assertTrue(w.toString().indexOf("[label=\"n\" style=\"bold\"") != -1);
   }
 
   // Make sure raw FST can differentiate between final vs
