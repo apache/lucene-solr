@@ -116,10 +116,11 @@ public abstract class UpdateHandler implements SolrInfoMBean {
    * all of the index files.
    * 
    * @param rollback IndexWriter if true else close
+   * @param forceNewDir Force a new Directory instance
    * 
    * @throws IOException If there is a low-level I/O error.
    */
-  public abstract void newIndexWriter(boolean rollback) throws IOException;
+  public abstract void newIndexWriter(boolean rollback, boolean forceNewDir) throws IOException;
 
   public abstract SolrCoreState getSolrCoreState();
 

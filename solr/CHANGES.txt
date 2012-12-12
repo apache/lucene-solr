@@ -20,6 +20,10 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
+==================  5.0.0 ==================
+
+(No changes)
+
 ==================  4.1.0 ==================
 
 Versions of Major Components
@@ -35,6 +39,12 @@ Upgrading from Solr 4.0.0-BETA
 
 Custom java parsing plugins need to migrade from throwing the internal
 ParseException to throwing SyntaxError.
+
+BaseDistributedSearchTestCase now randomizes the servlet context it uses when 
+creating Jetty instances.  Subclasses that assume a hard coded context of 
+"/solr" should either be fixed to use the "String context" variable, or should 
+take advantage of the new BaseDistributedSearchTestCase(String) constructor
+to explicitly specify a fixed servlet context path.  See SOLR-4136 for details.
 
 
 Detailed Change List
@@ -63,6 +73,18 @@ New Features
 * SOLR-3985: ExternalFileField caches can be reloaded on firstSearcher/
   newSearcher events using the ExternalFileFieldReloader (Alan Woodward)
 
+* SOLR-3911: Make Directory and DirectoryFactory first class so that the majority 
+  of Solr's features work with any custom implementations. (Mark Miller)
+  Additional Work:
+  - SOLR-4032: Files larger than an internal buffer size fail to replicate.
+    (Mark Miller, Markus Jelsma)
+  - SOLR-4033: Consistently use the solrconfig.xml lockType everywhere.
+    (Mark Miller, Markus Jelsma)
+    
+* SOLR-1972: Add extra statistics to RequestHandlers - 5 & 15-minute reqs/sec
+  rolling averages; median, 75th, 95th, 99th, 99.9th percentile request times
+  (Alan Woodward, Shawn Heisey, Adrien Grand)
+  
 * SOLR-4051: Add <propertyWriter /> element to DIH's data-config.xml file,  
   allowing the user to specify the location, filename and Locale for
   the "data-config.properties" file.  Alternatively, users can specify their
@@ -94,10 +116,6 @@ New Features
 
 * SOLR-4114: Allow creating more than one shard per instance with the
   Collection API. (Per Steffensen, Mark Miller)
-
-* SOLR-1972: Add extra statistics to RequestHandlers - 5 & 15-minute reqs/sec
-  rolling averages; median, 75th, 95th, 99th, 99.9th percentile request times
-  (Alan Woodward, Shawn Heisey, Adrien Grand)
 
 * SOLR-3531: Allowing configuring maxMergeSizeMB and maxCachedMB when
   using NRTCachingDirectoryFactory. (Andy Laird via Mark Miller) 
@@ -169,7 +187,7 @@ Bug Fixes
 
 * SOLR-3961: Fixed error using LimitTokenCountFilterFactory 
   (Jack Krupansky, hossman)
-  
+
 * SOLR-3933: Distributed commits are not guaranteed to be ordered within a 
   request. (Mark Miller)
 
@@ -200,6 +218,10 @@ Bug Fixes
 
 * SOLR-3998: Atomic update on uniqueKey field itself causes duplicate document.
   (Eric Spencer, yonik)
+
+* SOLR-4001: In CachingDirectoryFactory#close, if there are still refs for a
+  Directory outstanding, we need to wait for them to be released before closing.
+  (Mark Miller)
 
 * SOLR-4005: If CoreContainer fails to register a created core, it should close it.
   (Mark Miller)
@@ -233,7 +255,10 @@ Bug Fixes
   connection on a non-read-only database leak connections.  Also expanded the
   SqlEntityProcessor test to sometimes use Derby as well as HSQLDB (Derby is
   one db affected by this bug).  (Fenlor Sebastia, James Dyer)
-  
+
+* SOLR-4064: When there is an unexpected exception while trying to run the new
+  leader process, the SolrCore will not correctly rejoin the election.
+  (Po Rui Via Mark Miller)
 
 * SOLR-3989: SolrZkClient constructor dropped exception cause when throwing
   a new RuntimeException. (Colin Bartolome, yonik)
@@ -272,7 +297,7 @@ Bug Fixes
 
 * SOLR-3960: Fixed a bug where Distributed Grouping ignored PostFilters
   (Nathan Visagan, hossman)
-  
+
 * SOLR-3842: DIH would not populate multivalued fields if the column name
   derives from a resolved variable (James Dyer)
 
@@ -302,6 +327,10 @@ Bug Fixes
 * SOLR-4127: Added explicit error message if users attempt Atomic document 
   updates with either updateLog or DistribUpdateProcessor. (hossman)
 
+* SOLR-4136: Fix SolrCloud behavior when using "hostContext" containing "_" 
+  or"/" characters.  This fix also makes SolrCloud more accepting of 
+  hostContext values with leading/trailing slashes. (hossman)
+
 * SOLR-4168: Ensure we are using the absolute latest index dir when getting
   list of files for replication. (Mark Miller)
 
@@ -318,11 +347,10 @@ Other Changes
   (Markus Jelsma via hossman)
 
 * SOLR-3932: SolrCmdDistributorTest either takes 3 seconds or 3 minutes.
-  (yonik, Mark Miller) 
-
+  (yonik, Mark Miller)  
   
 * SOLR-3856: New tests for SqlEntityProcessor/CachedSqlEntityProcessor 
-  (James Dyer) 
+  (James Dyer)
 
 * SOLR-4067: ZkStateReader#getLeaderProps should not return props for a leader
   that it does not think is live. (Mark Miller)
@@ -705,6 +733,11 @@ Other Changes
 * SOLR-2857: The /update/json and /update/csv URLs were restored to aid
   in the migration of existing clients.  (yonik)
 
+* SOLR-3691: SimplePostTool: Mode for crawling/posting web pages
+  See http://wiki.apache.org/solr/ExtractingRequestHandler for examples (janhoy)
+
+* SOLR-3707: Upgrade Solr to Tika 1.2 (janhoy)
+
 * SOLR-2747: Updated changes2html.pl to handle Solr's CHANGES.txt; added
   target 'changes-to-html' to solr/build.xml.
   (Steve Rowe, Robert Muir)
@@ -720,8 +753,6 @@ Other Changes
 
 * SOLR-3780: Maven build: Make solrj tests run separately from solr-core.
   (Steve Rowe)
-
-* SOLR-3707: Upgrade Solr to Tika 1.2 (janhoy) 
   
 * SOLR-3772: Optionally, on cluster startup, we can wait until we see all registered 
   replicas before running the leader process - or if they all do not come up, 
@@ -730,9 +761,6 @@ Other Changes
 * SOLR-3750: Optionaly, on session expiration, we can explicitly wait some time before 
   running the leader sync process so that we are sure every node participates.
   (Per Steffensen, Mark Miller)
-
-* SOLR-3691: SimplePostTool: Mode for crawling/posting web pages
-  See http://wiki.apache.org/solr/ExtractingRequestHandler for examples (janhoy)
 
 * SOLR-3824: Velocity: Error messages from search not displayed (janhoy)
 
@@ -887,10 +915,10 @@ Bug Fixes
 * SOLR-3642: Correct broken check for multivalued fields in stats.facet
   (Yandong Yao, hossman)
 
-* SOLR-3658: Adding thousands of docs with one UpdateProcessorChain instance can briefly create 
-  spikes of threads in the thousands. (yonik, Mark Miller)
-
 * SOLR-3660: Velocity: Link to admin page broken (janhoy)
+
+* SOLR-3658: Adding thousands of docs with one UpdateProcessorChain instance can briefly create
+  spikes of threads in the thousands. (yonik, Mark Miller)
 
 * SOLR-3656: A core reload now always uses the same dataDir.  (Mark Miller, yonik)
 
@@ -963,7 +991,7 @@ Other Changes
   Also, the configuration itself can be passed using the "dataConfig" parameter rather than
   using a file (this previously worked in debug mode only).  When configuration errors are 
   encountered, the error message is returned in XML format.  (James Dyer)
-
+  
 * SOLR-3439: Make SolrCell easier to use out of the box. Also improves "/browse" to display
   rich-text documents correctly, along with facets for author and content_type.  
   With the new "content" field, highlighting of body is supported. See also SOLR-3672 for

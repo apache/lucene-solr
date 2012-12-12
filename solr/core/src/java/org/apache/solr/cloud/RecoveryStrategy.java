@@ -318,7 +318,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       try {
         CloudDescriptor cloudDesc = core.getCoreDescriptor()
             .getCloudDescriptor();
-        ZkNodeProps leaderprops = zkStateReader.getLeaderProps(
+        ZkNodeProps leaderprops = zkStateReader.getLeaderRetry(
             cloudDesc.getCollectionName(), cloudDesc.getShardId());
       
         String leaderBaseUrl = leaderprops.getStr(ZkStateReader.BASE_URL_PROP);

@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +72,7 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     
     // make sure replication can start
     Thread.sleep(1500);
-    
+    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, false, true);
     
     // stop indexing threads

@@ -21,6 +21,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -32,7 +33,6 @@ import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.xml.sax.SAXParseException;
 
 /**
  * This test is not fully functional - the port registered is illegal - 
@@ -148,19 +148,19 @@ public class BasicZkTest extends AbstractZkTestCase {
     assertU(delQ("id:[100 TO 110]"));
     assertU(commit());
     assertQ(request("id:[100 TO 110]"), "//*[@numFound='0']");
-    
-   
-    
+
+
+
     // SOLR-2651: test that reload still gets config files from zookeeper 
     zkController.getZkClient().setData("/configs/conf1/solrconfig.xml", new byte[0], true);
  
     // we set the solrconfig to nothing, so this reload should fail
     try {
-      SolrTestCaseJ4.ignoreException("SAXParseException");
+      SolrTestCaseJ4.ignoreException("SolrException");
       h.getCoreContainer().reload(h.getCore().getName());
       SolrTestCaseJ4.resetExceptionIgnores();
       fail("The reloaded SolrCore did not pick up configs from zookeeper");
-    } catch(SAXParseException e) {
+    } catch(SolrException e) {
       
     }
     

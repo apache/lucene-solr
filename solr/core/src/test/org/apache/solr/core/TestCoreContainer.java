@@ -27,7 +27,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
@@ -43,19 +42,22 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
 
   public void testShareSchema() throws IOException, ParserConfigurationException, SAXException {
-    final File workDir = new File(TEMP_DIR, this.getClass().getName());
-
-    if (workDir.exists()) {
-      FileUtils.deleteDirectory(workDir);
-    }
-    assertTrue("Failed to mkdirs workDir", workDir.mkdirs());
     
-    String solrHome = SolrResourceLoader.locateSolrHome();
-    File fconf = new File(solrHome, "solr.xml");
+    final File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName()
+        + "_shareSchema");
 
-    final CoreContainer cores = new CoreContainer(solrHome);
+    if (solrHomeDirectory.exists()) {
+      FileUtils.deleteDirectory(solrHomeDirectory);
+    }
+    assertTrue("Failed to mkdirs workDir", solrHomeDirectory.mkdirs());
+    
+    FileUtils.copyDirectory(new File(SolrTestCaseJ4.TEST_HOME()), solrHomeDirectory);
+    
+    File fconf = new File(solrHomeDirectory, "solr.xml");
+
+    final CoreContainer cores = new CoreContainer(solrHomeDirectory.getAbsolutePath());
     System.setProperty("shareSchema", "true");
-    cores.load(solrHome, fconf);
+    cores.load(solrHomeDirectory.getAbsolutePath(), fconf);
     try {
       cores.setPersistent(false);
       assertTrue(cores.isShareSchema());
@@ -72,6 +74,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       core2.close();
     } finally {
       cores.shutdown();
+      System.clearProperty("shareSchema");
     }
   }
 
@@ -86,7 +89,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     
     final CoreContainer cores = h.getCoreContainer();
     cores.setPersistent(true); // is this needed since we make explicit calls?
-    
+
     String instDir = null;
     {
       SolrCore template = null;
@@ -105,12 +108,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     
     final File oneXml = new File(workDir, "1.solr.xml");
     cores.persistFile(oneXml);
-    
+
     assertXmlFile(oneXml, "/solr[@persistent='true']",
-        "/solr/cores[@defaultCoreName='collection1']",
-        "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir
-            + "']", "1=count(/solr/cores/core)");
-    
+        "/solr/cores[@defaultCoreName='collection1' and not(@swappableCacheSize)]",
+        "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir +
+        "' and @swappable='false' and @loadOnStartup='true' ]", "1=count(/solr/cores/core)");
+
     // create some new cores and sanity check the persistence
     
     final File dataXfile = new File(workDir, "dataX");
@@ -139,16 +142,18 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       assertEquals("cores not added?", 3, cores.getCoreNames().size());
       
       final File twoXml = new File(workDir, "2.solr.xml");
+      cores.swappableCacheSize = 32;
+
       cores.persistFile(twoXml);
-      
+
       assertXmlFile(twoXml, "/solr[@persistent='true']",
-          "/solr/cores[@defaultCoreName='collection1']",
+          "/solr/cores[@defaultCoreName='collection1' and @swappableCacheSize='32']",
           "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir
               + "']", "/solr/cores/core[@name='X' and @instanceDir='" + instDir
               + "' and @dataDir='" + dataX + "']",
           "/solr/cores/core[@name='Y' and @instanceDir='" + instY + "']",
           "3=count(/solr/cores/core)");
-      
+
       // delete a core, check persistence again
       assertNotNull("removing X returned null", cores.remove("X"));
       
@@ -197,7 +202,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       throw new RuntimeException("XPath is invalid", e2);
     }
   }
-  
+
   public void testNoCores() throws IOException, ParserConfigurationException, SAXException {
     //create solrHome
     File solrHomeDirectory = new File(TEMP_DIR, this.getClass().getName()
@@ -230,8 +235,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       //assert cero cores
       assertEquals("There should not be cores", 0, cores.getCores().size());
       
+      FileUtils.copyDirectory(new File(SolrTestCaseJ4.TEST_HOME(), "collection1"), solrHomeDirectory);
       //add a new core
-      CoreDescriptor coreDescriptor = new CoreDescriptor(cores, "core1", SolrTestCaseJ4.TEST_HOME() + "/collection1");
+      CoreDescriptor coreDescriptor = new CoreDescriptor(cores, "core1", solrHomeDirectory.getAbsolutePath());
       SolrCore newCore = cores.create(coreDescriptor);
       cores.register(newCore, false);
       

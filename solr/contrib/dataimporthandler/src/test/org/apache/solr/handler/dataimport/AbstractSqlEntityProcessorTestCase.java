@@ -59,7 +59,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
     tmpdir.mkdir();
     fileLocation = tmpdir.getPath();
     fileName = "the.properties";
-  }
+  } 
   @After
   public void afterSqlEntitiyProcessorTestCase() {
     useSimpleCaches = false;
@@ -93,7 +93,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
       for(Map.Entry<String,Object> entry : props.entrySet()) {
         sb.append("  > key=" + entry.getKey() + " / value=" + entry.getValue() + "\n");
       }
-      log.info(sb.toString());
+      log.debug(sb.toString());
     }
   }
   
@@ -419,7 +419,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
     // One second in the future ensures a change time after the last import (DIH
     // uses second precision only)
     Timestamp theTime = new Timestamp(System.currentTimeMillis() + 1000);
-    log.info("PEOPLE UPDATE USING TIMESTAMP: "
+    log.debug("PEOPLE UPDATE USING TIMESTAMP: "
         + new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.ROOT)
             .format(theTime));
     try {
@@ -490,7 +490,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
     // One second in the future ensures a change time after the last import (DIH
     // uses second precision only)
     Timestamp theTime = new Timestamp(System.currentTimeMillis() + 1000);
-    log.info("COUNTRY UPDATE USING TIMESTAMP: "
+    log.debug("COUNTRY UPDATE USING TIMESTAMP: "
         + new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.ROOT)
             .format(theTime));
     try {
@@ -638,7 +638,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
     sb.append("</document> \n");
     sb.append("</dataConfig> \n");
     String config = sb.toString().replaceAll("[']{2}", "\"");
-    log.info(config);
+    log.debug(config);
     return config;
   }
   @Override
@@ -651,7 +651,7 @@ public abstract class AbstractSqlEntityProcessorTestCase extends
       s.executeUpdate("create table countries(code varchar(3) not null primary key, country_name varchar(50), deleted char(1) default 'N', last_modified timestamp not null)");
       s.executeUpdate("create table people(id int not null primary key, name varchar(50), country_code char(2), deleted char(1) default 'N', last_modified timestamp not null)");
       s.executeUpdate("create table people_sports(id int not null primary key, person_id int, sport_name varchar(50), deleted char(1) default 'N', last_modified timestamp not null)");
-      log.info("INSERTING DB DATA USING TIMESTAMP: "
+      log.debug("INSERTING DB DATA USING TIMESTAMP: "
           + new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.ROOT)
               .format(theTime));
       ps = conn

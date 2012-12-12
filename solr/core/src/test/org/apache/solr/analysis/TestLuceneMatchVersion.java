@@ -52,10 +52,10 @@ public class TestLuceneMatchVersion extends SolrTestCaseJ4 {
     assertEquals(DEFAULT_VERSION, (ana.getTokenizerFactory()).getLuceneMatchVersion());
     assertEquals(DEFAULT_VERSION, (ana.getTokenFilterFactories()[2]).getLuceneMatchVersion());
 
-    type = schema.getFieldType("text30");
+    type = schema.getFieldType("text40");
     ana = (TokenizerChain) type.getAnalyzer();
-    assertEquals(Version.LUCENE_30, (ana.getTokenizerFactory()).getLuceneMatchVersion());
-    assertEquals(Version.LUCENE_31, (ana.getTokenFilterFactories()[2]).getLuceneMatchVersion());
+    assertEquals(Version.LUCENE_40, (ana.getTokenizerFactory()).getLuceneMatchVersion());
+    assertEquals(Version.LUCENE_40, (ana.getTokenFilterFactories()[2]).getLuceneMatchVersion());
 
     // this is a hack to get the private matchVersion field in StandardAnalyzer's superclass, may break in later lucene versions - we have no getter :(
     final Field matchVersionField = StandardAnalyzer.class.getSuperclass().getDeclaredField("matchVersion");
@@ -66,9 +66,9 @@ public class TestLuceneMatchVersion extends SolrTestCaseJ4 {
     assertTrue(ana1 instanceof StandardAnalyzer);
     assertEquals(DEFAULT_VERSION, matchVersionField.get(ana1));
 
-    type = schema.getFieldType("textStandardAnalyzer30");
+    type = schema.getFieldType("textStandardAnalyzer40");
     ana1 = type.getAnalyzer();
     assertTrue(ana1 instanceof StandardAnalyzer);
-    assertEquals(Version.LUCENE_30, matchVersionField.get(ana1));
+    assertEquals(Version.LUCENE_40, matchVersionField.get(ana1));
   }
 }

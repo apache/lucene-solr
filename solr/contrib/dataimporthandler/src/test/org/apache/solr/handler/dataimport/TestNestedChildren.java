@@ -40,7 +40,7 @@ public class TestNestedChildren extends AbstractDIHJdbcTestCase {
     sb.append("  <entity name=\"SECOND\" processor=\"SqlEntityProcessor\" dataSource=\"derby\" ");
     sb.append("   query=\"select 1 as id, 2 as SECOND_ID, 'BEEF' as SECOND_S from sysibm.sysdummy1 WHERE 1=${FIRST.ID}\" >\n");
     sb.append("   <field column=\"SECOND_S\" name=\"second_s\" /> \n");
-    sb.append("   <entity name=\"SECOND\" processor=\"SqlEntityProcessor\" dataSource=\"derby\" ");
+    sb.append("   <entity name=\"THIRD\" processor=\"SqlEntityProcessor\" dataSource=\"derby\" ");
     sb.append("    query=\"select 1 as id, 'CHICKEN' as THIRD_S from sysibm.sysdummy1 WHERE 2=${SECOND.SECOND_ID}\" >\n");
     sb.append("    <field column=\"THIRD_S\" name=\"third_s\" /> \n");
     sb.append("   </entity>\n");

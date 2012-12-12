@@ -26,6 +26,7 @@ import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -259,9 +260,8 @@ public class OverseerCollectionProcessor implements Runnable {
           ShardRequest sreq = new ShardRequest();
           params.set("qt", adminPath);
           sreq.purpose = 1;
-          // TODO: this does not work if original url had _ in it
-          // We should have a master list
-          String replica = nodeName.replaceAll("_", "/");
+          String replica = zkStateReader.getZkClient()
+            .getBaseUrlForNodeName(nodeName);
           if (replica.startsWith("http://")) replica = replica.substring(7);
           sreq.shards = new String[] {replica};
           sreq.actualShards = sreq.shards;
@@ -305,13 +305,14 @@ public class OverseerCollectionProcessor implements Runnable {
     log.info("Executing Collection Cmd : " + params);
     String collectionName = message.getStr("name");
     
-    Map<String,Slice> slices = clusterState.getCollectionStates().get(collectionName);
+    DocCollection coll = clusterState.getCollection(collectionName);
     
-    if (slices == null) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find collection:" + collectionName);
+    if (coll == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "Could not find collection:" + collectionName);
     }
     
-    for (Map.Entry<String,Slice> entry : slices.entrySet()) {
+    for (Map.Entry<String,Slice> entry : coll.getSlicesMap().entrySet()) {
       Slice slice = entry.getValue();
       Map<String,Replica> shards = slice.getReplicasMap();
       Set<Map.Entry<String,Replica>> shardEntries = shards.entrySet();

@@ -111,10 +111,10 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       fail("bogus collection created ok");
     } catch (SolrException e) {
       // :NOOP:
-      // :TODO: CoreAdminHandler's exception messages are terrible, otherwise we could asert something useful here
+      // :TODO: CoreAdminHandler's exception messages are terrible, otherwise we could assert something useful here
     }
 
-    // check specificly for status of the failed core name
+    // check specifically for status of the failed core name
     resp = new SolrQueryResponse();
     admin.handleRequestBody
       (req(CoreAdminParams.ACTION, 
@@ -132,8 +132,8 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     assertEquals("wrong number of core failures", 1, failures.size());
     Exception fail = failures.get("bogus_dir_core");
     assertNotNull("null failure for test core", fail);
-    assertTrue("init failure doesn't mention problem: " + fail.getMessage(),
-               0 < fail.getMessage().indexOf("dir_does_not_exist"));
+    assertTrue("init failure doesn't mention problem: " + fail.getCause().getMessage(),
+               0 < fail.getCause().getMessage().indexOf("dir_does_not_exist"));
 
     assertEquals("bogus_dir_core status isn't empty",
                  0, ((NamedList)status.get("bogus_dir_core")).size());

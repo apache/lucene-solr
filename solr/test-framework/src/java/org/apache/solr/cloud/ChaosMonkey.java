@@ -189,7 +189,7 @@ public class ChaosMonkey {
   }
   
   private static void stopJettySolrRunner(JettySolrRunner jetty) throws Exception {
-    
+    assert(jetty != null);
     monkeyLog("stop shard! " + jetty.getLocalPort());
     // get a clean shutdown so that no dirs are left open...
     FilterHolder fh = jetty.getDispatchFilter();
@@ -263,7 +263,7 @@ public class ChaosMonkey {
   }
 
   private String getRandomSlice() {
-    Map<String,Slice> slices = zkStateReader.getClusterState().getSlices(collection);
+    Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(collection);
     
     List<String> sliceKeyList = new ArrayList<String>(slices.size());
     sliceKeyList.addAll(slices.keySet());
@@ -292,7 +292,7 @@ public class ChaosMonkey {
       // get latest cloud state
       zkStateReader.updateClusterState(true);
       
-      Slice theShards = zkStateReader.getClusterState().getSlices(collection)
+      Slice theShards = zkStateReader.getClusterState().getSlicesMap(collection)
           .get(slice);
       
       ZkNodeProps props = theShards.getReplicasMap().get(cloudJetty.coreNodeName);
@@ -347,7 +347,7 @@ public class ChaosMonkey {
       
       ZkNodeProps leader = null;
       try {
-        leader = zkStateReader.getLeaderProps(collection, slice);
+        leader = zkStateReader.getLeaderRetry(collection, slice);
       } catch (Throwable t) {
         log.error("Could not get leader", t);
         return null;

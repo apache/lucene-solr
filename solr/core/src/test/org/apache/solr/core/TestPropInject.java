@@ -17,24 +17,19 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.RefCounted;
+import org.junit.BeforeClass;
 
 public class TestPropInject extends AbstractSolrTestCase {
-  @Override
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
 
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig-propinject.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-propinject.xml", "schema.xml");
   }
 
   public void testMergePolicy() throws Exception {

@@ -637,7 +637,7 @@
        such as /select?qt=XXX
 
        handleSelect="true" will cause the SolrDispatchFilter to process
-       the request and dispatch the query to a handler specified by the
+       the request and dispatch the query to a handler specified by the 
        "qt" param, assuming "/select" isn't already registered.
 
        handleSelect="false" will cause the SolrDispatchFilter to
@@ -738,7 +738,7 @@
        like so: http://host/app/[core/]select?qt=name  If no qt is
        given, then the requestHandler that declares default="true" will be
        used or the one named "standard".
-       
+
        If a Request Handler is declared with startup="lazy", then it will
        not be initialized until the first request that uses it.
 

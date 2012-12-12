@@ -58,7 +58,9 @@ public abstract class AbstractDIHJdbcTestCase extends
     try {
       Class.forName("org.hsqldb.jdbcDriver").newInstance();
       String oldProp = System.getProperty("derby.stream.error.field");
-      System.setProperty("derby.stream.error.field", "DerbyUtil.DEV_NULL");
+      System
+          .setProperty("derby.stream.error.field",
+              "org.apache.solr.handler.dataimport.AbstractDIHJdbcTestCase$DerbyUtil.DEV_NULL");
       Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
       if (oldProp != null) {
         System.setProperty("derby.stream.error.field", oldProp);

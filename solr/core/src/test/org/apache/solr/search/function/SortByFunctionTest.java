@@ -17,6 +17,7 @@ package org.apache.solr.search.function;
  */
 
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 
 
 /**
@@ -24,14 +25,18 @@ import org.apache.solr.util.AbstractSolrTestCase;
  *
  **/
 public class SortByFunctionTest extends AbstractSolrTestCase {
-  @Override
-  public String getSchemaFile() {
-    return "schema.xml";
+
+  
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
   }
 
+  
   @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
+  public void setUp() throws Exception {
+    super.setUp();
+  
   }
 
   public void test() throws Exception {

@@ -27,10 +27,11 @@ import java.io.IOException;
  * Factory to instantiate {@link org.apache.lucene.store.SimpleFSDirectory}
  *
  **/
-public class SimpleFSDirectoryFactory extends CachingDirectoryFactory {
+public class SimpleFSDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
   protected Directory create(String path) throws IOException {
     return new SimpleFSDirectory(new File(path));
   }
+
 }

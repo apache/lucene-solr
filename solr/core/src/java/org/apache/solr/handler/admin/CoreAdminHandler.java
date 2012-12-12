@@ -39,7 +39,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.HashPartitioner;
+import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -216,7 +216,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
   }
 
   /** Creates a new core and registers it. The returned core will have it's reference count incremented an extra time and close() should be called when finished. */
-  private SolrCore createCore(SolrCore current, int ord, HashPartitioner.Range newRange) throws IOException, SAXException, ParserConfigurationException {
+  private SolrCore createCore(SolrCore current, int ord, DocRouter.Range newRange) throws IOException, SAXException, ParserConfigurationException {
     CoreDescriptor currCoreD = current.getCoreDescriptor();
     CloudDescriptor currCloudD = currCoreD.getCloudDescriptor();
 
@@ -268,7 +268,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
      // partitions=N    (split into N partitions, leaving it up to solr what the ranges are and where to put them)
     // path - multiValued param, or comma separated param?  Only creates indexes, not cores
 
-    List<HashPartitioner.Range> ranges = null;
+    List<DocRouter.Range> ranges = null;
     // boolean closeDirectories = true;
     // DirectoryFactory dirFactory = null;
 
@@ -290,9 +290,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
       //  split on every other doc rather than hash.
 
       // TODO (cloud): get from the current core
-      HashPartitioner.Range currentRange = new HashPartitioner.Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
+      DocRouter.Range currentRange = new DocRouter.Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
 
-      HashPartitioner hp = new HashPartitioner();
+      DocRouter hp = DocRouter.DEFAULT;  // TODO: get actual doc router for collection if available
       ranges = hp.partitionRange(partitions, currentRange);
 
       if (pathsArr == null) {
@@ -614,20 +614,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
           
           @Override
           public void postClose(SolrCore core) {
-            File dataDir = new File(core.getIndexDir());
-            File[] files = dataDir.listFiles();
-            if (files != null) {
-              for (File file : files) {
-                if (!file.delete()) {
-                  log.error(file.getAbsolutePath()
-                      + " could not be deleted on core unload");
-                }
-              }
-              if (!dataDir.delete()) log.error(dataDir.getAbsolutePath()
-                  + " could not be deleted on core unload");
-            } else {
-              log.error(dataDir.getAbsolutePath()
-                  + " could not be deleted on core unload");
+            try {
+              core.getDirectoryFactory().remove(core.getIndexDir());
+            } catch (IOException e) {
+              throw new RuntimeException(e);
             }
           }
         });
@@ -672,6 +662,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
         });
       }
     } finally {
+      // it's important that we try and cancel recovery
+      // before we close here - else we might close the
+      // core *in* recovery and end up locked in recovery
+      // waiting to for recovery to be cancelled
       if (core != null) {
         if (coreContainer.getZkController() != null) {
           core.getSolrCoreState().cancelRecovery();
@@ -1005,7 +999,24 @@ public class CoreAdminHandler extends RequestHandlerBase {
   }
   
   private long getIndexSize(SolrCore core) {
-    return FileUtils.sizeOfDirectory(new File(core.getIndexDir()));
+    Directory dir;
+    long size = 0;
+    try {
+      if (!core.getDirectoryFactory().exists(core.getIndexDir())) {
+        dir = core.getDirectoryFactory().get(core.getNewIndexDir(), core.getSolrConfig().indexConfig.lockType);
+      } else {
+        dir = core.getDirectoryFactory().get(core.getIndexDir(), core.getSolrConfig().indexConfig.lockType); 
+      }
+
+      try {
+        size = DirectoryFactory.sizeOfDirectory(dir);
+      } finally {
+        core.getDirectoryFactory().release(dir);
+      }
+    } catch (IOException e) {
+      SolrException.log(log, "IO error while trying to get the size of the Directory", e);
+    }
+    return size;
   }
 
   protected static String normalizePath(String path) {

@@ -24,6 +24,9 @@ import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -32,7 +35,7 @@ import org.junit.Test;
 public class ClusterStateTest extends SolrTestCaseJ4 {
   @Test
   public void testStoreAndRead() throws Exception {
-    Map<String,Map<String,Slice>> collectionStates = new HashMap<String,Map<String,Slice>>();
+    Map<String,DocCollection> collectionStates = new HashMap<String,DocCollection>();
     Set<String> liveNodes = new HashSet<String>();
     liveNodes.add("node1");
     liveNodes.add("node2");
@@ -49,12 +52,12 @@ public class ClusterStateTest extends SolrTestCaseJ4 {
     slices.put("shard1", slice);
     Slice slice2 = new Slice("shard2", sliceToProps, null);
     slices.put("shard2", slice2);
-    collectionStates.put("collection1", slices);
-    collectionStates.put("collection2", slices);
+    collectionStates.put("collection1", new DocCollection("collection1", slices, null, DocRouter.DEFAULT));
+    collectionStates.put("collection2", new DocCollection("collection2", slices, null, DocRouter.DEFAULT));
     
     ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
     byte[] bytes = ZkStateReader.toJSON(clusterState);
-    
+    // System.out.println("#################### " + new String(bytes));
     ClusterState loadedClusterState = ClusterState.load(null, bytes, liveNodes);
     
     assertEquals("Provided liveNodes not used properly", 2, loadedClusterState

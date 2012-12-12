@@ -19,13 +19,16 @@ package org.apache.solr.search;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestExtendedDismaxParser extends AbstractSolrTestCase {
-  @Override
-  public String getSchemaFile() { return "schema12.xml"; }
-  @Override
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema12.xml");
+  }
+  
   // public String getCoreName() { return "collection1"; }
 
   @Override

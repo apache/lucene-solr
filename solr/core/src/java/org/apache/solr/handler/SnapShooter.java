@@ -17,9 +17,6 @@
 package org.apache.solr.handler;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -31,18 +28,20 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.IndexDeletionPolicyWrapper;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * <p/> Provides functionality equivalent to the snapshooter script </p>
+ * This is no longer used in standard replication.
  *
  *
  * @since solr 1.4
@@ -101,8 +100,14 @@ public class SnapShooter {
         return;
       }
       Collection<String> files = indexCommit.getFileNames();
-      FileCopier fileCopier = new FileCopier(solrCore.getDeletionPolicy(), indexCommit);
-      fileCopier.copyFiles(files, snapShotDir);
+      FileCopier fileCopier = new FileCopier();
+      
+      Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), solrCore.getSolrConfig().indexConfig.lockType);
+      try {
+        fileCopier.copyFiles(dir, files, snapShotDir);
+      } finally {
+        solrCore.getDirectoryFactory().release(dir);
+      }
 
       details.add("fileCount", files.size());
       details.add("status", "success");
@@ -170,36 +175,26 @@ public class SnapShooter {
   
 
   private class FileCopier {
-    private static final int DEFAULT_BUFFER_SIZE = 32768;
-    private byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
-    private IndexCommit indexCommit;
-    private IndexDeletionPolicyWrapper delPolicy;
-
-    public FileCopier(IndexDeletionPolicyWrapper delPolicy, IndexCommit commit) {
-      this.delPolicy = delPolicy;
-      this.indexCommit = commit;
-    }
     
-    public void copyFiles(Collection<String> files, File destDir) throws IOException {
-      for (String indexFile : files) {
-        File source = new File(solrCore.getIndexDir(), indexFile);
-        copyFile(source, new File(destDir, source.getName()), true);
-      }
-    }
-    
-    public void copyFile(File source, File destination, boolean preserveFileDate)
-      throws IOException {
-      // check source exists
-      if (!source.exists()) {
-        String message = "File " + source + " does not exist";
-        throw new FileNotFoundException(message);
-      }
-
+    public void copyFiles(Directory sourceDir, Collection<String> files,
+        File destDir) throws IOException {
       // does destinations directory exist ?
-      if (destination.getParentFile() != null
-          && !destination.getParentFile().exists()) {
-        destination.getParentFile().mkdirs();
+      if (destDir != null && !destDir.exists()) {
+        destDir.mkdirs();
       }
+      
+      FSDirectory dir = FSDirectory.open(destDir);
+      try {
+        for (String indexFile : files) {
+          copyFile(sourceDir, indexFile, new File(destDir, indexFile), dir);
+        }
+      } finally {
+        dir.close();
+      }
+    }
+    
+    public void copyFile(Directory sourceDir, String indexFile, File destination, Directory destDir)
+      throws IOException {
 
       // make sure we can write to destination
       if (destination.exists() && !destination.canWrite()) {
@@ -207,45 +202,7 @@ public class SnapShooter {
         throw new IOException(message);
       }
 
-      FileInputStream input = null;
-      FileOutputStream output = null;
-      try {
-        input = new FileInputStream(source);
-        output = new FileOutputStream(destination);
- 
-        int count = 0;
-        int n = 0;
-        int rcnt = 0;
-        while (-1 != (n = input.read(buffer))) {
-          output.write(buffer, 0, n);
-          count += n;
-          rcnt++;
-          /***
-          // reserve every 4.6875 MB
-          if (rcnt == 150) {
-            rcnt = 0;
-            delPolicy.setReserveDuration(indexCommit.getVersion(), reserveTime);
-          }
-           ***/
-        }
-      } finally {
-        try {
-          IOUtils.closeQuietly(input);
-        } finally {
-          IOUtils.closeQuietly(output);
-        }
-      }
-
-      if (source.length() != destination.length()) {
-        String message = "Failed to copy full contents from " + source + " to "
-          + destination;
-        throw new IOException(message);
-      }
-
-      if (preserveFileDate) {
-        // file copy should preserve file date
-        destination.setLastModified(source.lastModified());
-      }
+      sourceDir.copy(destDir, indexFile, indexFile, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
   }
   

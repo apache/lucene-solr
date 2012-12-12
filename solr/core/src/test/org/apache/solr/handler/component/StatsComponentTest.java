@@ -16,25 +16,23 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
-import java.util.Date;
-import java.util.Locale;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.TimeZone;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TimeZone;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.StatsParams;
-
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
-
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 
 
 /**
@@ -42,19 +40,15 @@ import org.apache.solr.util.AbstractSolrTestCase;
  */
 public class StatsComponentTest extends AbstractSolrTestCase {
 
-  @Override
-  public String getSchemaFile() {
-    return "schema11.xml";
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema11.xml");
   }
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    clearIndex();
     lrf = h.getRequestFactory("standard", 0, 20);
   }
 

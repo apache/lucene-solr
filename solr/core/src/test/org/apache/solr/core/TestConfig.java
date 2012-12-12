@@ -145,14 +145,6 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertTrue("default LockType should be native", sic.lockType.equals(SolrIndexConfig.LOCK_TYPE_NATIVE));
   }
 
-  @Test
-  public void testDefaults31() throws Exception {
-    SolrConfig sc = new SolrConfig(new SolrResourceLoader("solr/collection1"), "solrconfig-basic-luceneVersion31.xml", null);
-    SolrIndexConfig sic = sc.indexConfig;
-    assertTrue("default useCompoundFile should be true", sic.useCompoundFile == true);
-    assertTrue("default LockType should be simple", sic.lockType.equals(SolrIndexConfig.LOCK_TYPE_SIMPLE));
-  }
-
 }
 
 

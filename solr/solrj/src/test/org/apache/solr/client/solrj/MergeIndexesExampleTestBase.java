@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -29,6 +30,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
  * Abstract base class for testing merge indexes command
@@ -37,7 +39,6 @@ import org.junit.AfterClass;
  *
  */
 public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
-  // protected static final CoreContainer cores = new CoreContainer();
   protected static CoreContainer cores;
   private String saveProp;
   private File dataDir2;
@@ -47,28 +48,31 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
     return ExternalPaths.EXAMPLE_MULTICORE_HOME;
   }
 
-  @Override
-  public String getSchemaFile() {
-    return getSolrHome() + "/core0/conf/schema.xml";
+  @BeforeClass
+  public static void beforeClass2() throws Exception {
+    if (dataDir == null) {
+      createTempDir();
+    }
+    cores = new CoreContainer();
   }
-
-  @Override
-  public String getSolrConfigFile() {
-    return getSolrHome() + "/core0/conf/solrconfig.xml";
+  
+  @AfterClass
+  public static void afterClass() {
+    cores.shutdown();
+    cores = null;
   }
-
+  
   @Override
   public void setUp() throws Exception {
     saveProp = System.getProperty("solr.directoryFactory");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     super.setUp();
 
-    cores = h.getCoreContainer();
     SolrCore.log.info("CORES=" + cores + " : " + cores.getCoreNames());
     cores.setPersistent(false);
     
     // setup datadirs
-    System.setProperty( "solr.core0.data.dir", this.dataDir.getCanonicalPath() ); 
+    System.setProperty( "solr.core0.data.dir", SolrTestCaseJ4.dataDir.getCanonicalPath() ); 
     
     dataDir2 = new File(TEMP_DIR, getClass().getName() + "-"
         + System.currentTimeMillis());
@@ -83,20 +87,15 @@ public abstract class MergeIndexesExampleTestBase extends SolrExampleTestBase {
     
     String skip = System.getProperty("solr.test.leavedatadir");
     if (null != skip && 0 != skip.trim().length()) {
-      System.err.println("NOTE: per solr.test.leavedatadir, dataDir will not be removed: " + dataDir.getAbsolutePath());
+      System.err.println("NOTE: per solr.test.leavedatadir, dataDir will not be removed: " + dataDir2.getAbsolutePath());
     } else {
-      if (!recurseDelete(dataDir)) {
-        System.err.println("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
+      if (!recurseDelete(dataDir2)) {
+        System.err.println("!!!! WARNING: best effort to remove " + dataDir2.getAbsolutePath() + " FAILED !!!!!");
       }
     }
     
     if (saveProp == null) System.clearProperty("solr.directoryFactory");
     else System.setProperty("solr.directoryFactory", saveProp);
-  }
-  
-  @AfterClass
-  public static void afterClass() {
-    cores = null;
   }
 
   @Override

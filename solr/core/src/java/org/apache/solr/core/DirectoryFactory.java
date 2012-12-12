@@ -21,8 +21,13 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FlushInfo;
+import org.apache.lucene.store.IOContext;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Provides access to a Directory implementation. You must release every
@@ -30,6 +35,14 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  */
 public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     Closeable {
+
+  // Estimate 10M docs, 100GB size, to avoid caching by NRTCachingDirectory
+  // Stayed away from upper bounds of the int/long in case any other code tried to aggregate these numbers.
+  // A large estimate should currently have no other side effects.
+  public static final IOContext IOCONTEXT_NO_CACHE = new IOContext(new FlushInfo(10*1000*1000, 100L*1000*1000*1000));
+
+
+  private static final Logger log = LoggerFactory.getLogger(DirectoryFactory.class.getName());
   
   /**
    * Indicates a Directory will no longer be used, and when it's ref count
@@ -67,8 +80,41 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public abstract boolean exists(String path);
   
   /**
+   * Removes the Directory's persistent storage.
+   * For example: A file system impl may remove the
+   * on disk directory.
+   * @throws IOException If there is a low-level I/O error.
+   * 
+   */
+  public abstract void remove(Directory dir) throws IOException;
+  
+  /**
+   * This remove is special in that it may be called even after
+   * the factory has been closed. Remove only makes sense for
+   * peristent directory factories.
+   * 
+   * @param path to remove
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public abstract void remove(String path) throws IOException;
+  
+  /**
+   * Override for more efficient moves.
+   * 
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext) throws IOException {
+    fromDir.copy(toDir, fileName, fileName, ioContext);
+    fromDir.deleteFile(fileName);
+  }
+  
+  /**
    * Returns the Directory for a given path, using the specified rawLockType.
    * Will return the same Directory instance for the same path.
+   * 
+   * Note: sometimes you might pass null for the rawLockType when
+   * you know the Directory exists and the rawLockType is already
+   * in use.
    * 
    * @throws IOException If there is a low-level I/O error.
    */
@@ -101,5 +147,59 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * @throws IOException If there is a low-level I/O error.
    */
   public abstract void release(Directory directory) throws IOException;
+  
+  
+  /**
+   * Normalize a given path.
+   * 
+   * @param path to normalize
+   * @return normalized path
+   * @throws IOException on io error
+   */
+  public String normalize(String path) throws IOException {
+    return path;
+  }
+  
+  public static long sizeOfDirectory(Directory directory) throws IOException {
+    final String[] files = directory.listAll();
+    long size = 0;
+    
+    for (final String file : files) {
+      size += sizeOf(directory, file);
+      if (size < 0) {
+        break;
+      }
+    }
+    
+    return size;
+  }
+  
+  public static long sizeOf(Directory directory, String file) throws IOException {
+    if (!directory.fileExists(file)) {
+      return 0;
+    }
+    
+    return directory.fileLength(file);
+  }
+  
+  /**
+   * Delete the files in the Directory
+   */
+  public static boolean empty(Directory dir) {
+    boolean isSuccess = true;
+    String contents[];
+    try {
+      contents = dir.listAll();
+      if (contents != null) {
+        for (String file : contents) {
+          dir.deleteFile(file);
+        }
+      }
+    } catch (IOException e) {
+      SolrException.log(log, "Error deleting files from Directory", e);
+      isSuccess = false;
+    }
+    return isSuccess;
+  }
   
 }

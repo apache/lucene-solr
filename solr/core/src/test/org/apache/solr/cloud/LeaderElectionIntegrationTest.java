@@ -256,7 +256,7 @@ public class LeaderElectionIntegrationTest extends SolrTestCaseJ4 {
   
   private String getLeader() throws InterruptedException {
     
-    ZkNodeProps props = reader.getLeaderProps("collection1", "shard1", 30000);
+    ZkNodeProps props = reader.getLeaderRetry("collection1", "shard1", 30000);
     String leader = props.getStr(ZkStateReader.NODE_NAME_PROP);
     
     return leader;

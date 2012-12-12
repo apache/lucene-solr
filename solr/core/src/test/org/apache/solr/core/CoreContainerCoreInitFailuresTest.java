@@ -96,11 +96,9 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
       ignoreException(Pattern.quote("bogus_path"));
       cc.create(bogus);
       fail("bogus inst dir failed to trigger exception from create");
-    } catch (Exception e) {
-      // :TODO: should really tighten up the exceptions CoreContainer throws (ie: just SolrException)
-      
-      assertTrue("init exception doesn't mention bogus dir: " + e.getMessage(),
-                 0 < e.getMessage().indexOf("bogus_path"));
+    } catch (SolrException e) {
+      assertTrue("init exception doesn't mention bogus dir: " + e.getCause().getCause().getMessage(),
+                 0 < e.getCause().getCause().getMessage().indexOf("bogus_path"));
       
     }
     
@@ -115,8 +113,8 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     assertEquals("wrong number of core failures", 1, failures.size());
     fail = failures.get("bogus");
     assertNotNull("null failure for test core", fail);
-    assertTrue("init failure doesn't mention problem: " + fail.getMessage(),
-               0 < fail.getMessage().indexOf("bogus_path"));
+    assertTrue("init failure doesn't mention problem: " + fail.getCause().getMessage(),
+               0 < fail.getCause().getMessage().indexOf("bogus_path"));
 
     // let the test end here, with some recorded failures, and let cleanUp()
     // verify that there is no problem shuting down CoreContainer with known 
@@ -197,11 +195,9 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
       ignoreException(Pattern.quote("bogus_path"));
       cc.create(bogus);
       fail("bogus inst dir failed to trigger exception from create");
-    } catch (Exception e) {
-      // :TODO: should really tighten up the exceptions CoreContainer throws (ie: just SolrException)
-      
-      assertTrue("init exception doesn't mention bogus dir: " + e.getMessage(),
-                 0 < e.getMessage().indexOf("bogus_path"));
+    } catch (SolrException e) {
+      assertTrue("init exception doesn't mention bogus dir: " + e.getCause().getCause().getMessage(),
+                 0 < e.getCause().getCause().getMessage().indexOf("bogus_path"));
       
     }
     
@@ -218,8 +214,8 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
     assertEquals("wrong number of core failures", 1, failures.size());
     fail = failures.get("bogus");
     assertNotNull("null failure for test core", fail);
-    assertTrue("init failure doesn't mention problem: " + fail.getMessage(),
-               0 < fail.getMessage().indexOf("bogus_path"));
+    assertTrue("init failure doesn't mention problem: " + fail.getCause().getMessage(),
+               0 < fail.getCause().getMessage().indexOf("bogus_path"));
 
 
     // -----
@@ -254,12 +250,13 @@ public class CoreContainerCoreInitFailuresTest extends SolrTestCaseJ4 {
       ignoreException(Pattern.quote("SAX"));
       cc.reload("col_bad");
       fail("corrupt solrconfig.xml failed to trigger exception from reload");
-    } catch (SAXParseException e) {
-      // :TODO: should really tighten up the exceptions CoreContainer throws (ie: just SolrException)
-      
-      assertTrue("reload exception doesn't refer to slrconfig.xml " + e.getSystemId(),
-                 0 < e.getSystemId().indexOf("solrconfig.xml"));
-      
+    } catch (SolrException e) {
+      assertTrue("We're supposed to have a wrapped SAXParserException here, but we don't",
+          e.getCause() instanceof SAXParseException);
+      SAXParseException se = (SAXParseException)e.getCause();
+      assertTrue("reload exception doesn't refer to slrconfig.xml " + se.getSystemId(),
+          0 < se.getSystemId().indexOf("solrconfig.xml"));
+
     }
 
     assertEquals("Failed core reload should not have changed start time",

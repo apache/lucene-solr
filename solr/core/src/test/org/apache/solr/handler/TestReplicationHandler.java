@@ -54,8 +54,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 
 /**
  * Test for ReplicationHandler
@@ -72,9 +72,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       + File.separator + "collection1" + File.separator + "conf"
       + File.separator;
 
-  static JettySolrRunner masterJetty, slaveJetty;
-  static SolrServer masterClient, slaveClient;
-  static SolrInstance master = null, slave = null;
+  JettySolrRunner masterJetty, slaveJetty;
+  SolrServer masterClient, slaveClient;
+  SolrInstance master = null, slave = null;
 
   static String context = "/solr";
 
@@ -83,9 +83,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   static int nDocs = 500;
 
 
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    useFactory(null); // need an FS factory
+  @Before
+  public void setup() throws Exception {
+    super.setUp();
+    // For manual testing only
+    // useFactory(null); // force an FS factory
     master = new SolrInstance("master", null);
     master.setUp();
     masterJetty = createJetty(master);
@@ -109,8 +111,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
   }
 
-  @AfterClass
-  public static void afterClass() throws Exception {
+  @Override
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
     masterJetty.stop();
     slaveJetty.stop();
     master.tearDown();
@@ -415,7 +419,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // setup an xslt dir to force subdir file replication
     File masterXsltDir = new File(master.getConfDir() + File.separator + "xslt");
     File masterXsl = new File(masterXsltDir, "dummy.xsl");
-    assertTrue(masterXsltDir.mkdir());
+    assertTrue("could not make dir " + masterXsltDir, masterXsltDir.mkdirs());
     assertTrue(masterXsl.createNewFile());
 
     File slaveXsltDir = new File(slave.getConfDir() + File.separator + "xslt");
@@ -596,14 +600,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     nDocs--;
     masterClient.deleteByQuery("*:*");
-    for (int i = 0; i < nDocs; i++)
-      index(masterClient, "id", i, "name", "name = " + i);
 
     masterClient.commit();
 
-    NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
-    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
-    assertEquals(nDocs, masterQueryResult.getNumFound());
+
 
     //change solrconfig having 'replicateAfter startup' option on master
     master.copyConfigFile(CONF_DIR + "solrconfig-master2.xml",
@@ -613,6 +613,16 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
+    
+    for (int i = 0; i < nDocs; i++)
+      index(masterClient, "id", i, "name", "name = " + i);
+
+    masterClient.commit();
+    
+    NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
+    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    assertEquals(nDocs, masterQueryResult.getNumFound());
+    
 
     slave.setTestPort(masterJetty.getLocalPort());
     slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
@@ -647,18 +657,11 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   private void doTestReplicateAfterCoreReload() throws Exception {
+    int docs = TEST_NIGHTLY ? 200000 : 0;
+    
     //stop slave
     slaveJetty.stop();
 
-    masterClient.deleteByQuery("*:*");
-    for (int i = 0; i < 10; i++)
-      index(masterClient, "id", i, "name", "name = " + i);
-
-    masterClient.commit();
-
-    NamedList masterQueryRsp = rQuery(10, "*:*", masterClient);
-    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
-    assertEquals(10, masterQueryResult.getNumFound());
 
     //change solrconfig having 'replicateAfter startup' option on master
     master.copyConfigFile(CONF_DIR + "solrconfig-master3.xml",
@@ -669,6 +672,16 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterJetty = createJetty(master);
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
 
+    masterClient.deleteByQuery("*:*");
+    for (int i = 0; i < docs; i++)
+      index(masterClient, "id", i, "name", "name = " + i);
+
+    masterClient.commit();
+
+    NamedList masterQueryRsp = rQuery(docs, "*:*", masterClient);
+    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    assertEquals(docs, masterQueryResult.getNumFound());
+    
     slave.setTestPort(masterJetty.getLocalPort());
     slave.copyConfigFile(slave.getSolrConfigFile(), "solrconfig.xml");
 
@@ -677,9 +690,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
     
     //get docs from slave and check if number is equal to master
-    NamedList slaveQueryRsp = rQuery(10, "*:*", slaveClient);
+    NamedList slaveQueryRsp = rQuery(docs, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    assertEquals(10, slaveQueryResult.getNumFound());
+    assertEquals(docs, slaveQueryResult.getNumFound());
     
     //compare results
     String cmp = BaseDistributedSearchTestCase.compare(masterQueryResult, slaveQueryResult, 0, null);
@@ -693,19 +706,19 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(version, getIndexVersion(masterClient).get("indexversion"));
     assertEquals(commits.get("commits"), getCommits(masterClient).get("commits"));
     
-    index(masterClient, "id", 110, "name", "name = 1");
-    index(masterClient, "id", 120, "name", "name = 2");
+    index(masterClient, "id", docs + 10, "name", "name = 1");
+    index(masterClient, "id", docs + 20, "name", "name = 2");
 
     masterClient.commit();
     
-    NamedList resp =  rQuery(12, "*:*", masterClient);
+    NamedList resp =  rQuery(docs + 2, "*:*", masterClient);
     masterQueryResult = (SolrDocumentList) resp.get("response");
-    assertEquals(12, masterQueryResult.getNumFound());
+    assertEquals(docs + 2, masterQueryResult.getNumFound());
     
     //get docs from slave and check if number is equal to master
-    slaveQueryRsp = rQuery(12, "*:*", slaveClient);
+    slaveQueryRsp = rQuery(docs + 2, "*:*", slaveClient);
     slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    assertEquals(12, slaveQueryResult.getNumFound());
+    assertEquals(docs + 2, slaveQueryResult.getNumFound());
     
     // NOTE: revert config on master.
     master.copyConfigFile(CONF_DIR + "solrconfig-master.xml", "solrconfig.xml");
@@ -923,6 +936,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   
       File[] files = dataDir.listFiles(new FilenameFilter() {
         
+          @Override
           public boolean accept(File dir, String name) {
             if(name.startsWith("snapshot")) {
               return true;

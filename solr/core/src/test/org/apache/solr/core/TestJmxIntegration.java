@@ -20,6 +20,7 @@ import org.apache.solr.core.JmxMonitoredMap.SolrDynamicMBean;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -35,14 +36,10 @@ import java.util.*;
  */
 public class TestJmxIntegration extends AbstractSolrTestCase {
 
-  @Override
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
+  
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
   }
 
   @Override

@@ -27,11 +27,11 @@ import java.io.IOException;
  * Factory to instantiate {@link org.apache.lucene.store.NIOFSDirectory}
  *
  **/
-public class NIOFSDirectoryFactory extends CachingDirectoryFactory {
+public class NIOFSDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
   protected Directory create(String path) throws IOException {
-   
     return new NIOFSDirectory(new File(path));
   }
+  
 }

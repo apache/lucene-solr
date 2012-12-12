@@ -35,6 +35,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -148,7 +149,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     }
     
     private String getShardId(final String coreName) {
-      Map<String,Slice> slices = zkStateReader.getClusterState().getSlices(
+      Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(
           collection);
       if (slices != null) {
         for (Slice slice : slices.values()) {
@@ -301,7 +302,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         cloudStateSliceCount = 0;
         reader.updateClusterState(true);
         ClusterState state = reader.getClusterState();
-        Map<String,Slice> slices = state.getSlices("collection1");
+        Map<String,Slice> slices = state.getSlicesMap("collection1");
         for (String name : slices.keySet()) {
           cloudStateSliceCount += slices.get(name).getReplicasMap().size();
         }
@@ -478,7 +479,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   }
   
   private void verifyShardLeader(ZkStateReader reader, String collection, String shard, String expectedCore) throws InterruptedException, KeeperException {
-    int maxIterations = 100;
+    int maxIterations = 200;
     while(maxIterations-->0) {
       reader.updateClusterState(true); // poll state
       ZkNodeProps props =  reader.getClusterState().getLeader(collection, shard);
@@ -712,8 +713,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       ClusterState state = reader.getClusterState();
       
       int numFound = 0;
-      for (Map<String,Slice> collection : state.getCollectionStates().values()) {
-        for (Slice slice : collection.values()) {
+      for (DocCollection collection : state.getCollectionStates().values()) {
+        for (Slice slice : collection.getSlices()) {
           if (slice.getReplicasMap().get("node1_core1") != null) {
             numFound++;
           }

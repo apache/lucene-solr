@@ -71,9 +71,13 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   private Double maxWriteMBPerSecRead;
 
   private Double maxWriteMBPerSecDefault;
+
+  private boolean closed;
   
   public interface CloseListener {
-    public void onClose();
+    public void postClose();
+
+    public void preClose();
   }
   
   @Override
@@ -118,6 +122,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   @Override
   public void close() throws IOException {
     synchronized (this) {
+      this.closed = true;
       for (CacheValue val : byDirectoryCache.values()) {
         try {
           // if there are still refs out, we have to wait for them
@@ -132,6 +137,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           }
           
           assert val.refCnt == 0 : val.refCnt;
+          log.info("Closing directory when closing factory:" + val.path);
           val.directory.close();
         } catch (Throwable t) {
           SolrException.log(log, "Error closing directory", t);
@@ -144,27 +150,40 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   
   private void close(Directory directory) throws IOException {
     synchronized (this) {
+      
       CacheValue cacheValue = byDirectoryCache.get(directory);
       if (cacheValue == null) {
         throw new IllegalArgumentException("Unknown directory: " + directory
             + " " + byDirectoryCache);
       }
-
-      log.debug("Closing: {}", cacheValue);
+      log.info("Releasing directory:" + cacheValue.path);
 
       cacheValue.refCnt--;
+
       if (cacheValue.refCnt == 0 && cacheValue.doneWithDir) {
         log.info("Closing directory:" + cacheValue.path);
-        directory.close();
-        byDirectoryCache.remove(directory);
-        byPathCache.remove(cacheValue.path);
         List<CloseListener> listeners = closeListeners.remove(directory);
         if (listeners != null) {
           for (CloseListener listener : listeners) {
-            listener.onClose();
+            listener.preClose();
+          }
+        }
+        try {
+          log.info("Closing directory:" + cacheValue.path);
+          directory.close();
+        } catch (Throwable t) {
+          SolrException.log(log, "Error closing directory", t);
+        }
+
+        if (listeners != null) {
+          for (CloseListener listener : listeners) {
+            listener.postClose();
           }
           closeListeners.remove(directory);
         }
+        
+        byDirectoryCache.remove(directory);
+        byPathCache.remove(cacheValue.path);
       }
     }
   }
@@ -202,7 +221,11 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       throws IOException {
     String fullPath = new File(path).getAbsolutePath();
     synchronized (this) {
-      CacheValue cacheValue = byPathCache.get(fullPath);
+      if (closed) {
+        throw new RuntimeException("Already closed");
+      }
+      
+      final CacheValue cacheValue = byPathCache.get(fullPath);
       Directory directory = null;
       if (cacheValue != null) {
         directory = cacheValue.directory;
@@ -227,7 +250,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         }
       }
       
-      if (directory == null || forceNew) {
+      if (directory == null || forceNew) { 
         directory = create(fullPath);
         
         directory = rateLimit(directory);

@@ -19,7 +19,9 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
+import java.net.URLEncoder;
 import java.net.NetworkInterface;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -44,6 +46,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
@@ -144,18 +147,31 @@ public final class ZkController {
       TimeoutException, IOException {
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
     this.cc = cc;
-    if (localHostContext.contains("/")) {
-      throw new IllegalArgumentException("localHostContext ("
-          + localHostContext + ") should not contain a /");
+    if (localHostContext.startsWith("/")) {
+      // be forgiving and strip this off
+      // this allows us to support users specifying hostContext="/" in 
+      // solr.xml to indicate the root context, instead of hostContext="" 
+      // which means the default of "solr"
+      localHostContext = localHostContext.substring(1);
     }
+    if (localHostContext.endsWith("/")) {
+      // be extra nice
+      localHostContext = localHostContext.substring(0,localHostContext.length()-1);
+    }
+    
     
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
     this.localHostContext = localHostContext;
     this.localHost = getHostAddress(localHost);
+    this.baseURL = this.localHost + ":" + this.localHostPort + 
+      (this.localHostContext.isEmpty() ? "" : ("/" + this.localHostContext));
+
     this.hostName = getHostNameFromAddress(this.localHost);
-    this.nodeName = this.hostName + ':' + this.localHostPort + '_' + this.localHostContext;
-    this.baseURL = this.localHost + ":" + this.localHostPort + "/" + this.localHostContext;
+    this.nodeName = generateNodeName(this.hostName, 
+                                     this.localHostPort, 
+                                     this.localHostContext);
+
     this.leaderVoteWait = leaderVoteWait;
     this.clientTimeout = zkClientTimeout;
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
@@ -919,6 +935,10 @@ public final class ZkController {
 
         try {
           Map<String,Object> collectionProps = new HashMap<String,Object>();
+
+          // set defaults
+          collectionProps.put(DocCollection.DOC_ROUTER, "compositeId");
+
           // TODO: if collection.configName isn't set, and there isn't already a conf in zk, just use that?
           String defaultConfigName = System.getProperty(COLLECTION_PARAM_PREFIX+CONFIGNAME_PROP, collection);
 
@@ -933,8 +953,10 @@ public final class ZkController {
             }
 
             // if the config name wasn't passed in, use the default
-            if (!collectionProps.containsKey(CONFIGNAME_PROP))
+            if (!collectionProps.containsKey(CONFIGNAME_PROP)) {
+              // TODO: getting the configName from the collectionPath should fail since we already know it doesn't exist?
               getConfName(collection, collectionPath, collectionProps);
+            }
             
           } else if(System.getProperty("bootstrap_confdir") != null) {
             // if we are bootstrapping a collection, default the config for
@@ -958,7 +980,6 @@ public final class ZkController {
           } else {
             getConfName(collection, collectionPath, collectionProps);
           }
-          
           ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
           zkClient.makePath(collectionPath, ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, null, true);
 
@@ -1269,4 +1290,23 @@ public final class ZkController {
     return cmdDistribExecutor;
   }
 
+  /**
+   * Returns the nodeName that should be used based on the specified properties.
+   *
+   * @param hostName - must not be the empty string
+   * @param hostPort - must consist only of digits, must not be the empty string
+   * @param hostContext - should not begin or end with a slash, may be the empty string to denote the root context
+   * @lucene.experimental
+   * @see SolrZkClient#getBaseUrlForNodeName
+   */
+  static String generateNodeName(final String hostName,
+                                 final String hostPort,
+                                 final String hostContext) {
+    try {
+      return hostName + ':' + hostPort + '_' + 
+        URLEncoder.encode(hostContext, "UTF-8");
+    } catch (UnsupportedEncodingException e) {
+      throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
+    }
+  }
 }
