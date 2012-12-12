@@ -74,6 +74,11 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   @Override
   public synchronized RefCounted<IndexWriter> getIndexWriter(SolrCore core)
       throws IOException {
+    
+    if (closed) {
+      throw new RuntimeException("SolrCoreState already closed");
+    }
+    
     synchronized (writerPauseLock) {
       if (core == null) {
         // core == null is a signal to just return the current writer, or null
@@ -136,7 +141,7 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
         } catch (InterruptedException e) {}
         
         if (closed) {
-          throw new RuntimeException("Already closed");
+          throw new RuntimeException("SolrCoreState already closed");
         }
       }
 
