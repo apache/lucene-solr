@@ -238,7 +238,7 @@ public class JettySolrRunner {
         }
       }
       
-      this.wait(300); // always 100ms - can take a moment for our cores to come up
+      this.wait(300); // always 300ms - can take a moment for our cores to come up
     }
     
     System.clearProperty("shard");
