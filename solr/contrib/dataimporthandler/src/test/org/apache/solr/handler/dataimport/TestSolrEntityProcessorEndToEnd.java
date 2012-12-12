@@ -36,7 +36,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +50,8 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   private static final String SOLR_SCHEMA = "dataimport-schema.xml";
   private static final String SOLR_HOME = getFile("dih/solr").getAbsolutePath();
   private static final String CONF_DIR = SOLR_HOME + File.separator + "collection1" + File.separator + "conf" + File.separator;
+  
+  private static final String DEAD_SOLR_SERVER = "http://[ff01::114]:33332/solr";
   
   private static final List<Map<String,Object>> DB_DOCS = new ArrayList<Map<String,Object>>();
   private static final List<Map<String,Object>> SOLR_DOCS = new ArrayList<Map<String,Object>>();
@@ -86,10 +87,10 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
         + "    </entity>\r\n" + "  </document>\r\n" + "</dataConfig>\r\n";
   }
   
-  private String generateDIHConfig(String options, boolean useFakeUrl) {
+  private String generateDIHConfig(String options, boolean useDeadServer) {
     return "<dataConfig>\r\n" + "  <document>\r\n"
         + "    <entity name='se' processor='SolrEntityProcessor'" + "   url='"
-        + (useFakeUrl ? "http://[ff01::114]:33332/solr" : getSourceUrl()) + "' " + options + " />\r\n" + "  </document>\r\n"
+        + (useDeadServer ? DEAD_SOLR_SERVER : getSourceUrl()) + "' " + options + " />\r\n" + "  </document>\r\n"
         + "</dataConfig>\r\n";
   }
   
@@ -220,17 +221,10 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   }
   
   public void testFullImportWrongSolrUrl() {
-    try {
-      jetty.stop();
-    } catch (Exception e) {
-      LOG.error("Error stopping jetty", e);
-      fail(e.getMessage());
-    }
-    
     assertQ(req("*:*"), "//result[@numFound='0']");
     
     try {
-      runFullImport(generateDIHConfig("query='*:*' rows='2' fl='id,desc' onError='skip'", true));
+      runFullImport(generateDIHConfig("query='*:*' rows='2' fl='id,desc' onError='skip'", true /* use dead server */));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       fail(e.getMessage());
