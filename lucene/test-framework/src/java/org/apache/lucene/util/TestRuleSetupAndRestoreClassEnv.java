@@ -211,6 +211,9 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
           Arrays.toString(avoidCodecs.toArray()));
       throw e;
     }
+    if (Constants.JAVA_VENDOR.startsWith("IBM")) {
+      throw new AssumptionViolatedException("refusing to execute on broken jvm");
+    }
   }
 
   /**
