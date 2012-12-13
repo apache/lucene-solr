@@ -175,6 +175,18 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
           "group.query", t1 + ":this_will_never_match",
           "group.limit", 10, "sort", i1 + " asc, id asc");
 
+    // SOLR-4164: main query matches nothing, or only matches on one shard
+    query("q", "bogus_s:nothing", // no docs match
+          "group", "true", 
+          "group.query", t1 + ":this_will_never_match",
+          "group.field", i1, 
+          "fl", "id", "group.limit", "2", "group.format", "simple");
+    query("q", "id:5", // one doc matches, so only one shard
+          "rows", 100, "fl", "id," + i1, "group", "true", 
+          "group.query", t1 + ":kings OR " + t1 + ":eggs", 
+          "group.field", i1,
+          "group.limit", 10, "sort", i1 + " asc, id asc");
+
     // SOLR-3109
     query("q", t1 + ":eggs", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", tlong + " asc, id asc");
     query("q", i1 + ":232", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", tlong + " asc, id asc");

@@ -585,6 +585,34 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         , "/grouped/foo_i=={'matches':10,'doclist':"
         + "{'numFound':10,'start':1,'docs':[{'id':'10'},{'id':'3'},{'id':'6'}]}}"
     );
+
+    //////////////////////// grouping where main query matches nothing
+    assertJQ(req("fq", filt, "q", "bogus_s:nothing", "group", "true", "group.field", f, "fl", "id", "group.limit", "2", "group.format", "simple")
+        , "/grouped/foo_i=={'matches':0,'doclist':{'numFound':0,'start':0,'docs':[]}}"
+    );
+    assertJQ(req("fq",filt,  "q","bogus_s:nothing", "group","true",
+        "group.query","id:[2 TO 5]",
+        "group.query","id:[5 TO 5]",
+        "group.field",f,
+        "rows","1",
+        "fl","id", "group.limit","2")
+       ,"/grouped/id:[2 TO 5]=={'matches':0,'doclist':{'numFound':0,'start':0,'docs':[]}}"
+       ,"/grouped/id:[5 TO 5]=={'matches':0,'doclist':{'numFound':0,'start':0,'docs':[]}}"        
+       ,"/grouped/"+f+"=={'matches':0,'groups':[]}"
+    );
+    assertJQ(req("fq",filt,  
+                 "q","bogus_s:nothing", 
+                 "group","true", 
+                 "group.query","id:[2 TO 5]", 
+                 "group.query","id:1000", 
+                 "fl","id", 
+                 "group.limit","3")
+             ,"/grouped/id:[2 TO 5]=={'matches':0,'doclist':{'numFound':0,'start':0,'docs':[]}}"
+             ,"/grouped/id:1000=={'matches':0,'doclist':{'numFound':0,'start':0,'docs':[]}}"
+    );
+
+
+
   }
 
 
