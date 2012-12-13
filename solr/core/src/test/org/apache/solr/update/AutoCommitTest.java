@@ -290,7 +290,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequestBase req = new SolrQueryRequestBase( core, params ) {};
     req.setContentStreams( toContentStreams(
-      adoc(1000, "id", "529", "field_t", "what's inside?", "subject", "info"), null ) );
+      adoc(2000, "id", "529", "field_t", "what's inside?", "subject", "info"), null ) );
     trigger.reset();
     handler.handleRequest( req, rsp );
 
