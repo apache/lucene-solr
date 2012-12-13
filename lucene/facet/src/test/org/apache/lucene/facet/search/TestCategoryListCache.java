@@ -1,6 +1,7 @@
 package org.apache.lucene.facet.search;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +17,7 @@ import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.cache.CategoryListCache;
 import org.apache.lucene.facet.search.cache.CategoryListData;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
+import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
@@ -74,22 +76,29 @@ public class TestCategoryListCache extends FacetTestBase {
   
   private void doTest(boolean withCache, boolean plantWrongData) throws Exception {
     Map<CategoryPath,Integer> truth = facetCountsTruth();
-    CategoryPath cp = (CategoryPath) truth.keySet().toArray()[0]; // any category path will do for this test 
-    CountFacetRequest frq = new CountFacetRequest(cp, 10);
-    FacetSearchParams sParams = getFacetedSearchParams();
-    sParams.addFacetRequest(frq);
+    CategoryPath cp = (CategoryPath) truth.keySet().toArray()[0]; // any category path will do for this test
+    FacetIndexingParams iParams = FacetIndexingParams.ALL_PARENTS;
+    final CategoryListCache clCache;
     if (withCache) {
       //let's use a cached cl data
-      FacetIndexingParams iparams = sParams.getFacetIndexingParams();
       CategoryListParams clp = new CategoryListParams(); // default term ok as only single list
-      CategoryListCache clCache = new CategoryListCache();
-      clCache.loadAndRegister(clp, indexReader, taxoReader, iparams);
+      clCache = new CategoryListCache();
+      clCache.loadAndRegister(clp, indexReader, taxoReader, iParams);
       if (plantWrongData) {
         // let's mess up the cached data and then expect a wrong result...
         messCachedData(clCache, clp);
       }
-      sParams.setClCache(clCache);
+    } else {
+      clCache = null;
     }
+    List<FacetRequest> req = new ArrayList<FacetRequest>();
+    req.add(new CountFacetRequest(cp, 10));
+    final FacetSearchParams sParams = new FacetSearchParams(req, iParams) {
+      @Override
+      public CategoryListCache getCategoryListCache() {
+        return clCache;
+      }
+    };
     FacetsCollector fc = new FacetsCollector(sParams, indexReader, taxoReader);
     searcher.search(new MatchAllDocsQuery(), fc);
     List<FacetResult> res = fc.getFacetResults();

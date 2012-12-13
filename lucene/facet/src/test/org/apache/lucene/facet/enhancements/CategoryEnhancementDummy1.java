@@ -56,7 +56,7 @@ public class CategoryEnhancementDummy1 implements CategoryEnhancement {
   }
 
   @Override
-  public Class<? extends CategoryProperty> getRetainableProperty() {
+  public CategoryProperty getRetainableProperty() {
     return null;
   }
 

@@ -65,8 +65,8 @@ public class CategoryEnhancementDummy2 implements CategoryEnhancement {
   }
 
   @Override
-  public Class<? extends CategoryProperty> getRetainableProperty() {
-    return DummyProperty.class;
+  public CategoryProperty getRetainableProperty() {
+    return DummyProperty.INSTANCE;
   }
 
   @Override

@@ -57,15 +57,15 @@ public class CategoryAttributeImplTest extends LuceneTestCase {
         .getProperty(DummyProperty.class));
     assertNull("Attribute classes should be null", ca.getPropertyClasses());
 
-    ca.addProperty(new DummyProperty());
+    ca.addProperty(DummyProperty.INSTANCE);
     assertEquals("DummyProperty should be in properties",
-        new DummyProperty(), ca.getProperty(DummyProperty.class));
+        DummyProperty.INSTANCE, ca.getProperty(DummyProperty.class));
     assertEquals("Attribute classes should contain 1 element", 1, ca
         .getPropertyClasses().size());
 
     boolean failed = false;
     try {
-      ca.addProperty(new DummyProperty());
+      ca.addProperty(DummyProperty.INSTANCE);
     } catch (UnsupportedOperationException e) {
       failed = true;
     }
@@ -77,24 +77,24 @@ public class CategoryAttributeImplTest extends LuceneTestCase {
     ca.clearProperties();
     assertNull("Attribute classes should be null", ca.getPropertyClasses());
 
-    ca.addProperty(new DummyProperty());
+    ca.addProperty(DummyProperty.INSTANCE);
     assertEquals("DummyProperty should be in properties",
-        new DummyProperty(), ca.getProperty(DummyProperty.class));
+        DummyProperty.INSTANCE, ca.getProperty(DummyProperty.class));
     ca.remove(DummyProperty.class);
     assertEquals("DummyProperty should not be in properties", null, ca
         .getProperty(DummyProperty.class));
     assertNull("Attribute classes should be null", ca.getPropertyClasses());
 
-    ca.addProperty(new DummyProperty());
+    ca.addProperty(DummyProperty.INSTANCE);
     List<Class<? extends CategoryProperty>> propertyClasses = new ArrayList<Class<? extends CategoryProperty>>();
     assertEquals("No property expected when no classes given", null, ca
         .getProperty(propertyClasses));
     propertyClasses.add(DummyProperty.class);
     assertEquals("DummyProperty should be in properties",
-        new DummyProperty(), ca.getProperty(propertyClasses));
+        DummyProperty.INSTANCE, ca.getProperty(propertyClasses));
     propertyClasses.add(OrdinalProperty.class);
     assertEquals("DummyProperty should be in properties",
-        new DummyProperty(), ca.getProperty(propertyClasses));
+        DummyProperty.INSTANCE, ca.getProperty(propertyClasses));
     propertyClasses.clear();
     propertyClasses.add(OrdinalProperty.class);
     assertEquals("No ordinal property expected", null, ca
@@ -107,7 +107,7 @@ public class CategoryAttributeImplTest extends LuceneTestCase {
 
     CategoryPath cp = new CategoryPath("a", "b");
     ca1.setCategoryPath(cp);
-    ca1.addProperty(new DummyProperty());
+    ca1.addProperty(DummyProperty.INSTANCE);
 
     CategoryAttribute ca2 = ca1.clone();
     assertEquals("Error in cloning", ca1, ca2);

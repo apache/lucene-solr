@@ -24,6 +24,10 @@ import org.apache.lucene.facet.index.attributes.CategoryProperty;
  */
 public class DummyProperty implements CategoryProperty {
 
+  public static final DummyProperty INSTANCE = new DummyProperty();
+  
+  private DummyProperty() {}
+  
   @Override
   public boolean equals(Object o) {
     if (o instanceof DummyProperty) {

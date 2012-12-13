@@ -1,18 +1,10 @@
 package org.apache.lucene.facet.example.simple;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopScoreDocCollector;
-
-import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.facet.example.ExampleUtils;
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.DrillDown;
 import org.apache.lucene.facet.search.FacetsCollector;
@@ -23,6 +15,13 @@ import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopScoreDocCollector;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -101,16 +100,11 @@ public class SimpleSearcher {
     TopScoreDocCollector topDocsCollector = TopScoreDocCollector.create(10, true);
 
     if (indexingParams == null) {
-      indexingParams = new DefaultFacetIndexingParams();
+      indexingParams = FacetIndexingParams.ALL_PARENTS;
     }
     
     // Faceted search parameters indicate which facets are we interested in
-    FacetSearchParams facetSearchParams = new FacetSearchParams(indexingParams);
-    
-    // Add the facet requests of interest to the search params
-    for (FacetRequest frq : facetRequests) {
-      facetSearchParams.addFacetRequest(frq);
-    }
+    FacetSearchParams facetSearchParams = new FacetSearchParams(Arrays.asList(facetRequests), indexingParams);
 
     FacetsCollector facetsCollector = new FacetsCollector(facetSearchParams, indexReader, taxoReader);
 
@@ -138,7 +132,7 @@ public class SimpleSearcher {
   public static List<FacetResult> searchWithDrillDown(IndexReader indexReader,
       TaxonomyReader taxoReader) throws Exception {
 
-    final FacetIndexingParams indexingParams = new DefaultFacetIndexingParams();
+    final FacetIndexingParams indexingParams = FacetIndexingParams.ALL_PARENTS;
     
     // base query the user is interested in
     Query baseQuery = new TermQuery(new Term(SimpleUtils.TEXT, "white"));

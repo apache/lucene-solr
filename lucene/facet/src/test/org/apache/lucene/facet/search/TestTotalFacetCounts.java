@@ -4,16 +4,15 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util._TestUtil;
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.facet.FacetTestUtils;
 import org.apache.lucene.facet.FacetTestUtils.IndexTaxonomyReaderPair;
 import org.apache.lucene.facet.FacetTestUtils.IndexTaxonomyWriterPair;
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
+import org.apache.lucene.facet.index.params.FacetIndexingParams;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -56,9 +55,9 @@ public class TestTotalFacetCounts extends LuceneTestCase {
     // Create our index/taxonomy writers
     IndexTaxonomyWriterPair[] writers = FacetTestUtils
     .createIndexTaxonomyWriterPair(dirs);
-    DefaultFacetIndexingParams iParams = new DefaultFacetIndexingParams() {
+    FacetIndexingParams iParams = new FacetIndexingParams() {
       @Override
-      protected int fixedPartitionSize() {
+      public int getPartitionSize() {
         return partitionSize;
       }
     };

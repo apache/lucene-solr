@@ -53,13 +53,12 @@ public class EnhancementsDocumentBuilder extends CategoryDocumentBuilder {
 
   @Override
   protected TokenStream getParentsStream(CategoryAttributesStream categoryAttributesStream) {
-    List<Class<? extends CategoryProperty>> toRetainList = ((EnhancementsIndexingParams) indexingParams)
-        .getRetainableProperties();
+    List<CategoryProperty> toRetainList = ((EnhancementsIndexingParams) indexingParams).getRetainableProperties();
     if (toRetainList != null) {
       CategoryParentsStream categoryParentsStream = new CategoryParentsStream(
           categoryAttributesStream, taxonomyWriter, indexingParams);
-      for (Class<? extends CategoryProperty> toRetain : toRetainList) {
-        categoryParentsStream.addRetainableProperty(toRetain);
+      for (CategoryProperty toRetain : toRetainList) {
+        categoryParentsStream.addRetainableProperty(toRetain.getClass());
       }
       return categoryParentsStream;
     }

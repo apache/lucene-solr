@@ -84,12 +84,10 @@ public class TestDemoFacets extends LuceneTestCase {
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
     taxoWriter.close();
 
-    // Holds all configuration for a facet request:
-    FacetSearchParams fsp = new FacetSearchParams();
-
     // Count both "Publish Date" and "Author" dimensions:
-    fsp.addFacetRequest(new CountFacetRequest(new CategoryPath("Publish Date"), 10));
-    fsp.addFacetRequest(new CountFacetRequest(new CategoryPath("Author"), 10));
+    FacetSearchParams fsp = new FacetSearchParams(
+        new CountFacetRequest(new CategoryPath("Publish Date"), 10), 
+        new CountFacetRequest(new CategoryPath("Author"), 10));
 
     // Aggregatses the facet counts:
     FacetsCollector c = new FacetsCollector(fsp, searcher.getIndexReader(), taxoReader);
@@ -110,9 +108,8 @@ public class TestDemoFacets extends LuceneTestCase {
 
     
     // Now user drills down on Publish Date/2010:
-    fsp = new FacetSearchParams();
+    fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("Author"), 10));
     Query q2 = DrillDown.query(fsp, new MatchAllDocsQuery(), new CategoryPath("Publish Date/2010", '/'));
-    fsp.addFacetRequest(new CountFacetRequest(new CategoryPath("Author"), 10));
     c = new FacetsCollector(fsp, searcher.getIndexReader(), taxoReader);
     searcher.search(q2, c);
     results = c.getFacetResults();

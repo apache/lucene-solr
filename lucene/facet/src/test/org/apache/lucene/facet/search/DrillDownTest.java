@@ -2,6 +2,8 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -10,8 +12,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.facet.index.CategoryDocumentBuilder;
 import org.apache.lucene.facet.index.params.CategoryListParams;
+import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
@@ -49,22 +51,18 @@ import org.junit.Test;
 
 public class DrillDownTest extends LuceneTestCase {
   
-  private FacetSearchParams defaultParams = new FacetSearchParams();
-  private FacetSearchParams nonDefaultParams;
+  private FacetIndexingParams defaultParams = FacetIndexingParams.ALL_PARENTS;
+  private PerDimensionIndexingParams nonDefaultParams;
   private static IndexReader reader;
   private static DirectoryTaxonomyReader taxo;
   private static Directory dir;
   private static Directory taxoDir;
   
   public DrillDownTest() {
-    PerDimensionIndexingParams iParams = new PerDimensionIndexingParams();
-    CategoryListParams aClParams = new CategoryListParams(new Term("testing_facets_a", "a"));
-    CategoryListParams bClParams = new CategoryListParams(new Term("testing_facets_b", "b"));
-    
-    iParams.addCategoryListParams(new CategoryPath("a"), aClParams);
-    iParams.addCategoryListParams(new CategoryPath("b"), bClParams);
-    
-    nonDefaultParams = new FacetSearchParams(iParams);
+    Map<CategoryPath,CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
+    paramsMap.put(new CategoryPath("a"), new CategoryListParams(new Term("testing_facets_a", "a")));
+    paramsMap.put(new CategoryPath("b"), new CategoryListParams(new Term("testing_facets_b", "b")));
+    nonDefaultParams = new PerDimensionIndexingParams(paramsMap);
   }
 
   @BeforeClass

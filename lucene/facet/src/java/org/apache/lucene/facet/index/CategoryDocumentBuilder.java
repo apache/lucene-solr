@@ -12,12 +12,10 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-
 import org.apache.lucene.facet.index.attributes.CategoryAttribute;
 import org.apache.lucene.facet.index.attributes.CategoryAttributesIterable;
 import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
 import org.apache.lucene.facet.index.categorypolicy.PathPolicy;
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.index.streaming.CategoryAttributesStream;
 import org.apache.lucene.facet.index.streaming.CategoryListTokenizer;
@@ -48,7 +46,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
  * A utility class which allows attachment of {@link CategoryPath}s or
  * {@link CategoryAttribute}s to a given document using a taxonomy.<br>
  * Construction could be done with either a given {@link FacetIndexingParams} or
- * the default implementation {@link DefaultFacetIndexingParams}.<br>
+ * the default implementation {@link FacetIndexingParams}.<br>
  * A CategoryDocumentBuilder can be reused by repeatedly setting the categories
  * and building the document. Categories are provided either as
  * {@link CategoryAttribute} elements through {@link #setCategories(Iterable)},
@@ -85,18 +83,16 @@ public class CategoryDocumentBuilder {
   protected Map<String, List<CategoryAttribute>> categoriesMap;
 
   /**
-   * Creating a facets document builder with default facet indexing
-   * parameters.<br>
-   * See:
-   * {@link #CategoryDocumentBuilder(TaxonomyWriter, FacetIndexingParams)}
+   * Creating a facets document builder with default facet indexing parameters.
    * 
    * @param taxonomyWriter
-   *            to which new categories will be added, as well as translating
-   *            known categories to ordinals
-   *
+   *          to which new categories will be added, as well as translating
+   *          known categories to ordinals
+   * 
+   * @see #CategoryDocumentBuilder(TaxonomyWriter, FacetIndexingParams)
    */
   public CategoryDocumentBuilder(TaxonomyWriter taxonomyWriter) {
-    this(taxonomyWriter, new DefaultFacetIndexingParams());
+    this(taxonomyWriter, FacetIndexingParams.ALL_PARENTS);
   }
 
   /**

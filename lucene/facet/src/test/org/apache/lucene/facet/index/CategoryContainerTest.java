@@ -62,7 +62,7 @@ public class CategoryContainerTest extends CategoryContainerTestBase {
   @Test
   public void testExistingNewCategoryWithProperty() throws FacetException {
     categoryContainer.addCategory(new CategoryPath("five", "six"),
-        new DummyProperty());
+        DummyProperty.INSTANCE);
     Iterator<CategoryAttribute> iterator = categoryContainer.iterator();
 
     // count the number of tokens, and check there is one DummyAttribute
@@ -83,12 +83,12 @@ public class CategoryContainerTest extends CategoryContainerTestBase {
     AssociationProperty associationProperty = new AssociationIntProperty(
         49);
     categoryContainer.addCategory(new CategoryPath("five", "six"),
-        new DummyProperty(), associationProperty);
+        DummyProperty.INSTANCE, associationProperty);
     categoryContainer.addCategory(new CategoryPath("seven", "eight"),
-        new DummyProperty());
+        DummyProperty.INSTANCE);
     associationProperty = new AssociationIntProperty(123);
     categoryContainer.addCategory(new CategoryPath("nine"),
-        associationProperty, new DummyProperty());
+        associationProperty, DummyProperty.INSTANCE);
     Iterator<CategoryAttribute> iterator = categoryContainer.iterator();
 
     // count the number of tokens, and check there is one DummyAttribute
@@ -114,7 +114,7 @@ public class CategoryContainerTest extends CategoryContainerTestBase {
   @Test
   public void testAddNewCategoryWithProperty() throws FacetException {
     categoryContainer.addCategory(new CategoryPath("seven", "eight"),
-        new DummyProperty());
+        DummyProperty.INSTANCE);
     Iterator<CategoryAttribute> iterator = categoryContainer.iterator();
 
     // count the number of tokens, and check there is one DummyAttribute
@@ -150,7 +150,7 @@ public class CategoryContainerTest extends CategoryContainerTestBase {
   public void testAddCategoryAttributeWithProperty() throws FacetException {
     CategoryAttribute newCA = new CategoryAttributeImpl(new CategoryPath(
         "seven", "eight"));
-    newCA.addProperty(new DummyProperty());
+    newCA.addProperty(DummyProperty.INSTANCE);
     categoryContainer.addCategory(newCA);
     Iterator<CategoryAttribute> iterator = categoryContainer.iterator();
 
@@ -215,12 +215,12 @@ public class CategoryContainerTest extends CategoryContainerTestBase {
     AssociationProperty associationProperty = new AssociationIntProperty(
         49);
     categoryContainer.addCategory(new CategoryPath("five", "six"),
-        new DummyProperty(), associationProperty);
+        DummyProperty.INSTANCE, associationProperty);
     categoryContainer.addCategory(new CategoryPath("seven", "eight"),
-        new DummyProperty());
+        DummyProperty.INSTANCE);
     associationProperty = new AssociationIntProperty(123);
     categoryContainer.addCategory(new CategoryPath("nine"),
-        associationProperty, new DummyProperty());
+        associationProperty, DummyProperty.INSTANCE);
     
     ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
     ObjectOutputStream out = new ObjectOutputStream(baos);

@@ -2,17 +2,6 @@ package org.apache.lucene.facet.search.association;
 
 import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.store.Directory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -20,7 +9,7 @@ import org.apache.lucene.facet.enhancements.EnhancementsDocumentBuilder;
 import org.apache.lucene.facet.enhancements.association.AssociationEnhancement;
 import org.apache.lucene.facet.enhancements.association.AssociationFloatProperty;
 import org.apache.lucene.facet.enhancements.association.AssociationIntProperty;
-import org.apache.lucene.facet.enhancements.params.DefaultEnhancementsIndexingParams;
+import org.apache.lucene.facet.enhancements.params.EnhancementsIndexingParams;
 import org.apache.lucene.facet.index.CategoryContainer;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
@@ -31,6 +20,16 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -72,8 +71,7 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     
     EnhancementsDocumentBuilder builder = new EnhancementsDocumentBuilder(
-        taxoWriter, new DefaultEnhancementsIndexingParams(
-            new AssociationEnhancement()));
+        taxoWriter, new EnhancementsIndexingParams(new AssociationEnhancement()));
     
     // index documents, 50% have only 'b' and all have 'a'
     for (int i = 0; i < 100; i++) {
@@ -109,9 +107,9 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
 
     // facet requests for two facets
-    FacetSearchParams fsp = new FacetSearchParams();
-    fsp.addFacetRequest(new AssociationIntSumFacetRequest(aint, 10));
-    fsp.addFacetRequest(new AssociationIntSumFacetRequest(bint, 10));
+    FacetSearchParams fsp = new FacetSearchParams(
+        new AssociationIntSumFacetRequest(aint, 10),
+        new AssociationIntSumFacetRequest(bint, 10));
     
     Query q = new MatchAllDocsQuery();
 
@@ -134,9 +132,9 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
 
     // facet requests for two facets
-    FacetSearchParams fsp = new FacetSearchParams();
-    fsp.addFacetRequest(new AssociationFloatSumFacetRequest(afloat, 10));
-    fsp.addFacetRequest(new AssociationFloatSumFacetRequest(bfloat, 10));
+    FacetSearchParams fsp = new FacetSearchParams(
+        new AssociationFloatSumFacetRequest(afloat, 10),
+        new AssociationFloatSumFacetRequest(bfloat, 10));
     
     Query q = new MatchAllDocsQuery();
 
@@ -162,11 +160,11 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
 
     // facet requests for two facets
-    FacetSearchParams fsp = new FacetSearchParams();
-    fsp.addFacetRequest(new AssociationIntSumFacetRequest(aint, 10));
-    fsp.addFacetRequest(new AssociationIntSumFacetRequest(bint, 10));
-    fsp.addFacetRequest(new AssociationFloatSumFacetRequest(afloat, 10));
-    fsp.addFacetRequest(new AssociationFloatSumFacetRequest(bfloat, 10));
+    FacetSearchParams fsp = new FacetSearchParams(
+        new AssociationIntSumFacetRequest(aint, 10),
+        new AssociationIntSumFacetRequest(bint, 10),
+        new AssociationFloatSumFacetRequest(afloat, 10),
+        new AssociationFloatSumFacetRequest(bfloat, 10));
     
     Query q = new MatchAllDocsQuery();
 

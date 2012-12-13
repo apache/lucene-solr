@@ -7,21 +7,17 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.store.Directory;
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.enhancements.EnhancementsDocumentBuilder;
-import org.apache.lucene.facet.enhancements.EnhancementsPayloadIterator;
-import org.apache.lucene.facet.enhancements.params.DefaultEnhancementsIndexingParams;
 import org.apache.lucene.facet.enhancements.params.EnhancementsIndexingParams;
 import org.apache.lucene.facet.search.DrillDown;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -47,10 +43,8 @@ public class TwoEnhancementsTest extends LuceneTestCase {
     Directory indexDir = newDirectory();
     Directory taxoDir = newDirectory();
 
-    EnhancementsIndexingParams indexingParams = 
-      new DefaultEnhancementsIndexingParams(
-          new CategoryEnhancementDummy1(),
-          new CategoryEnhancementDummy3());
+    EnhancementsIndexingParams indexingParams = new EnhancementsIndexingParams(
+        new CategoryEnhancementDummy1(), new CategoryEnhancementDummy3());
 
     // add document with a category containing data for both enhancements
     List<CategoryPath> categoryPaths = new ArrayList<CategoryPath>();
@@ -93,10 +87,8 @@ public class TwoEnhancementsTest extends LuceneTestCase {
     Directory indexDir = newDirectory();
     Directory taxoDir = newDirectory();
 
-    EnhancementsIndexingParams indexingParams = 
-      new DefaultEnhancementsIndexingParams(
-          new CategoryEnhancementDummy2(),
-          new CategoryEnhancementDummy3());
+    EnhancementsIndexingParams indexingParams = new EnhancementsIndexingParams(
+        new CategoryEnhancementDummy2(), new CategoryEnhancementDummy3());
 
     List<CategoryPath> categoryPaths = new ArrayList<CategoryPath>();
     categoryPaths.add(new CategoryPath("a", "b"));

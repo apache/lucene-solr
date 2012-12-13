@@ -83,7 +83,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
     this.facetArrays = facetArrays;
     // can only be computed later when docids size is known
     isUsingComplements = false;
-    partitionSize = PartitionsUtils.partitionSize(searchParams, taxonomyReader);
+    partitionSize = PartitionsUtils.partitionSize(searchParams.getFacetIndexingParams(), taxonomyReader);
     maxPartitions = (int) Math.ceil(this.taxonomyReader.getSize() / (double) partitionSize);
     accumulateGuard = new Object();
   }
@@ -91,7 +91,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
   public StandardFacetsAccumulator(FacetSearchParams searchParams,
       IndexReader indexReader, TaxonomyReader taxonomyReader) {
     this(searchParams, indexReader, taxonomyReader, new FacetArrays(
-        PartitionsUtils.partitionSize(searchParams, taxonomyReader)));
+        PartitionsUtils.partitionSize(searchParams.getFacetIndexingParams(), taxonomyReader)));
   }
 
   @Override
@@ -109,7 +109,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
         try {
           totalFacetCounts = TotalFacetCountsCache.getSingleton()
             .getTotalCounts(indexReader, taxonomyReader,
-                searchParams.getFacetIndexingParams(), searchParams.getClCache());
+                searchParams.getFacetIndexingParams(), searchParams.getCategoryListCache());
           if (totalFacetCounts != null) {
             docids = ScoredDocIdsUtils.getComplementSet(docids, indexReader);
           } else {
@@ -135,11 +135,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
           isUsingComplements = false;
         } catch (Exception e) {
           // give up: this should not happen!
-          IOException ioEx = new IOException(
-              "PANIC: Got unexpected exception while trying to get/calculate total counts: "
-              +e.getMessage());
-          ioEx.initCause(e);
-          throw ioEx;
+          throw new IOException("PANIC: Got unexpected exception while trying to get/calculate total counts", e);
         }
       }
 

@@ -1,8 +1,12 @@
 package org.apache.lucene.facet.search;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -11,6 +15,7 @@ import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
+import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.results.FacetResult;
@@ -70,7 +75,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     /**
      * Configure with no custom counting lists
      */
-    PerDimensionIndexingParams iParams = new PerDimensionIndexingParams();
+    PerDimensionIndexingParams iParams = new PerDimensionIndexingParams(Collections.<CategoryPath, CategoryListParams>emptyMap());
 
     seedIndex(iw, tw, iParams);
 
@@ -109,9 +114,9 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1],
         OpenMode.CREATE);
 
-    PerDimensionIndexingParams iParams = new PerDimensionIndexingParams();
-    iParams.addCategoryListParams(new CategoryPath("Author"),
-        new CategoryListParams(new Term("$author", "Authors")));
+    PerDimensionIndexingParams iParams = new PerDimensionIndexingParams(
+        Collections.singletonMap(new CategoryPath("Author"),
+            new CategoryListParams(new Term("$author", "Authors"))));
     seedIndex(iw, tw, iParams);
 
     IndexReader ir = iw.getReader();
@@ -148,11 +153,10 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1],
         OpenMode.CREATE);
 
-    PerDimensionIndexingParams iParams = new PerDimensionIndexingParams();
-    iParams.addCategoryListParams(new CategoryPath("Band"),
-        new CategoryListParams(new Term("$music", "Bands")));
-    iParams.addCategoryListParams(new CategoryPath("Composer"),
-        new CategoryListParams(new Term("$music", "Composers")));
+    Map<CategoryPath,CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
+    paramsMap.put(new CategoryPath("Band"), new CategoryListParams(new Term("$music", "Bands")));
+    paramsMap.put(new CategoryPath("Composer"), new CategoryListParams(new Term("$music", "Composers")));
+    PerDimensionIndexingParams iParams = new PerDimensionIndexingParams(paramsMap);
     seedIndex(iw, tw, iParams);
 
     IndexReader ir = iw.getReader();
@@ -195,11 +199,10 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     // create and open a taxonomy writer
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1], OpenMode.CREATE);
 
-    PerDimensionIndexingParams iParams = new PerDimensionIndexingParams();
-    iParams.addCategoryListParams(new CategoryPath("Band"),
-        new CategoryListParams(new Term("$bands", "Bands")));
-    iParams.addCategoryListParams(new CategoryPath("Composer"),
-        new CategoryListParams(new Term("$composers", "Composers")));
+    Map<CategoryPath,CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
+    paramsMap.put(new CategoryPath("Band"), new CategoryListParams(new Term("$bands", "Bands")));
+    paramsMap.put(new CategoryPath("Composer"), new CategoryListParams(new Term("$composers", "Composers")));
+    PerDimensionIndexingParams iParams = new PerDimensionIndexingParams(paramsMap);
     seedIndex(iw, tw, iParams);
 
     IndexReader ir = iw.getReader();
@@ -236,13 +239,11 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(dirs[0][1],
         OpenMode.CREATE);
 
-    PerDimensionIndexingParams iParams = new PerDimensionIndexingParams();
-    iParams.addCategoryListParams(new CategoryPath("Band"),
-        new CategoryListParams(new Term("$music", "music")));
-    iParams.addCategoryListParams(new CategoryPath("Composer"),
-        new CategoryListParams(new Term("$music", "music")));
-    iParams.addCategoryListParams(new CategoryPath("Author"),
-        new CategoryListParams(new Term("$literature", "Authors")));
+    Map<CategoryPath,CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
+    paramsMap.put(new CategoryPath("Band"), new CategoryListParams(new Term("$music", "music")));
+    paramsMap.put(new CategoryPath("Composer"), new CategoryListParams(new Term("$music", "music")));
+    paramsMap.put(new CategoryPath("Author"), new CategoryListParams(new Term("$literature", "Authors")));
+    PerDimensionIndexingParams iParams = new PerDimensionIndexingParams(paramsMap);
 
     seedIndex(iw, tw, iParams);
 
@@ -329,20 +330,21 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
                                         IndexSearcher searcher) throws IOException {
     // step 1: collect matching documents into a collector
     Query q = new MatchAllDocsQuery();
-    TopScoreDocCollector topDocsCollector = TopScoreDocCollector.create(10,
-        true);
+    TopScoreDocCollector topDocsCollector = TopScoreDocCollector.create(10, true);
 
-    // Faceted search parameters indicate which facets are we interested in
-    FacetSearchParams facetSearchParams = new FacetSearchParams(iParams);
-
-    facetSearchParams.addFacetRequest(new CountFacetRequest(new CategoryPath("Band"), 10));
+    List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
+    facetRequests.add(new CountFacetRequest(new CategoryPath("Band"), 10));
     CountFacetRequest bandDepth = new CountFacetRequest(new CategoryPath("Band"), 10);
     bandDepth.setDepth(2);
     // makes it easier to check the results in the test.
     bandDepth.setResultMode(ResultMode.GLOBAL_FLAT);
-    facetSearchParams.addFacetRequest(bandDepth);
-    facetSearchParams.addFacetRequest(new CountFacetRequest(new CategoryPath("Author"), 10));
-    facetSearchParams.addFacetRequest(new CountFacetRequest(new CategoryPath("Band", "Rock & Pop"), 10));
+    facetRequests.add(bandDepth);
+    facetRequests.add(new CountFacetRequest(new CategoryPath("Author"), 10));
+    facetRequests.add(new CountFacetRequest(new CategoryPath("Band", "Rock & Pop"), 10));
+
+    // Faceted search parameters indicate which facets are we interested in
+    FacetSearchParams facetSearchParams = new FacetSearchParams(facetRequests, iParams);
+    
 
     // perform documents search and facets accumulation
     FacetsCollector facetsCollector = new FacetsCollector(facetSearchParams, ir, tr);

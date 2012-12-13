@@ -2,16 +2,13 @@ package org.apache.lucene.facet.enhancements.params;
 
 import java.util.List;
 
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.facet.enhancements.CategoryEnhancement;
 import org.apache.lucene.facet.enhancements.CategoryEnhancementDummy1;
 import org.apache.lucene.facet.enhancements.CategoryEnhancementDummy2;
-import org.apache.lucene.facet.enhancements.params.DefaultEnhancementsIndexingParams;
-import org.apache.lucene.facet.enhancements.params.EnhancementsIndexingParams;
 import org.apache.lucene.facet.index.DummyProperty;
 import org.apache.lucene.facet.index.attributes.CategoryProperty;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -30,38 +27,25 @@ import org.apache.lucene.facet.index.attributes.CategoryProperty;
  * limitations under the License.
  */
 
-public class DefaultEnhancementsIndexingParamsTest extends LuceneTestCase {
+public class EnhancementsIndexingParamsTest extends LuceneTestCase {
 
   @Test
   public void testCategoryEnhancements() {
-    EnhancementsIndexingParams params = 
-      new DefaultEnhancementsIndexingParams(
-          new CategoryEnhancementDummy1());
+    EnhancementsIndexingParams params = new EnhancementsIndexingParams(
+        new CategoryEnhancementDummy1(), new CategoryEnhancementDummy2());
 
-    // check retainable properties 
-    List<Class<? extends CategoryProperty>> retainableProps = params
-        .getRetainableProperties();
-    assertNull("Unexpected content in retainable list", retainableProps);
-
-    params.addCategoryEnhancements(new CategoryEnhancementDummy2());
-
-    List<CategoryEnhancement> enhancements = params
-        .getCategoryEnhancements();
-
+    List<CategoryEnhancement> enhancements = params.getCategoryEnhancements();
     assertEquals("Wrong number of enhancements", 2, enhancements.size());
 
-    assertTrue("Wrong first enhancement",
-        enhancements.get(0) instanceof CategoryEnhancementDummy1);
-    assertTrue("Wrong second enhancement",
-        enhancements.get(1) instanceof CategoryEnhancementDummy2);
+    // check order
+    assertTrue("Wrong first enhancement", enhancements.get(0) instanceof CategoryEnhancementDummy1);
+    assertTrue("Wrong second enhancement", enhancements.get(1) instanceof CategoryEnhancementDummy2);
 
-    // re-check retainable properties 
-    retainableProps = params.getRetainableProperties();
+    // check retainable properties 
+    List<CategoryProperty> retainableProps = params.getRetainableProperties();
     assertNotNull("Unexpected empty retainable list", retainableProps);
-    assertEquals("Unexpected size of retainable list", 1, retainableProps
-        .size());
-    assertEquals("Wrong property in retainable list", DummyProperty.class,
-        retainableProps.get(0));
-
+    assertEquals("Unexpected size of retainable list", 1, retainableProps.size());
+    assertSame("Wrong property in retainable list", DummyProperty.INSTANCE, retainableProps.get(0));
   }
+  
 }

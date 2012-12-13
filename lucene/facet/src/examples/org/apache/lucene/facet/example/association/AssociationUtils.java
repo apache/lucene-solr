@@ -4,7 +4,7 @@ import org.apache.lucene.facet.enhancements.association.AssociationEnhancement;
 import org.apache.lucene.facet.enhancements.association.AssociationFloatProperty;
 import org.apache.lucene.facet.enhancements.association.AssociationIntProperty;
 import org.apache.lucene.facet.enhancements.association.AssociationProperty;
-import org.apache.lucene.facet.enhancements.params.DefaultEnhancementsIndexingParams;
+import org.apache.lucene.facet.enhancements.params.EnhancementsIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 
 /*
@@ -73,7 +73,7 @@ public class AssociationUtils {
    * Indexing Params: the indexing params to use when dealing with
    * associations.
    */
-  public static final DefaultEnhancementsIndexingParams assocIndexingParams = 
-    new DefaultEnhancementsIndexingParams(new AssociationEnhancement());
+  public static final EnhancementsIndexingParams assocIndexingParams = new EnhancementsIndexingParams(
+      new AssociationEnhancement());
 
 }

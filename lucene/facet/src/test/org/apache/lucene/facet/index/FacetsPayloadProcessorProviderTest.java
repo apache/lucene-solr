@@ -70,8 +70,7 @@ public class FacetsPayloadProcessorProviderTest extends LuceneTestCase {
     DirectoryReader reader1 = DirectoryReader.open(dir);
     DirectoryTaxonomyReader taxReader = new DirectoryTaxonomyReader(taxDir);
     IndexSearcher searcher = newSearcher(reader1);
-    FacetSearchParams fsp = new FacetSearchParams();
-    fsp.addFacetRequest(new CountFacetRequest(new CategoryPath("tag"), NUM_DOCS));
+    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("tag"), NUM_DOCS));
     FacetsCollector collector = new FacetsCollector(fsp, reader1, taxReader);
     searcher.search(new MatchAllDocsQuery(), collector);
     FacetResult result = collector.getFacetResults().get(0);
