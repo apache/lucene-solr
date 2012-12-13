@@ -315,7 +315,18 @@
   
   <target name="dist"
           description="Creates the Solr distribution files."
-          depends="dist-solrj, dist-core, dist-test-framework, dist-contrib, dist-war" />
+          depends="-dist-common, dist-war" />
+ 
+  <target name="dist-excl-slf4j"
+          description="Creates the Solr distribution files without slf4j API or bindings."
+          depends="-dist-common, dist-war-excl-slf4j" />
+ 
+  <target name="-dist-common"
+          depends="dist-solrj, dist-core, dist-test-framework, dist-contrib">
+    <!-- Targets common to dist and dist-excl-slf4j.
+         Only usable as a dependency
+    -->
+  </target>
  
   <target name="dist-test-framework" depends="init-dist"
           description="Creates the Solr test-framework JAR.">
@@ -338,10 +349,10 @@
   </target>
   
   <target name="dist-war-excl-slf4j"
-          description="Creates a Solr WAR Distribution file, excluding slf4j bindings.">
+          description="Creates a Solr WAR Distribution file, excluding slf4j API and bindings.">
     <ant dir="webapp" target="dist" inheritall="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
-      <property name="exclude.from.war" value="*over-slf4j*,slf4j-jdk14*,log4j-*" />
+      <property name="exclude.from.war" value="*slf4j*,log4j-*" />
       <property name="solr.war.suffix" value="-excl-slf4j" />
     </ant>
   </target>

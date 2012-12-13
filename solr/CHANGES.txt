@@ -347,6 +347,11 @@ Bug Fixes
 * SOLR-4178: ReplicationHandler should abort any current pulls and wait for 
   it's executor to stop during core close. (Mark Miller)
 
+* SOLR-3918: Fixed the 'dist-war-excl-slf4j' ant target to exclude all
+  slf4j jars, so that the resulting war is usable as is provided the servlet 
+  container includes the correct slf4j api and impl jars.
+  (Shawn Heisey, hossman)
+
 Other Changes
 ----------------------
 
