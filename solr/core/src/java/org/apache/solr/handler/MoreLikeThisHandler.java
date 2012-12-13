@@ -401,6 +401,33 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       return mlt;
     }
     
+    public NamedList<BooleanQuery> getMoreLikeTheseQuery(DocList docs)
+        throws IOException {
+      IndexSchema schema = searcher.getSchema();
+      NamedList<BooleanQuery> result = new NamedList<BooleanQuery>();
+      DocIterator iterator = docs.iterator();
+      while (iterator.hasNext()) {
+        int id = iterator.nextDoc();
+        BooleanQuery mltquery = (BooleanQuery) mlt.like(id);
+        if (mltquery.clauses().size() == 0) {
+          return result;
+        }
+        mltquery = (BooleanQuery) getBoostedQuery(mltquery);
+        
+        // exclude current document from results
+        BooleanQuery mltQuery = new BooleanQuery();
+        mltQuery.add(mltquery, BooleanClause.Occur.MUST);
+        String name = schema.printableUniqueKey(reader.document(id));
+        
+        // Added in-case uniqueKey is uri.
+        mltQuery.add(
+            new TermQuery(new Term(uniqueKeyField.getName(), name.replace(":",
+                "\\:"))), BooleanClause.Occur.MUST_NOT);
+        result.add(name, mltQuery);
+      }
+      return result;
+    }
+    
     private void fillInterestingTermsFromMLTQuery( Query query, List<InterestingTerm> terms )
     { 
       List clauses = ((BooleanQuery)query).clauses();

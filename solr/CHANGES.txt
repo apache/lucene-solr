@@ -146,6 +146,9 @@ New Features
 * SOLR-4140: Allow access to the collections API through CloudSolrServer
   without referencing an existing collection. (Per Steffensen via Mark Miller)
 
+* SOLR-788: Distributed search support for MLT.
+  (Matthew Woytowitz, Mike Anderson, Jamie Johnson, Mark Miller)
+
 Optimizations
 ----------------------
 
