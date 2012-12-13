@@ -150,6 +150,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   
   private void close(Directory directory) throws IOException {
     synchronized (this) {
+      if (closed) {
+        throw new RuntimeException("Already closed");
+      }
       
       CacheValue cacheValue = byDirectoryCache.get(directory);
       if (cacheValue == null) {
