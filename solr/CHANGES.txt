@@ -143,6 +143,9 @@ New Features
 * SOLR-4166: LBHttpSolrServer ignores ResponseParser passed in constructor.
   (Steve Molloy via Mark Miller)
 
+* SOLR-4140: Allow access to the collections API through CloudSolrServer
+  without referencing an existing collection. (Per Steffensen via Mark Miller)
+
 Optimizations
 ----------------------
 
