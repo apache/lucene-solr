@@ -49,10 +49,11 @@ dist/apache-solr-XX.war
   The Apache Solr Application.  Deploy this WAR file to any servlet
   container to run Apache Solr.
 
-dist/apache-solr-XX.jar
-  The Apache Solr Libraries.  This JAR file is needed to compile
-  Apache Solr Plugins (see http://wiki.apache.org/solr/SolrPlugins for
-  more information).
+dist/apache-solr-<component>-XX.jar
+  The Apache Solr libraries.  To compile Apache Solr Plugins,
+  one or more of these will be required.  The core library is
+  required at a minimum. (see http://wiki.apache.org/solr/SolrPlugins
+  for more information).
 
 docs/index.html
   The Apache Solr Javadoc API documentation and Tutorial
