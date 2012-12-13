@@ -369,13 +369,13 @@ var prepare_graph = function( graph_element, callback )
               for( var c in state )
               {
                 var shards = [];
-                for( var s in state[c] )
+                for( var s in state[c].shards )
                 {
                   var nodes = [];
-                  for( var n in state[c][s].replicas )
+                  for( var n in state[c].shards[s].replicas )
                   {
                     leaf_count++;
-                    var replica = state[c][s].replicas[n]
+                    var replica = state[c].shards[s].replicas[n]
 
                     var uri = replica.base_url;
                     var parts = uri.match( /^(\w+:)\/\/(([\w\d\.-]+)(:(\d+))?)(.+)$/ );
