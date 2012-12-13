@@ -225,10 +225,21 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   private static DocCollection collectionFromObjects(String name, Map<String,Object> objs) {
-    Map<String,Object> props = (Map<String,Object>)objs.get(DocCollection.PROPERTIES);
-    if (props == null) props = Collections.emptyMap();
+    Map<String,Object> props;
+    Map<String,Slice> slices;
+
+    Map<String,Object> sliceObjs = (Map<String,Object>)objs.get(DocCollection.SHARDS);
+    if (sliceObjs == null) {
+      // legacy format from 4.0... there was no separate "shards" level to contain the collection shards.
+      slices = makeSlices(objs);
+      props = Collections.emptyMap();
+    } else {
+      slices = makeSlices(sliceObjs);
+      props = new HashMap<String, Object>(objs);
+      objs.remove(DocCollection.SHARDS);
+    }
+
     DocRouter router = DocRouter.getDocRouter(props.get(DocCollection.DOC_ROUTER));
-    Map<String,Slice> slices = makeSlices(objs);
     return new DocCollection(name, slices, props, router);
   }
 
@@ -237,15 +248,12 @@ public class ClusterState implements JSONWriter.Writable {
     Map<String,Slice> result = new LinkedHashMap<String, Slice>(genericSlices.size());
     for (Map.Entry<String,Object> entry : genericSlices.entrySet()) {
       String name = entry.getKey();
-      if (DocCollection.PROPERTIES.equals(name)) continue;  // skip special properties entry
       Object val = entry.getValue();
-      Slice s;
       if (val instanceof Slice) {
-        s = (Slice)val;
-      } else {
-        s = new Slice(name, null, (Map<String,Object>)val);
+        result.put(name, (Slice)val);
+      } else if (val instanceof Map) {
+        result.put(name, new Slice(name, null, (Map<String,Object>)val));
       }
-      result.put(name, s);
     }
     return result;
   }
