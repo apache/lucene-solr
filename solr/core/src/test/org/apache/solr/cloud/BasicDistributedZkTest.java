@@ -922,7 +922,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private boolean waitForReloads(String collectionName, Map<String,Long> urlToTimeBefore) throws SolrServerException, IOException {
     
     
-    long timeoutAt = System.currentTimeMillis() + 30000;
+    long timeoutAt = System.currentTimeMillis() + 45000;
 
     boolean allTimesAreCorrect = false;
     while (System.currentTimeMillis() < timeoutAt) {
