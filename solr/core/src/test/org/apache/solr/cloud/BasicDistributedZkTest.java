@@ -748,8 +748,37 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     for (int i = 0; i < cnt; i++) {
       int numShards = _TestUtil.nextInt(random(), 0, shardCount) + 1;
       int replicationFactor = _TestUtil.nextInt(random(), 0, 3) + 2;
-      int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrServer().getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
-      createCollection(collectionInfos, i, numShards, replicationFactor, maxShardsPerNode);
+      int maxShardsPerNode = (((numShards * replicationFactor) / getCommonCloudSolrServer()
+          .getZkStateReader().getClusterState().getLiveNodes().size())) + 1;
+
+      
+      CloudSolrServer client = null;
+      try {
+        if (i == 0) {
+          // Test if we can create a collection through CloudSolrServer where
+          // you havnt set default-collection
+          // This is nice because you want to be able to create you first
+          // collection using CloudSolrServer, and in such case there is
+          // nothing reasonable to set as default-collection
+          client = createCloudClient(null);
+        } else if (i == 1) {
+          // Test if we can create a collection through CloudSolrServer where
+          // you have set default-collection to a non-existing collection
+          // This is nice because you want to be able to create you first
+          // collection using CloudSolrServer, and in such case there is
+          // nothing reasonable to set as default-collection, but you might want
+          // to use the same CloudSolrServer throughout the entire
+          // lifetime of your client-application, so it is nice to be able to
+          // set a default-collection on this CloudSolrServer once and for all
+          // and use this CloudSolrServer to create the collection
+          client = createCloudClient("awholynewcollection_" + i);
+        }
+        
+        createCollection(collectionInfos, "awholynewcollection_" + i,
+            numShards, replicationFactor, maxShardsPerNode, client);
+      } finally {
+        if (client != null) client.shutdown();
+      }
     }
     
     Set<Entry<String,List<Integer>>> collectionInfosEntrySet = collectionInfos.entrySet();
@@ -882,7 +911,12 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     int replicationFactor = 2;
     int maxShardsPerNode = 1;
     collectionInfos = new HashMap<String,List<Integer>>();
-    createCollection(collectionInfos, cnt, numShards, replicationFactor, maxShardsPerNode);
+    CloudSolrServer client = createCloudClient("awholynewcollection_" + cnt);
+    try {
+      createCollection(collectionInfos, "awholynewcollection_" + cnt, numShards, replicationFactor, maxShardsPerNode, client);
+    } finally {
+      client.shutdown();
+    }
     
     // TODO: REMOVE THE SLEEP IN THE METHOD CALL WHEN WE HAVE COLLECTION API 
     // RESPONSES
@@ -893,30 +927,34 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
 
   protected void createCollection(Map<String,List<Integer>> collectionInfos,
-      int i, int numShards, int numReplica, int maxShardsPerNode) throws SolrServerException, IOException {
+      String collectionName, int numShards, int numReplicas, int maxShardsPerNode, SolrServer client) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
 
     params.set(OverseerCollectionProcessor.NUM_SLICES, numShards);
-    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, numReplica);
+    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, numReplicas);
     params.set(OverseerCollectionProcessor.MAX_SHARDS_PER_NODE, maxShardsPerNode);
-    String collectionName = "awholynewcollection_" + i;
+
     int clientIndex = random().nextInt(2);
     List<Integer> list = new ArrayList<Integer>();
     list.add(numShards);
-    list.add(numReplica);
+    list.add(numReplicas);
     list.add(maxShardsPerNode);
     collectionInfos.put(collectionName, list);
     params.set("name", collectionName);
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
   
-    final String baseUrl = ((HttpSolrServer) clients.get(clientIndex)).getBaseURL().substring(
-        0,
-        ((HttpSolrServer) clients.get(clientIndex)).getBaseURL().length()
-            - DEFAULT_COLLECTION.length() - 1);
-    
-    createNewSolrServer("", baseUrl).request(request);
+    if (client == null) {
+      final String baseUrl = ((HttpSolrServer) clients.get(clientIndex)).getBaseURL().substring(
+          0,
+          ((HttpSolrServer) clients.get(clientIndex)).getBaseURL().length()
+              - DEFAULT_COLLECTION.length() - 1);
+      
+      createNewSolrServer("", baseUrl).request(request);
+    } else {
+      client.request(request);
+    }
   }
 
   private boolean waitForReloads(String collectionName, Map<String,Long> urlToTimeBefore) throws SolrServerException, IOException {

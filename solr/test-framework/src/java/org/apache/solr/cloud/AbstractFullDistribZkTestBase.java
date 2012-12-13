@@ -199,13 +199,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     assert(cloudInit == false);
     cloudInit = true;
     try {
-      CloudSolrServer server = new CloudSolrServer(zkServer.getZkAddress());
-      server.setDefaultCollection(DEFAULT_COLLECTION);
-      server.getLbServer().getHttpClient().getParams()
-          .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 5000);
-      server.getLbServer().getHttpClient().getParams()
-          .setParameter(CoreConnectionPNames.SO_TIMEOUT, 20000);
-      cloudClient = server;
+      cloudClient = createCloudClient(DEFAULT_COLLECTION);
       
       cloudClient.connect();
     } catch (MalformedURLException e) {
@@ -217,7 +211,17 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     chaosMonkey = new ChaosMonkey(zkServer, zkStateReader, DEFAULT_COLLECTION,
         shardToJetty, shardToLeaderJetty);
   }
-
+  
+  protected CloudSolrServer createCloudClient(String defaultCollection)
+      throws MalformedURLException {
+    CloudSolrServer server = new CloudSolrServer(zkServer.getZkAddress());
+    if (defaultCollection != null) server.setDefaultCollection(defaultCollection);
+    server.getLbServer().getHttpClient().getParams()
+        .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 5000);
+    server.getLbServer().getHttpClient().getParams()
+        .setParameter(CoreConnectionPNames.SO_TIMEOUT, 20000);
+    return server;
+  }
   
   @Override
   protected void createServers(int numServers) throws Exception {
