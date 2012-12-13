@@ -332,7 +332,7 @@ public abstract class FacetRequest implements Cloneable {
   public CategoryListIterator createCategoryListIterator(IndexReader reader,
       TaxonomyReader taxo, FacetSearchParams sParams, int partition)
       throws IOException {
-    CategoryListCache clCache = sParams.getClCache();
+    CategoryListCache clCache = sParams.getCategoryListCache();
     CategoryListParams clParams = sParams.getFacetIndexingParams().getCategoryListParams(categoryPath);
     if (clCache!=null) {
       CategoryListData clData = clCache.get(clParams);

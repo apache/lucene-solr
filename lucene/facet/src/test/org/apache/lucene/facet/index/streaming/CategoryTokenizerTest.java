@@ -7,17 +7,14 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.store.Directory;
-import org.junit.Test;
-
 import org.apache.lucene.facet.index.CategoryContainerTestBase;
 import org.apache.lucene.facet.index.attributes.CategoryAttributesIterable;
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
-import org.apache.lucene.facet.index.streaming.CategoryAttributesStream;
-import org.apache.lucene.facet.index.streaming.CategoryTokenizer;
+import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.store.Directory;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -47,7 +44,7 @@ public class CategoryTokenizerTest extends CategoryContainerTestBase {
     Directory directory = newDirectory();
     TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(
         directory);
-    DefaultFacetIndexingParams indexingParams = new DefaultFacetIndexingParams();
+    FacetIndexingParams indexingParams = FacetIndexingParams.ALL_PARENTS;
     CategoryTokenizer tokenizer = new CategoryTokenizer(
         new CategoryAttributesStream(categoryContainer),
         indexingParams);
@@ -89,7 +86,7 @@ public class CategoryTokenizerTest extends CategoryContainerTestBase {
     longCategory.add(new CategoryPath("one", "two", "three", "four",
         "five", "six", "seven"));
 
-    DefaultFacetIndexingParams indexingParams = new DefaultFacetIndexingParams();
+    FacetIndexingParams indexingParams = FacetIndexingParams.ALL_PARENTS;
     CategoryTokenizer tokenizer = new CategoryTokenizer(
         new CategoryAttributesStream(new CategoryAttributesIterable(
             longCategory)), indexingParams);

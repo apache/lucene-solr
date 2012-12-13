@@ -3,20 +3,17 @@ package org.apache.lucene.facet.index.streaming;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.store.Directory;
-import org.junit.Test;
-
-import org.apache.lucene.facet.FacetException;
 import org.apache.lucene.facet.index.CategoryContainerTestBase;
 import org.apache.lucene.facet.index.DummyProperty;
 import org.apache.lucene.facet.index.categorypolicy.NonTopLevelOrdinalPolicy;
 import org.apache.lucene.facet.index.categorypolicy.NonTopLevelPathPolicy;
 import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
 import org.apache.lucene.facet.index.categorypolicy.PathPolicy;
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.store.Directory;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -49,7 +46,7 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
         directory);
     CategoryParentsStream stream = new CategoryParentsStream(
         new CategoryAttributesStream(categoryContainer),
-        taxonomyWriter, new DefaultFacetIndexingParams());
+        taxonomyWriter, FacetIndexingParams.ALL_PARENTS);
 
     // count the number of tokens
     int nTokens;
@@ -72,13 +69,13 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
     Directory directory = newDirectory();
     final TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(
         directory);
-    FacetIndexingParams indexingParams = new DefaultFacetIndexingParams() {
+    FacetIndexingParams indexingParams = new FacetIndexingParams() {
       @Override
-      protected OrdinalPolicy fixedOrdinalPolicy() {
+      public OrdinalPolicy getOrdinalPolicy() {
         return new NonTopLevelOrdinalPolicy();
       }
       @Override
-      protected PathPolicy fixedPathPolicy() {
+      public PathPolicy getPathPolicy() {
         return new NonTopLevelPathPolicy();
       }
     };
@@ -110,15 +107,14 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
     Directory directory = newDirectory();
     TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(directory);
 
-    new CategoryParentsStream(new CategoryAttributesStream(categoryContainer),
-        taxonomyWriter, new DefaultFacetIndexingParams());
+    assertNotNull(new CategoryParentsStream(new CategoryAttributesStream(categoryContainer),
+        taxonomyWriter, FacetIndexingParams.ALL_PARENTS));
 
     // add DummyAttribute, but do not retain, only one expected
-    categoryContainer.addCategory(initialCatgeories[0], new DummyProperty());
+    categoryContainer.addCategory(initialCatgeories[0], DummyProperty.INSTANCE);
 
     CategoryParentsStream stream = new CategoryParentsStream(new CategoryAttributesStream(
-        categoryContainer), taxonomyWriter,
-        new DefaultFacetIndexingParams());
+        categoryContainer), taxonomyWriter, FacetIndexingParams.ALL_PARENTS);
 
     int nAttributes = 0;
     while (stream.incrementToken()) {
@@ -139,24 +135,21 @@ public class CategoryParentsStreamTest extends CategoryContainerTestBase {
   @Test
   public void testRetainableAttributes() throws IOException {
     Directory directory = newDirectory();
-    TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(
-        directory);
+    TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(directory);
 
-    FacetIndexingParams indexingParams = new DefaultFacetIndexingParams();
-    new CategoryParentsStream(new CategoryAttributesStream(
-        categoryContainer), taxonomyWriter, indexingParams);
+    FacetIndexingParams indexingParams = FacetIndexingParams.ALL_PARENTS;
+    assertNotNull(new CategoryParentsStream(new CategoryAttributesStream(
+        categoryContainer), taxonomyWriter, indexingParams));
 
     // add DummyAttribute and retain it, three expected
     categoryContainer.clear();
-    categoryContainer
-        .addCategory(initialCatgeories[0], new DummyProperty());
+    categoryContainer.addCategory(initialCatgeories[0], DummyProperty.INSTANCE);
     CategoryParentsStream stream = new CategoryParentsStream(
         new CategoryAttributesStream(categoryContainer),
-        taxonomyWriter, new DefaultFacetIndexingParams());
+        taxonomyWriter, FacetIndexingParams.ALL_PARENTS);
     stream.addRetainableProperty(DummyProperty.class);
 
-    MyCategoryListTokenizer tokenizer = new MyCategoryListTokenizer(stream,
-        indexingParams);
+    MyCategoryListTokenizer tokenizer = new MyCategoryListTokenizer(stream, indexingParams);
 
     int nAttributes = 0;
     try {

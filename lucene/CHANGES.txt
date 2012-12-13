@@ -90,6 +90,12 @@ Changes in backwards compatibility policy
   FacetArrays no longer takes those allocators; if you need to reuse the arrays,
   you should use ReusingFacetArrays. (Shai Erera, Gilad Barkai)
 
+* LUCENE-4621: FacetIndexingParams is now a concrete class (instead of DefaultFIP).
+  Also, the entire IndexingParams chain is now immutable. If you need to override
+  a setting, you should extend the relevant class.
+  Additionally, FacetSearchParams is now immutable, and requires all FacetRequests
+  to speified at initialization time. (Shai Erera)
+  
 New Features
 
 * LUCENE-4226: New experimental StoredFieldsFormat that compresses chunks of

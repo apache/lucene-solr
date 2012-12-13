@@ -27,21 +27,16 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class DefaultFacetIndexingParamsTest extends LuceneTestCase {
+public class FacetIndexingParamsTest extends LuceneTestCase {
 
   @Test
   public void testDefaultSettings() {
-    FacetIndexingParams dfip = new DefaultFacetIndexingParams();
-    assertNotNull("Missing default category list", dfip
-        .getAllCategoryListParams());
-    assertEquals(
-        "all categories have the same CategoryListParams by default",
-        dfip.getCategoryListParams(null), dfip
-            .getCategoryListParams(new CategoryPath("a")));
-    assertEquals(
-        "Expected default category list term is $facets:$fulltree$",
-        new Term("$facets", "$fulltree$"), dfip.getCategoryListParams(
-            null).getTerm());
+    FacetIndexingParams dfip = FacetIndexingParams.ALL_PARENTS;
+    assertNotNull("Missing default category list", dfip.getAllCategoryListParams());
+    assertEquals("all categories have the same CategoryListParams by default",
+        dfip.getCategoryListParams(null), dfip.getCategoryListParams(new CategoryPath("a")));
+    assertEquals("Expected default category list term is $facets:$fulltree$",
+        new Term("$facets", "$fulltree$"), dfip.getCategoryListParams(null).getTerm());
     String expectedDDText = "a"
         + dfip.getFacetDelimChar() + "b";
     CategoryPath cp = new CategoryPath("a", "b");
@@ -70,14 +65,14 @@ public class DefaultFacetIndexingParamsTest extends LuceneTestCase {
   public void testCategoryListParamsWithDefaultIndexingParams() {
     CategoryListParams clp = new CategoryListParams(
         new Term("clp", "value"));
-    FacetIndexingParams dfip = new DefaultFacetIndexingParams(clp);
+    FacetIndexingParams dfip = new FacetIndexingParams(clp);
     assertEquals("Expected default category list term is " + clp.getTerm(),
         clp.getTerm(), dfip.getCategoryListParams(null).getTerm());
   }
 
   @Test
   public void testCategoryPolicies() {
-    FacetIndexingParams dfip = new DefaultFacetIndexingParams();
+    FacetIndexingParams dfip = FacetIndexingParams.ALL_PARENTS;
     // check path policy
     CategoryPath cp = new CategoryPath();
     PathPolicy pathPolicy = PathPolicy.ALL_CATEGORIES;

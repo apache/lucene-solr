@@ -8,10 +8,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.lucene.index.IndexReader;
 
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
@@ -19,10 +19,14 @@ import org.apache.lucene.facet.search.aggregator.Aggregator;
 import org.apache.lucene.facet.search.aggregator.CountingAggregator;
 import org.apache.lucene.facet.search.cache.CategoryListCache;
 import org.apache.lucene.facet.search.cache.CategoryListData;
+import org.apache.lucene.facet.search.params.CountFacetRequest;
+import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
+import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.facet.util.ScoredDocIdsUtils;
+import org.apache.lucene.index.IndexReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -146,13 +150,17 @@ public class TotalFacetCounts {
       dos.close();
     }
   }
+  
+  // needed because FacetSearchParams do not allow empty FacetRequests
+  private static final List<FacetRequest> DUMMY_REQ = Arrays.asList(
+      new FacetRequest[] { new CountFacetRequest(new CategoryPath(), 1) });
 
   static TotalFacetCounts compute(final IndexReader indexReader,
       final TaxonomyReader taxonomy, final FacetIndexingParams facetIndexingParams,
       final CategoryListCache clCache) throws IOException {
     int partitionSize = PartitionsUtils.partitionSize(facetIndexingParams, taxonomy);
     final int[][] counts = new int[(int) Math.ceil(taxonomy.getSize()  /(float) partitionSize)][partitionSize];
-    FacetSearchParams newSearchParams = new FacetSearchParams(facetIndexingParams); 
+    FacetSearchParams newSearchParams = new FacetSearchParams(DUMMY_REQ, facetIndexingParams); 
       //createAllListsSearchParams(facetIndexingParams,  this.totalCounts);
     FacetsAccumulator fe = new StandardFacetsAccumulator(newSearchParams, indexReader, taxonomy) {
       @Override

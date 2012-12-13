@@ -3,14 +3,7 @@ package org.apache.lucene.facet.enhancements.association;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.store.Directory;
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.facet.enhancements.EnhancementsDocumentBuilder;
-import org.apache.lucene.facet.enhancements.params.DefaultEnhancementsIndexingParams;
 import org.apache.lucene.facet.enhancements.params.EnhancementsIndexingParams;
 import org.apache.lucene.facet.index.CategoryContainer;
 import org.apache.lucene.facet.index.attributes.CategoryAttributeImpl;
@@ -18,6 +11,11 @@ import org.apache.lucene.facet.index.attributes.CategoryProperty;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -51,8 +49,7 @@ public class CustomAssociationPropertyTest extends LuceneTestCase {
     }
 
     final int NUM_CATEGORIES = 10;
-    EnhancementsIndexingParams iParams = new DefaultEnhancementsIndexingParams(
-        new AssociationEnhancement());
+    EnhancementsIndexingParams iParams = new EnhancementsIndexingParams(new AssociationEnhancement());
 
     Directory iDir = newDirectory();
     Directory tDir = newDirectory();

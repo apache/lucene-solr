@@ -67,8 +67,7 @@ public class TestFacetsCollector extends LuceneTestCase {
     taxonomyWriter.close();
     iw.close();
     
-    FacetSearchParams sParams = new FacetSearchParams();
-    sParams.addFacetRequest(new ScoreFacetRequest(new CategoryPath("a"), 10));
+    FacetSearchParams sParams = new FacetSearchParams(new ScoreFacetRequest(new CategoryPath("a"), 10));
     
     DirectoryReader r = DirectoryReader.open(indexDir);
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);

@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.facet.index.params.CategoryListParams;
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
 import org.apache.lucene.index.AtomicReader;
@@ -71,6 +70,7 @@ import org.apache.lucene.util.encoding.IntEncoder;
  * @lucene.experimental
  */
 public class OrdinalMappingAtomicReader extends FilterAtomicReader {
+  
   private final int[] ordinalMap;
   // a little obtuse: but we dont need to create Term objects this way
   private final Map<String,Map<BytesRef,CategoryListParams>> termMap = 
@@ -82,7 +82,7 @@ public class OrdinalMappingAtomicReader extends FilterAtomicReader {
    * OrdinalMappingAtomicReader(in, ordinalMap, new DefaultFacetIndexingParams())}
    */
   public OrdinalMappingAtomicReader(AtomicReader in, int[] ordinalMap) {
-    this(in, ordinalMap, new DefaultFacetIndexingParams());
+    this(in, ordinalMap, FacetIndexingParams.ALL_PARENTS);
   }
   
   /**

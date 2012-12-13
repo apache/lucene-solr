@@ -121,7 +121,7 @@ public interface CategoryEnhancement {
    *         {@link CategoryParentsStream}, or {@code null} if there is no such
    *         property.
    */
-  Class<? extends CategoryProperty> getRetainableProperty();
+  CategoryProperty getRetainableProperty();
   
   /**
    * Category enhancements must override {@link Object#equals(Object)}, as it is

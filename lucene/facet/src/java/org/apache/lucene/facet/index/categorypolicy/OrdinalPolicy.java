@@ -2,7 +2,6 @@ package org.apache.lucene.facet.index.categorypolicy;
 
 import java.io.Serializable;
 
-import org.apache.lucene.facet.index.streaming.CategoryParentsStream;
 import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -25,11 +24,9 @@ import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
  */
 
 /**
- * Filtering category ordinals in {@link CategoryParentsStream}, where a given
- * category ordinal is added to the stream, and than its parents are being added
- * one after the other using {@link TaxonomyWriter#getParent(int)}. <br>
- * That loop should have a stop point - the default approach (excluding the
- * ROOT) is implemented in {@link OrdinalPolicy#ALL_PARENTS}.
+ * A policy for adding category parent ordinals to the list of ordinals that are
+ * encoded for a given document. The default {@link #ALL_PARENTS} policy always
+ * adds all parents, where {@link #NO_PARENTS} never adds any parents.
  * 
  * @lucene.experimental
  */

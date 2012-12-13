@@ -63,14 +63,12 @@ public class OversampleWithDepthTest extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(indexDir);
     TaxonomyReader tr = new DirectoryTaxonomyReader(taxoDir);
     
-    FacetSearchParams fsp = new FacetSearchParams();
-    
     CountFacetRequest facetRequest = new CountFacetRequest(new CategoryPath("root"), 10);
-    
     // Setting the depth to '2', should potentially get all categories
     facetRequest.setDepth(2);
     facetRequest.setResultMode(ResultMode.PER_NODE_IN_TREE);
-    fsp.addFacetRequest(facetRequest);
+
+    FacetSearchParams fsp = new FacetSearchParams(facetRequest);
     
     // Craft sampling params to enforce sampling
     final SamplingParams params = new SamplingParams();

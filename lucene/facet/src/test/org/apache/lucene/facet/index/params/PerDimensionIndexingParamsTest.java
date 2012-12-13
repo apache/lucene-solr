@@ -1,15 +1,13 @@
 package org.apache.lucene.facet.index.params;
 
-import org.apache.lucene.index.Term;
-import org.junit.Test;
+import java.util.Collections;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.index.params.CategoryListParams;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.search.DrillDown;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.util.PartitionsUtils;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -32,9 +30,8 @@ public class PerDimensionIndexingParamsTest extends LuceneTestCase {
 
   @Test
   public void testTopLevelSettings() {
-    FacetIndexingParams ifip = new PerDimensionIndexingParams();
-    assertNotNull("Missing default category list", ifip
-        .getAllCategoryListParams());
+    FacetIndexingParams ifip = new PerDimensionIndexingParams(Collections.<CategoryPath, CategoryListParams>emptyMap());
+    assertNotNull("Missing default category list", ifip.getAllCategoryListParams());
     assertEquals(
         "Expected default category list term is $facets:$fulltree$",
         new Term("$facets", "$fulltree$"), ifip.getCategoryListParams(
@@ -67,15 +64,12 @@ public class PerDimensionIndexingParamsTest extends LuceneTestCase {
 
   @Test
   public void testCategoryListParamsAddition() {
-    PerDimensionIndexingParams tlfip = new PerDimensionIndexingParams();
-    CategoryListParams clp = new CategoryListParams(
-        new Term("clp", "value"));
-    tlfip.addCategoryListParams(new CategoryPath("a"), clp);
-    assertEquals("Expected category list term is " + clp.getTerm(), clp
-        .getTerm(), tlfip.getCategoryListParams(new CategoryPath("a"))
-        .getTerm());
-    assertNotSame("Unexpected default category list " + clp.getTerm(), clp,
-        tlfip.getCategoryListParams(null));
+    CategoryListParams clp = new CategoryListParams(new Term("clp", "value"));
+    PerDimensionIndexingParams tlfip = new PerDimensionIndexingParams(
+        Collections.<CategoryPath,CategoryListParams> singletonMap(new CategoryPath("a"), clp));
+    assertEquals("Expected category list term is " + clp.getTerm(), 
+        clp.getTerm(), tlfip.getCategoryListParams(new CategoryPath("a")).getTerm());
+    assertNotSame("Unexpected default category list " + clp.getTerm(), clp, tlfip.getCategoryListParams(null));
   }
 
 }

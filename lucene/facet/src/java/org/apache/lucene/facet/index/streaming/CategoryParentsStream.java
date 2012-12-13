@@ -154,20 +154,17 @@ public class CategoryParentsStream extends TokenFilter {
    * using {@link #addRetainableProperty(Class)}.
    */
   protected void clearCategoryProperties() {
-    if (this.retainableProperties == null
-        || this.retainableProperties.isEmpty()) {
-      this.categoryAttribute.clearProperties();
+    if (retainableProperties == null || retainableProperties.isEmpty()) {
+      categoryAttribute.clearProperties();
     } else {
-      List<Class<? extends CategoryProperty>> propertyClassesToRemove = 
-                            new LinkedList<Class<? extends CategoryProperty>>();
-      for (Class<? extends CategoryProperty> propertyClass : this.categoryAttribute
-          .getPropertyClasses()) {
-        if (!this.retainableProperties.contains(propertyClass)) {
-          propertyClassesToRemove.add(propertyClass);
+      List<Class<? extends CategoryProperty>> propsToRemove = new LinkedList<Class<? extends CategoryProperty>>();
+      for (Class<? extends CategoryProperty> propertyClass : categoryAttribute.getPropertyClasses()) {
+        if (!retainableProperties.contains(propertyClass)) {
+          propsToRemove.add(propertyClass);
         }
       }
-      for (Class<? extends CategoryProperty> propertyClass : propertyClassesToRemove) {
-        this.categoryAttribute.remove(propertyClass);
+      for (Class<? extends CategoryProperty> propertyClass : propsToRemove) {
+        categoryAttribute.remove(propertyClass);
       }
     }
   }
