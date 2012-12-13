@@ -334,6 +334,9 @@ Bug Fixes
 * SOLR-4168: Ensure we are using the absolute latest index dir when getting
   list of files for replication. (Mark Miller)
 
+* SOLR-4102: Fix UI javascript error if canonical hostname can not be resolved
+  (steffkes via hossman)
+
 Other Changes
 ----------------------
 
