@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
+import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.schema.IndexSchema;
 import org.slf4j.Logger;
@@ -137,18 +138,26 @@ public class SolrIndexWriter extends IndexWriter {
   public void close() throws IOException {
     log.debug("Closing Writer " + name);
     Directory directory = getDirectory();
-    final InfoStream infoStream = isClosed ? null : getConfig().getInfoStream();    
+    final InfoStream infoStream = isClosed ? null : getConfig().getInfoStream();
     try {
-      super.close();
+      while (true) {
+        try {
+          super.close();
+        } catch (ThreadInterruptedException e) {
+          // don't allow interruption
+          continue;
+        }
+        break;
+      }
     } finally {
-      if(infoStream != null) {
+      if (infoStream != null) {
         infoStream.close();
       }
       
       isClosed = true;
-
+      
       directoryFactory.release(directory);
-     
+      
       numCloses.incrementAndGet();
     }
   }
@@ -156,7 +165,15 @@ public class SolrIndexWriter extends IndexWriter {
   @Override
   public void rollback() throws IOException {
     try {
-      super.rollback();
+      while (true) {
+        try {
+          super.rollback();
+        } catch (ThreadInterruptedException e) {
+          // don't allow interruption
+          continue;
+        }
+        break;
+      }
     } finally {
       isClosed = true;
       directoryFactory.release(getDirectory());
