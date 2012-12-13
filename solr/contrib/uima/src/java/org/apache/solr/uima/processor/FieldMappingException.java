@@ -20,6 +20,7 @@ package org.apache.solr.uima.processor;
 /**
  * Exception thrown when an error happening while mapping UIMA CAS model to Solt fields
  */
+@SuppressWarnings("serial")
 public class FieldMappingException extends Exception {
   public FieldMappingException(Exception e) {
   }
