@@ -71,7 +71,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.client.solrj.SolrServer;
@@ -83,12 +82,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
-import org.apache.solr.core.NRTCachingDirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler.FileInfo;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -1581,6 +1580,8 @@ public class SnapPuller {
 
   public void destroy() {
     if (executorService != null) executorService.shutdown();
+    abortPull();
+    if (executorService != null) ExecutorUtil.shutdownAndAwaitTermination(executorService);
   }
 
   String getMasterUrl() {

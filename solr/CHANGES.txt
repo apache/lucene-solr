@@ -340,6 +340,9 @@ Bug Fixes
 * SOLR-4102: Fix UI javascript error if canonical hostname can not be resolved
   (steffkes via hossman)
 
+* SOLR-4178: ReplicationHandler should abort any current pulls and wait for 
+  it's executor to stop during core close. (Mark Miller)
+
 Other Changes
 ----------------------
 
