@@ -17,7 +17,6 @@ package org.apache.solr.search.grouping.distributed.shardresultserializer;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.FieldDoc;
@@ -38,6 +37,8 @@ import org.apache.solr.search.grouping.Command;
 import org.apache.solr.search.grouping.distributed.command.QueryCommand;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 import org.apache.solr.search.grouping.distributed.command.TopGroupsFieldCommand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -52,6 +53,8 @@ import java.util.Map;
 public class TopGroupsResultTransformer implements ShardResultTransformer<List<Command>, Map<String, ?>> {
 
   private final ResponseBuilder rb;
+
+  private static final Logger log = LoggerFactory.getLogger(TopGroupsResultTransformer.class);
 
   public TopGroupsResultTransformer(ResponseBuilder rb) {
     this.rb = rb;
@@ -105,12 +108,24 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         ScoreDoc[] scoreDocs = new ScoreDoc[documents.size()];
         int j = 0;
         for (NamedList<Object> document : documents) {
-          Object uniqueId = document.get("id").toString();
+          Object docId = document.get("id");
+          Object uniqueId = null;
+          if (docId != null)
+            uniqueId = docId.toString();
+          else
+            log.warn("doc {} has null 'id'", document);
           Float score = (Float) document.get("score");
           if (score == null) {
             score = Float.NaN;
           }
-          Object[] sortValues = ((List) document.get("sortValues")).toArray();
+          Object[] sortValues = null;
+          Object sortValuesVal = document.get("sortValues");
+          if (sortValuesVal != null) {
+            sortValues = ((List) sortValuesVal).toArray();
+          }
+          else {
+            log.warn("doc {} has null 'sortValues'", document);
+          }
           scoreDocs[j++] = new ShardDoc(score, sortValues, uniqueId, shard);
         }
         result.put(key, new QueryCommandResult(new TopDocs(totalHits, scoreDocs, maxScore), matches));
