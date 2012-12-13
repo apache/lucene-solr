@@ -395,6 +395,8 @@ Other Changes
 * SOLR-2986: Add MoreLikeThis to warning about features that require uniqueKey.
   Also, change the warning to warn log level. (Shawn Heisey via Mark Miller)
 
+* SOLR-4163: README improvements (Shawn Heisey via hossman)
+
 ==================  4.0.0 ==================
 
 Versions of Major Components
