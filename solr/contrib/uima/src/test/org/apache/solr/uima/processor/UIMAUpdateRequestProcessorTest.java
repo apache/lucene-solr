@@ -17,8 +17,6 @@ package org.apache.solr.uima.processor;
  * limitations under the License.
  */
 
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
