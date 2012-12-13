@@ -35,6 +35,7 @@
     <module-directory>solr/contrib/analysis-extras</module-directory>
     <top-level>../../../..</top-level>
     <module-path>${top-level}/${module-directory}</module-path>
+    <surefire-solr-directory>${top-level}/../../solr</surefire-solr-directory>
   </properties>
   <scm>
     <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
@@ -98,5 +99,16 @@
         </includes>
       </testResource>
     </testResources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <java.util.logging.config.file>${surefire-solr-directory}/testlogging.properties</java.util.logging.config.file>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>
