@@ -237,8 +237,6 @@ public class JettySolrRunner {
           throw new RuntimeException("Jetty/Solr unresponsive");
         }
       }
-      
-      this.wait(300); // always 300ms - can take a moment for our cores to come up
     }
     
     System.clearProperty("shard");
