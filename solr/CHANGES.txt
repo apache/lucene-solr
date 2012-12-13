@@ -337,6 +337,9 @@ Bug Fixes
 * SOLR-4171: CachingDirectoryFactory should not return any directories after it
   has been closed. (Mark Miller)
 
+* SOLR-4102: Fix UI javascript error if canonical hostname can not be resolved
+  (steffkes via hossman)
+
 Other Changes
 ----------------------
 

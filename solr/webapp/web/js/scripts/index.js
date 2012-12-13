@@ -233,7 +233,7 @@ sammy.get
     
           var data = {
             'start_time' : app.dashboard_values['jvm']['jmx']['startTime'],
-            'host' : app.dashboard_values['core']['host'],
+            'host' : app.dashboard_values['core']['host'] || '-',
             'dir_instance' : app.dashboard_values['core']['directory']['instance'],
             'dir_data' : app.dashboard_values['core']['directory']['data'],
             'dir_index' : app.dashboard_values['core']['directory']['index'],
