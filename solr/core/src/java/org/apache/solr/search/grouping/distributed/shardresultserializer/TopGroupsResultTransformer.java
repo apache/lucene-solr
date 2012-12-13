@@ -17,6 +17,7 @@ package org.apache.solr.search.grouping.distributed.shardresultserializer;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
