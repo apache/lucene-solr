@@ -263,7 +263,6 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       }
       
       TopDocs cqSearch = searcher.search(cq, reader.maxDoc());
-      QueryUtils.check(random(), cq, searcher);
       
       TopDocs verifySearch = searcher.search(verifyQuery, reader.maxDoc());
       assertEquals(verifySearch.totalHits, cqSearch.totalHits);
@@ -277,6 +276,17 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       }
       
       assertTrue(hits.isEmpty());
+      
+      /*
+       *  need to force merge here since QueryUtils adds checks based
+       *  on leave readers which have different statistics than the top
+       *  level reader if we have more than one segment. This could 
+       *  result in a different query / results.
+       */
+      w.forceMerge(1); 
+      DirectoryReader reader2 = w.getReader();
+      QueryUtils.check(random(), cq, newSearcher(reader2));
+      reader2.close();
     } finally {
       reader.close();
       wrapper.close();
@@ -314,7 +324,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       long seed) throws IOException {
     Random random = new Random(seed);
     // primary source for our data is from linefiledocs, its realistic.
-    LineFileDocs lineFileDocs = new LineFileDocs(random);
+    LineFileDocs lineFileDocs = new LineFileDocs(random, false); // no docvalues in 4x
     
     // TODO: we should add other fields that use things like docs&freqs but omit
     // positions,
