@@ -24,8 +24,11 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -56,7 +59,9 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util._TestUtil;
@@ -1993,6 +1998,94 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
     
     dir.close();
+  }
+  
+  public void testIterableThrowsException() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    int iters = atLeast(100);
+    int docCount = 0;
+    int docId = 0;
+    Set<String> liveIds = new HashSet<String>();
+    for (int i = 0; i < iters; i++) {
+      List<Document> docs = new ArrayList<Document>();
+      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+      FieldType idFt = new FieldType(TextField.TYPE_STORED);
+      
+      int numDocs = atLeast(4);
+      for (int j = 0; j < numDocs; j++) {
+        Document doc = new Document();
+        doc.add(newField("id", ""+ (docId++), idFt));
+        doc.add(newField("foo", _TestUtil.randomSimpleString(random()), ft));
+        docs.add(doc);
+      }
+      boolean success = false;
+      try {
+        w.addDocuments(new RandomFailingFieldIterable(docs, random()));
+        success = true;
+      } catch (RuntimeException e) {
+        assertEquals("boom", e.getMessage());
+      } finally {
+        if (success) {
+          docCount += docs.size();
+          for (Document indexDocument : docs) {
+            liveIds.add(indexDocument.get("id"));  
+          }
+        }
+      }
+    }
+    DirectoryReader reader = w.getReader();
+    assertEquals(docCount, reader.numDocs());
+    List<AtomicReaderContext> leaves = reader.leaves();
+    for (AtomicReaderContext atomicReaderContext : leaves) {
+      AtomicReader ar = atomicReaderContext.reader();
+      Bits liveDocs = ar.getLiveDocs();
+      int maxDoc = ar.maxDoc();
+      for (int i = 0; i < maxDoc; i++) {
+        if (liveDocs.get(i)) {
+          assertTrue(liveIds.remove(ar.document(i).get("id")));
+        }
+      }
+    }
+    assertTrue(liveIds.isEmpty());
+    IOUtils.close(reader, w, dir);
+  }
+
+  private static class RandomFailingFieldIterable implements Iterable<IndexDocument> {
+    private final List<? extends IndexDocument> docList;
+    private final Random random;
+
+    public RandomFailingFieldIterable(List<? extends IndexDocument> docList, Random random) {
+      this.docList = docList;
+      this.random = random;
+    }
+    
+    @Override
+    public Iterator<IndexDocument> iterator() {
+      final Iterator<? extends IndexDocument> docIter = docList.iterator();
+      return new Iterator<IndexDocument>() {
+
+        @Override
+        public boolean hasNext() {
+          return docIter.hasNext();
+        }
+
+        @Override
+        public IndexDocument next() {
+          if (random.nextInt(5) == 0) {
+            throw new RuntimeException("boom");
+          }
+          return docIter.next();
+        }
+
+        @Override
+        public void remove() {throw new UnsupportedOperationException();}
+        
+        
+      };
+    }
+    
   }
   
 }

@@ -284,6 +284,10 @@ Bug Fixes
   parts of the shape's boundary erroneously too.  So center points aren't
   indexed any more; you should use another spatial field. (David Smiley)
 
+* LUCENE-4629: IndexWriter misses to delete documents if a document block is
+  indexed and the Iterator throws an exception. Documents were only rolled back
+  if the actual indexing process failed. (Simon Willnauer)
+
 Changes in Runtime Behavior
   
 * LUCENE-4586: Change default ResultMode of FacetRequest to PER_NODE_IN_TREE.
