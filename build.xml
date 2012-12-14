@@ -154,6 +154,7 @@
     <subant buildpath="." antfile="extra-targets.xml" target="-run-maven-build" inheritall="false" failonerror="true">
       <propertyset>
         <propertyref prefix="maven-"/>
+        <propertyref builtin="commandline"/>
       </propertyset>
     </subant>
   </target>

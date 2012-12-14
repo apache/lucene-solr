@@ -154,12 +154,25 @@ public class JettySolrRunner {
     }
     System.setProperty("solr.solr.home", solrHome);
     if (System.getProperty("jetty.testMode") != null) {
-      SelectChannelConnector connector = new SelectChannelConnector();
+      final String connectorName = System.getProperty("tests.jettyConnector", "SelectChannel");
+      final Connector connector;
+      final QueuedThreadPool threadPool;
+      if ("SelectChannel".equals(connectorName)) {
+        final SelectChannelConnector c = new SelectChannelConnector();
+        c.setReuseAddress(true);
+        c.setLowResourcesMaxIdleTime(1500);
+        connector = c;
+        threadPool = (QueuedThreadPool) c.getThreadPool();
+      } else if ("Socket".equals(connectorName)) {
+        final SocketConnector c = new SocketConnector();
+        c.setReuseAddress(true);
+        connector = c;
+        threadPool = (QueuedThreadPool) c.getThreadPool();
+      } else {
+        throw new IllegalArgumentException("Illegal value for system property 'tests.jettyConnector': " + connectorName);
+      }
       connector.setPort(port);
-      connector.setReuseAddress(true);
-      connector.setLowResourcesMaxIdleTime(1500);
-      QueuedThreadPool threadPool = (QueuedThreadPool) connector
-          .getThreadPool();
+      connector.setHost("127.0.0.1");
       if (threadPool != null) {
         threadPool.setMaxThreads(10000);
         threadPool.setMaxIdleTimeMs(5000);
