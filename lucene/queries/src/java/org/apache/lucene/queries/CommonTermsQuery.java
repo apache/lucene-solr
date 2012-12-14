@@ -157,10 +157,7 @@ public class CommonTermsQuery extends Query {
     final TermContext[] contextArray = new TermContext[terms.size()];
     final Term[] queryTerms = this.terms.toArray(new Term[0]);
     collectTermContext(reader, leaves, contextArray, queryTerms);
-    Query q = buildQuery(maxDoc, contextArray, queryTerms);
-    System.out.println(reader);
-    System.out.println(q);
-    return q;
+    return buildQuery(maxDoc, contextArray, queryTerms);
   }
   
   protected Query buildQuery(final int maxDoc,
@@ -175,20 +172,15 @@ public class CommonTermsQuery extends Query {
     BooleanQuery query = new BooleanQuery(true);
     for (int i = 0; i < queryTerms.length; i++) {
       TermContext termContext = contextArray[i];
-      
       if (termContext == null) {
-        System.out.println("term: " + queryTerms[i] + " context: " + -1 + " maxTermFrequency: " + maxTermFrequency + " LOW");
-
         lowFreq.add(new TermQuery(queryTerms[i]), lowFreqOccur);
       } else {
         if ((maxTermFrequency >= 1f && termContext.docFreq() > maxTermFrequency)
             || (termContext.docFreq() > (int) Math.ceil(maxTermFrequency
                 * (float) maxDoc))) {
-          System.out.println("term: " + queryTerms[i] + " context: " + termContext.docFreq() + " maxTermFrequency: " + maxTermFrequency + " HIGH");
           highFreq
               .add(new TermQuery(queryTerms[i], termContext), highFreqOccur);
         } else {
-          System.out.println("term: " + queryTerms[i] + " context: " + termContext.docFreq() + " maxTermFrequency: " + maxTermFrequency + " LOW");
           lowFreq.add(new TermQuery(queryTerms[i], termContext), lowFreqOccur);
         }
       }
@@ -265,6 +257,8 @@ public class CommonTermsQuery extends Query {
    * Returns true iff {@link Similarity#coord(int,int)} is disabled in scoring
    * for the high and low frequency query instance. The top level query will
    * always disable coords.
+   * 
+   * @see #CommonTermsQuery(Occur, Occur, float, boolean)
    */
   public boolean isCoordDisabled() {
     return disableCoord;
