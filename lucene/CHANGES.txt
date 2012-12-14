@@ -80,6 +80,9 @@ Changes in backwards compatibility policy
   a setting, you should extend the relevant class.
   Additionally, FacetSearchParams is now immutable, and requires all FacetRequests
   to speified at initialization time. (Shai Erera)
+
+* LUCENE-4608: Handle large number of requested fragments better.
+  (Martijn van Groningen)
   
 New Features
 

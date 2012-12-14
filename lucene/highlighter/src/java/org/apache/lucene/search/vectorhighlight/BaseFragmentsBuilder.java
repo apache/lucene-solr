@@ -124,7 +124,6 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     }
 
     List<WeightedFragInfo> fragInfos = fieldFragList.getFragInfos();
-    List<String> fragments = new ArrayList<String>( maxNumFragments );
     Field[] values = getFields( reader, docId, fieldName );
     if( values.length == 0 ) {
       return null;
@@ -135,9 +134,12 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     }
 
     fragInfos = getWeightedFragInfoList(fragInfos);
+    int limitFragments = maxNumFragments < fragInfos.size() ? maxNumFragments : fragInfos.size();
+    List<String> fragments = new ArrayList<String>( limitFragments );
+
     StringBuilder buffer = new StringBuilder();
     int[] nextValueIndex = { 0 };
-    for( int n = 0; n < maxNumFragments && n < fragInfos.size(); n++ ){
+    for( int n = 0; n < limitFragments; n++ ){
       WeightedFragInfo fragInfo = fragInfos.get( n );
       fragments.add( makeFragment( buffer, nextValueIndex, values, fragInfo, preTags, postTags, encoder ) );
     }
