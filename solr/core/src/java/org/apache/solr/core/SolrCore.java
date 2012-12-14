@@ -258,11 +258,12 @@ public final class SolrCore implements SolrInfoMBean {
     } catch (IOException e) {
       SolrException.log(log, "", e);
     } finally {
-    
-      try {
-        getDirectoryFactory().release(dir);
-      } catch (IOException e) {
-        SolrException.log(log, "", e);
+      if (dir != null) {
+        try {
+          getDirectoryFactory().release(dir);
+        } catch (IOException e) {
+          SolrException.log(log, "", e);
+        }
       }
     }
     if (!result.equals(lastNewIndexDir)) {
