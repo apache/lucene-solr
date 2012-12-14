@@ -1133,7 +1133,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private void checkForMissingCollection(String collectionName)
       throws Exception {
     // check for a  collection - we poll the state
-    long timeoutAt = System.currentTimeMillis() + 15000;
+    long timeoutAt = System.currentTimeMillis() + 30000;
     boolean found = true;
     while (System.currentTimeMillis() < timeoutAt) {
       getCommonCloudSolrServer().getZkStateReader().updateClusterState(true);
