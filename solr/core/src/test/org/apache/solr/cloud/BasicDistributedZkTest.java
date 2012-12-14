@@ -77,6 +77,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean.Category;
 import org.apache.solr.update.DirectUpdateHandler2;
@@ -775,7 +776,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         }
         
         createCollection(collectionInfos, "awholynewcollection_" + i,
-            numShards, replicationFactor, maxShardsPerNode, client);
+            numShards, replicationFactor, maxShardsPerNode, client, null);
       } finally {
         if (client != null) client.shutdown();
       }
@@ -785,7 +786,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     for (Entry<String,List<Integer>> entry : collectionInfosEntrySet) {
       String collection = entry.getKey();
       List<Integer> list = entry.getValue();
-      checkForCollection(collection, list);
+      checkForCollection(collection, list, null);
       
       String url = getUrlFromZk(collection);
 
@@ -892,7 +893,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     List<Integer> list = new ArrayList<Integer> (2);
     list.add(1);
     list.add(2);
-    checkForCollection(collectionName, list);
+    checkForCollection(collectionName, list, null);
     
     url = getUrlFromZk(collectionName);
     
@@ -906,14 +907,14 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
 
     // test maxShardsPerNode
-    int liveNodes = getCommonCloudSolrServer().getZkStateReader().getClusterState().getLiveNodes().size();
-    int numShards = (liveNodes/2) + 1;
+    int numLiveNodes = getCommonCloudSolrServer().getZkStateReader().getClusterState().getLiveNodes().size();
+    int numShards = (numLiveNodes/2) + 1;
     int replicationFactor = 2;
     int maxShardsPerNode = 1;
     collectionInfos = new HashMap<String,List<Integer>>();
     CloudSolrServer client = createCloudClient("awholynewcollection_" + cnt);
     try {
-      createCollection(collectionInfos, "awholynewcollection_" + cnt, numShards, replicationFactor, maxShardsPerNode, client);
+      createCollection(collectionInfos, "awholynewcollection_" + cnt, numShards, replicationFactor, maxShardsPerNode, client, null);
     } finally {
       client.shutdown();
     }
@@ -922,24 +923,50 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     // RESPONSES
     checkCollectionIsNotCreated(collectionInfos.keySet().iterator().next());
     
+    // Test createNodeSet
+    numLiveNodes = getCommonCloudSolrServer().getZkStateReader().getClusterState().getLiveNodes().size();
+    List<String> createNodeList = new ArrayList<String>();
+    int numOfCreateNodes = numLiveNodes/2;
+    assertFalse("createNodeSet test is pointless with only " + numLiveNodes + " nodes running", numOfCreateNodes == 0);
+    int i = 0;
+    for (String liveNode : getCommonCloudSolrServer().getZkStateReader().getClusterState().getLiveNodes()) {
+      if (i < numOfCreateNodes) {
+        createNodeList.add(liveNode);
+        i++;
+      } else {
+        break;
+      }
+    }
+    maxShardsPerNode = 2;
+    numShards = createNodeList.size() * maxShardsPerNode;
+    replicationFactor = 1;
+    collectionInfos = new HashMap<String,List<Integer>>();
+    client = createCloudClient("awholynewcollection_" + (cnt+1));
+    try {
+      createCollection(collectionInfos, "awholynewcollection_" + (cnt+1), numShards, replicationFactor, maxShardsPerNode, client, StrUtils.join(createNodeList, ','));
+    } finally {
+      client.shutdown();
+    }
+    checkForCollection(collectionInfos.keySet().iterator().next(), collectionInfos.entrySet().iterator().next().getValue(), createNodeList);
+    
     checkNoTwoShardsUseTheSameIndexDir();
   }
 
 
   protected void createCollection(Map<String,List<Integer>> collectionInfos,
-      String collectionName, int numShards, int numReplicas, int maxShardsPerNode, SolrServer client) throws SolrServerException, IOException {
+      String collectionName, int numShards, int numReplicas, int maxShardsPerNode, SolrServer client, String createNodeSetStr) throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
 
     params.set(OverseerCollectionProcessor.NUM_SLICES, numShards);
     params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, numReplicas);
     params.set(OverseerCollectionProcessor.MAX_SHARDS_PER_NODE, maxShardsPerNode);
+    if (createNodeSetStr != null) params.set(OverseerCollectionProcessor.CREATE_NODE_SET, createNodeSetStr);
 
     int clientIndex = random().nextInt(2);
     List<Integer> list = new ArrayList<Integer>();
     list.add(numShards);
     list.add(numReplicas);
-    list.add(maxShardsPerNode);
     collectionInfos.put(collectionName, list);
     params.set("name", collectionName);
     SolrRequest request = new QueryRequest(params);
@@ -1074,7 +1101,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     fail("Could not find the new collection - " + exp.code() + " : " + collectionClient.getBaseURL());
   }
 
-  private String checkCollectionExpectations(String collectionName, List<Integer> numShardsNumReplicaList) {
+  private String checkCollectionExpectations(String collectionName, List<Integer> numShardsNumReplicaList, List<String> nodesAllowedToRunShards) {
     ClusterState clusterState = getCommonCloudSolrServer().getZkStateReader().getClusterState();
     
     int expectedSlices = numShardsNumReplicaList.get(0);
@@ -1092,6 +1119,11 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       }
       int totalShards = 0;
       for (String sliceName : slices.keySet()) {
+        for (Replica replica : slices.get(sliceName).getReplicas()) {
+          if (nodesAllowedToRunShards != null && !nodesAllowedToRunShards.contains(replica.getStr(ZkStateReader.NODE_NAME_PROP))) {
+            return "Shard " + replica.getName() + " created on node " + replica.getStr(ZkStateReader.NODE_NAME_PROP) + " not allowed to run shards for the created collection " + collectionName;
+          }
+        }
         totalShards += slices.get(sliceName).getReplicas().size();
       }
       if (totalShards != expectedTotalShards) {
@@ -1103,14 +1135,14 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
   }
   
-  private void checkForCollection(String collectionName, List<Integer> numShardsNumReplicaList)
+  private void checkForCollection(String collectionName, List<Integer> numShardsNumReplicaList, List<String> nodesAllowedToRunShards)
       throws Exception {
     // check for an expectedSlices new collection - we poll the state
     long timeoutAt = System.currentTimeMillis() + 120000;
     boolean success = false;
     String checkResult = "Didnt get to perform a single check";
     while (System.currentTimeMillis() < timeoutAt) {
-      checkResult = checkCollectionExpectations(collectionName, numShardsNumReplicaList);
+      checkResult = checkCollectionExpectations(collectionName, numShardsNumReplicaList, nodesAllowedToRunShards);
       if (checkResult == null) {
         success = true;
         break;

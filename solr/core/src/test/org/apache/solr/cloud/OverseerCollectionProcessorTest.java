@@ -19,12 +19,14 @@ package org.apache.solr.cloud;
 
 import static org.easymock.EasyMock.capture;
 import static org.easymock.EasyMock.createMock;
+import static org.easymock.EasyMock.reset;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.verify;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +43,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
@@ -49,6 +52,7 @@ import org.easymock.IAnswer;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
@@ -57,12 +61,13 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   private static final String COLLECTION_NAME = "mycollection";
   private static final String CONFIG_NAME = "myconfig";
   
-  private OverseerCollectionProcessor underTest;
-  private DistributedQueue workQueueMock;
-  private ShardHandler shardHandlerMock;
-  private ZkStateReader zkStateReaderMock;
-  private ClusterState clusterStateMock;
-  private SolrZkClient solrZkClientMock;
+  private static DistributedQueue workQueueMock;
+  private static ShardHandler shardHandlerMock;
+  private static ZkStateReader zkStateReaderMock;
+  private static ClusterState clusterStateMock;
+  private static SolrZkClient solrZkClientMock;
+  
+  private OverseerCollectionProcessorToBeTested underTest;
   
   private Thread thread;
   private Queue<byte[]> queue = new BlockingArrayQueue<byte[]>();
@@ -70,10 +75,18 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   private class OverseerCollectionProcessorToBeTested extends
       OverseerCollectionProcessor {
     
+    private boolean lastProcessMessageResult = true;
+    
     public OverseerCollectionProcessorToBeTested(ZkStateReader zkStateReader,
         String myId, ShardHandler shardHandler, String adminPath,
         DistributedQueue workQueue) {
       super(zkStateReader, myId, shardHandler, adminPath, workQueue);
+    }
+    
+    @Override
+    protected boolean processMessage(ZkNodeProps message, String operation) {
+      lastProcessMessageResult = super.processMessage(message, operation);
+      return lastProcessMessageResult;
     }
     
     @Override
@@ -83,22 +96,30 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     
   }
   
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void setUpOnce() throws Exception {
     workQueueMock = createMock(DistributedQueue.class);
     shardHandlerMock = createMock(ShardHandler.class);
     zkStateReaderMock = createMock(ZkStateReader.class);
     clusterStateMock = createMock(ClusterState.class);
     solrZkClientMock = createMock(SolrZkClient.class);
+  }
+  
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    reset(workQueueMock);
+    reset(workQueueMock);
+    reset(shardHandlerMock);
+    reset(zkStateReaderMock);
+    reset(clusterStateMock);
+    reset(solrZkClientMock);
     underTest = new OverseerCollectionProcessorToBeTested(zkStateReaderMock,
         "1234", shardHandlerMock, ADMIN_PATH, workQueueMock);
   }
   
   @After
   public void tearDown() throws Exception {
-    underTest.close();
-    thread.interrupt();
     stopComponentUnderTest();
     super.tearDown();
   }
@@ -181,6 +202,8 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   }
   
   protected void stopComponentUnderTest() throws Exception {
+    underTest.close();
+    thread.interrupt();
     thread.join();
   }
   
@@ -209,25 +232,39 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   }
   
   protected void issueCreateJob(Integer numberOfSlices,
-      Integer replicationFactor, Integer maxShardsPerNode) {
-    ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-        OverseerCollectionProcessor.CREATECOLLECTION,
-        OverseerCollectionProcessor.REPLICATION_FACTOR,
-        replicationFactor.toString(), "name", COLLECTION_NAME,
-        "collection.configName", CONFIG_NAME,
-        OverseerCollectionProcessor.NUM_SLICES, numberOfSlices.toString(),
-        OverseerCollectionProcessor.MAX_SHARDS_PER_NODE,
-        maxShardsPerNode.toString());
+      Integer replicationFactor, Integer maxShardsPerNode, List<String> createNodeList, boolean sendCreateNodeList) {
+    ZkNodeProps props;
+    if (sendCreateNodeList) {
+      props = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+          OverseerCollectionProcessor.CREATECOLLECTION,
+          OverseerCollectionProcessor.REPLICATION_FACTOR,
+          replicationFactor.toString(), "name", COLLECTION_NAME,
+          "collection.configName", CONFIG_NAME,
+          OverseerCollectionProcessor.NUM_SLICES, numberOfSlices.toString(),
+          OverseerCollectionProcessor.MAX_SHARDS_PER_NODE,
+          maxShardsPerNode.toString(),
+          OverseerCollectionProcessor.CREATE_NODE_SET,
+          (createNodeList != null)?StrUtils.join(createNodeList, ','):null);
+    } else {
+      props = new ZkNodeProps(Overseer.QUEUE_OPERATION,
+          OverseerCollectionProcessor.CREATECOLLECTION,
+          OverseerCollectionProcessor.REPLICATION_FACTOR,
+          replicationFactor.toString(), "name", COLLECTION_NAME,
+          "collection.configName", CONFIG_NAME,
+          OverseerCollectionProcessor.NUM_SLICES, numberOfSlices.toString(),
+          OverseerCollectionProcessor.MAX_SHARDS_PER_NODE,
+          maxShardsPerNode.toString());
+    }
     queue.add(ZkStateReader.toJSON(props));
   }
   
   protected void verifySubmitCaptures(List<SubmitCapture> submitCaptures,
-      Integer numberOfSlices, Integer numberOfReplica, Set<String> liveNodes) {
+      Integer numberOfSlices, Integer numberOfReplica, Collection<String> createNodes) {
     List<String> coreNames = new ArrayList<String>();
     Map<String,Map<String,Integer>> sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap = new HashMap<String,Map<String,Integer>>();
     List<String> nodeUrlWithoutProtocolPartForLiveNodes = new ArrayList<String>(
-        liveNodes.size());
-    for (String nodeName : liveNodes) {
+        createNodes.size());
+    for (String nodeName : createNodes) {
       String nodeUrlWithoutProtocolPart = nodeName.replaceAll("_", "/");
       if (nodeUrlWithoutProtocolPart.startsWith("http://")) nodeUrlWithoutProtocolPart = nodeUrlWithoutProtocolPart
           .substring(7);
@@ -292,13 +329,16 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
       sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap.keySet()
           .contains("shard" + i);
     }
-    int minShardsPerSlicePerNode = numberOfReplica / liveNodes.size();
+    int minShardsPerSlicePerNode = numberOfReplica / createNodes.size();
     int numberOfNodesSupposedToRunMaxShards = numberOfReplica
-        % liveNodes.size();
-    int numberOfNodesSupposedToRunMinShards = liveNodes.size()
+        % createNodes.size();
+    int numberOfNodesSupposedToRunMinShards = createNodes.size()
         - numberOfNodesSupposedToRunMaxShards;
-    int maxShardsPerSlicePerNode = (numberOfNodesSupposedToRunMaxShards == 0) ? minShardsPerSlicePerNode
-        : (minShardsPerSlicePerNode + 1);
+    int maxShardsPerSlicePerNode = (minShardsPerSlicePerNode + 1);
+    if (numberOfNodesSupposedToRunMaxShards == 0) {
+      numberOfNodesSupposedToRunMaxShards = numberOfNodesSupposedToRunMinShards;
+      maxShardsPerSlicePerNode = minShardsPerSlicePerNode;
+    }
     boolean diffBetweenMinAndMaxShardsPerSlicePerNode = (maxShardsPerSlicePerNode != minShardsPerSlicePerNode);
     
     for (Entry<String,Map<String,Integer>> sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMapEntry : sliceToNodeUrlsWithoutProtocolPartToNumberOfShardsRunningMapMap
@@ -325,7 +365,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
         if (numberOfShardsRunningOnThisNode == minShardsPerSlicePerNode) numberOfNodesRunningMinShards++;
         if (numberOfShardsRunningOnThisNode == maxShardsPerSlicePerNode) numberOfNodesRunningMaxShards++;
       }
-      if (minShardsPerSlicePerNode == 0) numberOfNodesRunningMinShards = (liveNodes
+      if (minShardsPerSlicePerNode == 0) numberOfNodesRunningMinShards = (createNodes
           .size() - numberOfNodesRunningAtLeastOneShard);
       assertEquals(
           "Too many shards are running under slice "
@@ -348,10 +388,25 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     }
   }
   
-  protected void testTemplate(Integer numberOfNodes, Integer replicationFactor,
+  protected enum CreateNodeListOptions {
+    SEND,
+    DONT_SEND,
+    SEND_NULL
+  }
+  protected void testTemplate(Integer numberOfNodes, Integer numberOfNodesToCreateOn, CreateNodeListOptions createNodeListOption, Integer replicationFactor,
       Integer numberOfSlices, Integer maxShardsPerNode,
       boolean collectionExceptedToBeCreated) throws Exception {
+    assertTrue("Wrong usage of testTemplate. numberOfNodesToCreateOn " + numberOfNodesToCreateOn + " is not allowed to be higher than numberOfNodes " + numberOfNodes, numberOfNodes.intValue() >= numberOfNodesToCreateOn.intValue());
+    assertTrue("Wrong usage of testTemplage. createNodeListOption has to be " + CreateNodeListOptions.SEND + " when numberOfNodes and numberOfNodesToCreateOn are unequal", ((createNodeListOption == CreateNodeListOptions.SEND) || (numberOfNodes.intValue() == numberOfNodesToCreateOn.intValue())));
+    
     Set<String> liveNodes = commonMocks(numberOfNodes);
+    List<String> createNodeList = new ArrayList<String>();
+    int i = 0;
+    for (String node : liveNodes) {
+      if (i++ < numberOfNodesToCreateOn) {
+        createNodeList.add(node);
+      }
+    }
     
     List<SubmitCapture> submitCaptures = null;
     if (collectionExceptedToBeCreated) {
@@ -366,55 +421,112 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     replay(shardHandlerMock);
     startComponentUnderTest();
     
-    issueCreateJob(numberOfSlices, replicationFactor, maxShardsPerNode);
+    issueCreateJob(numberOfSlices, replicationFactor, maxShardsPerNode, (createNodeListOption != CreateNodeListOptions.SEND_NULL)?createNodeList:null, (createNodeListOption != CreateNodeListOptions.DONT_SEND));
     
     waitForEmptyQueue(10000);
     
+    assertEquals(collectionExceptedToBeCreated, underTest.lastProcessMessageResult);
     verify(shardHandlerMock);
     
     if (collectionExceptedToBeCreated) {
       verifySubmitCaptures(submitCaptures, numberOfSlices, replicationFactor,
-          liveNodes);
+          createNodeList);
     }
   }
   
   @Test
   public void testNoReplicationEqualNumberOfSlicesPerNode() throws Exception {
     Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 8;
     Integer maxShardsPerNode = 2;
-    testTemplate(numberOfNodes, replicationFactor, numberOfSlices,
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
         maxShardsPerNode, true);
   }
   
   @Test
   public void testReplicationEqualNumberOfSlicesPerNode() throws Exception {
     Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 4;
     Integer maxShardsPerNode = 2;
-    testTemplate(numberOfNodes, replicationFactor, numberOfSlices,
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
         maxShardsPerNode, true);
   }
   
   @Test
+  public void testNoReplicationEqualNumberOfSlicesPerNodeSendCreateNodesEqualToLiveNodes() throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
+    Integer replicationFactor = 1;
+    Integer numberOfSlices = 8;
+    Integer maxShardsPerNode = 2;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        maxShardsPerNode, true);
+  }
+  
+  @Test
+  public void testReplicationEqualNumberOfSlicesPerNodeSendCreateNodesEqualToLiveNodes() throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
+    Integer replicationFactor = 2;
+    Integer numberOfSlices = 4;
+    Integer maxShardsPerNode = 2;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        maxShardsPerNode, true);
+  }
+  
+  @Test
+  public void testNoReplicationEqualNumberOfSlicesPerNodeSendNullCreateNodes() throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND_NULL;
+    Integer replicationFactor = 1;
+    Integer numberOfSlices = 8;
+    Integer maxShardsPerNode = 2;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        maxShardsPerNode, true);
+  }
+  
+  @Test
+  public void testReplicationEqualNumberOfSlicesPerNodeSendNullCreateNodes() throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND_NULL;
+    Integer replicationFactor = 2;
+    Integer numberOfSlices = 4;
+    Integer maxShardsPerNode = 2;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        maxShardsPerNode, true);
+  }  
+  
+  @Test
   public void testNoReplicationUnequalNumberOfSlicesPerNode() throws Exception {
     Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 6;
     Integer maxShardsPerNode = 2;
-    testTemplate(numberOfNodes, replicationFactor, numberOfSlices,
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
         maxShardsPerNode, true);
   }
   
   @Test
   public void testReplicationUnequalNumberOfSlicesPerNode() throws Exception {
     Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 3;
     Integer maxShardsPerNode = 2;
-    testTemplate(numberOfNodes, replicationFactor, numberOfSlices,
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
         maxShardsPerNode, true);
   }
   
@@ -422,10 +534,12 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   public void testNoReplicationCollectionNotCreatedDueToMaxShardsPerNodeLimit()
       throws Exception {
     Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 6;
     Integer maxShardsPerNode = 1;
-    testTemplate(numberOfNodes, replicationFactor, numberOfSlices,
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
         maxShardsPerNode, false);
   }
   
@@ -433,11 +547,65 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   public void testReplicationCollectionNotCreatedDueToMaxShardsPerNodeLimit()
       throws Exception {
     Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 3;
     Integer maxShardsPerNode = 1;
-    testTemplate(numberOfNodes, replicationFactor, numberOfSlices,
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        maxShardsPerNode, false);
+  }
+
+  @Test
+  public void testNoReplicationLimitedNodesToCreateOn()
+      throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 2;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
+    Integer replicationFactor = 1;
+    Integer numberOfSlices = 6;
+    Integer maxShardsPerNode = 3;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        maxShardsPerNode, true);
+  }
+  
+  @Test
+  public void testReplicationLimitedNodesToCreateOn()
+      throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 2;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
+    Integer replicationFactor = 2;
+    Integer numberOfSlices = 3;
+    Integer maxShardsPerNode = 3;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        maxShardsPerNode, true);
+  }
+
+  @Test
+  public void testNoReplicationCollectionNotCreatedDueToMaxShardsPerNodeAndNodesToCreateOnLimits()
+      throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 3;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
+    Integer replicationFactor = 1;
+    Integer numberOfSlices = 8;
+    Integer maxShardsPerNode = 2;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
         maxShardsPerNode, false);
   }
   
+  @Test
+  public void testReplicationCollectionNotCreatedDueToMaxShardsPerNodeAndNodesToCreateOnLimits()
+      throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 3;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
+    Integer replicationFactor = 2;
+    Integer numberOfSlices = 4;
+    Integer maxShardsPerNode = 2;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        maxShardsPerNode, false);
+  }
+
 }
