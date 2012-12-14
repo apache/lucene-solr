@@ -35,6 +35,7 @@ import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
@@ -49,6 +50,8 @@ public class OverseerCollectionProcessor implements Runnable {
   public static final String REPLICATION_FACTOR = "replicationFactor";
   
   public static final String MAX_SHARDS_PER_NODE = "maxShardsPerNode";
+  
+  public static final String CREATE_NODE_SET = "createNodeSet";
   
   public static final String DELETECOLLECTION = "deletecollection";
 
@@ -150,7 +153,7 @@ public class OverseerCollectionProcessor implements Runnable {
     return false;
   }
   
-  private boolean processMessage(ZkNodeProps message, String operation) {
+  protected boolean processMessage(ZkNodeProps message, String operation) {
     if (CREATECOLLECTION.equals(operation)) {
       return createCollection(zkStateReader.getClusterState(), message);
     } else if (DELETECOLLECTION.equals(operation)) {
@@ -181,6 +184,8 @@ public class OverseerCollectionProcessor implements Runnable {
       int repFactor = msgStrToInt(message, REPLICATION_FACTOR, 1);
       int numSlices = msgStrToInt(message, NUM_SLICES, 0);
       int maxShardsPerNode = msgStrToInt(message, MAX_SHARDS_PER_NODE, 1);
+      String createNodeSetStr; 
+      List<String> createNodeList = ((createNodeSetStr = message.getStr(CREATE_NODE_SET)) == null)?null:StrUtils.splitSmart(createNodeSetStr, ",", true);
       
       if (repFactor <= 0) {
         SolrException.log(log, REPLICATION_FACTOR + " must be > 0");
@@ -204,11 +209,12 @@ public class OverseerCollectionProcessor implements Runnable {
       Set<String> nodes = clusterState.getLiveNodes();
       List<String> nodeList = new ArrayList<String>(nodes.size());
       nodeList.addAll(nodes);
+      if (createNodeList != null) nodeList.retainAll(createNodeList);
       Collections.shuffle(nodeList);
       
       if (nodeList.size() <= 0) {
         log.error("Cannot create collection " + collectionName
-            + ". No live Solr-instaces");
+            + ". No live Solr-instaces" + ((createNodeList != null)?" among Solr-instances specified in " + CREATE_NODE_SET:""));
         return false;
       }
       

@@ -151,6 +151,9 @@ New Features
 * SOLR-788: Distributed search support for MLT.
   (Matthew Woytowitz, Mike Anderson, Jamie Johnson, Mark Miller)
 
+* SOLR-4120: Collection API: Support for specifying a list of Solr addresses to
+  spread a new collection across. (Per Steffensen via Mark Miller)
+
 Optimizations
 ----------------------
 

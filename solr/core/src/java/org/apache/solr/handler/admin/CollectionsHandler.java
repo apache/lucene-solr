@@ -184,6 +184,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     String configName = req.getParams().get("collection.configName");
     String numShards = req.getParams().get(OverseerCollectionProcessor.NUM_SLICES);
     String maxShardsPerNode = req.getParams().get(OverseerCollectionProcessor.MAX_SHARDS_PER_NODE);
+    String createNodeSetStr = req.getParams().get(OverseerCollectionProcessor.CREATE_NODE_SET);
     
     if (name == null) {
       log.error("Collection name is required to create a new collection");
@@ -201,6 +202,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     }
     props.put(OverseerCollectionProcessor.NUM_SLICES, numShards);
     props.put(OverseerCollectionProcessor.MAX_SHARDS_PER_NODE, maxShardsPerNode);
+    props.put(OverseerCollectionProcessor.CREATE_NODE_SET, createNodeSetStr);
     
     ZkNodeProps m = new ZkNodeProps(props);
 
