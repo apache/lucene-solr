@@ -45,6 +45,13 @@ import java.util.Set;
 
 
 public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
+
+  String bucket1 = "shard1";      // shard1: top bits:10  80000000:bfffffff
+  String bucket2 = "shard2";      // shard2: top bits:11  c0000000:ffffffff
+  String bucket3 = "shard3";      // shard3: top bits:00  00000000:3fffffff
+  String bucket4 = "shard4";      // shard4: top bits:01  40000000:7fffffff
+
+
   @BeforeClass
   public static void beforeShardHashingTest() throws Exception {
     // TODO: we use an fs based dir because something
@@ -109,6 +116,7 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
       waitForRecoveriesToFinish(false);
 
       doHashingTest();
+      doTestNumRequests();
 
       testFinished = true;
     } finally {
@@ -127,10 +135,6 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
 
-    String bucket1 = "shard1";      // shard1: top bits:10  80000000:bfffffff
-    String bucket2 = "shard2";      // shard2: top bits:11  c0000000:ffffffff
-    String bucket3 = "shard3";      // shard3: top bits:00  00000000:3fffffff
-    String bucket4 = "shard4";      // shard4: top bits:01  40000000:7fffffff
 
     doAddDoc("b!doc1");
     doAddDoc("c!doc2");
@@ -196,9 +200,72 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     doAddDoc("e!doc4");
 
     commit();
-
-
   }
+
+
+  public void doTestNumRequests() throws Exception {
+
+    List<CloudJettyRunner> runners = shardToJetty.get(bucket1);
+    CloudJettyRunner leader = shardToLeaderJetty.get(bucket1);
+    CloudJettyRunner replica =  null;
+    for (CloudJettyRunner r : runners) {
+      if (r != leader) replica = r;
+    }
+
+    long nStart = getNumRequests();
+    leader.client.solrClient.add( sdoc("id","b!doc1") );
+    long nEnd = getNumRequests();
+    assertEquals(2, nEnd - nStart);   // one request to leader, which makes another to a replica
+
+
+    nStart = getNumRequests();
+    replica.client.solrClient.add( sdoc("id","b!doc1") );
+    nEnd = getNumRequests();
+    assertEquals(3, nEnd - nStart);   // orig request + replica forwards to leader, which forward back to replica.
+
+    nStart = getNumRequests();
+    replica.client.solrClient.add( sdoc("id","b!doc1") );
+    nEnd = getNumRequests();
+    assertEquals(3, nEnd - nStart);   // orig request + replica forwards to leader, which forward back to replica.
+
+    CloudJettyRunner leader2 = shardToLeaderJetty.get(bucket2);
+
+
+    nStart = getNumRequests();
+    replica.client.solrClient.query( params("q","*:*", "shards",bucket1) );
+    nEnd = getNumRequests();
+    assertEquals(1, nEnd - nStart);   // short circuit should prevent distrib search
+
+    nStart = getNumRequests();
+    replica.client.solrClient.query( params("q","*:*", "shard.keys","b!") );
+    nEnd = getNumRequests();
+    assertEquals(1, nEnd - nStart);   // short circuit should prevent distrib search
+
+    nStart = getNumRequests();
+    leader2.client.solrClient.query( params("q","*:*", "shard.keys","b!") );
+    nEnd = getNumRequests();
+    assertEquals(3, nEnd - nStart);   // original + 2 phase distrib search.  we could improve this!
+
+    nStart = getNumRequests();
+    leader2.client.solrClient.query( params("q","*:*") );
+    nEnd = getNumRequests();
+    assertEquals(9, nEnd - nStart);   // original + 2 phase distrib search * 4 shards.
+
+    nStart = getNumRequests();
+    leader2.client.solrClient.query( params("q","*:*", "shard.keys","b!,d!") );
+    nEnd = getNumRequests();
+    assertEquals(5, nEnd - nStart);   // original + 2 phase distrib search * 2 shards.
+  }
+
+
+  long getNumRequests() {
+    long n = controlJetty.getDebugFilter().getTotalRequests();
+    for (JettySolrRunner jetty : jettys) {
+      n += jetty.getDebugFilter().getTotalRequests();
+    }
+    return n;
+  }
+
 
   void doAddDoc(String id) throws Exception {
     index("id",id);

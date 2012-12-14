@@ -19,13 +19,17 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.io.IOException;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.LinkedList;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -53,6 +57,7 @@ public class JettySolrRunner {
   Server server;
 
   FilterHolder dispatchFilter;
+  FilterHolder debugFilter;
 
   String context;
 
@@ -72,6 +77,53 @@ public class JettySolrRunner {
   private String solrHome;
 
   private boolean stopAtShutdown;
+
+  public static class DebugFilter implements Filter {
+    public int requestsToKeep = 10;
+    private AtomicLong nRequests = new AtomicLong();
+
+    public long getTotalRequests() {
+      return nRequests.get();
+
+    }
+
+    // TODO: keep track of certain number of last requests
+    private LinkedList<HttpServletRequest> requests = new LinkedList<HttpServletRequest>();
+
+
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+    }
+
+    @Override
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+      nRequests.incrementAndGet();
+
+      /***
+      HttpServletRequest req = (HttpServletRequest)servletRequest;
+      HttpServletResponse resp = (HttpServletResponse)servletResponse;
+
+      String path = req.getServletPath();
+      if( req.getPathInfo() != null ) {
+        // this lets you handle /update/commit when /update is a servlet
+        path += req.getPathInfo();
+      }
+      System.out.println("###################### FILTER request " + servletRequest);
+      System.out.println("\t\tgetServletPath="+req.getServletPath());
+      System.out.println("\t\tgetPathInfo="+req.getPathInfo());
+      ***/
+
+      filterChain.doFilter(servletRequest, servletResponse);
+    }
+
+    @Override
+    public void destroy() {
+    }
+  }
+
+
+
+
 
   public JettySolrRunner(String solrHome, String context, int port) {
     this.init(solrHome, context, port, true);
@@ -174,6 +226,7 @@ public class JettySolrRunner {
             schemaFilename);
 //        SolrDispatchFilter filter = new SolrDispatchFilter();
 //        FilterHolder fh = new FilterHolder(filter);
+        debugFilter = root.addFilter(DebugFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
         dispatchFilter = root.addFilter(SolrDispatchFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
         if (solrConfigFilename != null) System.clearProperty("solrconfig");
         if (schemaFilename != null) System.clearProperty("schema");
@@ -293,6 +346,10 @@ public class JettySolrRunner {
       throw new IllegalStateException("You cannot get the port until this instance has started");
     }
     return lastPort;
+  }
+
+  public DebugFilter getDebugFilter() {
+    return (DebugFilter)debugFilter.getFilter();
   }
 
   // --------------------------------------------------------------
