@@ -288,6 +288,9 @@ Bug Fixes
   indexed and the Iterator throws an exception. Documents were only rolled back
   if the actual indexing process failed. (Simon Willnauer)
 
+* LUCENE-4608: Handle large number of requested fragments better.
+  (Martijn van Groningen)
+
 Changes in Runtime Behavior
   
 * LUCENE-4586: Change default ResultMode of FacetRequest to PER_NODE_IN_TREE.
