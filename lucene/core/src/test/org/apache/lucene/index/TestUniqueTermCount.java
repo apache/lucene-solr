@@ -27,11 +27,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
-import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Assume;
 
 /**
  * Tests the uniqueTermCount statistic in FieldInvertState
@@ -69,9 +69,11 @@ public class TestUniqueTermCount extends LuceneTestCase {
   }
   
   public void test() throws Exception {
-    byte fooNorms[] = (byte[])MultiDocValues.getNormDocValues(reader, "foo").getSource().getArray();
-    for (int i = 0; i < reader.maxDoc(); i++)
-      assertEquals(expected.get(i).intValue(), fooNorms[i] & 0xff);
+    Assume.assumeTrue(_TestUtil.canUseSimpleNorms());
+    NumericDocValues fooNorms = MultiSimpleDocValues.simpleNormValues(reader, "foo");
+    for (int i = 0; i < reader.maxDoc(); i++) {
+      assertEquals(expected.get(i).intValue(), fooNorms.get(i) & 0xff);
+    }
   }
 
   /**

@@ -25,8 +25,8 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -47,9 +47,9 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.SourceCache.DirectSourceCache;
 import org.apache.lucene.index.DocValues.SourceCache;
 import org.apache.lucene.index.DocValues.Type;
-import org.apache.lucene.index.DocValues.SourceCache.DirectSourceCache;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -63,6 +63,7 @@ import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Assume;
 
 /**
  * 
@@ -79,6 +80,7 @@ public class TestSimpleDocValuesIndexing extends LuceneTestCase {
    * Simple test case to show how to use the API
    */
   public void testDocValuesSimple() throws IOException {
+    Assume.assumeTrue(_TestUtil.canUseSimpleDV());
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, writerConfig(false));
     for (int i = 0; i < 5; i++) {
@@ -107,11 +109,10 @@ public class TestSimpleDocValuesIndexing extends LuceneTestCase {
     TopDocs search = searcher.search(query, 10);
     assertEquals(5, search.totalHits);
     ScoreDoc[] scoreDocs = search.scoreDocs;
-    DocValues docValues = MultiDocValues.getDocValues(reader, "docId");
-    Source source = docValues.getSource();
+    NumericDocValues docValues = getOnlySegmentReader(reader).getNumericDocValues("docId");
     for (int i = 0; i < scoreDocs.length; i++) {
       assertEquals(i, scoreDocs[i].doc);
-      assertEquals(i, source.getInt(scoreDocs[i].doc));
+      assertEquals(i, docValues.get(scoreDocs[i].doc));
     }
     reader.close();
     dir.close();

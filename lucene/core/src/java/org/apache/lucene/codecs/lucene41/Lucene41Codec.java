@@ -34,7 +34,6 @@ import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40NormsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
-import org.apache.lucene.codecs.lucene41.values.Lucene41DocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
@@ -145,4 +144,6 @@ public class Lucene41Codec extends Codec {
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
   // nocommit
   private final SimpleDocValuesFormat defaultDVFormat = SimpleDocValuesFormat.forName("Memory");
+
+  // nocommit need simpleNormsFormat
 }

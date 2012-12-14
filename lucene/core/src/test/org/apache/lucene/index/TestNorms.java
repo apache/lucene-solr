@@ -37,12 +37,14 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Assume;
 
 /**
  * Test that norms info is preserved during index life - including
  * separate norms, addDocument, addIndexes, forceMerge.
  */
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+// nocommit put SimpleText back in suppress list:
+@SuppressCodecs({ "Memory", "Direct" })
 @Slow
 public class TestNorms extends LuceneTestCase {
   final String byteTestField = "normsTestByte";
@@ -66,6 +68,8 @@ public class TestNorms extends LuceneTestCase {
   
   // LUCENE-1260
   public void testCustomEncoder() throws Exception {
+    // nocommit remove:
+    Assume.assumeTrue(_TestUtil.canUseSimpleNorms());
     Directory dir = newDirectory();
     IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     config.setSimilarity(new CustomNormEncodingSimilarity());
@@ -84,13 +88,15 @@ public class TestNorms extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
     
-    byte fooNorms[] = (byte[]) MultiDocValues.getNormDocValues(reader, "foo").getSource().getArray();
-    for (int i = 0; i < reader.maxDoc(); i++)
-      assertEquals(0, fooNorms[i]);
+    NumericDocValues fooNorms = MultiSimpleDocValues.simpleNormValues(reader, "foo");
+    for (int i = 0; i < reader.maxDoc(); i++) {
+      assertEquals(0, fooNorms.get(i));
+    }
     
-    byte barNorms[] = (byte[]) MultiDocValues.getNormDocValues(reader, "bar").getSource().getArray();
-    for (int i = 0; i < reader.maxDoc(); i++)
-      assertEquals(1, barNorms[i]);
+    NumericDocValues barNorms = MultiSimpleDocValues.simpleNormValues(reader, "bar");
+    for (int i = 0; i < reader.maxDoc(); i++) {
+      assertEquals(1, barNorms.get(i));
+    }
     
     reader.close();
     dir.close();

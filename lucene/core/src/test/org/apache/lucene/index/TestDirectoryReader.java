@@ -546,11 +546,12 @@ public void testFilesOpenClose() throws IOException {
 
   // TODO: maybe this can reuse the logic of test dueling codecs?
   public static void assertIndexEquals(DirectoryReader index1, DirectoryReader index2) throws IOException {
+    Assume.assumeTrue(_TestUtil.canUseSimpleNorms());
     assertEquals("IndexReaders have different values for numDocs.", index1.numDocs(), index2.numDocs());
     assertEquals("IndexReaders have different values for maxDoc.", index1.maxDoc(), index2.maxDoc());
     assertEquals("Only one IndexReader has deletions.", index1.hasDeletions(), index2.hasDeletions());
     assertEquals("Single segment test differs.", index1.leaves().size() == 1, index2.leaves().size() == 1);
-    
+
     // check field names
     FieldInfos fieldInfos1 = MultiFields.getMergedFieldInfos(index1);
     FieldInfos fieldInfos2 = MultiFields.getMergedFieldInfos(index2);
@@ -565,21 +566,17 @@ public void testFilesOpenClose() throws IOException {
     // check norms
     for(FieldInfo fieldInfo : fieldInfos1) {
       String curField = fieldInfo.name;
-      DocValues norms1 = MultiDocValues.getNormDocValues(index1, curField);
-      DocValues norms2 = MultiDocValues.getNormDocValues(index2, curField);
-      if (norms1 != null && norms2 != null)
-      {
+      NumericDocValues norms1 = MultiSimpleDocValues.simpleNormValues(index1, curField);
+      NumericDocValues norms2 = MultiSimpleDocValues.simpleNormValues(index2, curField);
+      if (norms1 != null && norms2 != null) {
         // todo: generalize this (like TestDuelingCodecs assert)
-        byte[] b1 = (byte[]) norms1.getSource().getArray();
-        byte[] b2 = (byte[]) norms2.getSource().getArray();
-        assertEquals(b1.length, b2.length);
-        for (int i = 0; i < b1.length; i++) {
-          assertEquals("Norm different for doc " + i + " and field '" + curField + "'.", b1[i], b2[i]);
+        assertEquals(norms1.size(), norms2.size());
+        for (int i = 0; i < norms1.size(); i++) {
+          assertEquals("Norm different for doc " + i + " and field '" + curField + "'.", norms1.get(i), norms2.get(i));
         }
-      }
-      else
-      {
-        assertSame(norms1, norms2);
+      } else {
+        assertNull(norms1);
+        assertNull(norms2);
       }
     }
     

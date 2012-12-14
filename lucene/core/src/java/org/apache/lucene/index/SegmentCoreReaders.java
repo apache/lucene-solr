@@ -257,7 +257,7 @@ final class SegmentCoreReaders {
       // Field does not exist
       return null;
     }
-    if (fi.omitsNorms()) {
+    if (!fi.isIndexed() || fi.omitsNorms()) {
       return null;
     }
     // nocommit change to assert != null!!

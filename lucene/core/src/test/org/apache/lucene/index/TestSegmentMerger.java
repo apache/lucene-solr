@@ -30,6 +30,7 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
+import org.junit.Assume;
 
 
 public class TestSegmentMerger extends LuceneTestCase {
@@ -78,6 +79,7 @@ public class TestSegmentMerger extends LuceneTestCase {
   }
 
   public void testMerge() throws IOException {
+    Assume.assumeTrue(_TestUtil.canUseSimpleNorms());
     final Codec codec = Codec.getDefault();
     final SegmentInfo si = new SegmentInfo(mergedDir, Constants.LUCENE_MAIN_VERSION, mergedSegment, -1, false, codec, null, null);
 

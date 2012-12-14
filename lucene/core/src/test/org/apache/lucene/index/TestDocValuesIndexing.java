@@ -55,6 +55,7 @@ import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -65,6 +66,7 @@ import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Assume;
 
 /**
  * 
@@ -595,7 +597,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       }
     }
     return docValues;
-    }
+  }
 
   @SuppressWarnings("fallthrough")
   private Source getSource(DocValues values) throws IOException {
@@ -761,6 +763,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   public void testMultiValuedDocValuesField() throws Exception {
+    Assume.assumeTrue(_TestUtil.canUseSimpleDV());
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document doc = new Document();
@@ -782,12 +785,13 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
     w.close();
-    assertEquals(17, getOnlySegmentReader(r).docValues("field").loadSource().getInt(0));
+    assertEquals(17, FieldCache.DEFAULT.getInts(getOnlySegmentReader(r), "field", false).get(0));
     r.close();
     d.close();
   }
 
   public void testDifferentTypedDocValuesField() throws Exception {
+    assumeTrue("requires simple dv", _TestUtil.canUseSimpleDV());
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document doc = new Document();
@@ -809,7 +813,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
     w.close();
-    assertEquals(17, getOnlySegmentReader(r).docValues("field").loadSource().getInt(0));
+    assertEquals(17, FieldCache.DEFAULT.getInts(getOnlySegmentReader(r), "field", false).get(0));
     r.close();
     d.close();
   }
@@ -1031,6 +1035,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
   // LUCENE-3870
   public void testLengthPrefixAcrossTwoPages() throws Exception {
+    assumeTrue("requires simple dv", _TestUtil.canUseSimpleDV());
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document doc = new Document();
@@ -1044,14 +1049,15 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.addDocument(doc);
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
-    Source s = getOnlySegmentReader(r).docValues("field").getSource();
+    BinaryDocValues s = FieldCache.DEFAULT.getTerms(getOnlySegmentReader(r), "field");
 
-    BytesRef bytes1 = s.getBytes(0, new BytesRef());
+    BytesRef bytes1 = new BytesRef();
+    s.get(0, bytes1);
     assertEquals(bytes.length, bytes1.length);
     bytes[0] = 0;
     assertEquals(b, bytes1);
     
-    bytes1 = s.getBytes(1, new BytesRef());
+    s.get(1, bytes1);
     assertEquals(bytes.length, bytes1.length);
     bytes[0] = 1;
     assertEquals(b, bytes1);
@@ -1076,7 +1082,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     w.close();
     d.close();
   }
-  
+
   public void testDocValuesUnstored() throws IOException {
     //nocommit convert!
     Directory dir = newDirectory();

@@ -16,7 +16,6 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,13 +37,14 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Assume;
 
 public class TestDirectoryReaderReopen extends LuceneTestCase {
   
   public void testReopen() throws Exception {
+    Assume.assumeTrue(_TestUtil.canUseSimpleNorms());
     final Directory dir1 = newDirectory();
     
     createIndex(random(), dir1, false);
@@ -196,6 +196,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
   }
   
   public void testThreadSafety() throws Exception {
+    Assume.assumeTrue(_TestUtil.canUseSimpleNorms());
     final Directory dir = newDirectory();
     // NOTE: this also controls the number of threads!
     final int n = _TestUtil.nextInt(random(), 20, 40);

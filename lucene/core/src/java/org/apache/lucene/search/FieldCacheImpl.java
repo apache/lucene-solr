@@ -556,6 +556,7 @@ class FieldCacheImpl implements FieldCache {
         throws IOException {
 
       final NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
+      System.out.println("ints values=" + valuesIn);
       if (valuesIn != null) {
         return new Ints() {
           @Override

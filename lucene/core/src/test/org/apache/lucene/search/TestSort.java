@@ -1388,14 +1388,14 @@ public class TestSort extends LuceneTestCase {
     @Override
     public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
       final int maxDoc = context.reader().maxDoc();
-      final DocValues.Source idSource = context.reader().docValues("id").getSource();
+      final FieldCache.Ints idSource = FieldCache.DEFAULT.getInts(context.reader(), "id", false);
       assertNotNull(idSource);
       final FixedBitSet bits = new FixedBitSet(maxDoc);
       for(int docID=0;docID<maxDoc;docID++) {
         if (random.nextFloat() <= density && (acceptDocs == null || acceptDocs.get(docID))) {
           bits.set(docID);
           //System.out.println("  acc id=" + idSource.getInt(docID) + " docID=" + docID);
-          matchValues.add(docValues.get((int) idSource.getInt(docID)));
+          matchValues.add(docValues.get(idSource.get(docID)));
         }
       }
 
