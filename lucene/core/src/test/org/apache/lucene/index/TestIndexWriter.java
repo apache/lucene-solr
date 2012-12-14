@@ -2043,7 +2043,7 @@ public class TestIndexWriter extends LuceneTestCase {
       Bits liveDocs = ar.getLiveDocs();
       int maxDoc = ar.maxDoc();
       for (int i = 0; i < maxDoc; i++) {
-        if (liveDocs.get(i)) {
+        if (liveDocs == null || liveDocs.get(i)) {
           assertTrue(liveIds.remove(ar.document(i).get("id")));
         }
       }
