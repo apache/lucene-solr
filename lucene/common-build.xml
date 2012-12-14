@@ -916,6 +916,7 @@
                 <propertyref prefix="tests.failfast" />
                 <propertyref prefix="tests.badapples" />
                 <propertyref prefix="tests.timeoutSuite" />
+                <propertyref prefix="tests.jettyConnector" />
             </syspropertyset>
 
             <!-- Pass randomized settings to the forked JVM. -->

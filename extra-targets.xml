@@ -56,6 +56,9 @@
       mavenVersion="${maven-version}" failonerror="true" fork="true">
       <arg value="-fae"/>
       <arg value="install"/>
+      <syspropertyset>
+        <propertyref builtin="commandline"/>
+      </syspropertyset>
     </mvn>
   </target>
 
