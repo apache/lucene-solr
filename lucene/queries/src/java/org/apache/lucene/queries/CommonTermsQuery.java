@@ -257,8 +257,6 @@ public class CommonTermsQuery extends Query {
    * Returns true iff {@link Similarity#coord(int,int)} is disabled in scoring
    * for the high and low frequency query instance. The top level query will
    * always disable coords.
-   * 
-   * @see #CommonTermsQuery(Occur, Occur, float, boolean)
    */
   public boolean isCoordDisabled() {
     return disableCoord;

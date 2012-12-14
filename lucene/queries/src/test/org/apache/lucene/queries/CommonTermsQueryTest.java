@@ -263,7 +263,6 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       }
       
       TopDocs cqSearch = searcher.search(cq, reader.maxDoc());
-      QueryUtils.check(random(), cq, searcher);
       
       TopDocs verifySearch = searcher.search(verifyQuery, reader.maxDoc());
       assertEquals(verifySearch.totalHits, cqSearch.totalHits);
@@ -277,6 +276,17 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       }
       
       assertTrue(hits.isEmpty());
+      
+      /*
+       *  need to force merge here since QueryUtils adds checks based
+       *  on leave readers which have different statistics than the top
+       *  level reader if we have more than one segment. This could 
+       *  result in a different query / results.
+       */
+      w.forceMerge(1); 
+      DirectoryReader reader2 = w.getReader();
+      QueryUtils.check(random(), cq, newSearcher(reader2));
+      reader2.close();
     } finally {
       reader.close();
       wrapper.close();
