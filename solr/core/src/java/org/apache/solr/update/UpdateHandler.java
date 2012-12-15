@@ -21,6 +21,7 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.util.Vector;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
@@ -53,7 +54,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   protected Vector<SolrEventListener> softCommitCallbacks = new Vector<SolrEventListener>();
   protected Vector<SolrEventListener> optimizeCallbacks = new Vector<SolrEventListener>();
 
-  protected UpdateLog ulog;
+  protected volatile UpdateLog ulog;
 
   private void parseEventListeners() {
     final Class<SolrEventListener> clazz = SolrEventListener.class;
@@ -83,6 +84,14 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     }
   }
 
+  // not thread safe - for startup
+  protected void clearLog() throws IOException {
+    if (ulog != null) {
+      ulog.close(false);
+      FileUtils.deleteDirectory(ulog.getLogDir());
+      initLog();
+    }
+  }
 
   protected void callPostCommitCallbacks() {
     for (SolrEventListener listener : commitCallbacks) {
@@ -109,6 +118,13 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     idFieldType = idField!=null ? idField.getType() : null;
     parseEventListeners();
     initLog();
+    if (!core.getDirectoryFactory().isPersistent()) {
+      try {
+        clearLog();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
   }
 
   /**
