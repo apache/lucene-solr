@@ -896,7 +896,7 @@
             <sysproperty key="java.io.tmpdir" value="." />
 
             <!-- Restrict access to certain Java features and install security manager: -->
-            <sysproperty key="tests.sandbox.dir" value="${build.dir}" />
+            <sysproperty key="tests.sandbox.dir" value="${tests.tempDir}" />
             <sysproperty key="clover.db.dir" value="${clover.db.dir}" />
             <sysproperty key="java.security.manager" value="org.apache.lucene.util.TestSecurityManager" />
             <sysproperty key="java.security.policy" value="${common.dir}/tools/junit4/tests.policy" />
