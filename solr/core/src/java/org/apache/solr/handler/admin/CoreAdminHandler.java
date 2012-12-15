@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.store.Directory;
@@ -70,8 +72,6 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
-
-import javax.xml.parsers.ParserConfigurationException;
 
 /**
  *
@@ -934,6 +934,29 @@ public class CoreAdminHandler extends RequestHandlerBase {
                   + " but I still do not see the request state. I see state: "
                   + state + " live:" + live);
         }
+        
+        // solrcloud_debug
+//        try {;
+//        LocalSolrQueryRequest r = new LocalSolrQueryRequest(core, new
+//        ModifiableSolrParams());
+//        CommitUpdateCommand commitCmd = new CommitUpdateCommand(r, false);
+//        commitCmd.softCommit = true;
+//        core.getUpdateHandler().commit(commitCmd);
+//        RefCounted<SolrIndexSearcher> searchHolder =
+//        core.getNewestSearcher(false);
+//        SolrIndexSearcher searcher = searchHolder.get();
+//        try {
+//        System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName()
+//        + " to replicate "
+//        + searcher.search(new MatchAllDocsQuery(), 1).totalHits + " gen:" +
+//        core.getDeletionPolicy().getLatestCommit().getGeneration() + " data:" +
+//        core.getDataDir());
+//        } finally {
+//        searchHolder.decref();
+//        }
+//        } catch (Exception e) {
+//       
+//        }
       } finally {
         if (core != null) {
           core.close();
@@ -942,29 +965,6 @@ public class CoreAdminHandler extends RequestHandlerBase {
       Thread.sleep(1000);
     }
 
-    
-    // solrcloud_debug
-    // try {;
-    // LocalSolrQueryRequest r = new LocalSolrQueryRequest(core, new
-    // ModifiableSolrParams());
-    // CommitUpdateCommand commitCmd = new CommitUpdateCommand(r, false);
-    // commitCmd.softCommit = true;
-    // core.getUpdateHandler().commit(commitCmd);
-    // RefCounted<SolrIndexSearcher> searchHolder =
-    // core.getNewestSearcher(false);
-    // SolrIndexSearcher searcher = searchHolder.get();
-    // try {
-    // System.out.println(core.getCoreDescriptor().getCoreContainer().getZkController().getNodeName()
-    // + " to replicate "
-    // + searcher.search(new MatchAllDocsQuery(), 1).totalHits + " gen:" +
-    // core.getDeletionPolicy().getLatestCommit().getGeneration() + " data:" +
-    // core.getDataDir());
-    // } finally {
-    // searchHolder.decref();
-    // }
-    // } catch (Exception e) {
-    //
-    // }
     
   }
 
