@@ -148,6 +148,7 @@ public class Compile {
           // no base token (stem) on a line
         }
       }
+      in.close();
       
       Optimizer o = new Optimizer();
       Optimizer2 o2 = new Optimizer2();
