@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ClosableThread;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -43,7 +44,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OverseerCollectionProcessor implements Runnable {
+public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   
   public static final String NUM_SLICES = "numShards";
   
@@ -382,5 +383,10 @@ public class OverseerCollectionProcessor implements Runnable {
       SolrException.log(log, "Could not parse " + key, ex);
       throw ex;
     }
+  }
+
+  @Override
+  public boolean isClosed() {
+    return isClosed;
   }
 }
