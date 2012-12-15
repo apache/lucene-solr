@@ -356,6 +356,9 @@ Bug Fixes
   container includes the correct slf4j api and impl jars.
   (Shawn Heisey, hossman)
 
+* SOLR-4198: OverseerCollectionProcessor should implement ClosableThread.
+  (Mark Miller)
+
 Other Changes
 ----------------------
 
