@@ -177,7 +177,6 @@
   <property name="build.dir" location="build"/>
   <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
   <property name="common.build.dir" location="${common.dir}/build"/>
-  <property name="tests.lockdir" location="${common.build.dir}"/>
   <property name="dist.dir" location="${common.dir}/dist"/>
   <property name="maven.dist.dir" location="${dist.dir}/maven"/>
   <makeurl file="${maven.dist.dir}" property="m2.repository.url" validate="false"/>
@@ -858,8 +857,6 @@
             <sysproperty key="tests.verbose" value="${tests.verbose}"/>
             <!-- even more debugging -->
             <sysproperty key="tests.infostream" value="${tests.infostream}"/>
-            <!-- directory for formatter lock -->
-            <sysproperty key="tests.lockdir" value="${tests.lockdir}"/>
             <!-- set the codec tests should run with -->
             <sysproperty key="tests.codec" value="${tests.codec}"/>
             <!-- set the postingsformat tests should run with -->
@@ -896,10 +893,10 @@
             <sysproperty key="java.io.tmpdir" value="." />
 
             <!-- Restrict access to certain Java features and install security manager: -->
-            <sysproperty key="tests.sandbox.dir" value="${tests.tempDir}" />
-            <sysproperty key="clover.db.dir" value="${clover.db.dir}" />
+            <sysproperty key="tests.sandbox.dir" file="${tests.tempDir}" />
+            <sysproperty key="clover.db.dir" file="${clover.db.dir}" />
             <sysproperty key="java.security.manager" value="org.apache.lucene.util.TestSecurityManager" />
-            <sysproperty key="java.security.policy" value="${common.dir}/tools/junit4/tests.policy" />
+            <sysproperty key="java.security.policy" file="${common.dir}/tools/junit4/tests.policy" />
 
             <sysproperty key="lucene.version" value="${dev.version}"/>
 
