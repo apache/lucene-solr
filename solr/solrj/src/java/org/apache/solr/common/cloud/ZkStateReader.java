@@ -127,14 +127,16 @@ public class ZkStateReader {
   
   private boolean closeClient = false;
 
-  private ZkCmdExecutor cmdExecutor = new ZkCmdExecutor();
+  private ZkCmdExecutor cmdExecutor;
   
   public ZkStateReader(SolrZkClient zkClient) {
     this.zkClient = zkClient;
+    initZkCmdExecutor(zkClient.getZkClientTimeout());
   }
-  
+
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) throws InterruptedException, TimeoutException, IOException {
     closeClient = true;
+    initZkCmdExecutor(zkClientTimeout);
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
         // on reconnect, reload cloud info
         new OnReconnect() {
@@ -157,6 +159,11 @@ public class ZkStateReader {
 
           }
         });
+  }
+  
+  private void initZkCmdExecutor(int zkClientTimeout) {
+    // we must retry at least as long as the session timeout
+    cmdExecutor = new ZkCmdExecutor(zkClientTimeout);
   }
   
   // load and publish a new CollectionInfo

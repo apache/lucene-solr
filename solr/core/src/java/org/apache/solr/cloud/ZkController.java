@@ -99,9 +99,7 @@ public final class ZkController {
   private final DistributedQueue overseerJobQueue;
   private final DistributedQueue overseerCollectionQueue;
   
-  // package private for tests
-
-  static final String CONFIGS_ZKNODE = "/configs";
+  public static final String CONFIGS_ZKNODE = "/configs";
 
   public final static String COLLECTION_PARAM_PREFIX="collection.";
   public final static String CONFIGNAME_PROP="configName";
@@ -141,6 +139,8 @@ public final class ZkController {
   private String leaderVoteWait;
 
   private int clientTimeout;
+
+  private volatile boolean isClosed;
 
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
       String localHostContext, String leaderVoteWait, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
@@ -241,7 +241,7 @@ public final class ZkController {
     
     this.overseerJobQueue = Overseer.getInQueue(zkClient);
     this.overseerCollectionQueue = Overseer.getCollectionQueue(zkClient);
-    cmdExecutor = new ZkCmdExecutor();
+    cmdExecutor = new ZkCmdExecutor(zkClientTimeout);
     leaderElector = new LeaderElector(zkClient);
     zkStateReader = new ZkStateReader(zkClient);
     
@@ -266,6 +266,9 @@ public final class ZkController {
           descriptor.getCloudDescriptor().isLeader = false;
           publish(descriptor, ZkStateReader.DOWN, updateLastPublished);
         } catch (Exception e) {
+          if (isClosed) {
+            return;
+          }
           try {
             Thread.sleep(1000);
           } catch (InterruptedException e1) {
@@ -282,6 +285,9 @@ public final class ZkController {
           waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
         } catch (Exception e) {
           SolrException.log(log, "", e);
+          if (isClosed) {
+            return;
+          }
           try {
             Thread.sleep(5000);
           } catch (InterruptedException e1) {
@@ -307,6 +313,7 @@ public final class ZkController {
    * Closes the underlying ZooKeeper client.
    */
   public void close() {
+    this.isClosed = true;
     
     if (cmdDistribExecutor != null) {
       try {

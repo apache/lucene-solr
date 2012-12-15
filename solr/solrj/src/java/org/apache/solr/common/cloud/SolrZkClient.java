@@ -71,11 +71,16 @@ public class SolrZkClient {
 
   private volatile SolrZooKeeper keeper;
   
-  private ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor();
+  private ZkCmdExecutor zkCmdExecutor;
 
   private volatile boolean isClosed = false;
   private ZkClientConnectionStrategy zkClientConnectionStrategy;
+  private int zkClientTimeout;
   
+  public int getZkClientTimeout() {
+    return zkClientTimeout;
+  }
+
   public SolrZkClient(String zkServerAddress, int zkClientTimeout) {
     this(zkServerAddress, zkClientTimeout, new DefaultConnectionStrategy(), null);
   }
@@ -92,6 +97,9 @@ public class SolrZkClient {
   public SolrZkClient(String zkServerAddress, int zkClientTimeout,
       ZkClientConnectionStrategy strat, final OnReconnect onReconnect, int clientConnectTimeout) {
     this.zkClientConnectionStrategy = strat;
+    this.zkClientTimeout = zkClientTimeout;
+    // we must retry at least as long as the session timeout
+    zkCmdExecutor = new ZkCmdExecutor(zkClientTimeout);
     connManager = new ConnectionManager("ZooKeeperConnection Watcher:"
         + zkServerAddress, this, zkServerAddress, zkClientTimeout, strat, onReconnect);
     try {

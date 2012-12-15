@@ -175,6 +175,10 @@ Optimizations
   
 * SOLR-4063: Allow CoreContainer to load multiple SolrCores in parallel rather
   than just serially. (Mark Miller)
+  
+* SOLR-4199: When doing zk retries due to connectionloss, rather than just 
+  retrying for 2 minutes, retry in proportion to the session timeout.
+  (Mark Miller)
 
 Bug Fixes
 ----------------------
