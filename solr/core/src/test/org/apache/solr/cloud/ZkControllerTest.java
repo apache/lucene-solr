@@ -31,7 +31,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
