@@ -44,6 +44,10 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     return new File(path).getCanonicalPath();
   }
   
+  public boolean isPersistent() {
+    return true;
+  }
+  
   @Override
   public void remove(Directory dir) throws IOException {
     CacheValue val = byDirectoryCache.get(dir);

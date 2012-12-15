@@ -91,7 +91,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   /**
    * This remove is special in that it may be called even after
    * the factory has been closed. Remove only makes sense for
-   * peristent directory factories.
+   * persistent directory factories.
    * 
    * @param path to remove
    * @throws IOException If there is a low-level I/O error.
@@ -139,6 +139,12 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * 
    */
   public abstract void incRef(Directory directory);
+  
+  
+  /**
+   * @return true if data is kept after close.
+   */
+  public abstract boolean isPersistent();
   
   /**
    * Releases the Directory so that it may be closed when it is no longer
