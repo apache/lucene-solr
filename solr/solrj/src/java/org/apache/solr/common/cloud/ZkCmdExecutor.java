@@ -27,11 +27,13 @@ import org.apache.zookeeper.data.ACL;
 
 
 public class ZkCmdExecutor {
-  private long retryDelay = 1000L;
-  private int retryCount = 15;
+  private long retryDelay = 1300L; // 300 ms over for padding
+  private int retryCount;
   private List<ACL> acl = ZooDefs.Ids.OPEN_ACL_UNSAFE;
   
-  public ZkCmdExecutor() {
+  public ZkCmdExecutor(int timeoutms) {
+    double timeouts = timeoutms / 1000.0;
+    this.retryCount = Math.round(0.5f * ((float)Math.sqrt(8.0f * timeouts + 1.0f) - 1.0f));
   }
   
   public List<ACL> getAcl() {
