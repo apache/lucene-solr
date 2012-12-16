@@ -3,6 +3,7 @@ package org.apache.lucene.facet.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.logging.Level;
@@ -152,19 +153,21 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
           int offset = part * partitionSize;
 
           // for each partition we go over all requests and handle
-          // each, where
-          // the request maintains the merged result.
-          // In this implementation merges happen after each
-          // partition,
+          // each, where the request maintains the merged result.
+          // In this implementation merges happen after each partition,
           // but other impl could merge only at the end.
+          final HashSet<FacetRequest> handledRequests = new HashSet<FacetRequest>();
           for (FacetRequest fr : searchParams.getFacetRequests()) {
-            FacetResultsHandler frHndlr = fr.createFacetResultsHandler(taxonomyReader);
-            IntermediateFacetResult res4fr = frHndlr.fetchPartitionResult(facetArrays, offset);
-            IntermediateFacetResult oldRes = fr2tmpRes.get(fr);
-            if (oldRes != null) {
-              res4fr = frHndlr.mergeResults(oldRes, res4fr);
-            }
-            fr2tmpRes.put(fr, res4fr);
+            // Handle and merge only facet requests which were not already handled.  
+            if (handledRequests.add(fr)) {
+              FacetResultsHandler frHndlr = fr.createFacetResultsHandler(taxonomyReader);
+              IntermediateFacetResult res4fr = frHndlr.fetchPartitionResult(facetArrays, offset);
+              IntermediateFacetResult oldRes = fr2tmpRes.get(fr);
+              if (oldRes != null) {
+                res4fr = frHndlr.mergeResults(oldRes, res4fr);
+              }
+              fr2tmpRes.put(fr, res4fr);
+            } 
           }
         }
       } finally {
@@ -260,7 +263,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
     int[] intArray = facetArrays.getIntArray();
     totalFacetCounts.fillTotalCountsForPartition(intArray, partition);
     double totalCountsFactor = getTotalCountsFactor();
-    // fix total counts, but only if the effect of this would be meaningfull. 
+    // fix total counts, but only if the effect of this would be meaningful. 
     if (totalCountsFactor < 0.99999) {
       int delta = nAccumulatedDocs + 1;
       for (int i = 0; i < intArray.length; i++) {
