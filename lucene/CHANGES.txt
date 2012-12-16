@@ -291,6 +291,10 @@ Bug Fixes
 * LUCENE-4608: Handle large number of requested fragments better.
   (Martijn van Groningen)
 
+* LUCENE-4633: DirectoryTaxonomyWriter.replaceTaxonomy did not refresh its
+  internal reader, which could cause an existing category to be added twice.
+  (Shai Erera)
+  
 Changes in Runtime Behavior
   
 * LUCENE-4586: Change default ResultMode of FacetRequest to PER_NODE_IN_TREE.

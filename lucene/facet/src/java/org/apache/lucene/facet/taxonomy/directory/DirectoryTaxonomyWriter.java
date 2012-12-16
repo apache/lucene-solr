@@ -1027,6 +1027,8 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
     indexWriter.deleteAll();
     indexWriter.addIndexes(taxoDir);
     shouldRefreshReaderManager = true;
+    initReaderManager(); // ensure that it's initialized
+    refreshReaderManager();
     nextID = indexWriter.maxDoc();
     
     // need to clear the cache, so that addCategory won't accidentally return
