@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.cl2o.Cl2oTaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.lru.LruTaxonomyWriterCache;
@@ -316,12 +317,12 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
   public void testReplaceTaxonomy() throws Exception {
     Directory input = newDirectory();
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(input);
-    taxoWriter.addCategory(new CategoryPath("a"));
+    int ordA = taxoWriter.addCategory(new CategoryPath("a"));
     taxoWriter.close();
     
     Directory dir = newDirectory();
     taxoWriter = new DirectoryTaxonomyWriter(dir);
-    int ordinal = taxoWriter.addCategory(new CategoryPath("b"));
+    int ordB = taxoWriter.addCategory(new CategoryPath("b"));
     taxoWriter.addCategory(new CategoryPath("c"));
     taxoWriter.commit();
     
@@ -330,11 +331,16 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     // replace the taxonomy with the input one
     taxoWriter.replaceTaxonomy(input);
     
+    // LUCENE-4633: make sure that category "a" is not added again in any case
+    taxoWriter.addTaxonomy(input, new MemoryOrdinalMap());
+    assertEquals("no categories should have been added", 2, taxoWriter.getSize()); // root + 'a'
+    assertEquals("category 'a' received new ordinal?", ordA, taxoWriter.addCategory(new CategoryPath("a")));
+
     // add the same category again -- it should not receive the same ordinal !
-    int newOrdinal = taxoWriter.addCategory(new CategoryPath("b"));
-    assertNotSame("new ordinal cannot be the original ordinal", ordinal, newOrdinal);
-    assertEquals("ordinal should have been 2 since only one category was added by replaceTaxonomy", 2, newOrdinal);
-    
+    int newOrdB = taxoWriter.addCategory(new CategoryPath("b"));
+    assertNotSame("new ordinal cannot be the original ordinal", ordB, newOrdB);
+    assertEquals("ordinal should have been 2 since only one category was added by replaceTaxonomy", 2, newOrdB);
+
     taxoWriter.close();
     
     long newEpoch = getEpoch(dir);
