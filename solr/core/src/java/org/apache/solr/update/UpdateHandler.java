@@ -87,8 +87,8 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   // not thread safe - for startup
   protected void clearLog() throws IOException {
     if (ulog != null) {
-      ulog.close(false);
-      FileUtils.deleteDirectory(ulog.getLogDir());
+      ulog.close(false, true);
+      //FileUtils.deleteDirectory(ulog.getLogDir());
       initLog();
     }
   }
