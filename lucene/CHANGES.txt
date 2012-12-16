@@ -294,7 +294,10 @@ Bug Fixes
 * LUCENE-4633: DirectoryTaxonomyWriter.replaceTaxonomy did not refresh its
   internal reader, which could cause an existing category to be added twice.
   (Shai Erera)
-  
+
+* LUCENE-4461: If you added the same FacetRequest more than once, you would get
+  inconsistent results. (Gilad Barkai via Shai Erera)
+    
 Changes in Runtime Behavior
   
 * LUCENE-4586: Change default ResultMode of FacetRequest to PER_NODE_IN_TREE.
