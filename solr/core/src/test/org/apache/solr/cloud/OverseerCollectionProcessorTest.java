@@ -51,6 +51,7 @@ import org.easymock.Capture;
 import org.easymock.IAnswer;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -103,6 +104,15 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     zkStateReaderMock = createMock(ZkStateReader.class);
     clusterStateMock = createMock(ClusterState.class);
     solrZkClientMock = createMock(SolrZkClient.class);
+  }
+  
+  @AfterClass
+  public static void tearDownOnce() {
+    workQueueMock = null;
+    shardHandlerMock = null;
+    zkStateReaderMock = null;
+    clusterStateMock = null;
+    solrZkClientMock = null;
   }
   
   @Before
