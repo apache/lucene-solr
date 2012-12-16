@@ -477,11 +477,21 @@ public class CoreAdminRequest extends SolrRequest
     return CoreAdminRequest.createCore(name, instanceDir, server, null, null);
   }
   
-  public static CoreAdminResponse createCore( String name, String instanceDir, SolrServer server, String configFile, String schemaFile ) throws SolrServerException, IOException 
+  public static CoreAdminResponse createCore( String name, String instanceDir, SolrServer server, String configFile, String schemaFile ) throws SolrServerException, IOException { 
+    return createCore(name, instanceDir, server, configFile, schemaFile, null, null);
+  }
+  
+  public static CoreAdminResponse createCore( String name, String instanceDir, SolrServer server, String configFile, String schemaFile, String dataDir, String tlogDir ) throws SolrServerException, IOException 
   {
     CoreAdminRequest.Create req = new CoreAdminRequest.Create();
     req.setCoreName( name );
     req.setInstanceDir(instanceDir);
+    if (dataDir != null) {
+      req.setDataDir(dataDir);
+    }
+    if (tlogDir != null) {
+      req.setUlogDir(tlogDir);
+    }
     if(configFile != null){
       req.setConfigName(configFile);
     }
