@@ -89,13 +89,11 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   public void testLazyLoad() throws Exception {
     CoreContainer cc = init();
     try {
-      // NOTE: the way this works, this should not assert, however if it's put after the getCore on this collection,
-      // that will cause the core to be loaded and this test will fail.
 
-      Collection<String> names = cc.getCoreNames();
-      for (String name : names) {
-        assertFalse("collectionLazy2".equals(name));
-      }
+      // NOTE: This checks the initial state for loading, no need to do this elsewhere.
+      checkInCores(cc, "collection1", "collectionLazy2", "collectionLazy5");
+      checkNotInCores(cc, "collectionLazy3", "collectionLazy4", "collectionLazy6", "collectionLazy7",
+          "collectionLazy8", "collectionLazy9");
 
       SolrCore core1 = cc.getCore("collection1");
       assertFalse("core1 should not be swappable", core1.getCoreDescriptor().isSwappable());
@@ -104,7 +102,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
       SolrCore core2 = cc.getCore("collectionLazy2");
       assertTrue("core2 should not be swappable", core2.getCoreDescriptor().isSwappable());
-      assertFalse("core2 should not be loadable", core2.getCoreDescriptor().isLoadOnStartup());
+      assertTrue("core2 should be loadable", core2.getCoreDescriptor().isLoadOnStartup());
 
       SolrCore core3 = cc.getCore("collectionLazy3");
       assertTrue("core3 should not be swappable", core3.getCoreDescriptor().isSwappable());
@@ -134,33 +132,33 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   public void testLazySearch() throws Exception {
     CoreContainer cc = init();
     try {
-      // Make sure Lazy2 isn't loaded.
-      checkNotInCores(cc, "collectionLazy2");
-      SolrCore core2 = cc.getCore("collectionLazy2");
+      // Make sure Lazy4 isn't loaded. Should be loaded on the get
+      checkNotInCores(cc, "collectionLazy4");
+      SolrCore core4 = cc.getCore("collectionLazy4");
 
-      addLazy(core2, "id", "0");
-      addLazy(core2, "id", "1", "v_t", "Hello Dude");
-      addLazy(core2, "id", "2", "v_t", "Hello Yonik");
-      addLazy(core2, "id", "3", "v_s", "{!literal}");
-      addLazy(core2, "id", "4", "v_s", "other stuff");
-      addLazy(core2, "id", "5", "v_f", "3.14159");
-      addLazy(core2, "id", "6", "v_f", "8983");
+      addLazy(core4, "id", "0");
+      addLazy(core4, "id", "1", "v_t", "Hello Dude");
+      addLazy(core4, "id", "2", "v_t", "Hello Yonik");
+      addLazy(core4, "id", "3", "v_s", "{!literal}");
+      addLazy(core4, "id", "4", "v_s", "other stuff");
+      addLazy(core4, "id", "5", "v_f", "3.14159");
+      addLazy(core4, "id", "6", "v_f", "8983");
 
-      SolrQueryRequest req = makeReq(core2);
+      SolrQueryRequest req = makeReq(core4);
       CommitUpdateCommand cmtCmd = new CommitUpdateCommand(req, false);
-      core2.getUpdateHandler().commit(cmtCmd);
+      core4.getUpdateHandler().commit(cmtCmd);
 
-      RefCounted<SolrIndexSearcher> holder = core2.getSearcher();
+      RefCounted<SolrIndexSearcher> holder = core4.getSearcher();
       SolrIndexSearcher searcher = holder.get();
 
       // Just get a couple of searches to work!
       assertQ("test prefix query",
-          makeReq(core2, "q", "{!prefix f=v_t}hel")
+          makeReq(core4, "q", "{!prefix f=v_t}hel")
           , "//result[@numFound='2']"
       );
 
       assertQ("test raw query",
-          makeReq(core2, "q", "{!raw f=v_t}hello")
+          makeReq(core4, "q", "{!raw f=v_t}hello")
           , "//result[@numFound='2']"
       );
 
@@ -173,18 +171,18 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
       // no analysis is done, so these should match nothing
       assertQ("test raw query",
-          makeReq(core2, "q", "{!raw f=v_t}Hello")
+          makeReq(core4, "q", "{!raw f=v_t}Hello")
           , "//result[@numFound='0']"
       );
       assertQ("test raw query",
-          makeReq(core2, "q", "{!raw f=v_f}1.5")
+          makeReq(core4, "q", "{!raw f=v_f}1.5")
           , "//result[@numFound='0']"
       );
 
-      checkInCores(cc, "collectionLazy2");
+      checkInCores(cc, "collectionLazy4");
 
       searcher.close();
-      core2.close();
+      core4.close();
     } finally {
       cc.shutdown();
     }
@@ -194,31 +192,41 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   public void testCachingLimit() throws Exception {
     CoreContainer cc = init();
     try {
+      // First check that all the cores that should be loaded at startup actually are.
+
+      checkInCores(cc, "collection1",  "collectionLazy2", "collectionLazy5");
+      checkNotInCores(cc,"collectionLazy3", "collectionLazy4", "collectionLazy6",
+          "collectionLazy7", "collectionLazy8", "collectionLazy9");
+
       // By putting these in non-alpha order, we're also checking that we're  not just seeing an artifact.
       SolrCore core1 = cc.getCore("collection1");
-      SolrCore core2 = cc.getCore("collectionLazy3");
+      SolrCore core3 = cc.getCore("collectionLazy3");
       SolrCore core4 = cc.getCore("collectionLazy4");
-      SolrCore core3 = cc.getCore("collectionLazy2");
+      SolrCore core2 = cc.getCore("collectionLazy2");
       SolrCore core5 = cc.getCore("collectionLazy5");
-
 
       checkInCores(cc, "collection1", "collectionLazy2", "collectionLazy3", "collectionLazy4", "collectionLazy5");
       checkNotInCores(cc, "collectionLazy6", "collectionLazy7", "collectionLazy8", "collectionLazy9");
 
       // map should be full up, add one more and verify
       SolrCore core6 = cc.getCore("collectionLazy6");
-      checkInCores(cc, "collection1", "collectionLazy2", "collectionLazy3", "collectionLazy4", "collectionLazy5", "collectionLazy6");
+      checkInCores(cc, "collection1", "collectionLazy2", "collectionLazy3", "collectionLazy4", "collectionLazy5",
+          "collectionLazy6");
       checkNotInCores(cc, "collectionLazy7", "collectionLazy8", "collectionLazy9");
 
       SolrCore core7 = cc.getCore("collectionLazy7");
-      checkInCores(cc, "collection1", "collectionLazy2", "collectionLazy3", "collectionLazy4", "collectionLazy5", "collectionLazy6", "collectionLazy7");
+      checkInCores(cc, "collection1", "collectionLazy2", "collectionLazy3", "collectionLazy4", "collectionLazy5",
+          "collectionLazy6", "collectionLazy7");
       checkNotInCores(cc, "collectionLazy8", "collectionLazy9");
+
       SolrCore core8 = cc.getCore("collectionLazy8");
-      checkInCores(cc, "collection1", "collectionLazy2", "collectionLazy4", "collectionLazy5", "collectionLazy6", "collectionLazy7", "collectionLazy8");
+      checkInCores(cc, "collection1", "collectionLazy2", "collectionLazy4", "collectionLazy5", "collectionLazy6",
+          "collectionLazy7", "collectionLazy8");
       checkNotInCores(cc, "collectionLazy3", "collectionLazy9");
 
       SolrCore core9 = cc.getCore("collectionLazy9");
-      checkInCores(cc, "collection1", "collectionLazy4", "collectionLazy5", "collectionLazy6", "collectionLazy7", "collectionLazy8", "collectionLazy9");
+      checkInCores(cc, "collection1", "collectionLazy4", "collectionLazy5", "collectionLazy6", "collectionLazy7",
+          "collectionLazy8", "collectionLazy9");
       checkNotInCores(cc, "collectionLazy2", "collectionLazy3");
 
 
@@ -286,7 +294,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private final static String LOTS_SOLR_XML = " <solr persistent=\"false\"> " +
       "<cores adminPath=\"/admin/cores\" defaultCoreName=\"collectionLazy2\" swappableCacheSize=\"4\">  " +
       "<core name=\"collection1\" instanceDir=\"collection1\" /> " +
-      "<core name=\"collectionLazy2\" instanceDir=\"collection2\" swappable=\"true\" loadOnStartup=\"false\"  /> " +
+      "<core name=\"collectionLazy2\" instanceDir=\"collection2\" swappable=\"true\" loadOnStartup=\"true\"  /> " +
       "<core name=\"collectionLazy3\" instanceDir=\"collection3\" swappable=\"on\" loadOnStartup=\"false\"/> " +
       "<core name=\"collectionLazy4\" instanceDir=\"collection4\" swappable=\"false\" loadOnStartup=\"false\"/> " +
       "<core name=\"collectionLazy5\" instanceDir=\"collection5\" swappable=\"false\" loadOnStartup=\"true\"/> " +

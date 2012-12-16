@@ -608,7 +608,7 @@ public class CoreContainer
                 .equalsIgnoreCase(opt)) ? true : false);
           }
           
-          if (!p.isSwappable() && p.isLoadOnStartup()) { // Just like current
+          if (p.isLoadOnStartup()) { // Just like current
                                                          // case.
             Callable<SolrCore> task = new Callable<SolrCore>() {
               @Override
@@ -616,7 +616,12 @@ public class CoreContainer
                 SolrCore c = null;
                 try {
                   c = create(p);
-                  register(name, c, false);
+                  if (p.isSwappable()) {
+                    registerLazyCore(name, c, false);
+                  } else {
+                    register(name, c, false);
+                  }
+
                 } catch (Throwable t) {
                   SolrException.log(log, null, t);
                   if (c != null) {
