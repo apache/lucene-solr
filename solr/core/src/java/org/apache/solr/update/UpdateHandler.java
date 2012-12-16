@@ -118,7 +118,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     idFieldType = idField!=null ? idField.getType() : null;
     parseEventListeners();
     initLog();
-    if (!core.getDirectoryFactory().isPersistent()) {
+    if (!core.isReloaded() && !core.getDirectoryFactory().isPersistent()) {
       try {
         clearLog();
       } catch (IOException e) {
