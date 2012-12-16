@@ -312,7 +312,7 @@
     <subant buildpath="." antfile="extra-targets.xml" target="-check-svn-working-copy" inheritall="false" failonerror="true"/>
   </target>
 
-  <target name="run-clover" description="Runs all tests to measure coverage and generates report (pass &quot;ANT_ARGS=-Xmx1536M&quot; as environment)" depends="clean">
+  <target name="run-clover" description="Runs all tests to measure coverage and generates report (pass &quot;ANT_OPTS=-Xmx1536M&quot; as environment)" depends="clean">
     <antcall>
       <param name="run.clover" value="true"/>
       <!-- must be 1, as clover does not like parallel test runs: -->
