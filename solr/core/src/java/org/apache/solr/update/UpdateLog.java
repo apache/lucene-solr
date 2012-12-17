@@ -1394,6 +1394,12 @@ public class UpdateLog implements PluginInfoInitialized {
       }
     }
   }
+  
+  public static File getTlogDir(PluginInfo info) {
+    String dataDir = (String)info.initArgs.get("dir");
+    return new File(dataDir, TLOG_NAME);
+  }
+  
 }
 
 

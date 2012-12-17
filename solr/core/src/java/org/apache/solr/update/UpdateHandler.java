@@ -18,10 +18,10 @@
 package org.apache.solr.update;
 
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Vector;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
@@ -74,8 +74,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   }
 
 
-  private void initLog() {
-    PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
+  private void initLog(PluginInfo ulogPluginInfo) {
     if (ulogPluginInfo != null && ulogPluginInfo.isEnabled()) {
       ulog = new UpdateLog();
       ulog.init(ulogPluginInfo);
@@ -85,11 +84,16 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   }
 
   // not thread safe - for startup
-  protected void clearLog() throws IOException {
+  private void clearLog(PluginInfo ulogPluginInfo) {
     if (ulog != null) {
-      ulog.close(false, true);
-      //FileUtils.deleteDirectory(ulog.getLogDir());
-      initLog();
+      String[] files = UpdateLog.getLogList(UpdateLog.getTlogDir(ulogPluginInfo));
+      for (String file : files) {
+        File f = new File(file);
+        boolean s = f.delete();
+        if (!s) {
+          log.error("Could not remove tlog file:" + f);
+        }
+      }
     }
   }
 
@@ -117,14 +121,11 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     idField = schema.getUniqueKeyField();
     idFieldType = idField!=null ? idField.getType() : null;
     parseEventListeners();
-    initLog();
+    PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
     if (!core.isReloaded() && !core.getDirectoryFactory().isPersistent()) {
-      try {
-        clearLog();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+      clearLog(ulogPluginInfo);
     }
+    initLog(ulogPluginInfo);
   }
 
   /**
