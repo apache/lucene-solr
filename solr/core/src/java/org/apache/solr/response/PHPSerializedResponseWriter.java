@@ -41,12 +41,18 @@ import org.apache.solr.search.ReturnFields;
 public class PHPSerializedResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_PHP_UTF8="text/x-php-serialized;charset=UTF-8";
 
+  private String contentType = CONTENT_TYPE_PHP_UTF8;
+
   @Override
-  public void init(NamedList n) {
+  public void init(NamedList namedList) {
+    String contentType = (String) namedList.get("content-type");
+    if (contentType != null) {
+      this.contentType = contentType;
+    }
   }
   
- @Override
-public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+  @Override
+  public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     PHPSerializedWriter w = new PHPSerializedWriter(writer, req, rsp);
     try {
       w.writeResponse();
@@ -57,7 +63,7 @@ public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) th
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return CONTENT_TYPE_TEXT_UTF8;
+    return contentType;
   }
 }
 

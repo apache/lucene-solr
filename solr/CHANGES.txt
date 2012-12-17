@@ -34,7 +34,7 @@ Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.5
 
-Upgrading from Solr 4.0.0-BETA
+Upgrading from Solr 4.0.0
 ----------------------
 
 Custom java parsing plugins need to migrade from throwing the internal
@@ -153,6 +153,9 @@ New Features
 
 * SOLR-4120: Collection API: Support for specifying a list of Solr addresses to
   spread a new collection across. (Per Steffensen via Mark Miller)
+
+* SOLR-4110: Configurable Content-Type headers for PHPResponseWriters and 
+  PHPSerializedResponseWriter. (Dominik Siebel via Mark Miller)
 
 Optimizations
 ----------------------
