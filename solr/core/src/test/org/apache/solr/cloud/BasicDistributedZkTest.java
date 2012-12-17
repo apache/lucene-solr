@@ -376,7 +376,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     String url1 = getBaseUrl(client);
     HttpSolrServer server = new HttpSolrServer(url1);
     server.setConnectionTimeout(15000);
-    server.setSoTimeout(15000);
+    server.setSoTimeout(30000);
     server.request(createCmd);
     
     createCmd = new Create();
