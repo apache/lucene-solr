@@ -52,6 +52,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -855,8 +856,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   
   protected void checkShardConsistency(boolean checkVsControl, boolean verbose)
       throws Exception {
-    long docs = controlClient.query(new SolrQuery("*:*")).getResults()
-        .getNumFound();
+    SolrParams q = params("q","*:*","fl","id,_version_","rows","100000");
+
+    SolrDocumentList controlDocList = controlClient.query(q).getResults();
+    long docs = controlDocList.getNumFound();
+
+    SolrDocumentList cloudDocList = cloudClient.query(q).getResults();
+    long cloudClientDocs = cloudDocList.getNumFound();
+
     if (verbose) System.err.println("Control Docs:" + docs);
     
     updateMappingsFromZk(jettys, clients);
@@ -907,11 +914,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         }
       }
       
-      SolrQuery q = new SolrQuery("*:*");
-      long cloudClientDocs = cloudClient.query(q).getResults().getNumFound();
-      assertEquals(
-          "adding up the # of docs on each shard does not match the control - cloud client returns:"
-              + cloudClientDocs, docs, cnt);
+
+      if (docs != cnt || cloudClientDocs != docs) {
+        String msg = "document count mismatch.  control=" + docs + " sum(shards)="+ cnt + " cloudClient="+cloudClientDocs;
+        log.error(msg);
+        showDiff(controlDocList, cloudDocList,"controlDocList","cloudDocList");
+        fail(msg);
+      }
     }
   }
   
