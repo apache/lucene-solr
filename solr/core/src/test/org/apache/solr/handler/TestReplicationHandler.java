@@ -180,7 +180,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       docList = (SolrDocumentList) res.get("response");
       timeSlept += 100;
       Thread.sleep(100);
-    } while(docList.getNumFound() != expectedDocCount && timeSlept < 30000);
+    } while(docList.getNumFound() != expectedDocCount && timeSlept < 45000);
     return res;
   }
   
