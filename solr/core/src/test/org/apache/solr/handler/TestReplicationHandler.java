@@ -138,6 +138,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       // setup the server...
       String url = "http://127.0.0.1:" + port + context;
       HttpSolrServer s = new HttpSolrServer(url);
+      s.setConnectionTimeout(15000);
+      s.setSoTimeout(30000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;

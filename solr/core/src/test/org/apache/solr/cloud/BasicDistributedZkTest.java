@@ -375,7 +375,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     SolrServer client = clients.get(0);
     String url1 = getBaseUrl(client);
     HttpSolrServer server = new HttpSolrServer(url1);
-    
+    server.setConnectionTimeout(15000);
+    server.setSoTimeout(15000);
     server.request(createCmd);
     
     createCmd = new Create();
@@ -437,6 +438,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     SolrServer client = clients.get(0);
     String url1 = getBaseUrl(client);
     HttpSolrServer server = new HttpSolrServer(url1);
+    server.setConnectionTimeout(15000);
+    server.setSoTimeout(30000);
     
     Create createCmd = new Create();
     createCmd.setCoreName("unloadcollection1");
@@ -627,7 +630,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     SolrServer client = clients.get(2);
     String url3 = getBaseUrl(client);
     final HttpSolrServer server = new HttpSolrServer(url3);
-    
+    server.setConnectionTimeout(15000);
+    server.setSoTimeout(60000);
     ThreadPoolExecutor executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
         5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
         new DefaultSolrThreadFactory("testExecutor"));
@@ -667,7 +671,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     SolrServer client = clients.get(0);
     String url3 = getBaseUrl(client);
     final HttpSolrServer server = new HttpSolrServer(url3);
-    
+    server.setConnectionTimeout(15000);
+    server.setSoTimeout(30000);
     ThreadPoolExecutor executor = new ThreadPoolExecutor(0, Integer.MAX_VALUE,
         5, TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
         new DefaultSolrThreadFactory("testExecutor"));
@@ -791,7 +796,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       String url = getUrlFromZk(collection);
 
       HttpSolrServer collectionClient = new HttpSolrServer(url);
-      
+      collectionClient.setConnectionTimeout(15000);
+      collectionClient.setSoTimeout(30000);
       // poll for a second - it can take a moment before we are ready to serve
       waitForNon403or404or503(collectionClient);
     }
@@ -1291,6 +1297,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private Long getNumCommits(HttpSolrServer solrServer) throws
       SolrServerException, IOException {
     HttpSolrServer server = new HttpSolrServer(solrServer.getBaseURL());
+    server.setConnectionTimeout(15000);
+    server.setSoTimeout(30000);
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/admin/mbeans?key=updateHandler&stats=true");
     // use generic request to avoid extra processing of queries
@@ -1483,7 +1491,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         HttpSolrServer server;
         try {
           server = new HttpSolrServer(baseUrl);
-          
+          server.setConnectionTimeout(15000);
+          server.setSoTimeout(30000);
           Create createCmd = new Create();
           createCmd.setRoles("none");
           createCmd.setCoreName(collection + num);
@@ -1649,7 +1658,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
           HttpSolrServer server;
           try {
             server = new HttpSolrServer(baseUrl);
-            
+            server.setConnectionTimeout(15000);
+            server.setSoTimeout(30000);
             Create createCmd = new Create();
             createCmd.setCoreName(collection);
             createCmd.setDataDir(dataDir.getAbsolutePath() + File.separator
@@ -1679,7 +1689,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     try {
       // setup the server...
       HttpSolrServer s = new HttpSolrServer(baseUrl + "/" + collection);
-      s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
+      s.setSoTimeout(30000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;
@@ -1696,6 +1706,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         try {
           commondCloudSolrServer = new CloudSolrServer(zkServer.getZkAddress());
           commondCloudSolrServer.setDefaultCollection(DEFAULT_COLLECTION);
+          commondCloudSolrServer.getLbServer().setConnectionTimeout(15000);
+          commondCloudSolrServer.getLbServer().setSoTimeout(30000);
           commondCloudSolrServer.connect();
         } catch (MalformedURLException e) {
           throw new RuntimeException(e);

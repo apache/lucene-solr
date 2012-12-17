@@ -372,6 +372,18 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
       Thread.currentThread().interrupt();
     }
   }
+  
+  public void setConnectionTimeout(int timeout) {
+    HttpClientUtil.setConnectionTimeout(server.getHttpClient(), timeout);
+  }
+
+  /**
+   * set soTimeout (read timeout) on the underlying HttpConnectionManager. This is desirable for queries, but probably
+   * not for indexing.
+   */
+  public void setSoTimeout(int timeout) {
+    HttpClientUtil.setSoTimeout(server.getHttpClient(), timeout);
+  }
 
   public void shutdownNow() {
     server.shutdown();

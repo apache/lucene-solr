@@ -191,6 +191,7 @@ public class TestHarness {
           hostPort = System.getProperty("hostPort");
           hostContext = "solr";
           defaultCoreName = CoreContainer.DEFAULT_DEFAULT_CORE_NAME;
+          initShardHandler(null);
           initZooKeeper(System.getProperty("zkHost"), 10000);
         }
       };

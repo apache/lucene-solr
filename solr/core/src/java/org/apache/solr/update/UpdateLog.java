@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -819,7 +820,7 @@ public class UpdateLog implements PluginInfoInitialized {
   public void close(boolean committed, boolean deleteOnClose) {
     synchronized (this) {
       try {
-        recoveryExecutor.shutdownNow();
+        ExecutorUtil.shutdownNowAndAwaitTermination(recoveryExecutor);
       } catch (Exception e) {
         SolrException.log(log, e);
       }

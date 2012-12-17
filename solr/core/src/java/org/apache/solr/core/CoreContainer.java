@@ -159,6 +159,8 @@ public class CoreContainer
   private String zkHost;
   private Map<SolrCore,String> coreToOrigName = new ConcurrentHashMap<SolrCore,String>();
   private String leaderVoteWait = LEADER_VOTE_WAIT;
+  private int distribUpdateConnTimeout = 0;
+  private int distribUpdateSoTimeout = 0;
   protected int swappableCacheSize = Integer.MAX_VALUE; // Use as a flag too, if swappableCacheSize set in solr.xml this will be changed
   private int coreLoadThreads;
   
@@ -250,18 +252,21 @@ public class CoreContainer
               "A chroot was specified in ZkHost but the znode doesn't exist. ");
         }
         
-        zkController = new ZkController(this, zookeeperHost, zkClientTimeout, zkClientConnectTimeout, host, hostPort, hostContext, leaderVoteWait, new CurrentCoreDescriptorProvider() {
-          
-          @Override
-          public List<CoreDescriptor> getCurrentDescriptors() {
-            List<CoreDescriptor> descriptors = new ArrayList<CoreDescriptor>(getCoreNames().size());
-            for (SolrCore core : getCores()) {
-              descriptors.add(core.getCoreDescriptor());
-            }
-            return descriptors;
-          }
-        });        
-
+        zkController = new ZkController(this, zookeeperHost, zkClientTimeout,
+            zkClientConnectTimeout, host, hostPort, hostContext,
+            leaderVoteWait, distribUpdateConnTimeout, distribUpdateSoTimeout,
+            new CurrentCoreDescriptorProvider() {
+              
+              @Override
+              public List<CoreDescriptor> getCurrentDescriptors() {
+                List<CoreDescriptor> descriptors = new ArrayList<CoreDescriptor>(
+                    getCoreNames().size());
+                for (SolrCore core : getCores()) {
+                  descriptors.add(core.getCoreDescriptor());
+                }
+                return descriptors;
+              }
+            });
         
         
         if (zkRun != null && zkServer.getServers().size() > 1 && confDir == null && boostrapConf == false) {
@@ -428,6 +433,8 @@ public class CoreContainer
     // now.
     cfg.substituteProperties();
     
+    initShardHandler(cfg);
+    
     allocateLazyCores(cfg);
     
     // Initialize Logging
@@ -486,6 +493,9 @@ public class CoreContainer
     shareSchema = cfg.getBool("solr/cores/@shareSchema", DEFAULT_SHARE_SCHEMA);
     zkClientTimeout = cfg.getInt("solr/cores/@zkClientTimeout",
         DEFAULT_ZK_CLIENT_TIMEOUT);
+    
+    distribUpdateConnTimeout = cfg.getInt("solr/cores/@distribUpdateConnTimeout", 0);
+    distribUpdateSoTimeout = cfg.getInt("solr/cores/@distribUpdateSoTimeout", 0);
     
     hostPort = cfg.get("solr/cores/@hostPort", DEFAULT_HOST_PORT);
     
@@ -687,6 +697,27 @@ public class CoreContainer
         ExecutorUtil.shutdownNowAndAwaitTermination(coreLoadExecutor);
       }
     }
+  }
+
+  protected void initShardHandler(Config cfg) {
+    PluginInfo info = null;
+    if (cfg != null) {
+      Node shfn = cfg.getNode("solr/cores/shardHandlerFactory", false);
+  
+      if (shfn != null) {
+        info = new PluginInfo(shfn, "shardHandlerFactory", false, true);
+      } else {
+        Map m = new HashMap();
+        m.put("class",HttpShardHandlerFactory.class.getName());
+        info = new PluginInfo("shardHandlerFactory", m, null, Collections.<PluginInfo>emptyList());
+      }
+    }
+
+    HttpShardHandlerFactory fac = new HttpShardHandlerFactory();
+    if (info != null) {
+      fac.init(info);
+    }
+    shardHandlerFactory = fac;
   }
 
   private Document copyDoc(Document document) throws TransformerException {
@@ -1568,18 +1599,7 @@ public class CoreContainer
 
   /** The default ShardHandlerFactory used to communicate with other solr instances */
   public ShardHandlerFactory getShardHandlerFactory() {
-    synchronized (this) {
-      if (shardHandlerFactory == null) {
-        Map m = new HashMap();
-        m.put("class",HttpShardHandlerFactory.class.getName());
-        PluginInfo info = new PluginInfo("shardHandlerFactory", m,null,Collections.<PluginInfo>emptyList());
-
-        HttpShardHandlerFactory fac = new HttpShardHandlerFactory();
-        fac.init(info);
-        shardHandlerFactory = fac;
-      }
-      return shardHandlerFactory;
-    }
+    return shardHandlerFactory;
   }
   
   private SolrConfig getSolrConfigFromZk(String zkConfigName, String solrConfigFileName,

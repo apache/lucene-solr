@@ -137,7 +137,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       cc = getCoreContainer();
       
       ZkController zkController = new ZkController(cc, server.getZkAddress(), TIMEOUT, 10000,
-          "127.0.0.1", "8983", "solr", "0", new CurrentCoreDescriptorProvider() {
+          "127.0.0.1", "8983", "solr", "0", 10000, 10000, new CurrentCoreDescriptorProvider() {
             
             @Override
             public List<CoreDescriptor> getCurrentDescriptors() {
@@ -177,7 +177,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       cc = getCoreContainer();
       
       zkController = new ZkController(cc, server.getZkAddress(),
-          TIMEOUT, 10000, "127.0.0.1", "8983", "solr", "0", new CurrentCoreDescriptorProvider() {
+          TIMEOUT, 10000, "127.0.0.1", "8983", "solr", "0", 10000, 10000, new CurrentCoreDescriptorProvider() {
             
             @Override
             public List<CoreDescriptor> getCurrentDescriptors() {
@@ -198,7 +198,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       }
       testFinished = true;
     } finally {
-      if (!testFinished) {
+      if (!testFinished & zkController != null) {
         zkController.getZkClient().printLayoutToStdOut();
       }
       
@@ -214,7 +214,13 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   }
 
   private CoreContainer getCoreContainer() {
-    return new CoreContainer(TEMP_DIR.getAbsolutePath());
+    CoreContainer cc = new CoreContainer(TEMP_DIR.getAbsolutePath()) {
+      {
+        initShardHandler(null);
+      }
+    };
+    
+    return cc;
   }
 
   @Override

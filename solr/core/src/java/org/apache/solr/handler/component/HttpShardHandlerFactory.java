@@ -156,6 +156,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
   @Override
   public void close() {
     try {
+      ExecutorUtil.shutdownNowAndAwaitTermination(commExecutor);
+    } catch (Throwable e) {
+      SolrException.log(log, e);
+    }
+    
+    try {
       defaultClient.getConnectionManager().shutdown();
     } catch (Throwable e) {
       SolrException.log(log, e);
@@ -165,10 +171,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
     } catch (Throwable e) {
       SolrException.log(log, e);
     }
-    try {
-      ExecutorUtil.shutdownNowAndAwaitTermination(commExecutor);
-    } catch (Throwable e) {
-      SolrException.log(log, e);
-    }
+
   }
 }

@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -130,6 +129,8 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
     
     HttpSolrServer baseServer = new HttpSolrServer(baseUrl);
+    baseServer.setConnectionTimeout(15000);
+    baseServer.setSoTimeout(30000);
     baseServer.request(request);
     
     waitForThingsToLevelOut(15);
@@ -157,12 +158,11 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     
     chaosMonkey.killJetty(leaderJetty);
 
-    // we are careful to make sure the downed node is no longer in the state,
-    // because on some systems (especially freebsd w/ blackhole enabled), trying
-    // to talk to a downed node causes grief
-    waitToSeeDownInClusterState(leaderJetty, jetties);
-
-    waitForThingsToLevelOut(45);
+    Thread.sleep(2000);
+    
+    waitForThingsToLevelOut(90);
+    
+    Thread.sleep(1000);
     
     checkShardConsistency(false, true);
     
@@ -220,9 +220,11 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     // kill the current leader
     chaosMonkey.killJetty(leaderJetty);
     
-    waitToSeeDownInClusterState(leaderJetty, jetties);
+    Thread.sleep(3000);
     
-    Thread.sleep(4000);
+    waitForThingsToLevelOut(90);
+    
+    Thread.sleep(2000);
     
     waitForRecoveriesToFinish(false);
 
@@ -250,17 +252,6 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     CloudJettyRunner cjetty = candidates.get(random().nextInt(candidates.size()));
     skipServers.add(cjetty.url + "/");
     return skipServers;
-  }
-
-  private void waitToSeeDownInClusterState(CloudJettyRunner leaderJetty,
-      Set<CloudJettyRunner> jetties) throws InterruptedException {
-
-    for (CloudJettyRunner cjetty : jetties) {
-      waitToSeeNotLive(((SolrDispatchFilter) cjetty.jetty.getDispatchFilter()
-          .getFilter()).getCores().getZkController().getZkStateReader(),
-          leaderJetty);
-    }
-    waitToSeeNotLive(cloudClient.getZkStateReader(), leaderJetty);
   }
   
   protected void indexDoc(List<String> skipServers, Object... fields) throws IOException,
