@@ -856,7 +856,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   
   protected void checkShardConsistency(boolean checkVsControl, boolean verbose)
       throws Exception {
-    SolrParams q = params("q","*:*","fl","id,_version_","rows","100000");
+    SolrParams q = params("q","*:*","fl","id","rows","100000");
 
     SolrDocumentList controlDocList = controlClient.query(q).getResults();
     long docs = controlDocList.getNumFound();
