@@ -117,7 +117,10 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
                   + " failed", t);
         }
         //}
-        workQueue.remove();
+        
+        
+        workQueue.poll();
+       
       } catch (KeeperException e) {
         if (e.code() == KeeperException.Code.SESSIONEXPIRED
             || e.code() == KeeperException.Code.CONNECTIONLOSS) {

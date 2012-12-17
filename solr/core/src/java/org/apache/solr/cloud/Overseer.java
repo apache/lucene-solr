@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -96,7 +97,9 @@ public class Overseer {
                   clusterState = processMessage(clusterState, message, operation);
                   zkClient.setData(ZkStateReader.CLUSTER_STATE,
                       ZkStateReader.toJSON(clusterState), true);
-                  workQueue.remove();
+                  
+                  workQueue.poll();
+                  
                   head = workQueue.peek();
                 }
               }
@@ -132,7 +135,8 @@ public class Overseer {
                 
                 clusterState = processMessage(clusterState, message, operation);
                 workQueue.offer(head);
-                stateUpdateQueue.remove();
+                
+                stateUpdateQueue.poll();
                 head = stateUpdateQueue.peek();
               }
               zkClient.setData(ZkStateReader.CLUSTER_STATE,
