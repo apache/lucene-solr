@@ -204,6 +204,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       setName("FullThrottleStopableIndexingThread");
       setDaemon(true);
       this.clients = clients;
+      HttpClientUtil.setConnectionTimeout(httpClient, 15000);
+      HttpClientUtil.setSoTimeout(httpClient, 15000);
       suss = new ConcurrentUpdateSolrServer(
           ((HttpSolrServer) clients.get(0)).getBaseURL(), httpClient, 8,
           2) {

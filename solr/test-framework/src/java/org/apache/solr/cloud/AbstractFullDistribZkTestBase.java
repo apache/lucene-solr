@@ -219,7 +219,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     server.getLbServer().getHttpClient().getParams()
         .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 5000);
     server.getLbServer().getHttpClient().getParams()
-        .setParameter(CoreConnectionPNames.SO_TIMEOUT, 20000);
+        .setParameter(CoreConnectionPNames.SO_TIMEOUT, 30000);
     return server;
   }
   
@@ -1157,7 +1157,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         retry  = true;
       }
       cnt++;
-      if (cnt > 4) break;
+      if (cnt > 10) break;
       Thread.sleep(2000);
     } while (retry);
   }
@@ -1210,7 +1210,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           + DEFAULT_COLLECTION;
       HttpSolrServer s = new HttpSolrServer(url);
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      s.setSoTimeout(40000);
+      s.setSoTimeout(15000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;
@@ -1218,28 +1218,5 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       throw new RuntimeException(ex);
     }
   }
-  
-  protected void waitToSeeNotLive(ZkStateReader zkStateReader,
-      CloudJettyRunner cjetty) throws InterruptedException {
-    waitToSeeNotLive(zkStateReader, cjetty, 0);
-  }
-  
-  protected void waitToSeeNotLive(ZkStateReader zkStateReader,
-      CloudJettyRunner cjetty, int cnt) throws InterruptedException {
-    int tries = 0;
-    ClusterState clusterState = zkStateReader.getClusterState();
-    while (clusterState.liveNodesContain(cjetty.info
-        .getStr(ZkStateReader.NODE_NAME_PROP))) {
-      System.out.println("scs:"
-          + zkStateReader.getClusterState().getZkClusterStateVersion() + " "
-          + zkStateReader.getClusterState().getLiveNodes());
-      System.out.println("see live nodes:"
-          + zkStateReader.getClusterState().getLiveNodes());
-      if (tries++ == 30) {
-        fail("Shard still reported as live in zk - " + cnt + " jetty");
-      }
-      Thread.sleep(1000);
-      clusterState = zkStateReader.getClusterState();
-    }
-  }
+
 }

@@ -176,9 +176,7 @@ public class JettySolrRunner {
       if (threadPool != null) {
         threadPool.setMaxThreads(10000);
         threadPool.setMaxIdleTimeMs(5000);
-        if (!stopAtShutdown) {
-          threadPool.setMaxStopTimeMs(100);
-        }
+        threadPool.setMaxStopTimeMs(30000);
       }
       
       server.setConnectors(new Connector[] {connector});

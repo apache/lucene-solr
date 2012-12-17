@@ -166,7 +166,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     zkController = req.getCore().getCoreDescriptor().getCoreContainer().getZkController();
     if (zkEnabled) {
       numNodes =  zkController.getZkStateReader().getClusterState().getLiveNodes().size();
-      cmdDistrib = new SolrCmdDistributor(numNodes, coreDesc.getCoreContainer().getZkController().getCmdDistribExecutor());
+      cmdDistrib = new SolrCmdDistributor(numNodes, coreDesc.getCoreContainer().getZkController().getUpdateShardHandler());
     }
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
 

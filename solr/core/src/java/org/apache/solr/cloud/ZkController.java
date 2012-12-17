@@ -21,8 +21,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
-import java.net.URLEncoder;
 import java.net.NetworkInterface;
+import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -31,9 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -55,16 +52,14 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-
 import org.apache.solr.core.Config;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DOMUtil;
-import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -104,10 +99,6 @@ public final class ZkController {
   public final static String COLLECTION_PARAM_PREFIX="collection.";
   public final static String CONFIGNAME_PROP="configName";
 
-  private ThreadPoolExecutor cmdDistribExecutor = new ThreadPoolExecutor(
-      0, Integer.MAX_VALUE, 5, TimeUnit.SECONDS,
-      new SynchronousQueue<Runnable>(), new DefaultSolrThreadFactory(
-          "cmdDistribExecutor"));
   
   private final Map<String, ElectionContext> electionContexts = Collections.synchronizedMap(new HashMap<String, ElectionContext>());
   
@@ -141,9 +132,11 @@ public final class ZkController {
   private int clientTimeout;
 
   private volatile boolean isClosed;
+  
+  private UpdateShardHandler updateShardHandler;
 
   public ZkController(final CoreContainer cc, String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
-      String localHostContext, String leaderVoteWait, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
+      String localHostContext, String leaderVoteWait, int distribUpdateConnTimeout, int distribUpdateSoTimeout, final CurrentCoreDescriptorProvider registerOnReconnect) throws InterruptedException,
       TimeoutException, IOException {
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
     this.cc = cc;
@@ -159,6 +152,7 @@ public final class ZkController {
       localHostContext = localHostContext.substring(0,localHostContext.length()-1);
     }
     
+    updateShardHandler = new UpdateShardHandler(distribUpdateConnTimeout, distribUpdateSoTimeout);
     
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
@@ -315,14 +309,6 @@ public final class ZkController {
   public void close() {
     this.isClosed = true;
     
-    if (cmdDistribExecutor != null) {
-      try {
-        ExecutorUtil.shutdownNowAndAwaitTermination(cmdDistribExecutor);
-      } catch (Throwable e) {
-        SolrException.log(log, e);
-      }
-    }
-    
     for (ElectionContext context : electionContexts.values()) {
       try {
         context.close();
@@ -336,7 +322,20 @@ public final class ZkController {
     } catch(Throwable t) {
       log.error("Error closing overseer", t);
     }
-    zkClient.close();
+    
+    try {
+      zkClient.close();;
+    } catch(Throwable t) {
+      log.error("Error closing zkClient", t);
+    } 
+    
+    if (updateShardHandler != null) {
+      try {
+        updateShardHandler.close();
+      } catch(Throwable t) {
+        log.error("Error closing updateShardHandler", t);
+      }
+    }
   }
 
   /**
@@ -1178,7 +1177,7 @@ public final class ZkController {
       HttpSolrServer server = null;
       server = new HttpSolrServer(leaderBaseUrl);
       server.setConnectionTimeout(45000);
-      server.setSoTimeout(45000);
+      server.setSoTimeout(120000);
       WaitForState prepCmd = new WaitForState();
       prepCmd.setCoreName(leaderCoreName);
       prepCmd.setNodeName(getNodeName());
@@ -1293,8 +1292,8 @@ public final class ZkController {
   }
 
   // may return null if not in zk mode
-  public ThreadPoolExecutor getCmdDistribExecutor() {
-    return cmdDistribExecutor;
+  public UpdateShardHandler getUpdateShardHandler() {
+    return updateShardHandler;
   }
 
   /**

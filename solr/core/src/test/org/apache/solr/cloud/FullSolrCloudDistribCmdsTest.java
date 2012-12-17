@@ -238,7 +238,8 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   private void testIndexingWithSuss() throws Exception {
     ConcurrentUpdateSolrServer suss = new ConcurrentUpdateSolrServer(
         ((HttpSolrServer) clients.get(0)).getBaseURL(), 3, 1);
-    
+    suss.setConnectionTimeout(15000);
+    suss.setSoTimeout(30000);
     for (int i=100; i<150; i++) {
       index_specific(suss, id, i);      
     }

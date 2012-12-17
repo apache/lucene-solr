@@ -200,26 +200,6 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     jetties.addAll(shardToJetty.get(SHARD2));
     jetties.remove(deadShard);
     
-    // wait till live nodes drops by 1
-    int liveNodes = cloudClient.getZkStateReader().getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true).size();
-    int tries = 50;
-    while(oldLiveNodes == liveNodes) {
-      Thread.sleep(100);
-      if (tries-- == 0) {
-        fail("We expected a node to drop...");
-      }
-      liveNodes = cloudClient.getZkStateReader().getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true).size();
-    }
-    assertEquals(4, liveNodes);
-
-    int cnt = 0;
-    for (CloudJettyRunner cjetty : jetties) {
-      waitToSeeNotLive(((SolrDispatchFilter) cjetty.jetty.getDispatchFilter()
-          .getFilter()).getCores().getZkController().getZkStateReader(),
-          deadShard, cnt++);
-    }
-    waitToSeeNotLive(cloudClient.getZkStateReader(), deadShard);
-
     // ensure shard is dead
     try {
       index_specific(deadShard.client.solrClient, id, 999, i1, 107, t1,
@@ -269,7 +249,14 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
     // ureq.setParam("update.chain", DISTRIB_UPDATE_CHAIN);
-    ureq.process(cloudClient);
+    
+    try {
+      ureq.process(cloudClient);
+    } catch(SolrServerException e){
+      // try again
+      Thread.sleep(500);
+      ureq.process(cloudClient);
+    }
     
     commit();
     
@@ -319,14 +306,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     
     // recover over 100 docs so we do more than just peer sync (replicate recovery)
     chaosMonkey.stopJetty(deadShard);
-    
-    for (CloudJettyRunner cjetty : jetties) {
-      waitToSeeNotLive(((SolrDispatchFilter) cjetty.jetty.getDispatchFilter()
-          .getFilter()).getCores().getZkController().getZkStateReader(),
-          deadShard);
-    }
-    waitToSeeNotLive(cloudClient.getZkStateReader(), deadShard);
-    
+
     for (int i = 0; i < 226; i++) {
       doc = new SolrInputDocument();
       doc.addField("id", 2000 + i);

@@ -30,11 +30,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
 
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequestExt;
@@ -50,18 +47,10 @@ import org.slf4j.LoggerFactory;
 
 
 public class SolrCmdDistributor {
-  private static final int MAX_RETRIES_ON_FORWARD = 10;
+  private static final int MAX_RETRIES_ON_FORWARD = 15;
   public static Logger log = LoggerFactory.getLogger(SolrCmdDistributor.class);
 
-  static final HttpClient client;
   static AdjustableSemaphore semaphore = new AdjustableSemaphore(8);
-  
-  static {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 500);
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 16);
-    client = HttpClientUtil.createClient(params);
-  }
   
   CompletionService<Request> completionService;
   Set<Future<Request>> pending;
@@ -73,6 +62,7 @@ public class SolrCmdDistributor {
   
   private final Map<Node,List<AddRequest>> adds = new HashMap<Node,List<AddRequest>>();
   private final Map<Node,List<DeleteRequest>> deletes = new HashMap<Node,List<DeleteRequest>>();
+  private UpdateShardHandler updateShardHandler;
   
   class AddRequest {
     AddUpdateCommand cmd;
@@ -88,14 +78,15 @@ public class SolrCmdDistributor {
     public boolean abortCheck();
   }
   
-  public SolrCmdDistributor(int numHosts, ThreadPoolExecutor executor) {
+  public SolrCmdDistributor(int numHosts, UpdateShardHandler updateShardHandler) {
     int maxPermits = Math.max(16, numHosts * 16);
     // limits how many tasks can actually execute at once
     if (maxPermits != semaphore.getMaxPermits()) {
       semaphore.setMaxPermits(maxPermits);
     }
-
-    completionService = new ExecutorCompletionService<Request>(executor);
+    
+    this.updateShardHandler = updateShardHandler;
+    completionService = new ExecutorCompletionService<Request>(updateShardHandler.getCmdDistribExecutor());
     pending = new HashSet<Future<Request>>();
   }
   
@@ -329,7 +320,7 @@ public class SolrCmdDistributor {
           }
   
           HttpSolrServer server = new HttpSolrServer(fullUrl,
-              client);
+              updateShardHandler.getHttpClient());
           
           if (Thread.currentThread().isInterrupted()) {
             clonedRequest.rspCode = 503;
@@ -363,7 +354,7 @@ public class SolrCmdDistributor {
       pending.add(completionService.submit(task));
     } catch (RejectedExecutionException e) {
       semaphore.release();
-      throw e;
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Shutting down", e);
     }
     
   }

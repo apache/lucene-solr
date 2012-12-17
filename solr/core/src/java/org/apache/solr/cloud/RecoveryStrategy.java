@@ -175,7 +175,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   private void commitOnLeader(String leaderUrl) throws SolrServerException, IOException {
     HttpSolrServer server = new HttpSolrServer(leaderUrl);
     server.setConnectionTimeout(30000);
-    server.setSoTimeout(30000);
+    server.setSoTimeout(60000);
     UpdateRequest ureq = new UpdateRequest();
     ureq.setParams(new ModifiableSolrParams());
     ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -190,7 +190,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       IOException {
     HttpSolrServer server = new HttpSolrServer(leaderBaseUrl);
     server.setConnectionTimeout(45000);
-    server.setSoTimeout(45000);
+    server.setSoTimeout(120000);
     WaitForState prepCmd = new WaitForState();
     prepCmd.setCoreName(leaderCoreName);
     prepCmd.setNodeName(zkController.getNodeName());
