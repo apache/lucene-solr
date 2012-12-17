@@ -796,8 +796,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       String url = getUrlFromZk(collection);
 
       HttpSolrServer collectionClient = new HttpSolrServer(url);
-      collectionClient.setConnectionTimeout(15000);
-      collectionClient.setSoTimeout(45000);
+      collectionClient.setConnectionTimeout(20000);
+      collectionClient.setSoTimeout(60000);
       // poll for a second - it can take a moment before we are ready to serve
       waitForNon403or404or503(collectionClient);
     }
