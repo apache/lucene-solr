@@ -204,12 +204,15 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     
     commit();
     
+    Thread.sleep(100);
+    
     waitForRecoveriesToFinish(false);
     
     // shard should be inconsistent
     shardFailMessage = checkShardConsistency("shard1", true);
-    assertNotNull(shardFailMessage);
-    
+    assertNotNull(
+        "shard1 shoul have just been set up to be inconsistent - but it's still consistent",
+        shardFailMessage); 
     
     jetties = new HashSet<CloudJettyRunner>();
     jetties.addAll(shardToJetty.get("shard1"));
