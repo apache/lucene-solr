@@ -85,8 +85,9 @@ public abstract class UpdateHandler implements SolrInfoMBean {
 
   // not thread safe - for startup
   private void clearLog(PluginInfo ulogPluginInfo) {
-    if (ulog != null) {
-      String[] files = UpdateLog.getLogList(UpdateLog.getTlogDir(ulogPluginInfo));
+    File tlogDir = UpdateLog.getTlogDir(ulogPluginInfo);
+    if (tlogDir.exists()) {
+      String[] files = UpdateLog.getLogList(tlogDir);
       for (String file : files) {
         File f = new File(file);
         boolean s = f.delete();
