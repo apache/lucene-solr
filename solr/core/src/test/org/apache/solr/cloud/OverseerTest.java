@@ -303,10 +303,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
         reader.updateClusterState(true);
         ClusterState state = reader.getClusterState();
         Map<String,Slice> slices = state.getSlicesMap("collection1");
-        for (String name : slices.keySet()) {
-          cloudStateSliceCount += slices.get(name).getReplicasMap().size();
+        if (slices != null) {
+          for (String name : slices.keySet()) {
+            cloudStateSliceCount += slices.get(name).getReplicasMap().size();
+          }
+          if (coreCount == cloudStateSliceCount) break;
         }
-        if (coreCount == cloudStateSliceCount) break;
+
         Thread.sleep(200);
       }
       assertEquals("Unable to verify all cores have been assigned an id in cloudstate", 
