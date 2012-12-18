@@ -628,8 +628,8 @@ public final class ZkController {
 
 
     if (log.isInfoEnabled()) {
-        log.info("Register shard - core:" + coreName + " address:"
-            + baseUrl + " shardId:" + shardId);
+        log.info("Register replica - core:" + coreName + " address:"
+            + baseUrl + " collection:" + cloudDesc.getCollectionName() + " shard:" + shardId);
     }
 
     ZkNodeProps leaderProps = new ZkNodeProps(props);
