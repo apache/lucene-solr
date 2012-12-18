@@ -114,7 +114,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     waitForRecoveriesToFinish(false);
 
     // shard should be inconsistent
-    String shardFailMessage = checkShardConsistency("shard1", true);
+    String shardFailMessage = checkShardConsistency("shard1", true, false);
     assertNotNull(shardFailMessage);
     
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -207,7 +207,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     waitForRecoveriesToFinish(false);
     
     // shard should be inconsistent
-    shardFailMessage = checkShardConsistency("shard1", true);
+    shardFailMessage = checkShardConsistency("shard1", true, false);
     assertNotNull(shardFailMessage);
     
     

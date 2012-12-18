@@ -89,7 +89,7 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
 
     // test that leader and replica have same doc count
     
-    checkShardConsistency("shard1", false); 
+    checkShardConsistency("shard1", false, false);
     SolrQuery query = new SolrQuery("*:*");
     query.setParam("distrib", "false");
     long client1Docs = shardToJetty.get("shard1").get(0).client.solrClient.query(query).getResults().getNumFound();
