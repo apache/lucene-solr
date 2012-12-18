@@ -82,9 +82,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
     private void deleteNode(final String path) {
       try {
-        Stat stat = zkClient.exists(path, null, false);
+        Stat stat = zkClient.exists(path, null, true);
         if (stat != null) {
-          zkClient.delete(path, stat.getVersion(), false);
+          zkClient.delete(path, stat.getVersion(), true);
         }
       } catch (KeeperException e) {
         fail("Unexpected KeeperException!" + e);
