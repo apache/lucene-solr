@@ -49,6 +49,8 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   @Before
   @Override
   public void setUp() throws Exception {
+    useFactory("solr.StandardDirectoryFactory");
+
     super.setUp();
     
     System.setProperty("numShards", Integer.toString(sliceCount));
