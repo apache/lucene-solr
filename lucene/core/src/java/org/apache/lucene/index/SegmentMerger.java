@@ -174,6 +174,7 @@ final class SegmentMerger {
             }
           }
         }
+        success = true;
       } finally {
         if (success) {
           IOUtils.close(consumer);
@@ -202,6 +203,7 @@ final class SegmentMerger {
             consumer.mergeNumericField(field, mergeState, toMerge);
           }
         }
+        success = true;
       } finally {
         if (success) {
           IOUtils.close(consumer);
