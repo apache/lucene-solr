@@ -371,10 +371,7 @@
   
   <target name="jenkins-nightly">
     <antcall>
-      <!-- raise memory limits a bit, this only works with OpenJDK / Oracle JDK: -->
       <param name="tests.nightly" value="true"/>
-      <param name="tests.heapsize" value="768m"/>
-      <param name="args" value="-XX:MaxPermSize=192m"/>
       <target name="jenkins-hourly"/>
     </antcall>
   </target>
