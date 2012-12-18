@@ -37,6 +37,10 @@ Bug Fixes:
 * LUCENE-4411: when sampling is enabled for a FacetRequest, its depth
   parameter is reset to the default (1), even if set otherwise.
   (Gilad Barkai via Shai Erera)
+
+* LUCENE-4635: Fixed ArrayIndexOutOfBoundsException when in-memory
+  terms index requires more than 2.1 GB RAM (indices with billions of
+  terms).  (Tom Burton-West via Mike McCandless)
   
 Documentation
 

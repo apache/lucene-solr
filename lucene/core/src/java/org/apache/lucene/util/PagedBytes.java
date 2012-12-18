@@ -411,7 +411,7 @@ public final class PagedBytes {
 
     /** Returns the current byte position. */
     public long getPosition() {
-      return currentBlockIndex * blockSize + currentBlockUpto;
+      return ((long) currentBlockIndex * blockSize) + currentBlockUpto;
     }
   
     /** Seek to a position previously obtained from
@@ -516,7 +516,7 @@ public final class PagedBytes {
       if (currentBlock == null) {
         return 0;
       } else {
-        return blocks.size() * blockSize + upto;
+        return ((long) blocks.size() * blockSize) + upto;
       }
     }
   }
