@@ -369,6 +369,16 @@
   <!-- Jenkins tasks -->
   <target name="jenkins-hourly" depends="clean,test-with-heapdumps,validate,documentation-lint,jar-checksums,check-svn-working-copy"/>
   
+  <target name="jenkins-nightly">
+    <antcall>
+      <!-- raise memory limits a bit, this only works with OpenJDK / Oracle JDK: -->
+      <param name="tests.nightly" value="true"/>
+      <param name="tests.heapsize" value="768m"/>
+      <param name="args" value="-XX:MaxPermSize=192m"/>
+      <target name="jenkins-hourly"/>
+    </antcall>
+  </target>
+  
   <target name="jenkins-maven-nightly" depends="clean,clean-maven-build">
     <!-- step 1: build, install, deploy, and validate ANT-generated maven artifacts: -->
     <antcall>
