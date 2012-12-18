@@ -1395,8 +1395,18 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
   
-  public static File getTlogDir(PluginInfo info) {
-    String dataDir = (String)info.initArgs.get("dir");
+  public static File getTlogDir(SolrCore core, PluginInfo info) {
+    String dataDir = (String) info.initArgs.get("dir");
+    if (dataDir == null) {
+      String ulogDir = core.getCoreDescriptor().getUlogDir();
+      if (ulogDir != null) {
+        dataDir = ulogDir;
+      }
+      
+      if (dataDir == null || dataDir.length() == 0) {
+        dataDir = core.getDataDir();
+      }
+    }
     return new File(dataDir, TLOG_NAME);
   }
   
