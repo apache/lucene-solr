@@ -106,7 +106,7 @@
   </condition>
   <property name="tests.heapsize" value="512M"/>
   
-  <condition property="tests.clover.args" value="-XX:ReservedCodeCacheSize=128m">
+  <condition property="tests.clover.args" value="-XX:ReservedCodeCacheSize=128m -XX:MaxPermSize=192m">
     <isset property="run.clover"/>
   </condition>
   <property name="tests.clover.args" value=""/>
