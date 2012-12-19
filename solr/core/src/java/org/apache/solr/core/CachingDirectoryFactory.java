@@ -176,7 +176,11 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     List<CloseListener> listeners = closeListeners.remove(cacheValue.directory);
     if (listeners != null) {
       for (CloseListener listener : listeners) {
-        listener.preClose();
+        try {
+          listener.preClose();
+        } catch (Throwable t) {
+          SolrException.log(log, "Error executing preClose for directory", t);
+        }
       }
     }
     try {
@@ -188,7 +192,11 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     
     if (listeners != null) {
       for (CloseListener listener : listeners) {
-        listener.postClose();
+        try {
+          listener.postClose();
+        } catch (Throwable t) {
+          SolrException.log(log, "Error executing postClose for directory", t);
+        }
       }
     }
   }
