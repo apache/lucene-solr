@@ -259,6 +259,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       controlClientCloud.connect();
       waitForCollection(controlClientCloud.getZkStateReader(), "control_collection", 0);
       // NOTE: we are skipping creation of the chaos monkey by returning here
+      cloudClient = controlClientCloud;  // temporary - some code needs/uses cloudClient
       return;
     }
 
@@ -326,10 +327,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (checkCreatedVsState) {
       // now wait until we see that the number of shards in the cluster state
       // matches what we expect
-      int numShards = getNumShards(DEFAULT_COLLECTION);
+      int numShards = getTotalReplicas(DEFAULT_COLLECTION);
       int retries = 0;
       while (numShards != shardCount) {
-        numShards = getNumShards(DEFAULT_COLLECTION);
+        numShards = getTotalReplicas(DEFAULT_COLLECTION);
         if (numShards == shardCount) break;
         if (retries++ == 60) {
           printLayoutOnTearDown = true;
@@ -361,17 +362,53 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return jettys;
   }
 
-  protected int getNumShards(String collection) {
+
+  protected SolrServer startCloudJetty(String collection, String shard) throws Exception {
+
+    // TODO: use the collection string!!!!
+    collection = DEFAULT_COLLECTION;
+
+    int totalReplicas = getTotalReplicas(collection);
+
+
+    int cnt = this.jettyIntCntr.incrementAndGet();
+      File jettyDir = new File(TEMP_DIR,
+          getClass().getName() + "-jetty" + cnt + "-" + System.currentTimeMillis());
+      jettyDir.mkdirs();
+      org.apache.commons.io.FileUtils.copyDirectory(new File(getSolrHome()), jettyDir);
+      JettySolrRunner j = createJetty(jettyDir, testDir + "/jetty" + cnt, shard, "solrconfig.xml", null);
+      jettys.add(j);
+      SolrServer client = createNewSolrServer(j.getLocalPort());
+      clients.add(client);
+
+    int retries = 60;
+    while (--retries >= 0) {
+      // total replicas changed.. assume it was us
+      if (getTotalReplicas(collection) != totalReplicas) {
+       break;
+      }
+      Thread.sleep(500);
+    }
+
+    if (retries <= 0) {
+      fail("Timeout waiting for " + j + " to appear in clusterstate");
+      printLayout();
+    }
+
+    updateMappingsFromZk(this.jettys, this.clients);
+    return client;
+  }
+
+
+  /* Total number of replicas (number of cores serving an index to the collection) shown by the cluster state */
+  protected int getTotalReplicas(String collection) {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(collection);
-    if (slices == null) {
-      throw new IllegalArgumentException("Could not find collection:" + collection);
-    }
+    DocCollection coll = zkStateReader.getClusterState().getCollectionStates().get(collection);
+    if (coll == null) return 0;  // support for when collection hasn't been created yet
     int cnt = 0;
-    for (Map.Entry<String,Slice> entry : slices.entrySet()) {
-      cnt += entry.getValue().getReplicasMap().size();
+    for (Slice slices : coll.getSlices()) {
+      cnt += slices.getReplicas().size();
     }
-    
     return cnt;
   }
   
@@ -842,24 +879,24 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     
   }
   
-  private String toStr(SolrDocumentList lst) {
-    if (lst.size() <= 10) return lst.toString();
+  private String toStr(SolrDocumentList lst, int maxSz) {
+    if (lst.size() <= maxSz) return lst.toString();
 
     StringBuilder sb = new StringBuilder("SolrDocumentList[sz=" + lst.size());
     if (lst.size() != lst.getNumFound()) {
       sb.append(" numFound=" + lst.getNumFound());
     }
     sb.append("]=");
-    sb.append(lst.subList(0,5).toString());
+    sb.append(lst.subList(0,maxSz/2).toString());
     sb.append(" , [...] , ");
-    sb.append(lst.subList(lst.size()-5, lst.size()).toString());
+    sb.append(lst.subList(lst.size()-maxSz/2, lst.size()).toString());
 
     return sb.toString();
   }
 
   Set<Map> showDiff(SolrDocumentList a, SolrDocumentList b, String aName, String bName) {
-    System.err.println("######"+aName+ ": " + toStr(a));
-    System.err.println("######"+bName+ ": " + toStr(b));
+    System.err.println("######"+aName+ ": " + toStr(a,10));
+    System.err.println("######"+bName+ ": " + toStr(b,10));
     System.err.println("###### sizes=" + a.size() + "," + b.size());
     
     Set<Map> setA = new HashSet<Map>();
