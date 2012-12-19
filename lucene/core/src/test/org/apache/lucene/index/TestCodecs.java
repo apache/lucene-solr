@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -31,7 +32,9 @@ import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.codecs.TermsConsumer;
 import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -629,5 +632,34 @@ public class TestCodecs extends LuceneTestCase {
       field.write(consumer);
     }
     consumer.close();
+  }
+  
+  public void testDocsOnlyFreq() throws Exception {
+    // tests that when fields are indexed with DOCS_ONLY, the Codec
+    // returns 1 in docsEnum.freq()
+    Directory dir = newDirectory();
+    Random random = random();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random)));
+    // we don't need many documents to assert this, but don't use one document either
+    int numDocs = atLeast(random, 50);
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      doc.add(new StringField("f", "doc", Store.NO));
+      writer.addDocument(doc);
+    }
+    writer.close();
+    
+    Term term = new Term("f", new BytesRef("doc"));
+    DirectoryReader reader = DirectoryReader.open(dir);
+    for (AtomicReaderContext ctx : reader.leaves()) {
+      DocsEnum de = ctx.reader().termDocsEnum(term);
+      while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+        assertEquals("wrong freq for doc " + de.docID(), 1, de.freq());
+      }
+    }
+    reader.close();
+    
+    dir.close();
   }
 }
