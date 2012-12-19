@@ -121,8 +121,6 @@ public class PossibilityIterator implements Iterator<RankedSpellPossibility> {
 	 * Rank here is the sum of each selected term's position in its respective
 	 * LinkedHashMap.
 	 * </p>
-	 * 
-	 * @return
 	 */
 	private RankedSpellPossibility internalNext() {
 		if (done) {
