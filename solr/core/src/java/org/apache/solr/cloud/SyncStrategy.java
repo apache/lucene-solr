@@ -271,7 +271,7 @@ public class SyncStrategy {
   
   public void close() {
     this.isClosed = true;
-    ExecutorUtil.shutdownNowAndAwaitTermination(recoveryCmdExecutor);
+    ExecutorUtil.shutdownAndAwaitTermination(recoveryCmdExecutor);
   }
   
   private void requestRecovery(final ZkNodeProps leaderProps, final String baseUrl, final String coreName) throws SolrServerException, IOException {

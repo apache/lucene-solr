@@ -308,24 +308,11 @@ public class JettySolrRunner {
   }
 
   public void stop() throws Exception {
-    // we try and do a bunch of extra stop stuff because
-    // jetty doesn't like to stop if it started
-    // and ended up in a failure state (like when it cannot get the port)
-    if (server.getState().equals(Server.FAILED)) {
-      Connector[] connectors = server.getConnectors();
-      for (Connector connector : connectors) {
-        connector.stop();
-      }
-    }
+
     Filter filter = dispatchFilter.getFilter();
-    ThreadPool threadPool = server.getThreadPool();
-    server.getServer().stop();
+
     server.stop();
-    if (threadPool instanceof QueuedThreadPool) {
-      ((QueuedThreadPool) threadPool).setMaxStopTimeMs(30000);
-      ((QueuedThreadPool) threadPool).stop();
-      ((QueuedThreadPool) threadPool).join();
-    }
+
     //server.destroy();
     if (server.getState().equals(Server.FAILED)) {
       filter.destroy();
