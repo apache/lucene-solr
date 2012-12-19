@@ -366,6 +366,9 @@ Bug Fixes
 * SOLR-4198: OverseerCollectionProcessor should implement ClosableThread.
   (Mark Miller)
 
+* SOLR-4213: Directories that are not shutdown until DirectoryFactory#close 
+  do not have close listeners called on them. (Mark Miller)
+
 Other Changes
 ----------------------
 
