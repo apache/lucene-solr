@@ -41,8 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -460,6 +459,9 @@ public class CoreContainer
       if (fname != null) {
         if ("JUL".equalsIgnoreCase(fname)) {
           logging = new JulWatcher(slf4jImpl);
+//      else if( "Log4j".equals(fname) ) {
+//        logging = new Log4jWatcher(slf4jImpl);
+//      }
         } else {
           try {
             logging = loader.newInstance(fname, LogWatcher.class);
@@ -546,14 +548,11 @@ public class CoreContainer
         XPathConstants.NODESET);
     
     // setup executor to load cores in parallel
-    coreLoadExecutor = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
-        TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+    coreLoadExecutor = new ThreadPoolExecutor(coreLoadThreads, coreLoadThreads, 1,
+        TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
         new DefaultSolrThreadFactory("coreLoadExecutor"));
     try {
-      // 4 threads at a time max
-      final AdjustableSemaphore semaphore = new AdjustableSemaphore(
-          coreLoadThreads);
-      
+
       CompletionService<SolrCore> completionService = new ExecutorCompletionService<SolrCore>(
           coreLoadExecutor);
       Set<Future<SolrCore>> pending = new HashSet<Future<SolrCore>>();
@@ -618,8 +617,8 @@ public class CoreContainer
                 .equalsIgnoreCase(opt)) ? true : false);
           }
           
-          if (p.isLoadOnStartup()) { // Just like current
-                                                         // case.
+          if (p.isLoadOnStartup()) { // The normal case
+
             Callable<SolrCore> task = new Callable<SolrCore>() {
               @Override
               public SolrCore call() {
@@ -638,26 +637,13 @@ public class CoreContainer
                     c.close();
                   }
                 }
-                semaphore.release();
-                
                 return c;
               }
             };
-            
-            try {
-              semaphore.acquire();
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
-              throw new SolrException(ErrorCode.SERVER_ERROR,
-                  "Interrupted while loading SolrCore(s)", e);
-            }
-            
-            try {
-              pending.add(completionService.submit(task));
-            } catch (RejectedExecutionException e) {
-              semaphore.release();
-              throw e;
-            }
+
+
+            pending.add(completionService.submit(task));
+
             
           } else {
             // Store it away for later use. includes non-swappable but not
@@ -682,14 +668,12 @@ public class CoreContainer
               coreToOrigName.put(c, c.getName());
             }
           } catch (ExecutionException e) {
-            // shouldn't happen since we catch exceptions ourselves
-            SolrException.log(SolrCore.log,
-                "error sending update request to shard", e);
+            SolrException.log(SolrCore.log, "error loading core", e);
           }
           
         } catch (InterruptedException e) {
           throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-              "interrupted waiting for shard update response", e);
+              "interrupted while loading core", e);
         }
       }
     } finally {
@@ -1275,7 +1259,7 @@ public class CoreContainer
     synchronized (cores) {
       core = cores.get(name);
       if (core != null) {
-        core.open();
+        core.open();    // increment the ref count while still synchronized
         return core;
       }
     }
