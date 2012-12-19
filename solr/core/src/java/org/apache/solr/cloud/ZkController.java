@@ -1062,7 +1062,7 @@ public final class ZkController {
 
   private String doGetShardIdProcess(String coreName, CloudDescriptor descriptor) {
     final String shardZkNodeName = getNodeName() + "_" + coreName;
-    int retryCount = 120;
+    int retryCount = 320;
     while (retryCount-- > 0) {
       final String shardId = zkStateReader.getClusterState().getShardId(
           shardZkNodeName);
@@ -1070,7 +1070,7 @@ public final class ZkController {
         return shardId;
       }
       try {
-        Thread.sleep(500);
+        Thread.sleep(1000);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
