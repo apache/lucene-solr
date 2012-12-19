@@ -156,7 +156,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
   @Override
   public void close() {
     try {
-      ExecutorUtil.shutdownNowAndAwaitTermination(commExecutor);
+      ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
     } catch (Throwable e) {
       SolrException.log(log, e);
     }
