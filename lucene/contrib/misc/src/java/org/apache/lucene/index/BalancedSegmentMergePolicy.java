@@ -22,6 +22,9 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.lucene.index.SerialMergeScheduler; // javadocs
+import org.apache.lucene.index.TieredMergePolicy; // javadocs
+
 /**
  * Merge policy that tries to balance not doing large
  * segment merges with not accumulating too many segments in
