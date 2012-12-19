@@ -921,7 +921,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       System.err.println("###### Only in " + bName + ": " + onlyInB);
     }
 
-    onlyInA.addAll(b);
+    onlyInA.addAll(onlyInB);
     return onlyInA;
   }
 
