@@ -32,6 +32,8 @@ import java.util.Set;
 
 public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
 
+  String collection = DEFAULT_COLLECTION;  // enable this to be configurable (more work needs to be done)
+
   @BeforeClass
   public static void beforeShardHashingTest() throws Exception {
     useFactory(null);
@@ -51,7 +53,7 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
       testFinished = true;
     } finally {
       if (!testFinished) {
-        printLayoutOnTearDown = true;
+        printLayout();
       }
     }
   }
@@ -59,8 +61,9 @@ public class ShardRoutingCustomTest extends AbstractFullDistribZkTestBase {
   private void doCustomSharding() throws Exception {
     printLayout();
 
+    startCloudJetty(collection, "shardA");
 
-
+    printLayout();
   }
 
 
