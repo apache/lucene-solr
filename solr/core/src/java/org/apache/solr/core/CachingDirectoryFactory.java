@@ -138,7 +138,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           
           assert val.refCnt == 0 : val.refCnt;
           log.info("Closing directory when closing factory:" + val.path);
-          val.directory.close();
+          closeDirectory(val);
         } catch (Throwable t) {
           SolrException.log(log, "Error closing directory", t);
         }
@@ -164,28 +164,31 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
       if (cacheValue.refCnt == 0 && cacheValue.doneWithDir) {
         log.info("Closing directory:" + cacheValue.path);
-        List<CloseListener> listeners = closeListeners.remove(directory);
-        if (listeners != null) {
-          for (CloseListener listener : listeners) {
-            listener.preClose();
-          }
-        }
-        try {
-          log.info("Closing directory:" + cacheValue.path);
-          directory.close();
-        } catch (Throwable t) {
-          SolrException.log(log, "Error closing directory", t);
-        }
-
-        if (listeners != null) {
-          for (CloseListener listener : listeners) {
-            listener.postClose();
-          }
-          closeListeners.remove(directory);
-        }
+        closeDirectory(cacheValue);
         
         byDirectoryCache.remove(directory);
         byPathCache.remove(cacheValue.path);
+      }
+    }
+  }
+
+  private void closeDirectory(CacheValue cacheValue) {
+    List<CloseListener> listeners = closeListeners.remove(cacheValue.directory);
+    if (listeners != null) {
+      for (CloseListener listener : listeners) {
+        listener.preClose();
+      }
+    }
+    try {
+      log.info("Closing directory:" + cacheValue.path);
+      cacheValue.directory.close();
+    } catch (Throwable t) {
+      SolrException.log(log, "Error closing directory", t);
+    }
+    
+    if (listeners != null) {
+      for (CloseListener listener : listeners) {
+        listener.postClose();
       }
     }
   }
