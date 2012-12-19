@@ -110,8 +110,10 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     }
     
     // try and wait for any replications and what not to finish...
-    
-    waitForThingsToLevelOut(Integer.MAX_VALUE);//Math.round((runLength / 1000.0f / 3.0f)));
+
+    Thread.sleep(2000);
+
+    waitForThingsToLevelOut(Integer.MAX_VALUE); //Math.round((runLength / 1000.0f / 3.0f)));
 
     checkShardConsistency(true, true);
     

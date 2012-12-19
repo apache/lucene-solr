@@ -96,7 +96,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   String missingField = "ignore_exception__missing_but_valid_field_t";
   String invalidField = "ignore_exception__invalid_field_not_in_schema";
   protected int sliceCount;
-  
+
+  protected CloudSolrServer controlClientCloud;  // cloud version of the control client
   protected volatile CloudSolrServer cloudClient;
   
   protected List<CloudJettyRunner> cloudJettys = new ArrayList<CloudJettyRunner>();
@@ -173,7 +174,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   public void setUp() throws Exception {
     super.setUp();
     // ignoreException(".*");
-    System.setProperty("numShards", Integer.toString(sliceCount));
+    if (sliceCount > 0) {
+      System.setProperty("numShards", Integer.toString(sliceCount));
+    } else {
+      System.clearProperty("numShards");
+    }
   }
   
   @BeforeClass
@@ -230,7 +235,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     System.setProperty("collection", "control_collection");
     String numShards = System.getProperty(ZkStateReader.NUM_SHARDS_PROP);
 
-    // we want hashes by default, so set to 1 shard as opposed to leaving unset
+    // we want hashes by default for the control, so set to 1 shard as opposed to leaving unset
     // System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
     System.setProperty(ZkStateReader.NUM_SHARDS_PROP, "1");
 
@@ -246,28 +251,40 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       System.clearProperty(ZkStateReader.NUM_SHARDS_PROP);
     }
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
-    
+
+    if (sliceCount <= 0) {
+      // for now, just create the cloud client for the control if we don't create the normal cloud client.
+      // this can change if more tests need it.
+      controlClientCloud = createCloudClient("control_collection");
+      controlClientCloud.connect();
+      waitForCollection(controlClientCloud.getZkStateReader(), "control_collection", 0);
+      // NOTE: we are skipping creation of the chaos monkey by returning here
+      return;
+    }
+
+
     initCloud();
     
     createJettys(numServers, true);
-    
+
+    waitForCollection(cloudClient.getZkStateReader(), DEFAULT_COLLECTION, sliceCount);
+  }
+
+
+  protected void waitForCollection(ZkStateReader reader, String collection, int slices) throws Exception {
     // wait until shards have started registering...
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     int cnt = 30;
-    while (!zkStateReader.getClusterState().getCollections()
-        .contains(DEFAULT_COLLECTION)) {
+    while (!reader.getClusterState().getCollections().contains(collection)) {
       if (cnt == 0) {
-        throw new RuntimeException(
-            "timeout waiting for collection1 in cluster state");
+        throw new RuntimeException("timeout waiting for collection in cluster state: collection=" + collection);
       }
       cnt--;
       Thread.sleep(500);
     }
     cnt = 30;
-    while (zkStateReader.getClusterState().getSlices(DEFAULT_COLLECTION).size() != sliceCount) {
+    while (reader.getClusterState().getSlices(collection).size() < slices) {
       if (cnt == 0) {
-        throw new RuntimeException(
-            "timeout waiting for collection shards to come up");
+        throw new RuntimeException("timeout waiting for collection shards to come up: collection="+collection + "nSlices="+slices);
       }
       cnt--;
       Thread.sleep(500);
@@ -1241,6 +1258,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
     if (cloudClient != null) {
       cloudClient.shutdown();
+    }
+    if (controlClientCloud != null) {
+      controlClientCloud.shutdown();
     }
     super.tearDown();
     
