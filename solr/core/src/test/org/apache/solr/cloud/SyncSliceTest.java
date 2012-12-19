@@ -193,7 +193,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     //System.out.println("leader:" + leaderJetty.url);
     //System.out.println("skip list:" + skipServers);
     
-    // we are skipping  one nodes
+    // we are skipping  2 nodes
     assertEquals(2, skipServers.size());
     
     // more docs than can peer sync
@@ -204,14 +204,21 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     
     commit();
     
-    Thread.sleep(100);
+    Thread.sleep(1000);
     
     waitForRecoveriesToFinish(false);
     
     // shard should be inconsistent
     shardFailMessage = checkShardConsistency("shard1", true, false);
+    
+    if (shardFailMessage == null) {
+      // try again
+      Thread.sleep(3000);
+      shardFailMessage = checkShardConsistency("shard1", true, false);
+    }
+    
     assertNotNull(
-        "shard1 shoul have just been set up to be inconsistent - but it's still consistent",
+        "shard1 should have just been set up to be inconsistent - but it's still consistent",
         shardFailMessage); 
     
     jetties = new HashSet<CloudJettyRunner>();
