@@ -162,12 +162,16 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
     }
     
     try {
-      defaultClient.getConnectionManager().shutdown();
+      if(defaultClient != null) {
+        defaultClient.getConnectionManager().shutdown();
+      }
     } catch (Throwable e) {
       SolrException.log(log, e);
     }
     try {
-      loadbalancer.shutdown();
+      if(loadbalancer != null) {
+        loadbalancer.shutdown();
+      }
     } catch (Throwable e) {
       SolrException.log(log, e);
     }
