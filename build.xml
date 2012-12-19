@@ -114,7 +114,7 @@
   <property name="maven-version" value="2.2.1"/>
   
   <target name="get-maven-poms"
-          description="Copy Maven POMs from dev-tools/maven/ to the working copy root">
+          description="Copy Maven POMs from dev-tools/maven/ to maven-build/">
     <copy todir="${maven-build-dir}" overwrite="true">
       <fileset dir="${basedir}/dev-tools/maven"/>
       <filterset begintoken="@" endtoken="@">
