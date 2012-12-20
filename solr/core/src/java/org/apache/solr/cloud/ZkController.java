@@ -142,17 +142,12 @@ public final class ZkController {
       TimeoutException, IOException {
     if (cc == null) throw new IllegalArgumentException("CoreContainer cannot be null.");
     this.cc = cc;
-    if (localHostContext.startsWith("/")) {
-      // be forgiving and strip this off
-      // this allows us to support users specifying hostContext="/" in 
-      // solr.xml to indicate the root context, instead of hostContext="" 
-      // which means the default of "solr"
-      localHostContext = localHostContext.substring(1);
-    }
-    if (localHostContext.endsWith("/")) {
-      // be extra nice
-      localHostContext = localHostContext.substring(0,localHostContext.length()-1);
-    }
+
+    // be forgiving and strip this off leading/trailing slashes
+    // this allows us to support users specifying hostContext="/" in 
+    // solr.xml to indicate the root context, instead of hostContext="" 
+    // which means the default of "solr"
+    localHostContext = trimLeadingAndTrailingSlashes(localHostContext);
     
     updateShardHandler = new UpdateShardHandler(distribUpdateConnTimeout, distribUpdateSoTimeout);
     
@@ -1313,9 +1308,9 @@ public final class ZkController {
   /**
    * Returns the nodeName that should be used based on the specified properties.
    *
-   * @param hostName - must not be the empty string
-   * @param hostPort - must consist only of digits, must not be the empty string
-   * @param hostContext - should not begin or end with a slash, may be the empty string to denote the root context
+   * @param hostName - must not be null or the empty string
+   * @param hostPort - must consist only of digits, must not be null or the empty string
+   * @param hostContext - should not begin or end with a slash (leading/trailin slashes will be ignored), must not be null, may be the empty string to denote the root context
    * @lucene.experimental
    * @see SolrZkClient#getBaseUrlForNodeName
    */
@@ -1324,9 +1319,27 @@ public final class ZkController {
                                  final String hostContext) {
     try {
       return hostName + ':' + hostPort + '_' + 
-        URLEncoder.encode(hostContext, "UTF-8");
+        URLEncoder.encode(trimLeadingAndTrailingSlashes(hostContext), "UTF-8");
     } catch (UnsupportedEncodingException e) {
       throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
     }
+  }
+  
+  /**
+   * utilitiy method fro trimming and leading and/or trailing slashes from 
+   * it's input.  May return the empty string.  May return null if and only 
+   * if the input is null.
+   */
+  private static String trimLeadingAndTrailingSlashes(final String in) {
+    if (null == in) return in;
+    
+    String out = in;
+    if (out.startsWith("/")) {
+      out = out.substring(1);
+    }
+    if (out.endsWith("/")) {
+      out = out.substring(0,out.length()-1);
+    }
+    return out;
   }
 }
