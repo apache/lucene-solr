@@ -122,7 +122,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   
   protected void waitForRecoveriesToFinish(String collection, ZkStateReader zkStateReader, boolean verbose, boolean failOnTimeout)
       throws Exception {
-    waitForRecoveriesToFinish(collection, zkStateReader, verbose, failOnTimeout, 180 * (TEST_NIGHTLY ? 2 : 1) * RANDOM_MULTIPLIER);
+    waitForRecoveriesToFinish(collection, zkStateReader, verbose, failOnTimeout, 230);
   }
   
   protected void waitForRecoveriesToFinish(String collection,
