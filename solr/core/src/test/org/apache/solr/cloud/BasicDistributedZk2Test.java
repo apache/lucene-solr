@@ -325,6 +325,10 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     // make sure we have published we are recovering
     Thread.sleep(1500);
     
+    waitForThingsToLevelOut(15);
+    
+    Thread.sleep(500);
+    
     waitForRecoveriesToFinish(false);
     
     checkShardConsistency(true, false);
