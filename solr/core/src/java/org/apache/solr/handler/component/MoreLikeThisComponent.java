@@ -78,6 +78,12 @@ public class MoreLikeThisComponent extends SearchComponent {
       int mltcount = params.getInt(MoreLikeThisParams.DOC_COUNT, 20);
       if (params.getBool(ShardParams.IS_SHARD, false)) {
         if (params.get(MoreLikeThisComponent.DIST_DOC_ID) == null) {
+          if (rb.getResults().docList.size() == 0) {
+            // return empty response
+            rb.rsp.add("moreLikeThis", new NamedList<DocList>());
+            return;
+          }
+          
           MoreLikeThisHandler.MoreLikeThisHelper mlt = new MoreLikeThisHandler.MoreLikeThisHelper(
               params, searcher);
           
@@ -132,11 +138,9 @@ public class MoreLikeThisComponent extends SearchComponent {
       }
     }
     
-
-    
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_MLT_RESULTS) != 0) {
       for (ShardResponse r : sreq.responses) {
-        log.info("MLT Query returned: "
+        log.debug("MLT Query returned: "
             + r.getSolrResponse().getResponse().toString());
       }
     }
@@ -312,7 +316,6 @@ public class MoreLikeThisComponent extends SearchComponent {
     // MLT Query is submitted as normal query to shards.
     s.params.set(CommonParams.Q, q);
     
-    s.shards = ShardRequest.ALL_SHARDS;
     return s;
   }
   
@@ -323,7 +326,7 @@ public class MoreLikeThisComponent extends SearchComponent {
 
     s.params.set(CommonParams.START, 0);
 
-    String id = rb.req.getSchema().getUniqueKeyField() .getName();
+    String id = rb.req.getSchema().getUniqueKeyField().getName();
 
     s.params.set(CommonParams.FL, "score," + id);
     // MLT Query is submitted as normal query to shards.
