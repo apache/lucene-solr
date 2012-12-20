@@ -51,6 +51,8 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     handle.clear();
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
+    handle.put("grouped", UNORDERED);   // distrib grouping doesn't guarantee order of top level group commands
+
     // Test distributed grouping with empty indices
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc");
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "hl","true","hl.fl",t1);
