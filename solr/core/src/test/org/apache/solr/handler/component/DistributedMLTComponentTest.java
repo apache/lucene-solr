@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.common.params.MoreLikeThisParams;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
@@ -38,7 +39,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
   public DistributedMLTComponentTest()
   {
     fixShardCount=true;
-    shardCount=2;
+    shardCount=3;
     stress=0;
   }
 
@@ -67,7 +68,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     index(id, "4", "lowerfilt", "ford");
     index(id, "5", "lowerfilt", "ferrari");
     index(id, "6", "lowerfilt", "jaguar");
-    index(id, "7", "lowerfilt", "mclaren moon or the moon and moon");
+    index(id, "7", "lowerfilt", "mclaren moon or the moon and moon moon shine and the moon but moon was good foxes too");
     index(id, "8", "lowerfilt", "sonata");
     index(id, "9", "lowerfilt", "The quick red fox jumped over the lazy big and large brown dogs.");
     index(id, "10", "lowerfilt", "blue");
@@ -76,7 +77,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     index(id, "14", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
     index(id, "15", "lowerfilt", "The fat red fox jumped over the lazy brown dogs.");
     index(id, "16", "lowerfilt", "The slim red fox jumped over the lazy brown dogs.");
-    index(id, "17", "lowerfilt", "The quote red fox jumped moon over the lazy brown dogs moon. Of course moon");
+    index(id, "17", "lowerfilt", "The quote red fox jumped moon over the lazy brown dogs moon. Of course moon. Foxes and moon come back to the foxes and moon");
     index(id, "18", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
     index(id, "19", "lowerfilt", "The hose red fox jumped over the lazy brown dogs.");
     index(id, "20", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
@@ -85,6 +86,7 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     index(id, "23", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
     index(id, "24", "lowerfilt", "The file red fox jumped over the lazy brown dogs.");
     index(id, "25", "lowerfilt", "rod fix");
+    
     commit();
 
     handle.clear();
@@ -102,8 +104,6 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     
     query("q", "lowerfilt:sonata", "mlt", "true", "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt", requestHandlerName);
     
-    query("q", "lowerfilt:moon", "fl", id, "sort", "id desc", "mlt", "true", "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt", requestHandlerName);
-    
     handle.put("24", UNORDERED);
     handle.put("23", UNORDERED);
     handle.put("22", UNORDERED);
@@ -116,10 +116,30 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     handle.put("15", UNORDERED);
     handle.put("14", UNORDERED);
     handle.put("13", UNORDERED);
+    handle.put("7", UNORDERED);
     
+    // keep in mind that MLT params influence stats that are calulated
+    // per shard - because of this, depending on params, distrib and single
+    // shard queries will not match.
     
-    query("q", "lowerfilt:fox", "fl", id, "sort", "id desc", "mlt", "true", "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt", requestHandlerName);
+    query("q", "lowerfilt:moon", "fl", id, MoreLikeThisParams.MIN_TERM_FREQ, 2,
+        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id desc", "mlt", "true",
+        "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt",
+        requestHandlerName);
     
-    //query("q", "*:*", "mlt", "true", "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt", requestHandlerName);
+    query("q", "lowerfilt:fox", "fl", id, MoreLikeThisParams.MIN_TERM_FREQ, 1,
+        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id desc", "mlt", "true",
+        "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt",
+        requestHandlerName);
+
+    query("q", "lowerfilt:the red fox", "fl", id, MoreLikeThisParams.MIN_TERM_FREQ, 1,
+        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id desc", "mlt", "true",
+        "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt",
+        requestHandlerName);
+    
+    query("q", "lowerfilt:blue moon", "fl", id, MoreLikeThisParams.MIN_TERM_FREQ, 1,
+        MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id desc", "mlt", "true",
+        "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt",
+        requestHandlerName);
   }
 }

@@ -408,6 +408,8 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       DocIterator iterator = docs.iterator();
       while (iterator.hasNext()) {
         int id = iterator.nextDoc();
+        String uniqueId = schema.printableUniqueKey(reader.document(id));
+
         BooleanQuery mltquery = (BooleanQuery) mlt.like(id);
         if (mltquery.clauses().size() == 0) {
           return result;
@@ -417,14 +419,12 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         // exclude current document from results
         BooleanQuery mltQuery = new BooleanQuery();
         mltQuery.add(mltquery, BooleanClause.Occur.MUST);
-        String name = schema.printableUniqueKey(reader.document(id));
         
-        // Added in-case uniqueKey is uri.
         mltQuery.add(
-            new TermQuery(new Term(uniqueKeyField.getName(), name.replace(":",
-                "\\:"))), BooleanClause.Occur.MUST_NOT);
-        result.add(name, mltQuery);
+            new TermQuery(new Term(uniqueKeyField.getName(), uniqueId)), BooleanClause.Occur.MUST_NOT);
+        result.add(uniqueId, mltQuery);
       }
+
       return result;
     }
     
