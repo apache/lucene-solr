@@ -282,6 +282,8 @@
   
   <!-- Clean targets -->
   <target name="clean" description="Cleans compiled files and other temporary artifacts.">
+    <!-- need to fix up the perms before we try to delete -->
+    <force-test-file-perms build.dir="build" perms="u+w" />
     <delete dir="build" />
     <delete dir="dist" />
     <delete dir="package" />

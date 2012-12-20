@@ -109,6 +109,19 @@
  
   <path id="test.classpath" refid="solr.test.base.classpath"/>
 
+  <macrodef name="force-test-file-perms">
+    <attribute name="build.dir" />
+    <attribute name="perms" />
+    <sequential>
+      <chmod perm="@{perms}" type="both">
+        <fileset dir="@{build.dir}" erroronmissingdir="false">
+          <include name="**/test-files" />
+          <include name="**/test-files/**" />
+        </fileset>
+      </chmod> 
+    </sequential>
+  </macrodef>
+
   <macrodef name="solr-contrib-uptodate">
     <attribute name="name"/>
     <attribute name="property" default="@{name}.uptodate"/>
@@ -381,6 +394,8 @@
     <sync todir="${build.dir}/test-files">
       <fileset dir="${tests.userdir}"/>
     </sync>
+    <!-- don't let tests muck with this -->
+    <force-test-file-perms build.dir="${build.dir}" perms="ugo-w" />
   </target>
 
   <!-- Solr test-framework targets -->
@@ -433,6 +448,14 @@
     <contrib-crawl target="add-to-war"/>
   </target>
   
+  <target name="clean" 
+          description="Removes contents of build and dist directories"
+          depends="-make-test-files-writable, common.clean" />
+  <target name="-make-test-files-writable">
+    <force-test-file-perms build.dir="${build.dir}" perms="u+w" />
+  </target> 
+  
+
   <!-- hack for now to disable *all* Solr tests on Jenkins when "tests.disable-solr" property is set -->
   <target name="test" unless="tests.disable-solr">
     <antcall target="common.test" inheritrefs="true" inheritall="true"/>
