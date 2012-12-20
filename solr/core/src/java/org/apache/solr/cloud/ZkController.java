@@ -44,6 +44,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
@@ -942,9 +944,6 @@ public final class ZkController {
         try {
           Map<String,Object> collectionProps = new HashMap<String,Object>();
 
-          // set defaults
-          collectionProps.put(DocCollection.DOC_ROUTER, "compositeId");
-
           // TODO: if collection.configName isn't set, and there isn't already a conf in zk, just use that?
           String defaultConfigName = System.getProperty(COLLECTION_PARAM_PREFIX+CONFIGNAME_PROP, collection);
 
@@ -986,6 +985,21 @@ public final class ZkController {
           } else {
             getConfName(collection, collectionPath, collectionProps);
           }
+
+          if (collectionProps.get(DocCollection.DOC_ROUTER) == null) {
+            Object numShards = collectionProps.get(ZkStateReader.NUM_SHARDS_PROP);
+            if (numShards == null) {
+              numShards = System.getProperty(ZkStateReader.NUM_SHARDS_PROP);
+            }
+            if (numShards == null) {
+              collectionProps.put(DocCollection.DOC_ROUTER, ImplicitDocRouter.NAME);
+            } else {
+              collectionProps.put(DocCollection.DOC_ROUTER, DocRouter.DEFAULT_NAME);
+            }
+          }
+
+          collectionProps.remove(ZkStateReader.NUM_SHARDS_PROP);  // we don't put numShards in the collections properties
+
           ZkNodeProps zkProps = new ZkNodeProps(collectionProps);
           zkClient.makePath(collectionPath, ZkStateReader.toJSON(zkProps), CreateMode.PERSISTENT, null, true);
 
