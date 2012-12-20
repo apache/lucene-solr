@@ -32,6 +32,7 @@ import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -40,6 +41,8 @@ import org.apache.lucene.util.LuceneTestCase;
  * In the example, a docvalues field is used as a per-document boost (separate from the norm)
  * @lucene.experimental
  */
+// nocommit Lucene40 doesn't yet impl SimpleDV:
+@SuppressCodecs("Lucene40")
 public class TestDocValuesScoring extends LuceneTestCase {
   private static final float SCORE_EPSILON = 0.001f; /* for comparing floats */
 

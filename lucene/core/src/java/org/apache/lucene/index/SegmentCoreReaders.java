@@ -19,7 +19,9 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -83,19 +85,17 @@ final class SegmentCoreReaders {
     }
   };
 
-  final CloseableThreadLocal<SimpleDVProducer> simpleDocValuesLocal = new CloseableThreadLocal<SimpleDVProducer>() {
+  final CloseableThreadLocal<Map<String,Object>> simpleDocValuesLocal = new CloseableThreadLocal<Map<String,Object>>() {
     @Override
-    protected SimpleDVProducer initialValue() {
-      // nocommit remove null check
-      return (simpleDVProducer == null) ? null : simpleDVProducer.clone();
+    protected Map<String,Object> initialValue() {
+      return new HashMap<String,Object>();
     }
   };
 
-  final CloseableThreadLocal<SimpleDVProducer> simpleNormsLocal = new CloseableThreadLocal<SimpleDVProducer>() {
+  final CloseableThreadLocal<Map<String,Object>> simpleNormsLocal = new CloseableThreadLocal<Map<String,Object>>() {
     @Override
-    protected SimpleDVProducer initialValue() {
-      // nocommit remove null check
-      return (simpleNormsProducer == null) ? null : simpleNormsProducer.clone();
+    protected Map<String,Object> initialValue() {
+      return new HashMap<String,Object>();
     }
   };
 
@@ -202,7 +202,15 @@ final class SegmentCoreReaders {
       return null;
     }
 
-    return simpleDocValuesLocal.get().getNumeric(fi);
+    Map<String,Object> dvFields = simpleDocValuesLocal.get();
+
+    NumericDocValues dvs = (NumericDocValues) dvFields.get(field);
+    if (dvs == null) {
+      dvs = simpleDVProducer.getNumeric(fi);
+      dvFields.put(field, dvs);
+    }
+
+    return dvs;
   }
 
   BinaryDocValues getBinaryDocValues(String field) throws IOException {
@@ -225,7 +233,15 @@ final class SegmentCoreReaders {
       return null;
     }
 
-    return simpleDocValuesLocal.get().getBinary(fi);
+    Map<String,Object> dvFields = simpleDocValuesLocal.get();
+
+    BinaryDocValues dvs = (BinaryDocValues) dvFields.get(field);
+    if (dvs == null) {
+      dvs = simpleDVProducer.getBinary(fi);
+      dvFields.put(field, dvs);
+    }
+
+    return dvs;
   }
 
   SortedDocValues getSortedDocValues(String field) throws IOException {
@@ -248,7 +264,15 @@ final class SegmentCoreReaders {
       return null;
     }
 
-    return simpleDocValuesLocal.get().getSorted(fi);
+    Map<String,Object> dvFields = simpleDocValuesLocal.get();
+
+    SortedDocValues dvs = (SortedDocValues) dvFields.get(field);
+    if (dvs == null) {
+      dvs = simpleDVProducer.getSorted(fi);
+      dvFields.put(field, dvs);
+    }
+
+    return dvs;
   }
 
   NumericDocValues getSimpleNormValues(String field) throws IOException {
@@ -264,7 +288,16 @@ final class SegmentCoreReaders {
     if (simpleNormsProducer == null) {
       return null;
     }
-    return simpleNormsLocal.get().getNumeric(fi);
+
+    Map<String,Object> normFields = simpleNormsLocal.get();
+
+    NumericDocValues norms = (NumericDocValues) normFields.get(field);
+    if (norms == null) {
+      norms = simpleNormsProducer.getNumeric(fi);
+      normFields.put(field, norms);
+    }
+
+    return norms;
   }
 
   void decRef() throws IOException {

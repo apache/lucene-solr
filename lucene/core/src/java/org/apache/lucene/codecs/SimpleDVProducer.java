@@ -37,6 +37,4 @@ public abstract class SimpleDVProducer implements Closeable {
   public abstract BinaryDocValues getBinary(FieldInfo field) throws IOException;
 
   public abstract SortedDocValues getSorted(FieldInfo field) throws IOException;
-
-  public abstract SimpleDVProducer clone();
 }

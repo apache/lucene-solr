@@ -228,7 +228,7 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
       Map<SimpleDVProducer,SimpleDVProducer> oldToNew = new IdentityHashMap<SimpleDVProducer,SimpleDVProducer>();
       // First clone all formats
       for(Map.Entry<String,SimpleDVProducer> ent : other.formats.entrySet()) {
-        SimpleDVProducer values = ent.getValue().clone();
+        SimpleDVProducer values = ent.getValue();
         formats.put(ent.getKey(), values);
         oldToNew.put(ent.getValue(), values);
       }

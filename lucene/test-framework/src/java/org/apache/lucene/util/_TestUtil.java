@@ -251,6 +251,8 @@ public class _TestUtil {
       ((TieredMergePolicy) mp).setUseCompoundFile(v);
     } else if (mp instanceof LogMergePolicy) {
       ((LogMergePolicy) mp).setUseCompoundFile(v);
+    } else {
+      throw new IllegalArgumentException("cannot set compound file for MergePolicy " + mp);
     }
   }
 

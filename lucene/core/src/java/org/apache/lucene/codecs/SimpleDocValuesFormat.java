@@ -50,6 +50,7 @@ public abstract class SimpleDocValuesFormat implements NamedSPILoader.NamedSPI {
   }
 
   public abstract SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException;
+
   // nocommit do this:
   public abstract SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException;
 

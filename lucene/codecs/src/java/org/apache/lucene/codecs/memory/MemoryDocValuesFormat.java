@@ -56,8 +56,7 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
 
       @Override
       public NumericDocValues getNumeric(FieldInfo field) throws IOException {
-        // nocommit is that clone() ok...?  it IS necessary
-        NumericDocValues valuesIn = producer.clone().getNumeric(field);
+        NumericDocValues valuesIn = producer.getNumeric(field);
 
         final int maxDoc = valuesIn.size();
         final long minValue = valuesIn.minValue();
@@ -96,8 +95,7 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
       
       @Override
       public BinaryDocValues getBinary(FieldInfo field) throws IOException {
-        // nocommit is that clone() ok...?  it IS necessary
-        BinaryDocValues valuesIn = producer.clone().getBinary(field);
+        BinaryDocValues valuesIn = producer.getBinary(field);
         final int maxDoc = valuesIn.size();
         final int maxLength = valuesIn.maxLength();
         final boolean fixedLength = valuesIn.isFixedLength();
@@ -138,8 +136,7 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
 
       @Override
       public SortedDocValues getSorted(FieldInfo field) throws IOException {
-        // nocommit is that clone() ok...?  it IS necessary
-        SortedDocValues valuesIn = producer.clone().getSorted(field);
+        SortedDocValues valuesIn = producer.getSorted(field);
         final int maxDoc = valuesIn.size();
         final int maxLength = valuesIn.maxLength();
         final boolean fixedLength = valuesIn.isFixedLength();
