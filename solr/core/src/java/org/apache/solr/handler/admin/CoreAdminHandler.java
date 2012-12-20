@@ -868,7 +868,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
   }
   
   protected void handleWaitForStateAction(SolrQueryRequest req,
-      SolrQueryResponse rsp) throws IOException, InterruptedException {
+      SolrQueryResponse rsp) throws IOException, InterruptedException, KeeperException {
     final SolrParams params = req.getParams();
     
     String cname = params.get(CoreAdminParams.CORE);
@@ -904,6 +904,12 @@ public class CoreAdminHandler extends RequestHandlerBase {
           // to accept updates
           CloudDescriptor cloudDescriptor = core.getCoreDescriptor()
               .getCloudDescriptor();
+          
+          if (retry == 15 || retry == 60) {
+            // force a cluster state update
+            coreContainer.getZkController().getZkStateReader().updateClusterState(true);
+          }
+          
           ClusterState clusterState = coreContainer.getZkController()
               .getClusterState();
           String collection = cloudDescriptor.getCollectionName();
@@ -927,11 +933,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
           }
         }
         
-        if (retry++ == 30) {
+        if (retry++ == 120) {
           throw new SolrException(ErrorCode.BAD_REQUEST,
               "I was asked to wait on state " + waitForState + " for "
                   + nodeName
-                  + " but I still do not see the request state. I see state: "
+                  + " but I still do not see the requested state. I see state: "
                   + state + " live:" + live);
         }
         
