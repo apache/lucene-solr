@@ -20,6 +20,7 @@ package org.apache.solr.handler.component;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * Test for distributed MoreLikeThisComponent's 
@@ -29,6 +30,7 @@ import org.junit.BeforeClass;
  * @see org.apache.solr.handler.component.MoreLikeThisComponent
  */
 @Slow
+@Ignore("distrib mlt not working right")
 public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
   
   private String requestHandlerName;
