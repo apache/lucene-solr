@@ -787,4 +787,47 @@ public class TestPackedInts extends LuceneTestCase {
     return true;
   }
 
+  public void testPackedInputOutput() throws IOException {
+    final long[] longs = new long[random().nextInt(8192)];
+    final int[] bitsPerValues = new int[longs.length];
+    final boolean[] skip = new boolean[longs.length];
+    for (int i = 0; i < longs.length; ++i) {
+      final int bpv = RandomInts.randomIntBetween(random(), 1, 64);
+      bitsPerValues[i] = random().nextBoolean() ? bpv : _TestUtil.nextInt(random(), bpv, 64);
+      if (bpv == 64) {
+        longs[i] = random().nextLong();
+      } else {
+        longs[i] = _TestUtil.nextLong(random(), 0, PackedInts.maxValue(bpv));
+      }
+      skip[i] = rarely();
+    }
+
+    final Directory dir = newDirectory();
+    final IndexOutput out = dir.createOutput("out.bin", IOContext.DEFAULT);
+    PackedDataOutput pout = new PackedDataOutput(out);
+    long totalBits = 0;
+    for (int i = 0; i < longs.length; ++i) {
+      pout.writeLong(longs[i], bitsPerValues[i]);
+      totalBits += bitsPerValues[i];
+      if (skip[i]) {
+        pout.flush();
+        totalBits = 8 * (long) Math.ceil((double) totalBits / 8);
+      }
+    }
+    pout.flush();
+    assertEquals((long) Math.ceil((double) totalBits / 8), out.getFilePointer());
+    out.close();
+    final IndexInput in = dir.openInput("out.bin", IOContext.READONCE);
+    final PackedDataInput pin = new PackedDataInput(in);
+    for (int i = 0; i < longs.length; ++i) {
+      assertEquals("" + i, longs[i], pin.readLong(bitsPerValues[i]));
+      if (skip[i]) {
+        pin.skipToNextByte();
+      }
+    }
+    assertEquals((long) Math.ceil((double) totalBits / 8), in.getFilePointer());
+    in.close();
+    dir.close();
+  }
+
 }
