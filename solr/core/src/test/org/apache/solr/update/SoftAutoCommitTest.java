@@ -235,7 +235,7 @@ public class SoftAutoCommitTest extends AbstractSolrTestCase {
     monitor.assertSaneOffers();
 
     // Wait for the soft commit with some fudge
-    soft529 = monitor.soft.poll(softCommitWaitMillis * 2, MILLISECONDS);
+    soft529 = monitor.soft.poll(softCommitWaitMillis * 3, MILLISECONDS);
     assertNotNull("soft529 wasn't fast enough", soft529);
     monitor.assertSaneOffers();
  
