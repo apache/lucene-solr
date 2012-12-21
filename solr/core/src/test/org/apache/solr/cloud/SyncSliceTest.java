@@ -209,13 +209,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     waitForRecoveriesToFinish(false);
     
     // shard should be inconsistent
-    shardFailMessage = checkShardConsistency("shard1", true, false);
-    
-    if (shardFailMessage == null) {
-      // try again
-      Thread.sleep(3000);
-      shardFailMessage = checkShardConsistency("shard1", true, false);
-    }
+    shardFailMessage = waitTillInconsistent();
     
     assertNotNull(
         "shard1 should have just been set up to be inconsistent - but it's still consistent",
@@ -240,6 +234,26 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
 
     checkShardConsistency(true, true);
     
+  }
+
+  private String waitTillInconsistent() throws Exception, InterruptedException {
+    String shardFailMessage = null;
+    
+    shardFailMessage = pollConsistency(shardFailMessage, 0);
+    shardFailMessage = pollConsistency(shardFailMessage, 3000);
+    shardFailMessage = pollConsistency(shardFailMessage, 5000);
+    
+    return shardFailMessage;
+  }
+
+  private String pollConsistency(String shardFailMessage, int sleep)
+      throws InterruptedException, Exception {
+    if (shardFailMessage == null) {
+      // try again
+      Thread.sleep(sleep);
+      shardFailMessage = checkShardConsistency("shard1", true, false);
+    }
+    return shardFailMessage;
   }
 
   private List<String> getRandomJetty() {
