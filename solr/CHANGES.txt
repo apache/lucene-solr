@@ -372,6 +372,9 @@ Bug Fixes
 * SOLR-4213: Directories that are not shutdown until DirectoryFactory#close 
   do not have close listeners called on them. (Mark Miller)
 
+* SOLR-4134: Standard (XML) request writer cannot "set" multiple values into
+  multivalued field with partial updates. (Luis Cappa Banda, Will Butler, shalin)
+
 Other Changes
 ----------------------
 
