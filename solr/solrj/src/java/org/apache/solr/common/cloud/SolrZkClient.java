@@ -484,7 +484,7 @@ public class SolrZkClient {
     try {
       final String path = URLDecoder.decode(nodeName.substring(1+_offset),
                                             "UTF-8");
-      return "http://" + hostAndPort + "/" + path;
+      return "http://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
     } catch (UnsupportedEncodingException e) {
       throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
     }
