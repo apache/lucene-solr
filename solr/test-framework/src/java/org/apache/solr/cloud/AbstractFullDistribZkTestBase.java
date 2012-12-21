@@ -1335,7 +1335,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         (context.endsWith("/") ? "" : "/") + DEFAULT_COLLECTION;
       HttpSolrServer s = new HttpSolrServer(url);
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      s.setSoTimeout(30000);
+      s.setSoTimeout(60000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;
