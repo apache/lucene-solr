@@ -300,6 +300,7 @@ public class SnapPuller {
     Directory tmpIndexDir = null;
     String tmpIndex = null;
     Directory indexDir = null;
+    String indexDirPath = null;
     boolean deleteTmpIdxDir = true;
     try {
       //get the current 'replicateable' index version in the master
@@ -376,7 +377,8 @@ public class SnapPuller {
       tmpIndexDir = core.getDirectoryFactory().get(tmpIndex, core.getSolrConfig().indexConfig.lockType);
       
       // make sure it's the newest known index dir...
-      indexDir = core.getDirectoryFactory().get(core.getNewIndexDir(), core.getSolrConfig().indexConfig.lockType);
+      indexDirPath = core.getNewIndexDir();
+      indexDir = core.getDirectoryFactory().get(indexDirPath, core.getSolrConfig().indexConfig.lockType);
       Directory oldDirectory = null;
 
       try {
@@ -425,12 +427,15 @@ public class SnapPuller {
         if (isFullCopyNeeded) {
           // we have to do this before commit
           final Directory freezeIndexDir = indexDir;
+          final String freezeIndexDirPath = indexDirPath;
           core.getDirectoryFactory().addCloseListener(oldDirectory, new CloseListener(){
 
             @Override
             public void preClose() {
               LOG.info("removing old index files " + freezeIndexDir);
-              DirectoryFactory.empty(freezeIndexDir);
+              if (core.getDirectoryFactory().exists(freezeIndexDirPath)) {
+                DirectoryFactory.empty(freezeIndexDir);
+              }
             }
             
             @Override
