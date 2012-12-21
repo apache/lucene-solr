@@ -88,6 +88,10 @@ public class RecoveryZkTest extends AbstractFullDistribZkTestBase {
     
     Thread.sleep(1000);
     
+    waitForThingsToLevelOut(30);
+    
+    Thread.sleep(1000);
+    
     waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, false, true);
 
     // test that leader and replica have same doc count
