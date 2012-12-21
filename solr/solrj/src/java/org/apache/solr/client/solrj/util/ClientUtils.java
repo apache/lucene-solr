@@ -104,41 +104,53 @@ public class ClientUtils
           // currently only supports a single value
           for (Entry<Object,Object> entry : ((Map<Object,Object>)v).entrySet()) {
             update = entry.getKey().toString();
-            Object fieldVal = entry.getValue();
-            v = fieldVal;
+            v = entry.getValue();
+            if (v instanceof Collection) {
+              Collection values = (Collection) v;
+              for (Object value : values) {
+                writeVal(writer, boost, name, value, update);
+                boost = 1.0f;
+              }
+            } else  {
+              writeVal(writer, boost, name, v, update);
+              boost = 1.0f;
+            }
           }
+        } else  {
+          writeVal(writer, boost, name, v, update);
+          // only write the boost for the first multi-valued field
+          // otherwise, the used boost is the product of all the boost values
+          boost = 1.0f;
         }
-
-        if (v instanceof Date) {
-          v = DateUtil.getThreadLocalDateFormat().format( (Date)v );
-        } else if (v instanceof byte[]) {
-          byte[] bytes = (byte[]) v;
-          v = Base64.byteArrayToBase64(bytes, 0,bytes.length);
-        } else if (v instanceof ByteBuffer) {
-          ByteBuffer bytes = (ByteBuffer) v;
-          v = Base64.byteArrayToBase64(bytes.array(), bytes.position(),bytes.limit() - bytes.position());
-        }
-
-        if (update == null) {
-          if( boost != 1.0f ) {
-            XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost );
-          } else if (v != null) {
-            XML.writeXML(writer, "field", v.toString(), "name", name );
-          }
-        } else {
-          if( boost != 1.0f ) {
-            XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost, "update", update);
-          } else if (v != null) {
-            XML.writeXML(writer, "field", v.toString(), "name", name, "update", update);
-          }
-        }
-
-        // only write the boost for the first multi-valued field
-        // otherwise, the used boost is the product of all the boost values
-        boost = 1.0f;
       }
     }
     writer.write("</doc>");
+  }
+
+  private static void writeVal(Writer writer, float boost, String name, Object v, String update) throws IOException {
+    if (v instanceof Date) {
+      v = DateUtil.getThreadLocalDateFormat().format( (Date)v );
+    } else if (v instanceof byte[]) {
+      byte[] bytes = (byte[]) v;
+      v = Base64.byteArrayToBase64(bytes, 0, bytes.length);
+    } else if (v instanceof ByteBuffer) {
+      ByteBuffer bytes = (ByteBuffer) v;
+      v = Base64.byteArrayToBase64(bytes.array(), bytes.position(),bytes.limit() - bytes.position());
+    }
+
+    if (update == null) {
+      if( boost != 1.0f ) {
+        XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost);
+      } else if (v != null) {
+        XML.writeXML(writer, "field", v.toString(), "name", name );
+      }
+    } else {
+      if( boost != 1.0f ) {
+        XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost, "update", update);
+      } else if (v != null) {
+        XML.writeXML(writer, "field", v.toString(), "name", name, "update", update);
+      }
+    }
   }
 
 
