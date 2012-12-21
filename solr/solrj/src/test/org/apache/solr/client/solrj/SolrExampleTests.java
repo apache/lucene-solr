@@ -1381,6 +1381,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
   }
 
+  @Test
   public void testUpdateMultiValuedField() throws Exception {
     SolrServer solrServer = getSolrServer();
     SolrInputDocument doc = new SolrInputDocument();
