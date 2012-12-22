@@ -341,6 +341,18 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         }
         
         zkController.publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
+        
+        
+        sendPrepRecoveryCmd(leaderBaseUrl, leaderCoreName);
+        
+        // we wait a bit so that any updates on the leader
+        // that started before they saw recovering state 
+        // are sure to have finished
+        try {
+          Thread.sleep(2000);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
 
         // first thing we just try to sync
         if (firstTime) {
@@ -387,17 +399,6 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         }
 
         log.info("Starting Replication Recovery. core=" + coreName);
-        
-        sendPrepRecoveryCmd(leaderBaseUrl, leaderCoreName);
-        
-        // we wait a bit so that any updates on the leader
-        // that started before they saw recovering state 
-        // are sure to have finished
-        try {
-          Thread.sleep(2000);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
         
         log.info("Begin buffering updates. core=" + coreName);
         ulog.bufferUpdates();
