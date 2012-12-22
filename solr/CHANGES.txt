@@ -375,6 +375,9 @@ Bug Fixes
 * SOLR-4134: Standard (XML) request writer cannot "set" multiple values into
   multivalued field with partial updates. (Luis Cappa Banda, Will Butler, shalin)
 
+* SOLR-3972: Fix ShowFileRequestHandler to not log a warning in the 
+  (expected) situation of a file not found.  (hossman)
+
 Other Changes
 ----------------------
 
