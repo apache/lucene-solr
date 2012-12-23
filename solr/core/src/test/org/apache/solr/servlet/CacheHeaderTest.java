@@ -246,9 +246,8 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   protected File makeFile(String contents, String charset) {
     try {
-      File f = _TestUtil.getTempDir("cachetest_csv");
-      Writer out = new OutputStreamWriter(new FileOutputStream(f),
-          charset);
+      File f = _TestUtil.createTempFile("cachetest_csv", null, TEMP_DIR);
+      Writer out = new OutputStreamWriter(new FileOutputStream(f), charset);
       out.write(contents);
       out.close();
       return f;

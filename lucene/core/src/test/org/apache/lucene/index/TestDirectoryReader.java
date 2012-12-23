@@ -720,7 +720,9 @@ public void testFilesOpenClose() throws IOException {
   // DirectoryReader on a non-existent directory, you get a
   // good exception
   public void testNoDir() throws Throwable {
-    Directory dir = newFSDirectory(_TestUtil.getTempDir("doesnotexist"));
+    File tempDir = _TestUtil.getTempDir("doesnotexist");
+    _TestUtil.rmDir(tempDir);
+    Directory dir = newFSDirectory(tempDir);
     try {
       DirectoryReader.open(dir);
       fail("did not hit expected exception");
