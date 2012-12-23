@@ -100,6 +100,17 @@ public final class SegmentInfo {
     this.attributes = attributes;
   }
 
+  SegmentInfo(SegmentInfo info, long gen) {
+    this.dir = info.dir;
+    this.version = info.version;
+    this.name = IndexFileNames.updatedSegmentFileNameFromGeneration(info.name, gen);
+    this.docCount = info.docCount;
+    this.isCompoundFile = info.isCompoundFile;
+    this.codec = info.codec;
+    this.diagnostics = info.diagnostics;
+    this.attributes = info.attributes;
+  }
+  
   /**
    * Returns total size in bytes of all of files used by
    * this segment.  Note that this will not include any live
@@ -273,6 +284,14 @@ public final class SegmentInfo {
     sizeInBytes = -1;
   }
   
+  /** Remove this file from the set of files written for this
+   *  segment. */
+  public void removeFile(String file) {
+    checkFileNames(Collections.singleton(file));
+    setFiles.remove(file);
+    sizeInBytes = -1;
+  }
+
   private void checkFileNames(Collection<String> files) {
     Matcher m = IndexFileNames.CODEC_FILE_PATTERN.matcher("");
     for (String file : files) {

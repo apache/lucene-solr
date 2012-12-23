@@ -75,6 +75,11 @@ public abstract class FilterCodec extends Codec {
   }
 
   @Override
+  public GenerationReplacementsFormat generationReplacementsFormat() {
+    return delegate.generationReplacementsFormat();
+  }
+  
+  @Override
   public NormsFormat normsFormat() {
     return delegate.normsFormat();
   }

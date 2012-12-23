@@ -258,7 +258,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     
     String fileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                             "",
-                                                            gen);
+                                                            gen, false);
     dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
 
     boolean oneSecondResolution = true;
@@ -269,7 +269,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         reader.close();
         fileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                          "",
-                                                         gen);
+                                                         gen, false);
 
         // if we are on a filesystem that seems to have only
         // 1 second resolution, allow +1 second in commit
@@ -286,7 +286,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         break;
       }
       
-      dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen));
+      dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen, false));
       gen--;
     }
 
@@ -370,7 +370,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       while(gen > 0) {
         IndexReader reader = DirectoryReader.open(dir);
         reader.close();
-        dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen));
+        dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen, false));
         gen--;
 
         if (gen > 0) {
@@ -602,7 +602,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
           }
         }
         if (i < N) {
-          dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen));
+          dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen, false));
         }
         gen--;
       }
@@ -719,7 +719,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
           }
         }
         if (i < N) {
-          dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen));
+          dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen, false));
         }
         gen--;
       }

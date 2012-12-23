@@ -34,6 +34,7 @@ import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.FIELD
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Set;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
@@ -191,7 +192,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   }
 
   @Override
-  public void visitDocument(int docID, StoredFieldVisitor visitor)
+  public void visitDocument(int docID, StoredFieldVisitor visitor, Set<String> ignoreFields)
       throws IOException {
     fieldsStream.seek(indexReader.getStartPointer(docID));
 
@@ -267,17 +268,22 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       final int bits = (int) (infoAndBits & TYPE_MASK);
       assert bits <= NUMERIC_DOUBLE: "bits=" + Integer.toHexString(bits);
 
-      switch(visitor.needsField(fieldInfo)) {
-        case YES:
-          readField(documentInput, visitor, fieldInfo, bits);
-          assert documentInput.getPosition() <= bytes.offset + bytes.length : documentInput.getPosition() + " " + bytes.offset + bytes.length;
-          break;
-        case NO:
-          skipField(documentInput, bits);
-          assert documentInput.getPosition() <= bytes.offset + bytes.length : documentInput.getPosition() + " " + bytes.offset + bytes.length;
-          break;
-        case STOP:
-          return;
+      if (ignoreFields != null && ignoreFields.contains(fieldInfo.name)) {
+        skipField(documentInput, bits);
+        assert documentInput.getPosition() <= bytes.offset + bytes.length : documentInput.getPosition() + " " + bytes.offset + bytes.length;
+      } else {
+        switch(visitor.needsField(fieldInfo)) {
+          case YES:
+            readField(documentInput, visitor, fieldInfo, bits);
+            assert documentInput.getPosition() <= bytes.offset + bytes.length : documentInput.getPosition() + " " + bytes.offset + bytes.length;
+            break;
+          case NO:
+            skipField(documentInput, bits);
+            assert documentInput.getPosition() <= bytes.offset + bytes.length : documentInput.getPosition() + " " + bytes.offset + bytes.length;
+            break;
+          case STOP:
+            return;
+        }
       }
     }
     assert documentInput.getPosition() == bytes.offset + bytes.length : documentInput.getPosition() + " " + bytes.offset + " " + bytes.length;

@@ -32,6 +32,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
   private final SegmentInfoWriter writer = new SimpleTextSegmentInfoWriter();
 
   public static final String SI_EXTENSION = "si";
+  public static final String SI_FILES_LIST_EXTENSION = "sif";
   
   @Override
   public SegmentInfoReader getSegmentInfoReader() {

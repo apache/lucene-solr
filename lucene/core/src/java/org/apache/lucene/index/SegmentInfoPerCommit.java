@@ -40,6 +40,9 @@ public class SegmentInfoPerCommit {
   // are no deletes yet):
   private long delGen;
 
+  // Generation number of updates (-1 if there are no updates yet):
+  private long updateGen;
+  
   private volatile long sizeInBytes = -1;
 
   /** Sole constructor.
@@ -48,10 +51,11 @@ public class SegmentInfoPerCommit {
    * @param delGen deletion generation number (used to name
              deletion files)
    **/
-  public SegmentInfoPerCommit(SegmentInfo info, int delCount, long delGen) {
+  public SegmentInfoPerCommit(SegmentInfo info, int delCount, long delGen, long updateGen) {
     this.info = info;
     this.delCount = delCount;
     this.delGen = delGen;
+    this.updateGen = updateGen;
   }
 
   void advanceDelGen() {
@@ -63,6 +67,15 @@ public class SegmentInfoPerCommit {
     sizeInBytes = -1;
   }
 
+  void advanceUpdateGen() {
+    if (updateGen == -1) {
+      updateGen = 1;
+    } else {
+      updateGen++;
+    }
+    sizeInBytes = -1;
+  }
+  
   /** Returns total size in bytes of all files for this
    *  segment. */
   public long sizeInBytes() throws IOException {
@@ -85,6 +98,9 @@ public class SegmentInfoPerCommit {
     // Must separately add any live docs files:
     info.getCodec().liveDocsFormat().files(this, files);
 
+    // Must separately add any generation replacement files:
+    info.getCodec().generationReplacementsFormat().files(this, info.dir, files);
+    
     return files;
   }
 
@@ -106,6 +122,7 @@ public class SegmentInfoPerCommit {
     sizeInBytes =  -1;
   }
 
+
   /**
    * Sets the generation number of the live docs file.
    * @see #getDelGen()
@@ -117,14 +134,14 @@ public class SegmentInfoPerCommit {
 
   /** Returns true if there are any deletions for the 
    * segment at this commit. */
-  public boolean hasDeletions() {
+   public boolean hasDeletions() {
     return delGen != -1;
   }
 
-  /**
-   * Returns the next available generation number
-   * of the live docs file.
-   */
+   /**
+    * Returns the next available generation number
+    * of the live docs file.
+    */
   public long getNextDelGen() {
     if (delGen == -1) {
       return 1;
@@ -164,11 +181,39 @@ public class SegmentInfoPerCommit {
     if (delGen != -1) {
       s += ":delGen=" + delGen;
     }
+    if (updateGen != -1) {
+      s += ":updateGen=" + updateGen;
+    }
     return s;
   }
 
   @Override
   public SegmentInfoPerCommit clone() {
-    return new SegmentInfoPerCommit(info, delCount, delGen);
+    return new SegmentInfoPerCommit(info, delCount, delGen, updateGen);
+  }
+
+  public void setUpdateGen(long updateGen) {
+    this.updateGen = updateGen;
+    sizeInBytes =  -1;
+  }
+
+  public boolean hasUpdates() {
+    return updateGen != -1;
+  }
+  
+  public long getNextUpdateGen() {
+    if (updateGen == -1) {
+      return 1;
+    }
+    return updateGen + 1;
+  }
+
+  public long getUpdateGen() {
+    return updateGen;
+  }
+  
+  void clearUpdateGen() {
+    updateGen = -1;
+    sizeInBytes = -1;
   }
 }

@@ -232,14 +232,14 @@ public class TestDoc extends LuceneTestCase {
       info.setFiles(new HashSet<String>(trackingDir.getCreatedFiles()));
       
       if (useCompoundFile) {
-        Collection<String> filesToDelete = IndexWriter.createCompoundFile(InfoStream.getDefault(), dir, MergeState.CheckAbort.NONE, info, newIOContext(random()));
+        Collection<String> filesToDelete = IndexWriter.createCompoundFile(InfoStream.getDefault(), dir, MergeState.CheckAbort.NONE, info, newIOContext(random()), -1);
         info.setUseCompoundFile(true);
         for (final String fileToDelete : filesToDelete) {
           si1.info.dir.deleteFile(fileToDelete);
         }
       }
 
-      return new SegmentInfoPerCommit(info, 0, -1L);
+      return new SegmentInfoPerCommit(info, 0, -1L, -1L);
    }
 
 

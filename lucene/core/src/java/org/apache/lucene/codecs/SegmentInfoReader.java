@@ -39,6 +39,7 @@ public abstract class SegmentInfoReader {
    * Read {@link SegmentInfo} data from a directory.
    * @param directory directory to read from
    * @param segmentName name of the segment to read
+   * @param context IO context to use
    * @return infos instance to be populated with data
    * @throws IOException If an I/O error occurs
    */

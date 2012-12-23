@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.SegmentInfoWriter;
+import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
@@ -111,19 +112,32 @@ public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
         }
       }
 
-      Set<String> files = si.files();
-      int numFiles = files == null ? 0 : files.size();
-      SimpleTextUtil.write(output, SI_NUM_FILES);
-      SimpleTextUtil.write(output, Integer.toString(numFiles), scratch);
-      SimpleTextUtil.writeNewline(output);
-
-      if (numFiles > 0) {
-        for(String fileName : files) {
-          SimpleTextUtil.write(output, SI_FILE);
-          SimpleTextUtil.write(output, fileName, scratch);
-          SimpleTextUtil.writeNewline(output);
-        }
+      actualWriteFiles(si, output, scratch);
+      
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(output);
+      } else {
+        output.close();
       }
+    }
+  }
+  
+  @Override
+  public void writeFilesList(Directory dir, SegmentInfo si, long generation, IOContext ioContext) throws IOException {
+    final String segFileName = IndexFileNames.fileNameFromGeneration(si.name,
+        Lucene40SegmentInfoFormat.SI_FILES_LIST_EXTENSION, generation, true);
+    si.addFile(segFileName);
+
+    boolean success = false;
+    IndexOutput output = dir.createOutput(segFileName,  ioContext);
+
+    try {
+      BytesRef scratch = new BytesRef();
+
+      actualWriteFiles(si, output, scratch);
+      
       success = true;
     } finally {
       if (!success) {
@@ -137,4 +151,22 @@ public class SimpleTextSegmentInfoWriter extends SegmentInfoWriter {
       }
     }
   }
+
+  public void actualWriteFiles(SegmentInfo si, IndexOutput output,
+      BytesRef scratch) throws IOException {
+    Set<String> files = si.files();
+    int numFiles = files == null ? 0 : files.size();
+    SimpleTextUtil.write(output, SI_NUM_FILES);
+    SimpleTextUtil.write(output, Integer.toString(numFiles), scratch);
+    SimpleTextUtil.writeNewline(output);
+
+    if (numFiles > 0) {
+      for(String fileName : files) {
+        SimpleTextUtil.write(output, SI_FILE);
+        SimpleTextUtil.write(output, fileName, scratch);
+        SimpleTextUtil.writeNewline(output);
+      }
+    }
+  }
+
 }

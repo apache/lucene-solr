@@ -57,14 +57,14 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       if (random().nextInt(20) == 0 || j == ids.length - 1) {
         queue.updateSlice(slice1);
         assertTrue(slice1.isTailItem(term));
-        slice1.apply(bd1, j);
+        slice1.apply(bd1, null, j);
         assertAllBetween(last1, j, bd1, ids);
         last1 = j + 1;
       }
       if (random().nextInt(10) == 5 || j == ids.length - 1) {
         queue.updateSlice(slice2);
         assertTrue(slice2.isTailItem(term));
-        slice2.apply(bd2, j);
+        slice2.apply(bd2, null, j);
         assertAllBetween(last2, j, bd2, ids);
         last2 = j + 1;
       }
@@ -167,7 +167,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     queue.tryApplyGlobalSlice();
     assertTrue("changes in global buffer", queue.anyChanges());
     FrozenBufferedDeletes freezeGlobalBuffer = queue.freezeGlobalBuffer(null);
-    assertTrue(freezeGlobalBuffer.any());
+    assertTrue(freezeGlobalBuffer.anyDeletes());
     assertEquals(1, freezeGlobalBuffer.termCount);
     assertFalse("all changes applied", queue.anyChanges());
   }
@@ -198,7 +198,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       DeleteSlice slice = updateThread.slice;
       queue.updateSlice(slice);
       BufferedDeletes deletes = updateThread.deletes;
-      slice.apply(deletes, BufferedDeletes.MAX_INT);
+      slice.apply(deletes, null, BufferedDeletes.MAX_INT);
       assertEquals(uniqueValues, deletes.terms.keySet());
     }
     queue.tryApplyGlobalSlice();
@@ -243,9 +243,9 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       int i = 0;
       while ((i = index.getAndIncrement()) < ids.length) {
         Term term = new Term("id", ids[i].toString());
-        queue.add(term, slice);
+        queue.add(term, slice, null);
         assertTrue(slice.isTailItem(term));
-        slice.apply(deletes, BufferedDeletes.MAX_INT);
+        slice.apply(deletes, null, BufferedDeletes.MAX_INT);
       }
     }
   }

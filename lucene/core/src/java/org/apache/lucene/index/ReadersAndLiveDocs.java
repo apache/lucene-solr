@@ -20,8 +20,10 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.MutableBits;
@@ -63,6 +65,8 @@ class ReadersAndLiveDocs {
   // liveDocs vs when we loaded it or last wrote it:
   private int pendingDeleteCount;
 
+  private UpdatedSegmentData liveUpdates;
+  
   // True if the current liveDocs is referenced by an
   // external NRT reader:
   private boolean shared;
@@ -207,7 +211,7 @@ class ReadersAndLiveDocs {
     }
     shared = true;
     if (liveDocs != null) {
-      return new SegmentReader(reader.getSegmentInfo(), reader.core, liveDocs, info.info.getDocCount() - info.getDelCount() - pendingDeleteCount);
+      return new SegmentReader(reader.getSegmentInfo(), context, reader.core, liveDocs, info.info.getDocCount() - info.getDelCount() - pendingDeleteCount);
     } else {
       assert reader.getLiveDocs() == liveDocs;
       reader.incRef();
@@ -288,6 +292,25 @@ class ReadersAndLiveDocs {
     } else {
       return false;
     }
+  }
+
+  public synchronized void setLiveUpdates(UpdatedSegmentData updatedSegmentData) {
+    assert liveUpdates == null;
+    liveUpdates = updatedSegmentData;
+  }
+
+  public synchronized boolean writeLiveUpdates(Directory directory, Codec codec)
+      throws IOException {
+    if (liveUpdates == null || !liveUpdates.hasUpdates()) {
+      return false;
+    }
+    IOContext context = new IOContext(new FlushInfo(info.info.getDocCount(),
+        info.info.sizeInBytes()));
+    writer.writeSegmentUpdates(info, liveUpdates, context);
+
+    liveUpdates = null;
+        
+    return true;
   }
 
   @Override

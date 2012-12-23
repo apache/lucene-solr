@@ -31,7 +31,6 @@ import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
@@ -103,7 +102,7 @@ final class SegmentMerger {
     assert numMerged == mergeState.segmentInfo.getDocCount();
 
     final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, mergeState.segmentInfo,
-                                                                      mergeState.fieldInfos, termIndexInterval, null, context);
+                                                                      0, mergeState.fieldInfos, termIndexInterval, null, null, context);
     mergeTerms(segmentWriteState);
     mergePerDoc(segmentWriteState);
     

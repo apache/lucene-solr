@@ -68,7 +68,7 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
     BytesRef scratch = new BytesRef();
     CharsRef scratchUTF16 = new CharsRef();
     
-    String fileName = IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getDelGen());
+    String fileName = IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getDelGen(), false);
     IndexInput in = null;
     boolean success = false;
     try {
@@ -110,7 +110,7 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
     int size = bits.length();
     BytesRef scratch = new BytesRef();
     
-    String fileName = IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getNextDelGen());
+    String fileName = IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getNextDelGen(), false);
     IndexOutput out = null;
     boolean success = false;
     try {
@@ -140,7 +140,7 @@ public class SimpleTextLiveDocsFormat extends LiveDocsFormat {
   @Override
   public void files(SegmentInfoPerCommit info, Collection<String> files) throws IOException {
     if (info.hasDeletions()) {
-      files.add(IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getDelGen()));
+      files.add(IndexFileNames.fileNameFromGeneration(info.info.name, LIVEDOCS_EXTENSION, info.getDelGen(), false));
     }
   }
   

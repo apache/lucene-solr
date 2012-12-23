@@ -86,6 +86,9 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   /** Encodes/decodes live docs */
   public abstract LiveDocsFormat liveDocsFormat();
   
+  /** Encodes/decodes live docs */
+  public abstract GenerationReplacementsFormat generationReplacementsFormat();
+  
   /** looks up a codec by name */
   public static Codec forName(String name) {
     if (loader == null) {

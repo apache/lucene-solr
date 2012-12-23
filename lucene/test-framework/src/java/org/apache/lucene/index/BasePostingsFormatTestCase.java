@@ -481,8 +481,8 @@ public abstract class BasePostingsFormatTestCase extends LuceneTestCase {
     long bytes =  totalPostings * 8 + totalPayloadBytes;
 
     SegmentWriteState writeState = new SegmentWriteState(null, dir,
-                                                         segmentInfo, newFieldInfos,
-                                                         32, null, new IOContext(new FlushInfo(maxDoc, bytes)));
+                                                         segmentInfo, 0, newFieldInfos,
+                                                         32, null, null, new IOContext(new FlushInfo(maxDoc, bytes)));
     FieldsConsumer fieldsConsumer = codec.postingsFormat().fieldsConsumer(writeState);
 
     for(Map.Entry<String,Map<BytesRef,Long>> fieldEnt : fields.entrySet()) {

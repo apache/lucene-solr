@@ -61,7 +61,7 @@ public class Lucene40SegmentInfoReader extends SegmentInfoReader {
       final boolean isCompoundFile = input.readByte() == SegmentInfo.YES;
       final Map<String,String> diagnostics = input.readStringStringMap();
       final Map<String,String> attributes = input.readStringStringMap();
-      final Set<String> files = input.readStringSet();
+      Set<String> files = input.readStringSet();
       
       if (input.getFilePointer() != input.length()) {
         throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
@@ -71,10 +71,51 @@ public class Lucene40SegmentInfoReader extends SegmentInfoReader {
                                              null, diagnostics, Collections.unmodifiableMap(attributes));
       si.setFiles(files);
 
+      int updatesIndex = 1;
+      while (updatesIndex > 0) {
+        files = readFilesList(dir, segment, updatesIndex, context);
+        if (files == null) {
+          updatesIndex = -1;
+        } else {
+          si.addFiles(files);
+          updatesIndex++;
+        }
+      }
+
       success = true;
 
       return si;
 
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(input);
+      } else {
+        input.close();
+      }
+    }
+  }
+
+  private Set<String> readFilesList(Directory dir, String segment,
+      long generation, IOContext context) throws IOException {
+    final String fileName = IndexFileNames.fileNameFromGeneration(segment,
+        Lucene40SegmentInfoFormat.SI_FILES_LIST_EXTENSION, generation, true);
+    if (!dir.fileExists(fileName)) {
+      return null;
+    }
+
+    final IndexInput input = dir.openInput(fileName, context);
+    boolean success = false;
+    try {
+      final Set<String> files = input.readStringSet();
+      
+      if (input.getFilePointer() != input.length()) {
+        throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
+      }
+      
+      success = true;
+      
+      return files;
+        
     } finally {
       if (!success) {
         IOUtils.closeWhileHandlingException(input);

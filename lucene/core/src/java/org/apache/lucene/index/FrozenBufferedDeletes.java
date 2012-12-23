@@ -17,8 +17,12 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.SortedSet;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ArrayUtil;
@@ -35,6 +39,7 @@ class FrozenBufferedDeletes {
   /* Query we often undercount (say 24 bytes), plus int. */
   final static int BYTES_PER_DEL_QUERY = RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_INT + 24;
 
+  final static List<Term> EMPTY_LIST = new ArrayList<Term>(0);
   // Terms, in sorted order:
   final PrefixCodedTerms terms;
   int termCount; // just for debugging
@@ -49,31 +54,68 @@ class FrozenBufferedDeletes {
   final boolean isSegmentPrivate;  // set to true iff this frozen packet represents 
                                    // a segment private deletes. in that case is should
                                    // only have Queries 
+  
+  // Updated terms, in sorted order:
+  final PrefixCodedTerms updateTerms;
+  // Updated fields per term
+  final FieldsUpdate[][] updateArrays;
 
-
-  public FrozenBufferedDeletes(BufferedDeletes deletes, boolean isSegmentPrivate) {
+  public FrozenBufferedDeletes(BufferedDeletes deletes, BufferedUpdates updates, boolean isSegmentPrivate) {
     this.isSegmentPrivate = isSegmentPrivate;
-    assert !isSegmentPrivate || deletes.terms.size() == 0 : "segment private package should only have del queries"; 
-    Term termsArray[] = deletes.terms.keySet().toArray(new Term[deletes.terms.size()]);
-    termCount = termsArray.length;
-    ArrayUtil.mergeSort(termsArray);
-    PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
-    for (Term term : termsArray) {
-      builder.add(term);
+    int localBytesUsed = 0;
+    if (deletes != null) {
+      assert !isSegmentPrivate || deletes.terms.size() == 0 : "segment private package should only have del queries";
+      Term termsArray[] = deletes.terms.keySet().toArray(
+          new Term[deletes.terms.size()]);
+      termCount = termsArray.length;
+      ArrayUtil.mergeSort(termsArray);
+      PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
+      for (Term term : termsArray) {
+        builder.add(term);
+      }
+      terms = builder.finish();
+      localBytesUsed += (int) terms.getSizeInBytes();
+      
+      queries = new Query[deletes.queries.size()];
+      queryLimits = new int[deletes.queries.size()];
+      int upto = 0;
+      for (Map.Entry<Query,Integer> ent : deletes.queries.entrySet()) {
+        queries[upto] = ent.getKey();
+        queryLimits[upto] = ent.getValue();
+        upto++;
+      }
+      
+      localBytesUsed += queries.length * BYTES_PER_DEL_QUERY;
+      numTermDeletes = deletes.numTermDeletes.get();
+    } else { 
+      terms = null;
+      numTermDeletes = 0;
+      queries = null;
+      queryLimits = null;
     }
-    terms = builder.finish();
     
-    queries = new Query[deletes.queries.size()];
-    queryLimits = new int[deletes.queries.size()];
-    int upto = 0;
-    for(Map.Entry<Query,Integer> ent : deletes.queries.entrySet()) {
-      queries[upto] = ent.getKey();
-      queryLimits[upto] = ent.getValue();
-      upto++;
+    // freeze updates
+    if (updates != null && !updates.terms.isEmpty()) {
+      PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
+      updateArrays = new FieldsUpdate[updates.terms.size()][];
+      localBytesUsed += RamUsageEstimator.NUM_BYTES_OBJECT_REF * (1 + updateArrays.length);
+      int i = 0;
+      for (Entry<Term,SortedSet<FieldsUpdate>> entry : updates.terms.entrySet()) {
+        builder.add(entry.getKey());
+        SortedSet<FieldsUpdate> updateList = entry.getValue();
+        // TODO : calculate bytes of updates?
+        updateArrays[i] = updateList.toArray(new FieldsUpdate[updateList.size()]);
+        localBytesUsed += RamUsageEstimator.NUM_BYTES_OBJECT_REF * (1 + updateArrays[i].length);
+        i++;
+      }
+      updateTerms = builder.finish();
+      localBytesUsed += (int) updateTerms.getSizeInBytes();
+    } else {
+      updateTerms = null;
+      updateArrays = null;
     }
-
-    bytesUsed = (int) terms.getSizeInBytes() + queries.length * BYTES_PER_DEL_QUERY;
-    numTermDeletes = deletes.numTermDeletes.get();
+    
+    bytesUsed = localBytesUsed;
   }
   
   public void setDelGen(long gen) {
@@ -90,6 +132,9 @@ class FrozenBufferedDeletes {
     return new Iterable<Term>() {
       @Override
       public Iterator<Term> iterator() {
+        if (terms == null) {
+          return EMPTY_LIST.iterator();
+        }
         return terms.iterator();
       }
     };
@@ -129,8 +174,11 @@ class FrozenBufferedDeletes {
     if (numTermDeletes != 0) {
       s += " " + numTermDeletes + " deleted terms (unique count=" + termCount + ")";
     }
-    if (queries.length != 0) {
+    if (queries != null && queries.length != 0) {
       s += " " + queries.length + " deleted queries";
+    }
+    if (updateArrays != null && updateArrays.length > 0) {
+      s += " " + updateArrays.length + " updates";
     }
     if (bytesUsed != 0) {
       s += " bytesUsed=" + bytesUsed;
@@ -139,7 +187,11 @@ class FrozenBufferedDeletes {
     return s;
   }
   
-  boolean any() {
-    return termCount > 0 || queries.length > 0;
+  boolean anyDeletes() {
+    return termCount > 0 || (queries != null && queries.length > 0);
+  }
+  
+  boolean anyUpdates() {
+    return updateTerms != null;
   }
 }

@@ -34,6 +34,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 
 import java.io.Closeable;
+import java.util.Set;
 
 import static org.apache.lucene.codecs.lucene40.Lucene40StoredFieldsWriter.*;
 
@@ -142,7 +143,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
   }
 
   @Override
-  public final void visitDocument(int n, StoredFieldVisitor visitor) throws IOException {
+  public final void visitDocument(int n, StoredFieldVisitor visitor, Set<String> ignoreFields) throws IOException {
     seekIndex(n);
     fieldsStream.seek(indexStream.readLong());
 
@@ -154,15 +155,19 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
       int bits = fieldsStream.readByte() & 0xFF;
       assert bits <= (FIELD_IS_NUMERIC_MASK | FIELD_IS_BINARY): "bits=" + Integer.toHexString(bits);
 
-      switch(visitor.needsField(fieldInfo)) {
-        case YES:
-          readField(visitor, fieldInfo, bits);
-          break;
-        case NO: 
-          skipField(bits);
-          break;
-        case STOP: 
-          return;
+      if (ignoreFields != null && ignoreFields.contains(fieldInfo.name)) {
+        skipField(bits);
+      } else {
+        switch (visitor.needsField(fieldInfo)) {
+          case YES:
+            readField(visitor, fieldInfo, bits);
+            break;
+          case NO:
+            skipField(bits);
+            break;
+          case STOP:
+            return;
+        }
       }
     }
   }

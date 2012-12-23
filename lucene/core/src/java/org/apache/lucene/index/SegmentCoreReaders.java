@@ -80,29 +80,41 @@ final class SegmentCoreReaders {
   private final Set<CoreClosedListener> coreClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
   
-  SegmentCoreReaders(SegmentReader owner, Directory dir, SegmentInfoPerCommit si, IOContext context, int termsIndexDivisor) throws IOException {
+  SegmentCoreReaders(SegmentReader owner, SegmentInfoPerCommit si, long updageGen, IOContext context, int termsIndexDivisor) throws IOException {
     
     if (termsIndexDivisor == 0) {
       throw new IllegalArgumentException("indexDivisor must be < 0 (don't load terms index) or greater than 0 (got 0)");
     }
+  
+    final SegmentInfo info;
+    final String infoName;
+    if (updageGen == -1) {
+      info = si.info;
+      infoName = info.name;
+    } else {
+      info = new SegmentInfo(si.info, updageGen);
+      infoName = IndexFileNames.fileNameFromGeneration(si.info.name, "", updageGen, true);
+    }
     
-    final Codec codec = si.info.getCodec();
+    Directory dir = info.dir;
+    
+    final Codec codec = info.getCodec();
     final Directory cfsDir; // confusing name: if (cfs) its the cfsdir, otherwise its the segment's directory.
 
     boolean success = false;
     
     try {
-      if (si.info.getUseCompoundFile()) {
-        cfsDir = cfsReader = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(si.info.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context, false);
+      if (info.getUseCompoundFile()) {
+        cfsDir = cfsReader = new CompoundFileDirectory(dir, IndexFileNames.segmentFileName(infoName, "", IndexFileNames.COMPOUND_FILE_EXTENSION), context, false);
       } else {
         cfsReader = null;
         cfsDir = dir;
       }
-      fieldInfos = codec.fieldInfosFormat().getFieldInfosReader().read(cfsDir, si.info.name, IOContext.READONCE);
+      fieldInfos = codec.fieldInfosFormat().getFieldInfosReader().read(cfsDir, infoName, IOContext.READONCE);
 
       this.termsIndexDivisor = termsIndexDivisor;
       final PostingsFormat format = codec.postingsFormat();
-      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, si.info, fieldInfos, context, termsIndexDivisor);
+      final SegmentReadState segmentReadState = new SegmentReadState(cfsDir, info, fieldInfos, context, termsIndexDivisor);
       // Ask codec for its Fields
       fields = format.fieldsProducer(segmentReadState);
       assert fields != null;
@@ -112,10 +124,10 @@ final class SegmentCoreReaders {
       norms = codec.normsFormat().docsProducer(segmentReadState);
       perDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
   
-      fieldsReaderOrig = si.info.getCodec().storedFieldsFormat().fieldsReader(cfsDir, si.info, fieldInfos, context);
+      fieldsReaderOrig = info.getCodec().storedFieldsFormat().fieldsReader(cfsDir, info, fieldInfos, context);
 
       if (fieldInfos.hasVectors()) { // open term vector files only as needed
-        termVectorsReaderOrig = si.info.getCodec().termVectorsFormat().vectorsReader(cfsDir, si.info, fieldInfos, context);
+        termVectorsReaderOrig = info.getCodec().termVectorsFormat().vectorsReader(cfsDir, info, fieldInfos, context);
       } else {
         termVectorsReaderOrig = null;
       }

@@ -28,7 +28,6 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.PerDocConsumer;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
 import org.apache.lucene.index.TypePromoter.TypeCompatibility;
 import org.apache.lucene.store.IOContext;
@@ -370,7 +369,7 @@ final class DocFieldProcessor extends DocConsumer {
     }
 
     if (perDocConsumer == null) {
-      PerDocWriteState perDocWriteState = docState.docWriter.newPerDocWriteState("");
+      PerDocWriteState perDocWriteState = docState.docWriter.newPerDocWriteState();
       perDocConsumer = docState.docWriter.codec.docValuesFormat().docsConsumer(perDocWriteState);
       if (perDocConsumer == null) {
         throw new IllegalStateException("codec=" +  docState.docWriter.codec + " does not support docValues: from docValuesFormat().docsConsumer(...) returned null; field=" + fieldInfo.name);

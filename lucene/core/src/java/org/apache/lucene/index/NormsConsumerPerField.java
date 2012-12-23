@@ -71,7 +71,7 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
     if (consumer == null) {
       assert fieldInfo.getNormType() == null || fieldInfo.getNormType() == type;
       fieldInfo.setNormValueType(type);
-      consumer = parent.newConsumer(docState.docWriter.newPerDocWriteState(""), fieldInfo, type);
+      consumer = parent.newConsumer(docState.docWriter.newPerDocWriteState(), fieldInfo, type);
       this.initType = type;
     }
     if (initType != type) {

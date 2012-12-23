@@ -92,7 +92,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     SegmentReader mergedReader = new SegmentReader(new SegmentInfoPerCommit(
                                                          new SegmentInfo(mergedDir, Constants.LUCENE_MAIN_VERSION, mergedSegment, docsMerged,
                                                                          false, codec, null, null),
-                                                         0, -1L),
+                                                         0, -1L, -1L),
                                                    DirectoryReader.DEFAULT_TERMS_INDEX_DIVISOR, newIOContext(random()));
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);

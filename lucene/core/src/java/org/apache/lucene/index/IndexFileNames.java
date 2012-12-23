@@ -29,7 +29,7 @@ import org.apache.lucene.codecs.Codec;
  * name matches an extension ({@link #matchesExtension(String, String)
  * matchesExtension}), as well as generating file names from a segment name,
  * generation and extension (
- * {@link #fileNameFromGeneration(String, String, long) fileNameFromGeneration},
+ * {@link #fileNameFromGeneration(String, String, long, boolean) fileNameFromGeneration},
  * {@link #segmentFileName(String, String, String) segmentFileName}).
  *
  * <p><b>NOTE</b>: extensions used by codecs are not
@@ -83,8 +83,9 @@ public final class IndexFileNames {
    * @param base main part of the file name
    * @param ext extension of the filename
    * @param gen generation
+   * @param isUpdate whether the file is an update file or not
    */
-  public static String fileNameFromGeneration(String base, String ext, long gen) {
+  public static String fileNameFromGeneration(String base, String ext, long gen, boolean isUpdate) {
     if (gen == -1) {
       return null;
     } else if (gen == 0) {
@@ -94,11 +95,43 @@ public final class IndexFileNames {
       // The '6' part in the length is: 1 for '.', 1 for '_' and 4 as estimate
       // to the gen length as string (hopefully an upper limit so SB won't
       // expand in the middle.
-      StringBuilder res = new StringBuilder(base.length() + 6 + ext.length())
-          .append(base).append('_').append(Long.toString(gen, Character.MAX_RADIX));
+      StringBuilder res = new StringBuilder(base.length() + 6 + ext.length());
+      if (isUpdate) {
+        res.append('_');
+      }
+      res.append(base).append('_').append(generationString(gen));
       if (ext.length() > 0) {
         res.append('.').append(ext);
       }
+      return res.toString();
+    }
+  }
+
+  public static String generationString(long gen) {
+    return Long.toString(gen, Character.MAX_RADIX);
+  }
+  
+  /**
+   * Computes the base name of an updated segment from base and generation. If
+   * the generation &lt; 0, the file name is null. otherwise, the file name is
+   * &lt;base&gt;_upd_&lt;gen&gt;.<br>
+   * 
+   * @param baseName
+   *          base segment string
+   * @param gen
+   *          update generation
+   */
+  public static String updatedSegmentFileNameFromGeneration(String baseName,
+      long gen) {
+    if (gen <= 0) {
+      return null;
+    } else {
+      assert gen > 0;
+      // The '10' part in the length is: 3 for '_', 3 for "upd" and 4 as
+      // estimate to the gen length as string (hopefully an upper limit so SB
+      // won't expand in the middle.
+      StringBuilder res = new StringBuilder(baseName.length() + 10).append('_')
+          .append(baseName).append('_').append(generationString(gen));
       return res.toString();
     }
   }
@@ -201,5 +234,5 @@ public final class IndexFileNames {
 
   // All files created by codecs much match this pattern (we
   // check this in SegmentInfo.java):
-  static final Pattern CODEC_FILE_PATTERN = Pattern.compile("_[a-z0-9]+(_.*)?\\..*");
+  static final Pattern CODEC_FILE_PATTERN = Pattern.compile("_[_]?[a-z0-9]+(_.*)?\\..*");
 }

@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.SegmentInfoReader;
+import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
@@ -95,21 +96,23 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
         attributes.put(key, value);
       }
 
-      SimpleTextUtil.readLine(input, scratch);
-      assert StringHelper.startsWith(scratch, SI_NUM_FILES);
-      int numFiles = Integer.parseInt(readString(SI_NUM_FILES.length, scratch));
-      Set<String> files = new HashSet<String>();
-
-      for (int i = 0; i < numFiles; i++) {
-        SimpleTextUtil.readLine(input, scratch);
-        assert StringHelper.startsWith(scratch, SI_FILE);
-        String fileName = readString(SI_FILE.length, scratch);
-        files.add(fileName);
-      }
+      Set<String> files = actualReadFiles(input, scratch);
 
       SegmentInfo info = new SegmentInfo(directory, version, segmentName, docCount, 
                                          isCompoundFile, null, diagnostics, Collections.unmodifiableMap(attributes));
       info.setFiles(files);
+
+      int updatesIndex = 1;
+      while (updatesIndex > 0) {
+        files = readFilesList(directory, segmentName, updatesIndex, context);
+        if (files == null) {
+          updatesIndex = -1;
+        } else {
+          info.addFiles(files);
+          updatesIndex++;
+        }
+      }
+      
       success = true;
       return info;
     } finally {
@@ -121,6 +124,45 @@ public class SimpleTextSegmentInfoReader extends SegmentInfoReader {
     }
   }
 
+  private Set<String> readFilesList(Directory dir, String segment, long generation,  IOContext context) throws IOException {
+    final String segFileName = IndexFileNames.fileNameFromGeneration(segment, Lucene40SegmentInfoFormat.SI_FILES_LIST_EXTENSION, generation, true);
+    if (!dir.fileExists(segFileName)) {
+      return null;
+    }
+
+    IndexInput input = dir.openInput(segFileName, context);
+    boolean success = false;
+    try {
+      BytesRef scratch = new BytesRef();
+      Set<String> files = actualReadFiles(input, scratch);
+      
+      success = true;
+      return files;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(input);
+      } else {
+        input.close();
+      }
+    }
+  }
+
+  private Set<String> actualReadFiles(IndexInput input, BytesRef scratch)
+      throws IOException {
+    SimpleTextUtil.readLine(input, scratch);
+    assert StringHelper.startsWith(scratch, SI_NUM_FILES);
+    int numFiles = Integer.parseInt(readString(SI_NUM_FILES.length, scratch));
+    Set<String> files = new HashSet<String>();
+    
+    for (int i = 0; i < numFiles; i++) {
+      SimpleTextUtil.readLine(input, scratch);
+      assert StringHelper.startsWith(scratch, SI_FILE);
+      String fileName = readString(SI_FILE.length, scratch);
+      files.add(fileName);
+    }
+    return files;
+  }
+  
   private String readString(int offset, BytesRef scratch) {
     return new String(scratch.bytes, scratch.offset+offset, scratch.length-offset, IOUtils.CHARSET_UTF_8);
   }

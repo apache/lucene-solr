@@ -86,7 +86,7 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
 
   @Override
   public Bits readLiveDocs(Directory dir, SegmentInfoPerCommit info, IOContext context) throws IOException {
-    String filename = IndexFileNames.fileNameFromGeneration(info.info.name, DELETES_EXTENSION, info.getDelGen());
+    String filename = IndexFileNames.fileNameFromGeneration(info.info.name, DELETES_EXTENSION, info.getDelGen(), false);
     final BitVector liveDocs = new BitVector(dir, filename, context);
     assert liveDocs.count() == info.info.getDocCount() - info.getDelCount():
       "liveDocs.count()=" + liveDocs.count() + " info.docCount=" + info.info.getDocCount() + " info.getDelCount()=" + info.getDelCount();
@@ -96,7 +96,7 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
 
   @Override
   public void writeLiveDocs(MutableBits bits, Directory dir, SegmentInfoPerCommit info, int newDelCount, IOContext context) throws IOException {
-    String filename = IndexFileNames.fileNameFromGeneration(info.info.name, DELETES_EXTENSION, info.getNextDelGen());
+    String filename = IndexFileNames.fileNameFromGeneration(info.info.name, DELETES_EXTENSION, info.getNextDelGen(), false);
     final BitVector liveDocs = (BitVector) bits;
     assert liveDocs.count() == info.info.getDocCount() - info.getDelCount() - newDelCount;
     assert liveDocs.length() == info.info.getDocCount();
@@ -106,7 +106,7 @@ public class Lucene40LiveDocsFormat extends LiveDocsFormat {
   @Override
   public void files(SegmentInfoPerCommit info, Collection<String> files) throws IOException {
     if (info.hasDeletions()) {
-      files.add(IndexFileNames.fileNameFromGeneration(info.info.name, DELETES_EXTENSION, info.getDelGen()));
+      files.add(IndexFileNames.fileNameFromGeneration(info.info.name, DELETES_EXTENSION, info.getDelGen(), false));
     }
   }
 }

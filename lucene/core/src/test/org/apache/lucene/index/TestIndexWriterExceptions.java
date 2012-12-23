@@ -1058,7 +1058,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     final String segmentsFileName = SegmentInfos.getLastCommitSegmentsFileName(dir);
     IndexInput in = dir.openInput(segmentsFileName, newIOContext(random()));
-    IndexOutput out = dir.createOutput(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", 1+gen), newIOContext(random()));
+    IndexOutput out = dir.createOutput(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", 1+gen, false), newIOContext(random()));
     out.copyBytes(in, in.length()-1);
     byte b = in.readByte();
     out.writeByte((byte) (1+b));
@@ -1104,7 +1104,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       String fileNameIn = SegmentInfos.getLastCommitSegmentsFileName(dir);
       String fileNameOut = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                                  "",
-                                                                 1+gen);
+                                                                 1+gen, false);
       IndexInput in = dir.openInput(fileNameIn, newIOContext(random()));
       IndexOutput out = dir.createOutput(fileNameOut, newIOContext(random()));
       long length = in.length();
@@ -1210,7 +1210,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       String fileNameIn = SegmentInfos.getLastCommitSegmentsFileName(dir);
       String fileNameOut = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                                  "",
-                                                                 1+gen);
+                                                                 1+gen, false);
       IndexInput in = dir.openInput(fileNameIn, newIOContext(random()));
       IndexOutput out = dir.createOutput(fileNameOut, newIOContext(random()));
       long length = in.length();

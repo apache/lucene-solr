@@ -18,13 +18,14 @@ package org.apache.lucene.codecs;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.lucene.index.StoredFieldVisitor;
 
 /**
  * Codec API for reading stored fields.
  * <p>
- * You need to implement {@link #visitDocument(int, StoredFieldVisitor)} to
+ * You need to implement {@link #visitDocument(int, StoredFieldVisitor, Set)} to
  * read the stored fields for a document, implement {@link #clone()} (creating
  * clones of any IndexInputs used, etc), and {@link #close()}
  * @lucene.experimental
@@ -35,8 +36,9 @@ public abstract class StoredFieldsReader implements Cloneable, Closeable {
   protected StoredFieldsReader() {
   }
   
-  /** Visit the stored fields for document <code>n</code> */
-  public abstract void visitDocument(int n, StoredFieldVisitor visitor) throws IOException;
+  /** Visit the stored fields for document <code>n</code>, ignoring certain
+   * fields. */
+  public abstract void visitDocument(int n, StoredFieldVisitor visitor, Set<String> ignoreFields) throws IOException;
 
   @Override
   public abstract StoredFieldsReader clone();

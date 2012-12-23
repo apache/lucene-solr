@@ -80,7 +80,7 @@ class BufferedDeletesStream {
      * since deletes are applied to the wrong segments.
      */
     packet.setDelGen(nextGen++);
-    assert packet.any();
+    assert packet.anyDeletes() || packet.anyUpdates();
     assert checkDeleteStats();
     assert packet.delGen() < nextGen;
     assert deletes.isEmpty() || deletes.get(deletes.size()-1).delGen() < packet.delGen() : "Delete packets must be in order";
@@ -187,7 +187,7 @@ class BufferedDeletesStream {
       final SegmentInfoPerCommit info = infos2.get(infosIDX);
       final long segGen = info.getBufferedDeletesGen();
 
-      if (packet != null && segGen < packet.delGen()) {
+      if (packet != null && packet.anyDeletes() && segGen < packet.delGen()) {
         //System.out.println("  coalesce");
         if (coalescedDeletes == null) {
           coalescedDeletes = new CoalescedDeletes();
@@ -204,7 +204,7 @@ class BufferedDeletesStream {
         }
 
         delIDX--;
-      } else if (packet != null && segGen == packet.delGen()) {
+      } else if (packet != null && packet.anyDeletes() && segGen == packet.delGen()) {
         assert packet.isSegmentPrivate : "Packet and Segments deletegen can only match on a segment private del packet gen=" + segGen;
         //System.out.println("  eq");
 
@@ -293,6 +293,25 @@ class BufferedDeletesStream {
         info.setBufferedDeletesGen(nextGen);
 
         infosIDX--;
+      }
+    }
+    
+    for (SegmentInfoPerCommit updateInfo : infos2) {
+      //System.out.println("BD: cycle delIDX=" + delIDX + " infoIDX=" + infosIDX);
+      final long updateSegGen = updateInfo.getBufferedDeletesGen();
+      
+      for (FrozenBufferedDeletes updatePacket : deletes) {
+        if (updatePacket.anyUpdates() && updatePacket.delGen() <= updateSegGen) {
+          assert readerPool.infoIsLive(updateInfo);
+          final ReadersAndLiveDocs rld = readerPool.get(updateInfo, true);
+          final SegmentReader reader = rld.getReader(IOContext.READ);
+          try {
+            anyNewDeletes |= applyTermUpdates(updatePacket.updateTerms, updatePacket.updateArrays, rld, reader);
+          } finally {
+            rld.release(reader);
+            readerPool.release(rld);
+          }
+        }
       }
     }
 
@@ -425,6 +444,77 @@ class BufferedDeletesStream {
     }
 
     return delCount;
+  }
+
+  private synchronized boolean applyTermUpdates(PrefixCodedTerms updateTerms,
+      FieldsUpdate[][] updateArrays, ReadersAndLiveDocs rld,
+      SegmentReader reader) throws IOException {
+    Fields fields = reader.fields();
+    if (fields == null) {
+      // This reader has no postings
+      return false;
+    }
+    
+    TermsEnum termsEnum = null;
+    
+    String currentField = null;
+    DocsEnum docs = null;
+    
+    assert checkDeleteTerm(null);
+
+    UpdatedSegmentData updatedSegmentData = new UpdatedSegmentData();
+    int termIndex = -1;
+    
+    // System.out.println(Thread.currentThread().getName() +
+    // " del terms reader=" + reader);
+    for (Term term : updateTerms) {
+      termIndex++;
+      // Since we visit terms sorted, we gain performance
+      // by re-using the same TermsEnum and seeking only
+      // forwards
+      if (!term.field().equals(currentField)) {
+        assert currentField == null || currentField.compareTo(term.field()) < 0;
+        currentField = term.field();
+        Terms terms = fields.terms(currentField);
+        if (terms != null) {
+          termsEnum = terms.iterator(null);
+        } else {
+          termsEnum = null;
+        }
+      }
+      
+      if (termsEnum == null) {
+        continue;
+      }
+      assert checkDeleteTerm(term);
+      
+      // System.out.println("  term=" + term);
+      
+      if (termsEnum.seekExact(term.bytes(), false)) {
+        // we don't need term frequencies for this
+        DocsEnum docsEnum = termsEnum.docs(rld.getLiveDocs(), docs, 0);
+        // System.out.println("BDS: got docsEnum=" + docsEnum);
+        
+        if (docsEnum != null) {
+          while (true) {
+            final int docID = docsEnum.nextDoc();
+            // System.out.println(Thread.currentThread().getName() +
+            // " del term=" + term + " doc=" + docID);
+            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
+              break;
+            }
+            updatedSegmentData.addUpdates(docID, updateArrays[termIndex]);
+          }
+        }
+      }
+    }
+    
+    if (updatedSegmentData.hasUpdates()) {
+      rld.setLiveUpdates(updatedSegmentData);
+      return true;
+    }
+    
+    return false;
   }
 
   public static class QueryAndLimit {

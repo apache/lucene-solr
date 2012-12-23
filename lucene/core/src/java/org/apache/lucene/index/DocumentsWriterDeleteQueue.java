@@ -25,15 +25,15 @@ import org.apache.lucene.search.Query;
 
 /**
  * {@link DocumentsWriterDeleteQueue} is a non-blocking linked pending deletes
- * queue. In contrast to other queue implementation we only maintain the
- * tail of the queue. A delete queue is always used in a context of a set of
- * DWPTs and a global delete pool. Each of the DWPT and the global pool need to
- * maintain their 'own' head of the queue (as a DeleteSlice instance per DWPT).
- * The difference between the DWPT and the global pool is that the DWPT starts
- * maintaining a head once it has added its first document since for its segments
- * private deletes only the deletes after that document are relevant. The global
- * pool instead starts maintaining the head once this instance is created by
- * taking the sentinel instance as its initial head.
+ * queue. In contrast to other queue implementation we only maintain the tail of
+ * the queue. A delete queue is always used in a context of a set of DWPTs and a
+ * global delete pool. Each of the DWPT and the global pool need to maintain
+ * their 'own' head of the queue (as a DeleteSlice instance per DWPT). The
+ * difference between the DWPT and the global pool is that the DWPT starts
+ * maintaining a head once it has added its first document since for its
+ * segments private deletes only the deletes after that document are relevant.
+ * The global pool instead starts maintaining the head once this instance is
+ * created by taking the sentinel instance as its initial head.
  * <p>
  * Since each {@link DeleteSlice} maintains its own head and the list is only
  * single linked the garbage collector takes care of pruning the list for us.
@@ -44,14 +44,15 @@ import org.apache.lucene.search.Query;
  * Each DWPT as well as the global delete pool maintain their private
  * DeleteSlice instance. In the DWPT case updating a slice is equivalent to
  * atomically finishing the document. The slice update guarantees a "happens
- * before" relationship to all other updates in the same indexing session. When a
- * DWPT updates a document it:
+ * before" relationship to all other updates in the same indexing session. When
+ * a DWPT updates a document it:
  * 
  * <ol>
  * <li>consumes a document and finishes its processing</li>
  * <li>updates its private {@link DeleteSlice} either by calling
- * {@link #updateSlice(DeleteSlice)} or {@link #add(Term, DeleteSlice)} (if the
- * document has a delTerm)</li>
+ * {@link #updateSlice(DeleteSlice)} or
+ * {@link #add(Term, DeleteSlice, FieldsUpdate)} (if the document has a delTerm)
+ * </li>
  * <li>applies all deletes in the slice to its private {@link BufferedDeletes}
  * and resets it</li>
  * <li>increments its internal document id</li>
@@ -73,6 +74,7 @@ final class DocumentsWriterDeleteQueue {
 
   private final DeleteSlice globalSlice;
   private final BufferedDeletes globalBufferedDeletes;
+  private final BufferedUpdates globalBufferedUpdates;
   /* only acquired to update the global deletes */
   private final ReentrantLock globalBufferLock = new ReentrantLock();
 
@@ -83,11 +85,12 @@ final class DocumentsWriterDeleteQueue {
   }
   
   DocumentsWriterDeleteQueue(long generation) {
-    this(new BufferedDeletes(), generation);
+    this(new BufferedDeletes(), new BufferedUpdates(), generation);
   }
 
-  DocumentsWriterDeleteQueue(BufferedDeletes globalBufferedDeletes, long generation) {
+  DocumentsWriterDeleteQueue(BufferedDeletes globalBufferedDeletes, BufferedUpdates globalBufferedUpdates, long generation) {
     this.globalBufferedDeletes = globalBufferedDeletes;
+    this.globalBufferedUpdates = globalBufferedUpdates;
     this.generation = generation;
     /*
      * we use a sentinel instance as our initial tail. No slice will ever try to
@@ -110,8 +113,8 @@ final class DocumentsWriterDeleteQueue {
   /**
    * invariant for document update
    */
-  void add(Term term, DeleteSlice slice) {
-    final TermNode termNode = new TermNode(term);
+  void add(Term term, DeleteSlice slice, FieldsUpdate fieldsUpdate) {
+    final TermNode termNode = new TermNode(term, fieldsUpdate);
 //    System.out.println(Thread.currentThread().getName() + ": push " + termNode + " this=" + this);
     add(termNode);
     /*
@@ -174,7 +177,7 @@ final class DocumentsWriterDeleteQueue {
        * and if the global slice is up-to-date
        * and if globalBufferedDeletes has changes
        */
-      return globalBufferedDeletes.any() || !globalSlice.isEmpty() || globalSlice.sliceTail != tail
+      return globalBufferedDeletes.any() || globalBufferedUpdates.any() || !globalSlice.isEmpty() || globalSlice.sliceTail != tail
           || tail.next != null;
     } finally {
       globalBufferLock.unlock();
@@ -192,7 +195,7 @@ final class DocumentsWriterDeleteQueue {
       try {
         if (updateSlice(globalSlice)) {
 //          System.out.println(Thread.currentThread() + ": apply globalSlice");
-          globalSlice.apply(globalBufferedDeletes, BufferedDeletes.MAX_INT);
+          globalSlice.apply(globalBufferedDeletes, globalBufferedUpdates, BufferedDeletes.MAX_INT);
         }
       } finally {
         globalBufferLock.unlock();
@@ -217,13 +220,14 @@ final class DocumentsWriterDeleteQueue {
     try {
       if (globalSlice.sliceTail != currentTail) {
         globalSlice.sliceTail = currentTail;
-        globalSlice.apply(globalBufferedDeletes, BufferedDeletes.MAX_INT);
+        globalSlice.apply(globalBufferedDeletes, globalBufferedUpdates, BufferedDeletes.MAX_INT);
       }
 
 //      System.out.println(Thread.currentThread().getName() + ": now freeze global buffer " + globalBufferedDeletes);
       final FrozenBufferedDeletes packet = new FrozenBufferedDeletes(
-          globalBufferedDeletes, false);
+          globalBufferedDeletes, globalBufferedUpdates, false);
       globalBufferedDeletes.clear();
+      globalBufferedUpdates.clear();
       return packet;
     } finally {
       globalBufferLock.unlock();
@@ -257,7 +261,7 @@ final class DocumentsWriterDeleteQueue {
       sliceHead = sliceTail = currentTail;
     }
 
-    void apply(BufferedDeletes del, int docIDUpto) {
+    void apply(BufferedDeletes del, BufferedUpdates update, int docIDUpto) {
       if (sliceHead == sliceTail) {
         // 0 length slice
         return;
@@ -272,7 +276,7 @@ final class DocumentsWriterDeleteQueue {
       do {
         current = current.next;
         assert current != null : "slice property violated between the head on the tail must not be a null node";
-        current.apply(del, docIDUpto);
+        current.apply(del, update, docIDUpto);
 //        System.out.println(Thread.currentThread().getName() + ": pull " + current + " docIDUpto=" + docIDUpto);
       } while (current != sliceTail);
       reset();
@@ -323,7 +327,7 @@ final class DocumentsWriterDeleteQueue {
     static final AtomicReferenceFieldUpdater<Node,Node> nextUpdater = AtomicReferenceFieldUpdater
         .newUpdater(Node.class, Node.class, "next");
 
-    void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
+    void apply(BufferedDeletes bufferedDeletes, BufferedUpdates bufferedUpdates, int docIDUpto) {
       throw new IllegalStateException("sentinel item must never be applied");
     }
 
@@ -333,14 +337,20 @@ final class DocumentsWriterDeleteQueue {
   }
 
   private static final class TermNode extends Node<Term> {
-
-    TermNode(Term term) {
+    FieldsUpdate fieldsUpdate;
+    
+    TermNode(Term term, FieldsUpdate fieldsUpdate) {
       super(term);
+      this.fieldsUpdate = fieldsUpdate;
     }
 
     @Override
-    void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
-      bufferedDeletes.addTerm(item, docIDUpto);
+    void apply(BufferedDeletes bufferedDeletes, BufferedUpdates bufferedUpdates, int docIDUpto) {
+      if (fieldsUpdate == null) {
+        bufferedDeletes.addTerm(item, docIDUpto);
+      } else {
+        bufferedUpdates.addTerm(item, new FieldsUpdate(fieldsUpdate, docIDUpto));
+      }
     }
 
     @Override
@@ -355,7 +365,7 @@ final class DocumentsWriterDeleteQueue {
     }
 
     @Override
-    void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
+    void apply(BufferedDeletes bufferedDeletes, BufferedUpdates bufferedUpdates, int docIDUpto) {
       for (Query query : item) {
         bufferedDeletes.addQuery(query, docIDUpto);  
       }
@@ -368,7 +378,7 @@ final class DocumentsWriterDeleteQueue {
     }
 
     @Override
-    void apply(BufferedDeletes bufferedDeletes, int docIDUpto) {
+    void apply(BufferedDeletes bufferedDeletes, BufferedUpdates bufferedUpdates, int docIDUpto) {
       for (Term term : item) {
         bufferedDeletes.addTerm(term, docIDUpto);  
       }
@@ -387,7 +397,7 @@ final class DocumentsWriterDeleteQueue {
     try {
       if (globalSlice.sliceTail != currentTail) {
         globalSlice.sliceTail = currentTail;
-        globalSlice.apply(globalBufferedDeletes, BufferedDeletes.MAX_INT);
+        globalSlice.apply(globalBufferedDeletes, globalBufferedUpdates, BufferedDeletes.MAX_INT);
       }
       return globalBufferedDeletes.any();
     } finally {
@@ -409,6 +419,10 @@ final class DocumentsWriterDeleteQueue {
     return globalBufferedDeletes.bytesUsed.get();
   }
 
+  public long updateBytesUsed() {
+    return globalBufferedUpdates.bytesUsed.get();
+  }
+  
   @Override
   public String toString() {
     return "DWDQ: [ generation: " + generation + " ]";

@@ -30,9 +30,7 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PostingsFormat; // javadocs
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldType; // for javadocs
+import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -46,6 +44,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CommandLineUtil;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.StringHelper;
+// javadocs
+// for javadocs
 
 /**
  * Basic tool and API to check the health of an index and
@@ -781,7 +781,7 @@ public class CheckIndex {
         }
         
         final int docFreq = termsEnum.docFreq();
-        if (docFreq <= 0) {
+        if (docFreq < 0) {
           throw new RuntimeException("docfreq: " + docFreq + " is out of bounds");
         }
         sumDocFreq += docFreq;
@@ -919,7 +919,7 @@ public class CheckIndex {
           throw new RuntimeException("term " + term + " docFreq=" + docFreq + " != tot docs w/o deletions " + docCount);
         }
         if (hasTotalTermFreq) {
-          if (totalTermFreq2 <= 0) {
+          if (totalTermFreq2 < 0) {
             throw new RuntimeException("totalTermFreq: " + totalTermFreq2 + " is out of bounds");
           }
           sumTotalTermFreq += totalTermFreq;

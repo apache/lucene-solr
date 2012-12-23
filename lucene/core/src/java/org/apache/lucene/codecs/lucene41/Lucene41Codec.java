@@ -21,6 +21,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
+import org.apache.lucene.codecs.GenerationReplacementsFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -29,6 +30,7 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40GenerationReplacementsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40NormsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
@@ -55,6 +57,7 @@ public class Lucene41Codec extends Codec {
   private final SegmentInfoFormat infosFormat = new Lucene40SegmentInfoFormat();
   private final NormsFormat normsFormat = new Lucene40NormsFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat();
+  private final GenerationReplacementsFormat generationReplacementsFormat = new Lucene40GenerationReplacementsFormat();
   
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
@@ -106,6 +109,11 @@ public class Lucene41Codec extends Codec {
   @Override
   public final LiveDocsFormat liveDocsFormat() {
     return liveDocsFormat;
+  }
+
+  @Override
+  public final GenerationReplacementsFormat generationReplacementsFormat() {
+    return generationReplacementsFormat;
   }
 
   /** Returns the postings format that should be used for writing 

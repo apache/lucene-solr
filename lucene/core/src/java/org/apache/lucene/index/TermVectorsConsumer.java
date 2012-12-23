@@ -112,7 +112,7 @@ final class TermVectorsConsumer extends TermsHashConsumer {
     assert lastDocID == docState.docID: "lastDocID=" + lastDocID + " docState.docID=" + docState.docID;
 
     lastDocID++;
-
+      
     termsHash.reset();
     reset();
     assert docWriter.writer.testPoint("TermVectorsTermsWriter.finishDocument end");

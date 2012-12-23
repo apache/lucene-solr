@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.simpletext;
  */
 
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.index.FieldInfo;
@@ -91,7 +92,7 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
   }
   
   @Override
-  public void visitDocument(int n, StoredFieldVisitor visitor) throws IOException {
+  public void visitDocument(int n, StoredFieldVisitor visitor, Set<String> ignoreFields) throws IOException {
     in.seek(offsets[n]);
     readLine();
     assert StringHelper.startsWith(scratch, NUM);
@@ -124,15 +125,20 @@ public class SimpleTextStoredFieldsReader extends StoredFieldsReader {
         throw new RuntimeException("unknown field type");
       }
       
-      switch (visitor.needsField(fieldInfo)) {
-        case YES:  
-          readField(type, fieldInfo, visitor);
-          break;
-        case NO:   
-          readLine();
-          assert StringHelper.startsWith(scratch, VALUE);
-          break;
-        case STOP: return;
+      if (ignoreFields != null && ignoreFields.contains(fieldInfo.name)) {
+        readLine();
+      } else {
+        switch (visitor.needsField(fieldInfo)) {
+          case YES:
+            readField(type, fieldInfo, visitor);
+            break;
+          case NO:
+            readLine();
+            assert StringHelper.startsWith(scratch, VALUE);
+            break;
+          case STOP:
+            return;
+        }
       }
     }
   }

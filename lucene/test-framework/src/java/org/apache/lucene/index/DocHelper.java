@@ -254,6 +254,23 @@ class DocHelper {
   }                         
 
   /**
+   * Adds part of the fields above to a document 
+   * @param doc The document to write
+   * @param from index of the first field to add
+   * @param to index of the last field to add + 1
+   */ 
+  public static void setupDoc(Document doc, int from, int to) {
+    for (int i=from; i<to; i++) {
+      doc.add(fields[i]);
+    }
+  }                         
+  
+  /** return the number of fields added in {@link #setupDoc(Document)} */
+  public static int numFields() {
+    return fields.length;
+  }
+  
+  /**
    * Writes the document to the directory using a segment
    * named "test"; returns the SegmentInfo describing the new
    * segment 

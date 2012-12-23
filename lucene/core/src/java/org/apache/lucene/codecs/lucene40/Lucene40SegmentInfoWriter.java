@@ -71,4 +71,28 @@ public class Lucene40SegmentInfoWriter extends SegmentInfoWriter {
       }
     }
   }
+  
+  @Override
+  public void writeFilesList(Directory dir, SegmentInfo si,
+      long generation, IOContext ioContext) throws IOException {
+    final String fileName = IndexFileNames.fileNameFromGeneration(si.name,
+        Lucene40SegmentInfoFormat.SI_FILES_LIST_EXTENSION, generation, true);
+    si.addFile(fileName);
+    
+    final IndexOutput output = dir.createOutput(fileName, ioContext);
+      
+    boolean success = false;
+    try {
+      output.writeStringSet(si.files());
+        
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(output);
+        si.dir.deleteFile(fileName);
+      } else {
+        output.close();
+      }
+    }
+  }
 }

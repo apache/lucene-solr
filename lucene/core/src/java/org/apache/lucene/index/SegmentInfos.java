@@ -203,7 +203,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
   public static String getLastCommitSegmentsFileName(String[] files) {
     return IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                  "",
-                                                 getLastCommitGeneration(files));
+                                                 getLastCommitGeneration(files), false);
   }
 
   /**
@@ -215,7 +215,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
   public static String getLastCommitSegmentsFileName(Directory directory) throws IOException {
     return IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                  "",
-                                                 getLastCommitGeneration(directory));
+                                                 getLastCommitGeneration(directory), false);
   }
 
   /**
@@ -224,7 +224,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
   public String getSegmentsFileName() {
     return IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                  "",
-                                                 lastGeneration);
+                                                 lastGeneration, false);
   }
   
   /**
@@ -256,7 +256,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
     }
     return IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                  "",
-                                                 nextGeneration);
+                                                 nextGeneration, false);
   }
 
   /**
@@ -305,7 +305,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         if (delCount < 0 || delCount > info.getDocCount()) {
           throw new CorruptIndexException("invalid deletion count: " + delCount + " (resource: " + input + ")");
         }
-        add(new SegmentInfoPerCommit(info, delCount, delGen));
+        long updateGen = input.readLong();
+        add(new SegmentInfoPerCommit(info, delCount, delGen, updateGen));
       }
       userData = input.readStringStringMap();
 
@@ -373,6 +374,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         segnOutput.writeString(si.getCodec().getName());
         segnOutput.writeLong(siPerCommit.getDelGen());
         segnOutput.writeInt(siPerCommit.getDelCount());
+        segnOutput.writeLong(siPerCommit.getUpdateGen());
         assert si.dir == directory;
 
         assert siPerCommit.getDelCount() <= si.getDocCount();
@@ -662,7 +664,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
 
         segmentFileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                                 "",
-                                                                gen);
+                                                                gen, false);
 
         try {
           Object v = doBody(segmentFileName);
@@ -690,7 +692,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
             // try it if so:
             String prevSegmentFileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                                                "",
-                                                                               gen-1);
+                                                                               gen-1, false);
 
             final boolean prevExists;
             prevExists = directory.fileExists(prevSegmentFileName);
@@ -742,7 +744,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
       // since lastGeneration isn't incremented:
       final String segmentFileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                                             "",
-                                                                           generation);
+                                                                           generation, false);
       // Suppress so we keep throwing the original exception
       // in our caller
       IOUtils.deleteFilesIgnoringExceptions(dir, segmentFileName);
@@ -832,7 +834,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
     // logic in SegmentInfos to kick in and load the last
     // good (previous) segments_N-1 file.
 
-    final String fileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", generation);
+    final String fileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", generation, false);
     success = false;
     try {
       dir.sync(Collections.singleton(fileName));

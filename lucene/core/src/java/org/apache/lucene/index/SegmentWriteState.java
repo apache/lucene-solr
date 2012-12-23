@@ -39,6 +39,7 @@ public class SegmentWriteState {
 
   /** {@link SegmentInfo} describing this segment. */
   public final SegmentInfo segmentInfo;
+  public final int updateGen;
 
   /** {@link FieldInfos} describing all fields in this
    *  segment. */
@@ -55,10 +56,20 @@ public class SegmentWriteState {
    *  deleted. */
   public final BufferedDeletes segDeletes;
 
+  /** Updates to apply while we are flushing the segment.  A
+   *  Term is enrolled in here if it was used in update at one
+   *  point, and it's mapped to the docIDUpto, meaning any
+   *  docID &lt; docIDUpto containing this term should be
+   *  deleted. */
+  public final BufferedUpdates segUpdates;
+
   /** {@link MutableBits} recording live documents; this is
    *  only set if there is one or more deleted documents. */
   public MutableBits liveDocs;
 
+  // Lazily created:
+  public UpdatedSegmentData liveUpdates;
+  
   /** Unique suffix for any postings files written for this
    *  segment.  {@link PerFieldPostingsFormat} sets this for
    *  each of the postings formats it wraps.  If you create
@@ -79,12 +90,16 @@ public class SegmentWriteState {
   public final IOContext context;
 
   /** Sole constructor. */
-  public SegmentWriteState(InfoStream infoStream, Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos,
-      int termIndexInterval, BufferedDeletes segDeletes, IOContext context) {
+  public SegmentWriteState(InfoStream infoStream, Directory directory,
+      SegmentInfo segmentInfo, int updateGen, FieldInfos fieldInfos,
+      int termIndexInterval, BufferedDeletes segDeletes,
+      BufferedUpdates segUpdates, IOContext context) {
     this.infoStream = infoStream;
     this.segDeletes = segDeletes;
+    this.segUpdates = segUpdates;
     this.directory = directory;
     this.segmentInfo = segmentInfo;
+    this.updateGen = updateGen;
     this.fieldInfos = fieldInfos;
     this.termIndexInterval = termIndexInterval;
     segmentSuffix = "";
@@ -98,11 +113,13 @@ public class SegmentWriteState {
     infoStream = state.infoStream;
     directory = state.directory;
     segmentInfo = state.segmentInfo;
+    updateGen = state.updateGen;
     fieldInfos = state.fieldInfos;
     termIndexInterval = state.termIndexInterval;
     context = state.context;
     this.segmentSuffix = segmentSuffix;
     segDeletes = state.segDeletes;
+    segUpdates = state.segUpdates;
     delCountOnFlush = state.delCountOnFlush;
   }
 }
