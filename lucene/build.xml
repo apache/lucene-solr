@@ -133,7 +133,7 @@
           -->
       <test-macro 
         dataDir="${backwards.dir}/core/src/test" 
-        tempDir="${build.dir.backwards}/test" 
+        workDir="${build.dir.backwards}/test" 
         junit.classpath="backwards.junit.classpath" 
         junit.output.dir="${junit.output.dir.backwards}" 
         tests.nightly="false"
