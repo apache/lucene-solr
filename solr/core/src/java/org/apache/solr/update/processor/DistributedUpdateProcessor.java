@@ -407,11 +407,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     // TODO: we should do this in the background it would seem
     for (SolrCmdDistributor.Error error : response.errors) {
-      if (error.node instanceof RetryNode || error.e instanceof SolrException) {
+      if (error.node instanceof RetryNode) {
         // we don't try to force a leader to recover
         // when we cannot forward to it
-        // and we assume SolrException means
-        // the node went down
         continue;
       }
       // TODO: we should force their state to recovering ??
