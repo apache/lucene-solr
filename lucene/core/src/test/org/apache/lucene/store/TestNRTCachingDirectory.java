@@ -124,7 +124,9 @@ public class TestNRTCachingDirectory extends LuceneTestCase {
   
   // LUCENE-3382 -- make sure we get exception if the directory really does not exist.
   public void testNoDir() throws Throwable {
-    Directory dir = new NRTCachingDirectory(newFSDirectory(_TestUtil.getTempDir("doesnotexist")), 2.0, 25.0);
+    File tempDir = _TestUtil.getTempDir("doesnotexist");
+    _TestUtil.rmDir(tempDir);
+    Directory dir = new NRTCachingDirectory(newFSDirectory(tempDir), 2.0, 25.0);
     try {
       DirectoryReader.open(dir);
       fail("did not hit expected exception");
