@@ -375,6 +375,9 @@ Bug Fixes
 * SOLR-3972: Fix ShowFileRequestHandler to not log a warning in the 
   (expected) situation of a file not found.  (hossman)
 
+* SOLR-4133: Cannot "set" field to null with partial updates when using the
+  standard RequestWriter. (Will Butler, shalin)
+
 Other Changes
 ----------------------
 

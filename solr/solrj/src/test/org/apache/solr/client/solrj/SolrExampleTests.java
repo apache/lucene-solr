@@ -21,6 +21,7 @@ package org.apache.solr.client.solrj;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +30,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import junit.framework.Assert;
 
 import org.apache.lucene.util._TestUtil;
@@ -1392,7 +1394,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertEquals("Failed to add doc to cloud server", 1, response.getResults().getNumFound());
 
     Map<String, List<String>> operation = new HashMap<String, List<String>>();
-    operation.put("set", Lists.asList("first", "second", new String[]{"third"}));
+    operation.put("set", Arrays.asList("first", "second", "third"));
     doc.addField("multi_ss", operation);
     solrServer.add(doc);
     solrServer.commit(true, true);
@@ -1402,7 +1404,7 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertEquals("Field values was not updated with all values via atomic update", 3, values.size());
 
     operation.clear();
-    operation.put("add", Lists.asList("fourth", new String[]{"fifth"}));
+    operation.put("add", Arrays.asList("fourth", "fifth"));
     doc.removeField("multi_ss");
     doc.addField("multi_ss", operation);
     solrServer.add(doc);
@@ -1410,6 +1412,27 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     response = solrServer.query(new SolrQuery("id:123"));
     values = (List<String>) response.getResults().get(0).get("multi_ss");
     assertEquals("Field values was not updated with all values via atomic update", 5, values.size());
+  }
+
+  @Test
+  public void testSetNullUpdates() throws Exception {
+    SolrServer solrServer = getSolrServer();
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "testSetNullUpdates");
+    doc.addField("single_s", "test-value");
+    doc.addField("multi_ss", Arrays.asList("first", "second"));
+    solrServer.add(doc);
+    solrServer.commit(true, true);
+    doc.removeField("single_s");
+    doc.removeField("multi_ss");
+    Map<String, Object> map = Maps.newHashMap();
+    map.put("set", null);
+    doc.addField("multi_ss", map);
+    solrServer.add(doc);
+    solrServer.commit(true, true);
+    QueryResponse response = solrServer.query(new SolrQuery("id:testSetNullUpdates"));
+    assertNotNull("Entire doc was replaced because null update was not written", response.getResults().get(0).getFieldValue("single_s"));
+    assertNull("Null update failed. Value still exists in document", response.getResults().get(0).getFieldValue("multi_ss"));
   }
   
   @Test

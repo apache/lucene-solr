@@ -147,8 +147,12 @@ public class ClientUtils
     } else {
       if( boost != 1.0f ) {
         XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost, "update", update);
-      } else if (v != null) {
-        XML.writeXML(writer, "field", v.toString(), "name", name, "update", update);
+      } else {
+        if (v == null)  {
+          XML.writeXML(writer, "field", null, "name", name, "update", update, "null", true);
+        } else  {
+          XML.writeXML(writer, "field", v.toString(), "name", name, "update", update);
+        }
       }
     }
   }
