@@ -224,7 +224,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
   private Map<SegmentInfoPerCommit,Boolean> segmentsToMerge = new HashMap<SegmentInfoPerCommit,Boolean>();
   private int mergeMaxNumSegments;
 
-  protected Lock writeLock;
+  private Lock writeLock;
 
   private volatile boolean closed;
   private volatile boolean closing;

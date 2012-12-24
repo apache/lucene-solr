@@ -150,17 +150,11 @@ public class SolrIndexWriter extends IndexWriter {
           log.error("Error closing IndexWriter, trying rollback", t);
           super.rollback();
         }
-        if (writeLock != null && writeLock.isLocked()) {
+        if (IndexWriter.isLocked(directory)) {
           try {
-            // we go right to the lock because
-            // IndexWriter#unlock(Directory) does
-            // not work well in this case with
-            // native locks
-            writeLock.release();
+            IndexWriter.unlock(directory);
           } catch (Throwable t) {
-            log.error(
-                "Coud not unlock directory after seemingly failed IndexWriter#close()",
-                t);
+            log.error("Coud not unlock directory after seemingly failed IndexWriter#close()", t);
           }
         }
         break;
