@@ -43,7 +43,7 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
  * limitations under the License.
  */
 
-public class FacetsPayloadProcessorProviderTest extends LuceneTestCase {
+public class OrdinalMappingReaderTest extends LuceneTestCase {
   
   private static final int NUM_DOCS = 100;
   
