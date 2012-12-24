@@ -101,13 +101,13 @@
   <inceptionYear>2000</inceptionYear>
   <scm>
     <connection>
-      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/branches/branch_3x
+      scm:svn:http://svn.apache.org/repos/asf/lucene/dev/branches/lucene_solr_3_6
     </connection>
     <developerConnection>
-      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/branches/branch_3x
+      scm:svn:https://svn.apache.org/repos/asf/lucene/dev/branches/lucene_solr_3_6
     </developerConnection>
     <url>
-      http://svn.apache.org/viewvc/lucene/dev/branches/branch_3x
+      http://svn.apache.org/viewvc/lucene/dev/branches/lucene_solr_3_6
     </url>
   </scm>
   <licenses>
