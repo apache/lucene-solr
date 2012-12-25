@@ -24,8 +24,8 @@ import org.apache.lucene.search.TermStatistics;
  * Used for ranking passages.
  * <p>
  * Each passage is scored as a miniature document within the document.
- * The final score is computed as {@link #norm} * {@link #weight} * &sum; {@link #tf}.
- * The default implementation is BM25 * {@link #norm}.
+ * The final score is computed as {@link #norm} * &sum; ({@link #weight} * {@link #tf}).
+ * The default implementation is {@link #norm} * BM25.
  * @lucene.experimental
  */
 public class PassageScorer {
