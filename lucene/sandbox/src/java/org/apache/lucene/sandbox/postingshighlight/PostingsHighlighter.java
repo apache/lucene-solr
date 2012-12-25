@@ -51,6 +51,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * Simple highlighter that does not analyze fields nor use
@@ -88,9 +89,7 @@ public final class PostingsHighlighter {
   /** Default maximum content size to process. Typically snippets
    *  closer to the beginning of the document better summarize its content */
   public static final int DEFAULT_MAX_LENGTH = 10000;
-  
-  // this looks bogus, but its not. we are dealing with characters :)
-  private static final BytesRef ceilingBytes = new BytesRef(new byte[] { (byte)0xff });  
+    
   private final String field;
   private final Term floor;
   private final Term ceiling;
@@ -119,7 +118,7 @@ public final class PostingsHighlighter {
     this.scorer = scorer;
     this.formatter = formatter;
     floor = new Term(field, "");
-    ceiling = new Term(field, ceilingBytes);
+    ceiling = new Term(field, UnicodeUtil.BIG_TERM);
   }
   
   /**
