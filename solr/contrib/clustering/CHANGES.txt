@@ -6,6 +6,10 @@ See http://wiki.apache.org/solr/ClusteringComponent
 
 CHANGES
 
+==================  3.6.3  ==================
+
+(No Changes)
+
 ==================  3.6.2  ==================
 
 (No Changes)

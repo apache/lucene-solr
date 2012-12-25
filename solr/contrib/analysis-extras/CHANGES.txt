@@ -9,6 +9,9 @@ upon large dependencies/dictionaries.
 It includes integration with ICU for multilingual support, and 
 analyzers for Chinese and Polish.
 
+==================  3.6.3  ==================
+
+(No Changes)
 
 ==================  3.6.2  ==================
 

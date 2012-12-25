@@ -20,6 +20,10 @@ when more advanced customization is required.
 See README.txt and http://lucene.apache.org/solr for more information
 on how to get started.
 
+==================  3.6.3  ==================
+
+(No Changes)
+
 ==================  3.6.2  ==================
 
 Bug Fixes

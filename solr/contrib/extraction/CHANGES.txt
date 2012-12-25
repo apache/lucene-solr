@@ -22,6 +22,10 @@ Tika Dependency
 
 Current Version: Tika 1.0 (released 2011-11-07)
 
+================== Release 3.6.3 ==================
+
+(No Changes)
+
 ================== Release 3.6.2 ==================
 
 (No Changes)

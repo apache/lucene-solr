@@ -4,6 +4,9 @@ Apache Solr Language Identifier
 This file describes changes to the SolrTika Language Identifier (contrib/langid) module.
 See http://wiki.apache.org/solr/LanguageDetection for details
 
+================== Release 3.6.3 ==================
+
+(No Changes)
 
 ================== Release 3.6.2 ==================
 

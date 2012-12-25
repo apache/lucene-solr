@@ -6,6 +6,9 @@ Introduction
 DataImportHandler is a data import tool for Solr which makes importing data from Databases, XML files and
 HTTP data sources quick and easy.
 
+==================  3.6.3  ==================
+
+(No Changes)
 
 ==================  3.6.2  ==================
 
