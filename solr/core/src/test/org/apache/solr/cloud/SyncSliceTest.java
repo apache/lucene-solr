@@ -242,12 +242,18 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     shardFailMessage = pollConsistency(shardFailMessage, 0);
     shardFailMessage = pollConsistency(shardFailMessage, 3000);
     shardFailMessage = pollConsistency(shardFailMessage, 5000);
+    shardFailMessage = pollConsistency(shardFailMessage, 8000);
     
     return shardFailMessage;
   }
 
   private String pollConsistency(String shardFailMessage, int sleep)
       throws InterruptedException, Exception {
+    try {
+      commit();
+    } catch (Throwable t) {
+      t.printStackTrace();
+    }
     if (shardFailMessage == null) {
       // try again
       Thread.sleep(sleep);
