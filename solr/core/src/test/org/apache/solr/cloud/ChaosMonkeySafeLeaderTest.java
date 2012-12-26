@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
@@ -29,12 +30,12 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
-@Ignore("SOLR-3126")
+@BadApple
 public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   private static final int BASE_RUN_LENGTH = 120000;
+  private static final int RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", Integer.toString(BASE_RUN_LENGTH)));
 
   @BeforeClass
   public static void beforeSuperClass() {
@@ -66,8 +67,8 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   public ChaosMonkeySafeLeaderTest() {
     super();
-    sliceCount = 3;//atLeast(2);
-    shardCount = 12;//atLeast(sliceCount*2);
+    sliceCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.slicecount", "3"));
+    shardCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.shardcount", "12"));
   }
   
   @Override
@@ -91,7 +92,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     }
     
     chaosMonkey.startTheMonkey(false, 500);
-    int runLength = atLeast(BASE_RUN_LENGTH);
+    int runLength = RUN_LENGTH;
     Thread.sleep(runLength);
     
     chaosMonkey.stopTheMonkey();
@@ -113,7 +114,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
 
     Thread.sleep(2000);
 
-    waitForThingsToLevelOut(Integer.MAX_VALUE); //Math.round((runLength / 1000.0f / 3.0f)));
+    waitForThingsToLevelOut(180000);
 
     checkShardConsistency(true, true);
     
