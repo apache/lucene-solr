@@ -17,9 +17,6 @@ package org.apache.lucene.sandbox.postingshighlight;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.CollectionStatistics;
-import org.apache.lucene.search.TermStatistics;
-
 /** 
  * Used for ranking passages.
  * <p>
@@ -44,16 +41,17 @@ public class PassageScorer {
   public static final float pivot = 87f;
     
   /**
-   * Computes term importance, given its collection-wide statistics.
+   * Computes term importance, given its in-document statistics.
    * 
-   * @param collectionStats statistics for the collection
-   * @param termStats statistics for the term
+   * @param contentLength length of document in characters
+   * @param totalTermFreq number of time term occurs in document
    * @return term importance
    */
-  public float weight(CollectionStatistics collectionStats, TermStatistics termStats) {
-    long numDocs = collectionStats.maxDoc();
-    long docFreq = termStats.docFreq();
-    return (k1 + 1) * (float) Math.log(1 + (numDocs - docFreq + 0.5D)/(docFreq + 0.5D));
+  public float weight(int contentLength, int totalTermFreq) {
+    // approximate #docs from content length
+    float numDocs = 1 + contentLength / pivot;
+    // numDocs not numDocs - docFreq (ala DFR), since we approximate numDocs
+    return (k1 + 1) * (float) Math.log(1 + (numDocs + 0.5D)/(totalTermFreq + 0.5D));
   }
 
   /**

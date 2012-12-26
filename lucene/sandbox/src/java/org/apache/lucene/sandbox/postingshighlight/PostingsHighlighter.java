@@ -39,16 +39,12 @@ import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
-import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
@@ -135,6 +131,7 @@ public final class PostingsHighlighter {
     SortedSet<Term> terms = new TreeSet<Term>();
     query.extractTerms(terms);
     terms = terms.subSet(floor, ceiling);
+    Term termTexts[] = terms.toArray(new Term[terms.size()]);
     // TODO: should we have some reasonable defaults for term pruning? (e.g. stopwords)
 
     int docids[] = new int[scoreDocs.length];
@@ -154,24 +151,6 @@ public final class PostingsHighlighter {
       reader.document(docids[i], visitor);
       contents[i] = visitor.getValue();
       visitor.reset();
-    }
-    
-    // now pull index stats: TODO: we should probably pull this from the reader instead?
-    // this could be a distributed call, which is crazy
-    CollectionStatistics collectionStats = searcher.collectionStatistics(field);
-    TermContext termContexts[] = new TermContext[terms.size()];
-    Term termTexts[] = new Term[terms.size()]; // needed for seekExact
-    float weights[] = new float[terms.size()];
-    int upto = 0;
-    for (Term term : terms) {
-      termTexts[upto] = term;
-      TermContext context = TermContext.build(readerContext, term, true);
-      termContexts[upto] = context;
-      TermStatistics termStats = searcher.termStatistics(term, context);
-      weights[upto] = scorer.weight(collectionStats, termStats);
-      upto++;
-      // TODO: should we instead score all the documents term-at-a-time here?
-      // the i/o would be better, but more transient ram
     }
     
     BreakIterator bi = (BreakIterator)breakIterator.clone();
@@ -201,7 +180,7 @@ public final class PostingsHighlighter {
         termsEnum = t.iterator(null);
         postings = new DocsAndPositionsEnum[terms.size()];
       }
-      Passage passages[] = highlightDoc(termTexts, termContexts, subContext.ord, weights, content.length(), bi, doc - subContext.docBase, termsEnum, postings, maxPassages);
+      Passage passages[] = highlightDoc(termTexts, content.length(), bi, doc - subContext.docBase, termsEnum, postings, maxPassages);
       if (passages.length > 0) {
         // otherwise a null snippet
         highlights.put(doc, formatter.format(passages, content));
@@ -219,9 +198,10 @@ public final class PostingsHighlighter {
   // algorithm: treat sentence snippets as miniature documents
   // we can intersect these with the postings lists via BreakIterator.preceding(offset),s
   // score each sentence as norm(sentenceStartOffset) * sum(weight * tf(freq))
-  private Passage[] highlightDoc(Term termTexts[], TermContext[] terms, int ord, float[] weights, 
-      int contentLength, BreakIterator bi, int doc, TermsEnum termsEnum, DocsAndPositionsEnum[] postings, int n) throws IOException {
+  private Passage[] highlightDoc(Term terms[], int contentLength, BreakIterator bi, int doc, 
+      TermsEnum termsEnum, DocsAndPositionsEnum[] postings, int n) throws IOException {
     PriorityQueue<OffsetsEnum> pq = new PriorityQueue<OffsetsEnum>();
+    float weights[] = new float[terms.length];
     // initialize postings
     for (int i = 0; i < terms.length; i++) {
       DocsAndPositionsEnum de = postings[i];
@@ -230,11 +210,9 @@ public final class PostingsHighlighter {
         continue;
       } else if (de == null) {
         postings[i] = EMPTY; // initially
-        TermState ts = terms[i].get(ord);
-        if (ts == null) {
-          continue;
+        if (!termsEnum.seekExact(terms[i].bytes(), true)) {
+          continue; // term not found
         }
-        termsEnum.seekExact(termTexts[i].bytes(), ts);
         DocsAndPositionsEnum de2 = termsEnum.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_OFFSETS);
         if (de2 == null) {
           continue;
@@ -250,6 +228,7 @@ public final class PostingsHighlighter {
       }
 
       if (doc == pDoc) {
+        weights[i] = scorer.weight(contentLength, de.freq());
         de.nextPosition();
         pq.add(new OffsetsEnum(de, i));
       }
@@ -315,7 +294,7 @@ public final class PostingsHighlighter {
       int tf = 0;
       while (true) {
         tf++;
-        current.addMatch(start, end, termTexts[off.id]);
+        current.addMatch(start, end, terms[off.id]);
         if (off.pos == dp.freq()) {
           break; // removed from pq
         } else {
