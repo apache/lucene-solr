@@ -23,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -372,7 +373,12 @@ public final class ZkController {
   private String getHostAddress(String host) throws IOException {
 
     if (host == null) {
-      String hostaddress = InetAddress.getLocalHost().getHostAddress();
+      String hostaddress;
+      try {
+        hostaddress = InetAddress.getLocalHost().getHostAddress();
+      } catch (UnknownHostException e) {
+        hostaddress = "127.0.0.1"; // cannot resolve system hostname, fall through
+      }
       // Re-get the IP again for "127.0.0.1", the other case we trust the hosts
       // file is right.
       if ("127.0.0.1".equals(hostaddress)) {
