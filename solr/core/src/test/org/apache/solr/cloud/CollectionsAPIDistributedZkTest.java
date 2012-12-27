@@ -609,29 +609,39 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         Object value;
         Object indexDir;
         Object name;
+
         try {
-          if (((value = server.getAttribute(mbean, "category")) != null && value.toString().equals(Category.CORE.toString())) &&
-              ((value = server.getAttribute(mbean, "source")) != null && value.toString().contains(SolrCore.class.getSimpleName())) &&
-              ((indexDir = server.getAttribute(mbean, "indexDir")) != null) &&
-              ((name = server.getAttribute(mbean, "name")) != null)) {
-              if (!indexDirToShardNamesMap.containsKey(indexDir.toString())) {
-                indexDirToShardNamesMap.put(indexDir.toString(), new HashSet<String>());
-              }
-              indexDirToShardNamesMap.get(indexDir.toString()).add(name.toString());
+          if (((value = server.getAttribute(mbean, "category")) != null && value
+              .toString().equals(Category.CORE.toString()))
+              && ((indexDir = server.getAttribute(mbean, "coreName")) != null)
+              && ((indexDir = server.getAttribute(mbean, "indexDir")) != null)
+              && ((name = server.getAttribute(mbean, "name")) != null)) {
+            if (!indexDirToShardNamesMap.containsKey(indexDir.toString())) {
+              indexDirToShardNamesMap.put(indexDir.toString(),
+                  new HashSet<String>());
+            }
+            indexDirToShardNamesMap.get(indexDir.toString()).add(
+                name.toString());
           }
         } catch (Exception e) {
-          // ignore, just continue - probably a "category" or "source" attribute not found
+          // ignore, just continue - probably a "category" or "source" attribute
+          // not found
         }
       }
     }
     
-    assertTrue("Something is broken in the assert for no shards using the same indexDir - probably something was changed in the attributes published in the MBean of " + SolrCore.class.getSimpleName(), indexDirToShardNamesMap.size() > 0);
-    for (Entry<String, Set<String>> entry : indexDirToShardNamesMap.entrySet()) {
+    assertTrue(
+        "Something is broken in the assert for no shards using the same indexDir - probably something was changed in the attributes published in the MBean of "
+            + SolrCore.class.getSimpleName() + " : " + indexDirToShardNamesMap,
+        indexDirToShardNamesMap.size() > 0);
+    for (Entry<String,Set<String>> entry : indexDirToShardNamesMap.entrySet()) {
       if (entry.getValue().size() > 1) {
-        fail("We have shards using the same indexDir. E.g. shards " + entry.getValue().toString() + " all use indexDir " + entry.getKey());
+        fail("We have shards using the same indexDir. E.g. shards "
+            + entry.getValue().toString() + " all use indexDir "
+            + entry.getKey());
       }
     }
-    
+
   }
   
   protected SolrInputDocument getDoc(Object... fields) throws Exception {
