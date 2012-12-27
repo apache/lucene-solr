@@ -17,11 +17,6 @@
 
 package org.apache.solr.handler;
 
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Counter;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
-import com.yammer.metrics.stats.Snapshot;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -35,34 +30,26 @@ import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
 
 import java.net.URL;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
  */
 public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoMBean {
 
+  // statistics
+  // TODO: should we bother synchronizing these, or is an off-by-one error
+  // acceptable every million requests or so?
+  volatile long numRequests;
+  volatile long numErrors;
+  volatile long numTimeouts;
   protected NamedList initArgs = null;
   protected SolrParams defaults;
   protected SolrParams appends;
   protected SolrParams invariants;
+  volatile long totalTime = 0;
+  long handlerStart = System.currentTimeMillis();
   protected boolean httpCaching = true;
 
-  // Statistics
-  private static final AtomicLong handlerNumber = new AtomicLong();
-  private final Counter numRequests;
-  private final Counter numErrors;
-  private final Counter numTimeouts;
-  private final Timer requestTimes;
-  long handlerStart = System.currentTimeMillis();
-
-  public RequestHandlerBase() {
-    String scope = new String("metrics-scope-" + handlerNumber.getAndIncrement());
-    numRequests = Metrics.newCounter(RequestHandlerBase.class, "numRequests", scope);
-    numErrors = Metrics.newCounter(RequestHandlerBase.class, "numErrors", scope);
-    numTimeouts = Metrics.newCounter(RequestHandlerBase.class, "numTimeouts", scope);
-    requestTimes = Metrics.newTimer(RequestHandlerBase.class, "requestTimes", scope);
-  }
 
   /**
    * Initializes the {@link org.apache.solr.request.SolrRequestHandler} by creating three {@link org.apache.solr.common.params.SolrParams} named.
@@ -107,7 +94,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   public void init(NamedList args) {
     initArgs = args;
 
-    // Copied from StandardRequestHandler
+    // Copied from StandardRequestHandler 
     if( args != null ) {
       Object o = args.get("defaults");
       if (o != null && o instanceof NamedList) {
@@ -127,7 +114,6 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       Object caching = initArgs.get("httpCaching");
       httpCaching = caching != null ? Boolean.parseBoolean(caching.toString()) : true;
     }
-
   }
 
   public NamedList getInitArgs() {
@@ -138,8 +124,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    numRequests.inc();
-    TimerContext timer = requestTimes.time();
+    numRequests++;
     try {
       SolrPluginUtils.setDefaults(req,defaults,appends,invariants);
       rsp.setHttpCaching(httpCaching);
@@ -150,7 +135,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         Object partialResults = header.get("partialResults");
         boolean timedOut = partialResults == null ? false : (Boolean)partialResults;
         if( timedOut ) {
-          numTimeouts.inc();
+          numTimeouts++;
           rsp.setHttpCaching(false);
         }
       }
@@ -171,12 +156,11 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       }
 
       rsp.setException(e);
-      numErrors.inc();
+      numErrors++;
     }
-    finally {
-      timer.stop();
-    }
+    totalTime += rsp.getEndTime() - req.getStartTime();
   }
+  
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
@@ -209,20 +193,12 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   public NamedList<Object> getStatistics() {
     NamedList<Object> lst = new SimpleOrderedMap<Object>();
     lst.add("handlerStart",handlerStart);
-    lst.add("requests", numRequests.count());
-    lst.add("errors", numErrors.count());
-    lst.add("timeouts", numTimeouts.count());
-    lst.add("totalTime",requestTimes.sum());
-    lst.add("avgRequestsPerSecond", requestTimes.meanRate());
-    lst.add("5minRateReqsPerSecond", requestTimes.fiveMinuteRate());
-    lst.add("15minRateReqsPerSecond", requestTimes.fifteenMinuteRate());
-    lst.add("avgTimePerRequest", requestTimes.mean());
-    Snapshot snapshot = requestTimes.getSnapshot();
-    lst.add("medianRequestTime", snapshot.getMedian());
-    lst.add("75thPcRequestTime", snapshot.get75thPercentile());
-    lst.add("95thPcRequestTime", snapshot.get95thPercentile());
-    lst.add("99thPcRequestTime", snapshot.get99thPercentile());
-    lst.add("999thPcRequestTime", snapshot.get999thPercentile());
+    lst.add("requests", numRequests);
+    lst.add("errors", numErrors);
+    lst.add("timeouts", numTimeouts);
+    lst.add("totalTime",totalTime);
+    lst.add("avgTimePerRequest", (float) totalTime / (float) this.numRequests);
+    lst.add("avgRequestsPerSecond", (float) numRequests*1000 / (float)(System.currentTimeMillis()-handlerStart));   
     return lst;
   }
   
