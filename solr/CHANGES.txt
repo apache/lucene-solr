@@ -83,10 +83,6 @@ New Features
   - SOLR-4144: Replication using too much RAM. (yonik, Markus Jelsma)
   - SOLR-4187: NPE on Directory release (Mark Miller, Markus Jelsma)
     
-* SOLR-1972: Add extra statistics to RequestHandlers - 5 & 15-minute reqs/sec
-  rolling averages; median, 75th, 95th, 99th, 99.9th percentile request times
-  (Alan Woodward, Shawn Heisey, Adrien Grand)
-  
 * SOLR-4051: Add <propertyWriter /> element to DIH's data-config.xml file,  
   allowing the user to specify the location, filename and Locale for
   the "data-config.properties" file.  Alternatively, users can specify their
