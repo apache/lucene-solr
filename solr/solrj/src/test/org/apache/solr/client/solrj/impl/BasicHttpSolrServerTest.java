@@ -124,20 +124,25 @@ public class BasicHttpSolrServerTest extends SolrJettyTestBase {
         .addServletWithMapping(DebugServlet.class, "/debug/*");
   }
   
+  // what is this actually testing? this test WILL randomly fail.
+  // not a good unit test!
   @Test
   public void testConnectionRefused() throws MalformedURLException {
     int unusedPort = findUnusedPort(); // XXX even if fwe found an unused port
                                        // it might not be unused anymore
     HttpSolrServer server = new HttpSolrServer("http://127.0.0.1:" + unusedPort
         + "/solr");
+    server.setConnectionTimeout(500);
     SolrQuery q = new SolrQuery("*:*");
     try {
       QueryResponse response = server.query(q);
       fail("Should have thrown an exception.");
     } catch (SolrServerException e) {
+      assumeFalse("blackholed!", e.getMessage().contains("IOException occured when talking to server"));
       assertTrue(e.getMessage().contains("refused"));
+    } finally {
+      server.shutdown();
     }
-    server.shutdown();
   }
   
   @Test
