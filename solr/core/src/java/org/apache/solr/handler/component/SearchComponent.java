@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.net.URL;
 
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
@@ -33,6 +32,10 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  */
 public abstract class SearchComponent implements SolrInfoMBean, NamedListInitializedPlugin
 {
+  /**
+   * The name given to this component in solrconfig.xml file
+   */
+  private String name = this.getClass().getName();
   /**
    * Prepare the response.  Guaranteed to be called before any SearchComponent {@link #process(org.apache.solr.handler.component.ResponseBuilder)} method.
    * Called for every incoming request.
@@ -71,6 +74,14 @@ public abstract class SearchComponent implements SolrInfoMBean, NamedListInitial
    */
   public void finishStage(ResponseBuilder rb) {
   }
+  
+  /**
+   * Sets the name of the SearchComponent. The name of the component is usually
+   * the name defined for it in the configuration.
+   */
+  public void setName(String name) {
+    this.name = name;
+  }
 
 
   //////////////////////// NamedListInitializedPlugin methods //////////////////////
@@ -84,7 +95,7 @@ public abstract class SearchComponent implements SolrInfoMBean, NamedListInitial
 
   @Override
   public String getName() {
-    return this.getClass().getName();
+    return name;
   }
 
   @Override

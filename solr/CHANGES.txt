@@ -376,6 +376,9 @@ Bug Fixes
 
 * SOLR-4223: "maxFormContentSize" in jetty.xml is not picked up by jetty 8
   so set it via solr webapp context file. (shalin)
+  
+* SOLR-4175:SearchComponent chain can't contain two components of the
+  same class and use debugQuery. (Tomás Fernández Löbbe via ehatcher)
 
 Other Changes
 ----------------------
