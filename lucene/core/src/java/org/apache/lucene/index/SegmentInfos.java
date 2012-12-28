@@ -868,9 +868,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         // Ignore; this file is only used in a retry
         // fallback on init.
       }
-      if (t instanceof ThreadInterruptedException) {
-        throw (ThreadInterruptedException) t;
-      }
     }
   }
 
