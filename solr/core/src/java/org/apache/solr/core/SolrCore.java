@@ -565,6 +565,9 @@ public final class SolrCore implements SolrInfoMBean {
     } else if (o instanceof NamedListInitializedPlugin) {
       ((NamedListInitializedPlugin) o).init(info.initArgs);
     }
+    if(o instanceof SearchComponent) {
+      ((SearchComponent) o).setName(info.name);
+    }
     return o;
   }
 
@@ -1170,7 +1173,10 @@ public final class SolrCore implements SolrInfoMBean {
     if(!registry.containsKey(name)){
       T searchComp = resourceLoader.newInstance(c.getName(), c);
       if (searchComp instanceof NamedListInitializedPlugin){
-        ((NamedListInitializedPlugin)searchComp).init( new NamedList() );
+        ((NamedListInitializedPlugin)searchComp).init( new NamedList<String>() );
+      }
+      if(searchComp instanceof SearchComponent) {
+        ((SearchComponent)searchComp).setName(name);
       }
       registry.put(name, searchComp);
       if (searchComp instanceof SolrInfoMBean){
