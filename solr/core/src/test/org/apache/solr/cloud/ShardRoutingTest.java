@@ -118,7 +118,7 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
 
       doHashingTest();
       doTestNumRequests();
-      // doAtomicUpdate();  TODO: this currently fails!
+      doAtomicUpdate();
 
       testFinished = true;
     } finally {
