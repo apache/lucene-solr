@@ -41,6 +41,7 @@ import org.junit.Ignore;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -117,6 +118,7 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
 
       doHashingTest();
       doTestNumRequests();
+      // doAtomicUpdate();  TODO: this currently fails!
 
       testFinished = true;
     } finally {
@@ -130,6 +132,7 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
 
 
   private void doHashingTest() throws Exception {
+    log.info("### STARTING doHashingTest");
     assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
     String shardKeys = ShardParams.SHARD_KEYS;
     // for now,  we know how ranges will be distributed to shards.
@@ -203,7 +206,12 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
   }
 
 
+
+
+
+
   public void doTestNumRequests() throws Exception {
+    log.info("### STARTING doTestNumRequests");
 
     List<CloudJettyRunner> runners = shardToJetty.get(bucket1);
     CloudJettyRunner leader = shardToLeaderJetty.get(bucket1);
@@ -257,8 +265,23 @@ public class ShardRoutingTest extends AbstractFullDistribZkTestBase {
     assertEquals(5, nEnd - nStart);   // original + 2 phase distrib search * 2 shards.
   }
 
+  public void doAtomicUpdate() throws Exception {
+    log.info("### STARTING doAtomicUpdate");
+    int nClients = clients.size();
+    assertEquals(8, nClients);
 
-  long getNumRequests() {
+    int expectedVal = 0;
+    for (SolrServer client : clients) {
+      client.add(sdoc("id", "b!doc", "foo_i", map("inc",1)));
+      expectedVal++;
+
+      QueryResponse rsp = client.query(params("qt","/get", "id","b!doc"));
+      Object val = ((Map)rsp.getResponse().get("doc")).get("foo_i");
+      assertEquals((Integer)expectedVal, val);
+    }
+  }
+
+    long getNumRequests() {
     long n = controlJetty.getDebugFilter().getTotalRequests();
     for (JettySolrRunner jetty : jettys) {
       n += jetty.getDebugFilter().getTotalRequests();
