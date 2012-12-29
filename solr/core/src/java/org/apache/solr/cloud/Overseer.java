@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 public class Overseer {
   public static final String QUEUE_OPERATION = "operation";
 
-  private static final int STATE_UPDATE_DELAY = 500;  // delay between cloud state updates
+  private static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
 
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
   
