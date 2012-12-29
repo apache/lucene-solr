@@ -172,6 +172,11 @@ New Features
 
 * SOLR-4110: Configurable Content-Type headers for PHPResponseWriters and 
   PHPSerializedResponseWriter. (Dominik Siebel via Mark Miller)
+  
+* SOLR-1028: The ability to specify "transient" and "loadOnStartup" as a new properties of
+  <core> tags in solr.xml. Can specify "transientCacheSize" in the <cores> tag. Together
+  these allow cores to be loaded only when needed and only transientCacheSize transient
+  cores will be loaded at a time, the rest aged out on an LRU basis.
 
 Optimizations
 ----------------------

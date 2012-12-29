@@ -96,24 +96,24 @@ public class TestLazyCores extends SolrTestCaseJ4 {
           "collectionLazy8", "collectionLazy9");
 
       SolrCore core1 = cc.getCore("collection1");
-      assertFalse("core1 should not be swappable", core1.getCoreDescriptor().isSwappable());
+      assertFalse("core1 should not be transient", core1.getCoreDescriptor().isTransient());
       assertTrue("core1 should  be loadable", core1.getCoreDescriptor().isLoadOnStartup());
       assertNotNull(core1.getSolrConfig());
 
       SolrCore core2 = cc.getCore("collectionLazy2");
-      assertTrue("core2 should not be swappable", core2.getCoreDescriptor().isSwappable());
+      assertTrue("core2 should not be transient", core2.getCoreDescriptor().isTransient());
       assertTrue("core2 should be loadable", core2.getCoreDescriptor().isLoadOnStartup());
 
       SolrCore core3 = cc.getCore("collectionLazy3");
-      assertTrue("core3 should not be swappable", core3.getCoreDescriptor().isSwappable());
+      assertTrue("core3 should not be transient", core3.getCoreDescriptor().isTransient());
       assertFalse("core3 should not be loadable", core3.getCoreDescriptor().isLoadOnStartup());
 
       SolrCore core4 = cc.getCore("collectionLazy4");
-      assertFalse("core4 should not be swappable", core4.getCoreDescriptor().isSwappable());
+      assertFalse("core4 should not be transient", core4.getCoreDescriptor().isTransient());
       assertFalse("core4 should not be loadable", core4.getCoreDescriptor().isLoadOnStartup());
 
       SolrCore core5 = cc.getCore("collectionLazy5");
-      assertFalse("core5 should not be swappable", core5.getCoreDescriptor().isSwappable());
+      assertFalse("core5 should not be transient", core5.getCoreDescriptor().isTransient());
       assertTrue("core5 should  be loadable", core5.getCoreDescriptor().isLoadOnStartup());
 
       core1.close();
@@ -292,16 +292,16 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   private final static String LOTS_SOLR_XML = " <solr persistent=\"false\"> " +
-      "<cores adminPath=\"/admin/cores\" defaultCoreName=\"collectionLazy2\" swappableCacheSize=\"4\">  " +
+      "<cores adminPath=\"/admin/cores\" defaultCoreName=\"collectionLazy2\" transientCacheSize=\"4\">  " +
       "<core name=\"collection1\" instanceDir=\"collection1\" /> " +
-      "<core name=\"collectionLazy2\" instanceDir=\"collection2\" swappable=\"true\" loadOnStartup=\"true\"  /> " +
-      "<core name=\"collectionLazy3\" instanceDir=\"collection3\" swappable=\"on\" loadOnStartup=\"false\"/> " +
-      "<core name=\"collectionLazy4\" instanceDir=\"collection4\" swappable=\"false\" loadOnStartup=\"false\"/> " +
-      "<core name=\"collectionLazy5\" instanceDir=\"collection5\" swappable=\"false\" loadOnStartup=\"true\"/> " +
-      "<core name=\"collectionLazy6\" instanceDir=\"collection6\" swappable=\"true\" loadOnStartup=\"false\" /> " +
-      "<core name=\"collectionLazy7\" instanceDir=\"collection7\" swappable=\"true\" loadOnStartup=\"false\" /> " +
-      "<core name=\"collectionLazy8\" instanceDir=\"collection8\" swappable=\"true\" loadOnStartup=\"false\" /> " +
-      "<core name=\"collectionLazy9\" instanceDir=\"collection9\" swappable=\"true\" loadOnStartup=\"false\" /> " +
+      "<core name=\"collectionLazy2\" instanceDir=\"collection2\" transient=\"true\" loadOnStartup=\"true\"  /> " +
+      "<core name=\"collectionLazy3\" instanceDir=\"collection3\" transient=\"on\" loadOnStartup=\"false\"/> " +
+      "<core name=\"collectionLazy4\" instanceDir=\"collection4\" transient=\"false\" loadOnStartup=\"false\"/> " +
+      "<core name=\"collectionLazy5\" instanceDir=\"collection5\" transient=\"false\" loadOnStartup=\"true\"/> " +
+      "<core name=\"collectionLazy6\" instanceDir=\"collection6\" transient=\"true\" loadOnStartup=\"false\" /> " +
+      "<core name=\"collectionLazy7\" instanceDir=\"collection7\" transient=\"true\" loadOnStartup=\"false\" /> " +
+      "<core name=\"collectionLazy8\" instanceDir=\"collection8\" transient=\"true\" loadOnStartup=\"false\" /> " +
+      "<core name=\"collectionLazy9\" instanceDir=\"collection9\" transient=\"true\" loadOnStartup=\"false\" /> " +
       "</cores> " +
       "</solr>";
 }

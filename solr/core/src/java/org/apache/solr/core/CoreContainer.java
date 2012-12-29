@@ -77,7 +77,6 @@ import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.jul.JulWatcher;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.SolrCoreState;
-import org.apache.solr.util.AdjustableSemaphore;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
@@ -119,12 +118,12 @@ public class CoreContainer
   private static final String CORE_ROLES = "roles";
   private static final String CORE_PROPERTIES = "properties";
   private static final String CORE_LOADONSTARTUP = "loadOnStartup";
-  private static final String CORE_SWAPPABLE = "swappable";
+  private static final String CORE_TRANSIENT = "transient";
 
 
   protected final Map<String, SolrCore> cores = new LinkedHashMap<String, SolrCore>(); // For "permanent" cores
 
-  protected Map<String, SolrCore> swappableCores = new LinkedHashMap<String, SolrCore>(); // For "lazily loaded" cores
+  protected Map<String, SolrCore> transientCores = new LinkedHashMap<String, SolrCore>(); // For "lazily loaded" cores
 
   protected final Map<String, CoreDescriptor> dynamicDescriptors = new LinkedHashMap<String, CoreDescriptor>();
 
@@ -160,7 +159,7 @@ public class CoreContainer
   private String leaderVoteWait = LEADER_VOTE_WAIT;
   private int distribUpdateConnTimeout = 0;
   private int distribUpdateSoTimeout = 0;
-  protected int swappableCacheSize = Integer.MAX_VALUE; // Use as a flag too, if swappableCacheSize set in solr.xml this will be changed
+  protected int transientCacheSize = Integer.MAX_VALUE; // Use as a flag too, if transientCacheSize set in solr.xml this will be changed
   private int coreLoadThreads;
   
   {
@@ -371,14 +370,14 @@ public class CoreContainer
     return p;
   }
 
-  // Trivial helper method for load, note it implements LRU on swappable cores
+  // Trivial helper method for load, note it implements LRU on transient cores
   private void allocateLazyCores(Config cfg) {
-    swappableCacheSize = cfg.getInt("solr/cores/@swappableCacheSize", Integer.MAX_VALUE);
-    if (swappableCacheSize != Integer.MAX_VALUE) {
-      swappableCores = new LinkedHashMap<String, SolrCore>(swappableCacheSize, 0.75f, true) {
+    transientCacheSize = cfg.getInt("solr/cores/@transientCacheSize", Integer.MAX_VALUE);
+    if (transientCacheSize != Integer.MAX_VALUE) {
+      transientCores = new LinkedHashMap<String, SolrCore>(transientCacheSize, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<String, SolrCore> eldest) {
-          if (size() > swappableCacheSize) {
+          if (size() > transientCacheSize) {
             eldest.getValue().close();
             return true;
           }
@@ -611,9 +610,9 @@ public class CoreContainer
                 .equalsIgnoreCase(opt)) ? true : false);
           }
           
-          opt = DOMUtil.getAttr(node, CORE_SWAPPABLE, null);
+          opt = DOMUtil.getAttr(node, CORE_TRANSIENT, null);
           if (opt != null) {
-            p.setSwappable(("true".equalsIgnoreCase(opt) || "on"
+            p.setTransient(("true".equalsIgnoreCase(opt) || "on"
                 .equalsIgnoreCase(opt)) ? true : false);
           }
           
@@ -625,7 +624,7 @@ public class CoreContainer
                 SolrCore c = null;
                 try {
                   c = create(p);
-                  if (p.isSwappable()) {
+                  if (p.isTransient()) {
                     registerLazyCore(name, c, false);
                   } else {
                     register(name, c, false);
@@ -646,7 +645,7 @@ public class CoreContainer
 
             
           } else {
-            // Store it away for later use. includes non-swappable but not
+            // Store it away for later use. includes non-transient but not
             // loaded at startup cores.
             dynamicDescriptors.put(rawName, p);
           }
@@ -755,15 +754,15 @@ public class CoreContainer
         }
         cores.clear();
       }
-      synchronized (swappableCores) {
-        for (SolrCore core : swappableCores.values()) {
+      synchronized (transientCores) {
+        for (SolrCore core : transientCores.values()) {
           try {
             core.close();
           } catch (Throwable t) {
             SolrException.log(log, "Error shutting down core", t);
           }
         }
-        swappableCores.clear();
+        transientCores.clear();
       }
     } finally {
       if (shardHandlerFactory != null) {
@@ -822,7 +821,7 @@ public class CoreContainer
   }
 
   protected SolrCore registerLazyCore(String name, SolrCore core, boolean returnPrevNotClosed) {
-    return registerCore(swappableCores, name, core, returnPrevNotClosed);
+    return registerCore(transientCores, name, core, returnPrevNotClosed);
   }
 
   protected SolrCore registerCore(Map<String,SolrCore> whichCores, String name, SolrCore core, boolean returnPrevNotClosed) {
@@ -1057,8 +1056,8 @@ public class CoreContainer
     synchronized (cores) {
       lst.addAll(this.cores.keySet());
     }
-    synchronized (swappableCores) {
-      lst.addAll(this.swappableCores.keySet());
+    synchronized (transientCores) {
+      lst.addAll(this.transientCores.keySet());
     }
     return lst;
   }
@@ -1075,8 +1074,8 @@ public class CoreContainer
         }
       }
     }
-    synchronized (swappableCores) {
-      for (Map.Entry<String,SolrCore> entry : swappableCores.entrySet()) {
+    synchronized (transientCores) {
+      for (Map.Entry<String,SolrCore> entry : transientCores.entrySet()) {
         if (core == entry.getValue()) {
           lst.add(entry.getKey());
         }
@@ -1264,25 +1263,25 @@ public class CoreContainer
       }
     }
 
-    if (dynamicDescriptors.size() == 0) return null; // Nobody even tried to define any swappable cores, so we're done.
+    if (dynamicDescriptors.size() == 0) return null; // Nobody even tried to define any transient cores, so we're done.
 
-    // Now look for already loaded swappable cores.
-    synchronized (swappableCores) {
-      core = swappableCores.get(name);
+    // Now look for already loaded transient cores.
+    synchronized (transientCores) {
+      core = transientCores.get(name);
       if (core != null) {
         core.open();
         return core;
       }
     }
     CoreDescriptor desc =  dynamicDescriptors.get(name);
-    if (desc == null) { //Nope, no swappable core with this name
+    if (desc == null) { //Nope, no transient core with this name
       return null;
     }
     try {
       core = create(desc); // This should throw an error if it fails.
       core.open();
-      if (desc.isSwappable()) {
-        registerLazyCore(name, core, false);    // This is a swappable core
+      if (desc.isTransient()) {
+        registerLazyCore(name, core, false);    // This is a transient core
       } else {
         register(name, core, false); // This is a "permanent", although deferred-load core
       }
@@ -1391,8 +1390,8 @@ public class CoreContainer
       coresAttribs.put("defaultCoreName", defaultCoreName);
     }
 
-    if (swappableCacheSize != Integer.MAX_VALUE) {
-      coresAttribs.put("swappableCacheSize", Integer.toString(swappableCacheSize));
+    if (transientCacheSize != Integer.MAX_VALUE) {
+      coresAttribs.put("transientCacheSize", Integer.toString(transientCacheSize));
     }
     
     addCoresAttrib(coresAttribs, "hostPort", this.hostPort, DEFAULT_HOST_PORT);
@@ -1471,7 +1470,7 @@ public class CoreContainer
         
         String dataDir = dcore.dataDir;
         addCoreProperty(coreAttribs, coreNode, CORE_DATADIR, dataDir, null);
-        addCoreProperty(coreAttribs, coreNode, CORE_SWAPPABLE, Boolean.toString(dcore.isSwappable()), null);
+        addCoreProperty(coreAttribs, coreNode, CORE_TRANSIENT, Boolean.toString(dcore.isTransient()), null);
         addCoreProperty(coreAttribs, coreNode, CORE_LOADONSTARTUP, Boolean.toString(dcore.isLoadOnStartup()), null);
 
         CloudDescriptor cd = dcore.getCloudDescriptor();
