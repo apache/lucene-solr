@@ -941,6 +941,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
                   + state + " live:" + live);
         }
         
+        if (coreContainer.isShutDown()) {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+              "Solr is shutting down");
+        }
+        
         // solrcloud_debug
 //        try {;
 //        LocalSolrQueryRequest r = new LocalSolrQueryRequest(core, new
