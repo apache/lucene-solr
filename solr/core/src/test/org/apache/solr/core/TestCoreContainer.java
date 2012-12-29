@@ -110,9 +110,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     cores.persistFile(oneXml);
 
     assertXmlFile(oneXml, "/solr[@persistent='true']",
-        "/solr/cores[@defaultCoreName='collection1' and not(@swappableCacheSize)]",
+        "/solr/cores[@defaultCoreName='collection1' and not(@transientCacheSize)]",
         "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir +
-        "' and @swappable='false' and @loadOnStartup='true' ]", "1=count(/solr/cores/core)");
+        "' and @transient='false' and @loadOnStartup='true' ]", "1=count(/solr/cores/core)");
 
     // create some new cores and sanity check the persistence
     
@@ -142,12 +142,12 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       assertEquals("cores not added?", 3, cores.getCoreNames().size());
       
       final File twoXml = new File(workDir, "2.solr.xml");
-      cores.swappableCacheSize = 32;
+      cores.transientCacheSize = 32;
 
       cores.persistFile(twoXml);
 
       assertXmlFile(twoXml, "/solr[@persistent='true']",
-          "/solr/cores[@defaultCoreName='collection1' and @swappableCacheSize='32']",
+          "/solr/cores[@defaultCoreName='collection1' and @transientCacheSize='32']",
           "/solr/cores/core[@name='collection1' and @instanceDir='" + instDir
               + "']", "/solr/cores/core[@name='X' and @instanceDir='" + instDir
               + "' and @dataDir='" + dataX + "']",
