@@ -60,7 +60,7 @@ public class UpdateShardHandler {
 
   public void close() {
     try {
-      ExecutorUtil.shutdownAndAwaitTermination(cmdDistribExecutor);
+      ExecutorUtil.shutdownNowAndAwaitTermination(cmdDistribExecutor);
     } catch (Throwable e) {
       SolrException.log(log, e);
     }

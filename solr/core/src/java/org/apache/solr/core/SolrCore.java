@@ -66,6 +66,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.SnapPuller;
@@ -961,7 +962,7 @@ public final class SolrCore implements SolrInfoMBean {
 
     try {
       infoRegistry.clear();
-    } catch (Exception e) {
+    } catch (Throwable e) {
       SolrException.log(log, e);
     }
 
@@ -984,22 +985,11 @@ public final class SolrCore implements SolrInfoMBean {
     }
     
     try {
-      searcherExecutor.shutdown();
-      if (!searcherExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
-        log.error("Timeout waiting for searchExecutor to terminate");
-      }
-    } catch (InterruptedException e) {
-      searcherExecutor.shutdownNow();
-      try {
-        if (!searcherExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
-          log.error("Timeout waiting for searchExecutor to terminate");
-        }
-      } catch (InterruptedException e2) {
-        SolrException.log(log, e2);
-      }
-    } catch (Exception e) {
+      ExecutorUtil.shutdownAndAwaitTermination(searcherExecutor);
+    } catch (Throwable e) {
       SolrException.log(log, e);
     }
+
     try {
       // Since we waited for the searcherExecutor to shut down,
       // there should be no more searchers warming in the background

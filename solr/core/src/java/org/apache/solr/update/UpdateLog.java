@@ -820,8 +820,8 @@ public class UpdateLog implements PluginInfoInitialized {
   public void close(boolean committed, boolean deleteOnClose) {
     synchronized (this) {
       try {
-        ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
-      } catch (Exception e) {
+        ExecutorUtil.shutdownNowAndAwaitTermination(recoveryExecutor);
+      } catch (Throwable e) {
         SolrException.log(log, e);
       }
 
