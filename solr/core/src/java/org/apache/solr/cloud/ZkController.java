@@ -652,8 +652,9 @@ public final class ZkController {
     
 
     // in this case, we want to wait for the leader as long as the leader might 
-    // wait for a vote, at least
-    String leaderUrl = getLeader(cloudDesc, Integer.parseInt(leaderVoteWait) + 1000);
+    // wait for a vote, at least - but also long enough that a large cluster has
+    // time to get its act together
+    String leaderUrl = getLeader(cloudDesc, Integer.parseInt(leaderVoteWait) + 600000);
     
     String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
     log.info("We are " + ourUrl + " and leader is " + leaderUrl);
@@ -721,7 +722,7 @@ public final class ZkController {
       
       // now wait until our currently cloud state contains the latest leader
       String clusterStateLeader = zkStateReader.getLeaderUrl(collection,
-          shardId, 30000);
+          shardId, timeoutms);
       int tries = 0;
       while (!leaderUrl.equals(clusterStateLeader)) {
         if (tries == 60) {
@@ -733,7 +734,7 @@ public final class ZkController {
         Thread.sleep(1000);
         tries++;
         clusterStateLeader = zkStateReader.getLeaderUrl(collection, shardId,
-            30000);
+            timeoutms);
         leaderUrl = getLeaderProps(collection, cloudDesc.getShardId(), timeoutms)
             .getCoreUrl();
       }
