@@ -1584,9 +1584,22 @@ public class SnapPuller {
   }
 
   public void destroy() {
-    if (executorService != null) executorService.shutdown();
-    abortPull();
-    if (executorService != null) ExecutorUtil.shutdownAndAwaitTermination(executorService);
+    try {
+      if (executorService != null) executorService.shutdown();
+    } catch (Throwable e) {
+      SolrException.log(LOG, e);
+    }
+    try {
+      abortPull();
+    } catch (Throwable e) {
+      SolrException.log(LOG, e);
+    }
+    try {
+      if (executorService != null) ExecutorUtil
+          .shutdownNowAndAwaitTermination(executorService);
+    } catch (Throwable e) {
+      SolrException.log(LOG, e);
+    }
   }
 
   String getMasterUrl() {

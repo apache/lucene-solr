@@ -27,7 +27,6 @@ import org.slf4j.LoggerFactory;
 public class ExecutorUtil {
   public static Logger log = LoggerFactory.getLogger(ExecutorUtil.class);
   
-  // really? lucene/solr do not like to be interrupted
   public static void shutdownNowAndAwaitTermination(ExecutorService pool) {
     pool.shutdown(); // Disable new tasks from being submitted
     pool.shutdownNow(); // Cancel currently executing tasks
@@ -52,7 +51,7 @@ public class ExecutorUtil {
     while (!shutdown) {
       try {
         // Wait a while for existing tasks to terminate
-        shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
+        shutdown = pool.awaitTermination(30, TimeUnit.SECONDS);
       } catch (InterruptedException ie) {
         // Preserve interrupt status
         Thread.currentThread().interrupt();
