@@ -408,6 +408,11 @@ Bug Fixes
 * SOLR-4175:SearchComponent chain can't contain two components of the
   same class and use debugQuery. (Tomás Fernández Löbbe via ehatcher)
 
+* SOLR-4244: When coming back from session expiration we should not wait for
+  the leader to see us in the down state if we are the node that must become
+  the leader. (Mark Miller)
+
+
 Other Changes
 ----------------------
 

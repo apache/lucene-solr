@@ -274,6 +274,32 @@ public final class ZkController {
             continue;
           }
         }
+        
+        // if it looks like we are going to be the leader, we don't
+        // want to wait for the following stuff
+        CloudDescriptor cloudDesc = descriptor.getCloudDescriptor();
+        String collection = cloudDesc.getCollectionName();
+        String slice = cloudDesc.getShardId();
+        try {
+          
+          int children = zkStateReader
+              .getZkClient()
+              .getChildren(
+                  ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
+                      + "/leader_elect/" + slice + "/election", null, true).size();
+          if (children == 0) {
+            return;
+          }
+
+        } catch (NoNodeException e) {
+         return;
+        } catch (InterruptedException e2) {
+          Thread.currentThread().interrupt();
+        } catch (KeeperException e) {
+          log.warn("", e);
+          Thread.currentThread().interrupt();
+        }
+        
         try {
           waitForLeaderToSeeDownState(descriptor, coreZkNodeName);
         } catch (Exception e) {
