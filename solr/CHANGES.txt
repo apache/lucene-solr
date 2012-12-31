@@ -421,7 +421,6 @@ Bug Fixes
   leader in the cluster state is 30 seconds rather than leaderVoteWait + extra 
   time. (Mark Miller)
 
-
 Other Changes
 ----------------------
 
@@ -481,6 +480,9 @@ Other Changes
   Also, change the warning to warn log level. (Shawn Heisey via Mark Miller)
 
 * SOLR-4163: README improvements (Shawn Heisey via hossman)
+
+* SOLR-4248: "ant eclipse" should declare .svn directories as derived.
+  (Shawn Heisey via Mark Miller)
 
 ==================  4.0.0 ==================
 
