@@ -398,6 +398,8 @@ Bug Fixes
   leader in the cluster state is 30 seconds rather than leaderVoteWait + extra 
   time. (Mark Miller)
 
+* SOLR-4238: Fix jetty example requestLog config (jm via hossman)
+
 Other Changes
 ----------------------
 
