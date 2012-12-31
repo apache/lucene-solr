@@ -112,6 +112,7 @@ public class CoreContainer
   private static final String CORE_CONFIG = "config";
   private static final String CORE_INSTDIR = "instanceDir";
   private static final String CORE_DATADIR = "dataDir";
+  private static final String CORE_ULOGDIR = "ulogDir";
   private static final String CORE_SCHEMA = "schema";
   private static final String CORE_SHARD = "shard";
   private static final String CORE_COLLECTION = "collection";
@@ -1469,7 +1470,9 @@ public class CoreContainer
         addCoreProperty(coreAttribs, coreNode, CORE_SCHEMA, schema, dcore.getDefaultSchemaName());
         
         String dataDir = dcore.dataDir;
+        String ulogDir = dcore.ulogDir;
         addCoreProperty(coreAttribs, coreNode, CORE_DATADIR, dataDir, null);
+        addCoreProperty(coreAttribs, coreNode, CORE_ULOGDIR, ulogDir, null);
         addCoreProperty(coreAttribs, coreNode, CORE_TRANSIENT, Boolean.toString(dcore.isTransient()), null);
         addCoreProperty(coreAttribs, coreNode, CORE_LOADONSTARTUP, Boolean.toString(dcore.isLoadOnStartup()), null);
 
