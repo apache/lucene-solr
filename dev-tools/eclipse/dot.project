@@ -60,5 +60,14 @@
                                 <arguments>1.0-projectRelativePath-matches-false-false-solr/dist</arguments>
                         </matcher>
                 </filter>
+                <filter>
+                        <id>1353353379246</id>
+                        <name></name>
+                        <type>10</type>
+                        <matcher>
+                                <id>org.eclipse.ui.ide.multiFilter</id>
+                                <arguments>1.0-name-matches-false-false-.svn</arguments>
+                        </matcher>
+                </filter>
         </filteredResources>
 </projectDescription>
