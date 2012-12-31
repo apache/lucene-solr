@@ -31,7 +31,7 @@ import org.junit.Ignore;
  * @see org.apache.solr.handler.component.MoreLikeThisComponent
  */
 @Slow
-@Ignore("distrib mlt not working right")
+@Ignore("fails on freebsd")
 public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
   
   private String requestHandlerName;
@@ -122,24 +122,27 @@ public class DistributedMLTComponentTest extends BaseDistributedSearchTestCase {
     // per shard - because of this, depending on params, distrib and single
     // shard queries will not match.
     
+    // because distrib and single node do not currently sort exactly the same,
+    // we ask for an mlt.count of 20 to ensure both include all results
+    
     query("q", "lowerfilt:moon", "fl", id, MoreLikeThisParams.MIN_TERM_FREQ, 2,
         MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id desc", "mlt", "true",
         "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt",
-        requestHandlerName);
+        requestHandlerName, "mlt.count", "20");
     
     query("q", "lowerfilt:fox", "fl", id, MoreLikeThisParams.MIN_TERM_FREQ, 1,
         MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id desc", "mlt", "true",
         "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt",
-        requestHandlerName);
+        requestHandlerName, "mlt.count", "20");
 
     query("q", "lowerfilt:the red fox", "fl", id, MoreLikeThisParams.MIN_TERM_FREQ, 1,
         MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id desc", "mlt", "true",
         "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt",
-        requestHandlerName);
+        requestHandlerName, "mlt.count", "20");
     
     query("q", "lowerfilt:blue moon", "fl", id, MoreLikeThisParams.MIN_TERM_FREQ, 1,
         MoreLikeThisParams.MIN_DOC_FREQ, 1, "sort", "id desc", "mlt", "true",
         "mlt.fl", "lowerfilt", "qt", requestHandlerName, "shards.qt",
-        requestHandlerName);
+        requestHandlerName, "mlt.count", "20");
   }
 }
