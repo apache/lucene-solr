@@ -158,6 +158,11 @@ New Features
   these allow cores to be loaded only when needed and only transientCacheSize transient
   cores will be loaded at a time, the rest aged out on an LRU basis.
 
+* SOLR-4246: When update.distrib is set to skip update processors before
+  the distributed update processor, always include the log update processor
+  so forwarded updates will still be logged. (yonik)
+
+
 Optimizations
 ----------------------
 
