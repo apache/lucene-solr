@@ -75,7 +75,7 @@ public class MoreLikeThisComponent extends SearchComponent {
           + params.getBool(ShardParams.IS_SHARD));
       SolrIndexSearcher searcher = rb.req.getSearcher();
 
-      int mltcount = params.getInt(MoreLikeThisParams.DOC_COUNT, 20);
+      int mltcount = params.getInt(MoreLikeThisParams.DOC_COUNT, 5);
       if (params.getBool(ShardParams.IS_SHARD, false)) {
         if (params.get(MoreLikeThisComponent.DIST_DOC_ID) == null) {
           if (rb.getResults().docList.size() == 0) {
@@ -156,7 +156,7 @@ public class MoreLikeThisComponent extends SearchComponent {
         && rb.req.getParams().getBool(COMPONENT_NAME, false)) {
       Map<Object,SolrDocumentList> tempResults = new LinkedHashMap<Object,SolrDocumentList>();
       
-      int mltcount = rb.req.getParams().getInt(MoreLikeThisParams.DOC_COUNT, 20);
+      int mltcount = rb.req.getParams().getInt(MoreLikeThisParams.DOC_COUNT, 5);
       String keyName = rb.req.getSchema().getUniqueKeyField().getName();
       
       for (ShardRequest sreq : rb.finished) {
@@ -298,7 +298,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     // needed to correlate results
     s.params.set(MoreLikeThisComponent.DIST_DOC_ID, key);
     s.params.set(CommonParams.START, 0);
-    int mltcount = s.params.getInt(MoreLikeThisParams.DOC_COUNT, 20);
+    int mltcount = s.params.getInt(MoreLikeThisParams.DOC_COUNT, 20); // overrequest
     s.params.set(CommonParams.ROWS, mltcount);
     
     // adding score to rank moreLikeThis
@@ -352,7 +352,7 @@ public class MoreLikeThisComponent extends SearchComponent {
     
     while (iterator.hasNext()) {
       int id = iterator.nextDoc();
-      int rows = p.getInt(MoreLikeThisParams.DOC_COUNT, 20);
+      int rows = p.getInt(MoreLikeThisParams.DOC_COUNT, 5);
       DocListAndSet sim = mltHelper.getMoreLikeThis(id, 0, rows, null, null,
           flags);
       String name = schema.printableUniqueKey(searcher.doc(id));
