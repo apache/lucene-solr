@@ -423,6 +423,9 @@ Bug Fixes
 
 * SOLR-4238: Fix jetty example requestLog config (jm via hossman)
 
+* SOLR-4251: Fix SynonymFilterFactory when an optional tokenizerFactory is supplied.
+  (Chris Bleakley via rmuir)
+
 Other Changes
 ----------------------
 
