@@ -56,6 +56,7 @@ public class SynonymFilterFactory extends TokenFilterFactory implements Resource
       }
       delegator = new SlowSynonymFilterFactory();
     }
+    delegator.setLuceneMatchVersion(luceneMatchVersion);
     delegator.init(args);
   }
 
