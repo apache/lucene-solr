@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase.BadApple;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
@@ -31,6 +32,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
+@Slow
 @BadApple
 public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
