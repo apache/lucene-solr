@@ -402,7 +402,6 @@ public class SolrCmdDistributor {
               SolrException.log(SolrCmdDistributor.log, "forwarding update to " + sreq.node.getUrl() + " failed - retrying ... ");
               Thread.sleep(500);
               submit(sreq);
-              checkResponses(block);
             } else {
               Exception e = sreq.exception;
               Error error = new Error();
