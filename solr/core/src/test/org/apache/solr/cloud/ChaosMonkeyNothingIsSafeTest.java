@@ -21,8 +21,10 @@ import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.http.client.HttpClient;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
@@ -34,12 +36,11 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
-@Ignore("ignore while investigating jenkins fails")
+@BadApple
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
   public static Logger log = LoggerFactory.getLogger(ChaosMonkeyNothingIsSafeTest.class);
   
@@ -72,8 +73,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   
   public ChaosMonkeyNothingIsSafeTest() {
     super();
-    sliceCount = 1;
-    shardCount = 7;
+    sliceCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.slicecount", "2"));
+    shardCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.shardcount", "7"));
   }
   
   @Override
