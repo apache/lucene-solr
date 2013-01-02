@@ -1023,15 +1023,19 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         ids.append(" "+doc.get("id"));
       }
       ids.append(")");
-
-      // get versions for those ids that don't match
-      q = params("q",ids.toString(),"rows","100000", "fl","id,_version_", "sort","id asc",
-                 "tests","checkShardConsistency(vsControl)/getVers");    // add a tag to aid in debugging via logs
-
-      SolrDocumentList a = controlClient.query(q).getResults();
-      SolrDocumentList b = cloudClient.query(q).getResults();
-
-      log.error("controlClient :" + a + "\n\tcloudClient :" + b);
+      
+      if (ids.length() > 0) {
+        // get versions for those ids that don't match
+        q = params("q", ids.toString(), "rows", "100000", "fl", "id,_version_",
+            "sort", "id asc", "tests",
+            "checkShardConsistency(vsControl)/getVers"); // add a tag to aid in
+                                                         // debugging via logs
+        
+        SolrDocumentList a = controlClient.query(q).getResults();
+        SolrDocumentList b = cloudClient.query(q).getResults();
+        
+        log.error("controlClient :" + a + "\n\tcloudClient :" + b);
+      }
 
       fail(msg);
     }
