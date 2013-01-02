@@ -370,6 +370,9 @@ Documentation
 
 Build
 
+* LUCENE-4650: Upgrade randomized testing to version 2.0.8: make the
+  test framework more robust under low memory conditions. (Dawid Weiss)
+
 * LUCENE-4603: Upgrade randomized testing to version 2.0.5: print forked
   JVM PIDs on heartbeat from hung tests (Dawid Weiss)
 
