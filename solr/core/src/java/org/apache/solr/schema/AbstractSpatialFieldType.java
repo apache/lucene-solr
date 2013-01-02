@@ -22,7 +22,9 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.context.SpatialContextFactory;
+import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.exception.InvalidShapeException;
+import com.spatial4j.core.io.ParseUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
@@ -43,6 +45,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SpatialOptions;
 import org.apache.solr.util.MapListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +60,7 @@ import java.util.concurrent.ExecutionException;
  *
  * @lucene.experimental
  */
-public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extends FieldType {
+public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extends FieldType implements SpatialQueryable {
 
   /** A local-param with one of "none" (default), "distance", or "recipDistance". */
   public static final String SCORE_PARAM = "score";
@@ -159,6 +162,35 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   //--------------------------------------------------------------
   // Query Support
   //--------------------------------------------------------------
+
+  /**
+   * Implemented for compatibility with Solr 3 spatial geofilt & bbox query parsers:
+   * {@link SpatialQueryable}.
+   */
+  @Override
+  public Query createSpatialQuery(QParser parser, SpatialOptions options) {
+    //--WARNING: the code from here to the next marker is identical to LatLonType's impl.
+    double[] point = null;
+    try {
+      point = ParseUtils.parseLatitudeLongitude(options.pointStr);
+    } catch (InvalidShapeException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+
+    // lat & lon in degrees
+    double latCenter = point[0];
+    double lonCenter = point[1];
+
+    double distDeg = DistanceUtils.dist2Degrees(options.distance, options.radius);
+    //--END-WARNING
+
+    Shape shape = ctx.makeCircle(lonCenter, latCenter, distDeg);
+    if (options.bbox)
+      shape = shape.getBoundingBox();
+
+    SpatialArgs spatialArgs = new SpatialArgs(SpatialOperation.Intersects, shape);
+    return getQueryFromSpatialArgs(parser, options.field, spatialArgs);
+  }
 
   @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {

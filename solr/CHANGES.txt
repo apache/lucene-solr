@@ -162,6 +162,8 @@ New Features
   the distributed update processor, always include the log update processor
   so forwarded updates will still be logged. (yonik)
 
+* SOLR-4230: The new Solr 4 spatial fields now work with the {!geofilt} and
+  {!bbox} query parsers. The score local-param works too. (David Smiley)
 
 Optimizations
 ----------------------
