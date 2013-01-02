@@ -1117,11 +1117,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       this.collection = collection;
       this.shardId = shardId;
     }
-    
-    @Override
-    public String toString() {
-      return url;
-    }
 
     @Override
     public boolean checkRetry() {
@@ -1134,7 +1129,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         return false;
       }
       
-      this.url = leaderProps.getCoreUrl();
+      this.nodeProps = leaderProps;
 
       return true;
     }
@@ -1155,9 +1150,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (!super.equals(obj)) return false;
       if (getClass() != obj.getClass()) return false;
       RetryNode other = (RetryNode) obj;
-      if (url == null) {
-        if (other.url != null) return false;
-      } else if (!url.equals(other.url)) return false;
+      if (nodeProps.getCoreUrl() == null) {
+        if (other.nodeProps.getCoreUrl() != null) return false;
+      } else if (!nodeProps.getCoreUrl().equals(other.nodeProps.getCoreUrl())) return false;
 
       return true;
     }
