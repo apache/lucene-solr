@@ -1156,6 +1156,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       
       while (true && !stop) {
         ++i;
+        boolean addFailed = false;
         
         if (doDeletes && random().nextBoolean() && deletes.size() > 0) {
           Integer delete = deletes.remove(0);
@@ -1179,6 +1180,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           indexr(id, i, i1, 50, tlong, 50, t1,
               "to come to the aid of their country.");
         } catch (Exception e) {
+          addFailed = true;
           System.err.println("REQUEST FAILED:");
           e.printStackTrace();
           if (e instanceof SolrServerException) {
@@ -1188,7 +1190,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           fails.incrementAndGet();
         }
         
-        if (doDeletes && random().nextBoolean()) {
+        if (!addFailed && doDeletes && random().nextBoolean()) {
           deletes.add(i);
         }
         
