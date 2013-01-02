@@ -19,13 +19,14 @@
 <ivy-module version="2.0">
     <info organisation="org.apache.solr" module="clustering"/>
     <dependencies>
-      <dependency org="org.carrot2" name="carrot2-core" rev="3.5.0" transitive="false"/>
-      <dependency org="com.carrotsearch" name="hppc" rev="0.3.3" transitive="false"/>
+      <dependency org="org.carrot2" name="carrot2-core" rev="3.6.2" transitive="false"/>
+      <dependency org="org.carrot2.attributes" name="attributes-binder" rev="1.0.1" transitive="false"/>
+      <dependency org="com.carrotsearch" name="hppc" rev="0.4.1" transitive="false"/>
       <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="1.7.4" transitive="false"/>
       <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="1.7.4" transitive="false"/>
-      <dependency org="org.apache.mahout" name="mahout-collections" rev="0.3" transitive="false"/>
-      <dependency org="org.apache.mahout" name="mahout-math" rev="0.3" transitive="false"/>
-      <dependency org="org.simpleframework" name="simple-xml" rev="2.4.1" transitive="false"/>
+      <dependency org="org.apache.mahout" name="mahout-collections" rev="1.0" transitive="false"/>
+      <dependency org="org.apache.mahout" name="mahout-math" rev="0.6" transitive="false"/>
+      <dependency org="org.simpleframework" name="simple-xml" rev="2.6.4" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>
