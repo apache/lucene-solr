@@ -149,7 +149,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
     assertQ(req(
         "fl", "id," + fieldName, "q", "*:*", "rows", "1000",
-        "fq", "{!field needScore=false f="+fieldName+"}Intersects(Circle(89.9,-130 d=9))"),
+        "fq", "{!field f="+fieldName+"}Intersects(Circle(89.9,-130 d=9))"),
         "//result/doc/*[@name='" + fieldName + "']//text()='" + OUT + "'");
   }
 
@@ -175,26 +175,37 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     // that there may be a more specific detailed id to investigate.
     tests[i++] = "*[count(//doc)=" + count + "]";
 
-    //never actually need the score but lets test
-    String score = new String[]{null, "none","distance","recipDistance"}[random().nextInt(4)];
+    //Test using the Solr 4 syntax
+    {
+      //never actually need the score but lets test
+      String score = new String[]{null, "none","distance","recipDistance"}[random().nextInt(4)];
 
-    double distDEG = DistanceUtils.dist2Degrees(distKM, DistanceUtils.EARTH_MEAN_RADIUS_KM);
-    String circleStr = "Circle(" + ptStr.replaceAll(" ", "") + " d=" + distDEG + ")";
-    String shapeStr;
-    if (exact) {
-      shapeStr = circleStr;
-    } else {//bbox
-      //the GEO is an assumption
-      SpatialContext ctx = SpatialContext.GEO;
-      shapeStr = ctx.toString( ctx.readShape(circleStr).getBoundingBox() );
+      double distDEG = DistanceUtils.dist2Degrees(distKM, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+      String circleStr = "Circle(" + ptStr.replaceAll(" ", "") + " d=" + distDEG + ")";
+      String shapeStr;
+      if (exact) {
+        shapeStr = circleStr;
+      } else {//bbox
+        //the GEO is an assumption
+        SpatialContext ctx = SpatialContext.GEO;
+        shapeStr = ctx.toString( ctx.readShape(circleStr).getBoundingBox() );
+      }
+
+      //FYI default distErrPct=0.025 works with the tests in this file
+      assertQ(req(
+            "fl", "id", "q","*:*", "rows", "1000",
+            "fq", "{!field f=" + fieldName + (score==null?"":" score="+score)
+              + "}Intersects(" + shapeStr + ")"),
+          tests);
+    }
+    //Test using the Solr 3 syntax
+    {
+      assertQ(req(
+          "fl", "id", "q", "*:*", "rows", "1000",
+          "fq", "{!" + (exact ? "geofilt" : "bbox") + " sfield=" + fieldName + " pt='" + ptStr + "' d=" + distKM + "}"),
+          tests);
     }
 
-    //FYI default distErrPct=0.025 works with the tests in this file
-    assertQ(req(
-          "fl", "id", "q","*:*", "rows", "1000",
-          "fq", "{!field f=" + fieldName + (score==null?"":" score="+score)
-            + "}Intersects(" + shapeStr + ")"),
-        tests);
   }
 
   @Test
@@ -203,10 +214,11 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     //match docId 1
     int docId = 1;
     int count = 1;
-    boolean needScore = random().nextBoolean();//never actually need the score but lets test
+
+    String score = random().nextBoolean() ? "none" : "distance";//never actually need the score but lets test
     assertQ(req(
         "fl", "id", "q","*:*", "rows", "1000",
-        "fq", "{! needScore="+needScore+" df="+fieldName+"}[32,-80 TO 33,-79]"),//lower-left to upper-right
+        "fq", "{! score="+score+" df="+fieldName+"}[32,-80 TO 33,-79]"),//lower-left to upper-right
 
         "//result/doc/*[@name='id'][.='" + docId + "']",
         "*[count(//doc)=" + count + "]");
