@@ -132,12 +132,9 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       try {
         resourceStream = resourceLoader.openResource(resourceName);
         asBytes = IOUtils.toByteArray(resourceStream);
-      } catch (RuntimeException e) {
+      } catch (IOException e) {
         log.debug("Resource not found in Solr's config: " + resourceName
             + ". Using the default " + resource + " from Carrot JAR.");          
-        return new IResource[] {};
-      } catch (IOException e) {
-        log.warn("Could not read Solr resource " + resourceName);
         return new IResource[] {};
       } finally {
         if (resourceStream != null) Closeables.closeQuietly(resourceStream);
