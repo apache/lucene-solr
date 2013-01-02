@@ -426,6 +426,10 @@ Bug Fixes
 * SOLR-4251: Fix SynonymFilterFactory when an optional tokenizerFactory is supplied.
   (Chris Bleakley via rmuir)
 
+* SOLR-4253: Misleading resource loading warning from Carrot2 clustering 
+  component fixed (Stanisław Osiński)
+
+
 Other Changes
 ----------------------
 
