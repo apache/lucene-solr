@@ -246,6 +246,7 @@
     <propertyref regex=".*\.uptodate$$"/>
     <propertyref regex=".*\.compiled$$"/>
     <propertyref regex=".*\.loaded$$"/>
+    <propertyref name="maven.version.glob"/>
     <propertyref name="lucene.javadoc.url"/><!-- for Solr -->
   </propertyset>
 
@@ -1349,6 +1350,13 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </m2-deploy>
     </sequential>
   </target>
+  
+  <target name="-define-maven-version-glob" depends="resolve-groovy" unless="maven.version.glob">
+    <!-- Too stupid, that ANT cannot apply regexes to property values: -->
+    <script language="groovy" classpathref="groovy.classpath"><![CDATA[
+      project.setProperty('maven.version.glob', project.getProperty('version').replaceAll(/\-SNAPSHOT/, '-*'));
+    ]]></script>
+  </target>
 
   <target name="-validate-maven-dependencies">
     <property name="top.level.dir" location="${common.dir}/.."/>
@@ -1363,7 +1371,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </pathconvert>
     <m2-validate-dependencies pom.xml="${pom.xml}" licenseDirectory="${license.dir}">
       <excludes>
-        <rsel:name name="**/lucene-*.jar" handledirsep="true"/>
+        <rsel:name name="**/lucene-*-${maven.version.glob}.jar" handledirsep="true"/>
       </excludes>
     </m2-validate-dependencies>
   </target>

@@ -36,7 +36,7 @@
     <attribute name="target" />
     <sequential>
       <subant target="@{target}" inheritall="false" failonerror="true">
-         <propertyset refid="uptodate.and.compiled.properties"/>
+        <propertyset refid="uptodate.and.compiled.properties"/>
         <fileset dir="${analyzers.dir}" includes="*/build.xml" />
       </subant>
     </sequential>
@@ -46,6 +46,7 @@
     <propertyref regex=".*\.uptodate$$"/>
     <propertyref regex=".*\.compiled$$"/>
     <propertyref regex=".*\.loaded$$"/>
+    <propertyref name="maven.version.glob"/>
   </propertyset>
 
   <target name="common">
