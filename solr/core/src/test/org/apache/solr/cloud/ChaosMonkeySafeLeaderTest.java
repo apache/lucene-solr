@@ -88,7 +88,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
     int threadCount = 2;
     for (int i = 0; i < threadCount; i++) {
-      StopableIndexingThread indexThread = new StopableIndexingThread(i * 50000, true);
+      StopableIndexingThread indexThread = new StopableIndexingThread(10000 + i*50000, true);
       threads.add(indexThread);
       indexThread.start();
     }
