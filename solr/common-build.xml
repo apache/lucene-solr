@@ -325,8 +325,8 @@
       </additional-filters>
       <excludes>
         <rsel:or>
-          <rsel:name name="**/lucene-*.jar" handledirsep="true"/>
-          <rsel:name name="**/solr-*.jar" handledirsep="true"/>
+          <rsel:name name="**/lucene-*-${maven.version.glob}.jar" handledirsep="true"/>
+          <rsel:name name="**/solr-*-${maven.version.glob}.jar" handledirsep="true"/>
           <!-- TODO: figure out what is going on here with servlet-apis -->
           <rsel:name name="**/*servlet*.jar" handledirsep="true"/>
         </rsel:or>

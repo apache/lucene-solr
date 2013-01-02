@@ -483,7 +483,7 @@
     </sequential>
   </target>
 	
-  <target name="-validate-maven-dependencies" depends="compile-tools, install-maven-tasks, load-custom-tasks">
+  <target name="-validate-maven-dependencies" depends="compile-tools, install-maven-tasks, load-custom-tasks, -define-maven-version-glob">
     <sequential>
       <subant target="-validate-maven-dependencies" failonerror="true" inheritall="false">
         <propertyset refid="uptodate.and.compiled.properties"/>
