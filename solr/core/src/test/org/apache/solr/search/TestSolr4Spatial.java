@@ -22,6 +22,7 @@ import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,6 +59,26 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
     super.setUp();
     clearIndex();
     assertU(commit());
+  }
+
+  @Test
+  public void testBadShapeParse400() {
+    assertQEx(null, req(
+        "fl", "id," + fieldName, "q", "*:*", "rows", "1000",
+        "fq", "{!field f="+fieldName+"}Intersects(NonexistentShape(89.9,-130 d=9))"), 400);
+    assertQEx(null, req(
+        "fl", "id," + fieldName, "q", "*:*", "rows", "1000",
+        "fq", "{!field f="+fieldName+"}Intersects(NonexistentShape(89.9,-130 d=9"), 400);//missing parens
+    assertQEx(null, req(
+        "fl", "id," + fieldName, "q", "*:*", "rows", "1000",
+        "fq", "{!field f="+fieldName+"}Intersectssss"), 400);
+
+    try {
+      assertU(adoc("id", "-1", fieldName, "NonexistentShape"));
+      fail();
+    } catch (SolrException e) {
+      assertEquals(400, e.code());
+    }
   }
 
   private void setupDocs() {
