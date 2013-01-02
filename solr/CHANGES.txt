@@ -25,7 +25,7 @@ $Id$
 Versions of Major Components
 ---------------------
 Apache Tika 1.2
-Carrot2 3.5.0
+Carrot2 3.6.2
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.5
@@ -49,7 +49,7 @@ Other Changes
 Versions of Major Components
 ---------------------
 Apache Tika 1.2
-Carrot2 3.5.0
+Carrot2 3.6.2
 Velocity 1.6.4 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.5
@@ -488,6 +488,8 @@ Other Changes
 
 * SOLR-4248: "ant eclipse" should declare .svn directories as derived.
   (Shawn Heisey via Mark Miller)
+
+* SOLR-3279: Upgrade Carrot2 to 3.6.2 (Stanisław Osiński)
 
 ==================  4.0.0 ==================
 
