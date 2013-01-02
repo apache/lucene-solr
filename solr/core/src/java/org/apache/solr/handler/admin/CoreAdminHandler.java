@@ -777,33 +777,41 @@ public class CoreAdminHandler extends RequestHandlerBase {
       SolrQueryResponse rsp) throws IOException {
     final SolrParams params = req.getParams();
     log.info("It has been requested that we recover");
-    String cname = params.get(CoreAdminParams.CORE);
-    if (cname == null) {
-      cname = "";
-    }
-    SolrCore core = null;
-    try {
-      core = coreContainer.getCore(cname);
-      if (core != null) {
-        // try to publish as recovering right away
-        try {
-          coreContainer.getZkController().publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
-        } catch (KeeperException e) {
-          SolrException.log(log, "", e);
-        } catch (InterruptedException e) {
-          SolrException.log(log, "", e);
+    Thread thread = new Thread() {
+      @Override
+      public void run() {
+        String cname = params.get(CoreAdminParams.CORE);
+        if (cname == null) {
+          cname = "";
         }
-        
-        core.getUpdateHandler().getSolrCoreState().doRecovery(coreContainer, cname);
-      } else {
-        SolrException.log(log, "Cound not find core to call recovery:" + cname);
+        SolrCore core = null;
+        try {
+          core = coreContainer.getCore(cname);
+          if (core != null) {
+            // try to publish as recovering right away
+            try {
+              coreContainer.getZkController().publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
+            }  catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+              SolrException.log(log, "", e);
+            } catch (Throwable t) {
+              SolrException.log(log, "", t);
+            }
+            
+            core.getUpdateHandler().getSolrCoreState().doRecovery(coreContainer, cname);
+          } else {
+            SolrException.log(log, "Cound not find core to call recovery:" + cname);
+          }
+        } finally {
+          // no recoveryStrat close for now
+          if (core != null) {
+            core.close();
+          }
+        }
       }
-    } finally {
-      // no recoveryStrat close for now
-      if (core != null) {
-        core.close();
-      }
-    }
+    };
+    
+    thread.start();
   }
   
   protected void handleRequestSyncAction(SolrQueryRequest req,

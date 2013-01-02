@@ -422,8 +422,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       log.info("try and ask " + recoveryUrl + " to recover");
       try {
         server = new HttpSolrServer(recoveryUrl);
-        server.setSoTimeout(5000);
-        server.setConnectionTimeout(5000);
+        server.setSoTimeout(15000);
+        server.setConnectionTimeout(15000);
         
         RequestRecovery recoverRequestCmd = new RequestRecovery();
         recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
