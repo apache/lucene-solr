@@ -1018,13 +1018,15 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       Set<Map> differences = showDiff(controlDocList, cloudDocList,"controlDocList","cloudDocList");
 
       // get versions for the mismatched ids
+      boolean foundId = false;
       StringBuilder ids = new StringBuilder("id:(");
       for (Map doc : differences) {
         ids.append(" "+doc.get("id"));
+        foundId = true;
       }
       ids.append(")");
       
-      if (ids.length() > 0) {
+      if (foundId) {
         // get versions for those ids that don't match
         q = params("q", ids.toString(), "rows", "100000", "fl", "id,_version_",
             "sort", "id asc", "tests",
