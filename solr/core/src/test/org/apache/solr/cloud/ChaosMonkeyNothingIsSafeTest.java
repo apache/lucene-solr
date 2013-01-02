@@ -61,6 +61,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     // can help to hide this when testing and looking at logs
     //ignoreException("shard update error");
     System.setProperty("numShards", Integer.toString(sliceCount));
+    useFactory("solr.StandardDirectoryFactory");
   }
   
   @Override
