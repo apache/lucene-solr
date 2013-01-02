@@ -472,6 +472,8 @@ Other Changes
 
 * SOLR-3279: Upgrade Carrot2 to 3.6.2 (Stanisław Osiński)
 
+* SOLR-4254: Harden the 'leader requests replica to recover' code path.
+  (Mark Miller, yonik)
 
 ==================  4.0.0 ==================
 
