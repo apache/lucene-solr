@@ -305,6 +305,11 @@ Bug Fixes
 
 * LUCENE-4461: If you added the same FacetRequest more than once, you would get
   inconsistent results. (Gilad Barkai via Shai Erera)
+
+* LUCENE-4656: Fix regression in IndexWriter to work with empty TokenStreams
+  that have no TermToBytesRefAttribute (commonly provided by CharTermAttribute),
+  e.g., oal.analysis.miscellaneous.EmptyTokenStream.
+  (Uwe Schindler, Adrien Grand, Robert Muir)
     
 Changes in Runtime Behavior
   
