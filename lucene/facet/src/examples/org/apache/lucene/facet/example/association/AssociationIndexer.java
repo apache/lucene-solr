@@ -3,20 +3,18 @@ package org.apache.lucene.facet.example.association;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.facet.associations.AssociationsFacetFields;
+import org.apache.lucene.facet.associations.CategoryAssociation;
+import org.apache.lucene.facet.associations.CategoryAssociationsContainer;
+import org.apache.lucene.facet.example.ExampleUtils;
+import org.apache.lucene.facet.example.simple.SimpleUtils;
+import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-
-import org.apache.lucene.facet.enhancements.EnhancementsDocumentBuilder;
-import org.apache.lucene.facet.enhancements.association.AssociationProperty;
-import org.apache.lucene.facet.example.ExampleUtils;
-import org.apache.lucene.facet.example.simple.SimpleUtils;
-import org.apache.lucene.facet.index.CategoryContainer;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -62,33 +60,30 @@ public class AssociationIndexer {
     // create and open a taxonomy writer
     TaxonomyWriter taxo = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
+    AssociationsFacetFields assocFacetFields = new AssociationsFacetFields(taxo);
+    
     // loop over sample documents
     int nDocsAdded = 0;
     int nFacetsAdded = 0;
     for (int docNum = 0; docNum < SimpleUtils.docTexts.length; docNum++) {
       ExampleUtils.log(" ++++ DOC ID: " + docNum);
       // obtain the sample categories for current document
-      CategoryContainer categoryContainer = new CategoryContainer();
+      CategoryAssociationsContainer associations = new CategoryAssociationsContainer();
       for (CategoryPath path : SimpleUtils.categories[docNum]) {
-        categoryContainer.addCategory(path);
+        associations.setAssociation(path, null);
         ExampleUtils.log("\t ++++ PATH: " + path);
+        ++nFacetsAdded;
       }
       // and also those with associations
       CategoryPath[] associationsPaths = AssociationUtils.categories[docNum];
-      AssociationProperty[] associationProps = AssociationUtils.associations[docNum];
+      CategoryAssociation[] associationsValues = AssociationUtils.associations[docNum];
       for (int i = 0; i < associationsPaths.length; i++) {
-        categoryContainer.addCategory(associationsPaths[i], associationProps[i]);
+        associations.setAssociation(associationsPaths[i], associationsValues[i]);
         ExampleUtils.log("\t $$$$ Association: ("
-            + associationsPaths[i] + "," + associationProps[i]
+            + associationsPaths[i] + "," + associationsValues[i]
             + ")");
+        ++nFacetsAdded;
       }
-
-      // we do not alter indexing parameters!
-      // a category document builder will add the categories to a document
-      // once build() is called
-      CategoryDocumentBuilder categoryDocBuilder = new EnhancementsDocumentBuilder(
-          taxo, AssociationUtils.assocIndexingParams);
-      categoryDocBuilder.setCategories(categoryContainer);
 
       // create a plain Lucene document and add some regular Lucene fields
       // to it
@@ -97,15 +92,13 @@ public class AssociationIndexer {
       doc.add(new TextField(SimpleUtils.TEXT, SimpleUtils.docTexts[docNum], Field.Store.NO));
 
       // invoke the category document builder for adding categories to the
-      // document and,
-      // as required, to the taxonomy index
-      categoryDocBuilder.build(doc);
+      // document and, as required, to the taxonomy index
+      assocFacetFields.addFields(doc, associations);
 
       // finally add the document to the index
       iw.addDocument(doc);
 
       nDocsAdded++;
-      nFacetsAdded += categoryContainer.size();
     }
 
     // commit changes.
@@ -122,8 +115,7 @@ public class AssociationIndexer {
     taxo.close();
     iw.close();
 
-    ExampleUtils.log("Indexed " + nDocsAdded + " documents with overall "
-        + nFacetsAdded + " facets.");
+    ExampleUtils.log("Indexed " + nDocsAdded + " documents with overall " + nFacetsAdded + " facets.");
   }
   
 }

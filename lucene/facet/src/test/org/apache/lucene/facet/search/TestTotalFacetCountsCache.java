@@ -2,7 +2,7 @@ package org.apache.lucene.facet.search;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -15,7 +15,7 @@ import org.apache.lucene.facet.example.ExampleResult;
 import org.apache.lucene.facet.example.TestMultiCLExample;
 import org.apache.lucene.facet.example.multiCL.MultiCLIndexer;
 import org.apache.lucene.facet.example.multiCL.MultiCLSearcher;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.TotalFacetCounts.CreationType;
 import org.apache.lucene.facet.search.results.FacetResult;
@@ -88,10 +88,10 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
   /** Utility method to add a document and facets to an index/taxonomy. */
   static void addFacets(FacetIndexingParams iParams, IndexWriter iw,
                         TaxonomyWriter tw, String... strings) throws IOException {
-    ArrayList<CategoryPath> cps = new ArrayList<CategoryPath>();
-    cps.add(new CategoryPath(strings));
-    CategoryDocumentBuilder builder = new CategoryDocumentBuilder(tw, iParams);
-    iw.addDocument(builder.setCategoryPaths(cps).build(new Document()));
+    Document doc = new Document();
+    FacetFields facetFields = new FacetFields(tw, iParams);
+    facetFields.addFields(doc, Collections.singletonList(new CategoryPath(strings)));
+    iw.addDocument(doc);
   }
 
   /** Clears the cache and sets its size to one. */
@@ -143,7 +143,6 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     MockDirectoryWrapper indexDir = new MockDirectoryWrapper(random(), slowIndexDir);
     SlowRAMDirectory slowTaxoDir = new SlowRAMDirectory(-1, random());
     MockDirectoryWrapper taxoDir = new MockDirectoryWrapper(random(), slowTaxoDir);
-    
 
     // Index documents without the "slowness"
     MultiCLIndexer.index(indexDir, taxoDir);

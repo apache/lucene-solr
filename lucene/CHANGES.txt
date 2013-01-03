@@ -95,6 +95,14 @@ Changes in backwards compatibility policy
   a setting, you should extend the relevant class.
   Additionally, FacetSearchParams is now immutable, and requires all FacetRequests
   to speified at initialization time. (Shai Erera)
+
+* LUCENE-4647: CategoryDocumentBuilder and EnhancementsDocumentBuilder are replaced
+  by FacetFields and AssociationsFacetFields respectively. CategoryEnhancement and
+  AssociationEnhancement were removed in favor of a simplified CategoryAssociation
+  interface, with CategoryIntAssociation and CategoryFloatAssociation 
+  implementations.
+  NOTE: indexes that contain category enhancements/associations are not supported
+  by the new code and should be recreated. (Shai Erera)
   
 New Features
 

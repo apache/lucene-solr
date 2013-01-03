@@ -10,7 +10,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
@@ -89,8 +89,8 @@ public class DrillDownTest extends LuceneTestCase {
       if (i % 5 == 0) { // 20
         paths.add(new CategoryPath("b"));
       }
-      CategoryDocumentBuilder builder = new CategoryDocumentBuilder(taxoWriter);
-      builder.setCategoryPaths(paths).build(doc);
+      FacetFields facetFields = new FacetFields(taxoWriter);
+      facetFields.addFields(doc, paths);
       writer.addDocument(doc);
     }
     

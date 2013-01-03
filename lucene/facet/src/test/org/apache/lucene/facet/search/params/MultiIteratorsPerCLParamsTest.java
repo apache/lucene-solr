@@ -8,7 +8,7 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.CategoryListIterator;
@@ -171,11 +171,11 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)));
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
+    FacetFields facetFields = new FacetFields(taxoWriter, iParams);
     for (CategoryPath[] categories : perDocCategories) {
-      writer.addDocument(new CategoryDocumentBuilder(taxoWriter, iParams)
-          .setCategoryPaths(Arrays.asList(categories)).build(
-              new Document()));
-
+      Document doc = new Document();
+      facetFields.addFields(doc, Arrays.asList(categories));
+      writer.addDocument(doc);
     }
     taxoWriter.commit();
     writer.commit();

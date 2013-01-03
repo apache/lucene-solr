@@ -101,9 +101,8 @@ public class OrdinalMappingReaderTest extends LuceneTestCase {
         int facetValue = asc? j: NUM_DOCS - j;
         categoryPaths.add(new CategoryPath("tag", Integer.toString(facetValue)));
       }
-      CategoryDocumentBuilder catBuilder = new CategoryDocumentBuilder(taxonomyWriter);
-      catBuilder.setCategoryPaths(categoryPaths);
-      catBuilder.build(doc);
+      FacetFields facetFields = new FacetFields(taxonomyWriter);
+      facetFields.addFields(doc, categoryPaths);
       writer.addDocument(doc);
     }    
     taxonomyWriter.close();

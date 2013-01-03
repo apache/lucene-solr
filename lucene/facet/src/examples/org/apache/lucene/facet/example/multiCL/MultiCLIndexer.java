@@ -9,21 +9,20 @@ import java.util.Random;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
-
 import org.apache.lucene.facet.example.ExampleUtils;
 import org.apache.lucene.facet.example.simple.SimpleUtils;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -162,10 +161,8 @@ public class MultiCLIndexer {
       List<CategoryPath> facetList = Arrays.asList(cPaths[docNum]);
 
       // we do not alter indexing parameters!
-      // a category document builder will add the categories to a document
-      // once build() is called
-      CategoryDocumentBuilder categoryDocBuilder = new CategoryDocumentBuilder(
-          taxo, iParams).setCategoryPaths(facetList);
+      // FacetFields adds the categories to the document in addFields()
+      FacetFields facetFields = new FacetFields(taxo, iParams);
 
       // create a plain Lucene document and add some regular Lucene fields
       // to it
@@ -174,7 +171,7 @@ public class MultiCLIndexer {
       doc.add(new TextField(SimpleUtils.TEXT, docTexts[docNum], Field.Store.NO));
 
       // finally add the document to the index
-      categoryDocBuilder.build(doc);
+      facetFields.addFields(doc, facetList);
       iw.addDocument(doc);
       
       nDocsAdded++;
