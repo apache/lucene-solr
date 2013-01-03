@@ -1032,18 +1032,19 @@ public class TestIndexWriter extends LuceneTestCase {
             doc.add(newField(random, "field", "some text contents", storedTextType));
             for(int i=0;i<100;i++) {
               idField.setStringValue(Integer.toString(i));
-              if (i%30 == 0) {
+              int action = random.nextInt(100);
+              if (action%30 == 0) {
                 w.deleteAll();
-              } else if (i%2 == 0) {
+              } else if (action%2 == 0) {
                 w.updateDocument(new Term("id", idField.stringValue()), doc);
               } else {
                 w.addDocument(doc);
               }
-              if (i%3 == 0) {
+              if (random.nextInt(3) == 0) {
                 IndexReader r = null;
                 boolean success = false;
                 try {
-                  r = DirectoryReader.open(w, true);
+                  r = DirectoryReader.open(w, random.nextBoolean());
                   success = true;
                 } finally {
                   if (success) {
@@ -1056,7 +1057,7 @@ public class TestIndexWriter extends LuceneTestCase {
               if (i%10 == 0) {
                 w.commit();
               }
-              if (i%40 == 0) {
+              if (random.nextInt(50) == 0) {
                 w.forceMerge(1);
               }
             }
