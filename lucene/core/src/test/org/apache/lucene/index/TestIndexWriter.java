@@ -1023,9 +1023,16 @@ public class TestIndexWriter extends LuceneTestCase {
             w = new IndexWriter(dir, conf);
 
             Document doc = new Document();
+            Field idField = newStringField("id", "", Field.Store.NO);
+            doc.add(idField);
             doc.add(newField("field", "some text contents", storedTextType));
             for(int i=0;i<100;i++) {
-              w.addDocument(doc);
+              idField.setStringValue(Integer.toString(i));
+              if (i%2 == 0) {
+                w.updateDocument(new Term("id", idField.stringValue()), doc);
+              } else {
+                w.addDocument(doc);
+              }
               if (i%10 == 0) {
                 w.commit();
               }
@@ -1046,10 +1053,12 @@ public class TestIndexWriter extends LuceneTestCase {
             allowInterrupt = true;
           }
         } catch (ThreadInterruptedException re) {
-          if (true || VERBOSE) {
-            System.out.println("TEST: got interrupt");
-            re.printStackTrace(System.out);
-          }
+          // NOTE: important to leave this verbosity/noise
+          // on!!  This test doesn't repro easily so when
+          // Jenkins hits a fail we need to study where the
+          // interrupts struck!
+          System.out.println("TEST: got interrupt");
+          re.printStackTrace(System.out);
           Throwable e = re.getCause();
           assertTrue(e instanceof InterruptedException);
           if (finish) {
@@ -1114,6 +1123,8 @@ public class TestIndexWriter extends LuceneTestCase {
     final int numInterrupts = atLeast(300);
     int i = 0;
     while(i < numInterrupts) {
+      // TODO: would be nice to also sometimes interrupt the
+      // CMS merge threads too ...
       Thread.sleep(10);
       if (t.allowInterrupt) {
         i++;
@@ -1238,7 +1249,6 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     writer.addDocument(new Document());
     writer.close();
 
