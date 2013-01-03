@@ -53,8 +53,19 @@ import org.apache.lucene.util.UnicodeUtil;
  * Simple highlighter that does not analyze fields nor use
  * term vectors. Instead it requires 
  * {@link IndexOptions#DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS}.
- * 
- * This is thread-safe, and can be used across different readers.
+ * <p>
+ * PostingsHighlighter treats the single original document as the whole corpus, and then scores individual
+ * passages as if they were documents in this corpus. It uses a {@link BreakIterator} to find 
+ * passages in the text; by default it breaks using {@link BreakIterator#getSentenceInstance(Locale) 
+ * getSentenceInstance(Locale.ROOT)}. It then iterates in parallel (merge sorting by offset) through 
+ * the positions of all terms from the query, coalescing those hits that occur in a single passage 
+ * into a {@link Passage}, and then scores each Passage using a separate {@link PassageScorer}. 
+ * Passages are finally formatted into highlighted snippets with a {@link PassageFormatter}.
+ * <p>
+ * <b>WARNING</b>: The code is very new and may still have some exciting bugs! This is why 
+ * it's located under Lucene's sandbox module. 
+ * <p>
+ * Example usage:
  * <pre class="prettyprint">
  *   // configure field with offsets at index time
  *   FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
@@ -67,6 +78,8 @@ import org.apache.lucene.util.UnicodeUtil;
  *   TopDocs topDocs = searcher.search(query, n);
  *   String highlights[] = highlighter.highlight("body", query, searcher, topDocs);
  * </pre>
+ * <p>
+ * This is thread-safe, and can be used across different readers.
  * @lucene.experimental
  */
 public final class PostingsHighlighter {
@@ -117,6 +130,9 @@ public final class PostingsHighlighter {
       // our sentinel in the offsets queue uses this value to terminate.
       throw new IllegalArgumentException("maxLength must be < Integer.MAX_VALUE");
     }
+    if (breakIterator == null || scorer == null || formatter == null) {
+      throw new NullPointerException();
+    }
     this.maxLength = maxLength;
     this.breakIterator = breakIterator;
     this.scorer = scorer;
@@ -165,7 +181,7 @@ public final class PostingsHighlighter {
   /**
    * Highlights the top passages from multiple fields.
    * <p>
-   * Conceptually, this behaves as a more efficent form of:
+   * Conceptually, this behaves as a more efficient form of:
    * <pre class="prettyprint">
    * Map m = new HashMap();
    * for (String field : fields) {

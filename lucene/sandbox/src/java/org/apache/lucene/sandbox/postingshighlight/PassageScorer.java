@@ -27,7 +27,7 @@ package org.apache.lucene.sandbox.postingshighlight;
  */
 public class PassageScorer {
   
-  // TODO: this formula completely made up. It might not provide relevant snippets!
+  // TODO: this formula is completely made up. It might not provide relevant snippets!
   
   /** BM25 k1 parameter, controls term frequency normalization */
   public static final float k1 = 1.2f;
@@ -36,7 +36,7 @@ public class PassageScorer {
   
   /**
    * A pivot used for length normalization.
-   * The default value is the typical average english sentence length.
+   * The default value is the typical average English sentence length.
    */
   public static final float pivot = 87f;
     
