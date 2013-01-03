@@ -45,7 +45,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -1035,9 +1034,7 @@ public class TestIndexWriter extends LuceneTestCase {
               idField.setStringValue(Integer.toString(i));
               int action = random.nextInt(100);
               if (action%30 == 0) {
-                // TODO: deleteAll has bugs when dropping its readers! w.deleteAll();
-                // this is hiding the bugs to stop the jenkins madness!!!!
-                w.deleteDocuments(new MatchAllDocsQuery());
+                w.deleteAll();
               } else if (action%2 == 0) {
                 w.updateDocument(new Term("id", idField.stringValue()), doc);
               } else {
@@ -1047,11 +1044,10 @@ public class TestIndexWriter extends LuceneTestCase {
                 IndexReader r = null;
                 try {
                   r = DirectoryReader.open(w, random.nextBoolean());
-                  // TODO: more bugs!
-                  // if (random.nextBoolean() && r.maxDoc() > 0) {
-                  //  int docid = random.nextInt(r.maxDoc());
-                  //  w.tryDeleteDocument(r, docid);
-                  //}
+                  if (random.nextBoolean() && r.maxDoc() > 0) {
+                    int docid = random.nextInt(r.maxDoc());
+                    w.tryDeleteDocument(r, docid);
+                  }
                 } finally {
                   IOUtils.closeWhileHandlingException(r);
                 }
