@@ -23,6 +23,8 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Random;
 
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -62,7 +64,7 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
     final int maxNumSentences = 20;
     
     Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
     Document document = new Document();
     Field id = new StringField("id", "", Field.Store.NO);
     FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
