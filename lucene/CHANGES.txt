@@ -81,9 +81,6 @@ Changes in backwards compatibility policy
   Additionally, FacetSearchParams is now immutable, and requires all FacetRequests
   to speified at initialization time. (Shai Erera)
 
-* LUCENE-4608: Handle large number of requested fragments better.
-  (Martijn van Groningen)
-
 * LUCENE-4647: CategoryDocumentBuilder and EnhancementsDocumentBuilder are replaced
   by FacetFields and AssociationsFacetFields respectively. CategoryEnhancement and
   AssociationEnhancement were removed in favor of a simplified CategoryAssociation
@@ -290,6 +287,9 @@ Bug Fixes
 
 * LUCENE-4461: If you added the same FacetRequest more than once, you would get
   inconsistent results. (Gilad Barkai via Shai Erera)
+
+* LUCENE-4608: Handle large number of requested fragments better.
+  (Martijn van Groningen)
     
 Changes in Runtime Behavior
   
