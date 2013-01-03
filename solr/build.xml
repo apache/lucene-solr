@@ -567,8 +567,8 @@
     <contrib-crawl target="-ecj-javadoc-lint"/>
   </target>
 
-  <!-- install-maven-tasks is *not* a useless dependency. do not remove -->
-  <target name="generate-maven-artifacts" depends="install-maven-tasks">
+  <!-- install-maven-tasks and define-lucene-javadoc-url are *not* a useless dependencies. Do not remove! -->
+  <target name="generate-maven-artifacts" depends="install-maven-tasks,define-lucene-javadoc-url">
     <sequential>
       <subant target="dist-maven" inheritall="false" >
         <propertyset refid="uptodate.and.compiled.properties"/>
