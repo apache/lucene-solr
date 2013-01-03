@@ -246,7 +246,6 @@
     <propertyref regex=".*\.uptodate$$"/>
     <propertyref regex=".*\.compiled$$"/>
     <propertyref regex=".*\.loaded$$"/>
-    <propertyref name="maven.version.glob"/>
     <propertyref name="lucene.javadoc.url"/><!-- for Solr -->
   </propertyset>
 
@@ -1351,16 +1350,10 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
     </sequential>
   </target>
   
-  <target name="-define-maven-version-glob" depends="resolve-groovy" unless="maven.version.glob">
-    <!-- Too stupid, that ANT cannot apply regexes to property values: -->
-    <script language="groovy" classpathref="groovy.classpath"><![CDATA[
-      project.setProperty('maven.version.glob', project.getProperty('version').replaceAll(/\-SNAPSHOT/, '-*'));
-    ]]></script>
-  </target>
-
-  <target name="-validate-maven-dependencies">
+  <target name="-validate-maven-dependencies.init">
+    <!-- find the correct pom.xml path and assigns it to property pom.xml -->
     <property name="top.level.dir" location="${common.dir}/.."/>
-    <pathconvert property="pom.xml">
+    <pathconvert property="maven.pom.xml">
       <mapper>
         <chainedmapper>
           <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
@@ -1369,7 +1362,21 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </mapper>
       <path location="${ant.file}"/>
     </pathconvert>
-    <m2-validate-dependencies pom.xml="${pom.xml}" licenseDirectory="${license.dir}">
+    
+    <!-- convert ${version} to be a glob pattern, so snapshot versions are allowed: -->
+    <loadresource property="maven.version.glob">
+      <propertyresource name="version"/>
+      <filterchain>
+        <tokenfilter>
+          <filetokenizer/>
+          <replacestring from="-SNAPSHOT" to="-*"/>
+        </tokenfilter>
+      </filterchain>
+    </loadresource>
+  </target>
+  
+  <target name="-validate-maven-dependencies" depends="-validate-maven-dependencies.init">
+    <m2-validate-dependencies pom.xml="${maven.pom.xml}" licenseDirectory="${license.dir}">
       <excludes>
         <rsel:name name="**/lucene-*-${maven.version.glob}.jar" handledirsep="true"/>
       </excludes>
