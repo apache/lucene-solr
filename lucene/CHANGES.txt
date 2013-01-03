@@ -281,6 +281,9 @@ Bug Fixes
   indexed and the Iterator throws an exception. Documents were only rolled back
   if the actual indexing process failed. (Simon Willnauer)
 
+* LUCENE-4608: Handle large number of requested fragments better.
+  (Martijn van Groningen)
+
 * LUCENE-4633: DirectoryTaxonomyWriter.replaceTaxonomy did not refresh its
   internal reader, which could cause an existing category to be added twice.
   (Shai Erera)
@@ -288,8 +291,10 @@ Bug Fixes
 * LUCENE-4461: If you added the same FacetRequest more than once, you would get
   inconsistent results. (Gilad Barkai via Shai Erera)
 
-* LUCENE-4608: Handle large number of requested fragments better.
-  (Martijn van Groningen)
+* LUCENE-4656: Fix regression in IndexWriter to work with empty TokenStreams
+  that have no TermToBytesRefAttribute (commonly provided by CharTermAttribute),
+  e.g., oal.analysis.miscellaneous.EmptyTokenStream.
+  (Uwe Schindler, Adrien Grand, Robert Muir)
     
 Changes in Runtime Behavior
   

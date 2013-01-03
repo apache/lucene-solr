@@ -17,19 +17,17 @@ package org.apache.lucene.analysis.core;
  * limitations under the License.
  */
 
-import java.lang.reflect.Modifier;
 import java.io.Reader;
 import java.io.StringReader;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.CharFilter;
-import org.apache.lucene.analysis.EmptyTokenizer;
 import org.apache.lucene.analysis.MockCharFilter;
 import org.apache.lucene.analysis.MockFixedLengthPayloadFilter;
 import org.apache.lucene.analysis.MockGraphTokenFilter;
@@ -39,10 +37,9 @@ import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.MockVariableLengthPayloadFilter;
 import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ValidatingTokenFilter;
-import org.apache.lucene.analysis.core.TestRandomChains;
 import org.apache.lucene.analysis.fr.FrenchStemFilter;
 import org.apache.lucene.analysis.in.IndicTokenizer;
 import org.apache.lucene.analysis.nl.DutchStemFilter;
@@ -75,7 +72,6 @@ public class TestAllAnalyzersHaveFactories extends LuceneTestCase {
       MockRandomLookaheadTokenFilter.class,
       MockTokenFilter.class,
       MockVariableLengthPayloadFilter.class,
-      EmptyTokenizer.class,
       ValidatingTokenFilter.class
     );
   }

@@ -19,14 +19,11 @@ package org.apache.lucene.document;
 
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.EmptyTokenizer;
-import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -288,7 +285,7 @@ public class TestDocument extends LuceneTestCase {
   // LUCENE-3616
   public void testInvalidFields() {
     try {
-      new Field("foo", new EmptyTokenizer(new StringReader("")), StringField.TYPE_STORED);
+      new Field("foo", new MockTokenizer(new StringReader("")), StringField.TYPE_STORED);
       fail("did not hit expected exc");
     } catch (IllegalArgumentException iae) {
       // expected

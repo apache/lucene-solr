@@ -116,8 +116,11 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     assertNotNull(output);
     CheckClearAttributesAttribute checkClearAtt = ts.addAttribute(CheckClearAttributesAttribute.class);
     
-    assertTrue("has no CharTermAttribute", ts.hasAttribute(CharTermAttribute.class));
-    CharTermAttribute termAtt = ts.getAttribute(CharTermAttribute.class);
+    CharTermAttribute termAtt = null;
+    if (output.length > 0) {
+      assertTrue("has no CharTermAttribute", ts.hasAttribute(CharTermAttribute.class));
+      termAtt = ts.getAttribute(CharTermAttribute.class);
+    }
     
     OffsetAttribute offsetAtt = null;
     if (startOffsets != null || endOffsets != null || finalOffset != null) {
@@ -615,8 +618,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     int remainder = random.nextInt(10);
     Reader reader = new StringReader(text);
     TokenStream ts = a.tokenStream("dummy", useCharFilter ? new MockCharFilter(reader, remainder) : reader);
-    assertTrue("has no CharTermAttribute", ts.hasAttribute(CharTermAttribute.class));
-    CharTermAttribute termAtt = ts.getAttribute(CharTermAttribute.class);
+    CharTermAttribute termAtt = ts.hasAttribute(CharTermAttribute.class) ? ts.getAttribute(CharTermAttribute.class) : null;
     OffsetAttribute offsetAtt = ts.hasAttribute(OffsetAttribute.class) ? ts.getAttribute(OffsetAttribute.class) : null;
     PositionIncrementAttribute posIncAtt = ts.hasAttribute(PositionIncrementAttribute.class) ? ts.getAttribute(PositionIncrementAttribute.class) : null;
     PositionLengthAttribute posLengthAtt = ts.hasAttribute(PositionLengthAttribute.class) ? ts.getAttribute(PositionLengthAttribute.class) : null;
@@ -631,6 +633,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
 
     // First pass: save away "correct" tokens
     while (ts.incrementToken()) {
+      assertNotNull("has no CharTermAttribute", termAtt);
       tokens.add(termAtt.toString());
       if (typeAtt != null) types.add(typeAtt.type());
       if (posIncAtt != null) positions.add(posIncAtt.getPositionIncrement());
