@@ -1045,16 +1045,15 @@ public class TestIndexWriter extends LuceneTestCase {
               }
               if (random.nextInt(3) == 0) {
                 IndexReader r = null;
-                boolean success = false;
                 try {
                   r = DirectoryReader.open(w, random.nextBoolean());
-                  success = true;
+                  // TODO: more bugs!
+                  // if (random.nextBoolean() && r.maxDoc() > 0) {
+                  //  int docid = random.nextInt(r.maxDoc());
+                  //  w.tryDeleteDocument(r, docid);
+                  //}
                 } finally {
-                  if (success) {
-                    r.close();
-                  } else {
-                    IOUtils.closeWhileHandlingException(r);
-                  }
+                  IOUtils.closeWhileHandlingException(r);
                 }
               }
               if (i%10 == 0) {
