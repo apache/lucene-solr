@@ -26,6 +26,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MutableBits;
 
 /** Optimized implementation of a vector of bits.  This is more-or-less like
@@ -238,7 +239,7 @@ final class BitVector implements Cloneable, MutableBits {
       }
       assert verifyCount();
     } finally {
-      output.close();
+      IOUtils.close(output);
     }
   }
 
