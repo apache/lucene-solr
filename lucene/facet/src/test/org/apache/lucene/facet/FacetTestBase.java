@@ -15,7 +15,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.params.FacetRequest;
@@ -255,9 +255,8 @@ public abstract class FacetTestBase extends LuceneTestCase {
   protected final void indexDoc(FacetIndexingParams iParams, RandomIndexWriter iw,
       TaxonomyWriter tw, String content, List<CategoryPath> categories) throws IOException {
     Document d = new Document();
-    CategoryDocumentBuilder builder = new CategoryDocumentBuilder(tw, iParams);
-    builder.setCategoryPaths(categories);
-    builder.build(d);
+    FacetFields facetFields = new FacetFields(tw, iParams);
+    facetFields.addFields(d, categories);
     d.add(new TextField("content", content, Field.Store.YES));
     iw.addDocument(d);
   }

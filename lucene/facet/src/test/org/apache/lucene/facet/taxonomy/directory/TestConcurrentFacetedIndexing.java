@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.cl2o.Cl2oTaxonomyWriterCache;
@@ -94,7 +94,7 @@ public class TestConcurrentFacetedIndexing extends LuceneTestCase {
 
     for (int i = 0; i < indexThreads.length; i++) {
       indexThreads[i] = new Thread() {
-        private final CategoryDocumentBuilder cdb = new CategoryDocumentBuilder(tw);
+        private final FacetFields facetFields = new FacetFields(tw);
         
         @Override
         public void run() {
@@ -115,8 +115,7 @@ public class TestConcurrentFacetedIndexing extends LuceneTestCase {
                   --level;
                 }
               }
-              cdb.setCategoryPaths(cats);
-              cdb.build(doc);
+              facetFields.addFields(doc, cats);
               iw.addDocument(doc);
             } catch (IOException e) {
               throw new RuntimeException(e);

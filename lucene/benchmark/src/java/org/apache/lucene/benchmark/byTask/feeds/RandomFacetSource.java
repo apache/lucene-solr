@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.facet.index.CategoryContainer;
+import org.apache.lucene.facet.associations.CategoryAssociationsContainer;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 
 /**
@@ -45,9 +45,10 @@ public class RandomFacetSource extends FacetSource {
   private int maxValue = maxDocFacets * maxFacetDepth;
   
   @Override
-  public CategoryContainer getNextFacets(CategoryContainer facets) throws NoMoreDataException, IOException {
+  public CategoryAssociationsContainer getNextFacets(CategoryAssociationsContainer facets) 
+      throws NoMoreDataException, IOException {
     if (facets == null) {
-      facets = new CategoryContainer();
+      facets = new CategoryAssociationsContainer();
     } else {
       facets.clear();
     }
@@ -59,7 +60,7 @@ public class RandomFacetSource extends FacetSource {
         cp.add(Integer.toString(random.nextInt(maxValue)));
         addItem();
       }
-      facets.addCategory(cp);
+      facets.setAssociation(cp, null);
       addBytes(cp.toString().length()); // very rough approximation
     }
     return facets;

@@ -130,7 +130,7 @@ public class FacetIndexingParams {
   public int getPartitionSize() {
     return partitionSize;
   }
-
+  
   /**
    * Returns a list of all {@link CategoryListParams categoryListParams} that
    * are used for facets indexing.

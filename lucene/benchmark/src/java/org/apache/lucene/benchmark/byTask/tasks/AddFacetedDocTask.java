@@ -19,8 +19,8 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.FacetSource;
-import org.apache.lucene.facet.index.CategoryContainer;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
+import org.apache.lucene.facet.associations.CategoryAssociationsContainer;
+import org.apache.lucene.facet.index.FacetFields;
 
 /**
  * Add a faceted document.
@@ -42,8 +42,8 @@ public class AddFacetedDocTask extends AddDocTask {
     super(runData);
   }
 
-  private CategoryContainer facets = null;
-  private CategoryDocumentBuilder categoryDocBuilder = null;
+  private CategoryAssociationsContainer facets = null;
+  private FacetFields facetFields = null;
   private boolean withFacets = true;
   
   @Override
@@ -53,8 +53,7 @@ public class AddFacetedDocTask extends AddDocTask {
     facets = getRunData().getFacetSource().getNextFacets(facets);  
     withFacets = getRunData().getConfig().get("with.facets", true);
     if (withFacets) {
-      categoryDocBuilder = new CategoryDocumentBuilder(getRunData().getTaxonomyWriter());
-      categoryDocBuilder.setCategories(facets);
+      facetFields = new FacetFields(getRunData().getTaxonomyWriter());
     }
   }
 
@@ -69,7 +68,7 @@ public class AddFacetedDocTask extends AddDocTask {
   @Override
   public int doLogic() throws Exception {
     if (withFacets) {
-      categoryDocBuilder.build(doc);
+      facetFields.addFields(doc, facets);
     }
     return super.doLogic();
   }

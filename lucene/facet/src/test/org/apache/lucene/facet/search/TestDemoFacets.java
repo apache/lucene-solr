@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
@@ -43,7 +43,7 @@ public class TestDemoFacets extends LuceneTestCase {
 
   private DirectoryTaxonomyWriter taxoWriter;
   private RandomIndexWriter writer;
-  private CategoryDocumentBuilder docBuilder;
+  private FacetFields docBuilder;
 
   private void add(String ... categoryPaths) throws IOException {
     Document doc = new Document();
@@ -52,8 +52,7 @@ public class TestDemoFacets extends LuceneTestCase {
     for(String categoryPath : categoryPaths) {
       paths.add(new CategoryPath(categoryPath, '/'));
     }
-    docBuilder.setCategoryPaths(paths);
-    docBuilder.build(doc);
+    docBuilder.addFields(doc, paths);
     writer.addDocument(doc);
   }
 
@@ -68,7 +67,7 @@ public class TestDemoFacets extends LuceneTestCase {
 
     // Reused across documents, to add the necessary facet
     // fields:
-    docBuilder = new CategoryDocumentBuilder(taxoWriter);
+    docBuilder = new FacetFields(taxoWriter);
 
     add("Author/Bob", "Publish Date/2010/10/15");
     add("Author/Lisa", "Publish Date/2010/10/20");

@@ -6,16 +6,15 @@ import java.util.List;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.facet.example.ExampleUtils;
+import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-
-import org.apache.lucene.facet.example.ExampleUtils;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -50,31 +49,29 @@ public class SimpleIndexer {
   public static void index (Directory indexDir, Directory taxoDir) throws Exception {
 
     // create and open an index writer
-    IndexWriter iw = new IndexWriter(indexDir, new IndexWriterConfig(ExampleUtils.EXAMPLE_VER, SimpleUtils.analyzer));
+    final IndexWriter iw = new IndexWriter(indexDir, 
+        new IndexWriterConfig(ExampleUtils.EXAMPLE_VER, SimpleUtils.analyzer));
 
     // create and open a taxonomy writer
-    TaxonomyWriter taxo = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
+    final TaxonomyWriter taxo = new DirectoryTaxonomyWriter(taxoDir, OpenMode.CREATE);
 
+    // FacetFields adds the categories to the document in addFields()
+    final FacetFields facetFields = new FacetFields(taxo);
+    
     // loop over  sample documents 
     int nDocsAdded = 0;
     int nFacetsAdded = 0;
-    for (int docNum=0; docNum<SimpleUtils.docTexts.length; docNum++) {
-
+    for (int docNum = 0; docNum < SimpleUtils.docTexts.length; docNum++) {
       // obtain the sample facets for current document
       List<CategoryPath> facetList = Arrays.asList(SimpleUtils.categories[docNum]);
-
-      // we do not alter indexing parameters!  
-      // a category document builder will add the categories to a document once build() is called
-      CategoryDocumentBuilder categoryDocBuilder = new CategoryDocumentBuilder(taxo).setCategoryPaths(facetList);
 
       // create a plain Lucene document and add some regular Lucene fields to it 
       Document doc = new Document();
       doc.add(new TextField(SimpleUtils.TITLE, SimpleUtils.docTitles[docNum], Field.Store.YES));
       doc.add(new TextField(SimpleUtils.TEXT, SimpleUtils.docTexts[docNum], Field.Store.NO));
 
-      // invoke the category document builder for adding categories to the document and,
-      // as required, to the taxonomy index 
-      categoryDocBuilder.build(doc);
+      // add the facet fields to the document
+      facetFields.addFields(doc, facetList);
 
       // finally add the document to the index
       iw.addDocument(doc);
