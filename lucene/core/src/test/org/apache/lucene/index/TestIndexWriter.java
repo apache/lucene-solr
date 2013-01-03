@@ -1018,6 +1018,7 @@ public class TestIndexWriter extends LuceneTestCase {
       doc.add(newStringField(random, "id", "500", Field.Store.NO));
       doc.add(newField(random, "field", "some prepackaged text contents", storedTextType));
       w.addDocument(doc);
+      doc = new Document();
       doc.add(newStringField(random, "id", "501", Field.Store.NO));
       doc.add(newField(random, "field", "some more contents", storedTextType));
       w.addDocument(doc);
