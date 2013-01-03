@@ -1004,9 +1004,25 @@ public class TestIndexWriter extends LuceneTestCase {
 
     volatile boolean allowInterrupt = false;
     final Random random;
+    final Directory adder;
     
-    IndexerThreadInterrupt() {
+    IndexerThreadInterrupt() throws IOException {
       this.random = new Random(random().nextLong());
+      // make a little directory for addIndexes
+      // LUCENE-2239: won't work with NIOFS/MMAP
+      adder = new MockDirectoryWrapper(random, new RAMDirectory());
+      IndexWriterConfig conf = newIndexWriterConfig(random,
+          TEST_VERSION_CURRENT, new MockAnalyzer(random));
+      IndexWriter w = new IndexWriter(adder, conf);
+      Document doc = new Document();
+      doc.add(newStringField(random, "id", "500", Field.Store.NO));
+      doc.add(newField(random, "field", "some prepackaged text contents", storedTextType));
+      w.addDocument(doc);
+      doc.add(newStringField(random, "id", "501", Field.Store.NO));
+      doc.add(newField(random, "field", "some more contents", storedTextType));
+      w.addDocument(doc);
+      w.deleteDocuments(new Term("id", "500"));
+      w.close();
     }
 
     @Override
@@ -1033,7 +1049,9 @@ public class TestIndexWriter extends LuceneTestCase {
             for(int i=0;i<100;i++) {
               idField.setStringValue(Integer.toString(i));
               int action = random.nextInt(100);
-              if (action%30 == 0) {
+              if (action == 17) {
+                w.addIndexes(adder);
+              } else if (action%30 == 0) {
                 w.deleteAll();
               } else if (action%2 == 0) {
                 w.updateDocument(new Term("id", idField.stringValue()), doc);
@@ -1123,7 +1141,7 @@ public class TestIndexWriter extends LuceneTestCase {
         }
       }
       try {
-        dir.close();
+        IOUtils.close(dir, adder);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
