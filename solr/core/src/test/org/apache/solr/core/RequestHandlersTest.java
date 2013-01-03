@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.StandardRequestHandler;
 import org.apache.solr.request.SolrRequestHandler;
 import org.junit.BeforeClass;
@@ -86,5 +87,24 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
     assertEquals( h1, h2 ); // the same object
     
     assertNull( core.getRequestHandler("/update/asdgadsgas" ) ); // prefix
+  }
+
+  @Test
+  public void testStatistics() {
+    SolrCore core = h.getCore();
+    SolrRequestHandler updateHandler = core.getRequestHandler("/update");
+    SolrRequestHandler termHandler = core.getRequestHandler("/terms");
+
+    assertU(adoc("id", "47",
+        "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
+    assertU(commit());
+
+    NamedList updateStats = updateHandler.getStatistics();
+    NamedList termStats = termHandler.getStatistics();
+
+    Double updateTime = (Double) updateStats.get("totalTime");
+    Double termTime = (Double) termStats.get("totalTime");
+
+    assertFalse("RequestHandlers should not share statistics!", updateTime.equals(termTime));
   }
 }

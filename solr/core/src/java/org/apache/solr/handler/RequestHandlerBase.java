@@ -28,28 +28,30 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.stats.Snapshot;
+import org.apache.solr.util.stats.Timer;
+import org.apache.solr.util.stats.TimerContext;
 
 import java.net.URL;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
  */
 public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoMBean {
 
-  // statistics
-  // TODO: should we bother synchronizing these, or is an off-by-one error
-  // acceptable every million requests or so?
-  volatile long numRequests;
-  volatile long numErrors;
-  volatile long numTimeouts;
   protected NamedList initArgs = null;
   protected SolrParams defaults;
   protected SolrParams appends;
   protected SolrParams invariants;
-  volatile long totalTime = 0;
-  long handlerStart = System.currentTimeMillis();
   protected boolean httpCaching = true;
 
+  // Statistics
+  private final AtomicLong numRequests = new AtomicLong();
+  private final AtomicLong numErrors = new AtomicLong();
+  private final AtomicLong numTimeouts = new AtomicLong();
+  private final Timer requestTimes = new Timer();
+  private final long handlerStart = System.currentTimeMillis();
 
   /**
    * Initializes the {@link org.apache.solr.request.SolrRequestHandler} by creating three {@link org.apache.solr.common.params.SolrParams} named.
@@ -94,7 +96,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   public void init(NamedList args) {
     initArgs = args;
 
-    // Copied from StandardRequestHandler 
+    // Copied from StandardRequestHandler
     if( args != null ) {
       Object o = args.get("defaults");
       if (o != null && o instanceof NamedList) {
@@ -114,6 +116,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       Object caching = initArgs.get("httpCaching");
       httpCaching = caching != null ? Boolean.parseBoolean(caching.toString()) : true;
     }
+
   }
 
   public NamedList getInitArgs() {
@@ -124,7 +127,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    numRequests++;
+    numRequests.incrementAndGet();
+    TimerContext timer = requestTimes.time();
     try {
       SolrPluginUtils.setDefaults(req,defaults,appends,invariants);
       rsp.setHttpCaching(httpCaching);
@@ -135,7 +139,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         Object partialResults = header.get("partialResults");
         boolean timedOut = partialResults == null ? false : (Boolean)partialResults;
         if( timedOut ) {
-          numTimeouts++;
+          numTimeouts.incrementAndGet();
           rsp.setHttpCaching(false);
         }
       }
@@ -156,11 +160,12 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       }
 
       rsp.setException(e);
-      numErrors++;
+      numErrors.incrementAndGet();
     }
-    totalTime += rsp.getEndTime() - req.getStartTime();
+    finally {
+      timer.stop();
+    }
   }
-  
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
@@ -192,13 +197,21 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   @Override
   public NamedList<Object> getStatistics() {
     NamedList<Object> lst = new SimpleOrderedMap<Object>();
+    Snapshot snapshot = requestTimes.getSnapshot();
     lst.add("handlerStart",handlerStart);
-    lst.add("requests", numRequests);
-    lst.add("errors", numErrors);
-    lst.add("timeouts", numTimeouts);
-    lst.add("totalTime",totalTime);
-    lst.add("avgTimePerRequest", (float) totalTime / (float) this.numRequests);
-    lst.add("avgRequestsPerSecond", (float) numRequests*1000 / (float)(System.currentTimeMillis()-handlerStart));   
+    lst.add("requests", numRequests.longValue());
+    lst.add("errors", numErrors.longValue());
+    lst.add("timeouts", numTimeouts.longValue());
+    lst.add("totalTime", requestTimes.getSum());
+    lst.add("avgRequestsPerSecond", requestTimes.getMeanRate());
+    lst.add("5minRateReqsPerSecond", requestTimes.getFiveMinuteRate());
+    lst.add("15minRateReqsPerSecond", requestTimes.getFifteenMinuteRate());
+    lst.add("avgTimePerRequest", requestTimes.getMean());
+    lst.add("medianRequestTime", snapshot.getMedian());
+    lst.add("75thPcRequestTime", snapshot.get75thPercentile());
+    lst.add("95thPcRequestTime", snapshot.get95thPercentile());
+    lst.add("99thPcRequestTime", snapshot.get99thPercentile());
+    lst.add("999thPcRequestTime", snapshot.get999thPercentile());
     return lst;
   }
   
