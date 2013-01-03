@@ -168,6 +168,8 @@ class BufferedDeletesStream {
       infoStream.message("BD", "applyDeletes: infos=" + infos + " packetCount=" + deletes.size());
     }
 
+    final long gen = nextGen++;
+
     List<SegmentInfoPerCommit> infos2 = new ArrayList<SegmentInfoPerCommit>();
     infos2.addAll(infos);
     Collections.sort(infos2, sortSegInfoByDelGen);
@@ -255,7 +257,7 @@ class BufferedDeletesStream {
          */
         delIDX--;
         infosIDX--;
-        info.setBufferedDeletesGen(nextGen);
+        info.setBufferedDeletesGen(gen);
 
       } else {
         //System.out.println("  gt");
@@ -290,7 +292,7 @@ class BufferedDeletesStream {
             infoStream.message("BD", "seg=" + info + " segGen=" + segGen + " coalesced deletes=[" + (coalescedDeletes == null ? "null" : coalescedDeletes) + "] newDelCount=" + delCount + (segAllDeletes ? " 100% deleted" : ""));
           }
         }
-        info.setBufferedDeletesGen(nextGen);
+        info.setBufferedDeletesGen(gen);
 
         infosIDX--;
       }
@@ -302,7 +304,7 @@ class BufferedDeletesStream {
     }
     // assert infos != segmentInfos || !any() : "infos=" + infos + " segmentInfos=" + segmentInfos + " any=" + any;
 
-    return new ApplyDeletesResult(anyNewDeletes, nextGen++, allDeleted);
+    return new ApplyDeletesResult(anyNewDeletes, gen, allDeleted);
   }
 
   synchronized long getNextGen() {

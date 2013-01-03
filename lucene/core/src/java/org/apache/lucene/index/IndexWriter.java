@@ -453,15 +453,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     /** Remove all our references to readers, and commits
      *  any pending changes. */
     synchronized void dropAll(boolean doSave) throws IOException {
+      Throwable priorE = null;
       final Iterator<Map.Entry<SegmentInfoPerCommit,ReadersAndLiveDocs>> it = readerMap.entrySet().iterator();
       while(it.hasNext()) {
         final ReadersAndLiveDocs rld = it.next().getValue();
-        if (doSave && rld.writeLiveDocs(directory)) {
-          // Make sure we only write del docs for a live segment:
-          assert infoIsLive(rld.info);
-          // Must checkpoint w/ deleter, because we just
-          // created created new _X_N.del file.
-          deleter.checkpoint(segmentInfos, false);
+
+        try {
+          if (doSave && rld.writeLiveDocs(directory)) {
+            // Make sure we only write del docs for a live segment:
+            assert infoIsLive(rld.info);
+            // Must checkpoint w/ deleter, because we just
+            // created created new _X_N.del file.
+            deleter.checkpoint(segmentInfos, false);
+          }
+        } catch (Throwable t) {
+          if (priorE != null) {
+            priorE = t;
+          }
         }
 
         // Important to remove as-we-go, not with .clear()
@@ -474,9 +482,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // actually close the SRs; this happens when a
         // near real-time reader is kept open after the
         // IndexWriter instance is closed:
-        rld.dropReaders();
+        try {
+          rld.dropReaders();
+        } catch (Throwable t) {
+          if (priorE != null) {
+            priorE = t;
+          }
+        }
       }
       assert readerMap.size() == 0;
+      if (priorE != null) {
+        throw new RuntimeException(priorE);
+      }
     }
 
     /**
@@ -3064,13 +3081,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         infoStream.message("IW", mergedDeletes.getPendingDeleteCount() + " new deletes since merge started");
       }
     }
-
-    // If new deletes were applied while we were merging
-    // (which happens if eg commit() or getReader() is
-    // called during our merge), then it better be the case
-    // that the delGen has increased for all our merged
-    // segments:
-    assert mergedDeletes == null || minGen > merge.info.getBufferedDeletesGen();
 
     merge.info.setBufferedDeletesGen(minGen);
 
