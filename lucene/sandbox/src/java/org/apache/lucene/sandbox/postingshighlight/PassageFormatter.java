@@ -18,7 +18,7 @@ package org.apache.lucene.sandbox.postingshighlight;
  */
 
 /**
- * Constructs a formatted passage.
+ * Creates a formatted snippet from the top passages.
  * <p>
  * The default implementation marks the query terms as bold, and places
  * ellipses between unconnected passages.
@@ -26,6 +26,12 @@ package org.apache.lucene.sandbox.postingshighlight;
  */
 public class PassageFormatter {
   /**
+   * Formats the top <code>passages</code> from <code>content</code>
+   * into a human-readable text snippet.
+   * 
+   * @param passages top-N passages for the field. Note these are sorted in
+   *        the order that they appear in the document for convenience.
+   * @param content content for the field.
    * @return formatted highlight
    */
   public String format(Passage passages[], String content) {

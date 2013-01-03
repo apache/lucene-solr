@@ -109,14 +109,12 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
   private void checkQuery(IndexSearcher is, Query query, int doc, int maxTopN) throws IOException {
     for (int n = 1; n < maxTopN; n++) {
       FakePassageFormatter f1 = new FakePassageFormatter();
-      PostingsHighlighter p1 = new PostingsHighlighter("body", 
-                                                       Integer.MAX_VALUE-1, 
+      PostingsHighlighter p1 = new PostingsHighlighter(Integer.MAX_VALUE-1, 
                                                        BreakIterator.getSentenceInstance(Locale.ROOT), 
                                                        new PassageScorer(),
                                                        f1);
       FakePassageFormatter f2 = new FakePassageFormatter();
-      PostingsHighlighter p2 = new PostingsHighlighter("body", 
-                                                       Integer.MAX_VALUE-1, 
+      PostingsHighlighter p2 = new PostingsHighlighter(Integer.MAX_VALUE-1, 
                                                        BreakIterator.getSentenceInstance(Locale.ROOT), 
                                                        new PassageScorer(),
                                                        f2);
@@ -124,8 +122,8 @@ public class TestPostingsHighlighterRanking extends LuceneTestCase {
       bq.add(query, BooleanClause.Occur.MUST);
       bq.add(new TermQuery(new Term("id", Integer.toString(doc))), BooleanClause.Occur.MUST);
       TopDocs td = is.search(bq, 1);
-      p1.highlight(bq, is, td, n);
-      p2.highlight(bq, is, td, n+1);
+      p1.highlight("body", bq, is, td, n);
+      p2.highlight("body", bq, is, td, n+1);
       assertTrue(f2.seen.containsAll(f1.seen));
     }
   }

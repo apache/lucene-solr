@@ -61,6 +61,8 @@ public final class Passage {
 
   /**
    * Start offset of this passage.
+   * @return start index (inclusive) of the passage in the 
+   *         original content: always &gt;= 0.
    */
   public int getStartOffset() {
     return startOffset;
@@ -68,6 +70,8 @@ public final class Passage {
 
   /**
    * End offset of this passage.
+   * @return end index (exclusive) of the passage in the 
+   *         original content: always &gt;= {@link #getStartOffset()}
    */
   public int getEndOffset() {
     return endOffset;
@@ -91,6 +95,7 @@ public final class Passage {
 
   /**
    * Start offsets of the term matches, in increasing order.
+   * <p>
    * Only {@link #getNumMatches} are valid. Note that these
    * offsets are absolute (not relative to {@link #getStartOffset()}).
    */
@@ -99,19 +104,20 @@ public final class Passage {
   }
 
   /**
-   * End offsets of the term matches, corresponding with
-   * {@link #getMatchStarts}. Note that its possible that
-   * an end offset could exceed beyond the bounds of the passage
-   * ({@link #getEndOffset()}), if the Analyzer produced a term
-   * which spans a passage boundary.
+   * End offsets of the term matches, corresponding with {@link #getMatchStarts}. 
+   * <p>
+   * Only {@link #getNumMatches} are valid. Note that its possible that an end offset 
+   * could exceed beyond the bounds of the passage ({@link #getEndOffset()}), if the 
+   * Analyzer produced a term which spans a passage boundary.
    */
   public int[] getMatchEnds() {
     return matchEnds;
   }
 
   /**
-   * Term of the matches, corresponding with
-   * {@link #getMatchStarts()}.
+   * Term of the matches, corresponding with {@link #getMatchStarts()}.
+   * <p>
+   * Only {@link #getNumMatches()} are valid.
    */
   public Term[] getMatchTerms() {
     return matchTerms;

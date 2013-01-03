@@ -17,6 +17,8 @@ package org.apache.lucene.sandbox.postingshighlight;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -63,11 +65,11 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    PostingsHighlighter highlighter = new PostingsHighlighter("body");
+    PostingsHighlighter highlighter = new PostingsHighlighter();
     Query query = new TermQuery(new Term("body", "highlighting"));
     TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
-    String snippets[] = highlighter.highlight(query, searcher, topDocs);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
     assertEquals(2, snippets.length);
     assertEquals("Just a test <b>highlighting</b> from postings. ", snippets[0]);
     assertEquals("<b>Highlighting</b> the first term. ", snippets[1]);
@@ -99,15 +101,56 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    PostingsHighlighter highlighter = new PostingsHighlighter("body");
+    PostingsHighlighter highlighter = new PostingsHighlighter();
     Query query = new TermQuery(new Term("body", "test"));
     TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
-    String snippets[] = highlighter.highlight(query, searcher, topDocs);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
     assertEquals(2, snippets.length);
     assertEquals("This is a <b>test</b>.", snippets[0]);
     assertEquals("<b>Test</b> a one sentence document.", snippets[1]);
     
+    ir.close();
+    dir.close();
+  }
+  
+  public void testMultipleFields() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", "", offsetsType);
+    Field title = new Field("title", "", offsetsType);
+    Document doc = new Document();
+    doc.add(body);
+    doc.add(title);
+    
+    body.setStringValue("This is a test. Just a test highlighting from postings. Feel free to ignore.");
+    title.setStringValue("I am hoping for the best.");
+    iw.addDocument(doc);
+    body.setStringValue("Highlighting the first term. Hope it works.");
+    title.setStringValue("But best may not be good enough.");
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter();
+    BooleanQuery query = new BooleanQuery();
+    query.add(new TermQuery(new Term("body", "highlighting")), BooleanClause.Occur.SHOULD);
+    query.add(new TermQuery(new Term("title", "best")), BooleanClause.Occur.SHOULD);
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(2, topDocs.totalHits);
+    Map<String,String[]> snippets = highlighter.highlightFields(new String [] { "body", "title" }, query, searcher, topDocs);
+    assertEquals(2, snippets.size());
+    assertEquals("Just a test <b>highlighting</b> from postings. ", snippets.get("body")[0]);
+    assertEquals("<b>Highlighting</b> the first term. ", snippets.get("body")[1]);
+    assertEquals("I am hoping for the <b>best</b>.", snippets.get("title")[0]);
+    assertEquals("But <b>best</b> may not be good enough.", snippets.get("title")[1]);
     ir.close();
     dir.close();
   }
@@ -133,14 +176,14 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    PostingsHighlighter highlighter = new PostingsHighlighter("body");
+    PostingsHighlighter highlighter = new PostingsHighlighter();
     BooleanQuery query = new BooleanQuery();
     query.add(new TermQuery(new Term("body", "highlighting")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("body", "just")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term("body", "first")), BooleanClause.Occur.SHOULD);
     TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
-    String snippets[] = highlighter.highlight(query, searcher, topDocs);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs);
     assertEquals(2, snippets.length);
     assertEquals("<b>Just</b> a test <b>highlighting</b> from postings. ", snippets[0]);
     assertEquals("<b>Highlighting</b> the <b>first</b> term. ", snippets[1]);
@@ -170,11 +213,11 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    PostingsHighlighter highlighter = new PostingsHighlighter("body");
+    PostingsHighlighter highlighter = new PostingsHighlighter();
     Query query = new TermQuery(new Term("body", "test"));
     TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
-    String snippets[] = highlighter.highlight(query, searcher, topDocs, 2);
+    String snippets[] = highlighter.highlight("body", query, searcher, topDocs, 2);
     assertEquals(2, snippets.length);
     assertEquals("This is a <b>test</b>. Just a <b>test</b> highlighting from postings. ", snippets[0]);
     assertEquals("This <b>test</b> is another <b>test</b>. ... <b>Test</b> <b>test</b> <b>test</b> <b>test</b>.", snippets[1]);
@@ -204,12 +247,12 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     iw.close();
     
     IndexSearcher searcher = newSearcher(ir);
-    PostingsHighlighter highlighter = new PostingsHighlighter("body");
+    PostingsHighlighter highlighter = new PostingsHighlighter();
     Query query = new TermQuery(new Term("body", "test"));
     TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits);
     try {
-      highlighter.highlight(query, searcher, topDocs, 2);
+      highlighter.highlight("body", query, searcher, topDocs, 2);
       fail("did not hit expected exception");
     } catch (IllegalArgumentException iae) {
       // expected

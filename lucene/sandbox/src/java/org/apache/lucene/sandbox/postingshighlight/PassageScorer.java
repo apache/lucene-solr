@@ -18,7 +18,7 @@ package org.apache.lucene.sandbox.postingshighlight;
  */
 
 /** 
- * Used for ranking passages.
+ * Ranks passages found by {@link PostingsHighlighter}.
  * <p>
  * Each passage is scored as a miniature document within the document.
  * The final score is computed as {@link #norm} * &sum; ({@link #weight} * {@link #tf}).
