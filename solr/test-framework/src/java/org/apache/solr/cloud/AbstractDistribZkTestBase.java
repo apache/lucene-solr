@@ -29,6 +29,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.core.Diagnostics;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
@@ -160,17 +161,9 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
         if (!sawLiveRecovering) {
           if (verbose) System.out.println("no one is recoverying");
         } else {
-          if (verbose) System.out
-          .println("Gave up waiting for recovery to finish..");
+          if (verbose) System.out.println("Gave up waiting for recovery to finish..");
           if (failOnTimeout) {
-            Map<Thread,StackTraceElement[]> stackTraces = Thread.getAllStackTraces();
-            for (Map.Entry<Thread,StackTraceElement[]>  entry : stackTraces.entrySet()) {
-              System.out.println("");
-              System.out.println(entry.getKey().toString());
-              for (StackTraceElement st : entry.getValue()) {
-                System.out.println(st);
-              }
-            }
+            Diagnostics.logThreadDumps("Gave up waiting for recovery to finish.  THREAD DUMP:");
             printLayout();
             fail("There are still nodes recoverying - waited for " + timeoutSeconds + " seconds");
             // won't get here
