@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -1028,13 +1027,32 @@ public class TestIndexWriter extends LuceneTestCase {
             doc.add(newField("field", "some text contents", storedTextType));
             for(int i=0;i<100;i++) {
               idField.setStringValue(Integer.toString(i));
-              if (i%2 == 0) {
+              if (i%30 == 0) {
+                w.deleteAll();
+              } else if (i%2 == 0) {
                 w.updateDocument(new Term("id", idField.stringValue()), doc);
               } else {
                 w.addDocument(doc);
               }
+              if (i%3 == 0) {
+                IndexReader r = null;
+                boolean success = false;
+                try {
+                  r = DirectoryReader.open(w, true);
+                  success = true;
+                } finally {
+                  if (success) {
+                    r.close();
+                  } else {
+                    IOUtils.closeWhileHandlingException(r);
+                  }
+                }
+              }
               if (i%10 == 0) {
                 w.commit();
+              }
+              if (i%40 == 0) {
+                w.forceMerge(1);
               }
             }
             w.close();
@@ -1120,7 +1138,7 @@ public class TestIndexWriter extends LuceneTestCase {
     assertTrue(new ThreadInterruptedException(new InterruptedException()).getCause() instanceof InterruptedException);
 
     // issue 300 interrupts to child thread
-    final int numInterrupts = atLeast(300);
+    final int numInterrupts = atLeast(3000);
     int i = 0;
     while(i < numInterrupts) {
       // TODO: would be nice to also sometimes interrupt the

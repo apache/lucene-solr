@@ -336,7 +336,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // obtained during this flush are pooled, the first time
     // this method is called:
     poolReaders = true;
-    final DirectoryReader r;
+    DirectoryReader r = null;
     doBeforeFlush();
     boolean anySegmentFlushed = false;
     /*
@@ -346,46 +346,54 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
      * We release the two stage full flush after we are done opening the
      * directory reader!
      */
-    synchronized (fullFlushLock) {
-      boolean success = false;
-      try {
-        anySegmentFlushed = docWriter.flushAllThreads();
-        if (!anySegmentFlushed) {
-          // prevent double increment since docWriter#doFlush increments the flushcount
-          // if we flushed anything.
-          flushCount.incrementAndGet();
-        }
-        success = true;
-        // Prevent segmentInfos from changing while opening the
-        // reader; in theory we could do similar retry logic,
-        // just like we do when loading segments_N
-        synchronized(this) {
-          maybeApplyDeletes(applyAllDeletes);
-          r = StandardDirectoryReader.open(this, segmentInfos, applyAllDeletes);
-          if (infoStream.isEnabled("IW")) {
-            infoStream.message("IW", "return reader version=" + r.getVersion() + " reader=" + r);
+    boolean success2 = false;
+    try {
+      synchronized (fullFlushLock) {
+        boolean success = false;
+        try {
+          anySegmentFlushed = docWriter.flushAllThreads();
+          if (!anySegmentFlushed) {
+            // prevent double increment since docWriter#doFlush increments the flushcount
+            // if we flushed anything.
+            flushCount.incrementAndGet();
           }
-        }
-      } catch (OutOfMemoryError oom) {
-        handleOOM(oom, "getReader");
-        // never reached but javac disagrees:
-        return null;
-      } finally {
-        if (!success) {
-          if (infoStream.isEnabled("IW")) {
-            infoStream.message("IW", "hit exception during NRT reader");
+          success = true;
+          // Prevent segmentInfos from changing while opening the
+          // reader; in theory we could do similar retry logic,
+          // just like we do when loading segments_N
+          synchronized(this) {
+            maybeApplyDeletes(applyAllDeletes);
+            r = StandardDirectoryReader.open(this, segmentInfos, applyAllDeletes);
+            if (infoStream.isEnabled("IW")) {
+              infoStream.message("IW", "return reader version=" + r.getVersion() + " reader=" + r);
+            }
           }
+        } catch (OutOfMemoryError oom) {
+          handleOOM(oom, "getReader");
+          // never reached but javac disagrees:
+          return null;
+        } finally {
+          if (!success) {
+            if (infoStream.isEnabled("IW")) {
+              infoStream.message("IW", "hit exception during NRT reader");
+            }
+          }
+          // Done: finish the full flush!
+          docWriter.finishFullFlush(success);
+          doAfterFlush();
         }
-        // Done: finish the full flush!
-        docWriter.finishFullFlush(success);
-        doAfterFlush();
       }
-    }
-    if (anySegmentFlushed) {
-      maybeMerge(MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
-    }
-    if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "getReader took " + (System.currentTimeMillis() - tStart) + " msec");
+      if (anySegmentFlushed) {
+        maybeMerge(MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
+      }
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "getReader took " + (System.currentTimeMillis() - tStart) + " msec");
+      }
+      success2 = true;
+    } finally {
+      if (!success2) {
+        IOUtils.closeWhileHandlingException(r);
+      }
     }
     return r;
   }
