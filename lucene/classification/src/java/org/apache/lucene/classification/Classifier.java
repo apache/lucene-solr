@@ -22,18 +22,19 @@ import org.apache.lucene.index.AtomicReader;
 import java.io.IOException;
 
 /**
- * A classifier, see <code>http://en.wikipedia.org/wiki/Classifier_(mathematics)</code>
+ * A classifier, see <code>http://en.wikipedia.org/wiki/Classifier_(mathematics)</code>, which assign classes of type
+ * <code>T</code>
  * @lucene.experimental
  */
-public interface Classifier {
+public interface Classifier<T> {
 
   /**
    * Assign a class (with score) to the given text String
    * @param text a String containing text to be classified
-   * @return a {@link ClassificationResult} holding assigned class and score
+   * @return a {@link ClassificationResult} holding assigned class of type <code>T</code> and score
    * @throws IOException If there is a low-level I/O error.
    */
-  public ClassificationResult assignClass(String text) throws IOException;
+  public ClassificationResult<T> assignClass(String text) throws IOException;
 
   /**
    * Train the classifier using the underlying Lucene index

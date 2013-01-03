@@ -23,6 +23,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -35,7 +36,7 @@ import java.util.Map;
  *
  * @lucene.experimental
  */
-public class KNearestNeighborClassifier implements Classifier {
+public class KNearestNeighborClassifier implements Classifier<BytesRef> {
 
   private MoreLikeThis mlt;
   private String textFieldName;
@@ -56,35 +57,37 @@ public class KNearestNeighborClassifier implements Classifier {
    * {@inheritDoc}
    */
   @Override
-  public ClassificationResult assignClass(String text) throws IOException {
+  public ClassificationResult<BytesRef> assignClass(String text) throws IOException {
     Query q = mlt.like(new StringReader(text), textFieldName);
     TopDocs topDocs = indexSearcher.search(q, k);
     return selectClassFromNeighbors(topDocs);
   }
 
-  private ClassificationResult selectClassFromNeighbors(TopDocs topDocs) throws IOException {
+  private ClassificationResult<BytesRef> selectClassFromNeighbors(TopDocs topDocs) throws IOException {
     // TODO : improve the nearest neighbor selection
-    Map<String, Integer> classCounts = new HashMap<String, Integer>();
+    Map<BytesRef, Integer> classCounts = new HashMap<BytesRef, Integer>();
     for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-      String cl = indexSearcher.doc(scoreDoc.doc).getField(classFieldName).stringValue();
-      Integer count = classCounts.get(cl);
-      if (count != null) {
-        classCounts.put(cl, count + 1);
-      } else {
-        classCounts.put(cl, 1);
+      BytesRef cl = new BytesRef(indexSearcher.doc(scoreDoc.doc).getField(classFieldName).stringValue());
+      if (cl != null) {
+        Integer count = classCounts.get(cl);
+        if (count != null) {
+          classCounts.put(cl, count + 1);
+        } else {
+          classCounts.put(cl, 1);
+        }
       }
     }
     double max = 0;
-    String assignedClass = null;
-    for (String cl : classCounts.keySet()) {
+    BytesRef assignedClass = new BytesRef();
+    for (BytesRef cl : classCounts.keySet()) {
       Integer count = classCounts.get(cl);
       if (count > max) {
         max = count;
-        assignedClass = cl;
+        assignedClass = cl.clone();
       }
     }
     double score = max / (double) k;
-    return new ClassificationResult(assignedClass, score);
+    return new ClassificationResult<BytesRef>(assignedClass, score);
   }
 
   /**
