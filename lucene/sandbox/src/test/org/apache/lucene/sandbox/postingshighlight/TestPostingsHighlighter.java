@@ -76,6 +76,42 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     dir.close();
   }
   
+  // simple test with one sentence documents.
+  public void testOneSentence() throws Exception {
+    Directory dir = newDirectory();
+    // use simpleanalyzer for more natural tokenization (else "test." is a token)
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.SIMPLE, true));
+    iwc.setMergePolicy(newLogMergePolicy());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
+    
+    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
+    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    Field body = new Field("body", "", offsetsType);
+    Document doc = new Document();
+    doc.add(body);
+    
+    body.setStringValue("This is a test.");
+    iw.addDocument(doc);
+    body.setStringValue("Test a one sentence document.");
+    iw.addDocument(doc);
+    
+    IndexReader ir = iw.getReader();
+    iw.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    PostingsHighlighter highlighter = new PostingsHighlighter("body");
+    Query query = new TermQuery(new Term("body", "test"));
+    TopDocs topDocs = searcher.search(query, null, 10, Sort.INDEXORDER);
+    assertEquals(2, topDocs.totalHits);
+    String snippets[] = highlighter.highlight(query, searcher, topDocs);
+    assertEquals(2, snippets.length);
+    assertEquals("This is a <b>test</b>.", snippets[0]);
+    assertEquals("<b>Test</b> a one sentence document.", snippets[1]);
+    
+    ir.close();
+    dir.close();
+  }
+  
   public void testMultipleTerms() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
