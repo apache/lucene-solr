@@ -1003,11 +1003,16 @@ public class TestIndexWriter extends LuceneTestCase {
     volatile boolean finish;
 
     volatile boolean allowInterrupt = false;
+    final Random random;
+    
+    IndexerThreadInterrupt() {
+      this.random = new Random(random().nextLong());
+    }
 
     @Override
     public void run() {
       // LUCENE-2239: won't work with NIOFS/MMAP
-      Directory dir = new MockDirectoryWrapper(random(), new RAMDirectory());
+      Directory dir = new MockDirectoryWrapper(random, new RAMDirectory());
       IndexWriter w = null;
       while(!finish) {
         try {
@@ -1017,14 +1022,14 @@ public class TestIndexWriter extends LuceneTestCase {
               w.close();
               w = null;
             }
-            IndexWriterConfig conf = newIndexWriterConfig(
-                                                          TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2);
+            IndexWriterConfig conf = newIndexWriterConfig(random,
+                                                          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2);
             w = new IndexWriter(dir, conf);
 
             Document doc = new Document();
-            Field idField = newStringField("id", "", Field.Store.NO);
+            Field idField = newStringField(random, "id", "", Field.Store.NO);
             doc.add(idField);
-            doc.add(newField("field", "some text contents", storedTextType));
+            doc.add(newField(random, "field", "some text contents", storedTextType));
             for(int i=0;i<100;i++) {
               idField.setStringValue(Integer.toString(i));
               if (i%30 == 0) {
