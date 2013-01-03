@@ -306,18 +306,8 @@
   <target name="dist-maven-src-java"
           depends="filter-pom-templates, install-maven-tasks, m2-deploy-solr-parent-pom, dist-maven-common-src-java"/>
 
-  <target name="-validate-maven-dependencies">
-    <property name="top.level.dir" location="${common.dir}/.."/>
-    <pathconvert property="pom.xml">
-      <mapper>
-        <chainedmapper>
-          <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
-          <globmapper from="*build.xml" to="*pom.xml"/>
-        </chainedmapper>
-      </mapper>
-      <path location="${ant.file}"/>
-    </pathconvert>
-    <m2-validate-dependencies pom.xml="${pom.xml}" licenseDirectory="${license.dir}">
+  <target name="-validate-maven-dependencies" depends="-validate-maven-dependencies.init">
+    <m2-validate-dependencies pom.xml="${maven.pom.xml}" licenseDirectory="${license.dir}">
       <additional-filters>
         <replaceregex pattern="jetty([^/]+)$" replace="jetty" flags="gi" />
         <replaceregex pattern="slf4j-([^/]+)$" replace="slf4j" flags="gi" />
