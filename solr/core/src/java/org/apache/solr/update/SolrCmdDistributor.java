@@ -40,6 +40,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.AdjustableSemaphore;
 import org.slf4j.Logger;
@@ -359,6 +360,8 @@ public class SolrCmdDistributor {
     
   }
 
+  public static Diagnostics.Callable testing_errorHook;  // called on error when forwarding request.  Currently data=[this, Request]
+
   void checkResponses(boolean block) {
 
     while (pending != null && pending.size() > 0) {
@@ -372,7 +375,9 @@ public class SolrCmdDistributor {
           Request sreq = future.get();
           if (sreq.rspCode != 0) {
             // error during request
-            
+
+            if (testing_errorHook != null) Diagnostics.call(testing_errorHook, this, sreq);
+
             // if there is a retry url, we want to retry...
             boolean isRetry = sreq.node.checkRetry();
             boolean doRetry = false;
