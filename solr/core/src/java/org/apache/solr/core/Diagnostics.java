@@ -26,6 +26,18 @@ import java.lang.management.ThreadInfo;
 public class Diagnostics {
   protected static Logger log = LoggerFactory.getLogger(Diagnostics.class);
 
+  public interface Callable {
+    public void call(Object... data);  // data depends on the context
+  }
+
+  public static void call(Callable callable, Object... data) {
+    try {
+      callable.call(data);
+    } catch (Throwable th) {
+      log.error("TEST HOOK EXCEPTION", th);
+    }
+  }
+
   public static void logThreadDumps(String message) {
     StringBuilder sb = new StringBuilder(32768);
     if (message == null) message = "============ THREAD DUMP REQUESTED ============";
@@ -38,5 +50,6 @@ public class Diagnostics {
     }
     log.error(sb.toString());
   }
+
 
 }
