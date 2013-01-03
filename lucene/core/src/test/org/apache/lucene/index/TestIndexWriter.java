@@ -1138,7 +1138,7 @@ public class TestIndexWriter extends LuceneTestCase {
     assertTrue(new ThreadInterruptedException(new InterruptedException()).getCause() instanceof InterruptedException);
 
     // issue 300 interrupts to child thread
-    final int numInterrupts = atLeast(3000);
+    final int numInterrupts = atLeast(300);
     int i = 0;
     while(i < numInterrupts) {
       // TODO: would be nice to also sometimes interrupt the
