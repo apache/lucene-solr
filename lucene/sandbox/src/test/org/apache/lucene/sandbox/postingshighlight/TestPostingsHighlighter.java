@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -232,15 +233,19 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
     
-    FieldType offsetsType = new FieldType(TextField.TYPE_STORED);
-    offsetsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
-    Field body = new Field("body", "", offsetsType);
+    FieldType positionsType = new FieldType(TextField.TYPE_STORED);
+    positionsType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS);
+    Field body = new Field("body", "", positionsType);
+    Field title = new StringField("title", "", Field.Store.YES);
     Document doc = new Document();
     doc.add(body);
+    doc.add(title);
     
     body.setStringValue("This is a test. Just a test highlighting from postings. Feel free to ignore.");
+    title.setStringValue("test");
     iw.addDocument(doc);
     body.setStringValue("This test is another test. Not a good sentence. Test test test test.");
+    title.setStringValue("test");
     iw.addDocument(doc);
     
     IndexReader ir = iw.getReader();
@@ -253,6 +258,13 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     assertEquals(2, topDocs.totalHits);
     try {
       highlighter.highlight("body", query, searcher, topDocs, 2);
+      fail("did not hit expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+    
+    try {
+      highlighter.highlight("title", new TermQuery(new Term("title", "test")), searcher, topDocs, 2);
       fail("did not hit expected exception");
     } catch (IllegalArgumentException iae) {
       // expected

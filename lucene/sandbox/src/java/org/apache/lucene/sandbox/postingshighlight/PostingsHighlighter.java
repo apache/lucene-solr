@@ -337,11 +337,10 @@ public final class PostingsHighlighter {
         if (!termsEnum.seekExact(terms[i].bytes(), true)) {
           continue; // term not found
         }
-        DocsAndPositionsEnum de2 = termsEnum.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_OFFSETS);
-        if (de2 == null) {
-          continue;
-        } else {
-          de = postings[i] = de2;
+        de = postings[i] = termsEnum.docsAndPositions(null, null, DocsAndPositionsEnum.FLAG_OFFSETS);
+        if (de == null) {
+          // no positions available
+          throw new IllegalArgumentException("field '" + field + "' was indexed without offsets, cannot highlight");
         }
         pDoc = de.advance(doc);
       } else {
