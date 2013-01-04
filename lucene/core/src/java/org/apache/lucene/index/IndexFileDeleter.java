@@ -436,7 +436,7 @@ final class IndexFileDeleter implements Closeable {
     assert locked();
 
     assert Thread.holdsLock(writer);
-
+    long t0 = System.nanoTime();
     if (infoStream.isEnabled("IFD")) {
       infoStream.message("IFD", "now checkpoint \"" + writer.segString(writer.toLiveInfos(segmentInfos)) + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
     }
@@ -466,6 +466,10 @@ final class IndexFileDeleter implements Closeable {
 
       // Save files so we can decr on next checkpoint/commit:
       lastFiles.add(segmentInfos.files(directory, false));
+    }
+    if (infoStream.isEnabled("IFD")) {
+      long t1 = System.nanoTime();
+      infoStream.message("IFD", ((t1-t0)/1000000) + " msec to checkpoint");
     }
   }
 
