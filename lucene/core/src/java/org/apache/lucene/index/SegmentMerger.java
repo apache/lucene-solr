@@ -98,7 +98,10 @@ final class SegmentMerger {
     mergeState.segmentInfo.setDocCount(setDocMaps());
     mergeDocValuesAndNormsFieldInfos();
     setMatchingSegmentReaders();
-    long t0 = System.nanoTime();
+    long t0 = 0;
+    if (mergeState.infoStream.isEnabled("SM")) {
+      t0 = System.nanoTime();
+    }
     int numMerged = mergeFields();
     if (mergeState.infoStream.isEnabled("SM")) {
       long t1 = System.nanoTime();
@@ -108,14 +111,18 @@ final class SegmentMerger {
 
     final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, mergeState.segmentInfo,
                                                                       mergeState.fieldInfos, termIndexInterval, null, context);
-    t0 = System.nanoTime();
+    if (mergeState.infoStream.isEnabled("SM")) {
+      t0 = System.nanoTime();
+    }
     mergeTerms(segmentWriteState);
     if (mergeState.infoStream.isEnabled("SM")) {
       long t1 = System.nanoTime();
       mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge postings [" + numMerged + " docs]");
     }
 
-    t0 = System.nanoTime();
+    if (mergeState.infoStream.isEnabled("SM")) {
+      t0 = System.nanoTime();
+    }
     mergePerDoc(segmentWriteState);
     if (mergeState.infoStream.isEnabled("SM")) {
       long t1 = System.nanoTime();
@@ -123,7 +130,9 @@ final class SegmentMerger {
     }
     
     if (mergeState.fieldInfos.hasNorms()) {
-      t0 = System.nanoTime();
+      if (mergeState.infoStream.isEnabled("SM")) {
+        t0 = System.nanoTime();
+      }
       mergeNorms(segmentWriteState);
       if (mergeState.infoStream.isEnabled("SM")) {
         long t1 = System.nanoTime();
@@ -132,7 +141,9 @@ final class SegmentMerger {
     }
 
     if (mergeState.fieldInfos.hasVectors()) {
-      t0 = System.nanoTime();
+      if (mergeState.infoStream.isEnabled("SM")) {
+        t0 = System.nanoTime();
+      }
       numMerged = mergeVectors();
       if (mergeState.infoStream.isEnabled("SM")) {
         long t1 = System.nanoTime();
