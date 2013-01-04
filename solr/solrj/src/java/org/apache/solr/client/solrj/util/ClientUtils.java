@@ -23,8 +23,13 @@ import java.io.Writer;
 import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.ParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TimeZone;
 import java.nio.ByteBuffer;
 
 import org.apache.solr.common.SolrDocument;
@@ -32,7 +37,11 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.*;
+import org.apache.solr.common.util.Base64;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.DateUtil;
+import org.apache.solr.common.util.XML;
 
 
 /**
