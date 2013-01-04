@@ -442,6 +442,9 @@ Bug Fixes
 Other Changes
 ----------------------
 
+* SOLR-4106: Javac/ ivy path warnings with morfologik fixed by
+  upgrading to Morfologik 1.5.5 (Robert Muir, Dawid Weiss)
+
 * SOLR-3899: SolrCore should not log at warning level when the index directory
   changes - it's an info event. (Tobias Bergman, Mark Miller)
 
