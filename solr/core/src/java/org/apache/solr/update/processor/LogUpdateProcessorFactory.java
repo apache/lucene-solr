@@ -94,7 +94,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
   
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString()); }
+    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString() + " " + req); }
 
     // call delegate first so we can log things like the version that get set later
     if (next != null) next.processAdd(cmd);
@@ -117,7 +117,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processDelete( DeleteUpdateCommand cmd ) throws IOException {
-    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString()); }
+    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString() + " " + req); }
     if (next != null) next.processDelete(cmd);
 
     if (cmd.isDeleteById()) {
@@ -145,7 +145,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
-    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString()); }
+    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString() + " " + req); }
     if (next != null) next.processMergeIndexes(cmd);
 
     toLog.add("mergeIndexes", cmd.toString());
@@ -153,7 +153,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void processCommit( CommitUpdateCommand cmd ) throws IOException {
-    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString()); }
+    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString() + " " + req); }
     if (next != null) next.processCommit(cmd);
 
 
@@ -166,7 +166,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
    */
   @Override
   public void processRollback( RollbackUpdateCommand cmd ) throws IOException {
-    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString()); }
+    if (logDebug) { log.debug("PRE_UPDATE " + cmd.toString() + " " + req); }
     if (next != null) next.processRollback(cmd);
 
     toLog.add("rollback", "");
@@ -175,7 +175,7 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
 
   @Override
   public void finish() throws IOException {
-    if (logDebug) { log.debug("PRE_UPDATE finish()"); }
+    if (logDebug) { log.debug("PRE_UPDATE FINISH " + req); }
     if (next != null) next.finish();
 
     // LOG A SUMMARY WHEN ALL DONE (INFO LEVEL)
