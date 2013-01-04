@@ -479,6 +479,14 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
           // Subsequent times through the loop we do any new
           // merge that writer says is necessary:
           merge = tWriter.getNextMerge();
+
+          // Notify here in case any threads were stalled;
+          // they will notice that the pending merge has
+          // been pulled and possibly resume:
+          synchronized(ConcurrentMergeScheduler.this) {
+            ConcurrentMergeScheduler.this.notifyAll();
+          }
+
           if (merge != null) {
             updateMergeThreads();
             if (verbose()) {

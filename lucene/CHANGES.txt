@@ -310,6 +310,10 @@ Bug Fixes
   that have no TermToBytesRefAttribute (commonly provided by CharTermAttribute),
   e.g., oal.analysis.miscellaneous.EmptyTokenStream.
   (Uwe Schindler, Adrien Grand, Robert Muir)
+
+* LUCENE-4660: ConcurrentMergeScheduler was taking too long to
+  un-pause incoming threads it had paused when too many merges were
+  queued up. (Mike McCandless)
     
 Changes in Runtime Behavior
   
