@@ -435,6 +435,9 @@ Bug Fixes
 * SOLR-4253: Misleading resource loading warning from Carrot2 clustering 
   component fixed (Stanisław Osiński)
 
+* SOLR-4257: PeerSync updates and Log Replay updates should not wait for
+  a ZooKeeper connection in order to proceed. (yonik)
+
 
 Other Changes
 ----------------------
