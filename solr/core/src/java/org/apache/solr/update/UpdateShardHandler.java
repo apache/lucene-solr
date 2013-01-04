@@ -44,8 +44,8 @@ public class UpdateShardHandler {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 500);
     params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 16);
-    params.set(HttpClientUtil.PROP_SO_TIMEOUT, distribUpdateConnTimeout);
-    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, distribUpdateSoTimeout);
+    params.set(HttpClientUtil.PROP_SO_TIMEOUT, distribUpdateSoTimeout);
+    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, distribUpdateConnTimeout);
     client = HttpClientUtil.createClient(params);
   }
   
