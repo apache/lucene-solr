@@ -425,6 +425,10 @@ Bug Fixes
 * SOLR-4045: SOLR admin page returns HTTP 404 on core names containing
   a '.' (dot) (steffkes)
 
+* SOLR-4176: analysis ui: javascript not properly handling URL decoding
+  of input (steffkes)
+  
+
 Other Changes
 ----------------------
 
