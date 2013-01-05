@@ -200,6 +200,8 @@ Optimizations
 
 * SOLR-4264: Missing Error-Screen on UI's Cloud-Page (steffkes)
 
+* SOLR-4261: Percentage Infos on Dashboard have a fixed width (steffkes)
+
 Bug Fixes
 ----------------------
 
