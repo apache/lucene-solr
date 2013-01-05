@@ -463,6 +463,9 @@ Bug Fixes
 * SOLR-4263: Incorrect Link from Schema-Browser to Query From for Top-Terms
   (steffkes)
 
+* SOLR-3829: Admin UI Logging events broken if schema.xml defines a catch-all
+  dynamicField with type ignored (steffkes)
+
 Other Changes
 ----------------------
 
