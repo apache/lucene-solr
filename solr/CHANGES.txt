@@ -198,6 +198,8 @@ Optimizations
 * SOLR-4262: Replication Icon on Dashboard does not reflect Master-/Slave-
   State (steffkes)
 
+* SOLR-4264: Missing Error-Screen on UI's Cloud-Page (steffkes)
+
 Bug Fixes
 ----------------------
 
