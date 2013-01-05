@@ -172,6 +172,110 @@ var solr_admin = function( app_config )
     }
   };
 
+  sort_cores_data = function sort_cores_data( cores_status )
+  {
+    // build array of core-names for sorting
+    var core_names = [];
+    for( var core_name in cores_status )
+    {
+      core_names.push( core_name );
+    }
+    core_names.sort();
+
+    var core_count = core_names.length;
+    var cores = {};
+
+    for( var i = 0; i < core_count; i++ )
+    {
+      var core_name = core_names[i];
+      cores[core_name] = cores_status[core_name];
+    }
+
+    return cores;
+  };
+
+  this.set_cores_data = function set_cores_data( cores )
+  {
+    self.cores_data = sort_cores_data( cores.status );
+    
+    self.menu_element
+      .empty();
+
+    var core_count = 0;
+    for( var core_name in self.cores_data )
+    {
+      core_count++;
+      var core_path = config.solr_path + '/' + core_name;
+      var classes = [];
+
+      if( !environment_basepath )
+      {
+        environment_basepath = core_path;
+      }
+
+      if( cores.status[core_name]['isDefaultCore'] )
+      {
+        classes.push( 'default' );
+      }
+
+      var core_tpl = '<li id="' + core_name.replace( /\./g, '__' ) + '" '
+                   + '    class="' + classes.join( ' ' ) + '"'
+                   + '    data-basepath="' + core_path + '"'
+                   + '    schema="' + cores.status[core_name]['schema'] + '"'
+                   + '    config="' + cores.status[core_name]['config'] + '"'
+                   + '>' + "\n"
+                   + '  <p><a href="#/' + core_name + '">' + core_name + '</a></p>' + "\n"
+                   + '  <ul>' + "\n"
+
+                   + '    <li class="ping"><a rel="' + core_path + '/admin/ping"><span>Ping</span></a></li>' + "\n"
+                   + '    <li class="query"><a href="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n"
+                   + '    <li class="schema"><a href="#/' + core_name + '/schema"><span>Schema</span></a></li>' + "\n"
+                   + '    <li class="config"><a href="#/' + core_name + '/config"><span>Config</span></a></li>' + "\n"
+                   + '    <li class="replication"><a href="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n"
+                   + '    <li class="analysis"><a href="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n"
+                   + '    <li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>' + "\n"
+                   + '    <li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n"
+                   + '    <li class="dataimport"><a href="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n"
+
+                   + '    </ul>' + "\n"
+                   + '</li>';
+
+      self.menu_element
+        .append( core_tpl );
+    }
+
+    if( cores.initFailures )
+    {
+      var failures = [];
+      for( var core_name in cores.initFailures )
+      {
+        failures.push
+        (
+          '<li>' +
+            '<strong>' + core_name.esc() + ':</strong>' + "\n" +
+            cores.initFailures[core_name].esc() + "\n" +
+          '</li>'
+        );
+      }
+
+      if( 0 !== failures.length )
+      {
+        var init_failures = $( '#init-failures' );
+
+        init_failures.show();
+        $( 'ul', init_failures ).html( failures.join( "\n" ) );
+      }
+    }
+
+    if( 0 === core_count )
+    {
+      show_global_error
+      ( 
+        '<div class="message">There are no SolrCores running. <br/> Using the Solr Admin UI currently requires at least one SolrCore.</div>'
+      );
+    } // else: we have at least one core....
+  };
+
   this.run = function()
   {
     $.ajax
@@ -186,84 +290,16 @@ var solr_admin = function( app_config )
         },
         success : function( response )
         {
-          self.cores_data = response.status;
-          var core_count = 0;
+          self.set_cores_data( response );
 
           for( var core_name in response.status )
           {
-            core_count++;
             var core_path = config.solr_path + '/' + core_name;
-            var schema =  response['status'][core_name]['schema'];
-            var solrconfig =  response['status'][core_name]['config'];
-            var classes = [];
-
             if( !environment_basepath )
             {
               environment_basepath = core_path;
             }
-
-            if( response['status'][core_name]['isDefaultCore'] )
-            {
-              classes.push( 'default' );
-            }
-
-            var core_tpl = '<li id="' + core_name.replace( /\./g, '__' ) + '" '
-                         + '    class="' + classes.join( ' ' ) + '"'
-                         + '    data-basepath="' + core_path + '"'
-                         + '    schema="' + schema + '"'
-                         + '    config="' + solrconfig + '"'
-                         + '>' + "\n"
-                         + '  <p><a href="#/' + core_name + '">' + core_name + '</a></p>' + "\n"
-                         + '  <ul>' + "\n"
-
-                         + '    <li class="ping"><a rel="' + core_path + '/admin/ping"><span>Ping</span></a></li>' + "\n"
-                         + '    <li class="query"><a href="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n"
-                         + '    <li class="schema"><a href="#/' + core_name + '/schema"><span>Schema</span></a></li>' + "\n"
-                         + '    <li class="config"><a href="#/' + core_name + '/config"><span>Config</span></a></li>' + "\n"
-                         + '    <li class="replication"><a href="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n"
-                         + '    <li class="analysis"><a href="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n"
-                         + '    <li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>' + "\n"
-                         + '    <li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n"
-                         + '    <li class="dataimport"><a href="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n"
-
-                         + '    </ul>' + "\n"
-                         + '</li>';
-
-            self.menu_element
-              .append( core_tpl );
           }
-
-          if( response.initFailures )
-          {
-            var failures = [];
-            for( var core_name in response.initFailures )
-            {
-              failures.push
-              (
-                '<li>' + 
-                  '<strong>' + core_name.esc() + ':</strong>' + "\n" +
-                  response.initFailures[core_name].esc() + "\n" +
-                '</li>'
-              );
-            }
-
-            if( 0 !== failures.length )
-            {
-              var init_failures = $( '#init-failures' );
-
-              init_failures.show();
-              $( 'ul', init_failures ).html( failures.join( "\n" ) );
-            }
-          }
-
-          if( 0 === core_count )
-          {
-            show_global_error
-            (
-              '<div class="message">There are no SolrCores running. <br/> Using the Solr Admin UI currently requires at least one SolrCore.</div>'
-            );
-            return;
-          } // else: we have at least one core....
 
           var system_url = environment_basepath + '/admin/system?wt=json';
           $.ajax
