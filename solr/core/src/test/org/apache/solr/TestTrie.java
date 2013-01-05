@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.FieldType;
@@ -46,6 +47,38 @@ public class TestTrie extends SolrTestCaseJ4 {
   public void tearDown() throws Exception {
     clearIndex();
     super.tearDown();
+  }
+  
+  @Test
+  public void testTokenizer() throws Exception {
+    FieldType type = h.getCore().getSchema().getFieldType("tint");
+    assertTrue(type instanceof TrieField);
+    
+    String value = String.valueOf(random().nextInt());
+    TokenStream ts = type.getAnalyzer().tokenStream("dummy", new StringReader(value));
+    OffsetAttribute ofsAtt = ts.addAttribute(OffsetAttribute.class);
+    ts.reset();
+    int count = 0;
+    while (ts.incrementToken()) {
+      count++;
+      assertEquals(0, ofsAtt.startOffset());
+      assertEquals(value.length(), ofsAtt.endOffset());
+    }
+    final int precStep = ((TrieType) type).getPrecisionStep();
+    assertEquals( (32 + precStep - 1) / precStep, count);
+    ts.end();
+    assertEquals(value.length(), ofsAtt.startOffset());
+    assertEquals(value.length(), ofsAtt.endOffset());
+    ts.close();
+    
+    // Test empty one:
+    ts = type.getAnalyzer().tokenStream("dummy", new StringReader(""));
+    ts.reset();
+    assertFalse(ts.incrementToken());
+    ts.end();
+    assertEquals(0, ofsAtt.startOffset());
+    assertEquals(0, ofsAtt.endOffset());
+    ts.close();    
   }
 
   @Test
