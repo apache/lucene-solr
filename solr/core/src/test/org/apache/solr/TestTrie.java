@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.DateField;
@@ -26,6 +27,7 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.StringReader;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.TimeZone;
@@ -64,7 +66,7 @@ public class TestTrie extends SolrTestCaseJ4 {
       assertEquals(0, ofsAtt.startOffset());
       assertEquals(value.length(), ofsAtt.endOffset());
     }
-    final int precStep = ((TrieType) type).getPrecisionStep();
+    final int precStep = ((TrieField) type).getPrecisionStep();
     assertEquals( (32 + precStep - 1) / precStep, count);
     ts.end();
     assertEquals(value.length(), ofsAtt.startOffset());
