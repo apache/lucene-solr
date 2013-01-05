@@ -129,7 +129,7 @@ sammy.get
                 {
                   fields++;
                   $( '[name="' + key + '"]', analysis_form )
-                    .val( decodeURIComponent( context.params[key].replace( /\+/g, '%20' ) ) );
+                    .val( context.params[key].replace( /\+/g, ' ' ) );
                 }
               }
 
