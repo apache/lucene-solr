@@ -205,6 +205,9 @@ Optimizations
 * SOLR-3851: create a new core/delete an existing core should also update 
   the main/left list of cores on the admin UI (steffkes)
 
+* SOLR-3840: XML query response display is unreadable in Solr Admin Query UI
+  (steffkes)
+
 Bug Fixes
 ----------------------
 

@@ -36,7 +36,7 @@ sammy.get
         var query_form = $( '#form form', query_element );
         var url_element = $( '#url', query_element );
         var result_element = $( '#result', query_element );
-        var response_element = $( '#response iframe', result_element );
+        var response_element = $( '#response', result_element );
 
         url_element
           .die( 'change' )
@@ -45,40 +45,49 @@ sammy.get
             'change',
             function( event )
             {
-              var check_iframe_ready_state = function()
-              {
-                var iframe_element = response_element.get(0).contentWindow.document || response_element.get(0).document;
+              var wt = $( '[name="wt"]', query_form ).val();
 
-                if( !iframe_element )
+              var content_generator = {
+
+                _default : function( xhr )
                 {
-                  console.debug( 'no iframe_element found', response_element );
-                  return false;
+                  return xhr.responseText.esc();
+                },
+
+                json : function( xhr )
+                {
+                  return JSON.stringify( JSON.parse( xhr.responseText ), undefined, 2 );
                 }
 
-                url_element
-                  .addClass( 'loader' );
+              };
 
-                if( 'complete' === iframe_element.readyState )
+              $.ajax
+              (
                 {
-                  url_element
-                    .removeClass( 'loader' );
-                }
-                else
-                {
-                  window.setTimeout( check_iframe_ready_state, 100 );
-                }
-              }
-              check_iframe_ready_state();
+                  url : this.href,
+                  dataType : wt,
+                  context : response_element,
+                  beforeSend : function( xhr, settings )
+                  {
+                    this
+                     .html( '<div class="loader">Loading ...</div>' );
+                  },
+                  complete : function( xhr, text_status )
+                  {
+                    var code = $(
+                      '<pre class="syntax language-' + wt + '"><code>' +
+                      ( content_generator[wt] || content_generator['_default'] )( xhr ) +
+                      '</code></pre>'
+                    );
+                    this.html( code );
 
-              response_element
-                .attr( 'src', this.href );
-                            
-              if( !response_element.hasClass( 'resized' ) )
-              {
-                response_element
-                  .addClass( 'resized' )
-                  .css( 'height', $( '#main' ).height() - 60 );
-              }
+                    if( 'success' === text_status )
+                    {
+                      hljs.highlightBlock( code.get(0) );
+                    }
+                  }
+                }
+              );
             }
           )
 
