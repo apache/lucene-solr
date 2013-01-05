@@ -101,7 +101,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
   /** Default set of articles for ElisionFilter */
   public static final CharArraySet DEFAULT_ARTICLES = CharArraySet.unmodifiableSet(
       new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(
-          "l", "m", "t", "qu", "n", "s", "j"), true));
+          "l", "m", "t", "qu", "n", "s", "j", "d", "c", "jusqu", "quoiqu", "lorsqu", "puisqu"), true));
   
   /**
    * Contains words that should be indexed but not stemmed.
