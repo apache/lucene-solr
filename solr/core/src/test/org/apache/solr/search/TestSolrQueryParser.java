@@ -87,8 +87,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
   @Test
   public void testSolr4121() throws Exception {
-    // This query doesn't match anything, testing
-    // to make sure that SOLR-4121 is not a problem.
+    // At one point, balanced quotes messed up the parser(SOLR-4121)
     assertJQ(req("q","eee_s:'balance'", "indent","true")
         ,"/response/numFound==1"
     );
