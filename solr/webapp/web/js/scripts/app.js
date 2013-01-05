@@ -224,7 +224,7 @@ var solr_admin = function( app_config )
                    + '    schema="' + cores.status[core_name]['schema'] + '"'
                    + '    config="' + cores.status[core_name]['config'] + '"'
                    + '>' + "\n"
-                   + '  <p><a href="#/' + core_name + '">' + core_name + '</a></p>' + "\n"
+                   + '  <p><a href="#/' + core_name + '" title="' + core_name + '">' + core_name + '</a></p>' + "\n"
                    + '  <ul>' + "\n"
 
                    + '    <li class="ping"><a rel="' + core_path + '/admin/ping"><span>Ping</span></a></li>' + "\n"

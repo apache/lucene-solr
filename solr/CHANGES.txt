@@ -433,7 +433,9 @@ Bug Fixes
 
 * SOLR-4176: analysis ui: javascript not properly handling URL decoding
   of input (steffkes)
-  
+
+* SOLR-4079: Long core names break web gui appearance and functionality
+  (steffkes) 
 
 Other Changes
 ----------------------
