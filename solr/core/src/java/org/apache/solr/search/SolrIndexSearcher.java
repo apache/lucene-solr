@@ -109,6 +109,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private final SolrCache[] cacheList;
   private static final SolrCache[] noCaches = new SolrCache[0];
   
+  private final FieldInfos fieldInfos;
+  // TODO: do we need this separate set of field names? we can just use the fieldinfos?
   private final Collection<String> fieldNames;
   private Collection<String> storedHighlightFieldNames;
   private DirectoryFactory directoryFactory;
@@ -199,7 +201,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     optimizer = null;
     
     fieldNames = new HashSet<String>();
-    for(FieldInfo fieldInfo : atomicReader.getFieldInfos()) {
+    fieldInfos = atomicReader.getFieldInfos();
+    for(FieldInfo fieldInfo : fieldInfos) {
       fieldNames.add(fieldInfo.name);
     }
 
@@ -509,12 +512,55 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   }
 
   /** Visit a document's fields using a {@link StoredFieldVisitor}
-   *  This method does not currently use the Solr document cache.
+   *  This method does not currently add to the Solr document cache.
    * 
    * @see IndexReader#document(int, StoredFieldVisitor) */
   @Override
   public void doc(int n, StoredFieldVisitor visitor) throws IOException {
+    if (documentCache != null) {
+      StoredDocument cached = documentCache.get(n);
+      if (cached != null) {
+        visitFromCached(cached, visitor);
+        return;
+      }
+    }
     getIndexReader().document(n, visitor);
+  }
+  
+  /** Executes a stored field visitor against a hit from the document cache */
+  private void visitFromCached(StoredDocument document, StoredFieldVisitor visitor) throws IOException {
+    for (StorableField f : document) {
+      FieldInfo info = fieldInfos.fieldInfo(f.name());
+      switch(visitor.needsField(info)) {
+        case YES:
+          if (f.binaryValue() != null) {
+            BytesRef binaryValue = f.binaryValue();
+            byte copy[] = new byte[binaryValue.length];
+            System.arraycopy(binaryValue.bytes, binaryValue.offset, copy, 0, copy.length);
+            visitor.binaryField(info, copy);
+          } else if (f.numericValue() != null) {
+            Number numericValue = f.numericValue();
+            if (numericValue instanceof Double) {
+              visitor.doubleField(info, numericValue.doubleValue());
+            } else if (numericValue instanceof Integer) {
+              visitor.intField(info, numericValue.intValue());
+            } else if (numericValue instanceof Float) {
+              visitor.floatField(info, numericValue.floatValue());
+            } else if (numericValue instanceof Long) {
+              visitor.longField(info, numericValue.longValue());
+            } else {
+              throw new AssertionError();
+            }
+          } else {
+            visitor.stringField(info, f.stringValue());
+          }
+          break;
+        case NO:
+          break;
+        case STOP:
+          return;
+      }
+    }
   }
 
   /**

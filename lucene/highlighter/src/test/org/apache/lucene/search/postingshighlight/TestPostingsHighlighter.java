@@ -1,4 +1,4 @@
-package org.apache.lucene.sandbox.postingshighlight;
+package org.apache.lucene.search.postingshighlight;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

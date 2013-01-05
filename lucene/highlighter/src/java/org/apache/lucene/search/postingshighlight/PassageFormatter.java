@@ -1,4 +1,4 @@
-package org.apache.lucene.sandbox.postingshighlight;
+package org.apache.lucene.search.postingshighlight;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,6 +25,32 @@ package org.apache.lucene.sandbox.postingshighlight;
  * @lucene.experimental
  */
 public class PassageFormatter {
+  private final String preTag;
+  private final String postTag;
+  private final String ellipsis;
+  
+  /**
+   * Creates a new PassageFormatter with the default tags.
+   */
+  public PassageFormatter() {
+    this("<b>", "</b>", "... ");
+  }
+  
+  /**
+   * Creates a new PassageFormatter with custom tags.
+   * @param preTag text which should appear before a highlighted term.
+   * @param postTag text which should appear after a highlighted term.
+   * @param ellipsis text which should be used to connect two unconnected passages.
+   */
+  public PassageFormatter(String preTag, String postTag, String ellipsis) {
+    if (preTag == null || postTag == null || ellipsis == null) {
+      throw new NullPointerException();
+    }
+    this.preTag = preTag;
+    this.postTag = postTag;
+    this.ellipsis = ellipsis;
+  }
+  
   /**
    * Formats the top <code>passages</code> from <code>content</code>
    * into a human-readable text snippet.
@@ -40,7 +66,7 @@ public class PassageFormatter {
     for (Passage passage : passages) {
       // don't add ellipsis if its the first one, or if its connected.
       if (passage.startOffset > pos && pos > 0) {
-        sb.append("... ");
+        sb.append(ellipsis);
       }
       pos = passage.startOffset;
       for (int i = 0; i < passage.numMatches; i++) {
@@ -51,9 +77,9 @@ public class PassageFormatter {
           sb.append(content.substring(pos, start));
         }
         if (end > pos) {
-          sb.append("<b>");
+          sb.append(preTag);
           sb.append(content.substring(Math.max(pos, start), end));
-          sb.append("</b>");
+          sb.append(postTag);
           pos = end;
         }
       }

@@ -24,6 +24,7 @@ import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.highlight.PostingsSolrHighlighter;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
@@ -128,7 +129,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
       }
       
       if(highlightQuery != null) {
-        boolean rewrite = !(Boolean.valueOf(params.get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true")) &&
+        boolean rewrite = (highlighter instanceof PostingsSolrHighlighter == false) && !(Boolean.valueOf(params.get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true")) &&
             Boolean.valueOf(params.get(HighlightParams.HIGHLIGHT_MULTI_TERM, "true")));
         highlightQuery = rewrite ?  highlightQuery.rewrite(req.getSearcher().getIndexReader()) : highlightQuery;
       }

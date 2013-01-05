@@ -189,6 +189,8 @@ New Features
   rolling averages; median, 75th, 95th, 99th, 99.9th percentile request times
   (Alan Woodward, Shawn Heisey, Adrien Grand, Uwe Schindler)
 
+* SOLR-4271: Add support for PostingsHighlighter.  (Robert Muir)
+
 Optimizations
 ----------------------
 

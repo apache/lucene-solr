@@ -162,7 +162,7 @@ New Features
   extractWikipedia.alg was changed to use this task, so now it creates two
   files. (Doron Cohen)
 
-* LUCENE-4290: Added PostingsHighlighter to the sandbox module. It uses
+* LUCENE-4290: Added PostingsHighlighter to the highlighter module. It uses
   offsets from the postings lists to highlight documents. (Robert Muir)
 
 * LUCENE-4628: Added CommonTermsQuery that executes high-frequency terms
