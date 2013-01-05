@@ -422,6 +422,8 @@ Bug Fixes
 * SOLR-4257: PeerSync updates and Log Replay updates should not wait for
   a ZooKeeper connection in order to proceed. (yonik)
 
+* SOLR-4045: SOLR admin page returns HTTP 404 on core names containing
+  a '.' (dot) (steffkes)
 
 Other Changes
 ----------------------

@@ -101,7 +101,7 @@ sammy.bind
 // #/:core/dataimport
 sammy.get
 (
-  /^#\/([\w\d-]+)\/(dataimport)$/,
+  new RegExp( app.core_regex_base + '\\/(dataimport)$' ),
   function( context )
   {
     sammy.trigger
@@ -129,7 +129,7 @@ sammy.get
 // #/:core/dataimport
 sammy.get
 (
-  /^#\/([\w\d-]+)\/(dataimport)\//,
+  new RegExp( app.core_regex_base + '\\/(dataimport)\\/' ),
   function( context )
   {
     var core_basepath = this.active_core.attr( 'data-basepath' );

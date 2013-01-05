@@ -382,7 +382,7 @@ sammy.bind
 // #/:core/plugins/$type
 sammy.get
 (
-  /^#\/([\w\d-]+)\/(plugins)\/(\w+)$/,
+  new RegExp( app.core_regex_base + '\\/(plugins)\\/(\\w+)$' ),
   function( context )
   {
     core_basepath = this.active_core.attr( 'data-basepath' );
@@ -405,7 +405,7 @@ sammy.get
 // #/:core/plugins
 sammy.get
 (
-  /^#\/([\w\d-]+)\/(plugins)$/,
+  new RegExp( app.core_regex_base + '\\/(plugins)$' ),
   function( context )
   {
     core_basepath = this.active_core.attr( 'data-basepath' );

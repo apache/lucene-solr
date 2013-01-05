@@ -100,7 +100,7 @@ var sammy = $.sammy
         {
           var selector = '~' === this.params.splat[0][0]
                        ? '#' + this.params.splat[0].replace( /^~/, '' ) + '.global'
-                       : '#menu-selector #' + this.params.splat[0];
+                       : '#menu-selector #' + this.params.splat[0].replace( /\./g, '__' );
 
           var active_element = $( selector, menu_wrapper );
                     
@@ -151,6 +151,8 @@ var solr_admin = function( app_config )
   this.config = config;
 
   this.timeout = null;
+
+  this.core_regex_base = '^#\\/([\\w\\d-\\.]+)';
 
   show_global_error = function( error )
   {
@@ -205,7 +207,7 @@ var solr_admin = function( app_config )
               classes.push( 'default' );
             }
 
-            var core_tpl = '<li id="' + core_name + '" '
+            var core_tpl = '<li id="' + core_name.replace( /\./g, '__' ) + '" '
                          + '    class="' + classes.join( ' ' ) + '"'
                          + '    data-basepath="' + core_path + '"'
                          + '    schema="' + schema + '"'

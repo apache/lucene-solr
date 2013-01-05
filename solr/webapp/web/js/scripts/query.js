@@ -18,7 +18,7 @@
 // #/:core/query
 sammy.get
 (
-  /^#\/([\w\d-]+)\/(query)$/,
+  new RegExp( app.core_regex_base + '\\/(query)$' ),
   function( context )
   {
     var core_basepath = this.active_core.attr( 'data-basepath' );

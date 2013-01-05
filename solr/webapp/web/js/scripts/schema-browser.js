@@ -678,7 +678,7 @@ sammy.bind
 // #/:core/schema-browser
 sammy.get
 (
-  /^#\/([\w\d-]+)\/(schema-browser)$/,
+  new RegExp( app.core_regex_base + '\\/(schema-browser)$' ),
   function( context )
   {
     var core_basepath = this.active_core.attr( 'data-basepath' );
