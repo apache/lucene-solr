@@ -108,8 +108,8 @@
 #content #dashboard #system h2 { background-image: url( ../../img/ico/server.png ); }
 #content #dashboard #statistics h2 { background-image: url( ../../img/ico/chart.png ); }
 #content #dashboard #replication h2 { background-image: url( ../../img/ico/node.png ); }
-#content #dashboard #replication.is-master h2 { background-image: url( ../../img/ico/node-master.png ); }
-#content #dashboard #replication.is-slave h2 { background-image: url( ../../img/ico/node-slave.png ); }
+#content #dashboard #replication.master h2 { background-image: url( ../../img/ico/node-master.png ); }
+#content #dashboard #replication.slave h2 { background-image: url( ../../img/ico/node-slave.png ); }
 #content #dashboard #dataimport h2 { background-image: url( ../../img/ico/document-import.png ); }
 #content #dashboard #admin-extra h2 { background-image: url( ../../img/ico/plus-button.png ); }
 
