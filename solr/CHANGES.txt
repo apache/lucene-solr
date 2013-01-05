@@ -195,6 +195,9 @@ Optimizations
   retrying for 2 minutes, retry in proportion to the session timeout.
   (Mark Miller)
 
+* SOLR-4262: Replication Icon on Dashboard does not reflect Master-/Slave-
+  State (steffkes)
+
 Bug Fixes
 ----------------------
 
