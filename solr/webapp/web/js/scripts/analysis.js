@@ -18,7 +18,7 @@
 // #/:core/analysis
 sammy.get
 (
-  /^#\/([\w\d-]+)\/(analysis)$/,
+  new RegExp( app.core_regex_base + '\\/(analysis)$' ),
   function( context )
   {
     var active_core = this.active_core;
