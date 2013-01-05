@@ -314,6 +314,9 @@ Bug Fixes
 * LUCENE-4660: ConcurrentMergeScheduler was taking too long to
   un-pause incoming threads it had paused when too many merges were
   queued up. (Mike McCandless)
+
+* LUCENE-4662: Add missing elided articles and prepositions to FrenchAnalyzer's
+  DEFAULT_ARTICLES list passed to ElisionFilter.  (David Leunen via Steve Rowe)
     
 Changes in Runtime Behavior
   
