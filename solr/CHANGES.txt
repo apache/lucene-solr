@@ -437,6 +437,9 @@ Bug Fixes
 * SOLR-4079: Long core names break web gui appearance and functionality
   (steffkes) 
 
+* SOLR-4263: Incorrect Link from Schema-Browser to Query From for Top-Terms
+  (steffkes)
+
 Other Changes
 ----------------------
 

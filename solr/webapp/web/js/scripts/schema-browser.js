@@ -115,7 +115,7 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
                                +  '<ul>' + "\n";
             }
 
-            var target = '#/' + current_core + '/query?q=' + field.esc() + ':' + encodeURIComponent( topterms[i] );
+            var target = '#/' + current_core + '/query?q=' + field.esc() + ':' + encodeURIComponent( '"' + topterms[i] + '"' );
             topterms_content += '<li><a href="' + target + '">' + topterms[i].esc() + '</a></li>' + "\n";
           }
 
