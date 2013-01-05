@@ -443,6 +443,10 @@ Bug Fixes
 * SOLR-3829: Admin UI Logging events broken if schema.xml defines a catch-all
   dynamicField with type ignored (steffkes)
 
+* SOLR-4275: Fix TrieTokenizer to no longer throw StringIndexOutOfBoundsException
+  in admin UI / AnalysisRequestHandler when you enter no number to tokenize.
+  (Uwe Schindler)
+
 Other Changes
 ----------------------
 
