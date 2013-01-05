@@ -1,4 +1,4 @@
-package org.apache.lucene.sandbox.postingshighlight;
+package org.apache.lucene.search.postingshighlight;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -62,8 +62,7 @@ import org.apache.lucene.util.UnicodeUtil;
  * into a {@link Passage}, and then scores each Passage using a separate {@link PassageScorer}. 
  * Passages are finally formatted into highlighted snippets with a {@link PassageFormatter}.
  * <p>
- * <b>WARNING</b>: The code is very new and may still have some exciting bugs! This is why 
- * it's located under Lucene's sandbox module. 
+ * <b>WARNING</b>: The code is very new and may still have some exciting bugs!
  * <p>
  * Example usage:
  * <pre class="prettyprint">
@@ -256,7 +255,7 @@ public final class PostingsHighlighter {
     LimitedStoredFieldVisitor visitor = new LimitedStoredFieldVisitor(fields, maxLength);
     String contents[][] = new String[fields.length][docids.length];
     for (int i = 0; i < docids.length; i++) {
-      reader.document(docids[i], visitor);
+      searcher.doc(docids[i], visitor);
       for (int j = 0; j < fields.length; j++) {
         contents[j][i] = visitor.getValue(j).toString();
       }
