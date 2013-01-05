@@ -202,6 +202,9 @@ Optimizations
 
 * SOLR-4261: Percentage Infos on Dashboard have a fixed width (steffkes)
 
+* SOLR-3851: create a new core/delete an existing core should also update 
+  the main/left list of cores on the admin UI (steffkes)
+
 Bug Fixes
 ----------------------
 
