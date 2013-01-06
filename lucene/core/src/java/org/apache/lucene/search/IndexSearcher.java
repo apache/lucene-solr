@@ -180,17 +180,26 @@ public class IndexSearcher {
     return reader;
   }
 
-  /** Sugar for <code>.getIndexReader().document(docID)</code> */
+  /** 
+   * Sugar for <code>.getIndexReader().document(docID)</code> 
+   * @see IndexReader#document(int) 
+   */
   public Document doc(int docID) throws IOException {
     return reader.document(docID);
   }
 
-  /** Sugar for <code>.getIndexReader().document(docID, fieldVisitor)</code> */
+  /** 
+   * Sugar for <code>.getIndexReader().document(docID, fieldVisitor)</code>
+   * @see IndexReader#document(int, StoredFieldVisitor) 
+   */
   public void doc(int docID, StoredFieldVisitor fieldVisitor) throws IOException {
     reader.document(docID, fieldVisitor);
   }
 
-  /** Sugar for <code>.getIndexReader().document(docID, fieldsToLoad)</code> */
+  /** 
+   * Sugar for <code>.getIndexReader().document(docID, fieldsToLoad)</code>
+   * @see IndexReader#document(int, Set) 
+   */
   public final Document document(int docID, Set<String> fieldsToLoad) throws IOException {
     return reader.document(docID, fieldsToLoad);
   }

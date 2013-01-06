@@ -38,12 +38,15 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
   private final Document doc = new Document();
   private final Set<String> fieldsToAdd;
 
-  /** Load only fields named in the provided <code>Set&lt;String&gt;</code>. */
+  /** 
+   * Load only fields named in the provided <code>Set&lt;String&gt;</code>. 
+   * @param fieldsToAdd Set of fields to load, or <code>null</code> (all fields).
+   */
   public DocumentStoredFieldVisitor(Set<String> fieldsToAdd) {
     this.fieldsToAdd = fieldsToAdd;
   }
 
-  /** Load only fields named in the provided <code>Set&lt;String&gt;</code>. */
+  /** Load only fields named in the provided fields. */
   public DocumentStoredFieldVisitor(String... fields) {
     fieldsToAdd = new HashSet<String>(fields.length);
     for(String field : fields) {
