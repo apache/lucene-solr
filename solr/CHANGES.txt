@@ -171,6 +171,10 @@ New Features
 
 * SOLR-4271: Add support for PostingsHighlighter.  (Robert Muir)
 
+* SOLR-4255: The new Solr 4 spatial fields now have a 'filter' boolean local-param
+  that can be set to false to not filter. Its useful when there is already a spatial
+  filter query but you also need to sort or boost by distance. (David Smiley)
+
 Optimizations
 ----------------------
 

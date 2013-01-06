@@ -64,6 +64,11 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
 
   /** A local-param with one of "none" (default), "distance", or "recipDistance". */
   public static final String SCORE_PARAM = "score";
+  /** A local-param boolean that can be set to false to only return the
+   * FunctionQuery (score), and thus not do filtering.
+   */
+  public static final String FILTER_PARAM = "filter";
+
   protected final Logger log = LoggerFactory.getLogger( getClass() );
 
   protected SpatialContext ctx;
@@ -249,9 +254,13 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
       valueSource = strategy.makeRecipDistanceValueSource(spatialArgs.getShape());
     else
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'score' local-param must be one of 'none', 'distance', or 'recipDistance'");
+    FunctionQuery functionQuery = new FunctionQuery(valueSource);
+
+    if (localParams != null && !localParams.getBool(FILTER_PARAM, true))
+      return functionQuery;
 
     Filter filter = strategy.makeFilter(spatialArgs);
-    return new FilteredQuery(new FunctionQuery(valueSource), filter);
+    return new FilteredQuery(functionQuery, filter);
   }
 
   /**

@@ -263,6 +263,19 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
         , "/response/docs/[1]/score==0.19970943"
     );
 
+    //score by distance and don't filter
+    assertJQ(req(
+        //circle radius is small and shouldn't match either, but we disable filtering
+        "q", "{! score=distance filter=false}"+fieldName +":\"Intersects(Circle(3,4 d=0.000001))\"",
+        "fl","id,score",
+        "sort","score asc")//want ascending due to increasing distance
+        , 1e-3
+        , "/response/docs/[0]/id=='100'"
+        , "/response/docs/[0]/score==2.827493"
+        , "/response/docs/[1]/id=='101'"
+        , "/response/docs/[1]/score==5.089807"
+    );
+
     //query again with the query point closer to #101, and check the new ordering
     assertJQ(req(
         "q", "{! score=distance}"+fieldName +":\"Intersects(Circle(4,0 d=9))\"",
