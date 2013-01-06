@@ -68,23 +68,13 @@ class NameIntCacheLRU {
     return res;
   }
 
-  /**
-   * Subclasses can override this to provide caching by e.g. hash of the string.
-   */
+  /** Subclasses can override this to provide caching by e.g. hash of the string. */
   Object key(CategoryPath name) {
-    // Note that a copy constructor (cloning) here is necessary, because a
-    // CategoryPath object is mutable, so we cannot save a reference to an
-    // existing CategoryPath. Subclasses which override this method can
-    // avoid this cloning by, e.g., hashing the name.
-    return new CategoryPath(name);
+    return name;
   }
 
   Object key(CategoryPath name, int prefixLen) {
-    // Note that a copy constructor (cloning) here is necessary, because a
-    // CategoryPath object is mutable, so we cannot save a reference to an
-    // existing CategoryPath. Subclasses which override this method can
-    // avoid this cloning by, e.g., hashing the name.
-    return new CategoryPath(name, prefixLen);
+    return name.subpath(prefixLen);
   }
 
   /**

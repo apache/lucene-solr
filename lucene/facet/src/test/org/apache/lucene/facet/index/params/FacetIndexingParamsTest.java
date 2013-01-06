@@ -74,7 +74,7 @@ public class FacetIndexingParamsTest extends LuceneTestCase {
   public void testCategoryPolicies() {
     FacetIndexingParams dfip = FacetIndexingParams.ALL_PARENTS;
     // check path policy
-    CategoryPath cp = new CategoryPath();
+    CategoryPath cp = CategoryPath.EMPTY;
     PathPolicy pathPolicy = PathPolicy.ALL_CATEGORIES;
     assertEquals("path policy does not match default for root", pathPolicy.shouldAdd(cp), dfip.getPathPolicy().shouldAdd(cp));
     for (int i = 0; i < 30; i++) {

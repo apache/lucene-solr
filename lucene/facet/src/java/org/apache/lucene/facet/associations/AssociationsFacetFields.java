@@ -89,11 +89,6 @@ public class AssociationsFacetFields extends FacetFields {
         clpContainer = new CategoryAssociationsContainer();
         categoryLists.put(clp, clpContainer);
       }
-      // DrillDownStream modifies the CategoryPath by calling trim(). That means
-      // that the source category, as the app ses it, is modified. While for
-      // most apps this is not a problem, we need to protect against it. If
-      // CategoryPath will be made immutable, we can stop cloning.
-      cp = cp.clone();
       clpContainer.setAssociation(cp, categoryAssociations.getAssociation(cp));
     }
     return categoryLists;

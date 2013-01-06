@@ -153,7 +153,7 @@ public class TotalFacetCounts {
   
   // needed because FacetSearchParams do not allow empty FacetRequests
   private static final List<FacetRequest> DUMMY_REQ = Arrays.asList(
-      new FacetRequest[] { new CountFacetRequest(new CategoryPath(), 1) });
+      new FacetRequest[] { new CountFacetRequest(CategoryPath.EMPTY, 1) });
 
   static TotalFacetCounts compute(final IndexReader indexReader,
       final TaxonomyReader taxonomy, final FacetIndexingParams facetIndexingParams,

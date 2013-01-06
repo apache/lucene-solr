@@ -55,12 +55,12 @@ public class DrillDownStream extends TokenStream {
   
   @Override
   public final boolean incrementToken() throws IOException {
-    if (current.length() == 0) {
+    if (current.length == 0) {
       if (!categories.hasNext()) {
         return false; // no more categories
       }
       current = categories.next();
-      termAttribute.resizeBuffer(current.charsNeededForFullPath());
+      termAttribute.resizeBuffer(current.fullPathLength());
       isParent = false;
     }
 
@@ -73,8 +73,8 @@ public class DrillDownStream extends TokenStream {
     // prepare current for next call by trimming the last component (parents)
     do {
       // skip all parent categories which are not accepted by PathPolicy
-      current.trim(1);
-    } while (!pathPolicy.shouldAdd(current) && current.length() > 0);
+      current = current.subpath(current.length - 1);
+    } while (!pathPolicy.shouldAdd(current) && current.length > 0);
     isParent = true;
     return true;
   }
@@ -82,7 +82,7 @@ public class DrillDownStream extends TokenStream {
   @Override
   public void reset() throws IOException {
     current = categories.next();
-    termAttribute.resizeBuffer(current.charsNeededForFullPath());
+    termAttribute.resizeBuffer(current.fullPathLength());
     isParent = false;
   }
   

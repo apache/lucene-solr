@@ -146,7 +146,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     if (path==null) {
       return "<null>";
     }
-    if (path.length()==0) {
+    if (path.length==0) {
       return "<empty>";
     }
     return "<"+path.toString('/')+">";
@@ -304,9 +304,9 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     tw.close();
     TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
     assertEquals(1, tr.getSize());
-    assertEquals(0, tr.getPath(0).length());
+    assertEquals(0, tr.getPath(0).length);
     assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getParent(0));
-    assertEquals(0, tr.getOrdinal(new CategoryPath()));
+    assertEquals(0, tr.getOrdinal(CategoryPath.EMPTY));
     tr.close();
     indexDir.close();
   }
@@ -323,9 +323,9 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     tw.commit();
     TaxonomyReader tr = new DirectoryTaxonomyReader(indexDir);
     assertEquals(1, tr.getSize());
-    assertEquals(0, tr.getPath(0).length());
+    assertEquals(0, tr.getPath(0).length);
     assertEquals(TaxonomyReader.INVALID_ORDINAL, tr.getParent(0));
-    assertEquals(0, tr.getOrdinal(new CategoryPath()));
+    assertEquals(0, tr.getOrdinal(CategoryPath.EMPTY));
     tw.close();
     tr.close();
     indexDir.close();
@@ -416,7 +416,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
         ", but this is not a valid category.");
       }
       // verify that the parent is indeed my parent, according to the strings
-      if (!new CategoryPath(me, me.length()-1).equals(parent)) {
+      if (!me.subpath(me.length-1).equals(parent)) {
         fail("Got parent "+parentOrdinal+" for ordinal "+ordinal+
             " but categories are "+showcat(parent)+" and "+showcat(me)+
             " respectively.");
@@ -506,7 +506,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
       }
       // verify that the parent is indeed my parent, according to the
       // strings
-      if (!new CategoryPath(me, me.length() - 1).equals(parent)) {
+      if (!me.subpath(me.length - 1).equals(parent)) {
         fail("Got parent " + parentOrdinal + " for ordinal " + ordinal
             + " but categories are " + showcat(parent) + " and "
             + showcat(me) + " respectively.");

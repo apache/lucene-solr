@@ -65,15 +65,6 @@ public interface TaxonomyWriterCache {
   public int get(CategoryPath categoryPath);
 
   /**
-   * Like {@link #get(CategoryPath)}, but for a given prefix of the
-   * category path.
-   * <P> 
-   * If the given length is negative or bigger than the path's actual
-   * length, the full path is taken. 
-   */
-  public int get(CategoryPath categoryPath, int length);
-
-  /**
    * Add a category to the cache, with the given ordinal as the value.
    * <P>
    * If the implementation keeps only a partial cache (e.g., an LRU cache)
@@ -93,15 +84,6 @@ public interface TaxonomyWriterCache {
    */
   public boolean put(CategoryPath categoryPath, int ordinal);
 
-  /**
-   * Like {@link #put(CategoryPath, int)}, but for a given prefix of the
-   * category path. 
-   * <P> 
-   * If the given length is negative or bigger than the path's actual
-   * length, the full path is taken. 
-   */
-  public boolean put(CategoryPath categoryPath, int prefixLen, int ordinal);
-  
   /**
    * Returns true if the cache is full, such that the next {@link #put} will
    * evict entries from it, false otherwise.

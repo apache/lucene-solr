@@ -77,7 +77,7 @@ public class OrdinalMappingReaderTest extends LuceneTestCase {
     FacetResultNode node = result.getFacetResultNode();
     for (FacetResultNode facet: node.getSubResults()) {
       int weight = (int)facet.getValue();
-      int label = Integer.parseInt(facet.getLabel().getComponent(1));
+      int label = Integer.parseInt(facet.getLabel().components[1]);
       //System.out.println(label + ": " + weight);
       if (VERBOSE) {
         System.out.println(label + ": " + weight);

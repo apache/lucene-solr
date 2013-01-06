@@ -103,6 +103,9 @@ Changes in backwards compatibility policy
   implementations.
   NOTE: indexes that contain category enhancements/associations are not supported
   by the new code and should be recreated. (Shai Erera)
+
+* LUCENE-4659: Massive cleanup to CategoryPath API. Additionally, CategoryPath is 
+  now immutable, so you don't need to clone() it. (Shai Erera)
   
 New Features
 

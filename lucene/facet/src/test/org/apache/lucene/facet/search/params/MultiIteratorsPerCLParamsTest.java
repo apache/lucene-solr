@@ -231,7 +231,7 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
       if (requestedPath == null) {
         parentOrdinal = 0;
       } else {
-        CategoryPath cp = new CategoryPath(requestedPath.getComponent(0));
+        CategoryPath cp = new CategoryPath(requestedPath.components[0]);
         parentOrdinal = taxo.getOrdinal(cp);
       }
       parentArray = taxo.getParallelTaxonomyArrays().parents();

@@ -33,12 +33,12 @@ public interface PathPolicy extends Serializable {
 
   /**
    * A {@link PathPolicy} which adds all {@link CategoryPath} that have at least
-   * one component (i.e. {@link CategoryPath#length()} &gt; 0) to the categories
+   * one component (i.e. {@link CategoryPath#length} &gt; 0) to the categories
    * stream.
    */
   public static final PathPolicy ALL_CATEGORIES = new PathPolicy() {
     @Override
-    public boolean shouldAdd(CategoryPath categoryPath) { return categoryPath.length() > 0; }
+    public boolean shouldAdd(CategoryPath categoryPath) { return categoryPath.length > 0; }
   };
   
   /**
