@@ -62,9 +62,4 @@ public class RedirectServlet extends HttpServlet{
     res.setHeader("Location", destination);
   }
 
-  @Override
-  public void doPost(HttpServletRequest req, HttpServletResponse res)
-          throws ServletException,IOException {
-    doGet(req,res);
-  }
 }

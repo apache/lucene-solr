@@ -657,8 +657,13 @@
          enableRemoteStreaming - enables use of the stream.file
          and stream.url parameters for specifying remote streams.
 
-         multipartUploadLimitInKB - specifies the max size of
+         multipartUploadLimitInKB - specifies the max size (in KiB) of
          Multipart File Uploads that Solr will allow in a Request.
+         
+         formdataUploadLimitInKB - specifies the max size (in KiB) of
+         form data (application/x-www-form-urlencoded) sent via
+         POST. You can use POST to pass request parameters not
+         fitting into the URL.
          
          *** WARNING ***
          The settings below authorize Solr to fetch remote files, You
@@ -667,7 +672,8 @@
 
       --> 
     <requestParsers enableRemoteStreaming="true" 
-                    multipartUploadLimitInKB="2048000" />
+                    multipartUploadLimitInKB="2048000"
+                    formdataUploadLimitInKB="2048"/>
 
     <!-- HTTP Caching
 

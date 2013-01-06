@@ -19,7 +19,8 @@ package org.apache.solr.servlet;
 
 import java.io.InputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -29,7 +30,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.solr.core.CoreContainer;
-
 
 /**
  * A simple servlet to load the Solr Admin UI
@@ -42,15 +42,15 @@ public final class LoadAdminUiServlet extends HttpServlet {
   public void doGet(HttpServletRequest request,
                     HttpServletResponse response)
       throws IOException {
-    response.setCharacterEncoding("UTF-8");
-    response.setContentType("text/html");
+    // This attribute is set by the SolrDispatchFilter
+    CoreContainer cores = (CoreContainer) request.getAttribute("org.apache.solr.CoreContainer");
 
-    PrintWriter out = response.getWriter();
     InputStream in = getServletContext().getResourceAsStream("/admin.html");
-    if(in != null) {
+    if(in != null && cores != null) {
       try {
-        // This attribute is set by the SolrDispatchFilter
-        CoreContainer cores = (CoreContainer) request.getAttribute("org.apache.solr.CoreContainer");
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("text/html");
+        Writer out = new OutputStreamWriter(response.getOutputStream(), "UTF-8");
 
         String html = IOUtils.toString(in, "UTF-8");
 
@@ -63,19 +63,14 @@ public final class LoadAdminUiServlet extends HttpServlet {
             StringEscapeUtils.escapeJavaScript(cores.getAdminPath())
         };
         
-        out.println( StringUtils.replaceEach(html, search, replace) );
+        out.write( StringUtils.replaceEach(html, search, replace) );
+        out.flush();
       } finally {
         IOUtils.closeQuietly(in);
       }
     } else {
-      out.println("solr");
+      response.sendError(404);
     }
   }
 
-  @Override
-  public void doPost(HttpServletRequest request,
-                     HttpServletResponse response)
-      throws IOException {
-    doGet(request, response);
-  }
 }

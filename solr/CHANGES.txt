@@ -175,6 +175,15 @@ New Features
   that can be set to false to not filter. Its useful when there is already a spatial
   filter query but you also need to sort or boost by distance. (David Smiley)
 
+* SOLR-4265: Solr now parses request parameters (in URL or sent with POST using
+  content-type application/x-www-form-urlencoded) in its dispatcher code. It no
+  longer relies on special configuration settings in Tomcat or other web containers
+  to enable UTF-8 encoding, which is mandatory for correct Solr behaviour. Also
+  the maximum length of x-www-form-urlencoded POST parameters can now be configured
+  through the requestDispatcher/requestParsers/@formdataUploadLimitInKB setting in
+  solrconfig.xml (defaults to 2 MiB). Solr now works out of the box with
+  e.g. Tomcat, JBoss,...  (Uwe Schindler, Dawid Weiss, Alex Rocher)
+
 Optimizations
 ----------------------
 
