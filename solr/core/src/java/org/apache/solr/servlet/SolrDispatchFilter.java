@@ -17,13 +17,13 @@
 
 package org.apache.solr.servlet;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -45,6 +45,8 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -53,7 +55,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ContentStreamHandlerBase;
-import org.apache.solr.request.ServletSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
@@ -66,7 +67,6 @@ import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.util.FastWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
 
 /**
  * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
@@ -82,18 +82,8 @@ public class SolrDispatchFilter implements Filter
   protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
   protected final Map<SolrConfig, SolrRequestParsers> parsers = new WeakHashMap<SolrConfig, SolrRequestParsers>();
-  protected final SolrRequestParsers adminRequestParser;
   
   private static final Charset UTF8 = Charset.forName("UTF-8");
-
-  public SolrDispatchFilter() {
-    try {
-      adminRequestParser = new SolrRequestParsers(new Config(null,"solr",new InputSource(new ByteArrayInputStream("<root/>".getBytes("UTF-8"))),"") );
-    } catch (Exception e) {
-      //unlikely
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
-    }
-  }
 
   @Override
   public void init(FilterConfig config) throws ServletException
@@ -180,14 +170,14 @@ public class SolrDispatchFilter implements Filter
         // Check for the core admin page
         if( path.equals( cores.getAdminPath() ) ) {
           handler = cores.getMultiCoreHandler();
-          solrReq =  adminRequestParser.parse(null,path, req);
+          solrReq =  SolrRequestParsers.DEFAULT.parse(null,path, req);
           handleAdminRequest(req, response, handler, solrReq);
           return;
         }
         // Check for the core admin collections url
         if( path.equals( "/admin/collections" ) ) {
           handler = cores.getCollectionsHandler();
-          solrReq =  adminRequestParser.parse(null,path, req);
+          solrReq =  SolrRequestParsers.DEFAULT.parse(null,path, req);
           handleAdminRequest(req, response, handler, solrReq);
           return;
         }
@@ -475,7 +465,15 @@ public class SolrDispatchFilter implements Filter
         core = cores.getCore(""); // default core
       }
       if(req==null) {
-        req = new SolrQueryRequestBase(core,new ServletSolrParams(request)) {};
+        final SolrParams solrParams;
+        if (request instanceof HttpServletRequest) {
+          // use GET parameters if available:
+          solrParams = SolrRequestParsers.parseQueryString(((HttpServletRequest) request).getQueryString());
+        } else {
+          // we have no params at all, use empty ones:
+          solrParams = new MapSolrParams(Collections.<String,String>emptyMap());
+        }
+        req = new SolrQueryRequestBase(core, solrParams) {};
       }
       QueryResponseWriter writer = core.getQueryResponseWriter(req);
       writeResponse(solrResp, response, writer, req, Method.GET);

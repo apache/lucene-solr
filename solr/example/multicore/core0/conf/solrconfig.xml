@@ -47,7 +47,7 @@
   <requestHandler name="/replication" class="solr.ReplicationHandler" startup="lazy" /> 
 
   <requestDispatcher handleSelect="true" >
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" formdataUploadLimitInKB="2048" />
   </requestDispatcher>
   
   <requestHandler name="standard" class="solr.StandardRequestHandler" default="true" />

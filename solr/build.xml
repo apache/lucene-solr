@@ -247,9 +247,12 @@
         <include name="jdk-deprecated.txt" />
         <include name="commons-io.txt" />
         <include name="executors.txt" />
+        <include name="servlet-api.txt" />
       </apiFileSet>
       <fileset dir="${basedir}/build">
         <include name="**/*.class" />        
+        <!-- violates the servlet-api restrictions, but it is safe to do so in this test: -->
+        <exclude name="solr-solrj/classes/test/org/apache/solr/client/solrj/impl/BasicHttpSolrServerTest$DebugServlet.class"/>
       </fileset>
     </forbidden-apis>
   </target>
