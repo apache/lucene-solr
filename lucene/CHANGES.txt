@@ -385,6 +385,10 @@ Optimizations
 
 * LUCENE-4598: PayloadIterator no longer uses top-level IndexReader to iterate on the
   posting's payload. (Shai Erera, Michael McCandless)
+
+* LUCENE-4661: Drop default maxThreadCount to 1 and maxMergeCount to 2
+  in ConcurrentMergeScheduler, for faster merge performance on
+  spinning-magnet drives (Mike McCandless)
   
 Documentation
 
