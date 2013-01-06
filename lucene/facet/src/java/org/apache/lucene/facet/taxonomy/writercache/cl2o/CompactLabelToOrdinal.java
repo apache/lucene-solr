@@ -29,8 +29,6 @@ import java.util.Iterator;
 
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 
-// TODO: maybe this could use an FST instead...
-
 /**
  * This is a very efficient LabelToOrdinal implementation that uses a
  * CharBlockArray to store all labels and a configurable number of HashArrays to
@@ -59,8 +57,8 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
 
   public static final float DefaultLoadFactor = 0.15f;
 
-  static final char TerminatorChar = 0xffff;
-  private static final int Collision = -5;
+  static final char TERMINATOR_CHAR = 0xffff;
+  private static final int COLLISION = -5;
 
   private HashArray[] hashArrays;
   private CollisionMap collisionMap;
@@ -103,9 +101,7 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
 
   private void init() {
     labelRepository = new CharBlockArray();
-    try {
-      new CategoryPath().serializeAppendTo(labelRepository);
-    } catch (IOException e) { }  //can't happen 
+    CategoryPathUtils.serialize(CategoryPath.EMPTY, labelRepository);
 
     int c = this.capacity;
     for (int i = 0; i < this.hashArrays.length; i++) {
@@ -116,7 +112,7 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
 
   @Override
   public void addLabel(CategoryPath label, int ordinal) {
-    if (this.collisionMap.size() > this.threshold) {
+    if (collisionMap.size() > threshold) {
       grow();
     }
 
@@ -127,65 +123,27 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
       }
     }
 
-    int prevVal = this.collisionMap.addLabel(label, hash, ordinal);
+    int prevVal = collisionMap.addLabel(label, hash, ordinal);
     if (prevVal != ordinal) {
-      throw new IllegalArgumentException("Label already exists: " +
-          label.toString('/') + " prev ordinal " + prevVal);
-    }
-  }
-
-  @Override
-  public void addLabel(CategoryPath label, int prefixLen, int ordinal) {
-    if (this.collisionMap.size() > this.threshold) {
-      grow();
-    }
-
-    int hash = CompactLabelToOrdinal.stringHashCode(label, prefixLen);
-    for (int i = 0; i < this.hashArrays.length; i++) {
-      if (addLabel(this.hashArrays[i], label, prefixLen, hash, ordinal)) {
-        return;
-      }
-    }
-
-    int prevVal = this.collisionMap.addLabel(label, prefixLen, hash, ordinal);
-    if (prevVal != ordinal) {
-      throw new IllegalArgumentException("Label already exists: " +
-          label.toString('/', prefixLen) + " prev ordinal " + prevVal);
+      throw new IllegalArgumentException("Label already exists: " + label.toString('/') + " prev ordinal " + prevVal);
     }
   }
 
   @Override
   public int getOrdinal(CategoryPath label) {
     if (label == null) {
-      return LabelToOrdinal.InvalidOrdinal;
+      return LabelToOrdinal.INVALID_ORDINAL;
     }
 
     int hash = CompactLabelToOrdinal.stringHashCode(label);
     for (int i = 0; i < this.hashArrays.length; i++) {
       int ord = getOrdinal(this.hashArrays[i], label, hash);
-      if (ord != Collision) {
+      if (ord != COLLISION) {
         return ord;
       }
     }
 
     return this.collisionMap.get(label, hash);
-  }
-
-  @Override
-  public int getOrdinal(CategoryPath label, int prefixLen) {
-    if (label == null) {
-      return LabelToOrdinal.InvalidOrdinal;
-    }
-
-    int hash = CompactLabelToOrdinal.stringHashCode(label, prefixLen);
-    for (int i = 0; i < this.hashArrays.length; i++) {
-      int ord = getOrdinal(this.hashArrays[i], label, prefixLen, hash);
-      if (ord != Collision) {
-        return ord;
-      }
-    }
-
-    return this.collisionMap.get(label, prefixLen, hash);
   }
 
   private void grow() {
@@ -241,39 +199,13 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
     }
   }
 
-  private boolean addLabel(HashArray a, CategoryPath label, int hash,
-                            int ordinal) {
+  private boolean addLabel(HashArray a, CategoryPath label, int hash, int ordinal) {
     int index = CompactLabelToOrdinal.indexFor(hash, a.offsets.length);
     int offset = a.offsets[index];
 
     if (offset == 0) {
       a.offsets[index] = this.labelRepository.length();
-      try {
-        label.serializeAppendTo(this.labelRepository);
-      } catch (IOException e) {
-        // can't happen - LabelRepository.append() never throws an
-        // exception
-      }
-      a.cids[index] = ordinal;
-      return true;
-    }
-
-    return false;
-  }
-
-  private boolean addLabel(HashArray a, CategoryPath label, int prefixLen,
-                            int hash, int ordinal) {
-    int index = CompactLabelToOrdinal.indexFor(hash, a.offsets.length);
-    int offset = a.offsets[index];
-
-    if (offset == 0) {
-      a.offsets[index] = this.labelRepository.length();
-      try {
-        label.serializeAppendTo(prefixLen, this.labelRepository);
-      } catch (IOException e) {
-        // can't happen - LabelRepository.append() never throws an
-        // exception
-      }
+      CategoryPathUtils.serialize(label, labelRepository);
       a.cids[index] = ordinal;
       return true;
     }
@@ -313,43 +245,23 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
 
   private int getOrdinal(HashArray a, CategoryPath label, int hash) {
     if (label == null) {
-      return LabelToOrdinal.InvalidOrdinal;
+      return LabelToOrdinal.INVALID_ORDINAL;
     }
 
-    int index = CompactLabelToOrdinal.indexFor(hash, a.offsets.length);
+    int index = indexFor(hash, a.offsets.length);
     int offset = a.offsets[index];
     if (offset == 0) {
-      return LabelToOrdinal.InvalidOrdinal;
+      return LabelToOrdinal.INVALID_ORDINAL;
     }
 
-    if (label.equalsToSerialized(labelRepository, offset)) {
+    if (CategoryPathUtils.equalsToSerialized(label, labelRepository, offset)) {
       return a.cids[index];
     }
 
-    return Collision;
+    return COLLISION;
   }
 
-  private int getOrdinal(HashArray a, CategoryPath label, int prefixLen, int hash) {
-    if (label == null) {
-      return LabelToOrdinal.InvalidOrdinal;
-    }
-
-    int index = CompactLabelToOrdinal.indexFor(hash, a.offsets.length);
-    int offset = a.offsets[index];
-    if (offset == 0) {
-      return LabelToOrdinal.InvalidOrdinal;
-    }
-
-    if (label.equalsToSerialized(prefixLen, labelRepository, offset)) {
-      return a.cids[index];
-    }
-
-    return Collision;
-  }
-
-  /**
-   * Returns index for hash code h.
-   */
+  /** Returns index for hash code h. */
   static int indexFor(int h, int length) {
     return h & (length - 1);
   }
@@ -378,22 +290,10 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
 
   }
 
-  static int stringHashCode(CategoryPath label, int prefixLen) {
-    int hash = label.hashCode(prefixLen);
-
-    hash = hash ^ ((hash >>> 20) ^ (hash >>> 12));
-    hash = hash ^ (hash >>> 7) ^ (hash >>> 4);
-
-    return hash;
-
-  }
-
   static int stringHashCode(CharBlockArray labelRepository, int offset) {
-    int hash = CategoryPath.hashCodeOfSerialized(labelRepository, offset);
-
+    int hash = CategoryPathUtils.hashCodeOfSerialized(labelRepository, offset);
     hash = hash ^ ((hash >>> 20) ^ (hash >>> 12));
     hash = hash ^ (hash >>> 7) ^ (hash >>> 4);
-
     return hash;
   }
 
@@ -495,25 +395,16 @@ public class CompactLabelToOrdinal extends LabelToOrdinal {
       // that array offsets will work).  Since the initial file is machine 
       // generated, I think this should be OK.
       while (offset < l2o.labelRepository.length()) {
-        // First component is numcomponents, so we initialize the hash
-        // to this
-        int ncomponents = l2o.labelRepository.charAt(offset++);
-        int hash = ncomponents;
-        // If ncomponents is 0, then we are done?
-        if (ncomponents != 0) {
-
-          // usedchars is always the last member of the 'ends' array
-          // in serialization. Rather than rebuild the entire array,
-          // assign usedchars to the last value we read in. This will
-          // be slightly more memory efficient.
-          int usedchars = 0;
-          for (int i = 0; i < ncomponents; i++) {
-            usedchars = l2o.labelRepository.charAt(offset++);
-            hash = hash * 31 + usedchars;
-          }
-          // Hash the usedchars for this label
-          for (int i = 0; i < usedchars; i++) {
-            hash = hash * 31 + l2o.labelRepository.charAt(offset++);
+        // identical code to CategoryPath.hashFromSerialized. since we need to
+        // advance offset, we cannot call the method directly. perhaps if we
+        // could pass a mutable Integer or something...
+        int length = (short) l2o.labelRepository.charAt(offset++);
+        int hash = length;
+        if (length != 0) {
+          for (int i = 0; i < length; i++) {
+            int len = (short) l2o.labelRepository.charAt(offset++);
+            hash = hash * 31 + l2o.labelRepository.subSequence(offset, offset + len).hashCode();
+            offset += len;
           }
         }
         // Now that we've hashed the components of the label, do the

@@ -39,6 +39,6 @@ public class NonTopLevelPathPolicy implements PathPolicy {
    */
   @Override
   public boolean shouldAdd(CategoryPath categoryPath) {
-    return categoryPath.length() >= DEFAULT_MINIMAL_SUBPATH_LENGTH;
+    return categoryPath.length >= DEFAULT_MINIMAL_SUBPATH_LENGTH;
   }
 }

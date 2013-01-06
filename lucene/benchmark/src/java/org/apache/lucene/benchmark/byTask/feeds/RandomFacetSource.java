@@ -53,13 +53,14 @@ public class RandomFacetSource extends FacetSource {
       facets.clear();
     }
     int numFacets = 1 + random.nextInt(maxDocFacets-1); // at least one facet to each doc
-    for (int i=0; i<numFacets; i++) {
-      CategoryPath cp = new CategoryPath();
-      int depth = 1 + random.nextInt(maxFacetDepth-1); // depth 0 is not useful
-      for (int k=0; k<depth; k++) {
-        cp.add(Integer.toString(random.nextInt(maxValue)));
+    for (int i = 0; i < numFacets; i++) {
+      int depth = 1 + random.nextInt(maxFacetDepth - 1); // depth 0 is not useful
+      String[] components = new String[depth];
+      for (int k = 0; k < depth; k++) {
+        components[k] = Integer.toString(random.nextInt(maxValue));
         addItem();
       }
+      CategoryPath cp = new CategoryPath(components);
       facets.setAssociation(cp, null);
       addBytes(cp.toString().length()); // very rough approximation
     }

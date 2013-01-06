@@ -154,8 +154,8 @@ public class TestDirectoryTaxonomyReader extends LuceneTestCase {
       for (int i=0; i<n; i++) {
         int k = random.nextInt(n);
         tw = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE);
-        for (int j=0; j<=k; j++) {
-          tw.addCategory(new CategoryPath(cp[j]));
+        for (int j = 0; j <= k; j++) {
+          tw.addCategory(cp[j]);
         }
         tw.close();
         if (closeReader) {

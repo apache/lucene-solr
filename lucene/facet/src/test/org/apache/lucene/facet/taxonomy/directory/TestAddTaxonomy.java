@@ -81,7 +81,6 @@ public class TestAddTaxonomy extends LuceneTestCase {
   }
 
   private void validate(Directory dest, Directory src, OrdinalMap ordMap) throws Exception {
-    CategoryPath cp = new CategoryPath();
     DirectoryTaxonomyReader destTR = new DirectoryTaxonomyReader(dest);
     try {
       final int destSize = destTR.getSize();
@@ -98,7 +97,7 @@ public class TestAddTaxonomy extends LuceneTestCase {
         // validate that all source categories exist in destination, and their
         // ordinals are as expected.
         for (int j = 1; j < srcSize; j++) {
-          srcTR.getPath(j, cp);
+          CategoryPath cp = srcTR.getPath(j);
           int destOrdinal = destTR.getOrdinal(cp);
           assertTrue(cp + " not found in destination", destOrdinal > 0);
           assertEquals(destOrdinal, map[j]);

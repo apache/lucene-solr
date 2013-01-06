@@ -142,11 +142,7 @@ public class FacetFields {
         list = new ArrayList<CategoryPath>();
         categoryLists.put(clp, list);
       }
-      // DrillDownStream modifies the CategoryPath by calling trim(). That means
-      // that the source category, as the app ses it, is modified. While for
-      // most apps this is not a problem, we need to protect against it. If
-      // CategoryPath will be made immutable, we can stop cloning.
-      list.add(cp.clone());
+      list.add(cp);
     }
     return categoryLists;
   }

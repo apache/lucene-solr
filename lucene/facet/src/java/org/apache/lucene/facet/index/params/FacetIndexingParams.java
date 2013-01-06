@@ -54,11 +54,11 @@ public class FacetIndexingParams {
   public static final FacetIndexingParams ALL_PARENTS = new FacetIndexingParams();
   
   /**
-   * The default delimiter with which {@link CategoryPath#getComponent(int)
-   * components} are concatenated when written to the index, e.g. as drill-down
-   * terms. If you choose to override it by overiding
-   * {@link #getFacetDelimChar()}, you should make sure that you return a
-   * character that's not found in any path component.
+   * The default delimiter with which {@link CategoryPath#components} are
+   * concatenated when written to the index, e.g. as drill-down terms. If you
+   * choose to override it by overiding {@link #getFacetDelimChar()}, you should
+   * make sure that you return a character that's not found in any path
+   * component.
    */
   public static final char DEFAULT_FACET_DELIM_CHAR = '\uF749';
   
@@ -108,10 +108,10 @@ public class FacetIndexingParams {
    * that were written.
    * <p>
    * <b>NOTE:</b> You should make sure that the {@code char[]} is large enough,
-   * by e.g. calling {@link CategoryPath#charsNeededForFullPath()}.
+   * by e.g. calling {@link CategoryPath#fullPathLength()}.
    */
   public int drillDownTermText(CategoryPath path, char[] buffer) {
-    return path.copyToCharArray(buffer, 0, -1, getFacetDelimChar());
+    return path.copyFullPath(buffer, 0, getFacetDelimChar());
   }
   
   /**

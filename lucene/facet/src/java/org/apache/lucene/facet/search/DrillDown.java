@@ -53,7 +53,7 @@ public final class DrillDown {
   /** Return a drill-down {@link Term} for a category. */
   public static final Term term(FacetIndexingParams iParams, CategoryPath path) {
     CategoryListParams clp = iParams.getCategoryListParams(path);
-    char[] buffer = new char[path.charsNeededForFullPath()];
+    char[] buffer = new char[path.fullPathLength()];
     iParams.drillDownTermText(path, buffer);
     return new Term(clp.getTerm().field(), String.valueOf(buffer));
   }

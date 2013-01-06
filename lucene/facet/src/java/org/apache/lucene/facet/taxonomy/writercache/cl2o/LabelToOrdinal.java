@@ -27,7 +27,7 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
 public abstract class LabelToOrdinal {
 
   protected int counter;
-  public static final int InvalidOrdinal = -2;
+  public static final int INVALID_ORDINAL = -2;
 
   /**
    * return the maximal Ordinal assigned so far
@@ -52,22 +52,9 @@ public abstract class LabelToOrdinal {
   public abstract void addLabel(CategoryPath label, int ordinal);
 
   /**
-   * Adds a new label if its not yet in the table.
-   * Throws an {@link IllegalArgumentException} if the same label with
-   * a different ordinal was previoulsy added to this table.
-   */
-  public abstract void addLabel(CategoryPath label, int prefixLen, int ordinal);
-
-  /**
    * @return the ordinal assigned to the given label, 
-   * or {@link #InvalidOrdinal} if the label cannot be found in this table.
+   * or {@link #INVALID_ORDINAL} if the label cannot be found in this table.
    */
   public abstract int getOrdinal(CategoryPath label);
-
-  /**
-   * @return the ordinal assigned to the given label, 
-   * or {@link #InvalidOrdinal} if the label cannot be found in this table.
-   */
-  public abstract int getOrdinal(CategoryPath label, int prefixLen);
 
 }

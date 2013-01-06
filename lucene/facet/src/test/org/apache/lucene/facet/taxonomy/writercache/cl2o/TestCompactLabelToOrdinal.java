@@ -6,11 +6,13 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import org.junit.Test;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.writercache.cl2o.CompactLabelToOrdinal;
 import org.apache.lucene.facet.taxonomy.writercache.cl2o.LabelToOrdinal;
@@ -46,9 +48,10 @@ public class TestCompactLabelToOrdinal extends LuceneTestCase {
     String[] uniqueValues = new String[numUniqueValues];
     byte[] buffer = new byte[50];
 
+    Random random = random();
     for (int i = 0; i < numUniqueValues;) {
-      random().nextBytes(buffer);
-      int size = 1 + random().nextInt(50);
+      random.nextBytes(buffer);
+      int size = 1 + random.nextInt(buffer.length);
 
       // This test is turning random bytes into a string,
       // this is asking for trouble.
@@ -56,16 +59,16 @@ public class TestCompactLabelToOrdinal extends LuceneTestCase {
           .onUnmappableCharacter(CodingErrorAction.REPLACE)
           .onMalformedInput(CodingErrorAction.REPLACE);
       uniqueValues[i] = decoder.decode(ByteBuffer.wrap(buffer, 0, size)).toString();
-      if (uniqueValues[i].indexOf(CompactLabelToOrdinal.TerminatorChar) == -1) {
+      if (uniqueValues[i].indexOf(CompactLabelToOrdinal.TERMINATOR_CHAR) == -1) {
         i++;
       }
     }
 
-    TEMP_DIR.mkdirs();
-    File f = new File(TEMP_DIR, "CompactLabelToOrdinalTest.tmp");
+    File tmpDir = _TestUtil.getTempDir("testLableToOrdinal");
+    File f = new File(tmpDir, "CompactLabelToOrdinalTest.tmp");
     int flushInterval = 10;
 
-    for (int i = 0; i < n * 10; i++) {
+    for (int i = 0; i < n; i++) {
       if (i > 0 && i % flushInterval == 0) {
         compact.flush(f);    
         compact = CompactLabelToOrdinal.open(f, 0.15f, 3);
@@ -75,19 +78,16 @@ public class TestCompactLabelToOrdinal extends LuceneTestCase {
         }
       }
 
-      int index = random().nextInt(numUniqueValues);
+      int index = random.nextInt(numUniqueValues);
       CategoryPath label = new CategoryPath(uniqueValues[index], '/');
 
       int ord1 = map.getOrdinal(label);
       int ord2 = compact.getOrdinal(label);
 
-      //System.err.println(ord1+" "+ord2);
-
       assertEquals(ord1, ord2);
 
-      if (ord1 == LabelToOrdinal.InvalidOrdinal) {
+      if (ord1 == LabelToOrdinal.INVALID_ORDINAL) {
         ord1 = compact.getNextOrdinal();
-
         map.addLabel(label, ord1);
         compact.addLabel(label, ord1);
       }
@@ -108,25 +108,15 @@ public class TestCompactLabelToOrdinal extends LuceneTestCase {
     
     @Override
     public void addLabel(CategoryPath label, int ordinal) {
-      map.put(new CategoryPath(label), ordinal);
-    }
-
-    @Override
-    public void addLabel(CategoryPath label, int prefixLen, int ordinal) {
-      map.put(new CategoryPath(label, prefixLen), ordinal);
+      map.put(label, ordinal);
     }
 
     @Override
     public int getOrdinal(CategoryPath label) {
       Integer value = map.get(label);
-      return (value != null) ? value.intValue() : LabelToOrdinal.InvalidOrdinal;
-    }
-
-    @Override
-    public int getOrdinal(CategoryPath label, int prefixLen) {
-      Integer value = map.get(new CategoryPath(label, prefixLen));
-      return (value != null) ? value.intValue() : LabelToOrdinal.InvalidOrdinal;
+      return (value != null) ? value.intValue() : LabelToOrdinal.INVALID_ORDINAL;
     }
 
   }
+
 }

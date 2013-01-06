@@ -29,10 +29,9 @@ public class PathPolicyTest extends LuceneTestCase {
   @Test
   public void testDefaultPathPolicy() {
     // check path policy
-    CategoryPath cp = new CategoryPath();
+    CategoryPath cp = CategoryPath.EMPTY;
     PathPolicy pathPolicy = PathPolicy.ALL_CATEGORIES;
-    assertFalse("default path policy should not accept root", 
-        pathPolicy.shouldAdd(cp));
+    assertFalse("default path policy should not accept root", pathPolicy.shouldAdd(cp));
     for (int i = 0; i < 300; i++) {
       int nComponents = 1 + random().nextInt(10);
       String[] components = new String[nComponents];
@@ -40,9 +39,7 @@ public class PathPolicyTest extends LuceneTestCase {
         components[j] = (Integer.valueOf(random().nextInt(30))).toString();
       }
       cp = new CategoryPath(components);
-      assertTrue("default path policy should accept "
-          + cp.toString('/'),
-          pathPolicy.shouldAdd(cp));
+      assertTrue("default path policy should accept " + cp.toString('/'), pathPolicy.shouldAdd(cp));
     }
   }
 
@@ -74,7 +71,7 @@ public class PathPolicyTest extends LuceneTestCase {
     // check ordinal policy
     PathPolicy pathPolicy = new NonTopLevelPathPolicy();
     assertFalse("top level path policy should not match root",
-        pathPolicy.shouldAdd(new CategoryPath()));
+        pathPolicy.shouldAdd(CategoryPath.EMPTY));
     for (int i = 0; i < 10; i++) {
       assertFalse("top level path policy should not match "
           + topLevelPaths[i],

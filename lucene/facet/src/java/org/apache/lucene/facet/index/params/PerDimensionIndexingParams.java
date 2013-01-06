@@ -43,7 +43,7 @@ public class PerDimensionIndexingParams extends FacetIndexingParams {
   /**
    * Initializes a new instance with the given dimension-to-params mapping. The
    * dimension is considered as what's returned by
-   * {@link CategoryPath#getComponent(int) cp.getComponent(0)}.
+   * {@link CategoryPath#components cp.components[0]}.
    * 
    * <p>
    * <b>NOTE:</b> for any dimension whose {@link CategoryListParams} is not
@@ -65,7 +65,7 @@ public class PerDimensionIndexingParams extends FacetIndexingParams {
     super(categoryListParams);
     clParamsMap = new HashMap<String,CategoryListParams>();
     for (Entry<CategoryPath, CategoryListParams> e : paramsMap.entrySet()) {
-      clParamsMap.put(e.getKey().getComponent(0), e.getValue());
+      clParamsMap.put(e.getKey().components[0], e.getValue());
     }
   }
 
@@ -83,7 +83,7 @@ public class PerDimensionIndexingParams extends FacetIndexingParams {
   @Override
   public CategoryListParams getCategoryListParams(CategoryPath category) {
     if (category != null) {
-      CategoryListParams clParams = clParamsMap.get(category.getComponent(0));
+      CategoryListParams clParams = clParamsMap.get(category.components[0]);
       if (clParams != null) {
         return clParams;
       }
