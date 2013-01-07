@@ -20,7 +20,7 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  */
 
 /** Utilities for use of {@link CategoryPath} by {@link CompactLabelToOrdinal}. */
-public class CategoryPathUtils {
+class CategoryPathUtils {
   
   /** Serializes the given {@link CategoryPath} to the {@link CharBlockArray}. */
   public static void serialize(CategoryPath cp, CharBlockArray charBlockArray) {
@@ -35,7 +35,7 @@ public class CategoryPathUtils {
   }
 
   /**
-   * Calculates a hash function of a path that serialized with
+   * Calculates a hash function of a path that was serialized with
    * {@link #serialize(CategoryPath, CharBlockArray)}.
    */
   public static int hashCodeOfSerialized(CharBlockArray charBlockArray, int offset) {
