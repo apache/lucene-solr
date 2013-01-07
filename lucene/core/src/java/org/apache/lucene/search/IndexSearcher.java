@@ -201,7 +201,7 @@ public class IndexSearcher {
    * Sugar for <code>.getIndexReader().document(docID, fieldsToLoad)</code>
    * @see IndexReader#document(int, Set) 
    */
-  public final StoredDocument document(int docID, Set<String> fieldsToLoad) throws IOException {
+  public StoredDocument doc(int docID, Set<String> fieldsToLoad) throws IOException {
     return reader.document(docID, fieldsToLoad);
   }
 

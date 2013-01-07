@@ -206,6 +206,10 @@ API Changes
   create your fst with finish(), and then call pack() to get another FST.
   Instead just pass true for doPackFST to Builder and finish() returns a packed FST.
   (Robert Muir)
+
+* LUCENE-4663: Deprecate IndexSearcher.document(int, Set). This was not intended
+  to be final, nor named document(). Use IndexSearcher.doc(int, Set) instead.
+  (Robert Muir)
   
 Bug Fixes
 

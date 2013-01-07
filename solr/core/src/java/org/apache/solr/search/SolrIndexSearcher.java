@@ -570,6 +570,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * filter is provided, only the provided fields will be loaded (the 
    * remainder will be available lazily).
    */
+  @Override
   public StoredDocument doc(int i, Set<String> fields) throws IOException {
     
     StoredDocument d;
