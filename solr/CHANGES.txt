@@ -485,6 +485,8 @@ Bug Fixes
   in admin UI / AnalysisRequestHandler when you enter no number to tokenize.
   (Uwe Schindler)
 
+* SOLR-4279: Wrong exception message if _version_ field is multivalued (shalin)
+
 Other Changes
 ----------------------
 
