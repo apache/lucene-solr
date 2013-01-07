@@ -72,11 +72,8 @@ public class Lucene41DocValuesProducer extends SimpleDVProducer {
   
   @Override
   public BinaryDocValues getBinary(FieldInfo field) throws IOException {
-    if (DocValues.isBytes(field.getDocValuesType()) || DocValues.isSortedBytes(field.getDocValuesType())) {
-      return new Lucene41BinaryDocValues.Factory(this.cfs, this.info, field, context).getDirect();
-    } else {
-      return null;
-    }
+    // nocommit
+    return null;
   }
   
   @Override

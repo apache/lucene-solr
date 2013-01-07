@@ -146,7 +146,8 @@ public class Lucene41SortedDocValues extends SortedDocValues {
         this.valueCount = datIn.readInt();
         this.baseOffset = datIn.getFilePointer();
         
-        if (size == Lucene41BinaryDocValuesConsumer.VALUE_SIZE_VAR) {
+        //if (size == Lucene41BinaryDocValuesConsumer.VALUE_SIZE_VAR) {
+        if (size == -1) {
           offsetIn = dir.openInput(Lucene41DocValuesConsumer
               .getDocValuesFileName(segmentInfo, field,
                   Lucene41DocValuesConsumer.OFFSET_EXTENSION), context);

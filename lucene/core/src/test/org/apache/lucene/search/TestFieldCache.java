@@ -428,46 +428,4 @@ public class TestFieldCache extends LuceneTestCase {
     }
     assertFalse(failed.get());
   }
-
-  public void testMaxFixedLength() throws Exception {
-    Directory d = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    int fixedLength = random().nextBoolean() ? -1 : _TestUtil.nextInt(random(), 1, 10);
-    int numTerms = atLeast(10);
-    int actualFixedLength = -2;
-    int actualMaxLength = -1;
-    for(int termIDX=0;termIDX<numTerms;termIDX++) {
-      Document doc = new Document();
-      String termString;
-      if (fixedLength == -1) {
-        termString = _TestUtil.randomRealisticUnicodeString(random());
-      } else {
-        termString = _TestUtil.randomRealisticUnicodeString(random(), fixedLength, fixedLength);
-      }
-      BytesRef term = new BytesRef(termString);
-      actualMaxLength = Math.max(actualMaxLength, term.length);
-      if (actualFixedLength == -2) {
-        actualFixedLength = term.length;
-      } else if (actualFixedLength != term.length) {
-        actualFixedLength = -1;
-      }
-      doc.add(newField("term", termString, StringField.TYPE_NOT_STORED));
-      w.addDocument(doc);
-    }
-    w.forceMerge(1);
-    IndexReader r = w.getReader();
-    w.close();
-    AtomicReader subR = r.leaves().get(0).reader();
-    BinaryDocValues values = FieldCache.DEFAULT.getTerms(subR, "term");
-    assertEquals(actualFixedLength >= 0, values.isFixedLength());
-    assertEquals(actualMaxLength, values.maxLength());
-
-    SortedDocValues sortedValues = FieldCache.DEFAULT.getTermsIndex(subR, "term");
-    assertEquals(actualFixedLength >= 0, sortedValues.isFixedLength());
-    assertEquals(actualMaxLength, sortedValues.maxLength());
-
-    // No field cache insanity because close purges FC entries:
-    r.close();
-    d.close();
-  }
 }

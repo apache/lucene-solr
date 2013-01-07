@@ -18,8 +18,8 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Iterator;
 
-import org.apache.lucene.codecs.BinaryDocValuesConsumer;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefArray;
@@ -37,16 +37,9 @@ class BytesDVWriter extends DocValuesWriter {
   private int addedValues = 0;
   private final BytesRef emptyBytesRef = new BytesRef();
 
-  // -2 means not set yet; -1 means length isn't fixed;
-  // -otherwise it's the fixed length seen so far:
-  int fixedLength = -2;
-  int maxLength;
-  int totalSize;
-
   public BytesDVWriter(FieldInfo fieldInfo, Counter counter) {
     this.fieldInfo = fieldInfo;
     this.bytesRefArray = new BytesRefArray(counter);
-    this.totalSize = 0;
   }
 
   public void addValue(int docID, BytesRef value) {
@@ -57,54 +50,60 @@ class BytesDVWriter extends DocValuesWriter {
       // nocommit improve message
       throw new IllegalArgumentException("null binaryValue not allowed (field=" + fieldInfo.name + ")");
     }
-    mergeLength(value.length);
     
     // Fill in any holes:
     while(addedValues < docID) {
       addedValues++;
       bytesRefArray.append(emptyBytesRef);
-      mergeLength(0);
     }
     addedValues++;
     bytesRefArray.append(value);
   }
 
-  private void mergeLength(int length) {
-    if (fixedLength == -2) {
-      fixedLength = length;
-    } else if (fixedLength != length) {
-      fixedLength = -1;
-    }
-    maxLength = Math.max(maxLength, length);
-    totalSize += length;
-  }
-
   @Override
   public void finish(int maxDoc) {
-    if (addedValues < maxDoc) {
-      mergeLength(0);
-    }
   }
 
   @Override
   public void flush(SegmentWriteState state, SimpleDVConsumer dvConsumer) throws IOException {
-    BinaryDocValuesConsumer consumer = dvConsumer.addBinaryField(fieldInfo,
-                                                                 fixedLength >= 0,
-                                                                 maxLength);
-    final int bufferedDocCount = addedValues;
-    BytesRef value = new BytesRef();
-    for(int docID=0;docID<bufferedDocCount;docID++) {
-      bytesRefArray.get(value, docID);
-      consumer.add(value);
-    }
     final int maxDoc = state.segmentInfo.getDocCount();
-    value.length = 0;
-    for(int docID=bufferedDocCount;docID<maxDoc;docID++) {
-      consumer.add(value);
-    }
-    consumer.finish();
+
+    dvConsumer.addBinaryField(fieldInfo,
+                              new Iterable<BytesRef>() {
+
+                                @Override
+                                public Iterator<BytesRef> iterator() {
+                                   return new Iterator<BytesRef>() {
+                                     BytesRef value = new BytesRef();
+                                     int upto;
+
+                                     @Override
+                                     public boolean hasNext() {
+                                       return upto < maxDoc;
+                                     }
+
+                                     @Override
+                                     public void remove() {
+                                       throw new UnsupportedOperationException();
+                                     }
+
+                                     @Override
+                                     public BytesRef next() {
+                                       // nocommit make
+                                       // mutable Number:
+                                       if (upto < bytesRefArray.size()) {
+                                         bytesRefArray.get(value, upto);
+                                       } else {
+                                         value.length = 0;
+                                       }
+                                       upto++;
+                                       return value;
+                                     }
+                                   };
+                                 }
+                               });
+
     reset();
-    //System.out.println("FLUSH");
   }
 
   public void abort() {
@@ -113,7 +112,5 @@ class BytesDVWriter extends DocValuesWriter {
 
   private void reset() {
     bytesRefArray.clear();
-    fixedLength = -2;
-    maxLength = 0;
   }
 }

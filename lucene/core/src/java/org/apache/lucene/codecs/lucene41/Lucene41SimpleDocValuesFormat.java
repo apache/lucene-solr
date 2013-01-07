@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.codecs.BinaryDocValuesConsumer;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SimpleDVProducer;
@@ -108,23 +107,23 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
     }
 
     @Override
-    public BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, int maxLength) throws IOException {
+    public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
       meta.writeVInt(field.number);
-      meta.writeByte(fixedLength ? (byte)1 : 0);
-      meta.writeVInt(maxLength);
+      // nocommit handle var length too!!
+      int length = -1;
+      for(BytesRef v : values) {
+        if (length == -1) {
+          length = v.length;
+        } else if (length != v.length) {
+          throw new UnsupportedOperationException();
+        }
+      }
+      // nocommit don't hardwire fixedLength to 1:
+      meta.writeByte((byte) 1);
+      meta.writeVInt(length);
       meta.writeLong(data.getFilePointer());
-      if (fixedLength) {
-        return new BinaryDocValuesConsumer() {
-          @Override
-          public void add(BytesRef value) throws IOException {
-            data.writeBytes(value.bytes, value.offset, value.length);
-          }
-
-          @Override
-          public void finish() throws IOException {}
-        };
-      } else {
-        throw new UnsupportedOperationException();
+      for(BytesRef value : values) {
+        data.writeBytes(value.bytes, value.offset, value.length);
       }
     }
 
@@ -266,16 +265,6 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
           }
         }
 
-        @Override
-        public boolean isFixedLength() {
-          return entry.fixedLength;
-        }
-
-        @Override
-        public int maxLength() {
-          return entry.maxLength;
-        }
-        
         @Override
         public int size() {
           return maxDoc;

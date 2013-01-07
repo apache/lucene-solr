@@ -1378,25 +1378,10 @@ public class CheckIndex {
     if (dv == null) {
       return;
     }
-    final boolean fixed = dv.isFixedLength();
-    final int maxLength = dv.maxLength();
-    boolean fixed2 = true;
-    int maxLength2 = -1;
+    // nocommit what else to check ...
     BytesRef scratch = new BytesRef();
     for (int i = 0; i < reader.maxDoc(); i++) {
       dv.get(i, scratch);
-      if (maxLength2 == -1) {
-        maxLength2 = scratch.length;
-      } else {
-        fixed2 &= scratch.length == maxLength2;
-        maxLength2 = Math.max(maxLength2, scratch.length);
-      }
-    }
-    if (fixed != fixed2) {
-      throw new RuntimeException("dv for field: " + fieldName + " reports fixed=" + fixed + " but this is not the case!");
-    }
-    if (maxLength != maxLength2) {
-      throw new RuntimeException("dv for field: " + fieldName + " reports maxLength=" + maxLength + " but this is not the case: " + maxLength2);
     }
   }
   

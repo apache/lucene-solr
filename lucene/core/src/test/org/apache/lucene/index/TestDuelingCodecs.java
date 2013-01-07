@@ -636,8 +636,6 @@ public class TestDuelingCodecs extends LuceneTestCase {
         BinaryDocValues rightValues = MultiSimpleDocValues.simpleBinaryValues(rightReader, field);
         if (leftValues != null && rightValues != null) {
           assertEquals(leftValues.size(), rightValues.size());
-          assertEquals(leftValues.maxLength(), rightValues.maxLength());
-          assertEquals(leftValues.isFixedLength(), rightValues.isFixedLength());
           BytesRef scratchLeft = new BytesRef();
           BytesRef scratchRight = new BytesRef();
           for(int docID=0;docID<leftValues.size();docID++) {

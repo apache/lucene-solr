@@ -27,9 +27,6 @@ public abstract class BinaryDocValues {
   
   public abstract int size();
   
-  public abstract boolean isFixedLength();
-  public abstract int maxLength();
-  
   public static class EMPTY extends BinaryDocValues {
     private final int size;
     
@@ -45,16 +42,6 @@ public abstract class BinaryDocValues {
     @Override
     public int size() {
       return size;
-    }
-
-    @Override
-    public boolean isFixedLength() {
-      return true;
-    }
-
-    @Override
-    public int maxLength() {
-      return 0;
     }
   };
 }

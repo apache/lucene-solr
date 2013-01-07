@@ -109,7 +109,6 @@ public class MultiSimpleDocValues {
   public static BinaryDocValues simpleBinaryValues(final IndexReader r, final String field) throws IOException {
     final List<AtomicReaderContext> leaves = r.leaves();
     boolean anyReal = false;
-    int maxLength = -1;
 
     for(AtomicReaderContext ctx : leaves) {
       BinaryDocValues values = ctx.reader().getBinaryDocValues(field);
@@ -119,14 +118,11 @@ public class MultiSimpleDocValues {
       } else {
         anyReal = true;
       }
-      
-      maxLength = Math.max(maxLength, values.maxLength());
     }
 
     if (!anyReal) {
       return null;
     } else {
-      final int finalMaxLength = maxLength;
 
       return new BinaryDocValues() {
         @Override
@@ -149,17 +145,6 @@ public class MultiSimpleDocValues {
         @Override
         public int size() {
           return r.maxDoc();
-        }
-
-        @Override
-        public boolean isFixedLength() {
-          // Harmless lie?
-          return false;
-        }
-
-        @Override
-        public int maxLength() {
-          return finalMaxLength;
         }
       };
     }

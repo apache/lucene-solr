@@ -29,7 +29,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.codecs.BinaryDocValuesConsumer;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
@@ -63,10 +62,10 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   final static BytesRef MINVALUE = new BytesRef("  minvalue ");
   final static BytesRef PATTERN  = new BytesRef("  pattern ");
   // used for bytes
-  final static BytesRef FIXEDLENGTH = new BytesRef("  fixedlength ");
-  final static BytesRef MAXLENGTH = new BytesRef("  maxlength ");
   final static BytesRef LENGTH = new BytesRef("length ");
+  final static BytesRef MAXLENGTH = new BytesRef("  maxlength ");
   // used for sorted bytes
+  final static BytesRef FIXEDLENGTH = new BytesRef("  fixedlength ");
   final static BytesRef NUMVALUES = new BytesRef("  numvalues ");
   final static BytesRef ORDPATTERN = new BytesRef("  ordpattern ");
   
@@ -101,8 +100,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
    *  for bytes this is also a "fixed-width" file, for example:
    *  <pre>
    *  field myField
-   *    fixedlength false
-   *    maxlength 8
+   *    maxlength 6
    *    pattern 0
    *  length 6
    *  foobar[space][space]
@@ -221,15 +219,16 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     }
 
     @Override
-    public BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, final int maxLength) throws IOException {
+    public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
       assert fieldSeen(field.name);
       assert DocValues.isBytes(field.getDocValuesType());
       assert !isNorms;
+      int maxLength = 0;
+      for(BytesRef value : values) {
+        maxLength = Math.max(maxLength, value.length);
+      }
       writeFieldEntry(field);
-      // write fixedlength
-      SimpleTextUtil.write(data, FIXEDLENGTH);
-      SimpleTextUtil.write(data, Boolean.toString(fixedLength), scratch);
-      SimpleTextUtil.writeNewline(data);
+
       // write maxLength
       SimpleTextUtil.write(data, MAXLENGTH);
       SimpleTextUtil.write(data, Integer.toString(maxLength), scratch);
@@ -245,34 +244,27 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       SimpleTextUtil.write(data, sb.toString(), scratch);
       SimpleTextUtil.writeNewline(data);
       final DecimalFormat encoder = new DecimalFormat(sb.toString(), new DecimalFormatSymbols(Locale.ROOT));
-      
-      return new BinaryDocValuesConsumer() {
-        int numDocsWritten = 0;
-        
-        @Override
-        public void add(BytesRef value) throws IOException {
-          // write length
-          SimpleTextUtil.write(data, LENGTH);
-          SimpleTextUtil.write(data, encoder.format(value.length), scratch);
-          SimpleTextUtil.writeNewline(data);
+
+      int numDocsWritten = 0;
+      for(BytesRef value : values) {
+        // write length
+        SimpleTextUtil.write(data, LENGTH);
+        SimpleTextUtil.write(data, encoder.format(value.length), scratch);
+        SimpleTextUtil.writeNewline(data);
           
-          // write bytes -- don't use SimpleText.write
-          // because it escapes:
-          data.writeBytes(value.bytes, value.offset, value.length);
+        // write bytes -- don't use SimpleText.write
+        // because it escapes:
+        data.writeBytes(value.bytes, value.offset, value.length);
 
-          // pad to fit
-          for (int i = value.length; i < maxLength; i++) {
-            data.writeByte((byte)' ');
-          }
-          SimpleTextUtil.writeNewline(data);
-          numDocsWritten++;
+        // pad to fit
+        for (int i = value.length; i < maxLength; i++) {
+          data.writeByte((byte)' ');
         }
+        SimpleTextUtil.writeNewline(data);
+        numDocsWritten++;
+      }
 
-        @Override
-        public void finish() throws IOException {
-          assert numDocs == numDocsWritten;
-        }
-      };
+      assert numDocs == numDocsWritten;
     }
     
     @Override
@@ -446,9 +438,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           data.seek(data.getFilePointer() + (1+field.pattern.length()) * maxDoc);
         } else if (DocValues.isBytes(dvType)) {
           readLine();
-          assert startsWith(FIXEDLENGTH);
-          field.fixedLength = Boolean.parseBoolean(stripPrefix(FIXEDLENGTH));
-          readLine();
           assert startsWith(MAXLENGTH);
           field.maxLength = Integer.parseInt(stripPrefix(MAXLENGTH));
           readLine();
@@ -573,16 +562,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         @Override
         public int size() {
           return maxDoc;
-        }
-
-        @Override
-        public boolean isFixedLength() {
-          return field.fixedLength;
-        }
-
-        @Override
-        public int maxLength() {
-          return field.maxLength;
         }
       };
     }

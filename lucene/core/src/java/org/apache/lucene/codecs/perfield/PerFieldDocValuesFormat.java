@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.ServiceLoader; // javadocs
 import java.util.TreeMap;
 
-import org.apache.lucene.codecs.BinaryDocValuesConsumer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SimpleDVProducer;
@@ -37,6 +36,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -106,8 +106,8 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
     }
 
     @Override
-    public BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, int maxLength) throws IOException {
-      return getInstance(field).addBinaryField(field, fixedLength, maxLength);
+    public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
+      getInstance(field).addBinaryField(field, values);
     }
 
     @Override

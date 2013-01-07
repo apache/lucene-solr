@@ -1290,16 +1290,6 @@ class FieldCacheImpl implements FieldCache {
         bytes.fill(ret, pointer);
       }
     }
-
-    @Override
-    public boolean isFixedLength() {
-      return isFixedLength;
-    }
-
-    @Override
-    public int maxLength() {
-      return maxLength;
-    }
   }
 
   // TODO: this if DocTermsIndex was already created, we

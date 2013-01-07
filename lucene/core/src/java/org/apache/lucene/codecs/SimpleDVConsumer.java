@@ -40,7 +40,8 @@ public abstract class SimpleDVConsumer implements Closeable {
   // nocommit should we pass SegmentWriteState...?
   public abstract void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException;    
 
-  public abstract BinaryDocValuesConsumer addBinaryField(FieldInfo field, boolean fixedLength, int maxLength) throws IOException;
+  public abstract void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException;
+
   // nocommit: figure out whats fair here.
   public abstract SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, int maxLength) throws IOException;
 
@@ -114,34 +115,72 @@ public abstract class SimpleDVConsumer implements Closeable {
   }
   
   // dead simple impl: codec can optimize
-  public void mergeBinaryField(FieldInfo fieldInfo, MergeState mergeState, List<BinaryDocValues> toMerge) throws IOException {
-    // first compute fixedLength and maxLength of live ones to be merged.
-    // nocommit: messy, and can be simplified by using docValues.maxLength/fixedLength in many cases.
-    boolean fixedLength = true;
-    int maxLength = -1;
-    BytesRef bytes = new BytesRef();
-    for (int readerIDX=0;readerIDX<toMerge.size();readerIDX++) {
-      AtomicReader reader = mergeState.readers.get(readerIDX);      
-      int maxDoc = reader.maxDoc();
-      Bits liveDocs = reader.getLiveDocs();
-      BinaryDocValues values = toMerge.get(readerIDX);
-      for (int i = 0; i < maxDoc; i++) {
-        if (liveDocs == null || liveDocs.get(i)) {
-          values.get(i, bytes);
-          if (maxLength == -1) {
-            maxLength = bytes.length;
-          } else {
-            fixedLength &= bytes.length == maxLength;
-            maxLength = Math.max(bytes.length, maxLength);
-          }
-        }
-        mergeState.checkAbort.work(300);
-      }
-    }
-    // now we can merge
-    assert maxLength >= 0; // could this happen (nothing to do?)
-    BinaryDocValuesConsumer field = addBinaryField(fieldInfo, fixedLength, maxLength);
-    field.merge(mergeState, toMerge);
+  public void mergeBinaryField(FieldInfo fieldInfo, final MergeState mergeState, final List<BinaryDocValues> toMerge) throws IOException {
+
+    addBinaryField(fieldInfo,
+                   new Iterable<BytesRef>() {
+                     @Override
+                     public Iterator<BytesRef> iterator() {
+                       return new Iterator<BytesRef>() {
+                         int readerUpto = -1;
+                         int docIDUpto;
+                         BytesRef nextValue = new BytesRef();
+                         AtomicReader currentReader;
+                         BinaryDocValues currentValues;
+                         Bits currentLiveDocs;
+                         boolean nextIsSet;
+
+                         @Override
+                         public boolean hasNext() {
+                           return nextIsSet || setNext();
+                         }
+
+                         @Override
+                         public void remove() {
+                           throw new UnsupportedOperationException();
+                         }
+
+                         @Override
+                         public BytesRef next() {
+                           if (!hasNext()) {
+                             throw new NoSuchElementException();
+                           }
+                           assert nextIsSet;
+                           nextIsSet = false;
+                           // nocommit make a mutable number
+                           return nextValue;
+                         }
+
+                         private boolean setNext() {
+                           while (true) {
+                             if (readerUpto == toMerge.size()) {
+                               return false;
+                             }
+
+                             if (currentReader == null || docIDUpto == currentReader.maxDoc()) {
+                               readerUpto++;
+                               if (readerUpto < toMerge.size()) {
+                                 currentReader = mergeState.readers.get(readerUpto);
+                                 currentValues = toMerge.get(readerUpto);
+                                 currentLiveDocs = currentReader.getLiveDocs();
+                               }
+                               docIDUpto = 0;
+                               continue;
+                             }
+
+                             if (currentLiveDocs == null || currentLiveDocs.get(docIDUpto)) {
+                               nextIsSet = true;
+                               currentValues.get(docIDUpto, nextValue);
+                               docIDUpto++;
+                               return true;
+                             }
+
+                             docIDUpto++;
+                           }
+                         }
+                       };
+                     }
+                   });
   }
 
   public void mergeSortedField(FieldInfo fieldInfo, MergeState mergeState, List<SortedDocValues> toMerge) throws IOException {

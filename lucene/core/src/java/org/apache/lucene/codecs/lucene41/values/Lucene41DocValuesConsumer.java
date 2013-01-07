@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.lucene41.values;
  */
 import java.io.IOException;
 
-import org.apache.lucene.codecs.BinaryDocValuesConsumer;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SortedDocValuesConsumer;
 import org.apache.lucene.index.FieldInfo;
@@ -29,6 +28,7 @@ import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
 public class Lucene41DocValuesConsumer extends SimpleDVConsumer {
@@ -86,25 +86,8 @@ public class Lucene41DocValuesConsumer extends SimpleDVConsumer {
   }
   
   @Override
-  public BinaryDocValuesConsumer addBinaryField(FieldInfo field,
-      boolean fixedLength, int maxLength) throws IOException {
-    String nameData = getDocValuesFileName(info, field, DATA_EXTENSION);
-    String idxOut = getDocValuesFileName(info, field, INDEX_EXTENSION);
-    boolean success = false;
-    IndexOutput dataOut = null;
-    IndexOutput indexOut = null;
-    try {
-      dataOut = getDirectory().createOutput(nameData, context);
-      indexOut = getDirectory().createOutput(idxOut, context);
-      Lucene41BinaryDocValuesConsumer consumer = new Lucene41BinaryDocValuesConsumer(
-          dataOut, indexOut, fixedLength, maxLength);
-      success = true;
-      return consumer;
-    } finally {
-      if (!success) {
-        IOUtils.close(dataOut, indexOut);
-      }
-    }
+  public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) {
+    // ncommit
   }
   
   // nocommit: bogus to put segmentName in here. think about copySegmentAsIs!!!!!!

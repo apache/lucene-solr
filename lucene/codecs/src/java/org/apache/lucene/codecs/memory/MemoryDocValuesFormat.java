@@ -94,8 +94,6 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
       public BinaryDocValues getBinary(FieldInfo field) throws IOException {
         BinaryDocValues valuesIn = producer.getBinary(field);
         final int maxDoc = valuesIn.size();
-        final int maxLength = valuesIn.maxLength();
-        final boolean fixedLength = valuesIn.isFixedLength();
         // nocommit more ram efficient
         final byte[][] values = new byte[maxDoc][];
         BytesRef scratch = new BytesRef();
@@ -117,16 +115,6 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
           @Override
           public int size() {
             return maxDoc;
-          }
-
-          @Override
-          public boolean isFixedLength() {
-            return fixedLength;
-          }
-
-          @Override
-          public int maxLength() {
-            return maxLength;
           }
         };
       }
