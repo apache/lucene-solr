@@ -32,7 +32,6 @@ import java.util.Set;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
-import org.apache.lucene.codecs.SortedDocValuesConsumer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocValues;
@@ -268,19 +267,22 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     }
     
     @Override
-    public SortedDocValuesConsumer addSortedField(FieldInfo field, final int valueCount, boolean fixedLength, final int maxLength) throws IOException {
+    public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
       assert fieldSeen(field.name);
       assert DocValues.isSortedBytes(field.getDocValuesType());
       assert !isNorms;
       writeFieldEntry(field);
+
+      int valueCount = 0;
+      int maxLength = -1;
+      for(BytesRef value : values) {
+        maxLength = Math.max(maxLength, value.length);
+        valueCount++;
+      }
+
       // write numValues
       SimpleTextUtil.write(data, NUMVALUES);
       SimpleTextUtil.write(data, Integer.toString(valueCount), scratch);
-      SimpleTextUtil.writeNewline(data);
-      
-      // write fixedlength
-      SimpleTextUtil.write(data, FIXEDLENGTH);
-      SimpleTextUtil.write(data, Boolean.toString(fixedLength), scratch);
       SimpleTextUtil.writeNewline(data);
       
       // write maxLength
@@ -312,40 +314,34 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       SimpleTextUtil.writeNewline(data);
       final DecimalFormat ordEncoder = new DecimalFormat(sb.toString(), new DecimalFormatSymbols(Locale.ROOT));
 
-      return new SortedDocValuesConsumer() {
+      // for asserts:
+      int valuesSeen = 0;
 
-        // for asserts:
-        private int valuesSeen;
-        
-        @Override
-        public void addValue(BytesRef value) throws IOException {
-          // write length
-          SimpleTextUtil.write(data, LENGTH);
-          SimpleTextUtil.write(data, encoder.format(value.length), scratch);
-          SimpleTextUtil.writeNewline(data);
+      for(BytesRef value : values) {
+        // write length
+        SimpleTextUtil.write(data, LENGTH);
+        SimpleTextUtil.write(data, encoder.format(value.length), scratch);
+        SimpleTextUtil.writeNewline(data);
           
-          // write bytes -- don't use SimpleText.write
-          // because it escapes:
-          data.writeBytes(value.bytes, value.offset, value.length);
+        // write bytes -- don't use SimpleText.write
+        // because it escapes:
+        data.writeBytes(value.bytes, value.offset, value.length);
 
-          // pad to fit
-          for (int i = value.length; i < maxLength; i++) {
-            data.writeByte((byte)' ');
-          }
-          SimpleTextUtil.writeNewline(data);
-          valuesSeen++;
-          assert valuesSeen <= valueCount;
+        // pad to fit
+        for (int i = value.length; i < maxLength; i++) {
+          data.writeByte((byte)' ');
         }
+        SimpleTextUtil.writeNewline(data);
+        valuesSeen++;
+        assert valuesSeen <= valueCount;
+      }
 
-        @Override
-        public void addDoc(int ord) throws IOException {
-          SimpleTextUtil.write(data, ordEncoder.format(ord), scratch);
-          SimpleTextUtil.writeNewline(data);
-        }
+      assert valuesSeen == valueCount;
 
-        @Override
-        public void finish() throws IOException {}
-      };
+      for(Number ord : docToOrd) {
+        SimpleTextUtil.write(data, ordEncoder.format(ord.intValue()), scratch);
+        SimpleTextUtil.writeNewline(data);
+      }
     }
 
     /** write the header for this field */
@@ -449,9 +445,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           readLine();
           assert startsWith(NUMVALUES);
           field.numValues = Integer.parseInt(stripPrefix(NUMVALUES));
-          readLine();
-          assert startsWith(FIXEDLENGTH);
-          field.fixedLength = Boolean.parseBoolean(stripPrefix(FIXEDLENGTH));
           readLine();
           assert startsWith(MAXLENGTH);
           field.maxLength = Integer.parseInt(stripPrefix(MAXLENGTH));
@@ -634,16 +627,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         @Override
         public int size() {
           return maxDoc;
-        }
-
-        @Override
-        public boolean isFixedLength() {
-          return field.fixedLength;
-        }
-
-        @Override
-        public int maxLength() {
-          return field.maxLength;
         }
       };
     }

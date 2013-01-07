@@ -29,7 +29,6 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
-import org.apache.lucene.codecs.SortedDocValuesConsumer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
@@ -111,8 +110,8 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
     }
 
     @Override
-    public SortedDocValuesConsumer addSortedField(FieldInfo field, int valueCount, boolean fixedLength, int maxLength) throws IOException {
-      return getInstance(field).addSortedField(field, valueCount, fixedLength, maxLength);
+    public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+      getInstance(field).addSortedField(field, values, docToOrd);
     }
 
     private SimpleDVConsumer getInstance(FieldInfo field) throws IOException {

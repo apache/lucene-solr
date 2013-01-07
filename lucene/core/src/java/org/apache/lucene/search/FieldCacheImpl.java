@@ -937,16 +937,12 @@ class FieldCacheImpl implements FieldCache {
     private final PackedInts.Reader termOrdToBytesOffset;
     private final PackedInts.Reader docToTermOrd;
     private final int numOrd;
-    private final int maxLength;
-    private final boolean isFixedLength;
 
-    public SortedDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader termOrdToBytesOffset, PackedInts.Reader docToTermOrd, int numOrd, int maxLength, boolean isFixedLength) {
+    public SortedDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader termOrdToBytesOffset, PackedInts.Reader docToTermOrd, int numOrd) {
       this.bytes = bytes;
       this.docToTermOrd = docToTermOrd;
       this.termOrdToBytesOffset = termOrdToBytesOffset;
       this.numOrd = numOrd;
-      this.maxLength = maxLength;
-      this.isFixedLength = isFixedLength;
     }
 
     @Override
@@ -973,16 +969,6 @@ class FieldCacheImpl implements FieldCache {
         throw new IllegalArgumentException("ord must be >=0 (got ord=" + ord + ")");
       }
       bytes.fill(ret, termOrdToBytesOffset.get(ord));
-    }
-
-    @Override
-    public boolean isFixedLength() {
-      return isFixedLength;
-    }
-
-    @Override
-    public int maxLength() {
-      return maxLength;
     }
 
     @Override
@@ -1207,9 +1193,6 @@ class FieldCacheImpl implements FieldCache {
 
         int termOrd = 0;
 
-        int sameLength = -2;
-        int maxLength = -1;
-
         // TODO: use Uninvert?
 
         if (terms != null) {
@@ -1221,12 +1204,6 @@ class FieldCacheImpl implements FieldCache {
             if (term == null) {
               break;
             }
-            if (sameLength == -2) {
-              sameLength = term.length;
-            } else if (sameLength != term.length) {
-              sameLength = -1;
-            }
-            maxLength = Math.max(maxLength, term.length);
             if (termOrd >= termCountHardLimit) {
               break;
             }
@@ -1256,7 +1233,7 @@ class FieldCacheImpl implements FieldCache {
         }
 
         // maybe an int-only impl?
-        return new SortedDocValuesImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd, maxLength, sameLength >= 0);
+        return new SortedDocValuesImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
       }
     }
   }
@@ -1264,14 +1241,10 @@ class FieldCacheImpl implements FieldCache {
   private static class BinaryDocValuesImpl extends BinaryDocValues {
     private final PagedBytes.Reader bytes;
     private final PackedInts.Reader docToOffset;
-    private final int maxLength;
-    private final boolean isFixedLength;
 
-    public BinaryDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader docToOffset, int maxLength, boolean isFixedLength) {
+    public BinaryDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader docToOffset) {
       this.bytes = bytes;
       this.docToOffset = docToOffset;
-      this.maxLength = maxLength;
-      this.isFixedLength = isFixedLength;
     }
 
     @Override
@@ -1353,9 +1326,6 @@ class FieldCacheImpl implements FieldCache {
         // pointer==0 means not set
         bytes.copyUsingLengthPrefix(new BytesRef());
 
-        int sameLength = -2;
-        int maxLength = -1;
-
         if (terms != null) {
           int termCount = 0;
           final TermsEnum termsEnum = terms.iterator(null);
@@ -1372,12 +1342,6 @@ class FieldCacheImpl implements FieldCache {
             if (term == null) {
               break;
             }
-            if (sameLength == -2) {
-              sameLength = term.length;
-            } else if (sameLength != term.length) {
-              sameLength = -1;
-            }
-            maxLength = Math.max(maxLength, term.length);
             final long pointer = bytes.copyUsingLengthPrefix(term);
             docs = termsEnum.docs(null, docs, 0);
             while (true) {
@@ -1391,7 +1355,7 @@ class FieldCacheImpl implements FieldCache {
         }
 
         // maybe an int-only impl?
-        return new BinaryDocValuesImpl(bytes.freeze(true), docToOffset.getMutable(), maxLength, sameLength >= 0);
+        return new BinaryDocValuesImpl(bytes.freeze(true), docToOffset.getMutable());
       }
     }
   }

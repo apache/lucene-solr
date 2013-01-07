@@ -18,9 +18,9 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.apache.lucene.codecs.SimpleDVConsumer;
-import org.apache.lucene.codecs.SortedDocValuesConsumer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
@@ -43,11 +43,6 @@ class SortedBytesDVWriter extends DocValuesWriter {
 
   private static final BytesRef EMPTY = new BytesRef(BytesRef.EMPTY_BYTES);
   private static final int DEFAULT_PENDING_SIZE = 16;
-
-  // -2 means not set yet; -1 means length isn't fixed;
-  // -otherwise it's the fixed length seen so far:
-  int fixedLength = -2;
-  int maxLength;
 
   public SortedBytesDVWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
@@ -81,12 +76,10 @@ class SortedBytesDVWriter extends DocValuesWriter {
   public void finish(int maxDoc) {
     if (pendingIndex < maxDoc) {
       addOneValue(EMPTY);
-      mergeLength(0);
     }
   }
 
   private void addOneValue(BytesRef value) {
-    mergeLength(value.length);
     int ord = hash.add(value);
     if (ord < 0) {
       ord = -ord-1;
@@ -100,54 +93,102 @@ class SortedBytesDVWriter extends DocValuesWriter {
     pending[pendingIndex++] = ord;
   }
 
-  private void mergeLength(int length) {
-    if (fixedLength == -2) {
-      fixedLength = length;
-    } else if (fixedLength != length) {
-      fixedLength = -1;
-    }
-    maxLength = Math.max(maxLength, length);
-  }
-
   @Override
   public void flush(SegmentWriteState state, SimpleDVConsumer dvConsumer) throws IOException {
-    SortedDocValuesConsumer consumer = dvConsumer.addSortedField(fieldInfo,
-                                                                 hash.size(),
-                                                                 fixedLength >= 0,
-                                                                 maxLength);
     final int maxDoc = state.segmentInfo.getDocCount();
-    int emptyOrd = -1;
+
+    final int emptyOrd;
     if (pendingIndex < maxDoc) {
       // Make sure we added EMPTY value before sorting:
-      emptyOrd = hash.add(EMPTY);
-      if (emptyOrd < 0) {
-        emptyOrd = -emptyOrd-1;
+      int ord = hash.add(EMPTY);
+      if (ord < 0) {
+        emptyOrd = -ord-1;
+      } else {
+        emptyOrd = ord;
       }
+    } else {
+      emptyOrd = -1;
     }
 
-    int valueCount = hash.size();
+    final int valueCount = hash.size();
 
-    int[] sortedValues = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
+    final int[] sortedValues = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
     final int sortedValueRamUsage = RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + RamUsageEstimator.NUM_BYTES_INT*valueCount;
     iwBytesUsed.addAndGet(sortedValueRamUsage);
     final int[] ordMap = new int[valueCount];
-    // Write values, in sorted order:
-    BytesRef scratch = new BytesRef();
+
     for(int ord=0;ord<valueCount;ord++) {
-      consumer.addValue(hash.get(sortedValues[ord], scratch));
       ordMap[sortedValues[ord]] = ord;
     }
+
     final int bufferedDocCount = pendingIndex;
 
-    for(int docID=0;docID<bufferedDocCount;docID++) {
-      consumer.addDoc(ordMap[pending[docID]]);
-    }
-    for(int docID=bufferedDocCount;docID<maxDoc;docID++) {
-      consumer.addDoc(ordMap[emptyOrd]);
-    }
+    dvConsumer.addSortedField(fieldInfo,
+
+                              // ord -> value
+                              new Iterable<BytesRef>() {
+                                @Override
+                                public Iterator<BytesRef> iterator() {
+                                  return new Iterator<BytesRef>() {
+                                    int ordUpto;
+                                    BytesRef scratch = new BytesRef();
+
+                                    @Override
+                                    public boolean hasNext() {
+                                      return ordUpto < valueCount;
+                                    }
+
+                                    @Override
+                                    public void remove() {
+                                      throw new UnsupportedOperationException();
+                                    }
+
+                                    @Override
+                                    public BytesRef next() {
+                                      hash.get(sortedValues[ordUpto], scratch);
+                                      ordUpto++;
+                                      return scratch;
+                                    }
+                                  };
+                                }
+                              },
+
+                              // doc -> ord
+                              new Iterable<Number>() {
+                                @Override
+                                public Iterator<Number> iterator() {
+                                  return new Iterator<Number>() {
+                                    int docUpto;
+
+                                    @Override
+                                    public boolean hasNext() {
+                                      return docUpto < maxDoc;
+                                    }
+
+                                    @Override
+                                    public void remove() {
+                                      throw new UnsupportedOperationException();
+                                    }
+
+                                    @Override
+                                    public Number next() {
+                                      int ord;
+                                      if (docUpto < bufferedDocCount) {
+                                        ord = pending[docUpto];
+                                      } else {
+                                        ord = emptyOrd;
+                                      }
+                                      docUpto++;
+                                      // nocommit make
+                                      // resuable Number?
+                                      return ordMap[ord];
+                                    }
+                                  };
+                                }
+                              });
+    
     iwBytesUsed.addAndGet(-sortedValueRamUsage);
     reset();
-    consumer.finish();
   }
 
   public void abort() {
@@ -159,7 +200,5 @@ class SortedBytesDVWriter extends DocValuesWriter {
     pending = ArrayUtil.shrink(pending, DEFAULT_PENDING_SIZE);
     pendingIndex = 0;
     hash.clear();
-    fixedLength = -2;
-    maxLength = 0;
   }
 }

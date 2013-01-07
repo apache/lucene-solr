@@ -123,8 +123,6 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
       public SortedDocValues getSorted(FieldInfo field) throws IOException {
         SortedDocValues valuesIn = producer.getSorted(field);
         final int maxDoc = valuesIn.size();
-        final int maxLength = valuesIn.maxLength();
-        final boolean fixedLength = valuesIn.isFixedLength();
         final int valueCount = valuesIn.getValueCount();
 
         // nocommit used packed ints and so on
@@ -162,16 +160,6 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
           @Override
           public int size() {
             return maxDoc;
-          }
-
-          @Override
-          public boolean isFixedLength() {
-            return fixedLength;
-          }
-
-          @Override
-          public int maxLength() {
-            return maxLength;
           }
         };
       }

@@ -44,7 +44,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Ignore;
 
 /**
  * A very simple demo used in the API documentation (src/java/overview.html).
@@ -594,7 +593,6 @@ public class TestDemoDocValue extends LuceneTestCase {
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     assert ireader.leaves().size() == 1;
     SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
-    assertTrue(dv.isFixedLength()); // "hello world 1" length == "hello world 2" length
     assertEquals(2, dv.getValueCount()); // 2 ords
     BytesRef scratch = new BytesRef();
     dv.lookupOrd(0, scratch);

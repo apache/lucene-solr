@@ -30,10 +30,6 @@ public abstract class SortedDocValues extends BinaryDocValues {
 
   public abstract int getValueCount();
 
-  public abstract boolean isFixedLength();
-
-  public abstract int maxLength();
-
   @Override
   public void get(int docID, BytesRef result) {
     int ord = getOrd(docID);
@@ -173,16 +169,6 @@ public abstract class SortedDocValues extends BinaryDocValues {
     @Override
     public int size() {
       return size;
-    }
-
-    @Override
-    public boolean isFixedLength() {
-      return true;
-    }
-
-    @Override
-    public int maxLength() {
-      return 0;
     }
   }
 
