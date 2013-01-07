@@ -200,8 +200,16 @@ public class IndexSearcher {
    * Sugar for <code>.getIndexReader().document(docID, fieldsToLoad)</code>
    * @see IndexReader#document(int, Set) 
    */
-  public final Document document(int docID, Set<String> fieldsToLoad) throws IOException {
+  public Document doc(int docID, Set<String> fieldsToLoad) throws IOException {
     return reader.document(docID, fieldsToLoad);
+  }
+  
+  /**
+   * @deprecated Use {@link #doc(int, Set)} instead.
+   */
+  @Deprecated
+  public final Document document(int docID, Set<String> fieldsToLoad) throws IOException {
+    return doc(docID, fieldsToLoad);
   }
 
   /** Expert: Set the Similarity implementation used by this IndexSearcher.
