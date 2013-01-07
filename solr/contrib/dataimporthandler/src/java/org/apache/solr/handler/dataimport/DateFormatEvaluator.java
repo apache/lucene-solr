@@ -7,9 +7,11 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.WeakHashMap;
 
@@ -52,13 +54,16 @@ public class DateFormatEvaluator extends Evaluator {
   public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
   Map<DateFormatCacheKey, SimpleDateFormat> cache = new WeakHashMap<DateFormatCacheKey, SimpleDateFormat>();
   Map<String, Locale> availableLocales = new HashMap<String, Locale>();
+  Set<String> availableTimezones = new HashSet<String>();
   
   class DateFormatCacheKey {
-    DateFormatCacheKey(Locale l, String df) {
+    DateFormatCacheKey(Locale l, TimeZone tz, String df) {
       this.locale = l;
+      this.timezone = tz;
       this.dateFormat = df;
     }
     Locale locale;
+    TimeZone timezone;
     String dateFormat;
   }
   
@@ -66,12 +71,16 @@ public class DateFormatEvaluator extends Evaluator {
     for (Locale locale : Locale.getAvailableLocales()) {
       availableLocales.put(locale.toString(), locale);
     }
+    for (String tz : TimeZone.getAvailableIDs()) {
+      availableTimezones.add(tz);
+    }
   }
-  private SimpleDateFormat getDateFormat(String pattern, Locale locale) {
-    DateFormatCacheKey dfck = new DateFormatCacheKey(locale, pattern);
+  private SimpleDateFormat getDateFormat(String pattern, TimeZone timezone, Locale locale) {
+    DateFormatCacheKey dfck = new DateFormatCacheKey(locale, timezone, pattern);
     SimpleDateFormat sdf = cache.get(dfck);
     if(sdf == null) {
       sdf = new SimpleDateFormat(pattern, locale);
+      sdf.setTimeZone(timezone);
       cache.put(dfck, sdf);
     }
     return sdf;
@@ -81,8 +90,8 @@ public class DateFormatEvaluator extends Evaluator {
   @Override
   public String evaluate(String expression, Context context) {
     List<Object> l = parseParams(expression, context.getVariableResolver());
-    if (l.size() < 2 || l.size() > 3) {
-      throw new DataImportHandlerException(SEVERE, "'formatDate()' must have two or three parameters ");
+    if (l.size() < 2 || l.size() > 4) {
+      throw new DataImportHandlerException(SEVERE, "'formatDate()' must have two, three or four parameters ");
     }
     Object o = l.get(0);
     Object format = l.get(1);
@@ -92,7 +101,7 @@ public class DateFormatEvaluator extends Evaluator {
       format = o.toString();
     }    
     Locale locale = Locale.ROOT;
-    if(l.size()==3) {
+    if(l.size()>2) {
       Object localeObj = l.get(2);
       String localeStr = null;
       if (localeObj  instanceof VariableWrapper) {
@@ -104,9 +113,24 @@ public class DateFormatEvaluator extends Evaluator {
       if(locale==null) {
         throw new DataImportHandlerException(SEVERE, "Unsupported locale: " + localeStr);
       }
-    }    
+    }
+    TimeZone tz = TimeZone.getDefault();
+    if(l.size()==4) {
+      Object tzObj = l.get(3);
+      String tzStr = null;
+      if (tzObj  instanceof VariableWrapper) {
+        tzStr = ((VariableWrapper) tzObj).resolve().toString();        
+      } else {
+        tzStr = tzObj.toString();
+      }
+      if(availableTimezones.contains(tzStr)) {
+        tz = TimeZone.getTimeZone(tzStr);
+      } else {
+        throw new DataImportHandlerException(SEVERE, "Unsupported Timezone: " + tzStr);
+      }
+    }
     String dateFmt = format.toString();
-    SimpleDateFormat fmt = getDateFormat(dateFmt, locale);
+    SimpleDateFormat fmt = getDateFormat(dateFmt, tz, locale);
     Date date = null;
     if (o instanceof VariableWrapper) {
       VariableWrapper variableWrapper = (VariableWrapper) o;
@@ -116,7 +140,7 @@ public class DateFormatEvaluator extends Evaluator {
       } else {
         String s = variableval.toString();
         try {
-          date = getDateFormat(DEFAULT_DATE_FORMAT, locale).parse(s);
+          date = getDateFormat(DEFAULT_DATE_FORMAT, tz, locale).parse(s);
         } catch (ParseException exp) {
           wrapAndThrow(SEVERE, exp, "Invalid expression for date");
         }
@@ -125,15 +149,15 @@ public class DateFormatEvaluator extends Evaluator {
       String datemathfmt = o.toString();
       datemathfmt = datemathfmt.replaceAll("NOW", "");
       try {
-        date = getDateMathParser(locale).parseMath(datemathfmt);
+        date = getDateMathParser(locale, tz).parseMath(datemathfmt);
       } catch (ParseException e) {
         wrapAndThrow(SEVERE, e, "Invalid expression for date");
       }
     }
     return fmt.format(date);
   }
-  static DateMathParser getDateMathParser(Locale l) {
-    return new DateMathParser(TimeZone.getDefault(), l) {
+  static DateMathParser getDateMathParser(Locale l, TimeZone tz) {
+    return new DateMathParser(tz, l) {
       @Override
       public Date getNow() {
         return new Date();

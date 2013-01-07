@@ -204,6 +204,9 @@ New Features
   solrconfig.xml (defaults to 2 MiB). Solr now works out of the box with
   e.g. Tomcat, JBoss,...  (Uwe Schindler, Dawid Weiss, Alex Rocher)
 
+* SOLR-2201: DIH's "formatDate" function now supports a timezone as an optional
+  fourth parameter (James Dyer, Mark Waddle)
+
 Optimizations
 ----------------------
 

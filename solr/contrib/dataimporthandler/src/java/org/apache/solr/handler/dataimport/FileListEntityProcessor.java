@@ -157,7 +157,7 @@ public class FileListEntityProcessor extends EntityProcessorBase {
       String expr = null;
       expr = m.group(1).replaceAll("NOW", "");
       try {
-        return DateFormatEvaluator.getDateMathParser(Locale.ROOT).parseMath(expr);
+        return DateFormatEvaluator.getDateMathParser(Locale.ROOT, TimeZone.getDefault()).parseMath(expr);
       } catch (ParseException exp) {
         throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
                 "Invalid expression for date", exp);
