@@ -26,7 +26,6 @@ import java.util.ServiceLoader; // javadocs
 import java.util.TreeMap;
 
 import org.apache.lucene.codecs.BinaryDocValuesConsumer;
-import org.apache.lucene.codecs.NumericDocValuesConsumer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SimpleDVProducer;
@@ -102,8 +101,8 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
     }
     
     @Override
-    public NumericDocValuesConsumer addNumericField(FieldInfo field, long minValue, long maxValue) throws IOException {
-      return getInstance(field).addNumericField(field, minValue, maxValue);
+    public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+      getInstance(field).addNumericField(field, values);
     }
 
     @Override

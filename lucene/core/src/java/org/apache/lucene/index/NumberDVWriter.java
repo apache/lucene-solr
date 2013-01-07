@@ -18,12 +18,11 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Iterator;
 
-import org.apache.lucene.codecs.NumericDocValuesConsumer;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.packed.AppendingLongBuffer;
-import org.apache.lucene.util.packed.PackedInts;
 
 // nocommit pick numeric or number ... then fix all places ...
 
@@ -40,10 +39,6 @@ class NumberDVWriter extends DocValuesWriter {
   private long bytesUsed;
   private final FieldInfo fieldInfo;
 
-  long minValue;
-  long maxValue;
-  private boolean anyValues;
-
   public NumberDVWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     pending = new AppendingLongBuffer();
     bytesUsed = pending.ramBytesUsed();
@@ -55,12 +50,10 @@ class NumberDVWriter extends DocValuesWriter {
     if (docID < pending.size()) {
       throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
     }
-    mergeValue(value);
 
     // Fill in any holes:
     for (int i = pending.size(); i < docID; ++i) {
       pending.add(MISSING);
-      mergeValue(0);
     }
 
     pending.add(value);
@@ -74,42 +67,52 @@ class NumberDVWriter extends DocValuesWriter {
     bytesUsed = newBytesUsed;
   }
 
-  private void mergeValue(long value) {
-    if (!anyValues) {
-      anyValues = true;
-      minValue = maxValue = value;
-    } else {
-      maxValue = Math.max(value, maxValue);
-      minValue = Math.min(value, minValue);
-    }
-  }
-
   @Override
   public void finish(int maxDoc) {
-    if (pending.size() < maxDoc) {
-      mergeValue(0);
-    }
   }
 
   @Override
   public void flush(SegmentWriteState state, SimpleDVConsumer dvConsumer) throws IOException {
-    NumericDocValuesConsumer consumer = dvConsumer.addNumericField(fieldInfo, minValue, maxValue);
-    final int bufferedDocCount = pending.size();
 
-    AppendingLongBuffer.Iterator it = pending.iterator();
-    for(int docID=0;docID<bufferedDocCount;docID++) {
-      assert it.hasNext();
-      long v = it.next();
-      consumer.add(v);
-    }
-    assert !it.hasNext();
     final int maxDoc = state.segmentInfo.getDocCount();
-    for(int docID=bufferedDocCount;docID<maxDoc;docID++) {
-      consumer.add(0);
-    }
-    consumer.finish();
+
+    dvConsumer.addNumericField(fieldInfo,
+                               new Iterable<Number>() {
+
+                                 @Override
+                                 public Iterator<Number> iterator() {
+                                   return new Iterator<Number>() {
+                                     int upto;
+                                     AppendingLongBuffer.Iterator iter = pending.iterator();
+
+                                     @Override
+                                     public boolean hasNext() {
+                                       return upto < maxDoc;
+                                     }
+
+                                     @Override
+                                     public void remove() {
+                                       throw new UnsupportedOperationException();
+                                     }
+
+                                     @Override
+                                     public Number next() {
+                                       // nocommit make
+                                       // mutable Number:
+                                       long value;
+                                       if (upto < pending.size()) {
+                                         value =  iter.next();
+                                       } else {
+                                         value = 0;
+                                       }
+                                       upto++;
+                                       return value;
+                                     }
+                                   };
+                                 }
+                               });
+
     reset();
-    //System.out.println("FLUSH");
   }
 
   public void abort() {
@@ -121,8 +124,5 @@ class NumberDVWriter extends DocValuesWriter {
   void reset() {
     pending = new AppendingLongBuffer();
     updateBytesUsed();
-    anyValues = false;
-    minValue = maxValue = 0;
   }
-
 }

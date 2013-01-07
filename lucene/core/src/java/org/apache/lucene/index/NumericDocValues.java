@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 public abstract class NumericDocValues {
   public abstract long get(int docID);
   
-  public abstract long minValue();
-  public abstract long maxValue();
   public abstract int size();
   
   public static final class EMPTY extends NumericDocValues {
@@ -33,16 +31,6 @@ public abstract class NumericDocValues {
 
     @Override
     public long get(int docID) {
-      return 0;
-    }
-
-    @Override
-    public long minValue() {
-      return 0;
-    }
-
-    @Override
-    public long maxValue() {
       return 0;
     }
 

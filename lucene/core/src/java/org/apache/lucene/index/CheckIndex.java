@@ -31,7 +31,6 @@ import java.util.Map;
 import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType; // for javadocs
 import org.apache.lucene.index.DocValues.SortedSource;
 import org.apache.lucene.index.DocValues.Source;
@@ -1442,20 +1441,9 @@ public class CheckIndex {
     if (ndv == null) {
       return;
     }
-    final long minValue = ndv.minValue();
-    final long maxValue = ndv.maxValue();
-    long minValue2 = Long.MAX_VALUE;
-    long maxValue2 = Long.MIN_VALUE;
+    // nocommit what else to check!
     for (int i = 0; i < reader.maxDoc(); i++) {
-      long value = ndv.get(i);
-      minValue2 = Math.min(minValue2, value);
-      maxValue2 = Math.max(maxValue2, value);
-    }
-    if (minValue != minValue2) {
-      throw new RuntimeException("dv for field: " + fieldName + " reports minValue=" + minValue + " but this is not the case: " + minValue2);
-    }
-    if (maxValue != maxValue2) {
-      throw new RuntimeException("dv for field: " + fieldName + " reports maxValue=" + maxValue + " but this is not the case: " + maxValue2);
+      ndv.get(i);
     }
   }
   

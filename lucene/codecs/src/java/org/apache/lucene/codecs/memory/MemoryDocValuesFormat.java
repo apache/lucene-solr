@@ -59,8 +59,13 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
         NumericDocValues valuesIn = producer.getNumeric(field);
 
         final int maxDoc = valuesIn.size();
-        final long minValue = valuesIn.minValue();
-        final long maxValue = valuesIn.maxValue();
+        long minValue = Long.MAX_VALUE;
+        long maxValue = Long.MIN_VALUE;
+        for(int docID=0;docID<maxDoc;docID++) {
+          long v = valuesIn.get(docID);
+          minValue = Math.min(minValue, v);
+          maxValue = Math.max(maxValue, v);
+        }
 
         final long delta = maxValue - minValue;
         final int bitsRequired = delta < 0 ? 64 : PackedInts.bitsRequired(delta);
@@ -69,26 +74,18 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
           values.set(docID, valuesIn.get(docID) - minValue);
         }
 
+        final long finalMinValue = minValue;
+
         return new NumericDocValues() {
 
           @Override
           public long get(int docID) {
-            return minValue + values.get(docID);
+            return finalMinValue + values.get(docID);
           }
 
           @Override
           public int size() {
             return maxDoc;
-          }
-
-          @Override
-          public long minValue() {
-            return minValue;
-          }
-
-          @Override
-          public long maxValue() {
-            return maxValue;
           }
         };
       }

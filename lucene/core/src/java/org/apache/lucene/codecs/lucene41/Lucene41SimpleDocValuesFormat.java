@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.BinaryDocValuesConsumer;
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.NumericDocValuesConsumer;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
@@ -73,10 +72,16 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
     }
     
     @Override
-    public NumericDocValuesConsumer addNumericField(FieldInfo field, final long minValue, long maxValue) throws IOException {
+    public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
       meta.writeVInt(field.number);
+      long minValue = Long.MAX_VALUE;
+      long maxValue = Long.MIN_VALUE;
+      for(Number nv : values) {
+        long v = nv.longValue();
+        minValue = Math.min(minValue, v);
+        maxValue = Math.max(maxValue, v);
+      }
       meta.writeLong(minValue);
-      meta.writeLong(maxValue);
       long delta = maxValue - minValue;
       final int bitsPerValue;
       if (delta < 0) {
@@ -96,17 +101,10 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
       meta.writeLong(data.getFilePointer());
       
       final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, formatAndBits.format, maxDoc, formatAndBits.bitsPerValue, 0);
-      return new NumericDocValuesConsumer() {
-        @Override
-        public void add(long value) throws IOException {
-          writer.add(value - minValue);
-        }
-
-        @Override
-        public void finish() throws IOException {
-          writer.finish();
-        }
-      };
+      for(Number nv : values) {
+        writer.add(nv.longValue() - minValue);
+      }
+      writer.finish();
     }
 
     @Override
@@ -148,7 +146,6 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
     long offset;
     
     long minValue;
-    long maxValue;
     PackedInts.Header header;
   }
   
@@ -218,7 +215,6 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
     static NumericEntry readNumericField(IndexInput meta) throws IOException {
       NumericEntry entry = new NumericEntry();
       entry.minValue = meta.readLong();
-      entry.maxValue = meta.readLong();
       entry.header = PackedInts.readHeader(meta);
       entry.offset = meta.readLong();
       return entry;
@@ -240,16 +236,6 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
         @Override
         public long get(int docID) {
           return entry.minValue + reader.get(docID);
-        }
-
-        @Override
-        public long minValue() {
-          return entry.minValue;
-        }
-
-        @Override
-        public long maxValue() {
-          return entry.maxValue;
         }
 
         @Override

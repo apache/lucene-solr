@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.lucene41.values;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BinaryDocValuesConsumer;
-import org.apache.lucene.codecs.NumericDocValuesConsumer;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SortedDocValuesConsumer;
 import org.apache.lucene.index.FieldInfo;
@@ -82,22 +81,8 @@ public class Lucene41DocValuesConsumer extends SimpleDVConsumer {
   }
   
   @Override
-  public NumericDocValuesConsumer addNumericField(FieldInfo field,
-      long minValue, long maxValue) throws IOException {
-    String name = getDocValuesFileName(info, field, DATA_EXTENSION);
-    IndexOutput dataOut = null;
-    boolean success = false;
-    try {
-      dataOut = getDirectory().createOutput(name, context);
-      Lucene41NumericDocValuesConsumer consumer = new Lucene41NumericDocValuesConsumer(
-          dataOut, minValue, maxValue, info.getDocCount());
-      success = true;
-      return consumer;
-    } finally {
-      if (!success) {
-        IOUtils.close(dataOut);
-      }
-    }
+  public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
+    // ncommit
   }
   
   @Override

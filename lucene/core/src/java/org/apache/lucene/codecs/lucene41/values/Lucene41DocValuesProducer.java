@@ -66,11 +66,8 @@ public class Lucene41DocValuesProducer extends SimpleDVProducer {
   
   @Override
   public NumericDocValues getNumeric(FieldInfo field) throws IOException {
-    if (DocValues.isNumber(field.getDocValuesType()) || DocValues.isFloat(field.getDocValuesType())) {
-      return new Lucene41NumericDocValues.Factory(this.cfs, this.info, field, context).getDirect();
-    } else {
-      return null;
-    }
+    // nocommit
+    return null;
   }
   
   @Override

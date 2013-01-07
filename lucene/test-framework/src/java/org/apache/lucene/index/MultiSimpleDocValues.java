@@ -27,8 +27,6 @@ public class MultiSimpleDocValues {
   public static NumericDocValues simpleNormValues(final IndexReader r, final String field) throws IOException {
     final List<AtomicReaderContext> leaves = r.leaves();
     boolean anyReal = false;
-    long minValue = Long.MAX_VALUE;
-    long maxValue = Long.MIN_VALUE;
     for(AtomicReaderContext ctx : leaves) {
       NumericDocValues norms = ctx.reader().simpleNormValues(field);
 
@@ -37,16 +35,11 @@ public class MultiSimpleDocValues {
       } else {
         anyReal = true;
       }
-
-      maxValue = Math.max(norms.maxValue(), maxValue);
-      minValue = Math.min(norms.minValue(), minValue);
     }
 
     if (!anyReal) {
       return null;
     } else {
-      final long finalMaxValue = maxValue;
-      final long finalMinValue = minValue;
       return new NumericDocValues() {
         @Override
         public long get(int docID) {
@@ -68,16 +61,6 @@ public class MultiSimpleDocValues {
         public int size() {
           return r.maxDoc();
         }
-
-        @Override
-        public long minValue() {
-          return finalMinValue;
-        }
-
-        @Override
-        public long maxValue() {
-          return finalMaxValue;
-        }
       };
     }
   }
@@ -85,8 +68,6 @@ public class MultiSimpleDocValues {
   public static NumericDocValues simpleNumericValues(final IndexReader r, final String field) throws IOException {
     final List<AtomicReaderContext> leaves = r.leaves();
     boolean anyReal = false;
-    long minValue = Long.MAX_VALUE;
-    long maxValue = Long.MIN_VALUE;
     for(AtomicReaderContext ctx : leaves) {
       NumericDocValues values = ctx.reader().getNumericDocValues(field);
 
@@ -95,16 +76,11 @@ public class MultiSimpleDocValues {
       } else {
         anyReal = true;
       }
-
-      maxValue = Math.max(values.maxValue(), maxValue);
-      minValue = Math.min(values.minValue(), minValue);
     }
 
     if (!anyReal) {
       return null;
     } else {
-      final long finalMaxValue = maxValue;
-      final long finalMinValue = minValue;
       return new NumericDocValues() {
         @Override
         public long get(int docID) {
@@ -125,16 +101,6 @@ public class MultiSimpleDocValues {
         @Override
         public int size() {
           return r.maxDoc();
-        }
-
-        @Override
-        public long minValue() {
-          return finalMinValue;
-        }
-
-        @Override
-        public long maxValue() {
-          return finalMaxValue;
         }
       };
     }

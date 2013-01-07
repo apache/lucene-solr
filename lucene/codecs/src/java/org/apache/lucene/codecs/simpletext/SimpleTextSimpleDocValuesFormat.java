@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.codecs.BinaryDocValuesConsumer;
-import org.apache.lucene.codecs.NumericDocValuesConsumer;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
@@ -62,7 +61,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   final static BytesRef FIELD   = new BytesRef("field ");
   // used for numerics
   final static BytesRef MINVALUE = new BytesRef("  minvalue ");
-  final static BytesRef MAXVALUE = new BytesRef("  maxvalue ");
   final static BytesRef PATTERN  = new BytesRef("  pattern ");
   // used for bytes
   final static BytesRef FIXEDLENGTH = new BytesRef("  fixedlength ");
@@ -91,7 +89,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
    *  <pre>
    *  field myField
    *    minvalue 0
-   *    maxvalue 234
    *    pattern 000
    *  005
    *  234
@@ -165,23 +162,26 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     }
 
     @Override
-    public NumericDocValuesConsumer addNumericField(FieldInfo field, final long minValue, long maxValue) throws IOException {
+    public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
       assert fieldSeen(field.name);
       assert (field.getDocValuesType() != null && (DocValues.isNumber(field.getDocValuesType()) || DocValues.isFloat(field.getDocValuesType()))) ||
         (field.getNormType() != null && (DocValues.isNumber(field.getNormType()) || DocValues.isFloat(field.getNormType()))): "field=" + field.name;
       writeFieldEntry(field);
+
+      // first pass to find min/max
+      long minValue = Long.MAX_VALUE;
+      long maxValue = Long.MIN_VALUE;
+      for(Number n : values) {
+        long v = n.longValue();
+        minValue = Math.min(minValue, v);
+        maxValue = Math.max(maxValue, v);
+      }
       
       // write our minimum value to the .dat, all entries are deltas from that
       SimpleTextUtil.write(data, MINVALUE);
       SimpleTextUtil.write(data, Long.toString(minValue), scratch);
       SimpleTextUtil.writeNewline(data);
       
-      SimpleTextUtil.write(data, MAXVALUE);
-      SimpleTextUtil.write(data, Long.toString(maxValue), scratch);
-      SimpleTextUtil.writeNewline(data);
-
-      assert maxValue >= minValue;
-
       // build up our fixed-width "simple text packed ints"
       // format
       BigInteger maxBig = BigInteger.valueOf(maxValue);
@@ -201,26 +201,23 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       final String patternString = sb.toString();
       
       final DecimalFormat encoder = new DecimalFormat(patternString, new DecimalFormatSymbols(Locale.ROOT));
-      return new NumericDocValuesConsumer() {
-        int numDocsWritten = 0;
+      
+      int numDocsWritten = 0;
 
-        @Override
-        public void add(long value) throws IOException {
-          assert value >= minValue;
-          Number delta = BigInteger.valueOf(value).subtract(BigInteger.valueOf(minValue));
-          String s = encoder.format(delta);
-          assert s.length() == patternString.length();
-          SimpleTextUtil.write(data, s, scratch);
-          SimpleTextUtil.writeNewline(data);
-          numDocsWritten++;
-          assert numDocsWritten <= numDocs;
-        }
+      // second pass to write the values
+      for(Number n : values) {
+        long value = n.longValue();
+        assert value >= minValue;
+        Number delta = BigInteger.valueOf(value).subtract(BigInteger.valueOf(minValue));
+        String s = encoder.format(delta);
+        assert s.length() == patternString.length();
+        SimpleTextUtil.write(data, s, scratch);
+        SimpleTextUtil.writeNewline(data);
+        numDocsWritten++;
+        assert numDocsWritten <= numDocs;
+      }
 
-        @Override
-        public void finish() throws IOException {
-          assert numDocs == numDocsWritten: "numDocs=" + numDocs + " numDocsWritten=" + numDocsWritten;
-        }
-      };
+      assert numDocs == numDocsWritten: "numDocs=" + numDocs + " numDocsWritten=" + numDocsWritten;
     }
 
     @Override
@@ -405,7 +402,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
       int maxLength;
       boolean fixedLength;
       long minValue;
-      long maxValue;
       int numValues;
     };
 
@@ -443,9 +439,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           readLine();
           assert startsWith(MINVALUE): "got " + scratch.utf8ToString() + " field=" + fieldName + " ext=" + ext;
           field.minValue = Long.parseLong(stripPrefix(MINVALUE));
-          readLine();
-          assert startsWith(MAXVALUE);
-          field.maxValue = Long.parseLong(stripPrefix(MAXVALUE));
           readLine();
           assert startsWith(PATTERN);
           field.pattern = stripPrefix(PATTERN);
@@ -529,16 +522,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           } catch (IOException ioe) {
             throw new RuntimeException(ioe);
           }
-        }
-
-        @Override
-        public long minValue() {
-          return field.minValue;
-        }
-
-        @Override
-        public long maxValue() {
-          return field.maxValue;
         }
 
         @Override
