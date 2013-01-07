@@ -217,7 +217,7 @@ public class SolrRequestParsers
             String value = URLDecoder.decode( kv.substring( idx+1 ), charset);
             MultiMapSolrParams.addParam( name, value, map );
           } else {
-            String name = URLDecoder.decode( kv, "UTF-8" );
+            String name = URLDecoder.decode( kv, charset );
             MultiMapSolrParams.addParam( name, "", map );
           }
         }
