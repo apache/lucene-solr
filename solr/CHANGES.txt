@@ -558,6 +558,9 @@ Other Changes
 * SOLR-4254: Harden the 'leader requests replica to recover' code path.
   (Mark Miller, yonik)
 
+* SOLR-4226: Extract fl parsing code out of ReturnFields constructor.
+  (Ryan Ernst via Robert Muir)
+
 ==================  4.0.0 ==================
 
 Versions of Major Components

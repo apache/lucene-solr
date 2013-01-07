@@ -20,6 +20,7 @@ package org.apache.solr.response;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrReturnFields;
 
 import java.util.*;
 
@@ -123,7 +124,7 @@ public class SolrQueryResponse {
    */
   public ReturnFields getReturnFields() {
     if( returnFields == null ) {
-      returnFields = new ReturnFields(); // by default return everything
+      returnFields = new SolrReturnFields(); // by default return everything
     }
     return returnFields;
   }

@@ -565,8 +565,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
   /**
    * Retrieve the {@link Document} instance corresponding to the document id.
-   *
-   * Note: The document will have all fields accessable, but if a field
+   * <p>
+   * Note: The document will have all fields accessible, but if a field
    * filter is provided, only the provided fields will be loaded (the 
    * remainder will be available lazily).
    */
