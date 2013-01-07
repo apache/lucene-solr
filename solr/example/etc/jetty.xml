@@ -12,17 +12,6 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-    <!-- Increase the maximum POST size to 1 MB to be able to handle large shard requests -->
-    <!-- allthough documented as the correct way to set the max POST size for
-         all webapps in a single server, this doesn't actaully work.
-         So instead it is set on the WebAppContext.
-    -->
-    <!--
-    <Call name="setAttribute">
-      <Arg>org.eclipse.jetty.server.Request.maxFormContentSize</Arg>
-      <Arg>1000000</Arg>
-    </Call>
-    -->
     <!-- =========================================================== -->
     <!-- Server Thread Pool                                          -->
     <!-- =========================================================== -->
