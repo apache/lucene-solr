@@ -93,7 +93,7 @@ public class QueryComponent extends SearchComponent
     SolrQueryResponse rsp = rb.rsp;
 
     // Set field flags    
-    ReturnFields returnFields = new ReturnFields( req );
+    ReturnFields returnFields = new SolrReturnFields( req );
     rsp.setReturnFields( returnFields );
     int flags = 0;
     if (returnFields.wantsScore()) {

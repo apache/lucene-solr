@@ -76,7 +76,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     SolrParams params = req.getParams();
 
     // Set field flags
-    ReturnFields returnFields = new ReturnFields( req );
+    ReturnFields returnFields = new SolrReturnFields( req );
     rsp.setReturnFields( returnFields );
     int flags = 0;
     if (returnFields.wantsScore()) {
