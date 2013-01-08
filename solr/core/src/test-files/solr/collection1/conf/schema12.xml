@@ -597,6 +597,7 @@
    <!-- unused, for testing luke copyFields -->
    <dynamicField name="foo_copysource_*" type="ignored" multiValued="true"/>
    <dynamicField name="bar_copydest_*" type="ignored" multiValued="true"/>
+   <dynamicField name="*_es"  type="text"    indexed="true"  stored="true"/>
 
  </fields>
 
