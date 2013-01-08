@@ -33,6 +33,7 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
+import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
@@ -137,7 +138,6 @@ public final class FST<T> {
   // if non-null, this FST accepts the empty string and
   // produces this output
   T emptyOutput;
-  private byte[] emptyOutputBytes;
 
   // Not private to avoid synthetic access$NNN methods:
   byte[] bytes;
@@ -293,14 +293,15 @@ public final class FST<T> {
     if (in.readByte() == 1) {
       // accepts empty string
       int numBytes = in.readVInt();
-      // messy
       bytes = new byte[numBytes];
       in.readBytes(bytes, 0, numBytes);
+      
+      // De-serialize empty-string output:
       BytesReader reader;
       if (packed) {
-        reader = getBytesReader(0);
+        reader = new ForwardBytesReader(bytes, 0);
       } else {
-        reader = getBytesReader(numBytes-1);
+        reader = new ReverseBytesReader(bytes, bytes.length-1);
       }
       emptyOutput = outputs.readFinalOutput(reader);
     } else {
@@ -412,26 +413,6 @@ public final class FST<T> {
     } else {
       emptyOutput = v;
     }
-
-    // TODO: this is messy -- replace with sillyBytesWriter; maybe make
-    // bytes private
-    final int posSave = writer.getPosition();
-    outputs.writeFinalOutput(emptyOutput, writer);
-    emptyOutputBytes = new byte[writer.getPosition()-posSave];
-
-    if (!packed) {
-      // reverse
-      final int stopAt = (writer.getPosition() - posSave)/2;
-      int upto = 0;
-      while(upto < stopAt) {
-        final byte b = bytes[posSave + upto];
-        bytes[posSave+upto] = bytes[writer.getPosition()-upto-1];
-        bytes[writer.getPosition()-upto-1] = b;
-        upto++;
-      }
-    }
-    System.arraycopy(bytes, posSave, emptyOutputBytes, 0, writer.getPosition()-posSave);
-    writer.setPosition(posSave);
   }
 
   public void save(DataOutput out) throws IOException {
@@ -453,7 +434,27 @@ public final class FST<T> {
     // TODO: really we should encode this as an arc, arriving
     // to the root node, instead of special casing here:
     if (emptyOutput != null) {
+      // Accepts empty string
       out.writeByte((byte) 1);
+
+      // Serialize empty-string output:
+      RAMOutputStream ros = new RAMOutputStream();
+      outputs.writeFinalOutput(emptyOutput, ros);
+      
+      byte[] emptyOutputBytes = new byte[(int) ros.getFilePointer()];
+      ros.writeTo(emptyOutputBytes, 0);
+
+      if (true || !packed) {
+        // reverse
+        final int stopAt = emptyOutputBytes.length/2;
+        int upto = 0;
+        while(upto < stopAt) {
+          final byte b = emptyOutputBytes[upto];
+          emptyOutputBytes[upto] = emptyOutputBytes[emptyOutputBytes.length-upto-1];
+          emptyOutputBytes[emptyOutputBytes.length-upto-1] = b;
+          upto++;
+        }
+      }
       out.writeVInt(emptyOutputBytes.length);
       out.writeBytes(emptyOutputBytes, 0, emptyOutputBytes.length);
     } else {
