@@ -748,7 +748,8 @@ public final class ZkController {
       
       // now wait until our currently cloud state contains the latest leader
       String clusterStateLeader = zkStateReader.getLeaderUrl(collection,
-          shardId, timeoutms);
+          shardId, timeoutms * 2); // since we found it in zk, we are willing to
+                                   // wait a while to find it in state
       int tries = 0;
       while (!leaderUrl.equals(clusterStateLeader)) {
         if (tries == 60) {
