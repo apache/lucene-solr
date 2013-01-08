@@ -73,7 +73,7 @@ public class NativeUnixDirectory extends FSDirectory {
   private final static long ALIGN = 512;
   private final static long ALIGN_NOT_MASK = ~(ALIGN-1);
   
-  /** Default buffer size before writing to disk (256 MB);
+  /** Default buffer size before writing to disk (256 KB);
    *  larger means less IO load but more RAM and direct
    *  buffer storage space consumed during merging. */
 
