@@ -374,12 +374,12 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
 
         @Override
         public int getValueCount() {
-          return ordinals.size();
+          return binary.size();
         }
 
         @Override
         public int size() {
-          return binary.size();
+          return ordinals.size();
         }
       };
     }
