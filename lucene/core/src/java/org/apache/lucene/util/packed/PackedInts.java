@@ -1145,6 +1145,10 @@ public class PackedInts {
       this.version = version;
     }
     
+    public int getValueCount() {
+      return valueCount;
+    }
+    
   }
 
 }

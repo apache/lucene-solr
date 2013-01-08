@@ -75,10 +75,12 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
       meta.writeVInt(field.number);
       long minValue = Long.MAX_VALUE;
       long maxValue = Long.MIN_VALUE;
+      int count = 0;
       for(Number nv : values) {
         long v = nv.longValue();
         minValue = Math.min(minValue, v);
         maxValue = Math.max(maxValue, v);
+        count++;
       }
       meta.writeLong(minValue);
       long delta = maxValue - minValue;
@@ -88,18 +90,18 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
       } else {
         bitsPerValue = PackedInts.bitsRequired(delta);
       }
-      FormatAndBits formatAndBits = PackedInts.fastestFormatAndBits(maxDoc, bitsPerValue, PackedInts.COMPACT);
+      FormatAndBits formatAndBits = PackedInts.fastestFormatAndBits(count, bitsPerValue, PackedInts.COMPACT);
       
       // nocommit: refactor this crap in PackedInts.java
       // e.g. Header.load()/save() or something rather than how it works now.
       CodecUtil.writeHeader(meta, PackedInts.CODEC_NAME, PackedInts.VERSION_CURRENT);
       meta.writeVInt(bitsPerValue);
-      meta.writeVInt(maxDoc);
+      meta.writeVInt(count);
       meta.writeVInt(formatAndBits.format.getId());
       
       meta.writeLong(data.getFilePointer());
       
-      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, formatAndBits.format, maxDoc, formatAndBits.bitsPerValue, 0);
+      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, formatAndBits.format, count, formatAndBits.bitsPerValue, 0);
       for(Number nv : values) {
         writer.add(nv.longValue() - minValue);
       }
@@ -113,13 +115,16 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
       int minLength = Integer.MAX_VALUE;
       int maxLength = Integer.MIN_VALUE;
       final long startFP = data.getFilePointer();
+      int count = 0;
       for(BytesRef v : values) {
         minLength = Math.min(minLength, v.length);
         maxLength = Math.max(maxLength, v.length);
         data.writeBytes(v.bytes, v.offset, v.length);
+        count++;
       }
       meta.writeVInt(minLength);
       meta.writeVInt(maxLength);
+      meta.writeVInt(count);
       meta.writeLong(startFP);
       
       // if minLength == maxLength, its a fixed-length byte[], we are done (the addresses are implicit)
@@ -155,7 +160,8 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
 
     @Override
     public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
-      // nocommit todo
+      addBinaryField(field, values);
+      addNumericField(field, docToOrd);
     }
     
     @Override
@@ -177,15 +183,16 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
   static class BinaryEntry {
     long offset;
 
+    int count;
     int minLength;
     int maxLength;
   }
   
   static class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
     private final Map<Integer,NumericEntry> numerics;
+    private final Map<Integer,NumericEntry> ords;
     private final Map<Integer,BinaryEntry> binaries;
     private final IndexInput data;
-    private final int maxDoc;
     
     Lucene41SimpleDocValuesProducer(SegmentReadState state) throws IOException {
       String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "dvm");
@@ -194,8 +201,9 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
       boolean success = false;
       try {
         numerics = new HashMap<Integer,NumericEntry>();
+        ords = new HashMap<Integer,NumericEntry>();
         binaries = new HashMap<Integer,BinaryEntry>();
-        readFields(numerics, binaries, in, state.fieldInfos);
+        readFields(numerics, ords, binaries, in, state.fieldInfos);
         success = true;
       } finally {
         if (success) {
@@ -207,18 +215,9 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
       
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "dvd");
       data = state.directory.openInput(dataName, state.context);
-      maxDoc = state.segmentInfo.getDocCount();
     }
     
-    // used by clone()
-    Lucene41SimpleDocValuesProducer(IndexInput data, Map<Integer,NumericEntry> numerics, Map<Integer,BinaryEntry> binaries, int maxDoc) {
-      this.data = data;
-      this.numerics = numerics;
-      this.binaries = binaries;
-      this.maxDoc = maxDoc;
-    }
-    
-    static void readFields(Map<Integer,NumericEntry> numerics, Map<Integer,BinaryEntry> binaries, IndexInput meta, FieldInfos infos) throws IOException {
+    static void readFields(Map<Integer,NumericEntry> numerics, Map<Integer,NumericEntry> ords, Map<Integer,BinaryEntry> binaries, IndexInput meta, FieldInfos infos) throws IOException {
       int fieldNumber = meta.readVInt();
       while (fieldNumber != -1) {
         DocValues.Type type = infos.fieldInfo(fieldNumber).getDocValuesType();
@@ -232,6 +231,17 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
             // variable length byte[]: read addresses as a numeric dv field
             numerics.put(fieldNumber, readNumericField(meta));
           }
+        } else if (DocValues.isSortedBytes(type)) {
+          BinaryEntry b = readBinaryField(meta);
+          binaries.put(fieldNumber, b);
+          if (b.minLength != b.maxLength) {
+            fieldNumber = meta.readVInt(); // waste
+            // variable length byte[]: read addresses as a numeric dv field
+            numerics.put(fieldNumber, readNumericField(meta));
+          }
+          // sorted byte[]: read ords as a numeric dv field
+          fieldNumber = meta.readVInt(); // waste
+          ords.put(fieldNumber, readNumericField(meta));
         }
         fieldNumber = meta.readVInt();
       }
@@ -249,6 +259,7 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
       BinaryEntry entry = new BinaryEntry();
       entry.minLength = meta.readVInt();
       entry.maxLength = meta.readVInt();
+      entry.count = meta.readVInt();
       entry.offset = meta.readLong();
       return entry;
     }
@@ -256,7 +267,11 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
     @Override
     public NumericDocValues getNumeric(FieldInfo field) throws IOException {
       // nocommit: user can currently get back a numericDV of the addresses...
-      final NumericEntry entry = numerics.get(field.number);
+      NumericEntry entry = numerics.get(field.number);
+      return getNumeric(field, entry);
+    }
+    
+    private NumericDocValues getNumeric(FieldInfo field, final NumericEntry entry) throws IOException {
       // nocommit: what are we doing with clone?!
       final IndexInput data = this.data.clone();
       data.seek(entry.offset);
@@ -269,7 +284,7 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
 
         @Override
         public int size() {
-          return maxDoc;
+          return entry.header.getValueCount();
         }
       };
     }
@@ -306,7 +321,7 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
 
         @Override
         public int size() {
-          return maxDoc;
+          return bytes.count;
         }
       };
     }
@@ -336,22 +351,39 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
 
         @Override
         public int size() {
-          return maxDoc;
+          return bytes.count;
         }
       };
     }
 
     @Override
     public SortedDocValues getSorted(FieldInfo field) throws IOException {
-      return null;
+      final BinaryDocValues binary = getBinary(field);
+      final NumericDocValues ordinals = getNumeric(field, ords.get(field.number));
+      return new SortedDocValues() {
+
+        @Override
+        public int getOrd(int docID) {
+          return (int) ordinals.get(docID);
+        }
+
+        @Override
+        public void lookupOrd(int ord, BytesRef result) {
+          binary.get(ord, result);
+        }
+
+        @Override
+        public int getValueCount() {
+          return ordinals.size();
+        }
+
+        @Override
+        public int size() {
+          return binary.size();
+        }
+      };
     }
 
-    // nocommit: is this not needed anymore? we can probably nuke some ctors and clean up
-    @Override
-    public SimpleDVProducer clone() {
-      return new Lucene41SimpleDocValuesProducer(data.clone(), numerics, binaries, maxDoc);
-    }
-    
     @Override
     public void close() throws IOException {
       data.close();
