@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.lucene41;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -106,23 +107,49 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
     }
 
     @Override
-    public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
+    public void addBinaryField(FieldInfo field, final Iterable<BytesRef> values) throws IOException {
+      // write the byte[] data
       meta.writeVInt(field.number);
-      // nocommit handle var length too!!
-      int length = -1;
+      int minLength = Integer.MAX_VALUE;
+      int maxLength = Integer.MIN_VALUE;
+      final long startFP = data.getFilePointer();
       for(BytesRef v : values) {
-        if (length == -1) {
-          length = v.length;
-        } else if (length != v.length) {
-          throw new UnsupportedOperationException();
-        }
+        minLength = Math.min(minLength, v.length);
+        maxLength = Math.max(maxLength, v.length);
+        data.writeBytes(v.bytes, v.offset, v.length);
       }
-      // nocommit don't hardwire fixedLength to 1:
-      meta.writeByte((byte) 1);
-      meta.writeVInt(length);
-      meta.writeLong(data.getFilePointer());
-      for(BytesRef value : values) {
-        data.writeBytes(value.bytes, value.offset, value.length);
+      meta.writeVInt(minLength);
+      meta.writeVInt(maxLength);
+      meta.writeLong(startFP);
+      
+      // if minLength == maxLength, its a fixed-length byte[], we are done (the addresses are implicit)
+      // otherwise, we need to record the length fields...
+      // TODO: make this more efficient. this is just as inefficient as 4.0 codec.... we can do much better.
+      if (minLength != maxLength) {
+        addNumericField(field, new Iterable<Number>() {
+          @Override
+          public Iterator<Number> iterator() {
+            final Iterator<BytesRef> inner = values.iterator();
+            return new Iterator<Number>() {
+              long addr = 0;
+
+              @Override
+              public boolean hasNext() {
+                return inner.hasNext();
+              }
+
+              @Override
+              public Number next() {
+                BytesRef b = inner.next();
+                addr += b.length;
+                return addr; // nocommit don't box
+              }
+
+              @Override
+              public void remove() { throw new UnsupportedOperationException(); } 
+            };
+          }
+        });
       }
     }
 
@@ -150,7 +177,7 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
   static class BinaryEntry {
     long offset;
 
-    boolean fixedLength;
+    int minLength;
     int maxLength;
   }
   
@@ -200,10 +227,10 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
         } else if (DocValues.isBytes(type)) {
           BinaryEntry b = readBinaryField(meta);
           binaries.put(fieldNumber, b);
-          if (!b.fixedLength) {
-            throw new AssertionError();
-            // here we will read a numerics entry for the field, too.
-            // it contains the addresses as ints.
+          if (b.minLength != b.maxLength) {
+            fieldNumber = meta.readVInt(); // waste
+            // variable length byte[]: read addresses as a numeric dv field
+            numerics.put(fieldNumber, readNumericField(meta));
           }
         }
         fieldNumber = meta.readVInt();
@@ -220,7 +247,7 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
     
     static BinaryEntry readBinaryField(IndexInput meta) throws IOException {
       BinaryEntry entry = new BinaryEntry();
-      entry.fixedLength = meta.readByte() != 0;
+      entry.minLength = meta.readVInt();
       entry.maxLength = meta.readVInt();
       entry.offset = meta.readLong();
       return entry;
@@ -228,7 +255,11 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
 
     @Override
     public NumericDocValues getNumeric(FieldInfo field) throws IOException {
+      // nocommit: user can currently get back a numericDV of the addresses...
       final NumericEntry entry = numerics.get(field.number);
+      // nocommit: what are we doing with clone?!
+      final IndexInput data = this.data.clone();
+      data.seek(entry.offset);
       final PackedInts.Reader reader = PackedInts.getDirectReaderNoHeader(data, entry.header);
       return new NumericDocValues() {
         @Override
@@ -245,20 +276,59 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
 
     @Override
     public BinaryDocValues getBinary(FieldInfo field) throws IOException {
-      final BinaryEntry entry = binaries.get(field.number);
-      assert entry.fixedLength;
+      BinaryEntry bytes = binaries.get(field.number);
+      if (bytes.minLength == bytes.maxLength) {
+        return getFixedBinary(field, bytes);
+      } else {
+        return getVariableBinary(field, bytes);
+      }
+    }
+    
+    private BinaryDocValues getFixedBinary(FieldInfo field, final BinaryEntry bytes) {
+      // nocommit: what are we doing with clone?!
+      final IndexInput data = this.data.clone();
       return new BinaryDocValues() {
         @Override
         public void get(int docID, BytesRef result) {
-          long address = entry.offset + docID * (long)entry.maxLength;
+          long address = bytes.offset + docID * (long)bytes.maxLength;
           try {
             data.seek(address);
-            if (result.length < entry.maxLength) {
+            if (result.length < bytes.maxLength) {
               result.offset = 0;
-              result.bytes = new byte[entry.maxLength];
+              result.bytes = new byte[bytes.maxLength];
             }
-            data.readBytes(result.bytes, result.offset, entry.maxLength);
-            result.length = entry.maxLength;
+            data.readBytes(result.bytes, result.offset, bytes.maxLength);
+            result.length = bytes.maxLength;
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        }
+
+        @Override
+        public int size() {
+          return maxDoc;
+        }
+      };
+    }
+    
+    private BinaryDocValues getVariableBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
+      // nocommit: what are we doing with clone?!
+      final IndexInput data = this.data.clone();
+      final NumericDocValues addresses = getNumeric(field);
+      return new BinaryDocValues() {
+        @Override
+        public void get(int docID, BytesRef result) {
+          long startAddress = docID == 0 ? bytes.offset : bytes.offset + addresses.get(docID-1);
+          long endAddress = bytes.offset + addresses.get(docID);
+          int length = (int) (endAddress - startAddress);
+          try {
+            data.seek(startAddress);
+            if (result.length < length) {
+              result.offset = 0;
+              result.bytes = new byte[length];
+            }
+            data.readBytes(result.bytes, result.offset, length);
+            result.length = length;
           } catch (IOException e) {
             throw new RuntimeException(e);
           }
@@ -276,6 +346,7 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
       return null;
     }
 
+    // nocommit: is this not needed anymore? we can probably nuke some ctors and clean up
     @Override
     public SimpleDVProducer clone() {
       return new Lucene41SimpleDocValuesProducer(data.clone(), numerics, binaries, maxDoc);
