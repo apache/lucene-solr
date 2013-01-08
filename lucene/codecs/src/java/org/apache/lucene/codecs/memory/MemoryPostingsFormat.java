@@ -113,7 +113,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       this.field = field;
       this.doPackFST = doPackFST;
       this.acceptableOverheadRatio = acceptableOverheadRatio;
-      builder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, doPackFST, acceptableOverheadRatio);
+      builder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, doPackFST, acceptableOverheadRatio, true);
     }
 
     private class PostingsWriter extends PostingsConsumer {
