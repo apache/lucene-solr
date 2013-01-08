@@ -43,8 +43,7 @@ import java.io.StringWriter;
  * <pre class="prettyprint">
  * &lt;processor class="solr.HTMLStripFieldUpdateProcessorFactory"&gt;
  *   &lt;str name="typeClass"&gt;solr.StrField&lt;/str&gt;
- * &lt;/processor&gt;
- * </pre>
+ * &lt;/processor&gt;</pre>
  */
 public final class HTMLStripFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 

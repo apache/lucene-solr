@@ -40,8 +40,7 @@ import org.apache.solr.response.SolrQueryResponse;
  * &lt;processor class="solr.TruncateFieldUpdateProcessorFactory"&gt;
  *   &lt;str name="typeClass"&gt;solr.StrField&lt;/str&gt;
  *   &lt;int name="maxLength"&gt;100&lt;/int&gt;
- * &lt;/processor&gt;
- * </pre>
+ * &lt;/processor&gt;</pre>
  */
 public final class TruncateFieldUpdateProcessorFactory 
   extends FieldMutatingUpdateProcessorFactory {

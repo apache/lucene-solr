@@ -51,18 +51,15 @@ import org.apache.commons.lang.StringUtils;
  * </p>
  *
  * <pre class="prettyprint">
- *  &lt;updateRequestProcessorChain&gt;
- *    &lt;processor class="solr.ConcatFieldUpdateProcessorFactory"&gt;
- *      &lt;str name="delimiter"&gt;; &lt;/str&gt;
- *      &lt;lst name="exclude"&gt;
- *        &lt;str name="fieldName"&gt;primary_author&lt;/str&gt;
- *      &lt;/lst&gt;
- *    &lt;/processor&gt;
- *    &lt;processor class="solr.FirstFieldValueUpdateProcessorFactory"&gt;
- *      &lt;str name="fieldName"&gt;primary_author&lt;/str&gt;
- *    &lt;/processor&gt;
- *  &lt;/updateRequestProcessorChain&gt;
- * </pre>
+ * &lt;processor class="solr.ConcatFieldUpdateProcessorFactory"&gt;
+ *   &lt;str name="delimiter"&gt;; &lt;/str&gt;
+ *   &lt;lst name="exclude"&gt;
+ *     &lt;str name="fieldName"&gt;primary_author&lt;/str&gt;
+ *   &lt;/lst&gt;
+ * &lt;/processor&gt;
+ * &lt;processor class="solr.FirstFieldValueUpdateProcessorFactory"&gt;
+ *   &lt;str name="fieldName"&gt;primary_author&lt;/str&gt;
+ * &lt;/processor&gt;</pre>
  */
 public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
