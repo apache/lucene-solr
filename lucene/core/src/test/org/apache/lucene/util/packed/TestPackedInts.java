@@ -27,6 +27,8 @@ import java.util.Locale;
 import java.util.Random;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -828,6 +830,104 @@ public class TestPackedInts extends LuceneTestCase {
     assertEquals((long) Math.ceil((double) totalBits / 8), in.getFilePointer());
     in.close();
     dir.close();
+  }
+
+  public void testBlockPackedReaderWriter() throws IOException {
+    final int iters = atLeast(2);
+    for (int iter = 0; iter < iters; ++iter) {
+      final int blockSize = 64 * _TestUtil.nextInt(random(), 1, 1 << 12);
+      final int valueCount = random().nextInt(1 << 18);
+      final long[] values = new long[valueCount];
+      long minValue = 0;
+      int bpv = 0;
+      for (int i = 0; i < valueCount; ++i) {
+        if (i % blockSize == 0) {
+          minValue = rarely() ? random().nextInt(256) : rarely() ? -5 : random().nextLong();
+          bpv = random().nextInt(65);
+        }
+        if (bpv == 0) {
+          values[i] = minValue;
+        } else if (bpv == 64) {
+          values[i] = random().nextLong();
+        } else {
+          values[i] = minValue + _TestUtil.nextLong(random(), 0, (1L << bpv) - 1);
+        }
+      }
+  
+      final Directory dir = newDirectory();
+      final IndexOutput out = dir.createOutput("out.bin", IOContext.DEFAULT);
+      final BlockPackedWriter writer = new BlockPackedWriter(out, blockSize);
+      for (int i = 0; i < valueCount; ++i) {
+        assertEquals(i, writer.ord());
+        writer.add(values[i]);
+      }
+      assertEquals(valueCount, writer.ord());
+      writer.finish();
+      assertEquals(valueCount, writer.ord());
+      final long fp = out.getFilePointer();
+      out.close();
+
+      DataInput in = dir.openInput("out.bin", IOContext.DEFAULT);
+      if (random().nextBoolean()) {
+        byte[] buf = new byte[(int) fp];
+        in.readBytes(buf, 0, (int) fp);
+        ((IndexInput) in).close();
+        in = new ByteArrayDataInput(buf);
+      }
+      final BlockPackedReader reader = new BlockPackedReader(in, PackedInts.VERSION_CURRENT, blockSize, valueCount);
+      for (int i = 0; i < valueCount; ) {
+        if (random().nextBoolean()) {
+          assertEquals("" + i, values[i], reader.next());
+          ++i;
+        } else {
+          final LongsRef nextValues = reader.next(_TestUtil.nextInt(random(), 1, 1024));
+          for (int j = 0; j < nextValues.length; ++j) {
+            assertEquals("" + (i + j), values[i + j], nextValues.longs[nextValues.offset + j]);
+          }
+          i += nextValues.length;
+        }
+        assertEquals(i, reader.ord());
+      }
+      assertEquals(fp, in instanceof ByteArrayDataInput ? ((ByteArrayDataInput) in).getPosition() : ((IndexInput) in).getFilePointer());
+      try {
+        reader.next();
+        assertTrue(false);
+      } catch (IOException e) {
+        // OK
+      }
+
+      if (in instanceof ByteArrayDataInput) {
+        ((ByteArrayDataInput) in).setPosition(0);
+      } else {
+        ((IndexInput) in).seek(0L);
+      }
+      final BlockPackedReader reader2 = new BlockPackedReader(in, PackedInts.VERSION_CURRENT, blockSize, valueCount);
+      int i = 0;
+      while (true) {
+        final int skip = _TestUtil.nextInt(random(), 0, valueCount - i);
+        reader2.skip(skip);
+        i += skip;
+        assertEquals(i, reader2.ord());
+        if (i == valueCount) {
+          break;
+        } else {
+          assertEquals(values[i], reader2.next());
+          ++i;
+        }
+      }
+      assertEquals(fp, in instanceof ByteArrayDataInput ? ((ByteArrayDataInput) in).getPosition() : ((IndexInput) in).getFilePointer());
+      try {
+        reader2.skip(1);
+        assertTrue(false);
+      } catch (IOException e) {
+        // OK
+      }
+
+      if (in instanceof IndexInput) {
+        ((IndexInput) in).close();
+      }
+      dir.close();
+    }
   }
 
 }
