@@ -141,7 +141,6 @@ public final class FST<T> {
 
   // Not private to avoid synthetic access$NNN methods:
   byte[] bytes;
-  int byteUpto = 0;
 
   private int startNode = -1;
 
