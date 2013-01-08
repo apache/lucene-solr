@@ -118,6 +118,7 @@ public abstract class DocValuesArraySource extends Source {
       return values;
     }
     
+    @Override
     public double getFloat(int docID) {
       return getInt(docID);
     }
@@ -140,6 +141,7 @@ public abstract class DocValuesArraySource extends Source {
       return new ByteValues((byte[]) array);
     }
 
+    @Override
     public void toBytes(long value, BytesRef bytesRef) {
       if (bytesRef.bytes.length == 0) {
         bytesRef.bytes = new byte[1];
@@ -183,6 +185,7 @@ public abstract class DocValuesArraySource extends Source {
       return values;
     }
     
+    @Override
     public double getFloat(int docID) {
       return getInt(docID);
     }
@@ -199,6 +202,7 @@ public abstract class DocValuesArraySource extends Source {
       return new ShortValues(input, numDocs);
     }
 
+    @Override
     public void toBytes(long value, BytesRef bytesRef) {
       copyShort(bytesRef, (short) (0xFFFFL & value));
     }
@@ -243,6 +247,7 @@ public abstract class DocValuesArraySource extends Source {
       return values;
     }
     
+    @Override
     public double getFloat(int docID) {
       return getInt(docID);
     }
@@ -259,6 +264,7 @@ public abstract class DocValuesArraySource extends Source {
       return new IntValues(input, numDocs);
     }
 
+    @Override
     public void toBytes(long value, BytesRef bytesRef) {
       copyInt(bytesRef, (int) (0xFFFFFFFF & value));
     }

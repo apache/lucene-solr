@@ -206,6 +206,7 @@ public abstract class AbstractDIHJdbcTestCase extends
   
   public static class DerbyUtil {
     public static final OutputStream DEV_NULL = new OutputStream() {
+      @Override
       public void write(int b) {}
     };
   }

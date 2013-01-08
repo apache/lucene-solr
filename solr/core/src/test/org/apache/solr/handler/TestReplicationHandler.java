@@ -111,6 +111,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     }
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();
@@ -137,6 +138,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       // setup the server...
       String url = "http://127.0.0.1:" + port + context;
       HttpSolrServer s = new HttpSolrServer(url);
+      s.setConnectionTimeout(15000);
+      s.setSoTimeout(60000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;
@@ -177,7 +180,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       docList = (SolrDocumentList) res.get("response");
       timeSlept += 100;
       Thread.sleep(100);
-    } while(docList.getNumFound() != expectedDocCount && timeSlept < 30000);
+    } while(docList.getNumFound() != expectedDocCount && timeSlept < 45000);
     return res;
   }
   
@@ -935,6 +938,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   
       File[] files = dataDir.listFiles(new FilenameFilter() {
         
+          @Override
           public boolean accept(File dir, String name) {
             if(name.startsWith("snapshot")) {
               return true;

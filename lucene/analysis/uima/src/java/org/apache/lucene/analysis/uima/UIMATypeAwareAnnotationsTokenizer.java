@@ -59,6 +59,7 @@ public final class UIMATypeAwareAnnotationsTokenizer extends BaseUIMATokenizer {
     this.typeAttributeFeaturePath = typeAttributeFeaturePath;
   }
 
+  @Override
   protected void initializeIterator() throws IOException {
     try {
       analyzeInput();

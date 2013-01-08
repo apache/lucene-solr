@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  */
 public class NorwegianLightStemFilterFactory extends TokenFilterFactory {
+  @Override
   public TokenStream create(TokenStream input) {
     return new NorwegianLightStemFilter(input);
   }

@@ -363,7 +363,7 @@ public class DocTermOrds {
       final int df = te.docFreq();
       if (df <= maxTermDocFreq) {
 
-        docsEnum = te.docs(liveDocs, docsEnum, 0);
+        docsEnum = te.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
 
         // dF, but takes deletions into account
         int actualDF = 0;

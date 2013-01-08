@@ -47,6 +47,7 @@ class TermsQuery extends MultiTermQuery {
     this.terms = terms;
   }
 
+  @Override
   protected TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
     if (this.terms.size() == 0) {
       return TermsEnum.EMPTY;
@@ -55,6 +56,7 @@ class TermsQuery extends MultiTermQuery {
     return new SeekingTermSetTermsEnum(terms.iterator(null), this.terms);
   }
 
+  @Override
   public String toString(String string) {
     return "TermsQuery{" +
         "field=" + field +
@@ -91,6 +93,7 @@ class TermsQuery extends MultiTermQuery {
       return temp;
     }
 
+    @Override
     protected AcceptStatus accept(BytesRef term) throws IOException {
       if (comparator.compare(term, lastTerm) > 0) {
         return AcceptStatus.END;

@@ -18,6 +18,7 @@
 package org.apache.solr.update;
 
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Vector;
 
@@ -53,7 +54,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   protected Vector<SolrEventListener> softCommitCallbacks = new Vector<SolrEventListener>();
   protected Vector<SolrEventListener> optimizeCallbacks = new Vector<SolrEventListener>();
 
-  protected UpdateLog ulog;
+  protected volatile UpdateLog ulog;
 
   private void parseEventListeners() {
     final Class<SolrEventListener> clazz = SolrEventListener.class;
@@ -73,8 +74,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   }
 
 
-  private void initLog() {
-    PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
+  private void initLog(PluginInfo ulogPluginInfo) {
     if (ulogPluginInfo != null && ulogPluginInfo.isEnabled()) {
       ulog = new UpdateLog();
       ulog.init(ulogPluginInfo);
@@ -83,6 +83,21 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     }
   }
 
+  // not thread safe - for startup
+  private void clearLog(PluginInfo ulogPluginInfo) {
+    if (ulogPluginInfo == null) return;
+    File tlogDir = UpdateLog.getTlogDir(core, ulogPluginInfo);
+    if (tlogDir.exists()) {
+      String[] files = UpdateLog.getLogList(tlogDir);
+      for (String file : files) {
+        File f = new File(file);
+        boolean s = f.delete();
+        if (!s) {
+          log.error("Could not remove tlog file:" + f);
+        }
+      }
+    }
+  }
 
   protected void callPostCommitCallbacks() {
     for (SolrEventListener listener : commitCallbacks) {
@@ -108,7 +123,11 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     idField = schema.getUniqueKeyField();
     idFieldType = idField!=null ? idField.getType() : null;
     parseEventListeners();
-    initLog();
+    PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
+    if (!core.isReloaded() && !core.getDirectoryFactory().isPersistent()) {
+      clearLog(ulogPluginInfo);
+    }
+    initLog(ulogPluginInfo);
   }
 
   /**

@@ -54,6 +54,7 @@ final class Direct32 extends PackedInts.MutableImpl {
     return values[index] & 0xFFFFFFFFL;
   }
 
+  @Override
   public void set(final int index, final long value) {
     values[index] = (int) (value);
   }
@@ -67,6 +68,7 @@ final class Direct32 extends PackedInts.MutableImpl {
         + RamUsageEstimator.sizeOf(values);
   }
 
+  @Override
   public void clear() {
     Arrays.fill(values, (int) 0L);
   }
@@ -94,6 +96,7 @@ final class Direct32 extends PackedInts.MutableImpl {
     return gets;
   }
 
+  @Override
   public int set(int index, long[] arr, int off, int len) {
     assert len > 0 : "len must be > 0 (got " + len + ")";
     assert index >= 0 && index < valueCount;

@@ -302,6 +302,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
       this.doRandomCommit = doRandomCommit;
     }
 
+    @Override
     public void run() {
       try {
         long ramSize = 0;

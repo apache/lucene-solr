@@ -716,7 +716,9 @@ public void testFilesOpenClose() throws IOException {
   // DirectoryReader on a non-existent directory, you get a
   // good exception
   public void testNoDir() throws Throwable {
-    Directory dir = newFSDirectory(_TestUtil.getTempDir("doesnotexist"));
+    File tempDir = _TestUtil.getTempDir("doesnotexist");
+    _TestUtil.rmDir(tempDir);
+    Directory dir = newFSDirectory(tempDir);
     try {
       DirectoryReader.open(dir);
       fail("did not hit expected exception");
@@ -961,6 +963,7 @@ public void testFilesOpenClose() throws IOException {
     final DirectoryReader reader = writer.getReader();
     final int[] closeCount = new int[1];
     final IndexReader.ReaderClosedListener listener = new IndexReader.ReaderClosedListener() {
+      @Override
       public void onClose(IndexReader reader) {
         closeCount[0]++;
       }

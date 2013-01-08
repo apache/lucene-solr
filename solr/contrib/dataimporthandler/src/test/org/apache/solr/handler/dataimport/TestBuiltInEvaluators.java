@@ -107,7 +107,13 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
     org.junit.Assert.assertEquals("c\\:t", s);
     
   }
-
+  
+  private Date getNow() {
+    Calendar calendar = new GregorianCalendar(TimeZone.getTimeZone("GMT"),
+        Locale.ROOT);
+    calendar.add(Calendar.DAY_OF_YEAR, -2);
+    return calendar.getTime();
+  }
   
   @Test
   public void testDateFormatEvaluator() {
@@ -116,23 +122,26 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
         Context.FULL_DUMP, Collections.<String,Object> emptyMap(), null, null);
     String currentLocale = Locale.getDefault().toString();
     {
-      Calendar calendar = new GregorianCalendar(TimeZone.getTimeZone("GMT"),
-          Locale.ROOT);
-      calendar.add(Calendar.DAY_OF_YEAR, -2);
-      Date d = calendar.getTime();
       {
-        String sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT).format(d);
-        String dfe = dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm'", context);
+        SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd HH", Locale.ROOT);
+        String sdf = sdfDate.format(getNow());
+        String dfe = dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH'", context);
         assertEquals(sdf,dfe);
       }
       {
-        String sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(d);
-        String dfe = dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm','"+ currentLocale + "'", context);
+        SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd HH", Locale.getDefault());
+        String sdf = sdfDate.format(getNow());
+        String dfe = dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH','"+ currentLocale + "'", context);
         assertEquals(sdf,dfe);
+        for(String tz : TimeZone.getAvailableIDs()) {          
+          sdfDate.setTimeZone(TimeZone.getTimeZone(tz));
+          sdf = sdfDate.format(getNow());
+          dfe = dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH','" + currentLocale + "','" + tz + "'", context);
+          assertEquals(sdf,dfe);          
+        }
       }
     }
-    Date d = new Date();
-    
+    Date d = new Date();    
     Map<String,Object> map = new HashMap<String,Object>();
     map.put("key", d);
     resolver.addNamespace("A", map);
@@ -144,6 +153,15 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
         new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(d),
         dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm','" + currentLocale
             + "'", context));
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+    for(String tz : TimeZone.getAvailableIDs()) {
+      sdf.setTimeZone(TimeZone.getTimeZone(tz));
+      assertEquals(
+          sdf.format(d),
+          dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm','" + currentLocale + "', '" + tz + "'", context));     
+      
+    }
+    
     
   }
 

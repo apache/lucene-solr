@@ -1,11 +1,11 @@
 package org.apache.lucene.facet.search.sampling;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
@@ -63,14 +63,12 @@ public class OversampleWithDepthTest extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(indexDir);
     TaxonomyReader tr = new DirectoryTaxonomyReader(taxoDir);
     
-    FacetSearchParams fsp = new FacetSearchParams();
-    
     CountFacetRequest facetRequest = new CountFacetRequest(new CategoryPath("root"), 10);
-    
     // Setting the depth to '2', should potentially get all categories
     facetRequest.setDepth(2);
     facetRequest.setResultMode(ResultMode.PER_NODE_IN_TREE);
-    fsp.addFacetRequest(facetRequest);
+
+    FacetSearchParams fsp = new FacetSearchParams(facetRequest);
     
     // Craft sampling params to enforce sampling
     final SamplingParams params = new SamplingParams();
@@ -102,14 +100,12 @@ public class OversampleWithDepthTest extends LuceneTestCase {
     IndexWriter w = new IndexWriter(indexDir, iwc);
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
     
-    CategoryDocumentBuilder cdb = new CategoryDocumentBuilder(tw);
-    ArrayList<CategoryPath> categoryPaths = new ArrayList<CategoryPath>(1);
-    
+    FacetFields facetFields = new FacetFields(tw);
     for (int i = 0; i < 100; i++) {
-      categoryPaths.clear();
-      categoryPaths.add(new CategoryPath("root",Integer.toString(i / 10), Integer.toString(i)));
-      cdb.setCategoryPaths(categoryPaths);
-      w.addDocument(cdb.build(new Document()));
+      Document doc = new Document();
+      CategoryPath cp = new CategoryPath("root",Integer.toString(i / 10), Integer.toString(i));
+      facetFields.addFields(doc, Collections.singletonList(cp));
+      w.addDocument(doc);
     }
     IOUtils.close(tw, w);
   }

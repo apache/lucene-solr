@@ -102,6 +102,7 @@ public class ByteFieldSource extends FieldCacheSource {
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o.getClass() != ByteFieldSource.class) return false;
     ByteFieldSource
@@ -111,6 +112,7 @@ public class ByteFieldSource extends FieldCacheSource {
           this.parser.getClass() == other.parser.getClass());
   }
 
+  @Override
   public int hashCode() {
     int h = parser == null ? Byte.class.hashCode() : parser.getClass().hashCode();
     h += super.hashCode();

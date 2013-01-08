@@ -89,6 +89,7 @@ public class BBoxSimilarityValueSource extends ValueSource {
         }
       }
 
+      @Override
       public Explanation explain(int doc) {
         // make sure it has minX and area
         if (validMinX.get(doc) && validMaxX.get(doc)) {

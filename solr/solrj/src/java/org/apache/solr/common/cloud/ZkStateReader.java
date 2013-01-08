@@ -127,18 +127,21 @@ public class ZkStateReader {
   
   private boolean closeClient = false;
 
-  private ZkCmdExecutor cmdExecutor = new ZkCmdExecutor();
+  private ZkCmdExecutor cmdExecutor;
   
   public ZkStateReader(SolrZkClient zkClient) {
     this.zkClient = zkClient;
+    initZkCmdExecutor(zkClient.getZkClientTimeout());
   }
-  
+
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) throws InterruptedException, TimeoutException, IOException {
     closeClient = true;
+    initZkCmdExecutor(zkClientTimeout);
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
         // on reconnect, reload cloud info
         new OnReconnect() {
 
+          @Override
           public void command() {
             try {
               ZkStateReader.this.createClusterStateWatchersAndUpdate();
@@ -156,6 +159,11 @@ public class ZkStateReader {
 
           }
         });
+  }
+  
+  private void initZkCmdExecutor(int zkClientTimeout) {
+    // we must retry at least as long as the session timeout
+    cmdExecutor = new ZkCmdExecutor(zkClientTimeout);
   }
   
   // load and publish a new CollectionInfo
@@ -317,6 +325,7 @@ public class ZkStateReader {
       clusterStateUpdateScheduled = true;
       updateCloudExecutor.schedule(new Runnable() {
         
+        @Override
         public void run() {
           log.info("Updating cluster state from ZooKeeper...");
           synchronized (getUpdateLock()) {
@@ -391,7 +400,7 @@ public class ZkStateReader {
   
   public String getLeaderUrl(String collection, String shard, int timeout)
       throws InterruptedException, KeeperException {
-    ZkCoreNodeProps props = new ZkCoreNodeProps(getLeaderProps(collection,
+    ZkCoreNodeProps props = new ZkCoreNodeProps(getLeaderRetry(collection,
         shard, timeout));
     return props.getCoreUrl();
   }
@@ -399,14 +408,14 @@ public class ZkStateReader {
   /**
    * Get shard leader properties, with retry if none exist.
    */
-  public Replica getLeaderProps(String collection, String shard) throws InterruptedException {
-    return getLeaderProps(collection, shard, 1000);
+  public Replica getLeaderRetry(String collection, String shard) throws InterruptedException {
+    return getLeaderRetry(collection, shard, 1000);
   }
 
   /**
    * Get shard leader properties, with retry if none exist.
    */
-  public Replica getLeaderProps(String collection, String shard, int timeout) throws InterruptedException {
+  public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException {
     long timeoutAt = System.currentTimeMillis() + timeout;
     while (System.currentTimeMillis() < timeoutAt) {
       if (clusterState != null) {    

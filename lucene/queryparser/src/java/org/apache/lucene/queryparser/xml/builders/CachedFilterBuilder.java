@@ -60,6 +60,7 @@ public class CachedFilterBuilder implements FilterBuilder {
     this.cacheSize = cacheSize;
   }
 
+  @Override
   public synchronized Filter getFilter(Element e) throws ParserException {
     Element childElement = DOMUtils.getFirstChildOrFail(e);
 

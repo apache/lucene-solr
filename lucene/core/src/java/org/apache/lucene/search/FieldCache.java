@@ -147,6 +147,7 @@ public interface FieldCache {
 
   /** The default parser for byte values, which are encoded by {@link Byte#toString(byte)} */
   public static final ByteParser DEFAULT_BYTE_PARSER = new ByteParser() {
+    @Override
     public byte parseByte(BytesRef term) {
       // TODO: would be far better to directly parse from
       // UTF8 bytes... but really users should use
@@ -162,6 +163,7 @@ public interface FieldCache {
 
   /** The default parser for short values, which are encoded by {@link Short#toString(short)} */
   public static final ShortParser DEFAULT_SHORT_PARSER = new ShortParser() {
+    @Override
     public short parseShort(BytesRef term) {
       // TODO: would be far better to directly parse from
       // UTF8 bytes... but really users should use
@@ -177,6 +179,7 @@ public interface FieldCache {
 
   /** The default parser for int values, which are encoded by {@link Integer#toString(int)} */
   public static final IntParser DEFAULT_INT_PARSER = new IntParser() {
+    @Override
     public int parseInt(BytesRef term) {
       // TODO: would be far better to directly parse from
       // UTF8 bytes... but really users should use
@@ -192,6 +195,7 @@ public interface FieldCache {
 
   /** The default parser for float values, which are encoded by {@link Float#toString(float)} */
   public static final FloatParser DEFAULT_FLOAT_PARSER = new FloatParser() {
+    @Override
     public float parseFloat(BytesRef term) {
       // TODO: would be far better to directly parse from
       // UTF8 bytes... but really users should use
@@ -207,6 +211,7 @@ public interface FieldCache {
 
   /** The default parser for long values, which are encoded by {@link Long#toString(long)} */
   public static final LongParser DEFAULT_LONG_PARSER = new LongParser() {
+    @Override
     public long parseLong(BytesRef term) {
       // TODO: would be far better to directly parse from
       // UTF8 bytes... but really users should use
@@ -222,6 +227,7 @@ public interface FieldCache {
 
   /** The default parser for double values, which are encoded by {@link Double#toString(double)} */
   public static final DoubleParser DEFAULT_DOUBLE_PARSER = new DoubleParser() {
+    @Override
     public double parseDouble(BytesRef term) {
       // TODO: would be far better to directly parse from
       // UTF8 bytes... but really users should use
@@ -240,6 +246,7 @@ public interface FieldCache {
    * via {@link IntField}/{@link NumericTokenStream}.
    */
   public static final IntParser NUMERIC_UTILS_INT_PARSER=new IntParser(){
+    @Override
     public int parseInt(BytesRef term) {
       if (NumericUtils.getPrefixCodedIntShift(term) > 0)
         throw new StopFillCacheException();
@@ -256,6 +263,7 @@ public interface FieldCache {
    * via {@link FloatField}/{@link NumericTokenStream}.
    */
   public static final FloatParser NUMERIC_UTILS_FLOAT_PARSER=new FloatParser(){
+    @Override
     public float parseFloat(BytesRef term) {
       if (NumericUtils.getPrefixCodedIntShift(term) > 0)
         throw new StopFillCacheException();
@@ -272,6 +280,7 @@ public interface FieldCache {
    * via {@link LongField}/{@link NumericTokenStream}.
    */
   public static final LongParser NUMERIC_UTILS_LONG_PARSER = new LongParser(){
+    @Override
     public long parseLong(BytesRef term) {
       if (NumericUtils.getPrefixCodedLongShift(term) > 0)
         throw new StopFillCacheException();
@@ -288,6 +297,7 @@ public interface FieldCache {
    * via {@link DoubleField}/{@link NumericTokenStream}.
    */
   public static final DoubleParser NUMERIC_UTILS_DOUBLE_PARSER = new DoubleParser(){
+    @Override
     public double parseDouble(BytesRef term) {
       if (NumericUtils.getPrefixCodedLongShift(term) > 0)
         throw new StopFillCacheException();

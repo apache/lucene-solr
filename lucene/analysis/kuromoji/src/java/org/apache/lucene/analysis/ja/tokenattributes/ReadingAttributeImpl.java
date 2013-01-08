@@ -28,14 +28,17 @@ import org.apache.lucene.util.AttributeReflector;
 public class ReadingAttributeImpl extends AttributeImpl implements ReadingAttribute, Cloneable {
   private Token token;
   
+  @Override
   public String getReading() {
     return token == null ? null : token.getReading();
   }
   
+  @Override
   public String getPronunciation() {
     return token == null ? null : token.getPronunciation();
   }
   
+  @Override
   public void setToken(Token token) {
     this.token = token;
   }

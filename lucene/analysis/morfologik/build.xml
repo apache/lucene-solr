@@ -27,9 +27,7 @@
 
   <path id="classpath">
     <pathelement path="${analyzers-common.jar}"/>
-    <pathelement path="lib/morfologik-fsa-1.5.3.jar"/>
-    <pathelement path="lib/morfologik-polish-1.5.3.jar"/>
-    <pathelement path="lib/morfologik-stemming-1.5.3.jar"/>
+    <fileset dir="lib"/>
     <path refid="base.classpath"/>
   </path>
 

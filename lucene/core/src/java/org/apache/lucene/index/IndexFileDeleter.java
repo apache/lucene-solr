@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -69,7 +70,7 @@ import org.apache.lucene.util.InfoStream;
  * directly with no retry logic.
  */
 
-final class IndexFileDeleter {
+final class IndexFileDeleter implements Closeable {
 
   /* Files that we tried to delete but failed (likely
    * because they are open and we are running on Windows),
@@ -435,8 +436,9 @@ final class IndexFileDeleter {
     assert locked();
 
     assert Thread.holdsLock(writer);
-
+    long t0 = 0;
     if (infoStream.isEnabled("IFD")) {
+      t0 = System.nanoTime();
       infoStream.message("IFD", "now checkpoint \"" + writer.segString(writer.toLiveInfos(segmentInfos)) + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
     }
 
@@ -465,6 +467,10 @@ final class IndexFileDeleter {
 
       // Save files so we can decr on next checkpoint/commit:
       lastFiles.add(segmentInfos.files(directory, false));
+    }
+    if (infoStream.isEnabled("IFD")) {
+      long t1 = System.nanoTime();
+      infoStream.message("IFD", ((t1-t0)/1000000) + " msec to checkpoint");
     }
   }
 

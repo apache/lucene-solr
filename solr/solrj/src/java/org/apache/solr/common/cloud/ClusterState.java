@@ -50,8 +50,6 @@ public class ClusterState implements JSONWriter.Writable {
   private final Map<String, DocCollection> collectionStates;  // Map<collectionName, Map<sliceName,Slice>>
   private final Set<String> liveNodes;
 
-  private final Map<String,RangeInfo> rangeInfos = new HashMap<String,RangeInfo>();
-  
   /**
    * Use this constr when ClusterState is meant for publication.
    * 
@@ -72,12 +70,11 @@ public class ClusterState implements JSONWriter.Writable {
     this.liveNodes.addAll(liveNodes);
     this.collectionStates = new HashMap<String, DocCollection>(collectionStates.size());
     this.collectionStates.putAll(collectionStates);
-    addRangeInfos(collectionStates.keySet());
   }
 
 
   /**
-   * Get properties of a shard/slice leader for specific collection, or null if one currently doesn't exist.
+   * Get the lead replica for specific collection, or null if one currently doesn't exist.
    */
   public Replica getLeader(String collection, String sliceName) {
     DocCollection coll = collectionStates.get(collection);
@@ -88,7 +85,7 @@ public class ClusterState implements JSONWriter.Writable {
   }
   
   /**
-   * Get replica properties (if the slice is unknown) or null if replica is not found.
+   * Gets the replica by the core name (assuming the slice is unknown) or null if replica is not found.
    * If the slice is known, do not use this method.
    * coreNodeName is the same as replicaName
    */
@@ -105,14 +102,9 @@ public class ClusterState implements JSONWriter.Writable {
     return null;
   }
 
-  private void addRangeInfos(Set<String> collections) {
-    for (String collection : collections) {
-      addRangeInfo(collection);
-    }
-  }
 
   /**
-   * Get the Slice for collection.
+   * Get the named Slice for collection, or null if not found.
    */
   public Slice getSlice(String collection, String sliceName) {
     DocCollection coll = collectionStates.get(collection);
@@ -184,34 +176,6 @@ public class ClusterState implements JSONWriter.Writable {
   public boolean liveNodesContain(String name) {
     return liveNodes.contains(name);
   }
-  
-  public RangeInfo getRanges(String collection) {
-    // TODO: store this in zk
-    RangeInfo rangeInfo = rangeInfos.get(collection);
-
-    return rangeInfo;
-  }
-
-  private RangeInfo addRangeInfo(String collection) {
-    List<Range> ranges;
-    RangeInfo rangeInfo;
-    rangeInfo = new RangeInfo();
-
-    DocCollection coll = getCollection(collection);
-    
-    Set<String> shards = coll.getSlicesMap().keySet();
-    ArrayList<String> shardList = new ArrayList<String>(shards.size());
-    shardList.addAll(shards);
-    Collections.sort(shardList);
-    
-    ranges = DocRouter.DEFAULT.partitionRange(shards.size(), Integer.MIN_VALUE, Integer.MAX_VALUE);
-    
-    rangeInfo.ranges = ranges;
-    rangeInfo.shardList = shardList;
-    rangeInfos.put(collection, rangeInfo);
-    return rangeInfo;
-  }
-
 
   @Override
   public String toString() {
@@ -261,10 +225,21 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   private static DocCollection collectionFromObjects(String name, Map<String,Object> objs) {
-    Map<String,Object> props = (Map<String,Object>)objs.get(DocCollection.PROPERTIES);
-    if (props == null) props = Collections.emptyMap();
+    Map<String,Object> props;
+    Map<String,Slice> slices;
+
+    Map<String,Object> sliceObjs = (Map<String,Object>)objs.get(DocCollection.SHARDS);
+    if (sliceObjs == null) {
+      // legacy format from 4.0... there was no separate "shards" level to contain the collection shards.
+      slices = makeSlices(objs);
+      props = Collections.emptyMap();
+    } else {
+      slices = makeSlices(sliceObjs);
+      props = new HashMap<String, Object>(objs);
+      objs.remove(DocCollection.SHARDS);
+    }
+
     DocRouter router = DocRouter.getDocRouter(props.get(DocCollection.DOC_ROUTER));
-    Map<String,Slice> slices = makeSlices(objs);
     return new DocCollection(name, slices, props, router);
   }
 
@@ -273,15 +248,12 @@ public class ClusterState implements JSONWriter.Writable {
     Map<String,Slice> result = new LinkedHashMap<String, Slice>(genericSlices.size());
     for (Map.Entry<String,Object> entry : genericSlices.entrySet()) {
       String name = entry.getKey();
-      if (DocCollection.PROPERTIES.equals(name)) continue;  // skip special properties entry
       Object val = entry.getValue();
-      Slice s;
       if (val instanceof Slice) {
-        s = (Slice)val;
-      } else {
-        s = new Slice(name, null, (Map<String,Object>)val);
+        result.put(name, (Slice)val);
+      } else if (val instanceof Map) {
+        result.put(name, new Slice(name, null, (Map<String,Object>)val));
       }
-      result.put(name, s);
     }
     return result;
   }
@@ -289,11 +261,6 @@ public class ClusterState implements JSONWriter.Writable {
   @Override
   public void write(JSONWriter jsonWriter) {
     jsonWriter.write(collectionStates);
-  }
-  
-  private class RangeInfo {
-    private List<Range> ranges;
-    private ArrayList<String> shardList;
   }
 
   /**

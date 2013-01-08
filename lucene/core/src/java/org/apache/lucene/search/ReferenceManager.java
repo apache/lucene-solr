@@ -121,6 +121,7 @@ public abstract class ReferenceManager<G> implements Closeable {
     * @throws IOException
     *           if the underlying reader of the current reference could not be closed
    */
+  @Override
   public final synchronized void close() throws IOException {
     if (current != null) {
       // make sure we can call this more than once

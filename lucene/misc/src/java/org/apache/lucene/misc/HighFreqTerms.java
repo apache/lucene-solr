@@ -207,6 +207,7 @@ public class HighFreqTerms {
 
 final class TotalTermFreqComparatorSortDescending implements Comparator<TermStats> {
   
+  @Override
   public int compare(TermStats a, TermStats b) {
     if (a.totalTermFreq < b.totalTermFreq) {
       return 1;

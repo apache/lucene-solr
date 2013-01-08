@@ -54,6 +54,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -66,6 +67,7 @@ public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
   IndexWriterConfig iwConf;
   private RandomIndexWriter iw;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
@@ -75,6 +77,7 @@ public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
     iw = new RandomIndexWriter(random(), dir, iwConf);
   }
 
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
     IOUtils.close(iw, dir);
@@ -359,6 +362,47 @@ public class TestCompressingStoredFieldsFormat extends LuceneTestCase {
       }
     }
     rd.close();
+  }
+  
+  @Test(expected=IllegalArgumentException.class)
+  public void testDeletePartiallyWrittenFilesIfAbort() throws IOException {
+    // disable CFS because this test checks file names
+    iwConf.setMergePolicy(newLogMergePolicy(false));
+    iw.close();
+    iw = new RandomIndexWriter(random(), dir, iwConf);
+
+    final Document validDoc = new Document();
+    validDoc.add(new IntField("id", 0, Store.YES));
+    iw.addDocument(validDoc);
+    iw.commit();
+    
+    // make sure that #writeField will fail to trigger an abort
+    final Document invalidDoc = new Document();
+    FieldType fieldType = new FieldType();
+    fieldType.setStored(true);
+    invalidDoc.add(new Field("invalid", fieldType) {
+      
+      @Override
+      public String stringValue() {
+        return null;
+      }
+      
+    });
+    
+    try {
+      iw.addDocument(invalidDoc);
+      iw.commit();
+    }
+    finally {
+      int counter = 0;
+      for (String fileName : dir.listAll()) {
+        if (fileName.endsWith(".fdt") || fileName.endsWith(".fdx")) {
+          counter++;
+        }
+      }
+      // Only one .fdt and one .fdx files must have been found
+      assertEquals(2, counter);
+    }
   }
 
 }

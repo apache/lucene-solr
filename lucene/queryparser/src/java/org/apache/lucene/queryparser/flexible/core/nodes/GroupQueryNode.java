@@ -57,6 +57,7 @@ public class GroupQueryNode extends QueryNodeImpl {
     return "<group>" + "\n" + getChild().toString() + "\n</group>";
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     if (getChild() == null)
       return "";

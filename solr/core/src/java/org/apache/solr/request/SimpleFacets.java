@@ -386,6 +386,7 @@ public class SimpleFacets {
 
 
   static final Executor directExecutor = new Executor() {
+    @Override
     public void execute(Runnable r) {
       r.run();
     }
@@ -708,7 +709,7 @@ public class SimpleFacets {
             // TODO: specialize when base docset is a bitset or hash set (skipDocs)?  or does it matter for this?
             // TODO: do this per-segment for better efficiency (MultiDocsEnum just uses base class impl)
             // TODO: would passing deleted docs lead to better efficiency over checking the fastForRandomSet?
-            docsEnum = termsEnum.docs(null, docsEnum, 0);
+            docsEnum = termsEnum.docs(null, docsEnum, DocsEnum.FLAG_NONE);
             c=0;
 
             if (docsEnum instanceof MultiDocsEnum) {
@@ -1201,6 +1202,7 @@ public class SimpleFacets {
       CountPair<?,?> that = (CountPair<?,?>) o;
       return (this.key.equals(that.key) && this.val.equals(that.val));
     }
+    @Override
     public int compareTo(CountPair<K,V> o) {
       int vc = o.val.compareTo(val);
       return (0 != vc ? vc : key.compareTo(o.key));

@@ -158,6 +158,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
    * make it possible to do:
    * <pre class="prettyprint">for (BooleanClause clause : booleanQuery) {}</pre>
    */
+  @Override
   public final Iterator<BooleanClause> iterator() { return clauses().iterator(); }
 
   /**

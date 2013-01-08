@@ -34,6 +34,7 @@
     <module-directory>solr/core</module-directory>
     <top-level>../../../../..</top-level>
     <module-path>${top-level}/${module-directory}/src/test</module-path>
+    <surefire-solr-directory>${top-level}/../../solr</surefire-solr-directory>
   </properties>
   <dependencies>
     <dependency>
@@ -116,6 +117,15 @@
         <version>2.3.7</version>
         <configuration>
           <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <java.util.logging.config.file>${surefire-solr-directory}/testlogging.properties</java.util.logging.config.file>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
     </plugins>

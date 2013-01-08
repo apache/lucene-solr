@@ -3,6 +3,7 @@ package org.apache.lucene.facet.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.logging.Level;
@@ -62,8 +63,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
 
   private static final Logger logger = Logger.getLogger(StandardFacetsAccumulator.class.getName());
 
-  protected final IntArrayAllocator intArrayAllocator;
-  protected final FloatArrayAllocator floatArrayAllocator;
+  protected final FacetArrays facetArrays;
 
   protected int partitionSize;
   protected int maxPartitions;
@@ -74,31 +74,25 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
   private Object accumulateGuard;
 
   public StandardFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader,
-      TaxonomyReader taxonomyReader, IntArrayAllocator intArrayAllocator,
-      FloatArrayAllocator floatArrayAllocator) {
-    
+      TaxonomyReader taxonomyReader, FacetArrays facetArrays) {
     super(searchParams,indexReader,taxonomyReader);
-    int realPartitionSize = intArrayAllocator == null || floatArrayAllocator == null 
-              ? PartitionsUtils.partitionSize(searchParams, taxonomyReader) : -1; // -1 if not needed.
-    this.intArrayAllocator = intArrayAllocator != null 
-        ? intArrayAllocator
-        // create a default one if null was provided
-        : new IntArrayAllocator(realPartitionSize, 1);
-    this.floatArrayAllocator = floatArrayAllocator != null 
-        ? floatArrayAllocator
-        // create a default one if null provided
-        : new FloatArrayAllocator(realPartitionSize, 1);
+    
+    if (facetArrays == null) {
+      throw new IllegalArgumentException("facetArrays cannot be null");
+    }
+    
+    this.facetArrays = facetArrays;
     // can only be computed later when docids size is known
     isUsingComplements = false;
-    partitionSize = PartitionsUtils.partitionSize(searchParams, taxonomyReader);
+    partitionSize = PartitionsUtils.partitionSize(searchParams.getFacetIndexingParams(), taxonomyReader);
     maxPartitions = (int) Math.ceil(this.taxonomyReader.getSize() / (double) partitionSize);
     accumulateGuard = new Object();
   }
 
-  public StandardFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader,
-      TaxonomyReader taxonomyReader) {
-    
-    this(searchParams, indexReader, taxonomyReader, null, null);
+  public StandardFacetsAccumulator(FacetSearchParams searchParams,
+      IndexReader indexReader, TaxonomyReader taxonomyReader) {
+    this(searchParams, indexReader, taxonomyReader, new FacetArrays(
+        PartitionsUtils.partitionSize(searchParams.getFacetIndexingParams(), taxonomyReader)));
   }
 
   @Override
@@ -116,7 +110,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
         try {
           totalFacetCounts = TotalFacetCountsCache.getSingleton()
             .getTotalCounts(indexReader, taxonomyReader,
-                searchParams.getFacetIndexingParams(), searchParams.getClCache());
+                searchParams.getFacetIndexingParams(), searchParams.getCategoryListCache());
           if (totalFacetCounts != null) {
             docids = ScoredDocIdsUtils.getComplementSet(docids, indexReader);
           } else {
@@ -142,17 +136,11 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
           isUsingComplements = false;
         } catch (Exception e) {
           // give up: this should not happen!
-          IOException ioEx = new IOException(
-              "PANIC: Got unexpected exception while trying to get/calculate total counts: "
-              +e.getMessage());
-          ioEx.initCause(e);
-          throw ioEx;
+          throw new IOException("PANIC: Got unexpected exception while trying to get/calculate total counts", e);
         }
       }
 
       docids = actualDocsToAccumulate(docids);
-
-      FacetArrays facetArrays = new FacetArrays(intArrayAllocator, floatArrayAllocator);
 
       HashMap<FacetRequest, IntermediateFacetResult> fr2tmpRes = new HashMap<FacetRequest, IntermediateFacetResult>();
 
@@ -165,19 +153,21 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
           int offset = part * partitionSize;
 
           // for each partition we go over all requests and handle
-          // each, where
-          // the request maintains the merged result.
-          // In this implementation merges happen after each
-          // partition,
+          // each, where the request maintains the merged result.
+          // In this implementation merges happen after each partition,
           // but other impl could merge only at the end.
+          final HashSet<FacetRequest> handledRequests = new HashSet<FacetRequest>();
           for (FacetRequest fr : searchParams.getFacetRequests()) {
-            FacetResultsHandler frHndlr = fr.createFacetResultsHandler(taxonomyReader);
-            IntermediateFacetResult res4fr = frHndlr.fetchPartitionResult(facetArrays, offset);
-            IntermediateFacetResult oldRes = fr2tmpRes.get(fr);
-            if (oldRes != null) {
-              res4fr = frHndlr.mergeResults(oldRes, res4fr);
-            }
-            fr2tmpRes.put(fr, res4fr);
+            // Handle and merge only facet requests which were not already handled.  
+            if (handledRequests.add(fr)) {
+              FacetResultsHandler frHndlr = fr.createFacetResultsHandler(taxonomyReader);
+              IntermediateFacetResult res4fr = frHndlr.fetchPartitionResult(facetArrays, offset);
+              IntermediateFacetResult oldRes = fr2tmpRes.get(fr);
+              if (oldRes != null) {
+                res4fr = frHndlr.mergeResults(oldRes, res4fr);
+              }
+              fr2tmpRes.put(fr, res4fr);
+            } 
           }
         }
       } finally {
@@ -273,7 +263,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
     int[] intArray = facetArrays.getIntArray();
     totalFacetCounts.fillTotalCountsForPartition(intArray, partition);
     double totalCountsFactor = getTotalCountsFactor();
-    // fix total counts, but only if the effect of this would be meaningfull. 
+    // fix total counts, but only if the effect of this would be meaningful. 
     if (totalCountsFactor < 0.99999) {
       int delta = nAccumulatedDocs + 1;
       for (int i = 0; i < intArray.length; i++) {

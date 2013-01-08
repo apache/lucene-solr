@@ -41,7 +41,7 @@ import java.util.LinkedList;
  *
  * @lucene.experimental
  */
-public class SimpleNaiveBayesClassifier implements Classifier {
+public class SimpleNaiveBayesClassifier implements Classifier<BytesRef> {
 
   private AtomicReader atomicReader;
   private String textFieldName;
@@ -89,12 +89,12 @@ public class SimpleNaiveBayesClassifier implements Classifier {
    * {@inheritDoc}
    */
   @Override
-  public ClassificationResult assignClass(String inputDocument) throws IOException {
+  public ClassificationResult<BytesRef> assignClass(String inputDocument) throws IOException {
     if (atomicReader == null) {
       throw new RuntimeException("need to train the classifier first");
     }
     double max = 0d;
-    String foundClass = null;
+    BytesRef foundClass = new BytesRef();
 
     Terms terms = MultiFields.getTerms(atomicReader, classFieldName);
     TermsEnum termsEnum = terms.iterator(null);
@@ -105,10 +105,10 @@ public class SimpleNaiveBayesClassifier implements Classifier {
       double clVal = calculatePrior(next) * calculateLikelihood(tokenizedDoc, next);
       if (clVal > max) {
         max = clVal;
-        foundClass = next.utf8ToString();
+        foundClass = next.clone();
       }
     }
-    return new ClassificationResult(foundClass, max);
+    return new ClassificationResult<BytesRef>(foundClass, max);
   }
 
 

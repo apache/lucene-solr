@@ -17,15 +17,17 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -56,7 +58,9 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util._TestUtil;
@@ -999,11 +1003,33 @@ public class TestIndexWriter extends LuceneTestCase {
     volatile boolean finish;
 
     volatile boolean allowInterrupt = false;
+    final Random random;
+    final Directory adder;
+    
+    IndexerThreadInterrupt() throws IOException {
+      this.random = new Random(random().nextLong());
+      // make a little directory for addIndexes
+      // LUCENE-2239: won't work with NIOFS/MMAP
+      adder = new MockDirectoryWrapper(random, new RAMDirectory());
+      IndexWriterConfig conf = newIndexWriterConfig(random,
+          TEST_VERSION_CURRENT, new MockAnalyzer(random));
+      IndexWriter w = new IndexWriter(adder, conf);
+      Document doc = new Document();
+      doc.add(newStringField(random, "id", "500", Field.Store.NO));
+      doc.add(newField(random, "field", "some prepackaged text contents", storedTextType));
+      w.addDocument(doc);
+      doc = new Document();
+      doc.add(newStringField(random, "id", "501", Field.Store.NO));
+      doc.add(newField(random, "field", "some more contents", storedTextType));
+      w.addDocument(doc);
+      w.deleteDocuments(new Term("id", "500"));
+      w.close();
+    }
 
     @Override
     public void run() {
       // LUCENE-2239: won't work with NIOFS/MMAP
-      Directory dir = new MockDirectoryWrapper(random(), new RAMDirectory());
+      Directory dir = new MockDirectoryWrapper(random, new RAMDirectory());
       IndexWriter w = null;
       while(!finish) {
         try {
@@ -1013,16 +1039,43 @@ public class TestIndexWriter extends LuceneTestCase {
               w.close();
               w = null;
             }
-            IndexWriterConfig conf = newIndexWriterConfig(
-                                                          TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMaxBufferedDocs(2);
+            IndexWriterConfig conf = newIndexWriterConfig(random,
+                                                          TEST_VERSION_CURRENT, new MockAnalyzer(random)).setMaxBufferedDocs(2);
             w = new IndexWriter(dir, conf);
 
             Document doc = new Document();
-            doc.add(newField("field", "some text contents", storedTextType));
+            Field idField = newStringField(random, "id", "", Field.Store.NO);
+            doc.add(idField);
+            doc.add(newField(random, "field", "some text contents", storedTextType));
             for(int i=0;i<100;i++) {
-              w.addDocument(doc);
+              idField.setStringValue(Integer.toString(i));
+              int action = random.nextInt(100);
+              if (action == 17) {
+                w.addIndexes(adder);
+              } else if (action%30 == 0) {
+                w.deleteAll();
+              } else if (action%2 == 0) {
+                w.updateDocument(new Term("id", idField.stringValue()), doc);
+              } else {
+                w.addDocument(doc);
+              }
+              if (random.nextInt(3) == 0) {
+                IndexReader r = null;
+                try {
+                  r = DirectoryReader.open(w, random.nextBoolean());
+                  if (random.nextBoolean() && r.maxDoc() > 0) {
+                    int docid = random.nextInt(r.maxDoc());
+                    w.tryDeleteDocument(r, docid);
+                  }
+                } finally {
+                  IOUtils.closeWhileHandlingException(r);
+                }
+              }
               if (i%10 == 0) {
                 w.commit();
+              }
+              if (random.nextInt(50) == 0) {
+                w.forceMerge(1);
               }
             }
             w.close();
@@ -1041,10 +1094,12 @@ public class TestIndexWriter extends LuceneTestCase {
             allowInterrupt = true;
           }
         } catch (ThreadInterruptedException re) {
-          if (VERBOSE) {
-            System.out.println("TEST: got interrupt");
-            re.printStackTrace(System.out);
-          }
+          // NOTE: important to leave this verbosity/noise
+          // on!!  This test doesn't repro easily so when
+          // Jenkins hits a fail we need to study where the
+          // interrupts struck!
+          System.out.println("TEST: got interrupt");
+          re.printStackTrace(System.out);
           Throwable e = re.getCause();
           assertTrue(e instanceof InterruptedException);
           if (finish) {
@@ -1087,7 +1142,7 @@ public class TestIndexWriter extends LuceneTestCase {
         }
       }
       try {
-        dir.close();
+        IOUtils.close(dir, adder);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -1105,9 +1160,12 @@ public class TestIndexWriter extends LuceneTestCase {
     // init this class (in servicing a first interrupt):
     assertTrue(new ThreadInterruptedException(new InterruptedException()).getCause() instanceof InterruptedException);
 
-    // issue 100 interrupts to child thread
+    // issue 300 interrupts to child thread
+    final int numInterrupts = atLeast(300);
     int i = 0;
-    while(i < 100) {
+    while(i < numInterrupts) {
+      // TODO: would be nice to also sometimes interrupt the
+      // CMS merge threads too ...
       Thread.sleep(10);
       if (t.allowInterrupt) {
         i++;
@@ -1181,12 +1239,12 @@ public class TestIndexWriter extends LuceneTestCase {
 
 
     // test that the terms were indexed.
-    assertTrue(_TestUtil.docs(random(), ir, "binary", new BytesRef("doc1field1"), null, null, 0).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(_TestUtil.docs(random(), ir, "binary", new BytesRef("doc2field1"), null, null, 0).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(_TestUtil.docs(random(), ir, "binary", new BytesRef("doc3field1"), null, null, 0).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(_TestUtil.docs(random(), ir, "string", new BytesRef("doc1field2"), null, null, 0).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(_TestUtil.docs(random(), ir, "string", new BytesRef("doc2field2"), null, null, 0).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    assertTrue(_TestUtil.docs(random(), ir, "string", new BytesRef("doc3field2"), null, null, 0).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random(), ir, "binary", new BytesRef("doc1field1"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random(), ir, "binary", new BytesRef("doc2field1"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random(), ir, "binary", new BytesRef("doc3field1"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random(), ir, "string", new BytesRef("doc1field2"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random(), ir, "string", new BytesRef("doc2field2"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(_TestUtil.docs(random(), ir, "string", new BytesRef("doc3field2"), null, null, DocsEnum.FLAG_NONE).nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
 
     ir.close();
     dir.close();
@@ -1232,7 +1290,6 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random())));
-    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     writer.addDocument(new Document());
     writer.close();
 
@@ -1258,7 +1315,7 @@ public class TestIndexWriter extends LuceneTestCase {
     TermsEnum t = r.fields().terms("field").iterator(null);
     int count = 0;
     while(t.next() != null) {
-      final DocsEnum docs = _TestUtil.docs(random(), t, null, null, 0);
+      final DocsEnum docs = _TestUtil.docs(random(), t, null, null, DocsEnum.FLAG_NONE);
       assertEquals(0, docs.nextDoc());
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, docs.nextDoc());
       count++;
@@ -1995,6 +2052,94 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
     
     dir.close();
+  }
+  
+  public void testIterableThrowsException() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
+    int iters = atLeast(100);
+    int docCount = 0;
+    int docId = 0;
+    Set<String> liveIds = new HashSet<String>();
+    for (int i = 0; i < iters; i++) {
+      List<Document> docs = new ArrayList<Document>();
+      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
+      FieldType idFt = new FieldType(TextField.TYPE_STORED);
+      
+      int numDocs = atLeast(4);
+      for (int j = 0; j < numDocs; j++) {
+        Document doc = new Document();
+        doc.add(newField("id", ""+ (docId++), idFt));
+        doc.add(newField("foo", _TestUtil.randomSimpleString(random()), ft));
+        docs.add(doc);
+      }
+      boolean success = false;
+      try {
+        w.addDocuments(new RandomFailingFieldIterable(docs, random()));
+        success = true;
+      } catch (RuntimeException e) {
+        assertEquals("boom", e.getMessage());
+      } finally {
+        if (success) {
+          docCount += docs.size();
+          for (Document indexDocument : docs) {
+            liveIds.add(indexDocument.get("id"));  
+          }
+        }
+      }
+    }
+    DirectoryReader reader = w.getReader();
+    assertEquals(docCount, reader.numDocs());
+    List<AtomicReaderContext> leaves = reader.leaves();
+    for (AtomicReaderContext atomicReaderContext : leaves) {
+      AtomicReader ar = atomicReaderContext.reader();
+      Bits liveDocs = ar.getLiveDocs();
+      int maxDoc = ar.maxDoc();
+      for (int i = 0; i < maxDoc; i++) {
+        if (liveDocs == null || liveDocs.get(i)) {
+          assertTrue(liveIds.remove(ar.document(i).get("id")));
+        }
+      }
+    }
+    assertTrue(liveIds.isEmpty());
+    IOUtils.close(reader, w, dir);
+  }
+
+  private static class RandomFailingFieldIterable implements Iterable<IndexDocument> {
+    private final List<? extends IndexDocument> docList;
+    private final Random random;
+
+    public RandomFailingFieldIterable(List<? extends IndexDocument> docList, Random random) {
+      this.docList = docList;
+      this.random = random;
+    }
+    
+    @Override
+    public Iterator<IndexDocument> iterator() {
+      final Iterator<? extends IndexDocument> docIter = docList.iterator();
+      return new Iterator<IndexDocument>() {
+
+        @Override
+        public boolean hasNext() {
+          return docIter.hasNext();
+        }
+
+        @Override
+        public IndexDocument next() {
+          if (random.nextInt(5) == 0) {
+            throw new RuntimeException("boom");
+          }
+          return docIter.next();
+        }
+
+        @Override
+        public void remove() {throw new UnsupportedOperationException();}
+        
+        
+      };
+    }
+    
   }
   
 }

@@ -35,6 +35,7 @@
     <module-directory>solr/contrib/clustering</module-directory>
     <top-level>../../../..</top-level>
     <module-path>${top-level}/${module-directory}</module-path>
+    <surefire-solr-directory>${top-level}/../../solr</surefire-solr-directory>
   </properties>
   <scm>
     <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
@@ -106,6 +107,22 @@
           <groupId>org.carrot2</groupId>
           <artifactId>morfologik-stemming</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>jfree</groupId>
+          <artifactId>jcommon</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.apache.commons</groupId>
+          <artifactId>commons-math</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.uncommons.maths</groupId>
+          <artifactId>uncommons-maths</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>xpp3</groupId>
+          <artifactId>xpp3</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
   </dependencies>
@@ -123,5 +140,16 @@
         </includes>
       </testResource>
     </testResources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <java.util.logging.config.file>${surefire-solr-directory}/testlogging.properties</java.util.logging.config.file>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>

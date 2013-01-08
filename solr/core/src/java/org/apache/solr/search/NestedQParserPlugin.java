@@ -34,6 +34,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class NestedQParserPlugin extends QParserPlugin {
   public static String NAME = "query";
 
+  @Override
   public void init(NamedList args) {
   }
 

@@ -92,6 +92,7 @@ public class TestReaderClosed extends LuceneTestCase {
     }
   }
   
+  @Override
   public void tearDown() throws Exception {
     dir.close();
     super.tearDown();

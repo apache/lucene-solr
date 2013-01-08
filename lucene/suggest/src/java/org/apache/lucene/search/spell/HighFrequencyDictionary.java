@@ -55,6 +55,7 @@ public class HighFrequencyDictionary implements Dictionary {
     this.thresh = thresh;
   }
 
+  @Override
   public final BytesRefIterator getWordsIterator() throws IOException {
     return new HighFrequencyIterator();
   }
@@ -79,6 +80,7 @@ public class HighFrequencyDictionary implements Dictionary {
       return freq >= minNumDocs;
     }
     
+    @Override
     public long weight() {
       return freq;
     }

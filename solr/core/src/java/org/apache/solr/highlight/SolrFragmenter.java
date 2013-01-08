@@ -30,6 +30,7 @@ public interface SolrFragmenter extends SolrInfoMBean, NamedListInitializedPlugi
    * may be specified when declaring a request handler in
    * solrconfig.xml
    */
+  @Override
   public void init(NamedList args);
 
   /**

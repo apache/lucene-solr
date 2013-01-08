@@ -534,8 +534,10 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
   }
   
   static class KeepAllCommits implements IndexDeletionPolicy {
+    @Override
     public void onInit(List<? extends IndexCommit> commits) {
     }
+    @Override
     public void onCommit(List<? extends IndexCommit> commits) {
     }
   }

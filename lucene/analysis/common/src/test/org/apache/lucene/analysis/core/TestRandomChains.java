@@ -46,7 +46,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.CharFilter;
-import org.apache.lucene.analysis.EmptyTokenizer;
 import org.apache.lucene.analysis.MockGraphTokenFilter;
 import org.apache.lucene.analysis.MockRandomLookaheadTokenFilter;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -110,8 +109,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
     // TODO: can we promote some of these to be only
     // offsets offenders?
     Collections.<Class<?>>addAll(brokenComponents,
-      // TODO: fix basetokenstreamtestcase not to trip because this one has no CharTermAtt
-      EmptyTokenizer.class,
       // doesn't actual reset itself!
       CachingTokenFilter.class,
       // doesn't consume whole stream!

@@ -178,6 +178,7 @@ class DocumentsWriterFlushQueue {
     protected GlobalDeletesTicket(FrozenBufferedDeletes frozenDeletes) {
       super(frozenDeletes);
     }
+    @Override
     protected void publish(DocumentsWriter writer) throws IOException {
       assert !published : "ticket was already publised - can not publish twice";
       published = true;
@@ -185,6 +186,7 @@ class DocumentsWriterFlushQueue {
       writer.finishFlush(null, frozenDeletes);
     }
 
+    @Override
     protected boolean canPublish() {
       return true;
     }
@@ -198,6 +200,7 @@ class DocumentsWriterFlushQueue {
       super(frozenDeletes);
     }
     
+    @Override
     protected void publish(DocumentsWriter writer) throws IOException {
       assert !published : "ticket was already publised - can not publish twice";
       published = true;
@@ -214,6 +217,7 @@ class DocumentsWriterFlushQueue {
       failed = true;
     }
 
+    @Override
     protected boolean canPublish() {
       return segment != null || failed;
     }

@@ -106,14 +106,14 @@
   </condition>
   <property name="tests.heapsize" value="512M"/>
   
-  <condition property="tests.clover.args" value="-XX:ReservedCodeCacheSize=128m">
+  <condition property="tests.clover.args" value="-XX:ReservedCodeCacheSize=128m -XX:MaxPermSize=192m">
     <isset property="run.clover"/>
   </condition>
   <property name="tests.clover.args" value=""/>
 
   <property name="tests.heapdump.args" value=""/>
 
-  <property name="tests.tempDir" location="${build.dir}/test"/>
+  <property name="tests.workDir" location="${build.dir}/test"/>
 
   <property name="tests.cachefile" location="${common.dir}/tools/junit4/cached-timehints.txt" />
   <property name="tests.cachefilehistory" value="20" />
@@ -177,7 +177,6 @@
   <property name="build.dir" location="build"/>
   <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
   <property name="common.build.dir" location="${common.dir}/build"/>
-  <property name="tests.lockdir" location="${common.build.dir}"/>
   <property name="dist.dir" location="${common.dir}/dist"/>
   <property name="maven.dist.dir" location="${dist.dir}/maven"/>
   <makeurl file="${maven.dist.dir}" property="m2.repository.url" validate="false"/>
@@ -475,6 +474,10 @@
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-7"/>
       <parent-poms/>
       <artifact:pom id="maven.project" file="@{pom.xml}"/>
+      <artifact:install file="@{jar.file}">
+        <artifact-attachments/>
+        <pom refid="maven.project"/>
+      </artifact:install>
       <artifact:deploy file="@{jar.file}">
         <artifact-attachments/>
         <remoteRepository id="${m2.repository.id}" url="${m2.repository.url}">
@@ -757,7 +760,7 @@
     <attribute name="junit.output.dir" default="${junit.output.dir}"/>
     <attribute name="junit.classpath" default="junit.classpath"/>
     <attribute name="testsDir" default="${build.dir}/classes/test"/>
-    <attribute name="tempDir" default="${tests.tempDir}"/>
+    <attribute name="workDir" default="${tests.workDir}"/>
     <attribute name="threadNum" default="1"/>
     <attribute name="tests.nightly" default="${tests.nightly}"/>
     <attribute name="tests.weekly" default="${tests.weekly}"/>
@@ -814,9 +817,12 @@
             -->
         </junit4:pickfromlist>
         
+        <!-- junit4 does not create this directory. TODO: is this a bug / inconsistency with dir="..."? -->
+        <mkdir dir="@{workDir}/temp" />
+        
         <junit4:junit4
-            dir="@{tempDir}"
-            tempdir="@{tempDir}"
+            dir="@{workDir}"
+            tempdir="@{workDir}/temp"
             maxmemory="${tests.heapsize}" 
             
             parallelism="@{threadNum}"
@@ -854,8 +860,6 @@
             <sysproperty key="tests.verbose" value="${tests.verbose}"/>
             <!-- even more debugging -->
             <sysproperty key="tests.infostream" value="${tests.infostream}"/>
-            <!-- directory for formatter lock -->
-            <sysproperty key="tests.lockdir" value="${tests.lockdir}"/>
             <!-- set the codec tests should run with -->
             <sysproperty key="tests.codec" value="${tests.codec}"/>
             <!-- set the postingsformat tests should run with -->
@@ -892,10 +896,10 @@
             <sysproperty key="java.io.tmpdir" value="." />
 
             <!-- Restrict access to certain Java features and install security manager: -->
-            <sysproperty key="tests.sandbox.dir" value="${build.dir}" />
-            <sysproperty key="clover.db.dir" value="${clover.db.dir}" />
+            <sysproperty key="junit4.tempDir" file="@{workDir}/temp" />
+            <sysproperty key="clover.db.dir" file="${clover.db.dir}" />
             <sysproperty key="java.security.manager" value="org.apache.lucene.util.TestSecurityManager" />
-            <sysproperty key="java.security.policy" value="${common.dir}/tools/junit4/tests.policy" />
+            <sysproperty key="java.security.policy" file="${common.dir}/tools/junit4/tests.policy" />
 
             <sysproperty key="lucene.version" value="${dev.version}"/>
 
@@ -912,6 +916,7 @@
                 <propertyref prefix="tests.failfast" />
                 <propertyref prefix="tests.badapples" />
                 <propertyref prefix="tests.timeoutSuite" />
+                <propertyref prefix="tests.jettyConnector" />
             </syspropertyset>
 
             <!-- Pass randomized settings to the forked JVM. -->
@@ -1344,10 +1349,11 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </m2-deploy>
     </sequential>
   </target>
-
-  <target name="-validate-maven-dependencies">
+  
+  <target name="-validate-maven-dependencies.init">
+    <!-- find the correct pom.xml path and assigns it to property pom.xml -->
     <property name="top.level.dir" location="${common.dir}/.."/>
-    <pathconvert property="pom.xml">
+    <pathconvert property="maven.pom.xml">
       <mapper>
         <chainedmapper>
           <globmapper from="${top.level.dir}*" to="${filtered.pom.templates.dir}*"/>
@@ -1356,9 +1362,23 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
       </mapper>
       <path location="${ant.file}"/>
     </pathconvert>
-    <m2-validate-dependencies pom.xml="${pom.xml}" licenseDirectory="${license.dir}">
+    
+    <!-- convert ${version} to be a glob pattern, so snapshot versions are allowed: -->
+    <loadresource property="maven.version.glob">
+      <propertyresource name="version"/>
+      <filterchain>
+        <tokenfilter>
+          <filetokenizer/>
+          <replacestring from="-SNAPSHOT" to="-*"/>
+        </tokenfilter>
+      </filterchain>
+    </loadresource>
+  </target>
+  
+  <target name="-validate-maven-dependencies" depends="-validate-maven-dependencies.init">
+    <m2-validate-dependencies pom.xml="${maven.pom.xml}" licenseDirectory="${license.dir}">
       <excludes>
-        <rsel:name name="**/lucene-*.jar" handledirsep="true"/>
+        <rsel:name name="**/lucene-*-${maven.version.glob}.jar" handledirsep="true"/>
       </excludes>
     </m2-validate-dependencies>
   </target>
@@ -2039,7 +2059,7 @@ The following arguments can be provided to ant to alter its behaviour and target
 
         <junit4:pickseed property="pitest.seed" />
 
-        <property name="pitest.sysprops" value="-Dlucene.version=${dev.version},-Dtest.seed=${pitest.seed},-Djava.security.manager,-Djava.security.policy=${common.dir}/tools/junit4/tests.policy,-Djava.io.tmpdir=${tests.tempDir},-Dtests.sandbox.dir=${build.dir}" />
+        <property name="pitest.sysprops" value="-Dlucene.version=${dev.version},-Dtest.seed=${pitest.seed},-Djava.security.manager=org.apache.lucene.util.TestSecurityManager,-Djava.security.policy=${common.dir}/tools/junit4/tests.policy,-Djava.io.tmpdir=${tests.workDir},-Djunit4.childvm.cwd=${tests.workDir},-Djunit4.tempDir=${tests.workDir}" />
 
         <pitest
             classPath="pitest.classpath"

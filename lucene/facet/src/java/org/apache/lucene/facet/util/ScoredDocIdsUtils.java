@@ -118,6 +118,7 @@ public class ScoredDocIdsUtils {
 
     return new ScoredDocIDs() {
 
+      @Override
       public DocIdSet getDocIDs() {
         return new DocIdSet() {
 
@@ -155,19 +156,24 @@ public class ScoredDocIdsUtils {
         };
       }
 
+      @Override
       public ScoredDocIDsIterator iterator() {
         return new ScoredDocIDsIterator() {
 
           int next = -1;
 
+          @Override
           public boolean next() { return ++next < size; }
 
+          @Override
           public float getScore() { return scores[next]; }
 
+          @Override
           public int getDocID() { return docids[next]; }
         };
       }
 
+      @Override
       public int size() { return size; }
 
     };
@@ -191,11 +197,14 @@ public class ScoredDocIdsUtils {
   public static final ScoredDocIDs createScoredDocIds(final DocIdSet docIdSet, final int maxDoc) {
     return new ScoredDocIDs() {
       private int size = -1;
+      @Override
       public DocIdSet getDocIDs() { return docIdSet; }
 
+      @Override
       public ScoredDocIDsIterator iterator() throws IOException {
         final DocIdSetIterator docIterator = docIdSet.iterator();
         return new ScoredDocIDsIterator() {
+          @Override
           public boolean next() {
             try {
               return docIterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
@@ -204,12 +213,15 @@ public class ScoredDocIdsUtils {
             }
           }
 
+          @Override
           public float getScore() { return DEFAULT_SCORE; }
 
+          @Override
           public int getDocID() { return docIterator.docID(); }
         };
       }
 
+      @Override
       public int size() {
         // lazy size computation
         if (size < 0) {
@@ -238,10 +250,12 @@ public class ScoredDocIdsUtils {
       this.maxDoc = reader.maxDoc();
     }
 
+    @Override
     public int size() {  
       return maxDoc;
     }
 
+    @Override
     public DocIdSet getDocIDs() {
       return new DocIdSet() {
 
@@ -279,10 +293,12 @@ public class ScoredDocIdsUtils {
       };
     }
 
+    @Override
     public ScoredDocIDsIterator iterator() {
       try {
         final DocIdSetIterator iter = getDocIDs().iterator();
         return new ScoredDocIDsIterator() {
+          @Override
           public boolean next() {
             try {
               return iter.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
@@ -292,10 +308,12 @@ public class ScoredDocIdsUtils {
             }
           }
 
+          @Override
           public float getScore() {
             return DEFAULT_SCORE;
           }
 
+          @Override
           public int getDocID() {
             return iter.docID();
           }
@@ -324,10 +342,12 @@ public class ScoredDocIdsUtils {
       this.reader = reader;
     }
 
+    @Override
     public int size() {
       return reader.numDocs();
     }
 
+    @Override
     public DocIdSet getDocIDs() {
       return new DocIdSet() {
 
@@ -369,10 +389,12 @@ public class ScoredDocIdsUtils {
       };
     }
 
+    @Override
     public ScoredDocIDsIterator iterator() {
       try {
         final DocIdSetIterator iter = getDocIDs().iterator();
         return new ScoredDocIDsIterator() {
+          @Override
           public boolean next() {
             try {
               return iter.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
@@ -382,10 +404,12 @@ public class ScoredDocIdsUtils {
             }
           }
 
+          @Override
           public float getScore() {
             return DEFAULT_SCORE;
           }
 
+          @Override
           public int getDocID() {
             return iter.docID();
           }

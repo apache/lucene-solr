@@ -266,6 +266,7 @@ public class Field implements IndexableField, StorableField {
    * binary value is used. Exactly one of stringValue(), readerValue(), and
    * getBinaryValue() must be set.
    */
+  @Override
   public String stringValue() {
     if (fieldsData instanceof String || fieldsData instanceof Number) {
       return fieldsData.toString();
@@ -279,6 +280,7 @@ public class Field implements IndexableField, StorableField {
    * binary value is used. Exactly one of stringValue(), readerValue(), and
    * getBinaryValue() must be set.
    */
+  @Override
   public Reader readerValue() {
     return fieldsData instanceof Reader ? (Reader) fieldsData : null;
   }
@@ -345,7 +347,7 @@ public class Field implements IndexableField, StorableField {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to BytesRef");
     }
     if (type.indexed()) {
-      throw new IllegalArgumentException("cannot set a Reader value on an indexed field");
+      throw new IllegalArgumentException("cannot set a BytesRef value on an indexed field");
     }
     fieldsData = value;
   }
@@ -431,6 +433,7 @@ public class Field implements IndexableField, StorableField {
     this.tokenStream = tokenStream;
   }
   
+  @Override
   public String name() {
     return name;
   }
@@ -441,6 +444,7 @@ public class Field implements IndexableField, StorableField {
    * The default value is <code>1.0f</code> (no boost).
    * @see #setBoost(float)
    */
+  @Override
   public float boost() {
     return boost;
   }
@@ -460,6 +464,7 @@ public class Field implements IndexableField, StorableField {
     this.boost = boost;
   }
 
+  @Override
   public Number numericValue() {
     if (fieldsData instanceof Number) {
       return (Number) fieldsData;
@@ -468,6 +473,7 @@ public class Field implements IndexableField, StorableField {
     }
   }
 
+  @Override
   public BytesRef binaryValue() {
     if (fieldsData instanceof BytesRef) {
       return (BytesRef) fieldsData;
@@ -494,10 +500,12 @@ public class Field implements IndexableField, StorableField {
   }
   
   /** Returns the {@link FieldType} for this field. */
+  @Override
   public FieldType fieldType() {
     return type;
   }
 
+  @Override
   public TokenStream tokenStream(Analyzer analyzer) throws IOException {
     if (!fieldType().indexed()) {
       return null;

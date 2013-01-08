@@ -54,6 +54,7 @@ public class RawResponseWriter implements BinaryQueryResponseWriter
   public static final String CONTENT = "content";
   private String _baseWriter = null;
   
+  @Override
   public void init(NamedList n) {
     if( n != null ) {
       Object base = n.get( "base" );
@@ -69,6 +70,7 @@ public class RawResponseWriter implements BinaryQueryResponseWriter
     return request.getCore().getQueryResponseWriter( _baseWriter );
   }
   
+  @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     Object obj = response.getValues().get( CONTENT );
     if( obj != null && (obj instanceof ContentStream ) ) {
@@ -77,6 +79,7 @@ public class RawResponseWriter implements BinaryQueryResponseWriter
     return getBaseWriter( request ).getContentType( request, response );
   }
 
+  @Override
   public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException 
   {
     Object obj = response.getValues().get( CONTENT );
@@ -95,6 +98,7 @@ public class RawResponseWriter implements BinaryQueryResponseWriter
     }
   }
 
+@Override
 public void write(OutputStream out, SolrQueryRequest request,
     SolrQueryResponse response) throws IOException {
     Object obj = response.getValues().get( CONTENT );

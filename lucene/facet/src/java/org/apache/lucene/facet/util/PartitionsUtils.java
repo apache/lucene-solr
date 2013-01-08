@@ -2,7 +2,6 @@ package org.apache.lucene.facet.util;
 
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
@@ -33,19 +32,9 @@ public final class PartitionsUtils {
    * Get the offset for a given partition.  That is, what is the minimum number an
    * ordinal could be for a particular partition. 
    */
-  public final static int partitionOffset (  FacetIndexingParams iParams, 
-                        int partitionNumber, 
-                        final TaxonomyReader taxonomyReader) {
+  public final static int partitionOffset(FacetIndexingParams iParams,
+      int partitionNumber, final TaxonomyReader taxonomyReader) {
     return partitionNumber * partitionSize(iParams, taxonomyReader);
-  }
-
-  /**
-   * @see #partitionOffset(FacetIndexingParams, int, TaxonomyReader)
-   */
-  public final static int partitionOffset (  FacetSearchParams sParams, 
-                        int partitionNumber, 
-                        final TaxonomyReader taxonomyReader) {
-    return partitionOffset(sParams.getFacetIndexingParams(), partitionNumber, taxonomyReader);
   }
 
   /**
@@ -54,13 +43,6 @@ public final class PartitionsUtils {
    */
   public final static int partitionSize(FacetIndexingParams indexingParams, final TaxonomyReader taxonomyReader) {
     return Math.min(indexingParams.getPartitionSize(), taxonomyReader.getSize());
-  }
-
-  /**
-   * @see #partitionSize(FacetIndexingParams, TaxonomyReader)
-   */
-  public final static int partitionSize(FacetSearchParams sParams, final TaxonomyReader taxonomyReader) {
-    return partitionSize(sParams.getFacetIndexingParams(), taxonomyReader);
   }
 
   /**
@@ -74,19 +56,11 @@ public final class PartitionsUtils {
   }
 
   /**
-   * @see #partitionNumber(FacetIndexingParams, int)
-   */
-  public final static int partitionNumber(FacetSearchParams sParams, int ordinal) {
-    return partitionNumber(sParams.getFacetIndexingParams(), ordinal);
-  }
-
-  /**
    * Partition name by category ordinal
    */
-  public final static String partitionNameByOrdinal(  FacetIndexingParams iParams, 
-                            CategoryListParams clParams, 
-                            int ordinal) {
-    int partition = partitionNumber(iParams, ordinal); 
+  public final static String partitionNameByOrdinal(
+      FacetIndexingParams iParams, CategoryListParams clParams, int ordinal) {
+    int partition = partitionNumber(iParams, ordinal);
     return partitionName(clParams, partition);
   }
 

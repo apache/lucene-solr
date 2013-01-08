@@ -145,6 +145,7 @@ public class MutableFacetResultNode implements FacetResultNode {
    * org.apache.lucene.facet.search.results2.FacetResultNode#toString(java.lang.
    * String)
    */
+  @Override
   public String toString(String prefix) {
     StringBuilder sb = new StringBuilder(prefix);
     
@@ -171,10 +172,12 @@ public class MutableFacetResultNode implements FacetResultNode {
     return sb.toString();
   }
   
+  @Override
   public final int getOrdinal() {
     return ordinal;
   }
   
+  @Override
   public final CategoryPath getLabel() {
     return label;
   }
@@ -188,6 +191,7 @@ public class MutableFacetResultNode implements FacetResultNode {
     this.label = label;
   }
   
+  @Override
   public final double getValue() {
     return value;
   }
@@ -199,6 +203,7 @@ public class MutableFacetResultNode implements FacetResultNode {
    *          the value to set
    * @see #getValue()
    */
+  @Override
   public void setValue(double value) {
     this.value = value;
   }
@@ -212,6 +217,7 @@ public class MutableFacetResultNode implements FacetResultNode {
     this.value += addedValue;
   }
   
+  @Override
   public final double getResidue() {
     return residue;
   }
@@ -234,6 +240,7 @@ public class MutableFacetResultNode implements FacetResultNode {
     this.residue += addedResidue;
   }
   
+  @Override
   public final Iterable<? extends FacetResultNode> getSubResults() {
     return subResults != null ? subResults : EMPTY_SUB_RESULTS;
   }
@@ -308,6 +315,7 @@ public class MutableFacetResultNode implements FacetResultNode {
    * org.apache.lucene.facet.search.results.FacetResultNode#getLabel(org.apache.lucene
    * .facet.taxonomy.TaxonomyReader)
    */
+  @Override
   public final CategoryPath getLabel(TaxonomyReader taxonomyReader)
       throws IOException {
     if (label == null) {
@@ -321,6 +329,7 @@ public class MutableFacetResultNode implements FacetResultNode {
    * 
    * @see org.apache.lucene.facet.search.results.FacetResultNode#getNumSubResults()
    */
+  @Override
   public final int getNumSubResults() {
     return subResults == null ? 0 : subResults.size();
   }

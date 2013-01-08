@@ -34,6 +34,7 @@ import org.apache.solr.response.PythonResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RubyResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.SolrReturnFields;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -105,7 +106,7 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
     JSONResponseWriter w = new JSONResponseWriter();
 
-    ReturnFields returnFields = new ReturnFields(req);
+    ReturnFields returnFields = new SolrReturnFields(req);
     rsp.setReturnFields(returnFields);
 
     StringWriter buf = new StringWriter();

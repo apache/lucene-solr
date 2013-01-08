@@ -89,6 +89,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void accumulate(NamedList stv) {
     count += (Long) stv.get("count");
     missing += (Long) stv.get("missing");
@@ -124,6 +125,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void accumulate(BytesRef value) {
     count++;
     T typedValue = (T)ft.toObject(sf, value);
@@ -134,6 +136,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void accumulate(BytesRef value, int count) {
     this.count += count;
     T typedValue = (T)ft.toObject(sf, value);
@@ -144,6 +147,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void missing() {
     missing++;
   }
@@ -151,6 +155,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void addMissing(int count) {
     missing += count;
   }
@@ -158,6 +163,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void addFacet(String facetName, Map<String, StatsValues> facetValues) {
     facets.put(facetName, facetValues);
   }
@@ -165,6 +171,7 @@ abstract class AbstractStatsValues<T> implements StatsValues {
   /**
    * {@inheritDoc}
    */
+  @Override
   public NamedList<?> getStatsValues() {
     NamedList<Object> res = new SimpleOrderedMap<Object>();
 
@@ -242,6 +249,7 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void updateTypeSpecificStats(NamedList stv) {
     sum += ((Number)stv.get("sum")).doubleValue();
     sumOfSquares += ((Number)stv.get("sumOfSquares")).doubleValue();
@@ -250,6 +258,7 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void updateTypeSpecificStats(Number v) {
     double value = v.doubleValue();
     sumOfSquares += (value * value); // for std deviation
@@ -259,6 +268,7 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void updateTypeSpecificStats(Number v, int count) {
     double value = v.doubleValue();
     sumOfSquares += (value * value * count); // for std deviation
@@ -268,6 +278,7 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
    /**
    * {@inheritDoc}
    */
+  @Override
   protected void updateMinMax(Number min, Number max) {
     this.min = Math.min(this.min.doubleValue(), min.doubleValue());
     this.max = Math.max(this.max.doubleValue(), max.doubleValue());
@@ -278,6 +289,7 @@ class NumericStatsValues extends AbstractStatsValues<Number> {
    *
    * @param res NamedList to add the type specific statistics too
    */
+  @Override
   protected void addTypeSpecificStats(NamedList<Object> res) {
     res.add("sum", sum);
     res.add("sumOfSquares", sumOfSquares);
@@ -314,6 +326,7 @@ class DateStatsValues extends AbstractStatsValues<Date> {
   /**
    * {@inheritDoc}
    */
+  @Override
   protected void updateTypeSpecificStats(NamedList stv) {
     sum += ((Date) stv.get("sum")).getTime();
     sumOfSquares += ((Number)stv.get("sumOfSquares")).doubleValue();
@@ -342,6 +355,7 @@ class DateStatsValues extends AbstractStatsValues<Date> {
    /**
    * {@inheritDoc}
    */
+  @Override
   protected void updateMinMax(Date min, Date max) {
     if(this.min==null || this.min.after(min)) {
       this.min = min;
@@ -356,6 +370,7 @@ class DateStatsValues extends AbstractStatsValues<Date> {
    *
    * @param res NamedList to add the type specific statistics too
    */
+  @Override
   protected void addTypeSpecificStats(NamedList<Object> res) {
     if(sum<=0) {
       return; // date==0 is meaningless
@@ -395,6 +410,7 @@ class StringStatsValues extends AbstractStatsValues<String> {
   /**
    * {@inheritDoc}
    */
+  @Override
   protected void updateTypeSpecificStats(NamedList stv) {
     // No type specific stats
   }
@@ -402,6 +418,7 @@ class StringStatsValues extends AbstractStatsValues<String> {
   /**
    * {@inheritDoc}
    */
+  @Override
   protected void updateTypeSpecificStats(String value) {
     // No type specific stats
   }
@@ -409,6 +426,7 @@ class StringStatsValues extends AbstractStatsValues<String> {
   /**
    * {@inheritDoc}
    */
+  @Override
   protected void updateTypeSpecificStats(String value, int count) {
     // No type specific stats
   }
@@ -416,6 +434,7 @@ class StringStatsValues extends AbstractStatsValues<String> {
    /**
    * {@inheritDoc}
    */
+  @Override
   protected void updateMinMax(String min, String max) {
     this.max = max(this.max, max);
     this.min = min(this.min, min);
@@ -424,6 +443,7 @@ class StringStatsValues extends AbstractStatsValues<String> {
   /**
    * Adds no type specific statistics
    */
+  @Override
   protected void addTypeSpecificStats(NamedList<Object> res) {
     // Add no statistics
   }

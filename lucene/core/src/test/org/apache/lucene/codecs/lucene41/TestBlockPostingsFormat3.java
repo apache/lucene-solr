@@ -332,17 +332,17 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
                                 rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions, DocsAndPositionsEnum.FLAG_OFFSETS));
         
         // with positions only
-        assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.docsAndPositions(null, leftPositions, 0),
-                                   rightPositions = rightTermsEnum.docsAndPositions(null, rightPositions, 0));
-        assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.docsAndPositions(randomBits, leftPositions, 0),
-                                   rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions, 0));
+        assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.docsAndPositions(null, leftPositions, DocsEnum.FLAG_NONE),
+                                   rightPositions = rightTermsEnum.docsAndPositions(null, rightPositions, DocsEnum.FLAG_NONE));
+        assertDocsAndPositionsEnum(leftPositions = leftTermsEnum.docsAndPositions(randomBits, leftPositions, DocsEnum.FLAG_NONE),
+                                   rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions, DocsEnum.FLAG_NONE));
 
         assertPositionsSkipping(leftTermsEnum.docFreq(), 
-                                leftPositions = leftTermsEnum.docsAndPositions(null, leftPositions, 0),
-                                rightPositions = rightTermsEnum.docsAndPositions(null, rightPositions, 0));
+                                leftPositions = leftTermsEnum.docsAndPositions(null, leftPositions, DocsEnum.FLAG_NONE),
+                                rightPositions = rightTermsEnum.docsAndPositions(null, rightPositions, DocsEnum.FLAG_NONE));
         assertPositionsSkipping(leftTermsEnum.docFreq(), 
-                                leftPositions = leftTermsEnum.docsAndPositions(randomBits, leftPositions, 0),
-                                rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions, 0));
+                                leftPositions = leftTermsEnum.docsAndPositions(randomBits, leftPositions, DocsEnum.FLAG_NONE),
+                                rightPositions = rightTermsEnum.docsAndPositions(randomBits, rightPositions, DocsEnum.FLAG_NONE));
         
         // with freqs:
         assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs),
@@ -351,10 +351,10 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
             rightDocs = rightTermsEnum.docs(randomBits, rightDocs));
 
         // w/o freqs:
-        assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(null, rightDocs, 0));
-        assertDocsEnum(leftDocs = leftTermsEnum.docs(randomBits, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, 0));
+        assertDocsEnum(leftDocs = leftTermsEnum.docs(null, leftDocs, DocsEnum.FLAG_NONE),
+            rightDocs = rightTermsEnum.docs(null, rightDocs, DocsEnum.FLAG_NONE));
+        assertDocsEnum(leftDocs = leftTermsEnum.docs(randomBits, leftDocs, DocsEnum.FLAG_NONE),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, DocsEnum.FLAG_NONE));
         
         // with freqs:
         assertDocsSkipping(leftTermsEnum.docFreq(), 
@@ -366,11 +366,11 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
 
         // w/o freqs:
         assertDocsSkipping(leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.docs(null, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(null, rightDocs, 0));
+            leftDocs = leftTermsEnum.docs(null, leftDocs, DocsEnum.FLAG_NONE),
+            rightDocs = rightTermsEnum.docs(null, rightDocs, DocsEnum.FLAG_NONE));
         assertDocsSkipping(leftTermsEnum.docFreq(), 
-            leftDocs = leftTermsEnum.docs(randomBits, leftDocs, 0),
-            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, 0));
+            leftDocs = leftTermsEnum.docs(randomBits, leftDocs, DocsEnum.FLAG_NONE),
+            rightDocs = rightTermsEnum.docs(randomBits, rightDocs, DocsEnum.FLAG_NONE));
       }
     }
     assertNull(rightTermsEnum.next());

@@ -21,8 +21,10 @@ import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.http.client.HttpClient;
+import org.apache.lucene.util.LuceneTestCase.BadApple;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+
+import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
@@ -34,12 +36,11 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
-@Ignore("ignore while investigating jenkins fails")
+@BadApple
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
   public static Logger log = LoggerFactory.getLogger(ChaosMonkeyNothingIsSafeTest.class);
   
@@ -60,6 +61,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     // can help to hide this when testing and looking at logs
     //ignoreException("shard update error");
     System.setProperty("numShards", Integer.toString(sliceCount));
+    useFactory("solr.StandardDirectoryFactory");
   }
   
   @Override
@@ -72,8 +74,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   
   public ChaosMonkeyNothingIsSafeTest() {
     super();
-    sliceCount = 1;
-    shardCount = 7;
+    sliceCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.slicecount", "2"));
+    shardCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.shardcount", "7"));
   }
   
   @Override
@@ -86,7 +88,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
       // make sure we have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
-        zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard" + j, 10000);
+        zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
       }      // make sure we again have leaders for each shard
       
       waitForRecoveriesToFinish(false);
@@ -140,12 +142,13 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         indexThread.join();
       }
       
-       // we expect full throttle fails, but not cloud client...
-       for (StopableThread indexThread : threads) {
-         if (indexThread instanceof StopableIndexingThread && !(indexThread instanceof FullThrottleStopableIndexingThread)) {
-           //assertEquals(0, ((StopableIndexingThread) indexThread).getFails());
-         }
-       }
+       // we expect full throttle fails, but cloud client should not easily fail
+       // but it's allowed to fail and sometimes does, so commented out for now
+//       for (StopableThread indexThread : threads) {
+//         if (indexThread instanceof StopableIndexingThread && !(indexThread instanceof FullThrottleStopableIndexingThread)) {
+//           assertEquals(0, ((StopableIndexingThread) indexThread).getFails());
+//         }
+//       }
       
       // try and wait for any replications and what not to finish...
       
@@ -156,7 +159,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       
       // make sure we again have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
-        zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard" + j, 10000);
+        zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
       }
       
       commit();
@@ -204,9 +207,12 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       setName("FullThrottleStopableIndexingThread");
       setDaemon(true);
       this.clients = clients;
+      HttpClientUtil.setConnectionTimeout(httpClient, 15000);
+      HttpClientUtil.setSoTimeout(httpClient, 15000);
       suss = new ConcurrentUpdateSolrServer(
           ((HttpSolrServer) clients.get(0)).getBaseURL(), httpClient, 8,
           2) {
+        @Override
         public void handleError(Throwable ex) {
           log.warn("suss error", ex);
         }
@@ -275,6 +281,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
         suss = new ConcurrentUpdateSolrServer(
             ((HttpSolrServer) clients.get(clientIndex)).getBaseURL(),
             httpClient, 30, 3) {
+          @Override
           public void handleError(Throwable ex) {
             log.warn("suss error", ex);
           }
@@ -282,12 +289,14 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       }
     }
     
+    @Override
     public void safeStop() {
       stop = true;
       suss.shutdownNow();
       httpClient.getConnectionManager().shutdown();
     }
 
+    @Override
     public int getFails() {
       return fails.get();
     }
@@ -296,6 +305,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   
   
   // skip the randoms - they can deadlock...
+  @Override
   protected void indexr(Object... fields) throws Exception {
     SolrInputDocument doc = getDoc(fields);
     indexDoc(doc);

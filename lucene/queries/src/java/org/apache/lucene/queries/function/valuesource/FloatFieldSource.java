@@ -49,6 +49,7 @@ public class FloatFieldSource extends FieldCacheSource {
     this.parser = parser;
   }
 
+  @Override
   public String description() {
     return "float(" + field + ')';
   }
@@ -95,6 +96,7 @@ public class FloatFieldSource extends FieldCacheSource {
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o.getClass() !=  FloatFieldSource.class) return false;
     FloatFieldSource other = (FloatFieldSource)o;
@@ -103,6 +105,7 @@ public class FloatFieldSource extends FieldCacheSource {
           this.parser.getClass() == other.parser.getClass());
   }
 
+  @Override
   public int hashCode() {
     int h = parser==null ? Float.class.hashCode() : parser.getClass().hashCode();
     h += super.hashCode();

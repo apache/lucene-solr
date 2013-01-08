@@ -1,10 +1,8 @@
 package org.apache.lucene.facet.example.association;
 
-import org.apache.lucene.facet.enhancements.association.AssociationEnhancement;
-import org.apache.lucene.facet.enhancements.association.AssociationFloatProperty;
-import org.apache.lucene.facet.enhancements.association.AssociationIntProperty;
-import org.apache.lucene.facet.enhancements.association.AssociationProperty;
-import org.apache.lucene.facet.enhancements.params.DefaultEnhancementsIndexingParams;
+import org.apache.lucene.facet.associations.CategoryAssociation;
+import org.apache.lucene.facet.associations.CategoryFloatAssociation;
+import org.apache.lucene.facet.associations.CategoryIntAssociation;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 
 /*
@@ -47,33 +45,26 @@ public class AssociationUtils {
     }
   };
 
-  public static AssociationProperty[][] associations = {
+  public static CategoryAssociation[][] associations = {
     // Doc #1 associations
     {
       /* 3 occurrences for tag 'lucene' */
-      new AssociationIntProperty(3), 
+      new CategoryIntAssociation(3), 
       /* 87% confidence level of genre 'computing' */
-      new AssociationFloatProperty(0.87f)
+      new CategoryFloatAssociation(0.87f)
     },
     
     // Doc #2 associations
     {
       /* 1 occurrence for tag 'lucene' */
-      new AssociationIntProperty(1),
+      new CategoryIntAssociation(1),
       /* 2 occurrences for tag 'solr' */
-      new AssociationIntProperty(2),
+      new CategoryIntAssociation(2),
       /* 75% confidence level of genre 'computing' */
-      new AssociationFloatProperty(0.75f),
+      new CategoryFloatAssociation(0.75f),
       /* 34% confidence level of genre 'software' */
-      new AssociationFloatProperty(0.34f),
+      new CategoryFloatAssociation(0.34f),
     }
   };
-
-  /**
-   * Indexing Params: the indexing params to use when dealing with
-   * associations.
-   */
-  public static final DefaultEnhancementsIndexingParams assocIndexingParams = 
-    new DefaultEnhancementsIndexingParams(new AssociationEnhancement());
 
 }

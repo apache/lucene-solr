@@ -31,16 +31,17 @@ import java.util.regex.Pattern;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * <p/> Provides functionality equivalent to the snapshooter script </p>
+ * This is no longer used in standard replication.
  *
  *
  * @since solr 1.4
@@ -79,7 +80,7 @@ public class SnapShooter {
   }
 
   void createSnapshot(final IndexCommit indexCommit, int numberToKeep, ReplicationHandler replicationHandler) {
-
+    LOG.info("Creating backup snapshot...");
     NamedList<Object> details = new NamedList<Object>();
     details.add("startTime", new Date().toString());
     File snapShotDir = null;
@@ -101,7 +102,7 @@ public class SnapShooter {
       Collection<String> files = indexCommit.getFileNames();
       FileCopier fileCopier = new FileCopier();
       
-      Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), solrCore.getSolrConfig().indexConfig.lockType);
+      Directory dir = solrCore.getDirectoryFactory().get(solrCore.getNewIndexDir(), solrCore.getSolrConfig().indexConfig.lockType);
       try {
         fileCopier.copyFiles(dir, files, snapShotDir);
       } finally {
@@ -163,6 +164,7 @@ public class SnapShooter {
         }
       }
     }
+    @Override
     public int compareTo(OldBackupDirectory that) {
       return that.timestamp.compareTo(this.timestamp);
     }
@@ -200,7 +202,7 @@ public class SnapShooter {
         throw new IOException(message);
       }
 
-      sourceDir.copy(destDir, indexFile, indexFile, IOContext.DEFAULT);
+      sourceDir.copy(destDir, indexFile, indexFile, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
   }
   

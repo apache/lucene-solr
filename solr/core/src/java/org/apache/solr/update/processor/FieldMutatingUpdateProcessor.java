@@ -133,6 +133,7 @@ public abstract class FieldMutatingUpdateProcessor
   /** Singleton indicating all fields should be mutated */
   public static final FieldNameSelector SELECT_ALL_FIELDS 
     = new FieldNameSelector() {
+        @Override
         public boolean shouldMutate(final String fieldName) {
           return true;
         }
@@ -141,6 +142,7 @@ public abstract class FieldMutatingUpdateProcessor
   /** Singleton indicating no fields should be mutated */
   public static final FieldNameSelector SELECT_NO_FIELDS 
     = new FieldNameSelector() {
+        @Override
         public boolean shouldMutate(final String fieldName) {
           return false;
         }
@@ -170,6 +172,7 @@ public abstract class FieldMutatingUpdateProcessor
     
     if (SELECT_ALL_FIELDS == includes) {
       return new FieldNameSelector() {
+        @Override
         public boolean shouldMutate(final String fieldName) {
           return ! excludes.shouldMutate(fieldName);
         }
@@ -177,6 +180,7 @@ public abstract class FieldMutatingUpdateProcessor
     }
 
     return new FieldNameSelector() {
+      @Override
       public boolean shouldMutate(final String fieldName) {
         return (includes.shouldMutate(fieldName)
                 && ! excludes.shouldMutate(fieldName));
@@ -244,6 +248,7 @@ public abstract class FieldMutatingUpdateProcessor
       this.regexes = regexes;
     }
 
+    @Override
     public boolean shouldMutate(final String fieldName) {
       
       // order of checks is bsaed on what should be quicker 

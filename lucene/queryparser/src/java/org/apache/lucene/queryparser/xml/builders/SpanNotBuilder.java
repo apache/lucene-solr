@@ -33,6 +33,7 @@ public class SpanNotBuilder extends SpanBuilderBase {
     this.factory = factory;
   }
 
+  @Override
   public SpanQuery getSpanQuery(Element e) throws ParserException {
     Element includeElem = DOMUtils.getChildByTagOrFail(e, "Include");
     includeElem = DOMUtils.getFirstChildOrFail(includeElem);

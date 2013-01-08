@@ -15,6 +15,18 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.facet.index.params.CategoryListParams;
+import org.apache.lucene.facet.index.params.FacetIndexingParams;
+import org.apache.lucene.facet.search.params.FacetRequest;
+import org.apache.lucene.facet.search.params.FacetSearchParams;
+import org.apache.lucene.facet.search.results.FacetResult;
+import org.apache.lucene.facet.search.results.FacetResultNode;
+import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -28,24 +40,10 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
-
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
-import org.apache.lucene.facet.index.params.CategoryListParams;
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -184,29 +182,28 @@ public abstract class FacetTestBase extends LuceneTestCase {
 
   /** Returns a default facet indexing params */
   protected FacetIndexingParams getFacetIndexingParams(final int partSize) {
-    return new DefaultFacetIndexingParams() {
+    return new FacetIndexingParams() {
       @Override
-      protected int fixedPartitionSize() {
+      public int getPartitionSize() {
         return partSize;
       }
     };
   }
   
   /**
-   * Faceted Search Params for the test.
-   * Sub classes should override in order to test with different faceted search params.
+   * Faceted Search Params for the test. Sub classes should override in order to
+   * test with different faceted search params.
    */
-  protected FacetSearchParams getFacetedSearchParams() {
-    return getFacetedSearchParams(Integer.MAX_VALUE);
+  protected FacetSearchParams getFacetSearchParams(FacetIndexingParams iParams, FacetRequest... facetRequests) {
+    return new FacetSearchParams(Arrays.asList(facetRequests), iParams);
   }
 
   /**
-   * Faceted Search Params with specified partition size.
-   * @see #getFacetedSearchParams()
+   * Faceted Search Params for the test. Sub classes should override in order to
+   * test with different faceted search params.
    */
-  protected FacetSearchParams getFacetedSearchParams(int partitionSize) {
-    FacetSearchParams res = new FacetSearchParams(getFacetIndexingParams(partitionSize));
-    return res; 
+  protected FacetSearchParams getFacetSearchParams(List<FacetRequest> facetRequests, FacetIndexingParams iParams) {
+    return new FacetSearchParams(facetRequests, iParams);
   }
 
   /**
@@ -258,9 +255,8 @@ public abstract class FacetTestBase extends LuceneTestCase {
   protected final void indexDoc(FacetIndexingParams iParams, RandomIndexWriter iw,
       TaxonomyWriter tw, String content, List<CategoryPath> categories) throws IOException {
     Document d = new Document();
-    CategoryDocumentBuilder builder = new CategoryDocumentBuilder(tw, iParams);
-    builder.setCategoryPaths(categories);
-    builder.build(d);
+    FacetFields facetFields = new FacetFields(tw, iParams);
+    facetFields.addFields(d, categories);
     d.add(new TextField("content", content, Field.Store.YES));
     iw.addDocument(d);
   }
@@ -284,7 +280,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
       TermsEnum te = terms.iterator(null);
       DocsEnum de = null;
       while (te.next() != null) {
-        de = _TestUtil.docs(random(), te, liveDocs, de, 0);
+        de = _TestUtil.docs(random(), te, liveDocs, de, DocsEnum.FLAG_NONE);
         int cnt = 0;
         while (de.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           cnt++;

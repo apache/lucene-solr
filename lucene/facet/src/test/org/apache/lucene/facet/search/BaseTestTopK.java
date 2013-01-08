@@ -1,6 +1,7 @@
 package org.apache.lucene.facet.search;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -12,6 +13,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.facet.FacetTestBase;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
+import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -97,12 +99,12 @@ public abstract class BaseTestTopK extends FacetTestBase {
   }
   
   protected FacetSearchParams searchParamsWithRequests(int numResults, int partitionSize) {
-    FacetSearchParams res = getFacetedSearchParams(partitionSize);
-    res.addFacetRequest(new CountFacetRequest(new CategoryPath("a"), numResults));
-    res.addFacetRequest(new CountFacetRequest(new CategoryPath("a", "1"), numResults));
-    res.addFacetRequest(new CountFacetRequest(new CategoryPath("a", "1", "10"), numResults));
-    res.addFacetRequest(new CountFacetRequest(new CategoryPath("a", "2",  "26", "267"), numResults));
-    return res;
+    List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
+    facetRequests.add(new CountFacetRequest(new CategoryPath("a"), numResults));
+    facetRequests.add(new CountFacetRequest(new CategoryPath("a", "1"), numResults));
+    facetRequests.add(new CountFacetRequest(new CategoryPath("a", "1", "10"), numResults));
+    facetRequests.add(new CountFacetRequest(new CategoryPath("a", "2",  "26", "267"), numResults));
+    return getFacetSearchParams(facetRequests, getFacetIndexingParams(partitionSize));
   }
 
   @Override

@@ -43,6 +43,7 @@ class PrefixCodedTerms implements Iterable<Term> {
   }
   
   /** @return iterator over the bytes */
+  @Override
   public Iterator<Term> iterator() {
     return new PrefixCodedTermsIterator();
   }
@@ -61,10 +62,12 @@ class PrefixCodedTerms implements Iterable<Term> {
       }
     }
 
+    @Override
     public boolean hasNext() {
       return input.getFilePointer() < input.length();
     }
     
+    @Override
     public Term next() {
       assert hasNext();
       try {
@@ -85,6 +88,7 @@ class PrefixCodedTerms implements Iterable<Term> {
       }
     }
     
+    @Override
     public void remove() {
       throw new UnsupportedOperationException();
     }

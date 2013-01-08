@@ -36,6 +36,7 @@ import java.util.List;
 public class LuceneQParserPlugin extends QParserPlugin {
   public static String NAME = "lucene";
 
+  @Override
   public void init(NamedList args) {
   }
 

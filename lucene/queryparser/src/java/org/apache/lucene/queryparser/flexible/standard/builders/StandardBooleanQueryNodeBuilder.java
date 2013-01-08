@@ -49,6 +49,7 @@ public class StandardBooleanQueryNodeBuilder implements StandardQueryBuilder {
     // empty constructor
   }
 
+  @Override
   public BooleanQuery build(QueryNode queryNode) throws QueryNodeException {
     StandardBooleanQueryNode booleanNode = (StandardBooleanQueryNode) queryNode;
 

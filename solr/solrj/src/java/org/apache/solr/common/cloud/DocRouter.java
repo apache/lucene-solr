@@ -85,6 +85,7 @@ public abstract class DocRouter {
       return includes(other.min) || includes(other.max) || isSubsetOf(other);
     }
 
+    @Override
     public String toString() {
       return Integer.toHexString(min) + '-' + Integer.toHexString(max);
     }
@@ -123,18 +124,17 @@ public abstract class DocRouter {
     return new Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
   }
 
-  public List<Range> partitionRange(int partitions, Range range) {
-    return partitionRange(partitions, range.min, range.max);
-  }
-
   /**
    * Returns the range for each partition
    */
-  public List<Range> partitionRange(int partitions, int min, int max) {
+  public List<Range> partitionRange(int partitions, Range range) {
+    int min = range.min;
+    int max = range.max;
+
     assert max >= min;
     if (partitions == 0) return Collections.EMPTY_LIST;
-    long range = (long)max - (long)min;
-    long srange = Math.max(1, range / partitions);
+    long rangeSize = (long)max - (long)min;
+    long rangeStep = Math.max(1, rangeSize / partitions);
 
     List<Range> ranges = new ArrayList<Range>(partitions);
 
@@ -142,7 +142,7 @@ public abstract class DocRouter {
     long end = start;
 
     while (end < max) {
-      end = start + srange;
+      end = start + rangeStep;
       // make last range always end exactly on MAX_VALUE
       if (ranges.size() == partitions - 1) {
         end = max;

@@ -87,6 +87,7 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
   private void assertNumSegments(String indexDir, int numSegs) {
     File file = new File(indexDir);
     File[] segs = file.listFiles(new FileFilter() {
+      @Override
       public boolean accept(File file) {
         return file.getName().endsWith("cfs");
       }

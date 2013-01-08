@@ -109,6 +109,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private final SolrCache[] cacheList;
   private static final SolrCache[] noCaches = new SolrCache[0];
   
+  private final FieldInfos fieldInfos;
+  // TODO: do we need this separate set of field names? we can just use the fieldinfos?
   private final Collection<String> fieldNames;
   private Collection<String> storedHighlightFieldNames;
   private DirectoryFactory directoryFactory;
@@ -199,7 +201,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     optimizer = null;
     
     fieldNames = new HashSet<String>();
-    for(FieldInfo fieldInfo : atomicReader.getFieldInfos()) {
+    fieldInfos = atomicReader.getFieldInfos();
+    for(FieldInfo fieldInfo : fieldInfos) {
       fieldNames.add(fieldInfo.name);
     }
 
@@ -252,6 +255,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    *
    * In particular, the underlying reader and any cache's in use are closed.
    */
+  @Override
   public void close() throws IOException {
     if (debug) {
       if (cachingEnabled) {
@@ -331,6 +335,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     if (solrConfig.fieldValueCacheConfig != null && solrConfig.fieldValueCacheConfig.getRegenerator() == null) {
       solrConfig.fieldValueCacheConfig.setRegenerator(
               new CacheRegenerator() {
+                @Override
                 public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache, Object oldKey, Object oldVal) throws IOException {
                   if (oldVal instanceof UnInvertedField) {
                     UnInvertedField.getUnInvertedField((String)oldKey, newSearcher);
@@ -344,6 +349,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     if (solrConfig.filterCacheConfig != null && solrConfig.filterCacheConfig.getRegenerator() == null) {
       solrConfig.filterCacheConfig.setRegenerator(
               new CacheRegenerator() {
+                @Override
                 public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache, Object oldKey, Object oldVal) throws IOException {
                   newSearcher.cacheDocSet((Query)oldKey, null, false);
                   return true;
@@ -356,6 +362,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       final int queryResultWindowSize = solrConfig.queryResultWindowSize;
       solrConfig.queryResultCacheConfig.setRegenerator(
               new CacheRegenerator() {
+                @Override
                 public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache, Object oldKey, Object oldVal) throws IOException {
                   QueryResultKey key = (QueryResultKey)oldKey;
                   int nDocs=1;
@@ -438,6 +445,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       lazyDoc = new LazyDocument(reader, docID);
     }
 
+    @Override
     public Status needsField(FieldInfo fieldInfo) {
       if (fieldsToLoad.contains(fieldInfo.name)) {
         return Status.YES;
@@ -504,21 +512,65 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   }
 
   /** Visit a document's fields using a {@link StoredFieldVisitor}
-   *  This method does not currently use the Solr document cache.
+   *  This method does not currently add to the Solr document cache.
    * 
    * @see IndexReader#document(int, StoredFieldVisitor) */
   @Override
   public void doc(int n, StoredFieldVisitor visitor) throws IOException {
+    if (documentCache != null) {
+      StoredDocument cached = documentCache.get(n);
+      if (cached != null) {
+        visitFromCached(cached, visitor);
+        return;
+      }
+    }
     getIndexReader().document(n, visitor);
+  }
+  
+  /** Executes a stored field visitor against a hit from the document cache */
+  private void visitFromCached(StoredDocument document, StoredFieldVisitor visitor) throws IOException {
+    for (StorableField f : document) {
+      FieldInfo info = fieldInfos.fieldInfo(f.name());
+      switch(visitor.needsField(info)) {
+        case YES:
+          if (f.binaryValue() != null) {
+            BytesRef binaryValue = f.binaryValue();
+            byte copy[] = new byte[binaryValue.length];
+            System.arraycopy(binaryValue.bytes, binaryValue.offset, copy, 0, copy.length);
+            visitor.binaryField(info, copy);
+          } else if (f.numericValue() != null) {
+            Number numericValue = f.numericValue();
+            if (numericValue instanceof Double) {
+              visitor.doubleField(info, numericValue.doubleValue());
+            } else if (numericValue instanceof Integer) {
+              visitor.intField(info, numericValue.intValue());
+            } else if (numericValue instanceof Float) {
+              visitor.floatField(info, numericValue.floatValue());
+            } else if (numericValue instanceof Long) {
+              visitor.longField(info, numericValue.longValue());
+            } else {
+              throw new AssertionError();
+            }
+          } else {
+            visitor.stringField(info, f.stringValue());
+          }
+          break;
+        case NO:
+          break;
+        case STOP:
+          return;
+      }
+    }
   }
 
   /**
    * Retrieve the {@link Document} instance corresponding to the document id.
-   *
-   * Note: The document will have all fields accessable, but if a field
+   * <p>
+   * Note: The document will have all fields accessible, but if a field
    * filter is provided, only the provided fields will be loaded (the 
    * remainder will be available lazily).
    */
+  @Override
   public StoredDocument doc(int i, Set<String> fields) throws IOException {
     
     StoredDocument d;
@@ -594,7 +646,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     if (!termsEnum.seekExact(termBytes, false)) {
       return -1;
     }
-    DocsEnum docs = termsEnum.docs(atomicReader.getLiveDocs(), null, 0);
+    DocsEnum docs = termsEnum.docs(atomicReader.getLiveDocs(), null, DocsEnum.FLAG_NONE);
     if (docs == null) return -1;
     int id = docs.nextDoc();
     return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
@@ -616,7 +668,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       
       TermsEnum te = terms.iterator(null);
       if (te.seekExact(idBytes, true)) {
-        DocsEnum docs = te.docs(reader.getLiveDocs(), null, 0);
+        DocsEnum docs = te.docs(reader.getLiveDocs(), null, DocsEnum.FLAG_NONE);
         int id = docs.nextDoc();
         if (id == DocIdSetIterator.NO_MORE_DOCS) continue;
         assert docs.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;
@@ -920,7 +972,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     int bitsSet = 0;
     OpenBitSet obs = null;
 
-    DocsEnum docsEnum = deState.termsEnum.docs(deState.liveDocs, deState.docsEnum, 0);
+    DocsEnum docsEnum = deState.termsEnum.docs(deState.liveDocs, deState.docsEnum, DocsEnum.FLAG_NONE);
     if (deState.docsEnum == null) {
       deState.docsEnum = docsEnum;
     }
@@ -998,7 +1050,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
           if (terms != null) {
             final TermsEnum termsEnum = terms.iterator(null);
             if (termsEnum.seekExact(termBytes, false)) {
-              docsEnum = termsEnum.docs(liveDocs, null, 0);
+              docsEnum = termsEnum.docs(liveDocs, null, DocsEnum.FLAG_NONE);
             }
           }
 
@@ -1953,36 +2005,44 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   // SolrInfoMBean stuff: Statistics and Module Info
   /////////////////////////////////////////////////////////////////////
 
+  @Override
   public String getName() {
     return SolrIndexSearcher.class.getName();
   }
 
+  @Override
   public String getVersion() {
     return SolrCore.version;
   }
 
+  @Override
   public String getDescription() {
     return "index searcher";
   }
 
+  @Override
   public Category getCategory() {
     return Category.CORE;
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public URL[] getDocs() {
     return null;
   }
 
+  @Override
   public NamedList<Object> getStatistics() {
     NamedList<Object> lst = new SimpleOrderedMap<Object>();
     lst.add("searcherName", name);
     lst.add("caching", cachingEnabled);
     lst.add("numDocs", reader.numDocs());
     lst.add("maxDoc", reader.maxDoc());
+    lst.add("deletedDocs", reader.maxDoc() - reader.numDocs());
     lst.add("reader", reader.toString());
     lst.add("readerDir", reader.directory());
     lst.add("indexVersion", reader.getVersion());

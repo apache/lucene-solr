@@ -123,14 +123,17 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
       super(groupSort, topNGroups, groupField, diskResident, type);
     }
 
+    @Override
     protected Long getDocGroupValue(int doc) {
       return source.getInt(doc);
     }
 
+    @Override
     protected Long copyDocGroupValue(Long groupValue, Long reuse) {
       return groupValue;
     }
 
+    @Override
     protected void setDocValuesSources(DocValues.Source source) {
       this.source = source;
     }
@@ -144,14 +147,17 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
       super(groupSort, topNGroups, groupField, diskResident, type);
     }
 
+    @Override
     protected Double getDocGroupValue(int doc) {
       return source.getFloat(doc);
     }
 
+    @Override
     protected Double copyDocGroupValue(Double groupValue, Double reuse) {
       return groupValue;
     }
 
+    @Override
     protected void setDocValuesSources(DocValues.Source source) {
       this.source = source;
     }
@@ -166,10 +172,12 @@ public abstract class DVFirstPassGroupingCollector<GROUP_VALUE_TYPE> extends Abs
       super(groupSort, topNGroups, groupField, diskResident, type);
     }
 
+    @Override
     protected BytesRef getDocGroupValue(int doc) {
       return source.getBytes(doc, spare);
     }
 
+    @Override
     protected BytesRef copyDocGroupValue(BytesRef groupValue, BytesRef reuse) {
       if (reuse != null) {
         reuse.copyBytes(groupValue);

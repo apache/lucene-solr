@@ -107,6 +107,7 @@ public abstract class ContentItemsSource implements Closeable {
   }
 
   /** Called when reading from this content source is no longer required. */
+  @Override
   public abstract void close() throws IOException;
   
   /** Returns the number of bytes generated since last reset. */

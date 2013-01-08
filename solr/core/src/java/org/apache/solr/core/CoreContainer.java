@@ -41,8 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -78,7 +77,6 @@ import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.jul.JulWatcher;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.SolrCoreState;
-import org.apache.solr.util.AdjustableSemaphore;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
@@ -114,18 +112,19 @@ public class CoreContainer
   private static final String CORE_CONFIG = "config";
   private static final String CORE_INSTDIR = "instanceDir";
   private static final String CORE_DATADIR = "dataDir";
+  private static final String CORE_ULOGDIR = "ulogDir";
   private static final String CORE_SCHEMA = "schema";
   private static final String CORE_SHARD = "shard";
   private static final String CORE_COLLECTION = "collection";
   private static final String CORE_ROLES = "roles";
   private static final String CORE_PROPERTIES = "properties";
   private static final String CORE_LOADONSTARTUP = "loadOnStartup";
-  private static final String CORE_SWAPPABLE = "swappable";
+  private static final String CORE_TRANSIENT = "transient";
 
 
   protected final Map<String, SolrCore> cores = new LinkedHashMap<String, SolrCore>(); // For "permanent" cores
 
-  protected Map<String, SolrCore> swappableCores = new LinkedHashMap<String, SolrCore>(); // For "lazily loaded" cores
+  protected Map<String, SolrCore> transientCores = new LinkedHashMap<String, SolrCore>(); // For "lazily loaded" cores
 
   protected final Map<String, CoreDescriptor> dynamicDescriptors = new LinkedHashMap<String, CoreDescriptor>();
 
@@ -159,7 +158,9 @@ public class CoreContainer
   private String zkHost;
   private Map<SolrCore,String> coreToOrigName = new ConcurrentHashMap<SolrCore,String>();
   private String leaderVoteWait = LEADER_VOTE_WAIT;
-  protected int swappableCacheSize = Integer.MAX_VALUE; // Use as a flag too, if swappableCacheSize set in solr.xml this will be changed
+  private int distribUpdateConnTimeout = 0;
+  private int distribUpdateSoTimeout = 0;
+  protected int transientCacheSize = Integer.MAX_VALUE; // Use as a flag too, if transientCacheSize set in solr.xml this will be changed
   private int coreLoadThreads;
   
   {
@@ -242,20 +243,30 @@ public class CoreContainer
         } else {
           log.info("Zookeeper client=" + zookeeperHost);          
         }
-        zkController = new ZkController(this, zookeeperHost, zkClientTimeout, zkClientConnectTimeout, host, hostPort, hostContext, leaderVoteWait, new CurrentCoreDescriptorProvider() {
-          
-          @Override
-          public List<CoreDescriptor> getCurrentDescriptors() {
-            List<CoreDescriptor> descriptors = new ArrayList<CoreDescriptor>(getCoreNames().size());
-            for (SolrCore core : getCores()) {
-              descriptors.add(core.getCoreDescriptor());
-            }
-            return descriptors;
-          }
-        });        
-
         String confDir = System.getProperty("bootstrap_confdir");
-        boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");
+        boolean boostrapConf = Boolean.getBoolean("bootstrap_conf");  
+        
+        if(!ZkController.checkChrootPath(zookeeperHost, (confDir!=null) || boostrapConf)) {
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "A chroot was specified in ZkHost but the znode doesn't exist. ");
+        }
+        
+        zkController = new ZkController(this, zookeeperHost, zkClientTimeout,
+            zkClientConnectTimeout, host, hostPort, hostContext,
+            leaderVoteWait, distribUpdateConnTimeout, distribUpdateSoTimeout,
+            new CurrentCoreDescriptorProvider() {
+              
+              @Override
+              public List<CoreDescriptor> getCurrentDescriptors() {
+                List<CoreDescriptor> descriptors = new ArrayList<CoreDescriptor>(
+                    getCoreNames().size());
+                for (SolrCore core : getCores()) {
+                  descriptors.add(core.getCoreDescriptor());
+                }
+                return descriptors;
+              }
+            });
+        
         
         if (zkRun != null && zkServer.getServers().size() > 1 && confDir == null && boostrapConf == false) {
           // we are part of an ensemble and we are not uploading the config - pause to give the config time
@@ -360,14 +371,14 @@ public class CoreContainer
     return p;
   }
 
-  // Trivial helper method for load, note it implements LRU on swappable cores
+  // Trivial helper method for load, note it implements LRU on transient cores
   private void allocateLazyCores(Config cfg) {
-    swappableCacheSize = cfg.getInt("solr/cores/@swappableCacheSize", Integer.MAX_VALUE);
-    if (swappableCacheSize != Integer.MAX_VALUE) {
-      swappableCores = new LinkedHashMap<String, SolrCore>(swappableCacheSize, 0.75f, true) {
+    transientCacheSize = cfg.getInt("solr/cores/@transientCacheSize", Integer.MAX_VALUE);
+    if (transientCacheSize != Integer.MAX_VALUE) {
+      transientCores = new LinkedHashMap<String, SolrCore>(transientCacheSize, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry<String, SolrCore> eldest) {
-          if (size() > swappableCacheSize) {
+          if (size() > transientCacheSize) {
             eldest.getValue().close();
             return true;
           }
@@ -421,6 +432,8 @@ public class CoreContainer
     // now.
     cfg.substituteProperties();
     
+    initShardHandler(cfg);
+    
     allocateLazyCores(cfg);
     
     // Initialize Logging
@@ -446,6 +459,9 @@ public class CoreContainer
       if (fname != null) {
         if ("JUL".equalsIgnoreCase(fname)) {
           logging = new JulWatcher(slf4jImpl);
+//      else if( "Log4j".equals(fname) ) {
+//        logging = new Log4jWatcher(slf4jImpl);
+//      }
         } else {
           try {
             logging = loader.newInstance(fname, LogWatcher.class);
@@ -479,6 +495,9 @@ public class CoreContainer
     shareSchema = cfg.getBool("solr/cores/@shareSchema", DEFAULT_SHARE_SCHEMA);
     zkClientTimeout = cfg.getInt("solr/cores/@zkClientTimeout",
         DEFAULT_ZK_CLIENT_TIMEOUT);
+    
+    distribUpdateConnTimeout = cfg.getInt("solr/cores/@distribUpdateConnTimeout", 0);
+    distribUpdateSoTimeout = cfg.getInt("solr/cores/@distribUpdateSoTimeout", 0);
     
     hostPort = cfg.get("solr/cores/@hostPort", DEFAULT_HOST_PORT);
     
@@ -529,14 +548,11 @@ public class CoreContainer
         XPathConstants.NODESET);
     
     // setup executor to load cores in parallel
-    coreLoadExecutor = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 5,
-        TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+    coreLoadExecutor = new ThreadPoolExecutor(coreLoadThreads, coreLoadThreads, 1,
+        TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
         new DefaultSolrThreadFactory("coreLoadExecutor"));
     try {
-      // 4 threads at a time max
-      final AdjustableSemaphore semaphore = new AdjustableSemaphore(
-          coreLoadThreads);
-      
+
       CompletionService<SolrCore> completionService = new ExecutorCompletionService<SolrCore>(
           coreLoadExecutor);
       Set<Future<SolrCore>> pending = new HashSet<Future<SolrCore>>();
@@ -595,49 +611,42 @@ public class CoreContainer
                 .equalsIgnoreCase(opt)) ? true : false);
           }
           
-          opt = DOMUtil.getAttr(node, CORE_SWAPPABLE, null);
+          opt = DOMUtil.getAttr(node, CORE_TRANSIENT, null);
           if (opt != null) {
-            p.setSwappable(("true".equalsIgnoreCase(opt) || "on"
+            p.setTransient(("true".equalsIgnoreCase(opt) || "on"
                 .equalsIgnoreCase(opt)) ? true : false);
           }
           
-          if (!p.isSwappable() && p.isLoadOnStartup()) { // Just like current
-                                                         // case.
+          if (p.isLoadOnStartup()) { // The normal case
+
             Callable<SolrCore> task = new Callable<SolrCore>() {
+              @Override
               public SolrCore call() {
                 SolrCore c = null;
                 try {
                   c = create(p);
-                  register(name, c, false);
+                  if (p.isTransient()) {
+                    registerLazyCore(name, c, false);
+                  } else {
+                    register(name, c, false);
+                  }
+
                 } catch (Throwable t) {
                   SolrException.log(log, null, t);
                   if (c != null) {
                     c.close();
                   }
                 }
-                semaphore.release();
-                
                 return c;
               }
             };
-            
-            try {
-              semaphore.acquire();
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
-              throw new SolrException(ErrorCode.SERVER_ERROR,
-                  "Interrupted while loading SolrCore(s)", e);
-            }
-            
-            try {
-              pending.add(completionService.submit(task));
-            } catch (RejectedExecutionException e) {
-              semaphore.release();
-              throw e;
-            }
+
+
+            pending.add(completionService.submit(task));
+
             
           } else {
-            // Store it away for later use. includes non-swappable but not
+            // Store it away for later use. includes non-transient but not
             // loaded at startup cores.
             dynamicDescriptors.put(rawName, p);
           }
@@ -659,14 +668,12 @@ public class CoreContainer
               coreToOrigName.put(c, c.getName());
             }
           } catch (ExecutionException e) {
-            // shouldn't happen since we catch exceptions ourselves
-            SolrException.log(SolrCore.log,
-                "error sending update request to shard", e);
+            SolrException.log(SolrCore.log, "error loading core", e);
           }
           
         } catch (InterruptedException e) {
           throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-              "interrupted waiting for shard update response", e);
+              "interrupted while loading core", e);
         }
       }
     } finally {
@@ -674,6 +681,27 @@ public class CoreContainer
         ExecutorUtil.shutdownNowAndAwaitTermination(coreLoadExecutor);
       }
     }
+  }
+
+  protected void initShardHandler(Config cfg) {
+    PluginInfo info = null;
+    if (cfg != null) {
+      Node shfn = cfg.getNode("solr/cores/shardHandlerFactory", false);
+  
+      if (shfn != null) {
+        info = new PluginInfo(shfn, "shardHandlerFactory", false, true);
+      } else {
+        Map m = new HashMap();
+        m.put("class",HttpShardHandlerFactory.class.getName());
+        info = new PluginInfo("shardHandlerFactory", m, null, Collections.<PluginInfo>emptyList());
+      }
+    }
+
+    HttpShardHandlerFactory fac = new HttpShardHandlerFactory();
+    if (info != null) {
+      fac.init(info);
+    }
+    shardHandlerFactory = fac;
   }
 
   private Document copyDoc(Document document) throws TransformerException {
@@ -727,15 +755,15 @@ public class CoreContainer
         }
         cores.clear();
       }
-      synchronized (swappableCores) {
-        for (SolrCore core : swappableCores.values()) {
+      synchronized (transientCores) {
+        for (SolrCore core : transientCores.values()) {
           try {
             core.close();
           } catch (Throwable t) {
             SolrException.log(log, "Error shutting down core", t);
           }
         }
-        swappableCores.clear();
+        transientCores.clear();
       }
     } finally {
       if (shardHandlerFactory != null) {
@@ -794,7 +822,7 @@ public class CoreContainer
   }
 
   protected SolrCore registerLazyCore(String name, SolrCore core, boolean returnPrevNotClosed) {
-    return registerCore(swappableCores, name, core, returnPrevNotClosed);
+    return registerCore(transientCores, name, core, returnPrevNotClosed);
   }
 
   protected SolrCore registerCore(Map<String,SolrCore> whichCores, String name, SolrCore core, boolean returnPrevNotClosed) {
@@ -1029,8 +1057,8 @@ public class CoreContainer
     synchronized (cores) {
       lst.addAll(this.cores.keySet());
     }
-    synchronized (swappableCores) {
-      lst.addAll(this.swappableCores.keySet());
+    synchronized (transientCores) {
+      lst.addAll(this.transientCores.keySet());
     }
     return lst;
   }
@@ -1047,8 +1075,8 @@ public class CoreContainer
         }
       }
     }
-    synchronized (swappableCores) {
-      for (Map.Entry<String,SolrCore> entry : swappableCores.entrySet()) {
+    synchronized (transientCores) {
+      for (Map.Entry<String,SolrCore> entry : transientCores.entrySet()) {
         if (core == entry.getValue()) {
           lst.add(entry.getKey());
         }
@@ -1231,30 +1259,30 @@ public class CoreContainer
     synchronized (cores) {
       core = cores.get(name);
       if (core != null) {
-        core.open();
+        core.open();    // increment the ref count while still synchronized
         return core;
       }
     }
 
-    if (dynamicDescriptors.size() == 0) return null; // Nobody even tried to define any swappable cores, so we're done.
+    if (dynamicDescriptors.size() == 0) return null; // Nobody even tried to define any transient cores, so we're done.
 
-    // Now look for already loaded swappable cores.
-    synchronized (swappableCores) {
-      core = swappableCores.get(name);
+    // Now look for already loaded transient cores.
+    synchronized (transientCores) {
+      core = transientCores.get(name);
       if (core != null) {
         core.open();
         return core;
       }
     }
     CoreDescriptor desc =  dynamicDescriptors.get(name);
-    if (desc == null) { //Nope, no swappable core with this name
+    if (desc == null) { //Nope, no transient core with this name
       return null;
     }
     try {
       core = create(desc); // This should throw an error if it fails.
       core.open();
-      if (desc.isSwappable()) {
-        registerLazyCore(name, core, false);    // This is a swappable core
+      if (desc.isTransient()) {
+        registerLazyCore(name, core, false);    // This is a transient core
       } else {
         register(name, core, false); // This is a "permanent", although deferred-load core
       }
@@ -1363,8 +1391,8 @@ public class CoreContainer
       coresAttribs.put("defaultCoreName", defaultCoreName);
     }
 
-    if (swappableCacheSize != Integer.MAX_VALUE) {
-      coresAttribs.put("swappableCacheSize", Integer.toString(swappableCacheSize));
+    if (transientCacheSize != Integer.MAX_VALUE) {
+      coresAttribs.put("transientCacheSize", Integer.toString(transientCacheSize));
     }
     
     addCoresAttrib(coresAttribs, "hostPort", this.hostPort, DEFAULT_HOST_PORT);
@@ -1442,8 +1470,10 @@ public class CoreContainer
         addCoreProperty(coreAttribs, coreNode, CORE_SCHEMA, schema, dcore.getDefaultSchemaName());
         
         String dataDir = dcore.dataDir;
+        String ulogDir = dcore.ulogDir;
         addCoreProperty(coreAttribs, coreNode, CORE_DATADIR, dataDir, null);
-        addCoreProperty(coreAttribs, coreNode, CORE_SWAPPABLE, Boolean.toString(dcore.isSwappable()), null);
+        addCoreProperty(coreAttribs, coreNode, CORE_ULOGDIR, ulogDir, null);
+        addCoreProperty(coreAttribs, coreNode, CORE_TRANSIENT, Boolean.toString(dcore.isTransient()), null);
         addCoreProperty(coreAttribs, coreNode, CORE_LOADONSTARTUP, Boolean.toString(dcore.isLoadOnStartup()), null);
 
         CloudDescriptor cd = dcore.getCloudDescriptor();
@@ -1555,18 +1585,7 @@ public class CoreContainer
 
   /** The default ShardHandlerFactory used to communicate with other solr instances */
   public ShardHandlerFactory getShardHandlerFactory() {
-    synchronized (this) {
-      if (shardHandlerFactory == null) {
-        Map m = new HashMap();
-        m.put("class",HttpShardHandlerFactory.class.getName());
-        PluginInfo info = new PluginInfo("shardHandlerFactory", m,null,Collections.<PluginInfo>emptyList());
-
-        HttpShardHandlerFactory fac = new HttpShardHandlerFactory();
-        fac.init(info);
-        shardHandlerFactory = fac;
-      }
-      return shardHandlerFactory;
-    }
+    return shardHandlerFactory;
   }
   
   private SolrConfig getSolrConfigFromZk(String zkConfigName, String solrConfigFileName,

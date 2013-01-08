@@ -125,6 +125,7 @@ public class JdbcDataSource extends
     }
 
     return factory = new Callable<Connection>() {
+      @Override
       public Connection call() throws Exception {
         LOG.info("Creating a connection for entity "
                 + context.getEntityAttribute(DataImporter.NAME) + " with URL: "
@@ -257,14 +258,17 @@ public class JdbcDataSource extends
       }
 
       rSetIterator = new Iterator<Map<String, Object>>() {
+        @Override
         public boolean hasNext() {
           return hasnext();
         }
 
+        @Override
         public Map<String, Object> next() {
           return getARow();
         }
 
+        @Override
         public void remove() {/* do nothing */
         }
       };

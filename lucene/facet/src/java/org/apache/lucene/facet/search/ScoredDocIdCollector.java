@@ -68,9 +68,12 @@ public abstract class ScoredDocIdCollector extends Collector {
         private DocIdSetIterator docIdsIter = docIds.iterator();
         private int nextDoc;
 
+        @Override
         public int getDocID() { return nextDoc; }
+        @Override
         public float getScore() { return defaultScore; }
 
+        @Override
         public boolean next() {
           try {
             nextDoc = docIdsIter.nextDoc();
@@ -133,9 +136,12 @@ public abstract class ScoredDocIdCollector extends Collector {
         private int nextDoc;
         private int scoresIdx = -1;
 
+        @Override
         public int getDocID() { return nextDoc; }
+        @Override
         public float getScore() { return scores[scoresIdx]; }
 
+        @Override
         public boolean next() {
           try {
             nextDoc = docIdsIter.nextDoc();
@@ -203,14 +209,17 @@ public abstract class ScoredDocIdCollector extends Collector {
   public ScoredDocIDs getScoredDocIDs() {
     return new ScoredDocIDs() {
 
+      @Override
       public ScoredDocIDsIterator iterator() throws IOException {
         return scoredDocIdsIterator();
       }
 
+      @Override
       public DocIdSet getDocIDs() {
         return docIds;
       }
 
+      @Override
       public int size() {
         return numDocIds;
       }

@@ -48,6 +48,7 @@ public class GroupedEndResultTransformer implements EndResultTransformer {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void transform(Map<String, ?> result, ResponseBuilder rb, SolrDocumentSource solrDocumentSource) {
     NamedList<Object> commands = new NamedList<Object>();
     for (Map.Entry<String, ?> entry : result.entrySet()) {

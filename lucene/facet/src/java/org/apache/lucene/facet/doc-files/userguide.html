@@ -538,7 +538,7 @@ parameters it defines, the following two are likely to interest many application
 forms: category-tokens (for drill-down) and category-list-tokens (for
 accumulation). This parameter allows to specify, for each category, the
 Lucene term used for maintaining the category-list-tokens for that category.
-The default implementation in <code>DefaultFacetIndexingParams</code> maintains
+The default implementation in <code>FacetIndexingParams</code> maintains
 this information for all categories under the same special dedicated term.
 One case where it is needed to maintain two categories in separate category
 lists, is when it is known that at search time it would be required to use
@@ -548,7 +548,7 @@ call.</li>
 for example, the partition size is set to 1000, a distinct sub-term is used for
 maintaining each 1000 categories, e.g. term1 for categories 0 to 999, term2
 for categories 1000 to 1999, etc. The default implementation in
-<code>DefaultFacetIndexingParams</code> maintains category lists in a single
+<code>FacetIndexingParams</code> maintains category lists in a single
 partition, hence it defines the partition size as <code>Integer.MAX_VALUE</code>. The
 importance of this parameter is on allowing to handle very large
 taxonomies without exhausting RAM resources. This is because at facet

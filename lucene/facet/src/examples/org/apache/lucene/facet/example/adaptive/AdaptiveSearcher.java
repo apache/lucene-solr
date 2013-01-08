@@ -2,16 +2,6 @@ package org.apache.lucene.facet.example.adaptive;
 
 import java.util.List;
 
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.store.Directory;
-
-import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.facet.example.ExampleUtils;
 import org.apache.lucene.facet.example.simple.SimpleUtils;
 import org.apache.lucene.facet.search.AdaptiveFacetsAccumulator;
@@ -22,6 +12,15 @@ import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.store.Directory;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -78,8 +77,8 @@ public class AdaptiveSearcher {
     ScoredDocIdCollector docIdsCollecor = ScoredDocIdCollector.create(indexReader.maxDoc(), false);
     
     // Faceted search parameters indicate which facets are we interested in 
-    FacetSearchParams facetSearchParams = new FacetSearchParams();
-    facetSearchParams.addFacetRequest(new CountFacetRequest(new CategoryPath("root","a"), 10));
+    FacetSearchParams facetSearchParams = new FacetSearchParams(
+        new CountFacetRequest(new CategoryPath("root", "a"), 10));
     
     // search, into both collectors. note: in case only facets accumulation 
     // is required, the topDocCollector part can be totally discarded

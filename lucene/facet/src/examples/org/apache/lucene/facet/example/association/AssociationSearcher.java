@@ -7,8 +7,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
 import org.apache.lucene.facet.example.simple.SimpleSearcher;
-import org.apache.lucene.facet.search.params.association.AssociationFloatSumFacetRequest;
-import org.apache.lucene.facet.search.params.association.AssociationIntSumFacetRequest;
+import org.apache.lucene.facet.search.params.associations.AssociationFloatSumFacetRequest;
+import org.apache.lucene.facet.search.params.associations.AssociationIntSumFacetRequest;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -49,8 +49,7 @@ public class AssociationSearcher {
     AssociationIntSumFacetRequest facetRequest = new AssociationIntSumFacetRequest(
         new CategoryPath("tags"), 10);
     
-    List<FacetResult> res = SimpleSearcher.searchWithRequest(indexReader, taxo,
-        AssociationUtils.assocIndexingParams, facetRequest);
+    List<FacetResult> res = SimpleSearcher.searchWithRequest(indexReader, taxo, null, facetRequest);
     
     // close readers
     taxo.close();
@@ -69,8 +68,7 @@ public class AssociationSearcher {
     AssociationFloatSumFacetRequest facetRequest = new AssociationFloatSumFacetRequest(
         new CategoryPath("genre"), 10);
     
-    List<FacetResult> res = SimpleSearcher.searchWithRequest(indexReader, taxo,
-        AssociationUtils.assocIndexingParams, facetRequest);
+    List<FacetResult> res = SimpleSearcher.searchWithRequest(indexReader, taxo, null, facetRequest);
     
     // close readers
     taxo.close();

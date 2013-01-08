@@ -35,6 +35,7 @@ public class PrefixWildcardQueryNodeBuilder implements StandardQueryBuilder {
     // empty constructor
   }
 
+  @Override
   public PrefixQuery build(QueryNode queryNode) throws QueryNodeException {    
 
     PrefixWildcardQueryNode wildcardNode = (PrefixWildcardQueryNode) queryNode;

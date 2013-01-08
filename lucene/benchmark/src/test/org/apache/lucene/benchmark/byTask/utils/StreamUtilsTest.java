@@ -133,6 +133,7 @@ public class StreamUtilsTest extends BenchmarkTestCase {
     r.close();
   }
   
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -141,6 +142,7 @@ public class StreamUtilsTest extends BenchmarkTestCase {
     assertTrue(testDir.mkdirs());
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     _TestUtil.rmDir(testDir);

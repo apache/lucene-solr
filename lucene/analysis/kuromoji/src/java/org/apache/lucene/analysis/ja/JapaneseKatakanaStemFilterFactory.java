@@ -48,6 +48,7 @@ public class JapaneseKatakanaStemFilterFactory extends TokenFilterFactory {
     }
   }
 
+  @Override
   public TokenStream create(TokenStream input) {
     return new JapaneseKatakanaStemFilter(input, minimumLength);
   }

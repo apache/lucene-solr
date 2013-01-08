@@ -149,6 +149,7 @@ public class CoreParser implements QueryBuilder {
   }
 
 
+  @Override
   public Query getQuery(Element e) throws ParserException {
     return queryFactory.getQuery(e);
   }

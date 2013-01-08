@@ -52,6 +52,7 @@ public class DocSlice extends DocSetBase implements DocList {
     this.maxScore=maxScore;
   }
 
+  @Override
   public DocList subset(int offset, int len) {
     if (this.offset == offset && this.len==len) return this;
 
@@ -65,20 +66,26 @@ public class DocSlice extends DocSetBase implements DocList {
     return new DocSlice(offset, realLen, docs, scores, matches, maxScore);
   }
 
+  @Override
   public boolean hasScores() {
     return scores!=null;
   }
 
+  @Override
   public float maxScore() {
     return maxScore;
   }
 
 
+  @Override
   public int offset()  { return offset; }
+  @Override
   public int size()    { return len; }
+  @Override
   public int matches() { return matches; }
 
 
+  @Override
   public long memSize() {
     return (docs.length<<2)
             + (scores==null ? 0 : (scores.length<<2))
@@ -86,6 +93,7 @@ public class DocSlice extends DocSetBase implements DocList {
   }
 
 
+  @Override
   public boolean exists(int doc) {
     int end = offset+len;
     for (int i=offset; i<end; i++) {
@@ -96,14 +104,17 @@ public class DocSlice extends DocSetBase implements DocList {
 
   // Hmmm, maybe I could have reused the scorer interface here...
   // except that it carries Similarity baggage...
+  @Override
   public DocIterator iterator() {
     return new DocIterator() {
       int pos=offset;
       final int end=offset+len;
+      @Override
       public boolean hasNext() {
         return pos < end;
       }
 
+      @Override
       public Integer next() {
         return nextDoc();
       }
@@ -111,14 +122,17 @@ public class DocSlice extends DocSetBase implements DocList {
       /**
        * The remove  operation is not supported by this Iterator.
        */
+      @Override
       public void remove() {
         throw new UnsupportedOperationException("The remove  operation is not supported by this Iterator.");
       }
 
+      @Override
       public int nextDoc() {
         return docs[pos++];
       }
 
+      @Override
       public float score() {
         return scores[pos-1];
       }

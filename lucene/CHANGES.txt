@@ -80,7 +80,33 @@ Changes in backwards compatibility policy
   can use OrdinalPolicy.NO_PARENTS to never write any parent category ordinal
   to the fulltree posting payload (but note that you need a special 
   FacetsAccumulator - see javadocs). (Shai Erera)
-    
+
+* LUCENE-4594: Spatial PrefixTreeStrategy no longer indexes center points of
+  non-point shapes.  If you want to call makeDistanceValueSource() based on
+  shape centers, you need to do this yourself in another spatial field.
+  (David Smiley)
+
+* LUCENE-4615: Replace IntArrayAllocator and FloatArrayAllocator by ArraysPool.
+  FacetArrays no longer takes those allocators; if you need to reuse the arrays,
+  you should use ReusingFacetArrays. (Shai Erera, Gilad Barkai)
+
+* LUCENE-4621: FacetIndexingParams is now a concrete class (instead of DefaultFIP).
+  Also, the entire IndexingParams chain is now immutable. If you need to override
+  a setting, you should extend the relevant class.
+  Additionally, FacetSearchParams is now immutable, and requires all FacetRequests
+  to speified at initialization time. (Shai Erera)
+
+* LUCENE-4647: CategoryDocumentBuilder and EnhancementsDocumentBuilder are replaced
+  by FacetFields and AssociationsFacetFields respectively. CategoryEnhancement and
+  AssociationEnhancement were removed in favor of a simplified CategoryAssociation
+  interface, with CategoryIntAssociation and CategoryFloatAssociation 
+  implementations.
+  NOTE: indexes that contain category enhancements/associations are not supported
+  by the new code and should be recreated. (Shai Erera)
+
+* LUCENE-4659: Massive cleanup to CategoryPath API. Additionally, CategoryPath is 
+  now immutable, so you don't need to clone() it. (Shai Erera)
+  
 New Features
 
 * LUCENE-4226: New experimental StoredFieldsFormat that compresses chunks of
@@ -138,7 +164,14 @@ New Features
   Wikipedia category pages and non-category pages into separate line files.
   extractWikipedia.alg was changed to use this task, so now it creates two
   files. (Doron Cohen)
-  
+
+* LUCENE-4290: Added PostingsHighlighter to the highlighter module. It uses
+  offsets from the postings lists to highlight documents. (Robert Muir)
+
+* LUCENE-4628: Added CommonTermsQuery that executes high-frequency terms
+  in a optional sub-query to prevent slow queries due to "common" terms 
+  like stopwords. (Simon Willnauer)
+
 API Changes
 
 * LUCENE-4399: Deprecated AppendingCodec. Lucene's term dictionaries
@@ -164,6 +197,19 @@ API Changes
 
 * LUCENE-4591: CompressingStoredFields{Writer,Reader} now accept a segment
   suffix as a constructor parameter. (Renaud Delbru via Adrien Grand)
+  
+* LUCENE-4605: Added DocsEnum.FLAG_NONE which can be passed instead of 0 as
+  the flag to .docs() and .docsAndPositions(). (Shai Erera)
+
+* LUCENE-4617: Remove FST.pack() method. Previously to make a packed FST,
+  you had to make a Builder with willPackFST=true (telling it you will later pack it),
+  create your fst with finish(), and then call pack() to get another FST.
+  Instead just pass true for doPackFST to Builder and finish() returns a packed FST.
+  (Robert Muir)
+
+* LUCENE-4663: Deprecate IndexSearcher.document(int, Set). This was not intended
+  to be final, nor named document(). Use IndexSearcher.doc(int, Set) instead.
+  (Robert Muir)
   
 Bug Fixes
 
@@ -246,6 +292,39 @@ Bug Fixes
 * LUCENE-4596: fix a concurrency bug in DirectoryTaxonomyWriter.
   (Shai Erera)
 
+* LUCENE-4594: Spatial PrefixTreeStrategy would index center-points in addition
+  to the shape to index if it was non-point, in the same field.  But sometimes
+  the center-point isn't actually in the shape (consider a LineString), and for
+  highly precise shapes it could cause makeDistanceValueSource's cache to load
+  parts of the shape's boundary erroneously too.  So center points aren't
+  indexed any more; you should use another spatial field. (David Smiley)
+
+* LUCENE-4629: IndexWriter misses to delete documents if a document block is
+  indexed and the Iterator throws an exception. Documents were only rolled back
+  if the actual indexing process failed. (Simon Willnauer)
+
+* LUCENE-4608: Handle large number of requested fragments better.
+  (Martijn van Groningen)
+
+* LUCENE-4633: DirectoryTaxonomyWriter.replaceTaxonomy did not refresh its
+  internal reader, which could cause an existing category to be added twice.
+  (Shai Erera)
+
+* LUCENE-4461: If you added the same FacetRequest more than once, you would get
+  inconsistent results. (Gilad Barkai via Shai Erera)
+
+* LUCENE-4656: Fix regression in IndexWriter to work with empty TokenStreams
+  that have no TermToBytesRefAttribute (commonly provided by CharTermAttribute),
+  e.g., oal.analysis.miscellaneous.EmptyTokenStream.
+  (Uwe Schindler, Adrien Grand, Robert Muir)
+
+* LUCENE-4660: ConcurrentMergeScheduler was taking too long to
+  un-pause incoming threads it had paused when too many merges were
+  queued up. (Mike McCandless)
+
+* LUCENE-4662: Add missing elided articles and prepositions to FrenchAnalyzer's
+  DEFAULT_ARTICLES list passed to ElisionFilter.  (David Leunen via Steve Rowe)
+    
 Changes in Runtime Behavior
   
 * LUCENE-4586: Change default ResultMode of FacetRequest to PER_NODE_IN_TREE.
@@ -310,6 +389,10 @@ Optimizations
 
 * LUCENE-4598: PayloadIterator no longer uses top-level IndexReader to iterate on the
   posting's payload. (Shai Erera, Michael McCandless)
+
+* LUCENE-4661: Drop default maxThreadCount to 1 and maxMergeCount to 2
+  in ConcurrentMergeScheduler, for faster merge performance on
+  spinning-magnet drives (Mike McCandless)
   
 Documentation
 
@@ -317,6 +400,9 @@ Documentation
   (Paul Elschot via Robert Muir)
 
 Build
+
+* LUCENE-4650: Upgrade randomized testing to version 2.0.8: make the
+  test framework more robust under low memory conditions. (Dawid Weiss)
 
 * LUCENE-4603: Upgrade randomized testing to version 2.0.5: print forked
   JVM PIDs on heartbeat from hung tests (Dawid Weiss)

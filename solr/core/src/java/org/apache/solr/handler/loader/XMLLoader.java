@@ -59,7 +59,9 @@ import javax.xml.parsers.SAXParserFactory;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -110,6 +112,7 @@ public class XMLLoader extends ContentStreamLoader {
     return this;
   }
 
+  @Override
   public String getDefaultWT() {
     return "xml";
   }
@@ -378,8 +381,9 @@ public class XMLLoader extends ContentStreamLoader {
     float boost = 1.0f;
     boolean isNull = false;
     String update = null;
-
-    while (true) {
+    Map<String, Map<String, Object>> updateMap = null;
+    boolean complete = false;
+    while (!complete) {
       int event = parser.next();
       switch (event) {
         // Add everything to the text
@@ -391,13 +395,33 @@ public class XMLLoader extends ContentStreamLoader {
 
         case XMLStreamConstants.END_ELEMENT:
           if ("doc".equals(parser.getLocalName())) {
-            return doc;
+            complete = true;
+            break;
           } else if ("field".equals(parser.getLocalName())) {
             Object v = isNull ? null : text.toString();
             if (update != null) {
-              Map<String,Object> extendedValue = new HashMap<String,Object>(1);
-              extendedValue.put(update, v);
-              v = extendedValue;
+              if (updateMap == null) updateMap = new HashMap<String, Map<String, Object>>();
+              Map<String, Object> extendedValues = updateMap.get(name);
+              if (extendedValues == null) {
+                extendedValues = new HashMap<String, Object>(1);
+                updateMap.put(name, extendedValues);
+              }
+              Object val = extendedValues.get(update);
+              if (val == null) {
+                extendedValues.put(update, v);
+              } else {
+                // multiple val are present
+                if (val instanceof List) {
+                  List list = (List) val;
+                  list.add(v);
+                } else {
+                  List<Object> values = new ArrayList<Object>();
+                  values.add(val);
+                  values.add(v);
+                  extendedValues.put(update, values);
+                }
+              }
+              break;
             }
             doc.addField(name, v, boost);
             boost = 1.0f;
@@ -433,5 +457,15 @@ public class XMLLoader extends ContentStreamLoader {
           break;
       }
     }
+
+    if (updateMap != null)  {
+      for (Map.Entry<String, Map<String, Object>> entry : updateMap.entrySet()) {
+        name = entry.getKey();
+        Map<String, Object> value = entry.getValue();
+        doc.addField(name, value, 1.0f);
+      }
+    }
+
+    return doc;
   }
 }

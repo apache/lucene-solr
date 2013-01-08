@@ -41,6 +41,7 @@ public class NameHashIntCacheLRU extends NameIntCacheLRU {
 
   @Override
   Object key(CategoryPath name, int prefixLen) {
-    return new Long(name.longHashCode(prefixLen));
+    return new Long(name.subpath(prefixLen).longHashCode());
   }
+  
 }

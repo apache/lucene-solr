@@ -54,10 +54,12 @@ abstract class TermsWithScoreCollector extends Collector {
     return scoreSums;
   }
 
+  @Override
   public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
   }
 
+  @Override
   public boolean acceptsDocsOutOfOrder() {
     return true;
   }
@@ -97,6 +99,7 @@ abstract class TermsWithScoreCollector extends Collector {
       super(field, scoreMode);
     }
 
+    @Override
     public void collect(int doc) throws IOException {
       fromDocTerms.get(doc, spare);
       int ord = collectedTerms.add(spare);
@@ -125,6 +128,7 @@ abstract class TermsWithScoreCollector extends Collector {
       }
     }
 
+    @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
       fromDocTerms = FieldCache.DEFAULT.getTerms(context.reader(), field);
     }
@@ -185,6 +189,7 @@ abstract class TermsWithScoreCollector extends Collector {
       super(field, scoreMode);
     }
 
+    @Override
     public void collect(int doc) throws IOException {
       reuse = fromDocTermOrds.lookup(doc, reuse);
       int[] buffer = new int[5];
@@ -227,6 +232,7 @@ abstract class TermsWithScoreCollector extends Collector {
       } while (chunk >= buffer.length);
     }
 
+    @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
       fromDocTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), field);
       docTermsEnum = fromDocTermOrds.getOrdTermsEnum(context.reader());

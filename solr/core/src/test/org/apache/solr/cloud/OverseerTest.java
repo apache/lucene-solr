@@ -82,9 +82,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
     private void deleteNode(final String path) {
       try {
-        Stat stat = zkClient.exists(path, null, false);
+        Stat stat = zkClient.exists(path, null, true);
         if (stat != null) {
-          zkClient.delete(path, stat.getVersion(), false);
+          zkClient.delete(path, stat.getVersion(), true);
         }
       } catch (KeeperException e) {
         fail("Unexpected KeeperException!" + e);
@@ -303,10 +303,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
         reader.updateClusterState(true);
         ClusterState state = reader.getClusterState();
         Map<String,Slice> slices = state.getSlicesMap("collection1");
-        for (String name : slices.keySet()) {
-          cloudStateSliceCount += slices.get(name).getReplicasMap().size();
+        if (slices != null) {
+          for (String name : slices.keySet()) {
+            cloudStateSliceCount += slices.get(name).getReplicasMap().size();
+          }
+          if (coreCount == cloudStateSliceCount) break;
         }
-        if (coreCount == cloudStateSliceCount) break;
+
         Thread.sleep(200);
       }
       assertEquals("Unable to verify all cores have been assigned an id in cloudstate", 
@@ -314,7 +317,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       // make sure all cores have been returned an id
       int assignedCount = 0;
-      for (int i = 0; i < 90; i++) {
+      for (int i = 0; i < 120; i++) {
         assignedCount = 0;
         for (int j = 0; j < coreCount; j++) {
           if (ids[j] != null) {

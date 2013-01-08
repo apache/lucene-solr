@@ -164,6 +164,7 @@ public class XPathRecordReader {
   public List<Map<String, Object>> getAllRecords(Reader r) {
     final List<Map<String, Object>> results = new ArrayList<Map<String, Object>>();
     streamRecords(r, new Handler() {
+      @Override
       public void handle(Map<String, Object> record, String s) {
         results.add(record);
       }

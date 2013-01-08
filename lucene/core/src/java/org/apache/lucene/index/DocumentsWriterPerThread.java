@@ -302,7 +302,9 @@ class DocumentsWriterPerThread {
       infoStream.message("DWPT", Thread.currentThread().getName() + " update delTerm=" + delTerm + " docID=" + docState.docID + " seg=" + segmentInfo.name);
     }
     int docCount = 0;
+    boolean allDocsIndexed = false;
     try {
+      
       for(IndexDocument doc : docs) {
         docState.doc = doc;
         docState.docID = numDocsInRAM;
@@ -315,20 +317,7 @@ class DocumentsWriterPerThread {
         } finally {
           if (!success) {
             // An exc is being thrown...
-
             if (!aborting) {
-              // One of the documents hit a non-aborting
-              // exception (eg something happened during
-              // analysis).  We now go and mark any docs
-              // from this batch that we had already indexed
-              // as deleted:
-              int docID = docState.docID;
-              final int endDocID = docID - docCount;
-              while (docID > endDocID) {
-                deleteDocID(docID);
-                docID--;
-              }
-
               // Incr here because finishDocument will not
               // be called (because an exc is being thrown):
               numDocsInRAM++;
@@ -349,6 +338,7 @@ class DocumentsWriterPerThread {
 
         finishDocument(null);
       }
+      allDocsIndexed = true;
 
       // Apply delTerm only after all indexing has
       // succeeded, but apply it only to docs prior to when
@@ -360,6 +350,16 @@ class DocumentsWriterPerThread {
       }
 
     } finally {
+      if (!allDocsIndexed && !aborting) {
+        // the iterator threw an exception that is not aborting 
+        // go and mark all docs from this block as deleted
+        int docID = numDocsInRAM-1;
+        final int endDocID = docID - docCount;
+        while (docID > endDocID) {
+          deleteDocID(docID);
+          docID--;
+        }
+      }
       docState.clear();
     }
 
@@ -643,6 +643,7 @@ class DocumentsWriterPerThread {
     }
     
     /* Allocate another int[] from the shared pool */
+    @Override
     public int[] getIntBlock() {
       int[] b = new int[IntBlockPool.INT_BLOCK_SIZE];
       bytesUsed.addAndGet(IntBlockPool.INT_BLOCK_SIZE
@@ -650,6 +651,7 @@ class DocumentsWriterPerThread {
       return b;
     }
     
+    @Override
     public void recycleIntBlocks(int[][] blocks, int offset, int length) {
       bytesUsed.addAndGet(-(length * (IntBlockPool.INT_BLOCK_SIZE * RamUsageEstimator.NUM_BYTES_INT)));
     }

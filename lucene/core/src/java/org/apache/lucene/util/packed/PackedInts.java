@@ -577,22 +577,27 @@ public class PackedInts {
       this.valueCount = valueCount;
     }
 
+    @Override
     public int getBitsPerValue() {
       return bitsPerValue;
     }
 
+    @Override
     public int size() {
       return valueCount;
     }
 
+    @Override
     public Object getArray() {
       return null;
     }
 
+    @Override
     public boolean hasArray() {
       return false;
     }
 
+    @Override
     public int get(int index, long[] arr, int off, int len) {
       assert len > 0 : "len must be > 0 (got " + len + ")";
       assert index >= 0 && index < valueCount;
@@ -613,6 +618,7 @@ public class PackedInts {
       super(valueCount, bitsPerValue);
     }
 
+    @Override
     public int set(int index, long[] arr, int off, int len) {
       assert len > 0 : "len must be > 0 (got " + len + ")";
       assert index >= 0 && index < valueCount;
@@ -625,6 +631,7 @@ public class PackedInts {
       return len;
     }
 
+    @Override
     public void fill(int fromIndex, int toIndex, long val) {
       assert val <= maxValue(bitsPerValue);
       assert fromIndex <= toIndex;

@@ -38,6 +38,7 @@ import org.apache.solr.search.function.*;
 public class FunctionRangeQParserPlugin extends QParserPlugin {
   public static String NAME = "frange";
 
+  @Override
   public void init(NamedList args) {
   }
 

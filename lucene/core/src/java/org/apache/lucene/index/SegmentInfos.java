@@ -868,9 +868,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         // Ignore; this file is only used in a retry
         // fallback on init.
       }
-      if (t instanceof ThreadInterruptedException) {
-        throw (ThreadInterruptedException) t;
-      }
     }
   }
 
@@ -991,6 +988,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
   
   /** Returns an <b>unmodifiable</b> {@link Iterator} of contained segments in order. */
   // @Override (comment out until Java 6)
+  @Override
   public Iterator<SegmentInfoPerCommit> iterator() {
     return asList().iterator();
   }

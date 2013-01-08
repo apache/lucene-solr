@@ -144,14 +144,17 @@ public class ResultSortUtils {
       this.accending = accending;
     }
 
+    @Override
     public FacetResultNode insertWithOverflow(FacetResultNode node) {
       resultNodes.add(node);
       return null;
     }
 
+    @Override
     public FacetResultNode pop() {
       if (!isReady) {
         Collections.sort(resultNodes, new Comparator<FacetResultNode>() {
+          @Override
           public int compare(FacetResultNode o1, FacetResultNode o2) {
             int value = Double.compare(o1.getValue(), o2
                 .getValue());
@@ -170,10 +173,12 @@ public class ResultSortUtils {
       return resultNodes.remove(0);
     }
 
+    @Override
     public int size() {
       return resultNodes.size();
     }
 
+    @Override
     public FacetResultNode top() {
       if (resultNodes.size() > 0) {
         return resultNodes.get(0);
@@ -182,11 +187,13 @@ public class ResultSortUtils {
       return null;
     }
 
+    @Override
     public FacetResultNode add(FacetResultNode frn) {
       resultNodes.add(frn);
       return null;
     }
 
+    @Override
     public void clear() {
       resultNodes.clear();
     }

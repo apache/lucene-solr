@@ -52,6 +52,7 @@ public class DataSplitterTest extends LuceneTestCase {
   private String classFieldName = "class";
   private String idFieldName = "id";
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -81,6 +82,7 @@ public class DataSplitterTest extends LuceneTestCase {
 
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     originalIndex.close();

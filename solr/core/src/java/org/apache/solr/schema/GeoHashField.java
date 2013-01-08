@@ -58,6 +58,7 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
     //QUESTION: Should we do a fast and crude one?  Or actually check distances
   //Fast and crude could use EdgeNGrams, but that would require a different
   //encoding.  Plus there are issues around the Equator/Prime Meridian
+  @Override
   public Query createSpatialQuery(QParser parser, SpatialOptions options) {
     double [] point = new double[0];
     try {

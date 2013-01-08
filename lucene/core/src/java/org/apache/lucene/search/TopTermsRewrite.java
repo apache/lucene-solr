@@ -183,6 +183,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
   
   private static final Comparator<ScoreTerm> scoreTermSortByTermComp = 
     new Comparator<ScoreTerm>() {
+      @Override
       public int compare(ScoreTerm st1, ScoreTerm st2) {
         assert st1.termComp == st2.termComp :
           "term comparator should not change between segments";
@@ -200,6 +201,7 @@ public abstract class TopTermsRewrite<Q extends Query> extends TermCollectingRew
       this.termState = termState;
     }
     
+    @Override
     public int compareTo(ScoreTerm other) {
       if (this.boost == other.boost)
         return termComp.compare(other.bytes, this.bytes);

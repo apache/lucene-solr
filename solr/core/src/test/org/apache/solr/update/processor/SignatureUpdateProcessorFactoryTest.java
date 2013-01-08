@@ -347,6 +347,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     public UnusualList(int size) {
       super(size);
     }
+    @Override
     public String toString() {
       return "UNUSUAL:" + super.toString();
     }

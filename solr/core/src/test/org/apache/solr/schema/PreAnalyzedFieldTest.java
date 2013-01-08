@@ -70,6 +70,7 @@ public class PreAnalyzedFieldTest extends LuceneTestCase {
   int props = 
     FieldProperties.INDEXED | FieldProperties.STORED;
   
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     field = new SchemaField("content", new TextField(), props, null);

@@ -66,6 +66,7 @@ class ConnectionManager implements Watcher {
     connected = false;
   }
 
+  @Override
   public synchronized void process(WatchedEvent event) {
     if (log.isInfoEnabled()) {
       log.info("Watcher " + this + " name:" + name + " got event " + event

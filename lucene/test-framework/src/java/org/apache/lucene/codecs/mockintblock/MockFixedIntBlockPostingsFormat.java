@@ -90,6 +90,7 @@ public final class MockFixedIntBlockPostingsFormat extends PostingsFormat {
         protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) {
           return new BlockReader() {
             public void seek(long pos) {}
+            @Override
             public void readBlock() throws IOException {
               for(int i=0;i<buffer.length;i++) {
                 buffer[i] = in.readVInt();

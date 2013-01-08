@@ -48,6 +48,7 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
   private int maxCommitsToKeep = 1;
   private int maxOptimizedCommitsToKeep = 0;
 
+  @Override
   public void init(NamedList args) {
     String keepOptimizedOnlyString = (String) args.get("keepOptimizedOnly");
     String maxCommitsToKeepString = (String) args.get("maxCommitsToKeep");
@@ -109,6 +110,7 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
   /**
    * Internal use for Lucene... do not explicitly call.
    */
+  @Override
   public void onInit(List commits) throws IOException {
     log.info("SolrDeletionPolicy.onInit: commits:" + str(commits));
     updateCommits((List<IndexCommit>) commits);
@@ -117,6 +119,7 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
   /**
    * Internal use for Lucene... do not explicitly call.
    */
+  @Override
   public void onCommit(List commits) throws IOException {
     log.info("SolrDeletionPolicy.onCommit: commits:" + str(commits));
     updateCommits((List<IndexCommit>) commits);

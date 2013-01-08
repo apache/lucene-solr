@@ -26,7 +26,7 @@
   <import file="../analysis-module-build.xml"/>
 
   <path id="icujar">
-     <pathelement location="lib/icu4j-49.1.jar"/>
+     <fileset dir="lib"/>
   </path>
 
   <path id="classpath">

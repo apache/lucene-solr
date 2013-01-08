@@ -47,13 +47,22 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
     assertEquals(0x00000000, ranges.get(1).min);
     assertEquals(0x7fffffff, ranges.get(1).max);
 
-    ranges = hp.partitionRange(2, 0, 0x7fffffff);
+    ranges = hp.partitionRange(2, new DocRouter.Range(0, 0x7fffffff));
     assertEquals(0x00000000, ranges.get(0).min);
     assertEquals(0x3fffffff, ranges.get(0).max);
     assertEquals(0x40000000, ranges.get(1).min);
     assertEquals(0x7fffffff, ranges.get(1).max);
 
-    for (int i = 1; i <= 30000; i += 13) {
+    int defaultLowerBits = 0x0000ffff;
+
+    for (int i = 1; i <= 30000; i++) {
+      // start skipping at higher numbers
+      if (i > 100) i+=13;
+      else if (i > 1000) i+=31;
+      else if (i > 5000) i+=101;
+
+      long rangeSize = 0x0000000100000000L / i;
+
       ranges = hp.partitionRange(i, hp.fullRange());
       assertEquals(i, ranges.size());
       assertTrue("First range does not start before " + Integer.MIN_VALUE
@@ -69,6 +78,32 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
         assertEquals(range, newRange);
       }
 
+      // ensure that ranges are contiguous and that size deviations are not too large.
+      int lastEnd = Integer.MIN_VALUE - 1;
+      for (Range range : ranges) {
+        int currStart = range.min;
+        int currEnd = range.max;
+        assertEquals(lastEnd+1, currStart);
+
+        if (ranges.size() < 4000) {
+          // ranges should be rounded to avoid crossing hash domains
+          assertEquals(defaultLowerBits, currEnd & defaultLowerBits);
+
+          // given our rounding condition that domains should be less than 1/16 of the step size,
+          // this means that any sizing deviations should also be less than 1/16th of the idealized range size.
+          // boolean round = rangeStep >= (1<<bits)*16;
+
+          long currRangeSize = (long)currEnd - (long)currStart;
+          long error = Math.abs(rangeSize - currRangeSize);
+          assertTrue( error < rangeSize/16);
+        }
+
+
+        // String s = range.toString();
+        // Range newRange = hp.fromString(s);
+        // assertEquals(range, newRange);
+        lastEnd = currEnd;
+      }
 
     }
   }

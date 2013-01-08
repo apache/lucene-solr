@@ -212,6 +212,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     
     // sort the tokens by absoulte position
     ArrayUtil.mergeSort(tokens, new Comparator<AttributeSource>() {
+      @Override
       public int compare(AttributeSource a, AttributeSource b) {
         return arrayCompare(
           a.getAttribute(TokenTrackingAttribute.class).getPositions(),
@@ -255,6 +256,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       }
 
       token.reflectWith(new AttributeReflector() {
+        @Override
         public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
           // leave out position and bytes term
           if (TermToBytesRefAttribute.class.isAssignableFrom(attClass))
@@ -365,17 +367,20 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     private int position = 0;
     private transient int[] cachedPositions = null;
 
+    @Override
     public void freezeStage() {
       this.basePositions = getPositions();
       this.position = 0;
       this.cachedPositions = null;
     }
     
+    @Override
     public void setActPosition(int pos) {
       this.position = pos;
       this.cachedPositions = null;
     }
     
+    @Override
     public int[] getPositions() {
       if (cachedPositions == null) {
         cachedPositions = ArrayUtils.add(basePositions, position);
@@ -383,6 +388,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       return cachedPositions;
     }
     
+    @Override
     public void reset(int[] basePositions, int position) {
       this.basePositions = basePositions;
       this.position = position;

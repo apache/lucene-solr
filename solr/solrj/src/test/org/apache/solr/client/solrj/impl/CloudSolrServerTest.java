@@ -139,6 +139,7 @@ public class CloudSolrServerTest extends AbstractFullDistribZkTestBase {
   }
   
   
+  @Override
   protected void indexr(Object... fields) throws Exception {
     SolrInputDocument doc = getDoc(fields);
     indexDoc(doc);

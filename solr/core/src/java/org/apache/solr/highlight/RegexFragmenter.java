@@ -63,6 +63,7 @@ public class RegexFragmenter extends HighlightingPluginBase implements SolrFragm
     defaultPattern = Pattern.compile(defaultPatternRaw);
   }
 
+  @Override
   public Fragmenter getFragmenter(String fieldName, SolrParams params )
   { 
     numRequests++;
@@ -187,6 +188,7 @@ class LuceneRegexFragmenter implements Fragmenter
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.TextFragmenter#start(java.lang.String)
    */
+  @Override
   public void start(String originalText, TokenStream tokenStream) {
     currentNumFrags = 1;
     currentOffset = 0;
@@ -227,6 +229,7 @@ class LuceneRegexFragmenter implements Fragmenter
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.TextFragmenter#isNewFragment(org.apache.lucene.analysis.Token)
    */
+  @Override
   public boolean isNewFragment()
   {
     boolean isNewFrag = false;

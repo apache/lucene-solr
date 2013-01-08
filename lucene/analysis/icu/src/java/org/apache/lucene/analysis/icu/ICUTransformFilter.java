@@ -124,32 +124,39 @@ public final class ICUTransformFilter extends TokenFilter {
       this.length = token.length();
     }
 
+    @Override
     public int char32At(int pos) {
       return UTF16.charAt(buffer, 0, length, pos);
     }
 
+    @Override
     public char charAt(int pos) {
       return buffer[pos];
     }
 
+    @Override
     public void copy(int start, int limit, int dest) {
       char text[] = new char[limit - start];
       getChars(start, limit, text, 0);
       replace(dest, dest, text, 0, limit - start);
     }
 
+    @Override
     public void getChars(int srcStart, int srcLimit, char[] dst, int dstStart) {
       System.arraycopy(buffer, srcStart, dst, dstStart, srcLimit - srcStart);
     }
 
+    @Override
     public boolean hasMetaData() {
       return false;
     }
 
+    @Override
     public int length() {
       return length;
     }
 
+    @Override
     public void replace(int start, int limit, String text) {
       final int charsLen = text.length();
       final int newLength = shiftForReplace(start, limit, charsLen);
@@ -158,6 +165,7 @@ public final class ICUTransformFilter extends TokenFilter {
       token.setLength(length = newLength);
     }
 
+    @Override
     public void replace(int start, int limit, char[] text, int charsStart,
         int charsLen) {
       // shift text if necessary for the replacement

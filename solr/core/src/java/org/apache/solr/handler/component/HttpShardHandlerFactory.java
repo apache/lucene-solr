@@ -87,6 +87,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
   /**
    * Get {@link ShardHandler} that uses the default http client.
    */
+  @Override
   public ShardHandler getShardHandler() {
     return getShardHandler(defaultClient);
   }
@@ -98,6 +99,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
     return new HttpShardHandler(this, httpClient);
   }
 
+  @Override
   public void init(PluginInfo info) {
     NamedList args = info.initArgs;
     this.soTimeout = getParameter(args, HttpClientUtil.PROP_SO_TIMEOUT, soTimeout);
@@ -154,19 +156,25 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements Plug
   @Override
   public void close() {
     try {
-      defaultClient.getConnectionManager().shutdown();
-    } catch (Throwable e) {
-      SolrException.log(log, e);
-    }
-    try {
-      loadbalancer.shutdown();
-    } catch (Throwable e) {
-      SolrException.log(log, e);
-    }
-    try {
       ExecutorUtil.shutdownNowAndAwaitTermination(commExecutor);
     } catch (Throwable e) {
       SolrException.log(log, e);
     }
+    
+    try {
+      if(defaultClient != null) {
+        defaultClient.getConnectionManager().shutdown();
+      }
+    } catch (Throwable e) {
+      SolrException.log(log, e);
+    }
+    try {
+      if(loadbalancer != null) {
+        loadbalancer.shutdown();
+      }
+    } catch (Throwable e) {
+      SolrException.log(log, e);
+    }
+
   }
 }

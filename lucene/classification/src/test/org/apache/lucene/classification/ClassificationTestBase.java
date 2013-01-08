@@ -24,6 +24,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -38,6 +39,7 @@ public abstract class ClassificationTestBase extends LuceneTestCase {
   private String classFieldName;
   private Directory dir;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -47,6 +49,7 @@ public abstract class ClassificationTestBase extends LuceneTestCase {
     classFieldName = "cat";
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();
@@ -54,15 +57,17 @@ public abstract class ClassificationTestBase extends LuceneTestCase {
     dir.close();
   }
 
-  protected void checkCorrectClassification(Classifier classifier, Analyzer analyzer) throws Exception {
+
+  protected void checkCorrectClassification(Classifier<BytesRef> classifier, Analyzer analyzer) throws Exception {
     SlowCompositeReaderWrapper compositeReaderWrapper = null;
     try {
       populateIndex(analyzer);
       compositeReaderWrapper = new SlowCompositeReaderWrapper(indexWriter.getReader());
       classifier.train(compositeReaderWrapper, textFieldName, classFieldName, analyzer);
       String newText = "Much is made of what the likes of Facebook, Google and Apple know about users. Truth is, Amazon may know more.";
-      ClassificationResult classificationResult = classifier.assignClass(newText);
-      assertEquals("technology", classificationResult.getAssignedClass());
+      ClassificationResult<BytesRef> classificationResult = classifier.assignClass(newText);
+      assertNotNull(classificationResult.getAssignedClass());
+      assertEquals(new BytesRef("technology"), classificationResult.getAssignedClass());
       assertTrue(classificationResult.getScore() > 0);
     } finally {
       if (compositeReaderWrapper != null)

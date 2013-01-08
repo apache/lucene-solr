@@ -114,7 +114,7 @@
   <property name="maven-version" value="2.2.1"/>
   
   <target name="get-maven-poms"
-          description="Copy Maven POMs from dev-tools/maven/ to the working copy root">
+          description="Copy Maven POMs from dev-tools/maven/ to maven-build/">
     <copy todir="${maven-build-dir}" overwrite="true">
       <fileset dir="${basedir}/dev-tools/maven"/>
       <filterset begintoken="@" endtoken="@">
@@ -154,6 +154,7 @@
     <subant buildpath="." antfile="extra-targets.xml" target="-run-maven-build" inheritall="false" failonerror="true">
       <propertyset>
         <propertyref prefix="maven-"/>
+        <propertyref builtin="commandline"/>
       </propertyset>
     </subant>
   </target>
@@ -170,11 +171,28 @@
 
   <target name="eclipse" depends="resolve" description="Setup Eclipse configuration">
     <copy file="dev-tools/eclipse/dot.project" tofile=".project" overwrite="false"/>
-    <copy file="dev-tools/eclipse/dot.classpath" tofile=".classpath" overwrite="true"/>
     <mkdir dir=".settings"/>
     <copy todir=".settings/" overwrite="true">
       <fileset dir="dev-tools/eclipse/dot.settings" includes="*.prefs" />
     </copy>
+    
+    <pathconvert property="eclipse.fileset.sourcefolders" pathsep="|" dirsep="/">
+      <dirset dir="${basedir}/lucene" includes="**/src/java, **/src/resources, **/src/test, **/src/test-files, **/src/examples" excludes="tools/**, build/**, backwards/**" />
+      <dirset dir="${basedir}/solr" includes="**/src/java, **/src/resources, **/src/test, **/src/test-files, **/src/examples" excludes="build/**" />
+      <map from="${basedir}/" to=""/>
+    </pathconvert>
+    <!-- TODO: find a better way to exclude duplicate JAR files & fix the servlet-api mess! -->
+    <pathconvert property="eclipse.fileset.libs" pathsep="|" dirsep="/">
+      <fileset dir="${basedir}/lucene" includes="**/lib/*.jar" excludes="**/*servlet-api*.jar, analysis/uima/**, tools/**, build/**"/>
+      <fileset dir="${basedir}/solr" includes="**/lib/*.jar" excludes="core/lib/*servlet-api*.jar, contrib/analysis-extras/**, test-framework/**, build/**, dist/**, package/**" />
+      <map from="${basedir}/" to=""/>
+    </pathconvert>
+    <xslt in="${ant.file}" out=".classpath" style="dev-tools/eclipse/dot.classpath.xsl" force="true">
+      <outputproperty name="indent" value="yes"/>
+      <param name="eclipse.fileset.libs" expression="${eclipse.fileset.libs}"/>
+      <param name="eclipse.fileset.sourcefolders" expression="${eclipse.fileset.sourcefolders}"/>
+    </xslt>
+
     <echo>
       SUCCESS: You must right-click your project and choose Refresh.
                Your project must use a Java 6 JRE.
@@ -294,7 +312,7 @@
     <subant buildpath="." antfile="extra-targets.xml" target="-check-svn-working-copy" inheritall="false" failonerror="true"/>
   </target>
 
-  <target name="run-clover" description="Runs all tests to measure coverage and generates report (pass &quot;ANT_ARGS=-Xmx1536M&quot; as environment)" depends="clean">
+  <target name="run-clover" description="Runs all tests to measure coverage and generates report (pass &quot;ANT_OPTS=-Xmx1536M&quot; as environment)" depends="clean">
     <antcall>
       <param name="run.clover" value="true"/>
       <!-- must be 1, as clover does not like parallel test runs: -->
@@ -351,7 +369,26 @@
   <!-- Jenkins tasks -->
   <target name="jenkins-hourly" depends="clean,test-with-heapdumps,validate,documentation-lint,jar-checksums,check-svn-working-copy"/>
   
-  <target name="jenkins-maven-nightly" depends="clean,remove-maven-artifacts,run-maven-build,generate-maven-artifacts,validate-maven-dependencies"/>
+  <target name="jenkins-nightly">
+    <antcall>
+      <param name="tests.nightly" value="true"/>
+      <target name="jenkins-hourly"/>
+    </antcall>
+  </target>
+  
+  <target name="jenkins-maven-nightly" depends="clean,clean-maven-build">
+    <!-- step 1: build, install, deploy, and validate ANT-generated maven artifacts: -->
+    <antcall>
+      <target name="remove-maven-artifacts"/>
+      <!-- this implicitely publishes the maven artifacts: -->
+      <target name="validate-maven-dependencies"/>
+    </antcall>
+    <!-- step 2: run the maven build to check that the pom templates also work to drive "mvn": -->
+    <antcall>
+      <target name="remove-maven-artifacts"/>
+      <target name="run-maven-build"/>
+    </antcall>
+  </target>
   
   <target name="jenkins-clover" depends="run-clover"/>
 </project>

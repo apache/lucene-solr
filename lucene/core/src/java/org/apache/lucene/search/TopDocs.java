@@ -91,6 +91,7 @@ public class TopDocs {
     }
 
     // Returns true if first is < second
+    @Override
     public boolean lessThan(ShardRef first, ShardRef second) {
       assert first != second;
       final float firstScore = shardHits[first.shardIndex][first.hitIndex].score;
@@ -156,6 +157,7 @@ public class TopDocs {
     }
 
     // Returns true if first is < second
+    @Override
     @SuppressWarnings({"unchecked","rawtypes"})
     public boolean lessThan(ShardRef first, ShardRef second) {
       assert first != second;

@@ -33,10 +33,12 @@ public class MockEventListener implements SolrEventListener {
     createCounter.incrementAndGet();
   }
 
+  @Override
   public void init(NamedList args) {
     /* NOOP */
   }
 
+  @Override
   public void postCommit() {
     /* NOOP */
   }
@@ -46,6 +48,7 @@ public class MockEventListener implements SolrEventListener {
     /* NOOP */
   }
 
+  @Override
   public void newSearcher(SolrIndexSearcher newSearcher, 
                           SolrIndexSearcher currentSearcher) {
     /* NOOP */

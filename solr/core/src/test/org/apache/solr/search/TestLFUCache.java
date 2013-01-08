@@ -39,6 +39,7 @@ import java.util.Map;
 public class TestLFUCache extends SolrTestCaseJ4 {
 
   private class LFURegenerator implements CacheRegenerator {
+    @Override
     public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache,
                                   SolrCache oldCache, Object oldKey, Object oldVal) throws IOException {
       newCache.put(oldKey, oldVal);

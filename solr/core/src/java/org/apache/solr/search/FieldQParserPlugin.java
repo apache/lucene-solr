@@ -34,6 +34,7 @@ import org.apache.solr.schema.SchemaField;
 public class FieldQParserPlugin extends QParserPlugin {
   public static String NAME = "field";
 
+  @Override
   public void init(NamedList args) {
   }
 

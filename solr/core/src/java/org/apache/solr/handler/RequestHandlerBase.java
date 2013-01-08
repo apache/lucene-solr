@@ -17,11 +17,6 @@
 
 package org.apache.solr.handler;
 
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.Counter;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
-import com.yammer.metrics.stats.Snapshot;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -33,6 +28,9 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.stats.Snapshot;
+import org.apache.solr.util.stats.Timer;
+import org.apache.solr.util.stats.TimerContext;
 
 import java.net.URL;
 import java.util.concurrent.atomic.AtomicLong;
@@ -49,20 +47,11 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   protected boolean httpCaching = true;
 
   // Statistics
-  private static final AtomicLong handlerNumber = new AtomicLong();
-  private final Counter numRequests;
-  private final Counter numErrors;
-  private final Counter numTimeouts;
-  private final Timer requestTimes;
-  long handlerStart = System.currentTimeMillis();
-
-  public RequestHandlerBase() {
-    String scope = new String("metrics-scope-" + handlerNumber.getAndIncrement());
-    numRequests = Metrics.newCounter(RequestHandlerBase.class, "numRequests", scope);
-    numErrors = Metrics.newCounter(RequestHandlerBase.class, "numErrors", scope);
-    numTimeouts = Metrics.newCounter(RequestHandlerBase.class, "numTimeouts", scope);
-    requestTimes = Metrics.newTimer(RequestHandlerBase.class, "requestTimes", scope);
-  }
+  private final AtomicLong numRequests = new AtomicLong();
+  private final AtomicLong numErrors = new AtomicLong();
+  private final AtomicLong numTimeouts = new AtomicLong();
+  private final Timer requestTimes = new Timer();
+  private final long handlerStart = System.currentTimeMillis();
 
   /**
    * Initializes the {@link org.apache.solr.request.SolrRequestHandler} by creating three {@link org.apache.solr.common.params.SolrParams} named.
@@ -103,6 +92,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
    *
    * See also the example solrconfig.xml located in the Solr codebase (example/solr/conf).
    */
+  @Override
   public void init(NamedList args) {
     initArgs = args;
 
@@ -135,8 +125,9 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   
   public abstract void handleRequestBody( SolrQueryRequest req, SolrQueryResponse rsp ) throws Exception;
 
+  @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    numRequests.inc();
+    numRequests.incrementAndGet();
     TimerContext timer = requestTimes.time();
     try {
       SolrPluginUtils.setDefaults(req,defaults,appends,invariants);
@@ -148,7 +139,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         Object partialResults = header.get("partialResults");
         boolean timedOut = partialResults == null ? false : (Boolean)partialResults;
         if( timedOut ) {
-          numTimeouts.inc();
+          numTimeouts.incrementAndGet();
           rsp.setHttpCaching(false);
         }
       }
@@ -169,7 +160,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
       }
 
       rsp.setException(e);
-      numErrors.inc();
+      numErrors.incrementAndGet();
     }
     finally {
       timer.stop();
@@ -178,37 +169,44 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
+  @Override
   public String getName() {
     return this.getClass().getName();
   }
 
+  @Override
   public abstract String getDescription();
+  @Override
   public abstract String getSource();
   
+  @Override
   public String getVersion() {
     return getClass().getPackage().getSpecificationVersion();
   }
   
+  @Override
   public Category getCategory() {
     return Category.QUERYHANDLER;
   }
 
+  @Override
   public URL[] getDocs() {
     return null;  // this can be overridden, but not required
   }
 
+  @Override
   public NamedList<Object> getStatistics() {
     NamedList<Object> lst = new SimpleOrderedMap<Object>();
-    lst.add("handlerStart",handlerStart);
-    lst.add("requests", numRequests.count());
-    lst.add("errors", numErrors.count());
-    lst.add("timeouts", numTimeouts.count());
-    lst.add("totalTime",requestTimes.sum());
-    lst.add("avgRequestsPerSecond", requestTimes.meanRate());
-    lst.add("5minRateReqsPerSecond", requestTimes.fiveMinuteRate());
-    lst.add("15minRateReqsPerSecond", requestTimes.fifteenMinuteRate());
-    lst.add("avgTimePerRequest", requestTimes.mean());
     Snapshot snapshot = requestTimes.getSnapshot();
+    lst.add("handlerStart",handlerStart);
+    lst.add("requests", numRequests.longValue());
+    lst.add("errors", numErrors.longValue());
+    lst.add("timeouts", numTimeouts.longValue());
+    lst.add("totalTime", requestTimes.getSum());
+    lst.add("avgRequestsPerSecond", requestTimes.getMeanRate());
+    lst.add("5minRateReqsPerSecond", requestTimes.getFiveMinuteRate());
+    lst.add("15minRateReqsPerSecond", requestTimes.getFifteenMinuteRate());
+    lst.add("avgTimePerRequest", requestTimes.getMean());
     lst.add("medianRequestTime", snapshot.getMedian());
     lst.add("75thPcRequestTime", snapshot.get75thPercentile());
     lst.add("95thPcRequestTime", snapshot.get95thPercentile());

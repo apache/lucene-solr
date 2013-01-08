@@ -26,6 +26,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MutableBits;
 
 /** Optimized implementation of a vector of bits.  This is more-or-less like
@@ -109,6 +110,7 @@ final class BitVector implements Cloneable, MutableBits {
   }
 
   /** Sets the value of <code>bit</code> to zero. */
+  @Override
   public final void clear(int bit) {
     if (bit >= size) {
       throw new ArrayIndexOutOfBoundsException(bit);
@@ -138,6 +140,7 @@ final class BitVector implements Cloneable, MutableBits {
 
   /** Returns <code>true</code> if <code>bit</code> is one and
     <code>false</code> if it is zero. */
+  @Override
   public final boolean get(int bit) {
     assert bit >= 0 && bit < size: "bit " + bit + " is out of bounds 0.." + (size-1);
     return (bits[bit >> 3] & (1 << (bit & 7))) != 0;
@@ -236,7 +239,7 @@ final class BitVector implements Cloneable, MutableBits {
       }
       assert verifyCount();
     } finally {
-      output.close();
+      IOUtils.close(output);
     }
   }
 

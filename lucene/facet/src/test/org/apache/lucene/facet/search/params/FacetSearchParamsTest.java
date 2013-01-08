@@ -1,16 +1,15 @@
 package org.apache.lucene.facet.search.params;
 
-import org.apache.lucene.store.Directory;
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
+import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.util.PartitionsUtils;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -32,47 +31,32 @@ import org.apache.lucene.facet.util.PartitionsUtils;
 public class FacetSearchParamsTest extends LuceneTestCase {
 
   @Test
-  public void testDefaultSettings() throws Exception {
-    FacetSearchParams fsp = new FacetSearchParams();
-    assertEquals("unexpected default facet indexing params class", DefaultFacetIndexingParams.class.getName(), fsp.getFacetIndexingParams().getClass().getName());
-    assertEquals("no facet requests should be added by default", 0, fsp.getFacetRequests().size());
-    Directory dir = newDirectory();
-    new DirectoryTaxonomyWriter(dir).close();
-    TaxonomyReader tr = new DirectoryTaxonomyReader(dir);
-    assertEquals("unexpected partition offset for 0 categories", 1, PartitionsUtils.partitionOffset(fsp, 1, tr));
-    assertEquals("unexpected partition size for 0 categories", 1, PartitionsUtils.partitionSize(fsp,tr));
-    tr.close();
-    dir.close();
-  }
-  
-  @Test
   public void testAddFacetRequest() throws Exception {
-    FacetSearchParams fsp = new FacetSearchParams();
-    fsp.addFacetRequest(new CountFacetRequest(new CategoryPath("a", "b"), 1));
+    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("a", "b"), 1));
     assertEquals("expected 1 facet request", 1, fsp.getFacetRequests().size());
   }
   
   @Test
   public void testPartitionSizeWithCategories() throws Exception {
-    FacetSearchParams fsp = new FacetSearchParams();
     Directory dir = newDirectory();
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(dir);
     tw.addCategory(new CategoryPath("a"));
     tw.commit();
     tw.close();
     TaxonomyReader tr = new DirectoryTaxonomyReader(dir);
-    assertEquals("unexpected partition offset for 1 categories", 2, PartitionsUtils.partitionOffset(fsp, 1, tr));
-    assertEquals("unexpected partition size for 1 categories", 2, PartitionsUtils.partitionSize(fsp,tr));
+    assertEquals("unexpected partition offset for 1 categories", 2,
+        PartitionsUtils.partitionOffset(FacetIndexingParams.ALL_PARENTS, 1, tr));
+    assertEquals("unexpected partition size for 1 categories", 2,
+        PartitionsUtils.partitionSize(FacetIndexingParams.ALL_PARENTS,tr));
     tr.close();
     dir.close();
   }
   
   @Test
   public void testSearchParamsWithNullRequest() throws Exception {
-    FacetSearchParams fsp = new FacetSearchParams();
     try {
-      fsp.addFacetRequest(null);
-      fail("FacetSearchParams should throw IllegalArgumentException when trying to add a null FacetRequest");
+      assertNull(new FacetSearchParams());
+      fail("FacetSearchParams should throw IllegalArgumentException when not adding requests");
     } catch (IllegalArgumentException e) {
     }
   }

@@ -27,10 +27,12 @@ public class OffsetAttributeImpl extends AttributeImpl implements OffsetAttribut
   /** Initialize this attribute with startOffset and endOffset of 0. */
   public OffsetAttributeImpl() {}
 
+  @Override
   public int startOffset() {
     return startOffset;
   }
 
+  @Override
   public void setOffset(int startOffset, int endOffset) {
 
     // TODO: we could assert that this is set-once, ie,
@@ -48,6 +50,7 @@ public class OffsetAttributeImpl extends AttributeImpl implements OffsetAttribut
     this.endOffset = endOffset;
   }
   
+  @Override
   public int endOffset() {
     return endOffset;
   }

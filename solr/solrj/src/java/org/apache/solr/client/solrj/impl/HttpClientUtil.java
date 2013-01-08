@@ -238,6 +238,7 @@ public class HttpClientUtil {
   private static class UseCompressionResponseInterceptor implements
       HttpResponseInterceptor {
     
+    @Override
     public void process(final HttpResponse response, final HttpContext context)
         throws HttpException, IOException {
       
@@ -266,10 +267,12 @@ public class HttpClientUtil {
       super(entity);
     }
     
+    @Override
     public InputStream getContent() throws IOException, IllegalStateException {
       return new GZIPInputStream(wrappedEntity.getContent());
     }
     
+    @Override
     public long getContentLength() {
       return -1;
     }
@@ -281,6 +284,7 @@ public class HttpClientUtil {
       super(entity);
     }
     
+    @Override
     public InputStream getContent() throws IOException, IllegalStateException {
       return new InflaterInputStream(wrappedEntity.getContent());
     }

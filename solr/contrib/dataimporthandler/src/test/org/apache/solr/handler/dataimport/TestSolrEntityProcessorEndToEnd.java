@@ -30,7 +30,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
@@ -47,11 +46,11 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   
   private static Logger LOG = LoggerFactory.getLogger(TestSolrEntityProcessorEndToEnd.class);
   
-  //rivate static final String SOLR_SOURCE_URL = "http://127.0.0.1:8983/solr";
   private static final String SOLR_CONFIG = "dataimport-solrconfig.xml";
   private static final String SOLR_SCHEMA = "dataimport-schema.xml";
-  private static final String SOLR_HOME = "dih/solr";
-  private static final String CONF_DIR = "dih" + File.separator + "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
+  private static final String SOURCE_CONF_DIR = "dih" + File.separator + "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
+  
+  private static final String DEAD_SOLR_SERVER = "http://[ff01::114]:33332/solr";
   
   private static final List<Map<String,Object>> DB_DOCS = new ArrayList<Map<String,Object>>();
   private static final List<Map<String,Object>> SOLR_DOCS = new ArrayList<Map<String,Object>>();
@@ -73,7 +72,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   private SolrInstance instance = null;
   private JettySolrRunner jetty;
   
-  private static String getDihConfigTagsInnerEntity(int port) {
+  private String getDihConfigTagsInnerEntity() {
     return  "<dataConfig>\r\n"
         + "  <dataSource type='MockDataSource' />\r\n"
         + "  <document>\r\n"
@@ -81,21 +80,21 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
         + "      <field column='dbid_s' />\r\n"
         + "      <field column='dbdesc_s' />\r\n"
         + "      <entity name='se' processor='SolrEntityProcessor' query='id:${db.dbid_s}'\n"
-        + "     url='" + getSourceUrl(port) + "' fields='id,desc'>\r\n"
+        + "     url='" + getSourceUrl() + "' fields='id,desc'>\r\n"
         + "        <field column='id' />\r\n"
         + "        <field column='desc' />\r\n" + "      </entity>\r\n"
         + "    </entity>\r\n" + "  </document>\r\n" + "</dataConfig>\r\n";
   }
   
-  private static String generateDIHConfig(String options, int port) {
+  private String generateDIHConfig(String options, boolean useDeadServer) {
     return "<dataConfig>\r\n" + "  <document>\r\n"
         + "    <entity name='se' processor='SolrEntityProcessor'" + "   url='"
-        + getSourceUrl(port) + "' " + options + " />\r\n" + "  </document>\r\n"
+        + (useDeadServer ? DEAD_SOLR_SERVER : getSourceUrl()) + "' " + options + " />\r\n" + "  </document>\r\n"
         + "</dataConfig>\r\n";
   }
   
-  private static String getSourceUrl(int port) {
-    return "http://127.0.0.1:" + port + "/solr";
+  private String getSourceUrl() {
+    return "http://127.0.0.1:" + jetty.getLocalPort() + "/solr";
   }
   
   //TODO: fix this test to close its directories
@@ -120,7 +119,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   public void setUp() throws Exception {
     super.setUp();
     // destination solr core
-    initCore(SOLR_CONFIG, SOLR_SCHEMA, SOLR_HOME);
+    initCore(SOLR_CONFIG, SOLR_SCHEMA);
     // data source solr instance
     instance = new SolrInstance();
     instance.setUp();
@@ -145,7 +144,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     
     try {
       addDocumentsToSolr(SOLR_DOCS);
-      runFullImport(generateDIHConfig("query='*:*' rows='2' fl='id,desc' onError='skip'", jetty.getLocalPort()));
+      runFullImport(generateDIHConfig("query='*:*' rows='2' fl='id,desc' onError='skip'", false));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       fail(e.getMessage());
@@ -163,7 +162,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       addDocumentsToSolr(generateSolrDocuments(30));
       Map<String,String> map = new HashMap<String,String>();
       map.put("rows", "50");
-      runFullImport(generateDIHConfig("query='*:*' fq='desc:Description1*,desc:Description*2' rows='2'", jetty.getLocalPort()), map);
+      runFullImport(generateDIHConfig("query='*:*' fq='desc:Description1*,desc:Description*2' rows='2'", false), map);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       fail(e.getMessage());
@@ -178,7 +177,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     
     try {
       addDocumentsToSolr(generateSolrDocuments(7));
-      runFullImport(generateDIHConfig("query='*:*' fl='id' rows='2'", jetty.getLocalPort()));
+      runFullImport(generateDIHConfig("query='*:*' fl='id' rows='2'", false));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       fail(e.getMessage());
@@ -204,7 +203,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     try {
       MockDataSource.setIterator("select * from x", DB_DOCS.iterator());
       addDocumentsToSolr(SOLR_DOCS);
-      runFullImport(getDihConfigTagsInnerEntity(jetty.getLocalPort()));
+      runFullImport(getDihConfigTagsInnerEntity());
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       fail(e.getMessage());
@@ -221,17 +220,10 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   }
   
   public void testFullImportWrongSolrUrl() {
-    try {
-      jetty.stop();
-    } catch (Exception e) {
-      LOG.error("Error stopping jetty", e);
-      fail(e.getMessage());
-    }
-    
     assertQ(req("*:*"), "//result[@numFound='0']");
     
     try {
-      runFullImport(generateDIHConfig("query='*:*' rows='2' fl='id,desc' onError='skip'", jetty.getLocalPort()));
+      runFullImport(generateDIHConfig("query='*:*' rows='2' fl='id,desc' onError='skip'", true /* use dead server */));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       fail(e.getMessage());
@@ -244,7 +236,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     assertQ(req("*:*"), "//result[@numFound='0']");
     
     try {
-      runFullImport(generateDIHConfig("query='bogus:3' rows='2' fl='id,desc' onError='abort'", jetty.getLocalPort()));
+      runFullImport(generateDIHConfig("query='bogus:3' rows='2' fl='id,desc' onError='abort'", false));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       fail(e.getMessage());
@@ -274,9 +266,9 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       sidl.add(sd);
     }
     
-    HttpClient client = HttpClientUtil.createClient(null);
-    URL url = new URL(getSourceUrl(jetty.getLocalPort()));
-    HttpSolrServer solrServer = new HttpSolrServer(url.toExternalForm(), client);
+    HttpSolrServer solrServer = new HttpSolrServer(getSourceUrl());
+    solrServer.setConnectionTimeout(15000);
+    solrServer.setSoTimeout(30000);
     solrServer.add(sidl);
     solrServer.commit(true, true);
   }
@@ -291,7 +283,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     }
     
     public String getSchemaFile() {
-      return CONF_DIR + "dataimport-schema.xml";
+      return SOURCE_CONF_DIR + "dataimport-schema.xml";
     }
     
     public String getDataDir() {
@@ -299,7 +291,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
     }
     
     public String getSolrConfigFile() {
-      return CONF_DIR + "dataimport-solrconfig.xml";
+      return SOURCE_CONF_DIR + "dataimport-solrconfig.xml";
     }
     
     public void setUp() throws Exception {
@@ -321,7 +313,7 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
       
       FileUtils.copyFile(getFile(getSchemaFile()), f);
       f = new File(confDir, "data-config.xml");
-      FileUtils.copyFile(getFile(CONF_DIR + "dataconfig-contentstream.xml"), f);
+      FileUtils.copyFile(getFile(SOURCE_CONF_DIR + "dataconfig-contentstream.xml"), f);
     }
     
     public void tearDown() throws Exception {

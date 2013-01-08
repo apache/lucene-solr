@@ -38,6 +38,7 @@ class SimpleTermRewriteQuery extends RewriteQuery<SimpleTerm> {
     final List<Query> luceneSubQueries = new ArrayList<Query>();
     srndQuery.visitMatchingTerms(reader, fieldName,
     new SimpleTerm.MatchingTermVisitor() {
+      @Override
       public void visitMatchingTerm(Term term) throws IOException {
         luceneSubQueries.add(qf.newTermQuery(term));
       }

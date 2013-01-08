@@ -810,6 +810,7 @@ public class SolrPluginUtils {
    * </p>
    */
   public static class IdentityRegenerator implements CacheRegenerator {
+    @Override
     public boolean regenerateItem(SolrIndexSearcher newSearcher,
                                   SolrCache newCache,
                                   SolrCache oldCache,

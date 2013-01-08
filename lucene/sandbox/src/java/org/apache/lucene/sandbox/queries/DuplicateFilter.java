@@ -102,7 +102,7 @@ public class DuplicateFilter extends Filter {
       if (currTerm == null) {
         break;
       } else {
-        docs = termsEnum.docs(acceptDocs, docs, 0);
+        docs = termsEnum.docs(acceptDocs, docs, DocsEnum.FLAG_NONE);
         int doc = docs.nextDoc();
         if (doc != DocIdSetIterator.NO_MORE_DOCS) {
           if (keepMode == KeepMode.KM_USE_FIRST_OCCURRENCE) {
@@ -142,7 +142,7 @@ public class DuplicateFilter extends Filter {
       } else {
         if (termsEnum.docFreq() > 1) {
           // unset potential duplicates
-          docs = termsEnum.docs(acceptDocs, docs, 0);
+          docs = termsEnum.docs(acceptDocs, docs, DocsEnum.FLAG_NONE);
           int doc = docs.nextDoc();
           if (doc != DocIdSetIterator.NO_MORE_DOCS) {
             if (keepMode == KeepMode.KM_USE_FIRST_OCCURRENCE) {

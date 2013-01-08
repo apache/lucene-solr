@@ -91,8 +91,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  *   &lt;lst name="exclude"&gt;
  *     &lt;str name="typeClass"&gt;solr.DateField&lt;/str&gt;
  *   &lt;/lst&gt;
- * &lt;/processor&gt;
- * </pre>
+ * &lt;/processor&gt;</pre>
  * 
  * <p>
  * Subclasses define the default selection behavior to be applied if no 
@@ -197,6 +196,7 @@ public abstract class FieldMutatingUpdateProcessorFactory
 
   }
 
+  @Override
   public void inform(final SolrCore core) {
     
     final IndexSchema schema = core.getSchema();

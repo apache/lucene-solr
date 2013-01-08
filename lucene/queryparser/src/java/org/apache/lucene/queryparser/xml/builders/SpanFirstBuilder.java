@@ -33,6 +33,7 @@ public class SpanFirstBuilder extends SpanBuilderBase {
     this.factory = factory;
   }
 
+  @Override
   public SpanQuery getSpanQuery(Element e) throws ParserException {
     int end = DOMUtils.getAttribute(e, "end", 1);
     Element child = DOMUtils.getFirstChildElement(e);

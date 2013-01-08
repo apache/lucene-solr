@@ -113,11 +113,13 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
   // and adds a new entry for this document into the index
   // stream.  This assumes the buffer was already written
   // in the correct fields format.
+  @Override
   public void startDocument(int numStoredFields) throws IOException {
     indexStream.writeLong(fieldsStream.getFilePointer());
     fieldsStream.writeVInt(numStoredFields);
   }
 
+  @Override
   public void close() throws IOException {
     try {
       IOUtils.close(fieldsStream, indexStream);
@@ -126,6 +128,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
     }
   }
 
+  @Override
   public void abort() {
     try {
       close();
@@ -135,6 +138,7 @@ public final class Lucene40StoredFieldsWriter extends StoredFieldsWriter {
         IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION));
   }
 
+  @Override
   public void writeField(FieldInfo info, StorableField field) throws IOException {
     fieldsStream.writeVInt(info.number);
     int bits = 0;

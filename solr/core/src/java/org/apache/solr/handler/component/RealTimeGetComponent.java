@@ -56,6 +56,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.update.DocumentBuilder;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
@@ -72,7 +73,7 @@ public class RealTimeGetComponent extends SearchComponent
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     // Set field flags
-    ReturnFields returnFields = new ReturnFields( rb.req );
+    ReturnFields returnFields = new SolrReturnFields( rb.req );
     rb.rsp.setReturnFields( returnFields );
   }
 

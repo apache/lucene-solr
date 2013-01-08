@@ -30,15 +30,15 @@
   adminPath: RequestHandler path to manage cores.  
     If 'null' (or absent), cores will not be manageable via REST
   -->
-  <cores adminPath="/admin/cores" defaultCoreName="core0" host="127.0.0.1" hostPort="${hostPort:8983}" hostContext="solr" zkClientTimeout="8000">
+  <cores adminPath="/admin/cores" defaultCoreName="core0" host="127.0.0.1" hostPort="${hostPort:8983}" hostContext="${hostContext:}" zkClientTimeout="8000">
     <core name="collection1" instanceDir="." />
-    <core name="core0" instanceDir="${theInstanceDir:./}" collection="${collection:acollection}">
+    <core name="core0" instanceDir="${theInstanceDir:./}" dataDir="${dataDir1}" collection="${collection:acollection}">
       <property name="version" value="3.5"/>
       <property name="l10n" value="EN"/>
       <property name="ctlField" value="core0"/>
       <property name="comment" value="This is a sample with a sys prop ${sysprop:default}"/>
     </core>
-    <core name="core1" instanceDir="./">
+    <core name="core1" instanceDir="./" dataDir="${dataDir2}">
       <property name="version" value="2.4"/>
       <property name="l10n" value="FR"/>
       <property name="ctlField" value="core1"/>

@@ -41,6 +41,7 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
   /**
    * {@inheritDoc}
    */
+  @Override
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
     SortSpec ss = rb.getSortSpec();
     Sort groupSort = rb.getGroupingSpec().getGroupSort();

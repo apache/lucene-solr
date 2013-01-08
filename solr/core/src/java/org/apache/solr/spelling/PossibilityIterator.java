@@ -346,14 +346,17 @@ public class PossibilityIterator implements
     return false;
   }
   
+  @Override
   public boolean hasNext() {
     return rankedPossibilityIterator.hasNext();
   }
   
+  @Override
   public PossibilityIterator.RankedSpellPossibility next() {
     return rankedPossibilityIterator.next();
   }
   
+  @Override
   public void remove() {
     throw new UnsupportedOperationException();
   }
@@ -388,6 +391,7 @@ public class PossibilityIterator implements
       return true;
     }
     
+    @Override
     public String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("rank=").append(rank).append(" (").append(index).append(")");
@@ -413,6 +417,7 @@ public class PossibilityIterator implements
   
   private class RankComparator implements Comparator<RankedSpellPossibility> {
     // Rank poorer suggestions ahead of better ones for use with a PriorityQueue
+    @Override
     public int compare(RankedSpellPossibility r1, RankedSpellPossibility r2) {
       int retval = r2.rank - r1.rank;
       if (retval == 0) {

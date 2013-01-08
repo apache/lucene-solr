@@ -2,26 +2,14 @@ package org.apache.lucene.facet;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.store.Directory;
-
-import org.apache.lucene.search.MultiCollector;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
@@ -32,6 +20,17 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -91,19 +90,18 @@ public class FacetTestUtils {
   }
 
   public static Collector[] search(IndexSearcher searcher,
-      TaxonomyReader taxonomyReader, DefaultFacetIndexingParams iParams,
-      int k, String... facetNames) throws IOException {
+      TaxonomyReader taxonomyReader, FacetIndexingParams iParams, int k,
+      String... facetNames) throws IOException {
     
     Collector[] collectors = new Collector[2];
     
-    FacetSearchParams facetSearchParams = new FacetSearchParams(iParams);
-    Collection<FacetRequest> fRequests = new ArrayList<FacetRequest>();
+    List<FacetRequest> fRequests = new ArrayList<FacetRequest>();
     for (String facetName : facetNames) {
       CategoryPath cp = new CategoryPath(facetName);
       FacetRequest fq = new CountFacetRequest(cp, k);
-      facetSearchParams.addFacetRequest(fq);
       fRequests.add(fq);
     }
+    FacetSearchParams facetSearchParams = new FacetSearchParams(fRequests, iParams);
 
     TopScoreDocCollector topDocsCollector = TopScoreDocCollector.create(
         searcher.getIndexReader().maxDoc(), true);
@@ -120,11 +118,9 @@ public class FacetTestUtils {
   
   public static void add(FacetIndexingParams iParams, RandomIndexWriter iw,
       TaxonomyWriter tw, String... strings) throws IOException {
-    ArrayList<CategoryPath> cps = new ArrayList<CategoryPath>();
-    CategoryPath cp = new CategoryPath(strings);
-    cps.add(cp);
     Document d = new Document();
-    new CategoryDocumentBuilder(tw, iParams).setCategoryPaths(cps).build(d);
+    FacetFields facetFields = new FacetFields(tw, iParams);
+    facetFields.addFields(d, Collections.singletonList(new CategoryPath(strings)));
     d.add(new TextField("content", "alpha", Field.Store.YES));
     iw.addDocument(d);
   }

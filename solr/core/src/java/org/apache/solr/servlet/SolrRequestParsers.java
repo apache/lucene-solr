@@ -32,6 +32,8 @@ import java.util.Locale;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.BoundedInputStream;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -46,7 +48,6 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.ServletSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 
@@ -57,47 +58,63 @@ public class SolrRequestParsers
   
   // Should these constants be in a more public place?
   public static final String MULTIPART = "multipart";
+  public static final String FORMDATA = "formdata";
   public static final String RAW = "raw";
   public static final String SIMPLE = "simple";
   public static final String STANDARD = "standard";
   
-  private HashMap<String, SolrRequestParser> parsers;
-  private boolean enableRemoteStreams = false;
-  private boolean handleSelect = true;
+  private final HashMap<String, SolrRequestParser> parsers =
+      new HashMap<String, SolrRequestParser>();
+  private final boolean enableRemoteStreams;
   private StandardRequestParser standard;
+  private boolean handleSelect = true;
   
+  /** Default instance for e.g. admin requests. Limits to 2 MB uploads and does not allow remote streams. */
+  public static final SolrRequestParsers DEFAULT = new SolrRequestParsers();
+
   /**
    * Pass in an xml configuration.  A null configuration will enable
-   * everythign with maximum values.
+   * everything with maximum values.
    */
-  public SolrRequestParsers( Config globalConfig )
-  {
-    long uploadLimitKB = 1048;  // 2MB default
+  public SolrRequestParsers( Config globalConfig ) {
+    final int multipartUploadLimitKB, formUploadLimitKB;
     if( globalConfig == null ) {
-      uploadLimitKB = Long.MAX_VALUE; 
+      multipartUploadLimitKB = formUploadLimitKB = Integer.MAX_VALUE; 
       enableRemoteStreams = true;
       handleSelect = true;
-    }
-    else {
-      uploadLimitKB = globalConfig.getInt( 
-          "requestDispatcher/requestParsers/@multipartUploadLimitInKB", (int)uploadLimitKB );
+    } else {
+      multipartUploadLimitKB = globalConfig.getInt( 
+          "requestDispatcher/requestParsers/@multipartUploadLimitInKB", 2048 );
+      
+      formUploadLimitKB = globalConfig.getInt( 
+          "requestDispatcher/requestParsers/@formdataUploadLimitInKB", 2048 );
       
       enableRemoteStreams = globalConfig.getBool( 
           "requestDispatcher/requestParsers/@enableRemoteStreaming", false ); 
   
       // Let this filter take care of /select?xxx format
       handleSelect = globalConfig.getBool( 
-          "requestDispatcher/@handleSelect", handleSelect ); 
+          "requestDispatcher/@handleSelect", true ); 
     }
-       
-    MultipartRequestParser multi = new MultipartRequestParser( uploadLimitKB );
+    init(multipartUploadLimitKB, formUploadLimitKB);
+  }
+  
+  private SolrRequestParsers() {
+    enableRemoteStreams = false;
+    handleSelect = false;
+    init(2048, 2048);
+  }
+
+  private void init( int multipartUploadLimitKB, int formUploadLimitKB) {       
+    MultipartRequestParser multi = new MultipartRequestParser( multipartUploadLimitKB );
     RawRequestParser raw = new RawRequestParser();
-    standard = new StandardRequestParser( multi, raw );
+    FormDataRequestParser formdata = new FormDataRequestParser( formUploadLimitKB );
+    standard = new StandardRequestParser( multi, raw, formdata );
     
     // I don't see a need to have this publicly configured just yet
     // adding it is trivial
-    parsers = new HashMap<String, SolrRequestParser>();
     parsers.put( MULTIPART, multi );
+    parsers.put( FORMDATA, formdata );
     parsers.put( RAW, raw );
     parsers.put( SIMPLE, new SimpleRequestParser() );
     parsers.put( STANDARD, standard );
@@ -175,24 +192,32 @@ public class SolrRequestParsers
     return q;
   }
   
+  /**
+   * Given a url-encoded query string (UTF-8), map it into solr params
+   */
+  public static MultiMapSolrParams parseQueryString(String queryString) {
+    Map<String,String[]> map = new HashMap<String, String[]>();
+    parseQueryString(queryString, "UTF-8", map);
+    return new MultiMapSolrParams(map);
+  }
 
   /**
-   * Given a standard query string map it into solr params
+   * Given a url-encoded query string, map it into the given map
+   * @param queryString as given from URL
+   * @param charset to be used to decode %-encoding
+   * @param map place all parameters in this map
    */
-  public static MultiMapSolrParams parseQueryString(String queryString) 
-  {
-    Map<String,String[]> map = new HashMap<String, String[]>();
+  static void parseQueryString(String queryString, String charset, Map<String,String[]> map) {
     if( queryString != null && queryString.length() > 0 ) {
       try {
         for( String kv : queryString.split( "&" ) ) {
           int idx = kv.indexOf( '=' );
-          if( idx > 0 ) {
-            String name = URLDecoder.decode( kv.substring( 0, idx ), "UTF-8");
-            String value = URLDecoder.decode( kv.substring( idx+1 ), "UTF-8");
+          if( idx >= 0 ) {
+            String name = URLDecoder.decode( kv.substring( 0, idx ), charset);
+            String value = URLDecoder.decode( kv.substring( idx+1 ), charset);
             MultiMapSolrParams.addParam( name, value, map );
-          }
-          else {
-            String name = URLDecoder.decode( kv, "UTF-8" );
+          } else {
+            String name = URLDecoder.decode( kv, charset );
             MultiMapSolrParams.addParam( name, "", map );
           }
         }
@@ -201,7 +226,6 @@ public class SolrRequestParsers
         throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, uex );
       }
     }
-    return new MultiMapSolrParams( map );
   }
 
   public boolean isHandleSelect() {
@@ -228,14 +252,15 @@ interface SolrRequestParser
 //-----------------------------------------------------------------
 
 /**
- * The simple parser just uses the params directly
+ * The simple parser just uses the params directly, does not support POST URL-encoded forms
  */
 class SimpleRequestParser implements SolrRequestParser
 {
+  @Override
   public SolrParams parseParamsAndFillStreams( 
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {
-    return new ServletSolrParams(req);
+    return SolrRequestParsers.parseQueryString(req.getQueryString());
   }
 }
 
@@ -259,6 +284,7 @@ class HttpRequestContentStream extends ContentStreamBase
     }
   }
 
+  @Override
   public InputStream getStream() throws IOException {
     return req.getInputStream();
   }
@@ -281,6 +307,7 @@ class FileItemContentStream extends ContentStreamBase
     size = item.getSize();
   }
     
+  @Override
   public InputStream getStream() throws IOException {
     return item.getInputStream();
   }
@@ -291,16 +318,10 @@ class FileItemContentStream extends ContentStreamBase
  */
 class RawRequestParser implements SolrRequestParser
 {
+  @Override
   public SolrParams parseParamsAndFillStreams( 
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {
-    // The javadocs for HttpServletRequest are clear that req.getReader() should take
-    // care of any character encoding issues.  BUT, there are problems while running on
-    // some servlet containers: including Tomcat 5 and resin.
-    //
-    // Rather than return req.getReader(), this uses the default ContentStreamBase method
-    // that checks for charset definitions in the ContentType.
-    
     streams.add( new HttpRequestContentStream( req ) );
     return SolrRequestParsers.parseQueryString( req.getQueryString() );
   }
@@ -313,13 +334,14 @@ class RawRequestParser implements SolrRequestParser
  */
 class MultipartRequestParser implements SolrRequestParser
 {
-  private long uploadLimitKB;
+  private final int uploadLimitKB;
   
-  public MultipartRequestParser( long limit )
+  public MultipartRequestParser( int limit )
   {
     uploadLimitKB = limit;
   }
   
+  @Override
   public SolrParams parseParamsAndFillStreams( 
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {
@@ -338,7 +360,7 @@ class MultipartRequestParser implements SolrRequestParser
 
     // Create a new file upload handler
     ServletFileUpload upload = new ServletFileUpload(factory);
-    upload.setSizeMax( uploadLimitKB*1024 );
+    upload.setSizeMax( ((long) uploadLimitKB) * 1024L );
 
     // Parse the request
     List items = upload.parseRequest(req);
@@ -363,39 +385,126 @@ class MultipartRequestParser implements SolrRequestParser
 
 
 /**
+ * Extract application/x-www-form-urlencoded form data for POST requests
+ */
+class FormDataRequestParser implements SolrRequestParser
+{
+  private final int uploadLimitKB;
+  
+  public FormDataRequestParser( int limit )
+  {
+    uploadLimitKB = limit;
+  }
+  
+  @Override
+  public SolrParams parseParamsAndFillStreams( 
+      final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
+  {
+    if (!isFormData(req)) {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Not application/x-www-form-urlencoded content: "+req.getContentType() );
+    }
+    
+    String charset = ContentStreamBase.getCharsetFromContentType(req.getContentType());
+    if (charset == null) charset = "UTF-8";
+    
+    final Map<String,String[]> map = new HashMap<String, String[]>();
+    
+    // also add possible URL parameters and include into the map (parsed using UTF-8):
+    final String qs = req.getQueryString();
+    if (qs != null) {
+      SolrRequestParsers.parseQueryString(qs, "UTF-8", map);
+    }
+    
+    // may be -1, so we check again later. But if its already greater we can stop processing!
+    final long totalLength = req.getContentLength();
+    final long maxLength = ((long) uploadLimitKB) * 1024L;
+    if (totalLength > maxLength) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded content length (" +
+        totalLength + " bytes) exceeds upload limit of " + uploadLimitKB + " KB");
+    }
+    
+    // get query String from request body, using the charset given in content-type:
+    final InputStream in;
+    try {
+      in = req.getInputStream();
+    } catch (IllegalStateException ise) {
+      throw (SolrException) getParameterIncompatibilityException().initCause(ise);
+    }
+    try {
+      final String data = IOUtils.toString(new BoundedInputStream(in, maxLength), charset);
+      // if there is remaining data in the underlying stream, throw exception:
+      if (in.read() != -1) {
+        // read remaining data and throw away:
+        while (IOUtils.skip(in, 1024L) > 0);
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded content exceeds upload limit of " + uploadLimitKB + " KB");
+      }
+      if (data.length() == 0 && totalLength > 0L) {
+        throw getParameterIncompatibilityException();
+      }
+      SolrRequestParsers.parseQueryString(data, charset, map);
+    } finally {
+      IOUtils.closeQuietly(in);
+    }
+    
+    return new MultiMapSolrParams(map);
+  }
+  
+  private SolrException getParameterIncompatibilityException() {
+    return new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+      "Solr requires that request parameters sent using application/x-www-form-urlencoded " +
+      "content-type can be read through the request input stream. Unfortunately, the " +
+      "stream was empty / not available. This may be caused by another servlet filter calling " +
+      "ServletRequest.getParameter*() before SolrDispatchFilter, please remove it."
+    );
+  }
+  
+  public boolean isFormData(HttpServletRequest req) {
+    String contentType = req.getContentType();
+    if (contentType != null) {
+      int idx = contentType.indexOf( ';' );
+      if( idx > 0 ) { // remove the charset definition "; charset=utf-8"
+        contentType = contentType.substring( 0, idx );
+      }
+      contentType = contentType.trim();
+      if( "application/x-www-form-urlencoded".equalsIgnoreCase(contentType)) {
+        return true;
+      }
+    }
+    return false;
+  }
+}
+
+
+/**
  * The default Logic
  */
 class StandardRequestParser implements SolrRequestParser
 {
   MultipartRequestParser multipart;
   RawRequestParser raw;
+  FormDataRequestParser formdata;
   
-  StandardRequestParser( MultipartRequestParser multi, RawRequestParser raw ) 
+  StandardRequestParser(MultipartRequestParser multi, RawRequestParser raw, FormDataRequestParser formdata) 
   {
     this.multipart = multi;
     this.raw = raw;
+    this.formdata = formdata;
   }
   
+  @Override
   public SolrParams parseParamsAndFillStreams( 
       final HttpServletRequest req, ArrayList<ContentStream> streams ) throws Exception
   {
     String method = req.getMethod().toUpperCase(Locale.ROOT);
-    if( "GET".equals( method ) || "HEAD".equals( method )) {
-      return new ServletSolrParams(req);
+    if ("GET".equals(method) || "HEAD".equals(method)) {
+      return SolrRequestParsers.parseQueryString(req.getQueryString());
     }
-    if( "POST".equals( method ) ) {
-      String contentType = req.getContentType();
-      if( contentType != null ) {
-        int idx = contentType.indexOf( ';' );
-        if( idx > 0 ) { // remove the charset definition "; charset=utf-8"
-          contentType = contentType.substring( 0, idx );
-        }
-        if( "application/x-www-form-urlencoded".equals( contentType.toLowerCase(Locale.ROOT) ) ) {
-          return new ServletSolrParams(req); // just get the params from parameterMap
-        }
-        if( ServletFileUpload.isMultipartContent(req) ) {
-          return multipart.parseParamsAndFillStreams(req, streams);
-        }
+    if ("POST".equals( method ) ) {
+      if (formdata.isFormData(req)) {
+        return formdata.parseParamsAndFillStreams(req, streams);
+      }
+      if (ServletFileUpload.isMultipartContent(req)) {
+        return multipart.parseParamsAndFillStreams(req, streams);
       }
       return raw.parseParamsAndFillStreams(req, streams);
     }

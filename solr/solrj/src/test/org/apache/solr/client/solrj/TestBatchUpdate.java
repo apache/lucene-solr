@@ -71,10 +71,12 @@ public class TestBatchUpdate extends SolrJettyTestBase {
     counter[0] = 0;
     commonsHttpSolrServer.addBeans(new Iterator<Bean>() {
 
+      @Override
       public boolean hasNext() {
         return counter[0] < numdocs;
       }
 
+      @Override
       public Bean next() {
         Bean bean = new Bean();
         bean.id = "" + (++counter[0]);
@@ -82,6 +84,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
         return bean;
       }
 
+      @Override
       public void remove() {
         //do nothing
       }
@@ -105,10 +108,12 @@ public class TestBatchUpdate extends SolrJettyTestBase {
     counter[0] = 0;
     commonsHttpSolrServer.add(new Iterator<SolrInputDocument>() {
 
+      @Override
       public boolean hasNext() {
         return counter[0] < numdocs;
       }
 
+      @Override
       public SolrInputDocument next() {
         SolrInputDocument doc = new SolrInputDocument();
         doc.addField("id", "" + (++counter[0]));
@@ -116,6 +121,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
         return doc;
       }
 
+      @Override
       public void remove() {
         //do nothing
 

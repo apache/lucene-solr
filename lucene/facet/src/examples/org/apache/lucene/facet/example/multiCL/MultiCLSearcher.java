@@ -1,5 +1,6 @@
 package org.apache.lucene.facet.example.multiCL;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.index.DirectoryReader;
@@ -17,6 +18,7 @@ import org.apache.lucene.facet.example.simple.SimpleUtils;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
+import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
@@ -91,17 +93,14 @@ public class MultiCLSearcher {
     Query q = new TermQuery(new Term(SimpleUtils.TEXT, "Quis"));
     ExampleUtils.log("Query: " + q);
 
-    TopScoreDocCollector topDocsCollector = TopScoreDocCollector.create(10,
-        true);
+    TopScoreDocCollector topDocsCollector = TopScoreDocCollector.create(10, true);
 
     // Faceted search parameters indicate which facets are we interested in
-    FacetSearchParams facetSearchParams = new FacetSearchParams(iParams);
-    facetSearchParams.addFacetRequest(new CountFacetRequest(
-        new CategoryPath("5"), 10));
-    facetSearchParams.addFacetRequest(new CountFacetRequest(
-        new CategoryPath("5", "5"), 10));
-    facetSearchParams.addFacetRequest(new CountFacetRequest(
-        new CategoryPath("6", "2"), 10));
+    List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
+    facetRequests.add(new CountFacetRequest(new CategoryPath("5"), 10));
+    facetRequests.add(new CountFacetRequest(new CategoryPath("5", "5"), 10));
+    facetRequests.add(new CountFacetRequest(new CategoryPath("6", "2"), 10));
+    FacetSearchParams facetSearchParams = new FacetSearchParams(facetRequests, iParams);
 
     // Facets collector is the simplest interface for faceted search.
     // It provides faceted search functions that are sufficient to many

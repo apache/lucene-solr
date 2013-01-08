@@ -132,7 +132,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
 
   private void testThatCantForwardToLeaderFails() throws Exception {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    ZkNodeProps props = zkStateReader.getLeaderProps(DEFAULT_COLLECTION, "shard1");
+    ZkNodeProps props = zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard1");
     
     chaosMonkey.stopShard("shard1");
 
@@ -238,7 +238,8 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
   private void testIndexingWithSuss() throws Exception {
     ConcurrentUpdateSolrServer suss = new ConcurrentUpdateSolrServer(
         ((HttpSolrServer) clients.get(0)).getBaseURL(), 3, 1);
-    
+    suss.setConnectionTimeout(15000);
+    suss.setSoTimeout(30000);
     for (int i=100; i<150; i++) {
       index_specific(suss, id, i);      
     }

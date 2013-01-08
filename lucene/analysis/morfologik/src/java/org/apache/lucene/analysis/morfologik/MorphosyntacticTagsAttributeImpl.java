@@ -47,10 +47,12 @@ public class MorphosyntacticTagsAttributeImpl extends AttributeImpl
     return tags;
   }
 
+  @Override
   public void clear() {
     tags = null;
   }
 
+  @Override
   public boolean equals(Object other) {
     if (other instanceof MorphosyntacticTagsAttribute) {
       return equal(this.getTags(), ((MorphosyntacticTagsAttribute) other).getTags());
@@ -62,6 +64,7 @@ public class MorphosyntacticTagsAttributeImpl extends AttributeImpl
     return l1 == null ? (l2 == null) : (l1.equals(l2));
   }
 
+  @Override
   public int hashCode() {
     return this.tags == null ? 0 : tags.hashCode();
   }
@@ -75,6 +78,7 @@ public class MorphosyntacticTagsAttributeImpl extends AttributeImpl
     this.tags = tags;
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     List<StringBuilder> cloned = null;
     if (tags != null) {
@@ -86,6 +90,7 @@ public class MorphosyntacticTagsAttributeImpl extends AttributeImpl
     ((MorphosyntacticTagsAttribute) target).setTags(cloned);
   }
 
+  @Override
   public MorphosyntacticTagsAttributeImpl clone() {
     MorphosyntacticTagsAttributeImpl cloned = new MorphosyntacticTagsAttributeImpl();
     this.copyTo(cloned);

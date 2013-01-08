@@ -2,22 +2,12 @@ package org.apache.lucene.facet.search;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
-import org.junit.Before;
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.facet.FacetTestUtils;
 import org.apache.lucene.facet.FacetTestUtils.IndexTaxonomyReaderPair;
 import org.apache.lucene.facet.FacetTestUtils.IndexTaxonomyWriterPair;
@@ -25,8 +15,7 @@ import org.apache.lucene.facet.example.ExampleResult;
 import org.apache.lucene.facet.example.TestMultiCLExample;
 import org.apache.lucene.facet.example.multiCL.MultiCLIndexer;
 import org.apache.lucene.facet.example.multiCL.MultiCLSearcher;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.TotalFacetCounts.CreationType;
 import org.apache.lucene.facet.search.results.FacetResult;
@@ -36,9 +25,18 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SlowRAMDirectory;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Before;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -90,10 +88,10 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
   /** Utility method to add a document and facets to an index/taxonomy. */
   static void addFacets(FacetIndexingParams iParams, IndexWriter iw,
                         TaxonomyWriter tw, String... strings) throws IOException {
-    ArrayList<CategoryPath> cps = new ArrayList<CategoryPath>();
-    cps.add(new CategoryPath(strings));
-    CategoryDocumentBuilder builder = new CategoryDocumentBuilder(tw, iParams);
-    iw.addDocument(builder.setCategoryPaths(cps).build(new Document()));
+    Document doc = new Document();
+    FacetFields facetFields = new FacetFields(tw, iParams);
+    facetFields.addFields(doc, Collections.singletonList(new CategoryPath(strings)));
+    iw.addDocument(doc);
   }
 
   /** Clears the cache and sets its size to one. */
@@ -145,7 +143,6 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     MockDirectoryWrapper indexDir = new MockDirectoryWrapper(random(), slowIndexDir);
     SlowRAMDirectory slowTaxoDir = new SlowRAMDirectory(-1, random());
     MockDirectoryWrapper taxoDir = new MockDirectoryWrapper(random(), slowTaxoDir);
-    
 
     // Index documents without the "slowness"
     MultiCLIndexer.index(indexDir, taxoDir);
@@ -196,7 +193,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     // it references a different TFC cache. This will still result
     // in valid results, but will only search one of the category lists
     // instead of all of them.
-    multis[numThreads - 1] = new Multi(slowIndexReader, slowTaxoReader, new DefaultFacetIndexingParams());
+    multis[numThreads - 1] = new Multi(slowIndexReader, slowTaxoReader, FacetIndexingParams.ALL_PARENTS);
 
     // Gentleman, start your engines
     for (Multi m : multis) {
@@ -252,7 +249,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
 
     // Create our index/taxonomy writers
     IndexTaxonomyWriterPair[] writers = FacetTestUtils.createIndexTaxonomyWriterPair(dirs);
-    DefaultFacetIndexingParams iParams = new DefaultFacetIndexingParams();
+    FacetIndexingParams iParams = FacetIndexingParams.ALL_PARENTS;
 
     // Add a facet to the index
     addFacets(iParams, writers[0].indexWriter, writers[0].taxWriter, "a", "b");
@@ -347,11 +344,10 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     // Create temporary RAMDirectories
     Directory[][] dirs = FacetTestUtils.createIndexTaxonomyDirs(1);
     // Create our index/taxonomy writers
-    IndexTaxonomyWriterPair[] writers = FacetTestUtils
-    .createIndexTaxonomyWriterPair(dirs);
-    DefaultFacetIndexingParams iParams = new DefaultFacetIndexingParams() {
+    IndexTaxonomyWriterPair[] writers = FacetTestUtils.createIndexTaxonomyWriterPair(dirs);
+    FacetIndexingParams iParams = new FacetIndexingParams() {
       @Override
-      protected int fixedPartitionSize() {
+      public int getPartitionSize() {
         return 2;
       }
     };
@@ -403,7 +399,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     IndexWriter w = new IndexWriter(indexDir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
-    DefaultFacetIndexingParams iParams = new DefaultFacetIndexingParams();
+    FacetIndexingParams iParams = FacetIndexingParams.ALL_PARENTS;
     // Add documents and facets
     for (int i = 0; i < 1000; i++) {
       addFacets(iParams, w, tw, "facet", Integer.toString(i));
@@ -454,7 +450,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     Directory[][] dirs = FacetTestUtils.createIndexTaxonomyDirs(2);
     // Create our index/taxonomy writers
     IndexTaxonomyWriterPair[] writers = FacetTestUtils.createIndexTaxonomyWriterPair(dirs);
-    DefaultFacetIndexingParams iParams = new DefaultFacetIndexingParams();
+    FacetIndexingParams iParams = FacetIndexingParams.ALL_PARENTS;
 
     // Add a facet to the index
     addFacets(iParams, writers[0].indexWriter, writers[0].taxWriter, "a", "b");

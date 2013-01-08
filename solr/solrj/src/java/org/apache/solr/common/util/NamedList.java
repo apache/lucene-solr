@@ -284,14 +284,17 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       value = _value;
     }
 
+    @Override
     public String getKey() {
       return key;
     }
 
+    @Override
     public T getValue() {
       return  value;
     }
 
+    @Override
     public T setValue(T _value) {
       T oldValue = value;
       value = _value;
@@ -337,6 +340,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   /**
    * Support the Iterable interface
    */
+  @Override
   public Iterator<Map.Entry<String,T>> iterator() {
 
     final NamedList<T> list = this;
@@ -345,17 +349,21 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
       int idx = 0;
 
+      @Override
       public boolean hasNext() {
         return idx < list.size();
       }
 
+      @Override
       public Map.Entry<String,T> next() {
         final int index = idx++;
         Map.Entry<String,T> nv = new Map.Entry<String,T>() {
+          @Override
           public String getKey() {
             return list.getName( index );
           }
 
+          @Override
           @SuppressWarnings("unchecked")
           public T getValue() {
             return list.getVal( index );
@@ -367,6 +375,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
             return getKey()+"="+getValue();
           }
 
+          @Override
           public T setValue(T value) {
             return list.setVal(index, value);
           }
@@ -374,6 +383,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
         return nv;
       }
 
+      @Override
       public void remove() {
         throw new UnsupportedOperationException();
       }

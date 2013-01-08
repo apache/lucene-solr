@@ -31,6 +31,7 @@ public class SpatialPrefixTreeTest extends LuceneTestCase {
   private SpatialContext ctx;
   private SpatialPrefixTree trie;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

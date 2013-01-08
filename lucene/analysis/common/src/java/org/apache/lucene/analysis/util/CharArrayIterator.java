@@ -59,34 +59,41 @@ public abstract class CharArrayIterator implements CharacterIterator {
     this.limit = start + length;
   }
 
+  @Override
   public char current() {
     return (index == limit) ? DONE : jreBugWorkaround(array[index]);
   }
   
   protected abstract char jreBugWorkaround(char ch);
 
+  @Override
   public char first() {
     index = start;
     return current();
   }
 
+  @Override
   public int getBeginIndex() {
     return 0;
   }
 
+  @Override
   public int getEndIndex() {
     return length;
   }
 
+  @Override
   public int getIndex() {
     return index - start;
   }
 
+  @Override
   public char last() {
     index = (limit == start) ? limit : limit - 1;
     return current();
   }
 
+  @Override
   public char next() {
     if (++index >= limit) {
       index = limit;
@@ -96,6 +103,7 @@ public abstract class CharArrayIterator implements CharacterIterator {
     }
   }
 
+  @Override
   public char previous() {
     if (--index < start) {
       index = start;
@@ -105,6 +113,7 @@ public abstract class CharArrayIterator implements CharacterIterator {
     }
   }
 
+  @Override
   public char setIndex(int position) {
     if (position < getBeginIndex() || position > getEndIndex())
       throw new IllegalArgumentException("Illegal Position: " + position);

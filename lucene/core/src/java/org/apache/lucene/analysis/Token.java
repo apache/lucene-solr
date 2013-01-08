@@ -242,6 +242,7 @@ public class Token extends CharTermAttributeImpl
    * {@inheritDoc}
    * @see PositionIncrementAttribute
    */
+  @Override
   public void setPositionIncrement(int positionIncrement) {
     if (positionIncrement < 0)
       throw new IllegalArgumentException
@@ -253,6 +254,7 @@ public class Token extends CharTermAttributeImpl
    * {@inheritDoc}
    * @see PositionIncrementAttribute
    */
+  @Override
   public int getPositionIncrement() {
     return positionIncrement;
   }
@@ -279,6 +281,7 @@ public class Token extends CharTermAttributeImpl
    * {@inheritDoc}
    * @see OffsetAttribute
    */
+  @Override
   public final int startOffset() {
     return startOffset;
   }
@@ -287,6 +290,7 @@ public class Token extends CharTermAttributeImpl
    * {@inheritDoc}
    * @see OffsetAttribute
    */
+  @Override
   public final int endOffset() {
     return endOffset;
   }
@@ -295,6 +299,7 @@ public class Token extends CharTermAttributeImpl
    * {@inheritDoc}
    * @see OffsetAttribute
    */
+  @Override
   public void setOffset(int startOffset, int endOffset) {
     checkOffsets(startOffset, endOffset);
     this.startOffset = startOffset;
@@ -305,6 +310,7 @@ public class Token extends CharTermAttributeImpl
    * {@inheritDoc}
    * @see TypeAttribute
    */
+  @Override
   public final String type() {
     return type;
   }
@@ -313,6 +319,7 @@ public class Token extends CharTermAttributeImpl
    * {@inheritDoc}
    * @see TypeAttribute
    */
+  @Override
   public final void setType(String type) {
     this.type = type;
   }
@@ -321,6 +328,7 @@ public class Token extends CharTermAttributeImpl
    * {@inheritDoc}
    * @see FlagsAttribute
    */
+  @Override
   public int getFlags() {
     return flags;
   }
@@ -329,6 +337,7 @@ public class Token extends CharTermAttributeImpl
    * {@inheritDoc}
    * @see FlagsAttribute
    */
+  @Override
   public void setFlags(int flags) {
     this.flags = flags;
   }
@@ -337,6 +346,7 @@ public class Token extends CharTermAttributeImpl
    * {@inheritDoc}
    * @see PayloadAttribute
    */
+  @Override
   public BytesRef getPayload() {
     return this.payload;
   }
@@ -345,6 +355,7 @@ public class Token extends CharTermAttributeImpl
    * {@inheritDoc}
    * @see PayloadAttribute
    */
+  @Override
   public void setPayload(BytesRef payload) {
     this.payload = payload;
   }

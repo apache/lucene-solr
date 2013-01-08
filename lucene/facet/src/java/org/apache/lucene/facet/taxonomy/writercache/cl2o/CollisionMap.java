@@ -1,6 +1,5 @@
 package org.apache.lucene.facet.taxonomy.writercache.cl2o;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -108,25 +107,11 @@ public class CollisionMap {
     int bucketIndex = indexFor(hash, this.capacity);
     Entry e = this.entries[bucketIndex];
 
-    while (e != null && !(hash == e.hash && label.equalsToSerialized(this.labelRepository, e.offset))) { 
+    while (e != null && !(hash == e.hash && CategoryPathUtils.equalsToSerialized(label, labelRepository, e.offset))) { 
       e = e.next;
     }
     if (e == null) {
-      return LabelToOrdinal.InvalidOrdinal;
-    }
-
-    return e.cid;
-  }
-
-  public int get(CategoryPath label, int prefixLen, int hash) {
-    int bucketIndex = indexFor(hash, this.capacity);
-    Entry e = this.entries[bucketIndex];
-
-    while (e != null && !(hash == e.hash && label.equalsToSerialized(prefixLen, this.labelRepository, e.offset))) { 
-      e = e.next;
-    }
-    if (e == null) {
-      return LabelToOrdinal.InvalidOrdinal;
+      return LabelToOrdinal.INVALID_ORDINAL;
     }
 
     return e.cid;
@@ -135,47 +120,22 @@ public class CollisionMap {
   public int addLabel(CategoryPath label, int hash, int cid) {
     int bucketIndex = indexFor(hash, this.capacity);
     for (Entry e = this.entries[bucketIndex]; e != null; e = e.next) {
-      if (e.hash == hash && label.equalsToSerialized(this.labelRepository, e.offset)) {
+      if (e.hash == hash && CategoryPathUtils.equalsToSerialized(label, labelRepository, e.offset)) {
         return e.cid;
       }
     }
 
     // new string; add to label repository
-    int offset = this.labelRepository.length();
-    try {
-      label.serializeAppendTo(labelRepository);
-    } catch (IOException e) {
-      // can't happen, because labelRepository.append() doesn't throw an exception
-    }
-
-    addEntry(offset, cid, hash, bucketIndex);
-    return cid;
-  }
-
-  public int addLabel(CategoryPath label, int prefixLen, int hash, int cid) {
-    int bucketIndex = indexFor(hash, this.capacity);
-    for (Entry e = this.entries[bucketIndex]; e != null; e = e.next) {
-      if (e.hash == hash && label.equalsToSerialized(prefixLen, this.labelRepository, e.offset)) {
-        return e.cid;
-      }
-    }
-
-    // new string; add to label repository
-    int offset = this.labelRepository.length();
-    try {
-      label.serializeAppendTo(prefixLen, labelRepository);
-    } catch (IOException e) {
-      // can't happen, because labelRepository.append() doesn't throw an exception
-    }
-
+    int offset = labelRepository.length();
+    CategoryPathUtils.serialize(label, labelRepository);
     addEntry(offset, cid, hash, bucketIndex);
     return cid;
   }
 
   /**
-   * This method does not check if the same value is already
-   * in the map because we pass in an char-array offset, so
-   * so we now that we're in resize-mode here. 
+   * This method does not check if the same value is already in the map because
+   * we pass in an char-array offset, so so we now that we're in resize-mode
+   * here.
    */
   public void addLabelOffset(int hash, int offset, int cid) {
     int bucketIndex = indexFor(hash, this.capacity);
@@ -239,10 +199,12 @@ public class CollisionMap {
       this.index = i;
     }
 
+    @Override
     public boolean hasNext() {
       return this.next != null;
     }
 
+    @Override
     public Entry next() { 
       Entry e = this.next;
       if (e == null) throw new NoSuchElementException();
@@ -258,6 +220,7 @@ public class CollisionMap {
       return  e;
     }
 
+    @Override
     public void remove() {
       throw new UnsupportedOperationException();
     }

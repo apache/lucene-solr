@@ -57,6 +57,7 @@ public class FileDictionary implements Dictionary {
     in = new BufferedReader(reader);
   }
 
+  @Override
   public TermFreqIterator getWordsIterator() {
     return new FileIterator();
   }
@@ -66,6 +67,7 @@ public class FileDictionary implements Dictionary {
     private final BytesRef spare = new BytesRef();
     
    
+    @Override
     public long weight() {
       return curFreq;
     }

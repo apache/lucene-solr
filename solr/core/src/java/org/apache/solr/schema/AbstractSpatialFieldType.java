@@ -17,8 +17,14 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
+import com.google.common.base.Throwables;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.context.SpatialContextFactory;
+import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.exception.InvalidShapeException;
+import com.spatial4j.core.io.ParseUtils;
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
@@ -39,29 +45,36 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SpatialOptions;
 import org.apache.solr.util.MapListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Abstract base class for Solr FieldTypes based on a Lucene 4 {@link SpatialStrategy}.
  *
  * @lucene.experimental
  */
-public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extends FieldType {
+public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extends FieldType implements SpatialQueryable {
 
   /** A local-param with one of "none" (default), "distance", or "recipDistance". */
   public static final String SCORE_PARAM = "score";
+  /** A local-param boolean that can be set to false to only return the
+   * FunctionQuery (score), and thus not do filtering.
+   */
+  public static final String FILTER_PARAM = "filter";
+
   protected final Logger log = LoggerFactory.getLogger( getClass() );
 
   protected SpatialContext ctx;
   protected SpatialArgsParser argsParser;
 
-  private final ConcurrentHashMap<String, T> fieldStrategyMap = new ConcurrentHashMap<String,T>();
+  private final Cache<String, T> fieldStrategyCache = CacheBuilder.newBuilder().build();
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
@@ -86,20 +99,20 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
 
   @Override
   public final Field createField(SchemaField field, Object val, float boost) {
-    throw new IllegalStateException("should be calling createFields because isPolyField() is true");
+    throw new IllegalStateException("instead call createFields() because isPolyField() is true");
   }
 
   @Override
-  public final Field[] createFields(SchemaField field, Object val, float boost) {
+  public Field[] createFields(SchemaField field, Object val, float boost) {
     String shapeStr = null;
     Shape shape = null;
     if (val instanceof Shape) {
       shape = ((Shape) val);
     } else {
       shapeStr = val.toString();
-      shape = ctx.readShape(shapeStr);
+      shape = parseShape(shapeStr);
     }
-    if( shape == null ) {
+    if (shape == null) {
       log.debug("Field {}: null shape for input: {}", field, val);
       return null;
     }
@@ -131,6 +144,14 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     }
   }
 
+  protected Shape parseShape(String shapeStr) {
+    try {
+      return ctx.readShape(shapeStr);
+    } catch (InvalidShapeException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+  }
+
   protected String shapeToString(Shape shape) {
     return ctx.toString(shape);
   }
@@ -147,12 +168,41 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   // Query Support
   //--------------------------------------------------------------
 
+  /**
+   * Implemented for compatibility with Solr 3 spatial geofilt & bbox query parsers:
+   * {@link SpatialQueryable}.
+   */
+  @Override
+  public Query createSpatialQuery(QParser parser, SpatialOptions options) {
+    //--WARNING: the code from here to the next marker is identical to LatLonType's impl.
+    double[] point = null;
+    try {
+      point = ParseUtils.parseLatitudeLongitude(options.pointStr);
+    } catch (InvalidShapeException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+
+    // lat & lon in degrees
+    double latCenter = point[0];
+    double lonCenter = point[1];
+
+    double distDeg = DistanceUtils.dist2Degrees(options.distance, options.radius);
+    //--END-WARNING
+
+    Shape shape = ctx.makeCircle(lonCenter, latCenter, distDeg);
+    if (options.bbox)
+      shape = shape.getBoundingBox();
+
+    SpatialArgs spatialArgs = new SpatialArgs(SpatialOperation.Intersects, shape);
+    return getQueryFromSpatialArgs(parser, options.field, spatialArgs);
+  }
+
   @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     if (!minInclusive || !maxInclusive)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Both sides of spatial range query must be inclusive: " + field.getName());
-    Shape shape1 = ctx.readShape(part1);
-    Shape shape2 = ctx.readShape(part2);
+    Shape shape1 = parseShape(part1);
+    Shape shape2 = parseShape(part2);
     if (!(shape1 instanceof Point) || !(shape2 instanceof Point))
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Both sides of spatial range query must be points: " + field.getName());
     Point p1 = (Point) shape1;
@@ -165,14 +215,22 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     //This is different from Solr 3 LatLonType's approach which uses the MultiValueSource concept to directly expose
-    // the an x & y pair of FieldCache value sources.
+    // the x & y pair of FieldCache value sources.
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
         "A ValueSource isn't directly available from this field. Instead try a query using the distance as the score.");
   }
 
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    return getQueryFromSpatialArgs(parser, field, argsParser.parse(externalVal, ctx));
+    return getQueryFromSpatialArgs(parser, field, parseSpatialArgs(externalVal));
+  }
+
+  protected SpatialArgs parseSpatialArgs(String externalVal) {
+    try {
+      return argsParser.parse(externalVal, ctx);
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
   }
 
   private Query getQueryFromSpatialArgs(QParser parser, SchemaField field, SpatialArgs spatialArgs) {
@@ -196,9 +254,13 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
       valueSource = strategy.makeRecipDistanceValueSource(spatialArgs.getShape());
     else
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'score' local-param must be one of 'none', 'distance', or 'recipDistance'");
+    FunctionQuery functionQuery = new FunctionQuery(valueSource);
+
+    if (localParams != null && !localParams.getBool(FILTER_PARAM, true))
+      return functionQuery;
 
     Filter filter = strategy.makeFilter(spatialArgs);
-    return new FilteredQuery(new FunctionQuery(valueSource), filter);
+    return new FilteredQuery(functionQuery, filter);
   }
 
   /**
@@ -208,18 +270,16 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
    * @return Non-null.
    */
   public T getStrategy(final String fieldName) {
-    T strategy = fieldStrategyMap.get(fieldName);
-    //double-checked locking idiom
-    if (strategy == null) {
-      synchronized (fieldStrategyMap) {
-        strategy = fieldStrategyMap.get(fieldName);
-        if (strategy == null) {
-          strategy = newSpatialStrategy(fieldName);
-          fieldStrategyMap.put(fieldName,strategy);
+    try {
+      return fieldStrategyCache.get(fieldName, new Callable<T>() {
+        @Override
+        public T call() throws Exception {
+          return newSpatialStrategy(fieldName);
         }
-      }
+      });
+    } catch (ExecutionException e) {
+      throw Throwables.propagate(e.getCause());
     }
-    return strategy;
   }
 
   @Override
@@ -229,7 +289,8 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Sorting not supported on SpatialField: " + field.getName());
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Sorting not supported on SpatialField: " + field.getName()+
+      ", instead try sorting by query.");
   }
 }
 

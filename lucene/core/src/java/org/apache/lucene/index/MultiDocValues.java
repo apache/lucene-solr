@@ -49,10 +49,12 @@ class MultiDocValues extends DocValues {
   
   private static DocValuesPuller DEFAULT_PULLER = new DocValuesPuller();
   private static final DocValuesPuller NORMS_PULLER = new DocValuesPuller() {
+    @Override
     public DocValues pull(AtomicReader reader, String field) throws IOException {
       return reader.normValues(field);
     }
     
+    @Override
     public boolean stopLoadingOnNull(AtomicReader reader, String field) {
       // for norms we drop all norms if one leaf reader has no norms and the field is present
       FieldInfos fieldInfos = reader.getFieldInfos();
@@ -265,6 +267,7 @@ class MultiDocValues extends DocValues {
       this.direct = direct;
     }
 
+    @Override
     public long getInt(int docID) {
       final int doc = ensureSource(docID);
       return current.getInt(doc);
@@ -295,11 +298,13 @@ class MultiDocValues extends DocValues {
       }
     }
 
+    @Override
     public double getFloat(int docID) {
       final int doc = ensureSource(docID);
       return current.getFloat(doc);
     }
 
+    @Override
     public BytesRef getBytes(int docID, BytesRef bytesRef) {
       final int doc = ensureSource(docID);
       return current.getBytes(doc, bytesRef);
@@ -359,6 +364,7 @@ class MultiDocValues extends DocValues {
       return docBases;
     }
     
+    @Override
     public boolean hasArray() {
       boolean oneRealSource = false;
       for (DocValuesSlice slice : slices) {

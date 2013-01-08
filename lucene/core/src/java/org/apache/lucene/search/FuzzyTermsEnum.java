@@ -412,6 +412,7 @@ public class FuzzyTermsEnum extends TermsEnum {
   public static final class LevenshteinAutomataAttributeImpl extends AttributeImpl implements LevenshteinAutomataAttribute {
     private final List<CompiledAutomaton> automata = new ArrayList<CompiledAutomaton>();
       
+    @Override
     public List<CompiledAutomaton> automata() {
       return automata;
     }

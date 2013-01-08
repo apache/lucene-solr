@@ -285,5 +285,6 @@ public abstract class TermVectorsWriter implements Closeable {
    *  before feeding to this API. */
   public abstract Comparator<BytesRef> getComparator() throws IOException;
 
+  @Override
   public abstract void close() throws IOException;
 }

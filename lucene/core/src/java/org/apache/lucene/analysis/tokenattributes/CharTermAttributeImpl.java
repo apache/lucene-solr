@@ -36,16 +36,19 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   /** Initialize this attribute with empty term text */
   public CharTermAttributeImpl() {}
 
+  @Override
   public final void copyBuffer(char[] buffer, int offset, int length) {
     growTermBuffer(length);
     System.arraycopy(buffer, offset, termBuffer, 0, length);
     termLength = length;
   }
 
+  @Override
   public final char[] buffer() {
     return termBuffer;
   }
   
+  @Override
   public final char[] resizeBuffer(int newSize) {
     if(termBuffer.length < newSize){
       // Not big enough; create a new array with slight
@@ -65,6 +68,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
     }
   }
 
+  @Override
   public final CharTermAttribute setLength(int length) {
     if (length > termBuffer.length)
       throw new IllegalArgumentException("length " + length + " exceeds the size of the termBuffer (" + termBuffer.length + ")");
@@ -72,6 +76,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
     return this;
   }
   
+  @Override
   public final CharTermAttribute setEmpty() {
     termLength = 0;
     return this;
@@ -81,26 +86,31 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   private BytesRef bytes = new BytesRef(MIN_BUFFER_SIZE);
 
   // not until java 6 @Override
+  @Override
   public int fillBytesRef() {
     return UnicodeUtil.UTF16toUTF8WithHash(termBuffer, 0, termLength, bytes);
   }
 
   // not until java 6 @Override
+  @Override
   public BytesRef getBytesRef() {
     return bytes;
   }
   
   // *** CharSequence interface ***
+  @Override
   public final int length() {
     return termLength;
   }
   
+  @Override
   public final char charAt(int index) {
     if (index >= termLength)
       throw new IndexOutOfBoundsException();
     return termBuffer[index];
   }
   
+  @Override
   public final CharSequence subSequence(final int start, final int end) {
     if (start > termLength || end > termLength)
       throw new IndexOutOfBoundsException();
@@ -109,12 +119,14 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   
   // *** Appendable interface ***
 
+  @Override
   public final CharTermAttribute append(CharSequence csq) {
     if (csq == null) // needed for Appendable compliance
       return appendNull();
     return append(csq, 0, csq.length());
   }
   
+  @Override
   public final CharTermAttribute append(CharSequence csq, int start, int end) {
     if (csq == null) // needed for Appendable compliance
       csq = "null";
@@ -151,6 +163,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
     }
   }
   
+  @Override
   public final CharTermAttribute append(char c) {
     resizeBuffer(termLength + 1)[termLength++] = c;
     return this;
@@ -158,6 +171,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   
   // *** For performance some convenience methods in addition to CSQ's ***
   
+  @Override
   public final CharTermAttribute append(String s) {
     if (s == null) // needed for Appendable compliance
       return appendNull();
@@ -167,6 +181,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
     return this;
   }
   
+  @Override
   public final CharTermAttribute append(StringBuilder s) {
     if (s == null) // needed for Appendable compliance
       return appendNull();
@@ -176,6 +191,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
     return this;
   }
   
+  @Override
   public final CharTermAttribute append(CharTermAttribute ta) {
     if (ta == null) // needed for Appendable compliance
       return appendNull();

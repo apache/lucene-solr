@@ -41,7 +41,7 @@ class CharBlockArray implements Appendable, Serializable, CharSequence {
   final static class Block implements Serializable, Cloneable {
     private static final long serialVersionUID = 1L;
 
-    char[] chars;
+    final char[] chars;
     int length;
 
     Block(int size) {
@@ -78,10 +78,12 @@ class CharBlockArray implements Appendable, Serializable, CharSequence {
     return index % blockSize;
   }
 
+  @Override
   public CharBlockArray append(CharSequence chars) {
     return append(chars, 0, chars.length());
   }
 
+  @Override
   public CharBlockArray append(char c) {
     if (this.current.length == this.blockSize) {
       addBlock();
@@ -92,6 +94,7 @@ class CharBlockArray implements Appendable, Serializable, CharSequence {
     return this;
   }
 
+  @Override
   public CharBlockArray append(CharSequence chars, int start, int length) {
     int end = start + length;
     for (int i = start; i < end; i++) {
@@ -144,26 +147,40 @@ class CharBlockArray implements Appendable, Serializable, CharSequence {
     return this;
   }
 
+  @Override
   public char charAt(int index) {
-    Block b = this.blocks.get(blockIndex(index));
+    Block b = blocks.get(blockIndex(index));
     return b.chars[indexInBlock(index)];
   }
 
+  @Override
   public int length() {
     return this.length;
   }
 
+  @Override
   public CharSequence subSequence(int start, int end) {
-    throw new UnsupportedOperationException("subsequence not implemented yet");
+    int remaining = end - start;
+    StringBuilder sb = new StringBuilder(remaining);
+    int blockIdx = blockIndex(start);
+    int indexInBlock = indexInBlock(start);
+    while (remaining > 0) {
+      Block b = blocks.get(blockIdx++);
+      int numToAppend = Math.min(remaining, b.length - indexInBlock);
+      sb.append(b.chars, indexInBlock, numToAppend);
+      remaining -= numToAppend;
+      indexInBlock = 0; // 2nd+ iterations read from start of the block 
+    }
+    return sb.toString();
   }
 
   @Override
   public String toString() {
-    StringBuilder b = new StringBuilder(blockSize * this.blocks.size());
-    for (int i = 0; i < this.blocks.size(); i++) {
-      b.append(this.blocks.get(i).chars);
+    StringBuilder sb = new StringBuilder();
+    for (Block b : blocks) {
+      sb.append(b.chars, 0, b.length);
     }
-    return b.toString();
+    return sb.toString();
   }
 
   void flush(OutputStream out) throws IOException {

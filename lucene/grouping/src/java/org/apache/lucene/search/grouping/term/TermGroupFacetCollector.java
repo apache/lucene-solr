@@ -83,6 +83,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       super(groupField, facetField, facetPrefix, initialSize);
     }
 
+    @Override
     public void collect(int doc) throws IOException {
       int facetOrd = facetFieldTermsIndex.getOrd(doc);
       if (facetOrd < startFacetOrd || facetOrd >= endFacetOrd) {
@@ -119,6 +120,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       groupedFacetHits.add(new GroupedFacetHit(groupKey, facetKey));
     }
 
+    @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
       if (segmentFacetCounts != null) {
         segmentResults.add(createSegmentResult());
@@ -164,6 +166,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       }
     }
 
+    @Override
     protected SegmentResult createSegmentResult() throws IOException {
       return new SegmentResult(segmentFacetCounts, segmentTotalCount, facetFieldTermsIndex.getTermsEnum(), startFacetOrd, endFacetOrd);
     }
@@ -183,6 +186,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
         }
       }
 
+      @Override
       protected void nextTerm() throws IOException {
         mergeTerm = tenum.next();
       }
@@ -200,6 +204,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       super(groupField, facetField, facetPrefix, initialSize);
     }
 
+    @Override
     public void collect(int doc) throws IOException {
       int groupOrd = groupFieldTermsIndex.getOrd(doc);
       if (facetFieldDocTermOrds.isEmpty()) {
@@ -270,6 +275,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       } while (chunk >= buffer.length);
     }
 
+    @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
       if (segmentFacetCounts != null) {
         segmentResults.add(createSegmentResult());
@@ -335,6 +341,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
       }
     }
 
+    @Override
     protected SegmentResult createSegmentResult() throws IOException {
       return new SegmentResult(segmentFacetCounts, segmentTotalCount, facetFieldDocTermOrds.numTerms(), facetOrdTermsEnum, startFacetOrd, endFacetOrd);
     }
@@ -354,6 +361,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
         }
       }
 
+      @Override
       protected void nextTerm() throws IOException {
         mergeTerm = tenum.next();
       }

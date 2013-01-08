@@ -64,6 +64,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
     super.init(args);
   }
 
+  @Override
   public void inform(SolrCore core) {
     if (initArgs != null) {
       //if relative,then relative to config dir, otherwise, absolute path

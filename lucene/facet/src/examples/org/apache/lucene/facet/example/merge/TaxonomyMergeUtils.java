@@ -3,6 +3,13 @@ package org.apache.lucene.facet.example.merge;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.facet.example.ExampleUtils;
+import org.apache.lucene.facet.index.OrdinalMappingAtomicReader;
+import org.apache.lucene.facet.index.params.FacetIndexingParams;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.DiskOrdinalMap;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
@@ -10,15 +17,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.store.Directory;
-
-import org.apache.lucene.facet.example.ExampleUtils;
-import org.apache.lucene.facet.index.OrdinalMappingAtomicReader;
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.DiskOrdinalMap;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -88,7 +86,7 @@ public class TaxonomyMergeUtils {
     destTaxWriter.addTaxonomy(srcTaxDir, map);
 
     int ordinalMap[] = map.getMap();
-    FacetIndexingParams params = new DefaultFacetIndexingParams();
+    FacetIndexingParams params = FacetIndexingParams.ALL_PARENTS;
 
     DirectoryReader reader = DirectoryReader.open(srcIndexDir, -1);
     List<AtomicReaderContext> leaves = reader.leaves();

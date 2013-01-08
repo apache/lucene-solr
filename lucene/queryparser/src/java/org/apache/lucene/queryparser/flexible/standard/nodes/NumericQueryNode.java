@@ -68,6 +68,7 @@ public class NumericQueryNode extends QueryNodeImpl implements
    * 
    * @return the field associated with this node
    */
+  @Override
   public CharSequence getField() {
     return this.field;
   }
@@ -77,6 +78,7 @@ public class NumericQueryNode extends QueryNodeImpl implements
    * 
    * @param fieldName the field associated with this node
    */
+  @Override
   public void setField(CharSequence fieldName) {
     this.field = fieldName;
   }
@@ -94,6 +96,7 @@ public class NumericQueryNode extends QueryNodeImpl implements
         Locale.ROOT, Type.NORMAL);
   }
   
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     if (isDefaultField(this.field)) {
       return getTermEscaped(escapeSyntaxParser);
@@ -125,6 +128,7 @@ public class NumericQueryNode extends QueryNodeImpl implements
    * 
    * @return the numeric value
    */
+  @Override
   public Number getValue() {
     return value;
   }
@@ -134,6 +138,7 @@ public class NumericQueryNode extends QueryNodeImpl implements
    * 
    * @param value the numeric value
    */
+  @Override
   public void setValue(Number value) {
     this.value = value;
   }

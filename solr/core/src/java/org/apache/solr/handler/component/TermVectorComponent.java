@@ -36,6 +36,7 @@ import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
@@ -111,7 +112,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
         (1 == fldLst.length && 0 == fldLst[0].length())) {
 
       // no tv.fl, parse the main fl
-      ReturnFields rf = new ReturnFields
+      ReturnFields rf = new SolrReturnFields
         (params.getParams(CommonParams.FL), rb.req);
 
       if (rf.wantsAllFields()) {
@@ -462,6 +463,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     this.initParams = args;
   }
 
+  @Override
   public void inform(SolrCore core) {
 
   }

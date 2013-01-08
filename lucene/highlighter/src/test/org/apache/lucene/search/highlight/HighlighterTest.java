@@ -1367,17 +1367,21 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     // for
     // highlighting but scores a single fragment for selection
     Highlighter highlighter = new Highlighter(this, new SimpleHTMLEncoder(), new Scorer() {
+      @Override
       public void startFragment(TextFragment newFragment) {
       }
 
+      @Override
       public float getTokenScore() {
         return 0;
       }
 
+      @Override
       public float getFragmentScore() {
         return 1;
       }
 
+      @Override
       public TokenStream init(TokenStream tokenStream) {
         return null;
       }
@@ -1713,6 +1717,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
    * System.out.println(highlightedText); } }
    */
 
+  @Override
   public String highlightTerm(String originalText, TokenGroup group) {
     if (group.getTotalScore() <= 0) {
       return originalText;

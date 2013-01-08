@@ -106,75 +106,72 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           OffsetAttribute offsetAttribute = fieldState.attributeSource.addAttribute(OffsetAttribute.class);
           PositionIncrementAttribute posIncrAttribute = fieldState.attributeSource.addAttribute(PositionIncrementAttribute.class);
 
-          consumer.start(field);
+          if (hasMoreTokens) {
+            consumer.start(field);
 
-          for (;;) {
+            do {
+              // If we hit an exception in stream.next below
+              // (which is fairly common, eg if analyzer
+              // chokes on a given document), then it's
+              // non-aborting and (above) this one document
+              // will be marked as deleted, but still
+              // consume a docID
 
-            // If we hit an exception in stream.next below
-            // (which is fairly common, eg if analyzer
-            // chokes on a given document), then it's
-            // non-aborting and (above) this one document
-            // will be marked as deleted, but still
-            // consume a docID
-
-            if (!hasMoreTokens) break;
-
-            final int posIncr = posIncrAttribute.getPositionIncrement();
-            if (posIncr < 0) {
-              throw new IllegalArgumentException("position increment must be >=0 (got " + posIncr + ")");
-            }
-            if (fieldState.position == 0 && posIncr == 0) {
-              throw new IllegalArgumentException("first position increment must be > 0 (got 0)");
-            }
-            int position = fieldState.position + posIncr;
-            if (position > 0) {
-              // NOTE: confusing: this "mirrors" the
-              // position++ we do below
-              position--;
-            } else if (position < 0) {
-              throw new IllegalArgumentException("position overflow for field '" + field.name() + "'");
-            }
-            
-            // position is legal, we can safely place it in fieldState now.
-            // not sure if anything will use fieldState after non-aborting exc...
-            fieldState.position = position;
-
-            if (posIncr == 0)
-              fieldState.numOverlap++;
-            
-            if (checkOffsets) {
-              int startOffset = fieldState.offset + offsetAttribute.startOffset();
-              int endOffset = fieldState.offset + offsetAttribute.endOffset();
-              if (startOffset < 0 || endOffset < startOffset) {
-                throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset, "
-                    + "startOffset=" + startOffset + ",endOffset=" + endOffset);
+              final int posIncr = posIncrAttribute.getPositionIncrement();
+              if (posIncr < 0) {
+                throw new IllegalArgumentException("position increment must be >=0 (got " + posIncr + ")");
               }
-              if (startOffset < lastStartOffset) {
-                throw new IllegalArgumentException("offsets must not go backwards startOffset=" 
-                     + startOffset + " is < lastStartOffset=" + lastStartOffset);
+              if (fieldState.position == 0 && posIncr == 0) {
+                throw new IllegalArgumentException("first position increment must be > 0 (got 0)");
               }
-              lastStartOffset = startOffset;
-            }
-
-            boolean success = false;
-            try {
-              // If we hit an exception in here, we abort
-              // all buffered documents since the last
-              // flush, on the likelihood that the
-              // internal state of the consumer is now
-              // corrupt and should not be flushed to a
-              // new segment:
-              consumer.add();
-              success = true;
-            } finally {
-              if (!success) {
-                docState.docWriter.setAborting();
+              int position = fieldState.position + posIncr;
+              if (position > 0) {
+                // NOTE: confusing: this "mirrors" the
+                // position++ we do below
+                position--;
+              } else if (position < 0) {
+                throw new IllegalArgumentException("position overflow for field '" + field.name() + "'");
               }
-            }
-            fieldState.length++;
-            fieldState.position++;
+              
+              // position is legal, we can safely place it in fieldState now.
+              // not sure if anything will use fieldState after non-aborting exc...
+              fieldState.position = position;
 
-            hasMoreTokens = stream.incrementToken();
+              if (posIncr == 0)
+                fieldState.numOverlap++;
+              
+              if (checkOffsets) {
+                int startOffset = fieldState.offset + offsetAttribute.startOffset();
+                int endOffset = fieldState.offset + offsetAttribute.endOffset();
+                if (startOffset < 0 || endOffset < startOffset) {
+                  throw new IllegalArgumentException("startOffset must be non-negative, and endOffset must be >= startOffset, "
+                      + "startOffset=" + startOffset + ",endOffset=" + endOffset);
+                }
+                if (startOffset < lastStartOffset) {
+                  throw new IllegalArgumentException("offsets must not go backwards startOffset=" 
+                       + startOffset + " is < lastStartOffset=" + lastStartOffset);
+                }
+                lastStartOffset = startOffset;
+              }
+
+              boolean success = false;
+              try {
+                // If we hit an exception in here, we abort
+                // all buffered documents since the last
+                // flush, on the likelihood that the
+                // internal state of the consumer is now
+                // corrupt and should not be flushed to a
+                // new segment:
+                consumer.add();
+                success = true;
+              } finally {
+                if (!success) {
+                  docState.docWriter.setAborting();
+                }
+              }
+              fieldState.length++;
+              fieldState.position++;
+            } while (stream.incrementToken());
           }
           // trigger streams to perform end-of-stream operations
           stream.end();

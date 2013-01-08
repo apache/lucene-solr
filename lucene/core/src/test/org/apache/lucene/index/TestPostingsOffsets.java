@@ -53,6 +53,7 @@ import org.apache.lucene.util._TestUtil;
 public class TestPostingsOffsets extends LuceneTestCase {
   IndexWriterConfig iwc;
   
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));

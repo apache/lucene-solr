@@ -119,6 +119,7 @@ public class ModifierQueryNode extends QueryNodeImpl {
         + getChild().toString() + "\n</modifier>";
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     if (getChild() == null)
       return "";

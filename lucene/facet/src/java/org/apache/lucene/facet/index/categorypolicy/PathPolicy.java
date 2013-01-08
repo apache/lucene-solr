@@ -2,7 +2,7 @@ package org.apache.lucene.facet.index.categorypolicy;
 
 import java.io.Serializable;
 
-import org.apache.lucene.facet.index.streaming.CategoryParentsStream;
+import org.apache.lucene.facet.index.DrillDownStream;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 
 /*
@@ -24,7 +24,7 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
 
 /**
  * Determines which {@link CategoryPath categories} should be added as terms to
- * the {@link CategoryParentsStream}. The default approach is implemented by
+ * the {@link DrillDownStream}. The default approach is implemented by
  * {@link #ALL_CATEGORIES}.
  * 
  * @lucene.experimental
@@ -33,12 +33,12 @@ public interface PathPolicy extends Serializable {
 
   /**
    * A {@link PathPolicy} which adds all {@link CategoryPath} that have at least
-   * one component (i.e. {@link CategoryPath#length()} &gt; 0) to the categories
+   * one component (i.e. {@link CategoryPath#length} &gt; 0) to the categories
    * stream.
    */
   public static final PathPolicy ALL_CATEGORIES = new PathPolicy() {
     @Override
-    public boolean shouldAdd(CategoryPath categoryPath) { return categoryPath.length() > 0; }
+    public boolean shouldAdd(CategoryPath categoryPath) { return categoryPath.length > 0; }
   };
   
   /**

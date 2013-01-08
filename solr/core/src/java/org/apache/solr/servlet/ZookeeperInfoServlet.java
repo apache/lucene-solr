@@ -18,21 +18,28 @@
 package org.apache.solr.servlet;
 
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.net.URLEncoder;
 import java.util.Date;
 import java.util.List;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
 import org.apache.noggit.CharArr;
 import org.apache.noggit.JSONWriter;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.util.FastWriter;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -46,7 +53,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class ZookeeperInfoServlet extends HttpServlet {
   static final Logger log = LoggerFactory.getLogger(ZookeeperInfoServlet.class);
-
+  
   @Override
   public void init() {
   }
@@ -54,28 +61,42 @@ public final class ZookeeperInfoServlet extends HttpServlet {
   @Override
   public void doGet(HttpServletRequest request,
                     HttpServletResponse response)
-      throws IOException {
-    response.setCharacterEncoding("UTF-8");
-    response.setContentType("application/json");
-
+      throws ServletException,IOException {
     // This attribute is set by the SolrDispatchFilter
     CoreContainer cores = (CoreContainer) request.getAttribute("org.apache.solr.CoreContainer");
+    if (cores == null) {
+      throw new ServletException("Missing request attribute org.apache.solr.CoreContainer.");
+    }
+    
+    final SolrParams params;
+    try {
+      params = SolrRequestParsers.DEFAULT.parse(null, request.getServletPath(), request).getParams();
+    } catch (Exception e) {
+      int code=500;
+      if (e instanceof SolrException) {
+        code = Math.min(599, Math.max(100, ((SolrException)e).code()));
+      }
+      response.sendError(code, e.toString());
+      return;
+    }
 
-    String path = request.getParameter("path");
-    String addr = request.getParameter("addr");
+    String path = params.get("path");
+    String addr = params.get("addr");
 
     if (addr != null && addr.length() == 0) {
       addr = null;
     }
 
-    String detailS = request.getParameter("detail");
+    String detailS = params.get("detail");
     boolean detail = detailS != null && detailS.equals("true");
 
-    String dumpS = request.getParameter("dump");
+    String dumpS = params.get("dump");
     boolean dump = dumpS != null && dumpS.equals("true");
 
-    PrintWriter out = response.getWriter();
+    response.setCharacterEncoding("UTF-8");
+    response.setContentType("application/json");
 
+    Writer out = new FastWriter(new OutputStreamWriter(response.getOutputStream(), IOUtils.CHARSET_UTF_8));
 
     ZKPrinter printer = new ZKPrinter(response, out, cores.getZkController(), addr);
     printer.detail = detail;
@@ -86,12 +107,14 @@ public final class ZookeeperInfoServlet extends HttpServlet {
     } finally {
       printer.close();
     }
+    
+    out.flush();
   }
 
   @Override
   public void doPost(HttpServletRequest request,
                      HttpServletResponse response)
-      throws IOException {
+      throws ServletException,IOException {
     doGet(request, response);
   }
 
@@ -114,13 +137,13 @@ public final class ZookeeperInfoServlet extends HttpServlet {
     boolean doClose;  // close the client after done if we opened it
 
     final HttpServletResponse response;
-    final PrintWriter out;
+    final Writer out;
     SolrZkClient zkClient;
 
     int level;
     int maxData = 95;
 
-    public ZKPrinter(HttpServletResponse response, PrintWriter out, ZkController controller, String addr) throws IOException {
+    public ZKPrinter(HttpServletResponse response, Writer out, ZkController controller, String addr) throws IOException {
       this.response = response;
       this.out = out;
       this.addr = addr;
@@ -207,10 +230,10 @@ public final class ZookeeperInfoServlet extends HttpServlet {
       }
       json.endArray();
       json.endObject();
-      out.println(chars.toString());
+      out.write(chars.toString());
     }
 
-    void writeError(int code, String msg) {
+    void writeError(int code, String msg) throws IOException {
       response.setStatus(code);
 
       CharArr chars = new CharArr();
@@ -227,7 +250,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
       w.writeString(msg);
       w.endObject();
 
-      out.println(chars.toString());
+      out.write(chars.toString());
     }
 
 
@@ -352,7 +375,7 @@ public final class ZookeeperInfoServlet extends HttpServlet {
       json.write(v);
     }
 
-    boolean printZnode(JSONWriter json, String path) {
+    boolean printZnode(JSONWriter json, String path) throws IOException {
       try {
         Stat stat = new Stat();
         // Trickily, the call to zkClient.getData fills in the stat variable

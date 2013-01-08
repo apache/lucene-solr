@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ClosableThread;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -35,6 +36,7 @@ import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
@@ -42,13 +44,15 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OverseerCollectionProcessor implements Runnable {
+public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   
   public static final String NUM_SLICES = "numShards";
   
   public static final String REPLICATION_FACTOR = "replicationFactor";
   
   public static final String MAX_SHARDS_PER_NODE = "maxShardsPerNode";
+  
+  public static final String CREATE_NODE_SET = "createNodeSet";
   
   public static final String DELETECOLLECTION = "deletecollection";
 
@@ -77,11 +81,15 @@ public class OverseerCollectionProcessor implements Runnable {
   private boolean isClosed;
   
   public OverseerCollectionProcessor(ZkStateReader zkStateReader, String myId, ShardHandler shardHandler, String adminPath) {
+    this(zkStateReader, myId, shardHandler, adminPath, Overseer.getCollectionQueue(zkStateReader.getZkClient()));
+  }
+
+  protected OverseerCollectionProcessor(ZkStateReader zkStateReader, String myId, ShardHandler shardHandler, String adminPath, DistributedQueue workQueue) {
     this.zkStateReader = zkStateReader;
     this.myId = myId;
     this.shardHandler = shardHandler;
     this.adminPath = adminPath;
-    workQueue = Overseer.getCollectionQueue(zkStateReader.getZkClient());
+    this.workQueue = workQueue;
   }
   
   @Override
@@ -109,7 +117,10 @@ public class OverseerCollectionProcessor implements Runnable {
                   + " failed", t);
         }
         //}
-        workQueue.remove();
+        
+        
+        workQueue.poll();
+       
       } catch (KeeperException e) {
         if (e.code() == KeeperException.Code.SESSIONEXPIRED
             || e.code() == KeeperException.Code.CONNECTIONLOSS) {
@@ -130,7 +141,7 @@ public class OverseerCollectionProcessor implements Runnable {
     isClosed = true;
   }
   
-  private boolean amILeader() {
+  protected boolean amILeader() {
     try {
       ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(
           "/overseer_elect/leader", null, null, true));
@@ -146,7 +157,7 @@ public class OverseerCollectionProcessor implements Runnable {
     return false;
   }
   
-  private boolean processMessage(ZkNodeProps message, String operation) {
+  protected boolean processMessage(ZkNodeProps message, String operation) {
     if (CREATECOLLECTION.equals(operation)) {
       return createCollection(zkStateReader.getClusterState(), message);
     } else if (DELETECOLLECTION.equals(operation)) {
@@ -174,11 +185,13 @@ public class OverseerCollectionProcessor implements Runnable {
       // look at the replication factor and see if it matches reality
       // if it does not, find best nodes to create more cores
       
-      int numReplica = msgStrToInt(message, REPLICATION_FACTOR, 0);
+      int repFactor = msgStrToInt(message, REPLICATION_FACTOR, 1);
       int numSlices = msgStrToInt(message, NUM_SLICES, 0);
       int maxShardsPerNode = msgStrToInt(message, MAX_SHARDS_PER_NODE, 1);
+      String createNodeSetStr; 
+      List<String> createNodeList = ((createNodeSetStr = message.getStr(CREATE_NODE_SET)) == null)?null:StrUtils.splitSmart(createNodeSetStr, ",", true);
       
-      if (numReplica < 0) {
+      if (repFactor <= 0) {
         SolrException.log(log, REPLICATION_FACTOR + " must be > 0");
         return false;
       }
@@ -200,20 +213,20 @@ public class OverseerCollectionProcessor implements Runnable {
       Set<String> nodes = clusterState.getLiveNodes();
       List<String> nodeList = new ArrayList<String>(nodes.size());
       nodeList.addAll(nodes);
+      if (createNodeList != null) nodeList.retainAll(createNodeList);
       Collections.shuffle(nodeList);
       
       if (nodeList.size() <= 0) {
         log.error("Cannot create collection " + collectionName
-            + ". No live Solr-instaces");
+            + ". No live Solr-instaces" + ((createNodeList != null)?" among Solr-instances specified in " + CREATE_NODE_SET:""));
         return false;
       }
       
-      int numShardsPerSlice = numReplica + 1;
-      if (numShardsPerSlice > nodeList.size()) {
+      if (repFactor > nodeList.size()) {
         log.warn("Specified "
             + REPLICATION_FACTOR
             + " of "
-            + numReplica
+            + repFactor
             + " on collection "
             + collectionName
             + " is higher than or equal to the number of Solr instances currently live ("
@@ -222,21 +235,21 @@ public class OverseerCollectionProcessor implements Runnable {
       }
       
       int maxShardsAllowedToCreate = maxShardsPerNode * nodeList.size();
-      int requestedShardsToCreate = numSlices * numShardsPerSlice;
+      int requestedShardsToCreate = numSlices * repFactor;
       if (maxShardsAllowedToCreate < requestedShardsToCreate) {
         log.error("Cannot create collection " + collectionName + ". Value of "
             + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
             + ", and the number of live nodes is " + nodeList.size()
             + ". This allows a maximum of " + maxShardsAllowedToCreate
             + " to be created. Value of " + NUM_SLICES + " is " + numSlices
-            + " and value of " + REPLICATION_FACTOR + " is " + numReplica
+            + " and value of " + REPLICATION_FACTOR + " is " + repFactor
             + ". This requires " + requestedShardsToCreate
             + " shards to be created (higher than the allowed number)");
         return false;
       }
       
       for (int i = 1; i <= numSlices; i++) {
-        for (int j = 1; j <= numShardsPerSlice; j++) {
+        for (int j = 1; j <= repFactor; j++) {
           String nodeName = nodeList.get(((i - 1) + (j - 1)) % nodeList.size());
           String sliceName = "shard" + i;
           String shardName = collectionName + "_" + sliceName + "_replica" + j;
@@ -257,9 +270,8 @@ public class OverseerCollectionProcessor implements Runnable {
           ShardRequest sreq = new ShardRequest();
           params.set("qt", adminPath);
           sreq.purpose = 1;
-          // TODO: this does not work if original url had _ in it
-          // We should have a master list
-          String replica = nodeName.replaceAll("_", "/");
+          String replica = zkStateReader.getZkClient()
+            .getBaseUrlForNodeName(nodeName);
           if (replica.startsWith("http://")) replica = replica.substring(7);
           sreq.shards = new String[] {replica};
           sreq.actualShards = sreq.shards;
@@ -374,5 +386,10 @@ public class OverseerCollectionProcessor implements Runnable {
       SolrException.log(log, "Could not parse " + key, ex);
       throw ex;
     }
+  }
+
+  @Override
+  public boolean isClosed() {
+    return isClosed;
   }
 }

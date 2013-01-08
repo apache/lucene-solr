@@ -63,6 +63,7 @@ public class PlainTextDictionary implements Dictionary {
     in = new BufferedReader(reader);
   }
 
+  @Override
   public BytesRefIterator getWordsIterator() throws IOException {
     return new FileIterator();
   }

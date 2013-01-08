@@ -18,7 +18,7 @@
 // #/:core/analysis
 sammy.get
 (
-  /^#\/([\w\d-]+)\/(analysis)$/,
+  new RegExp( app.core_regex_base + '\\/(analysis)$' ),
   function( context )
   {
     var active_core = this.active_core;
@@ -129,7 +129,7 @@ sammy.get
                 {
                   fields++;
                   $( '[name="' + key + '"]', analysis_form )
-                    .val( decodeURIComponent( context.params[key].replace( /\+/g, '%20' ) ) );
+                    .val( context.params[key].replace( /\+/g, ' ' ) );
                 }
               }
 

@@ -51,18 +51,15 @@ import org.apache.commons.lang.StringUtils;
  * </p>
  *
  * <pre class="prettyprint">
- *  &lt;updateRequestProcessorChain&gt;
- *    &lt;processor class="solr.ConcatFieldUpdateProcessorFactory"&gt;
- *      &lt;str name="delimiter"&gt;; &lt;/str&gt;
- *      &lt;lst name="exclude"&gt;
- *        &lt;str name="fieldName"&gt;primary_author&lt;/str&gt;
- *      &lt;/lst&gt;
- *    &lt;/processor&gt;
- *    &lt;processor class="solr.FirstFieldValueUpdateProcessorFactory"&gt;
- *      &lt;str name="fieldName"&gt;primary_author&lt;/str&gt;
- *    &lt;/processor&gt;
- *  &lt;/updateRequestProcessorChain&gt;
- * </pre>
+ * &lt;processor class="solr.ConcatFieldUpdateProcessorFactory"&gt;
+ *   &lt;str name="delimiter"&gt;; &lt;/str&gt;
+ *   &lt;lst name="exclude"&gt;
+ *     &lt;str name="fieldName"&gt;primary_author&lt;/str&gt;
+ *   &lt;/lst&gt;
+ * &lt;/processor&gt;
+ * &lt;processor class="solr.FirstFieldValueUpdateProcessorFactory"&gt;
+ *   &lt;str name="fieldName"&gt;primary_author&lt;/str&gt;
+ * &lt;/processor&gt;</pre>
  */
 public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
@@ -82,6 +79,7 @@ public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdate
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
     return new FieldMutatingUpdateProcessor(getSelector(), next) {
+      @Override
       protected SolrInputField mutate(final SolrInputField src) {
         if (src.getValueCount() <= 1) return src;
 
@@ -99,6 +97,7 @@ public final class ConcatFieldUpdateProcessorFactory extends FieldMutatingUpdate
 
     final IndexSchema schema = core.getSchema();
     return new FieldMutatingUpdateProcessor.FieldNameSelector() {
+      @Override
       public boolean shouldMutate(final String fieldName) {
 
         // first check type since it should be fastest

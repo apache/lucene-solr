@@ -95,6 +95,7 @@ public class ShortFieldSource extends FieldCacheSource {
     };
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o.getClass() != ShortFieldSource.class) return false;
     ShortFieldSource
@@ -104,6 +105,7 @@ public class ShortFieldSource extends FieldCacheSource {
           this.parser.getClass() == other.parser.getClass());
   }
 
+  @Override
   public int hashCode() {
     int h = parser == null ? Short.class.hashCode() : parser.getClass().hashCode();
     h += super.hashCode();

@@ -28,17 +28,20 @@ public abstract class AbstractQueryMaker implements QueryMaker {
   protected Query[] queries;
   protected Config config;
 
+  @Override
   public void resetInputs() {
     qnum = 0;
   }
 
   protected abstract Query[] prepareQueries() throws Exception;
 
+  @Override
   public void setConfig(Config config) throws Exception {
     this.config = config;
     queries = prepareQueries();
   }
 
+  @Override
   public String printQueries() {
     String newline = System.getProperty("line.separator");
     StringBuilder sb = new StringBuilder();
@@ -51,6 +54,7 @@ public abstract class AbstractQueryMaker implements QueryMaker {
     return sb.toString();
   }
 
+  @Override
   public Query makeQuery() throws Exception {
     return queries[nextQnum()];
   }
@@ -66,6 +70,7 @@ public abstract class AbstractQueryMaker implements QueryMaker {
   *  (non-Javadoc)
   * @see org.apache.lucene.benchmark.byTask.feeds.QueryMaker#makeQuery(int)
   */
+  @Override
   public Query makeQuery(int size) throws Exception {
     throw new Exception(this+".makeQuery(int size) is not supported!");
   }

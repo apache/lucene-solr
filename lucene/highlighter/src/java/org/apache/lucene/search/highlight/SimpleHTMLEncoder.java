@@ -25,6 +25,7 @@ public class SimpleHTMLEncoder implements Encoder
   {
   }
 
+  @Override
   public String encodeText(String originalText)
   {
     return htmlEncode(originalText);

@@ -26,10 +26,12 @@ import org.apache.solr.request.SolrQueryRequest;
 public class PythonResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_PYTHON_ASCII="text/x-python;charset=US-ASCII";
 
+  @Override
   public void init(NamedList n) {
     /* NOOP */
   }
   
+  @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     PythonWriter w = new PythonWriter(writer, req, rsp);
     try {
@@ -39,13 +41,16 @@ public class PythonResponseWriter implements QueryResponseWriter {
     }
   }
 
+  @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return CONTENT_TYPE_TEXT_ASCII;
   }
 }
 
 class PythonWriter extends NaNFloatWriter {
+  @Override
   protected String getNaN() { return "float('NaN')"; }
+  @Override
   protected String getInf() { return "float('Inf')"; }
 
   public PythonWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {

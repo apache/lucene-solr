@@ -46,6 +46,7 @@ public class NonTopLevelOrdinalPolicy implements OrdinalPolicy {
    *            A relevant taxonomyWriter object, with which ordinals sent to
    *            {@link #shouldAdd(int)} are examined.
    */
+  @Override
   public void init(TaxonomyWriter taxonomyWriter) {
     this.taxonomyWriter = taxonomyWriter;
   }
@@ -55,6 +56,7 @@ public class NonTopLevelOrdinalPolicy implements OrdinalPolicy {
    * determine if a parent is root, there's a need for
    * {@link TaxonomyWriter#getParent(int)}.
    */
+  @Override
   public boolean shouldAdd(int ordinal) {
     if (ordinal > TaxonomyReader.ROOT_ORDINAL) {
       try {

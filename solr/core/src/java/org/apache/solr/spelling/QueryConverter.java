@@ -76,6 +76,7 @@ public abstract class QueryConverter implements NamedListInitializedPlugin {
    * </p>
    */
   public static final int TERM_IN_BOOLEAN_QUERY_FLAG = 131072;
+  @Override
   public void init(NamedList args) {
     this.args = args;
   }

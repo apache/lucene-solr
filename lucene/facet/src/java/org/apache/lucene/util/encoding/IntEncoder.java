@@ -1,5 +1,6 @@
 package org.apache.lucene.util.encoding;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -43,7 +44,7 @@ import java.io.OutputStream;
  * 
  * @lucene.experimental
  */
-public abstract class IntEncoder {
+public abstract class IntEncoder implements Closeable {
 
   protected OutputStream out = null;
 
@@ -68,6 +69,7 @@ public abstract class IntEncoder {
    * <b>NOTE:</b> overriding classes should make sure they either call
    * <code>super.close()</code> or close the output stream themselves.
    */
+  @Override
   public void close() throws IOException {
     if (out != null) {
       out.close();

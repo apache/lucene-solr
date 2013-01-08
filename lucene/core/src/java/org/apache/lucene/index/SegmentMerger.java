@@ -99,17 +99,47 @@ final class SegmentMerger {
     mergeState.segmentInfo.setDocCount(setDocMaps());
     mergeDocValuesAndNormsFieldInfos();
     setMatchingSegmentReaders();
+    long t0 = 0;
+    if (mergeState.infoStream.isEnabled("SM")) {
+      t0 = System.nanoTime();
+    }
     int numMerged = mergeFields();
+    if (mergeState.infoStream.isEnabled("SM")) {
+      long t1 = System.nanoTime();
+      mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge stored fields [" + numMerged + " docs]");
+    }
     assert numMerged == mergeState.segmentInfo.getDocCount();
 
     final SegmentWriteState segmentWriteState = new SegmentWriteState(mergeState.infoStream, directory, mergeState.segmentInfo,
                                                                       mergeState.fieldInfos, termIndexInterval, null, context);
+    if (mergeState.infoStream.isEnabled("SM")) {
+      t0 = System.nanoTime();
+    }
     mergeTerms(segmentWriteState);
+    if (mergeState.infoStream.isEnabled("SM")) {
+      long t1 = System.nanoTime();
+      mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge postings [" + numMerged + " docs]");
+    }
+
+    if (mergeState.infoStream.isEnabled("SM")) {
+      t0 = System.nanoTime();
+    }
     mergePerDoc(segmentWriteState);
+    if (mergeState.infoStream.isEnabled("SM")) {
+      long t1 = System.nanoTime();
+      mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge doc values [" + numMerged + " docs]");
+    }
     
     if (mergeState.fieldInfos.hasNorms()) {
+      if (mergeState.infoStream.isEnabled("SM")) {
+        t0 = System.nanoTime();
+      }
       mergeNorms(segmentWriteState);
       mergeSimpleNorms(segmentWriteState);
+      if (mergeState.infoStream.isEnabled("SM")) {
+        long t1 = System.nanoTime();
+        mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge norms [" + numMerged + " docs]");
+      }
     }
 
     // Merge simple doc values:
@@ -119,7 +149,14 @@ final class SegmentMerger {
     }
 
     if (mergeState.fieldInfos.hasVectors()) {
+      if (mergeState.infoStream.isEnabled("SM")) {
+        t0 = System.nanoTime();
+      }
       numMerged = mergeVectors();
+      if (mergeState.infoStream.isEnabled("SM")) {
+        long t1 = System.nanoTime();
+        mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge vectors [" + numMerged + " docs]");
+      }
       assert numMerged == mergeState.segmentInfo.getDocCount();
     }
     

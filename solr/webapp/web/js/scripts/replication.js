@@ -490,7 +490,7 @@ var replication_fetch_status = function()
 // #/:core/replication
 sammy.get
 (
-  /^#\/([\w\d-]+)\/(replication)$/,
+  new RegExp( app.core_regex_base + '\\/(replication)$' ),
   function( context )
   {
     core_basepath = this.active_core.attr( 'data-basepath' );

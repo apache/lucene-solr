@@ -2,12 +2,26 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.facet.index.params.FacetIndexingParams;
+import org.apache.lucene.facet.search.params.CountFacetRequest;
+import org.apache.lucene.facet.search.params.FacetRequest;
+import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
+import org.apache.lucene.facet.search.params.FacetSearchParams;
+import org.apache.lucene.facet.search.results.FacetResult;
+import org.apache.lucene.facet.search.results.FacetResultNode;
+import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -16,21 +30,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.junit.Test;
-
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
-import org.apache.lucene.facet.search.params.CountFacetRequest;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
-import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
-import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.facet.util.PartitionsUtils;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -69,9 +70,9 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       }
       
       final int pSize = partitionSize;
-      DefaultFacetIndexingParams iParams = new DefaultFacetIndexingParams() {
+      FacetIndexingParams iParams = new FacetIndexingParams() {
         @Override
-        protected int fixedPartitionSize() {
+        public int getPartitionSize() {
           return pSize;
         }
       };
@@ -153,19 +154,19 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       cfrb20.setDepth(0);
       cfrb20.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-      FacetSearchParams facetSearchParams = new FacetSearchParams(iParams);
-      facetSearchParams.addFacetRequest(cfra23);
-      facetSearchParams.addFacetRequest(cfra22);
-      facetSearchParams.addFacetRequest(cfra21);
-      facetSearchParams.addFacetRequest(cfrb23);
-      facetSearchParams.addFacetRequest(cfrb22);
-      facetSearchParams.addFacetRequest(cfrb21);
-      facetSearchParams.addFacetRequest(doctor);
-      facetSearchParams.addFacetRequest(cfrb20);
+      List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
+      facetRequests.add(cfra23);
+      facetRequests.add(cfra22);
+      facetRequests.add(cfra21);
+      facetRequests.add(cfrb23);
+      facetRequests.add(cfrb22);
+      facetRequests.add(cfrb21);
+      facetRequests.add(doctor);
+      facetRequests.add(cfrb20);
+      FacetSearchParams facetSearchParams = new FacetSearchParams(facetRequests, iParams);
       
-      IntArrayAllocator iaa = new IntArrayAllocator(PartitionsUtils.partitionSize(facetSearchParams,tr), 1);
-      FloatArrayAllocator faa = new FloatArrayAllocator(PartitionsUtils.partitionSize(facetSearchParams,tr), 1);
-      FacetsAccumulator fctExtrctr = new StandardFacetsAccumulator(facetSearchParams, is.getIndexReader(), tr, iaa, faa);
+      FacetArrays facetArrays = new FacetArrays(PartitionsUtils.partitionSize(facetSearchParams.getFacetIndexingParams(), tr));
+      FacetsAccumulator fctExtrctr = new StandardFacetsAccumulator(facetSearchParams, is.getIndexReader(), tr, facetArrays);
       fctExtrctr.setComplementThreshold(FacetsAccumulator.DISABLE_COMPLEMENT);
       long start = System.currentTimeMillis();
 
@@ -177,7 +178,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       }
       
       FacetResult fr = facetResults.get(0); // a, depth=3, K=2
-      boolean hasDoctor = "Doctor".equals(fr.getFacetRequest().getCategoryPath().getComponent(0));
+      boolean hasDoctor = "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
       assertEquals(9, fr.getNumValidDescendants());
       FacetResultNode parentRes = fr.getFacetResultNode();
       assertEquals(16.0, parentRes.getValue(), Double.MIN_VALUE);
@@ -218,7 +219,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       }
 
       fr = facetResults.get(1); // a, depth=2, K=2. same result as before
-      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().getComponent(0));
+      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
       assertEquals(9, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
       assertEquals(16.0, parentRes.getValue(), Double.MIN_VALUE);
@@ -238,7 +239,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       }
 
       fr = facetResults.get(2); // a, depth=1, K=2
-      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().getComponent(0));
+      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
       assertEquals(4, fr.getNumValidDescendants(), 4);
       parentRes = fr.getFacetResultNode();
       assertEquals(16.0, parentRes.getValue(), Double.MIN_VALUE);
@@ -256,7 +257,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       }
       
       fr = facetResults.get(3); // a/b, depth=3, K=2
-      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().getComponent(0));
+      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
       assertEquals(4, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
       assertEquals(8.0, parentRes.getValue(), Double.MIN_VALUE);
@@ -271,7 +272,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       }
 
       fr = facetResults.get(4); // a/b, depth=2, K=2
-      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().getComponent(0));
+      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
       assertEquals(4, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
       assertEquals(8.0, parentRes.getValue(), Double.MIN_VALUE);
@@ -285,7 +286,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       }
 
       fr = facetResults.get(5); // a/b, depth=1, K=2
-      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().getComponent(0));
+      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
       assertEquals(4, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
       assertEquals(8.0, parentRes.getValue(), Double.MIN_VALUE);
@@ -299,13 +300,13 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       }
       
       fr = facetResults.get(6); // a/b, depth=0, K=2
-      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().getComponent(0));
+      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
       assertEquals(0, fr.getNumValidDescendants()); // 0 descendants but rootnode
       parentRes = fr.getFacetResultNode();
       assertEquals(8.0, parentRes.getValue(), Double.MIN_VALUE);
       assertEquals(0.0, parentRes.getResidue(), Double.MIN_VALUE);
       assertEquals(0, parentRes.getNumSubResults());
-      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().getComponent(0));
+      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
 
       // doctor, depth=1, K=2
       assertFalse("Shouldn't have found anything for a FacetRequest " +
@@ -319,13 +320,11 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
 
   }
 
-  private void prvt_add(DefaultFacetIndexingParams iParams, RandomIndexWriter iw,
-                    TaxonomyWriter tw, String... strings) throws IOException {
-    ArrayList<CategoryPath> cps = new ArrayList<CategoryPath>();
-    CategoryPath cp = new CategoryPath(strings);
-    cps.add(cp);
+  private void prvt_add(FacetIndexingParams iParams, RandomIndexWriter iw,
+      TaxonomyWriter tw, String... strings) throws IOException {
     Document d = new Document();
-    new CategoryDocumentBuilder(tw, iParams).setCategoryPaths(cps).build(d);
+    FacetFields facetFields = new FacetFields(tw, iParams);
+    facetFields.addFields(d, Collections.singletonList(new CategoryPath(strings)));
     d.add(new TextField("content", "alpha", Field.Store.YES));
     iw.addDocument(d);
   }

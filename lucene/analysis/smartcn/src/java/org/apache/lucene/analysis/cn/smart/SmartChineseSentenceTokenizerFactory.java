@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.util.TokenizerFactory;
  * @lucene.experimental
  */
 public class SmartChineseSentenceTokenizerFactory extends TokenizerFactory {
+  @Override
   public Tokenizer create(Reader input) {
     return new SentenceTokenizer(input);
   }

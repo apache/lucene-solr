@@ -32,6 +32,7 @@ public class StempelPolishStemFilterFactory extends TokenFilterFactory {
   /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
   public StempelPolishStemFilterFactory() {}
 
+  @Override
   public TokenStream create(TokenStream input) {
     return new StempelFilter(input, new StempelStemmer(PolishAnalyzer.getDefaultTable()));
   }

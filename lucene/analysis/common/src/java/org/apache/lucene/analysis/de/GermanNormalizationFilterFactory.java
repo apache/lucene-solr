@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class GermanNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
 
+  @Override
   public TokenStream create(TokenStream input) {
     return new GermanNormalizationFilter(input);
   }

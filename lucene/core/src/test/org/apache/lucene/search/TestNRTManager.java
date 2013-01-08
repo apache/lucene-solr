@@ -307,6 +307,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     manager.maybeRefresh();
     assertFalse(gen < manager.getCurrentSearchingGen());
     Thread t = new Thread() {
+      @Override
       public void run() {
         try {
           signal.await();
@@ -340,6 +341,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     
     final AtomicBoolean finished = new AtomicBoolean(false);
     Thread waiter = new Thread() {
+      @Override
       public void run() {
         manager.waitForGeneration(lastGen);
         finished.set(true);
@@ -372,6 +374,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
 
     }
 
+    @Override
     public void updateDocument(Term term,
         IndexDocument doc, Analyzer analyzer)
         throws IOException {

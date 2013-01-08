@@ -746,30 +746,37 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   // SolrInfoMBean stuff: Statistics and Module Info
   /////////////////////////////////////////////////////////////////////
 
+  @Override
   public String getName() {
     return DirectUpdateHandler2.class.getName();
   }
 
+  @Override
   public String getVersion() {
     return SolrCore.version;
   }
 
+  @Override
   public String getDescription() {
     return "Update handler that efficiently directly updates the on-disk main lucene index";
   }
 
+  @Override
   public Category getCategory() {
     return Category.UPDATEHANDLER;
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public URL[] getDocs() {
     return null;
   }
 
+  @Override
   public NamedList getStatistics() {
     NamedList lst = new SimpleOrderedMap();
     lst.add("commits", commitCommands.get());

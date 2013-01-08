@@ -55,6 +55,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   /**
    * Initialize the plugin.
    */
+  @Override
   public void init(NamedList args) {}
 
   /**

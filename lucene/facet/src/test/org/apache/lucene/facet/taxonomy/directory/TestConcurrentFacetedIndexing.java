@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.cl2o.Cl2oTaxonomyWriterCache;
@@ -48,11 +48,7 @@ public class TestConcurrentFacetedIndexing extends LuceneTestCase {
     @Override
     public int get(CategoryPath categoryPath) { return -1; }
     @Override
-    public int get(CategoryPath categoryPath, int length) { return -1; }
-    @Override
     public boolean put(CategoryPath categoryPath, int ordinal) { return true; }
-    @Override
-    public boolean put(CategoryPath categoryPath, int prefixLen, int ordinal) { return true; }
     @Override
     public boolean isFull() { return true; }
     @Override
@@ -94,7 +90,7 @@ public class TestConcurrentFacetedIndexing extends LuceneTestCase {
 
     for (int i = 0; i < indexThreads.length; i++) {
       indexThreads[i] = new Thread() {
-        private final CategoryDocumentBuilder cdb = new CategoryDocumentBuilder(tw);
+        private final FacetFields facetFields = new FacetFields(tw);
         
         @Override
         public void run() {
@@ -108,15 +104,14 @@ public class TestConcurrentFacetedIndexing extends LuceneTestCase {
                 CategoryPath cp = newCategory();
                 cats.add(cp);
                 // add all prefixes to values
-                int level = cp.length();
+                int level = cp.length;
                 while (level > 0) {
-                  String s = cp.toString('/', level);
+                  String s = cp.subpath(level).toString('/');
                   values.put(s, s);
                   --level;
                 }
               }
-              cdb.setCategoryPaths(cats);
-              cdb.build(doc);
+              facetFields.addFields(doc, cats);
               iw.addDocument(doc);
             } catch (IOException e) {
               throw new RuntimeException(e);
@@ -135,11 +130,11 @@ public class TestConcurrentFacetedIndexing extends LuceneTestCase {
     for (String cat : values.keySet()) {
       CategoryPath cp = new CategoryPath(cat, '/');
       assertTrue("category not found " + cp, tr.getOrdinal(cp) > 0);
-      int level = cp.length();
+      int level = cp.length;
       int parentOrd = 0; // for root, parent is always virtual ROOT (ord=0)
-      CategoryPath path = new CategoryPath();
+      CategoryPath path = CategoryPath.EMPTY;
       for (int i = 0; i < level; i++) {
-        path.add(cp.getComponent(i));
+        path = cp.subpath(i + 1);
         int ord = tr.getOrdinal(path);
         assertEquals("invalid parent for cp=" + path, parentOrd, parents[ord]);
         parentOrd = ord; // next level should have this parent

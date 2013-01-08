@@ -68,6 +68,7 @@ public class PhraseSlopQueryNode extends QueryNodeImpl implements FieldableNode 
         + getChild().toString() + "\n</phraseslop>";
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     if (getChild() == null)
       return "";
@@ -84,6 +85,7 @@ public class PhraseSlopQueryNode extends QueryNodeImpl implements FieldableNode 
     return clone;
   }
 
+  @Override
   public CharSequence getField() {
     QueryNode child = getChild();
 
@@ -95,6 +97,7 @@ public class PhraseSlopQueryNode extends QueryNodeImpl implements FieldableNode 
 
   }
 
+  @Override
   public void setField(CharSequence fieldName) {
     QueryNode child = getChild();
 

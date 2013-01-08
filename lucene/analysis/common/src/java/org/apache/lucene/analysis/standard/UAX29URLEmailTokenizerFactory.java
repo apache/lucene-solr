@@ -48,6 +48,7 @@ public class UAX29URLEmailTokenizerFactory extends TokenizerFactory {
                             StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
   }
 
+  @Override
   public UAX29URLEmailTokenizer create(Reader input) {
     UAX29URLEmailTokenizer tokenizer = new UAX29URLEmailTokenizer(luceneMatchVersion, input); 
     tokenizer.setMaxTokenLength(maxTokenLength);

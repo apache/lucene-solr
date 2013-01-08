@@ -68,8 +68,11 @@ public interface CharTermAttribute extends Attribute, CharSequence, Appendable {
   public CharTermAttribute setEmpty();
   
   // the following methods are redefined to get rid of IOException declaration:
+  @Override
   public CharTermAttribute append(CharSequence csq);
+  @Override
   public CharTermAttribute append(CharSequence csq, int start, int end);
+  @Override
   public CharTermAttribute append(char c);
 
   /** Appends the specified {@code String} to this character sequence. 

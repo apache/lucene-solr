@@ -134,10 +134,12 @@ public class FunctionAllGroupHeadsCollector extends AbstractAllGroupHeadsCollect
       }
     }
 
+    @Override
     public int compare(int compIDX, int doc) throws IOException {
       return comparators[compIDX].compareBottom(doc);
     }
 
+    @Override
     public void updateDocHead(int doc) throws IOException {
       for (FieldComparator<?> comparator : comparators) {
         comparator.copy(0, doc);

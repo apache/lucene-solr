@@ -42,6 +42,7 @@ public class LowerCaseTokenizerFactory extends TokenizerFactory implements Multi
     assureMatchVersion();
   }
 
+  @Override
   public LowerCaseTokenizer create(Reader input) {
     return new LowerCaseTokenizer(luceneMatchVersion,input);
   }

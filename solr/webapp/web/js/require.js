@@ -9359,7 +9359,9 @@ jQuery.extend({
 					}
 					done( 0, statusText );
 					return this;
-				}
+				},
+
+				url : s.url
 			};
 
 		// Callback for when everything is done

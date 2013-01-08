@@ -5,6 +5,7 @@
 /eclipse-build
 /classes
 /build
+/idea-build
 /dist
 /*~
 /velocity.log

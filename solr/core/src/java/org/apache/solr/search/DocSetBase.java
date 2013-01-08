@@ -55,6 +55,7 @@ abstract class DocSetBase implements DocSet {
   /**
    * @throws SolrException Base implementation does not allow modifications
    */
+  @Override
   public void add(int doc) {
     throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Unsupported Operation");
   }
@@ -62,6 +63,7 @@ abstract class DocSetBase implements DocSet {
   /**
    * @throws SolrException Base implementation does not allow modifications
    */
+  @Override
   public void addUnique(int doc) {
     throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Unsupported Operation");
   }
@@ -71,6 +73,7 @@ abstract class DocSetBase implements DocSet {
    *
    * @see BitDocSet#getBits
    */
+  @Override
   public OpenBitSet getBits() {
     OpenBitSet bits = new OpenBitSet();
     for (DocIterator iter = iterator(); iter.hasNext();) {
@@ -79,6 +82,7 @@ abstract class DocSetBase implements DocSet {
     return bits;
   };
 
+  @Override
   public DocSet intersection(DocSet other) {
     // intersection is overloaded in the smaller DocSets to be more
     // efficient, so dispatch off of it instead.
@@ -92,6 +96,7 @@ abstract class DocSetBase implements DocSet {
     return new BitDocSet(newbits);
   }
 
+  @Override
   public boolean intersects(DocSet other) {
     // intersection is overloaded in the smaller DocSets to be more
     // efficient, so dispatch off of it instead.
@@ -103,12 +108,14 @@ abstract class DocSetBase implements DocSet {
   }
 
 
+  @Override
   public DocSet union(DocSet other) {
     OpenBitSet newbits = (OpenBitSet)(this.getBits().clone());
     newbits.or(other.getBits());
     return new BitDocSet(newbits);
   }
 
+  @Override
   public int intersectionSize(DocSet other) {
     // intersection is overloaded in the smaller DocSets to be more
     // efficient, so dispatch off of it instead.
@@ -119,20 +126,24 @@ abstract class DocSetBase implements DocSet {
     return intersection(other).size();
   }
 
+  @Override
   public int unionSize(DocSet other) {
     return this.size() + other.size() - this.intersectionSize(other);
   }
 
+  @Override
   public DocSet andNot(DocSet other) {
     OpenBitSet newbits = (OpenBitSet)(this.getBits().clone());
     newbits.andNot(other.getBits());
     return new BitDocSet(newbits);
   }
 
+  @Override
   public int andNotSize(DocSet other) {
     return this.size() - this.intersectionSize(other);
   }
 
+  @Override
   public Filter getTopFilter() {
     final OpenBitSet bs = getBits();
 
@@ -194,6 +205,7 @@ abstract class DocSetBase implements DocSet {
     };
   }
 
+  @Override
   public void setBitsOn(OpenBitSet target) {
     DocIterator iter = iterator();
     while (iter.hasNext()) {

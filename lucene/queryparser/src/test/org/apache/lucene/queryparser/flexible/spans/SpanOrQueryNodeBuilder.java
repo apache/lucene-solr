@@ -35,6 +35,7 @@ import org.apache.lucene.search.spans.SpanQuery;
  */
 public class SpanOrQueryNodeBuilder implements StandardQueryBuilder {
 
+  @Override
   public SpanOrQuery build(QueryNode node) throws QueryNodeException {
 
     // validates node

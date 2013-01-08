@@ -51,6 +51,7 @@ public class DoubleFieldSource extends FieldCacheSource {
     this.parser = parser;
   }
 
+  @Override
   public String description() {
     return "double(" + field + ')';
   }
@@ -151,6 +152,7 @@ public class DoubleFieldSource extends FieldCacheSource {
 
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o.getClass() != DoubleFieldSource.class) return false;
     DoubleFieldSource other = (DoubleFieldSource) o;
@@ -159,6 +161,7 @@ public class DoubleFieldSource extends FieldCacheSource {
           this.parser.getClass() == other.parser.getClass());
   }
 
+  @Override
   public int hashCode() {
     int h = parser == null ? Double.class.hashCode() : parser.getClass().hashCode();
     h += super.hashCode();

@@ -66,8 +66,10 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.handler.SnapPuller;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.component.DebugComponent;
 import org.apache.solr.handler.component.FacetComponent;
@@ -236,8 +238,8 @@ public final class SolrCore implements SolrInfoMBean {
     Directory dir = null;
     try {
       dir = getDirectoryFactory().get(getDataDir(), getSolrConfig().indexConfig.lockType);
-      if (dir.fileExists("index.properties")){
-        final IndexInput input = dir.openInput("index.properties", IOContext.DEFAULT);
+      if (dir.fileExists(SnapPuller.INDEX_PROPERTIES)){
+        final IndexInput input = dir.openInput(SnapPuller.INDEX_PROPERTIES, IOContext.DEFAULT);
   
         final InputStream is = new PropertiesInputStream(input);
         try {
@@ -249,7 +251,7 @@ public final class SolrCore implements SolrInfoMBean {
           }
           
         } catch (Exception e) {
-          log.error("Unable to load index.properties", e);
+          log.error("Unable to load " + SnapPuller.INDEX_PROPERTIES, e);
         } finally {
           IOUtils.closeQuietly(is);
         }
@@ -257,11 +259,12 @@ public final class SolrCore implements SolrInfoMBean {
     } catch (IOException e) {
       SolrException.log(log, "", e);
     } finally {
-    
-      try {
-        getDirectoryFactory().release(dir);
-      } catch (IOException e) {
-        SolrException.log(log, "", e);
+      if (dir != null) {
+        try {
+          getDirectoryFactory().release(dir);
+        } catch (IOException e) {
+          SolrException.log(log, "", e);
+        }
       }
     }
     if (!result.equals(lastNewIndexDir)) {
@@ -281,6 +284,7 @@ public final class SolrCore implements SolrInfoMBean {
     return indexReaderFactory;
   }
   
+  @Override
   public String getName() {
     return name;
   }
@@ -562,6 +566,9 @@ public final class SolrCore implements SolrInfoMBean {
     } else if (o instanceof NamedListInitializedPlugin) {
       ((NamedListInitializedPlugin) o).init(info.initArgs);
     }
+    if(o instanceof SearchComponent) {
+      ((SearchComponent) o).setName(info.name);
+    }
     return o;
   }
 
@@ -729,6 +736,7 @@ public final class SolrCore implements SolrInfoMBean {
       // until after inform() has been called for all components.
       // searchExecutor must be single-threaded for this to work
       searcherExecutor.submit(new Callable() {
+        @Override
         public Object call() throws Exception {
           latch.await();
           return null;
@@ -954,7 +962,7 @@ public final class SolrCore implements SolrInfoMBean {
 
     try {
       infoRegistry.clear();
-    } catch (Exception e) {
+    } catch (Throwable e) {
       SolrException.log(log, e);
     }
 
@@ -977,22 +985,11 @@ public final class SolrCore implements SolrInfoMBean {
     }
     
     try {
-      searcherExecutor.shutdown();
-      if (!searcherExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
-        log.error("Timeout waiting for searchExecutor to terminate");
-      }
-    } catch (InterruptedException e) {
-      searcherExecutor.shutdownNow();
-      try {
-        if (!searcherExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
-          log.error("Timeout waiting for searchExecutor to terminate");
-        }
-      } catch (InterruptedException e2) {
-        SolrException.log(log, e2);
-      }
-    } catch (Exception e) {
+      ExecutorUtil.shutdownAndAwaitTermination(searcherExecutor);
+    } catch (Throwable e) {
       SolrException.log(log, e);
     }
+
     try {
       // Since we waited for the searcherExecutor to shut down,
       // there should be no more searchers warming in the background
@@ -1166,7 +1163,10 @@ public final class SolrCore implements SolrInfoMBean {
     if(!registry.containsKey(name)){
       T searchComp = resourceLoader.newInstance(c.getName(), c);
       if (searchComp instanceof NamedListInitializedPlugin){
-        ((NamedListInitializedPlugin)searchComp).init( new NamedList() );
+        ((NamedListInitializedPlugin)searchComp).init( new NamedList<String>() );
+      }
+      if(searchComp instanceof SearchComponent) {
+        ((SearchComponent)searchComp).setName(name);
       }
       registry.put(name, searchComp);
       if (searchComp instanceof SolrInfoMBean){
@@ -1570,6 +1570,7 @@ public final class SolrCore implements SolrInfoMBean {
       if (currSearcher != null) {
         future = searcherExecutor.submit(
             new Callable() {
+              @Override
               public Object call() throws Exception {
                 try {
                   newSearcher.warm(currSearcher);
@@ -1585,6 +1586,7 @@ public final class SolrCore implements SolrInfoMBean {
       if (currSearcher==null && firstSearcherListeners.size() > 0) {
         future = searcherExecutor.submit(
             new Callable() {
+              @Override
               public Object call() throws Exception {
                 try {
                   for (SolrEventListener listener : firstSearcherListeners) {
@@ -1602,6 +1604,7 @@ public final class SolrCore implements SolrInfoMBean {
       if (currSearcher!=null && newSearcherListeners.size() > 0) {
         future = searcherExecutor.submit(
             new Callable() {
+              @Override
               public Object call() throws Exception {
                 try {
                   for (SolrEventListener listener : newSearcherListeners) {
@@ -1622,6 +1625,7 @@ public final class SolrCore implements SolrInfoMBean {
       if (!alreadyRegistered) {
         future = searcherExecutor.submit(
             new Callable() {
+              @Override
               public Object call() throws Exception {
                 try {
                   // registerSearcher will decrement onDeckSearchers and
@@ -2165,31 +2169,38 @@ public final class SolrCore implements SolrInfoMBean {
   // SolrInfoMBean stuff: Statistics and Module Info
   /////////////////////////////////////////////////////////////////////
 
+  @Override
   public String getVersion() {
     return SolrCore.version;
   }
 
+  @Override
   public String getDescription() {
     return "SolrCore";
   }
 
+  @Override
   public Category getCategory() {
     return Category.CORE;
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public URL[] getDocs() {
     return null;
   }
 
+  @Override
   public NamedList getStatistics() {
     NamedList<Object> lst = new SimpleOrderedMap<Object>();
     lst.add("coreName", name==null ? "(null)" : name);
     lst.add("startTime", new Date(startTime));
     lst.add("refCount", getOpenCount());
+    lst.add("indexDir", getIndexDir());
 
     CoreDescriptor cd = getCoreDescriptor();
     if (cd != null) {

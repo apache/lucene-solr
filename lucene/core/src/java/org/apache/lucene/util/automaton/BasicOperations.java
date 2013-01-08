@@ -473,6 +473,7 @@ final public class BasicOperations {
     int point;
     final TransitionList ends = new TransitionList();
     final TransitionList starts = new TransitionList();
+    @Override
     public int compareTo(PointTransitions other) {
       return point - other.point;
     }

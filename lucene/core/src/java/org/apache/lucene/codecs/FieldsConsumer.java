@@ -54,6 +54,7 @@ public abstract class FieldsConsumer implements Closeable {
   public abstract TermsConsumer addField(FieldInfo field) throws IOException;
   
   /** Called when we are done adding everything. */
+  @Override
   public abstract void close() throws IOException;
 
   /** Called during merging to merge all {@link Fields} from

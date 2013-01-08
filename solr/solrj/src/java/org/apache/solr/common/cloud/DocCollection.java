@@ -21,6 +21,7 @@ import org.apache.noggit.JSONUtil;
 import org.apache.noggit.JSONWriter;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -29,18 +30,24 @@ import java.util.Map;
  * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
  */
 public class DocCollection extends ZkNodeProps {
-  public static final String PROPERTIES = "properties";
   public static final String DOC_ROUTER = "router";
+  public static final String SHARDS = "shards";
 
   private final String name;
   private final Map<String, Slice> slices;
   private final DocRouter router;
 
+  /**
+   * @param name  The name of the collection
+   * @param slices The logical shards of the collection.  This is used directly and a copy is not made.
+   * @param props  The properties of the slice.  This is used directly and a copy is not made.
+   */
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
-    super(props == null ? new HashMap<String,Object>(1) : props);
+    super( props==null ? Collections.<String,Object>emptyMap() : props);
     this.name = name;
     this.slices = slices;
     this.router = router;
+
     assert name != null && slices != null;
   }
 
@@ -81,10 +88,9 @@ public class DocCollection extends ZkNodeProps {
 
   @Override
   public void write(JSONWriter jsonWriter) {
-    // write out the properties under "properties"
     LinkedHashMap<String,Object> all = new LinkedHashMap<String,Object>(slices.size()+1);
-    all.put(PROPERTIES, propMap);
-    all.putAll(slices);
+    all.putAll(propMap);
+    all.put(SHARDS, slices);
     jsonWriter.write(all);
   }
 }

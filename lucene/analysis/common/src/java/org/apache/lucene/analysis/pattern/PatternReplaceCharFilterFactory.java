@@ -54,6 +54,7 @@ public class PatternReplaceCharFilterFactory extends CharFilterFactory {
     // TODO: throw exception if you set maxBlockChars or blockDelimiters ?
   }
 
+  @Override
   public CharFilter create(Reader input) {
     return new PatternReplaceCharFilter( p, replacement, input );
   }

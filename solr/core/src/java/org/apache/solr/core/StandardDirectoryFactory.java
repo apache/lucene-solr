@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.IOContext;
 
 /**
  * Directory provider which mimics original Solr 
@@ -43,13 +44,25 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     return new File(path).getCanonicalPath();
   }
   
+  public boolean isPersistent() {
+    return true;
+  }
+  
   @Override
   public void remove(Directory dir) throws IOException {
     CacheValue val = byDirectoryCache.get(dir);
     if (val == null) {
-      throw new NullPointerException("Unknown directory " + dir);
+      throw new IllegalArgumentException("Unknown directory " + dir);
     }
     File dirFile = new File(val.path);
+    FileUtils.deleteDirectory(dirFile);
+  }
+  
+
+  @Override
+  public void remove(String path) throws IOException {
+    String fullPath = new File(path).getAbsolutePath();
+    File dirFile = new File(fullPath);
     FileUtils.deleteDirectory(dirFile);
   }
   
@@ -59,7 +72,8 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
    * @throws IOException
    *           If there is a low-level I/O error.
    */
-  public void move(Directory fromDir, Directory toDir, String fileName)
+  @Override
+  public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext)
       throws IOException {
     if (fromDir instanceof FSDirectory && toDir instanceof FSDirectory) {
       File dir1 = ((FSDirectory) fromDir).getDirectory();
@@ -72,6 +86,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
       }
     }
 
-    super.move(fromDir, toDir, fileName);
+    super.move(fromDir, toDir, fileName, ioContext);
   }
+
 }

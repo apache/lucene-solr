@@ -327,6 +327,7 @@ public class ConcurrentLFUCache<K, V> {
       this.lastAccessed = lastAccessed;
     }
 
+    @Override
     public int compareTo(CacheEntry<K, V> that) {
       if (this.hitsCopy == that.hitsCopy) {
         if (this.lastAccessedCopy == that.lastAccessedCopy) {

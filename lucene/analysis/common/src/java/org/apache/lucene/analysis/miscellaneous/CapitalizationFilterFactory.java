@@ -133,6 +133,7 @@ public class CapitalizationFilterFactory extends TokenFilterFactory {
     }
   }
 
+  @Override
   public CapitalizationFilter create(TokenStream input) {
     return new CapitalizationFilter(input, onlyFirstWord, keep, 
       forceFirstLetter, okPrefix, minWordLength, maxWordCount, maxTokenLength);

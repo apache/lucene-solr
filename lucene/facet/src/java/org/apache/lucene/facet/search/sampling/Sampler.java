@@ -1,6 +1,8 @@
 package org.apache.lucene.facet.search.sampling;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 
@@ -183,11 +185,12 @@ public abstract class Sampler {
     // So now we can sample -> altering the searchParams to accommodate for the statistical error for the sampling
     double overSampleFactor = getSamplingParams().getOversampleFactor();
     if (overSampleFactor > 1) { // any factoring to do?
-      res = new FacetSearchParams(original.getFacetIndexingParams());
-      for (FacetRequest frq: original.getFacetRequests()) {
+      List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
+      for (FacetRequest frq : original.getFacetRequests()) {
         int overSampledNumResults = (int) Math.ceil(frq.getNumResults() * overSampleFactor);
-        res.addFacetRequest(new OverSampledFacetRequest(frq, overSampledNumResults));
+        facetRequests.add(new OverSampledFacetRequest(frq, overSampledNumResults));
       }
+      res = new FacetSearchParams(facetRequests, original.getFacetIndexingParams());
     }
     return res;
   }

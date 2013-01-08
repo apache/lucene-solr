@@ -40,6 +40,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertU(adoc("id","10", "qqq_s","X"));
     assertU(adoc("id","11", "www_s","X"));
     assertU(adoc("id","12", "eee_s","X"));
+    assertU(adoc("id","13", "eee_s","'balance'"));
 
     assertU(commit());
   }
@@ -82,8 +83,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertJQ(req("q","qaz {!join from=www_s to=eee_s}{!join from=qqq_s to=www_s}id:10" )
         ,"/response/docs/[0]/id=='12'"
     );
-
-
   }
 
+  @Test
+  public void testSolr4121() throws Exception {
+    // At one point, balanced quotes messed up the parser(SOLR-4121)
+    assertJQ(req("q","eee_s:'balance'", "indent","true")
+        ,"/response/numFound==1"
+    );
+  }
 }

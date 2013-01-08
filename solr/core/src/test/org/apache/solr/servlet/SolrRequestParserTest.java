@@ -21,6 +21,7 @@ import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 
+import java.io.ByteArrayInputStream;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
@@ -31,10 +32,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -168,12 +171,11 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   @Test
   public void testStandardParseParamsAndFillStreams() throws Exception
   {
-    ArrayList<ContentStream> streams = new ArrayList<ContentStream>();
-    Map<String,String[]> params = new HashMap<String, String[]>();
-    params.put( "q", new String[] { "hello" } );
+    final String getParams = "qt=%C3%BC&dup=foo", postParams = "q=hello&d%75p=bar";
+    final byte[] postBytes = postParams.getBytes("UTF-8");
     
     // Set up the expected behavior
-    String[] ct = new String[] {
+    final String[] ct = new String[] {
         "application/x-www-form-urlencoded",
         "Application/x-www-form-urlencoded",
         "application/x-www-form-urlencoded; charset=utf-8",
@@ -184,16 +186,102 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       HttpServletRequest request = createMock(HttpServletRequest.class);
       expect(request.getMethod()).andReturn("POST").anyTimes();
       expect(request.getContentType()).andReturn( contentType ).anyTimes();
-      expect(request.getParameterMap()).andReturn(params).anyTimes();
+      expect(request.getQueryString()).andReturn(getParams).anyTimes();
+      expect(request.getContentLength()).andReturn(postBytes.length).anyTimes();
+      expect(request.getInputStream()).andReturn(new ServletInputStream() {
+        private final ByteArrayInputStream in = new ByteArrayInputStream(postBytes);
+        @Override public int read() { return in.read(); }
+      });
       replay(request);
       
-      MultipartRequestParser multipart = new MultipartRequestParser( 1000000 );
+      MultipartRequestParser multipart = new MultipartRequestParser( 2048 );
       RawRequestParser raw = new RawRequestParser();
-      StandardRequestParser standard = new StandardRequestParser( multipart, raw );
+      FormDataRequestParser formdata = new FormDataRequestParser( 2048 );
+      StandardRequestParser standard = new StandardRequestParser( multipart, raw, formdata );
       
-      SolrParams p = standard.parseParamsAndFillStreams( request, streams );
+      SolrParams p = standard.parseParamsAndFillStreams(request, new ArrayList<ContentStream>());
       
       assertEquals( "contentType: "+contentType, "hello", p.get("q") );
+      assertEquals( "contentType: "+contentType, "\u00FC", p.get("qt") );
+      assertArrayEquals( "contentType: "+contentType, new String[]{"foo","bar"}, p.getParams("dup") );
+    }
+  }
+  
+  @Test
+  public void testStandardFormdataUploadLimit() throws Exception
+  {
+    final int limitKBytes = 128;
+
+    final StringBuilder large = new StringBuilder("q=hello");
+    // grow exponentially to reach 128 KB limit:
+    while (large.length() <= limitKBytes * 1024) {
+      large.append('&').append(large);
+    }
+    HttpServletRequest request = createMock(HttpServletRequest.class);
+    expect(request.getMethod()).andReturn("POST").anyTimes();
+    expect(request.getContentType()).andReturn("application/x-www-form-urlencoded").anyTimes();
+    // we dont pass a content-length to let the security mechanism limit it:
+    expect(request.getContentLength()).andReturn(-1).anyTimes();
+    expect(request.getQueryString()).andReturn(null).anyTimes();
+    expect(request.getInputStream()).andReturn(new ServletInputStream() {
+      private final ByteArrayInputStream in = new ByteArrayInputStream(large.toString().getBytes("UTF-8"));
+      @Override public int read() { return in.read(); }
+    });
+    replay(request);
+    
+    FormDataRequestParser formdata = new FormDataRequestParser( limitKBytes );    
+    try {
+      formdata.parseParamsAndFillStreams(request, new ArrayList<ContentStream>());
+      fail("should throw SolrException");
+    } catch (SolrException solre) {
+      assertTrue(solre.getMessage().contains("upload limit"));
+      assertEquals(400, solre.code());
+    }
+  }
+  
+  @Test
+  public void testParameterIncompatibilityException1() throws Exception
+  {
+    HttpServletRequest request = createMock(HttpServletRequest.class);
+    expect(request.getMethod()).andReturn("POST").anyTimes();
+    expect(request.getContentType()).andReturn("application/x-www-form-urlencoded").anyTimes();
+    expect(request.getContentLength()).andReturn(100).anyTimes();
+    expect(request.getQueryString()).andReturn(null).anyTimes();
+    // we emulate Jetty that returns empty stream when parameters were parsed before:
+    expect(request.getInputStream()).andReturn(new ServletInputStream() {
+      @Override public int read() { return -1; }
+    });
+    replay(request);
+    
+    FormDataRequestParser formdata = new FormDataRequestParser( 2048 );    
+    try {
+      formdata.parseParamsAndFillStreams(request, new ArrayList<ContentStream>());
+      fail("should throw SolrException");
+    } catch (SolrException solre) {
+      assertTrue(solre.getMessage().startsWith("Solr requires that request parameters"));
+      assertEquals(500, solre.code());
+    }
+  }
+  
+  @Test
+  public void testParameterIncompatibilityException2() throws Exception
+  {
+    HttpServletRequest request = createMock(HttpServletRequest.class);
+    expect(request.getMethod()).andReturn("POST").anyTimes();
+    expect(request.getContentType()).andReturn("application/x-www-form-urlencoded").anyTimes();
+    expect(request.getContentLength()).andReturn(100).anyTimes();
+    expect(request.getQueryString()).andReturn(null).anyTimes();
+    // we emulate Tomcat that throws IllegalStateException when parameters were parsed before:
+    expect(request.getInputStream()).andThrow(new IllegalStateException());
+    replay(request);
+    
+    FormDataRequestParser formdata = new FormDataRequestParser( 2048 );    
+    try {
+      formdata.parseParamsAndFillStreams(request, new ArrayList<ContentStream>());
+      fail("should throw SolrException");
+    } catch (SolrException solre) {
+      assertTrue(solre.getMessage().startsWith("Solr requires that request parameters"));
+      assertEquals(500, solre.code());
     }
   }
 }

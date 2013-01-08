@@ -33,6 +33,7 @@ public final class LevensteinDistance implements StringDistance {
     //*****************************
     // Compute Levenshtein distance: see org.apache.commons.lang.StringUtils#getLevenshteinDistance(String, String)
     //*****************************
+    @Override
     public float getDistance (String target, String other) {
       char[] sa;
       int n;

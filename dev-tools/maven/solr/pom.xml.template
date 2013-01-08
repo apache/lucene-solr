@@ -104,7 +104,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <configuration>
             <systemPropertyVariables>
-              <java.util.logging.config.file>../test-classes/maven.testlogging.properties</java.util.logging.config.file>
+              <tests.jettyConnector>${tests.jettyConnector}</tests.jettyConnector>
             </systemPropertyVariables>
           </configuration>
         </plugin>

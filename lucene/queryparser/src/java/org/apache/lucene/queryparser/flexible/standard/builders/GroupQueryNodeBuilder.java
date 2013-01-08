@@ -34,6 +34,7 @@ public class GroupQueryNodeBuilder implements StandardQueryBuilder {
     // empty constructor
   }
 
+  @Override
   public Query build(QueryNode queryNode) throws QueryNodeException {
     GroupQueryNode groupNode = (GroupQueryNode) queryNode;
 

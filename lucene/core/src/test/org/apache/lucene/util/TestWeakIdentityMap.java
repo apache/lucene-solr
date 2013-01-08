@@ -177,6 +177,7 @@ public class TestWeakIdentityMap extends LuceneTestCase {
       for (int t = 0; t < threadCount; t++) {
         final Random rnd = new Random(random().nextLong());
         exec.execute(new Runnable() {
+          @Override
           public void run() {
             final int count = atLeast(rnd, 10000);
             for (int i = 0; i < count; i++) {

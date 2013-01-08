@@ -50,6 +50,7 @@ public class NGramDistance implements StringDistance {
     this(2);
   }
   
+  @Override
   public float getDistance(String source, String target) {
     final int sl = source.length();
     final int tl = target.length();

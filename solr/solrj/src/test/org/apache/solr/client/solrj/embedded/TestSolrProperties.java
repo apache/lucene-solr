@@ -17,21 +17,26 @@
 
 package org.apache.solr.client.solrj.embedded;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.*;
+
 import org.apache.commons.io.IOUtils;
-import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.*;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.FileUtils;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -41,23 +46,12 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 /**
  *
  * @since solr 1.3
  */
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class
-})
 public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
   protected static Logger log = LoggerFactory.getLogger(TestSolrProperties.class);
 
@@ -70,6 +64,18 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
 
   private static final XPathFactory xpathFactory = XPathFactory.newInstance();
 
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+  }
+  
+  @Override
+  @After
+  public void tearDown() throws Exception {
+   super.tearDown(); 
+  }
+  
   @Override
   protected File getSolrXml() throws Exception {
     //This test writes on the directory where the solr.xml is located. Better to copy the solr.xml to
@@ -196,6 +202,7 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     }
     
     CoreAdminRequest.renameCore(name, "renamed_core", coreadmin);
+    
     mcr = CoreAdminRequest.persist(SOLR_PERSIST_XML, getRenamedSolrAdmin());
     
 //    fis = new FileInputStream(new File(tempDir, SOLR_PERSIST_XML));
@@ -215,8 +222,13 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     }
     
     coreadmin = getRenamedSolrAdmin();
-    CoreAdminRequest.createCore("newCore", SOLR_HOME.getAbsolutePath(), coreadmin);
-    
+    File dataDir = new File(tempDir,"data3");
+    File tlogDir = new File(tempDir,"tlog3");
+
+    CoreAdminRequest.createCore("newCore", SOLR_HOME.getAbsolutePath(),
+        coreadmin, null, null, dataDir.getAbsolutePath(),
+        tlogDir.getAbsolutePath());
+
 //    fis = new FileInputStream(new File(solrXml.getParent(), SOLR_PERSIST_XML));
 //    solrPersistXml = IOUtils.toString(fis);
 //    System.out.println("xml:" + solrPersistXml);
@@ -240,9 +252,14 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     // test reload and parse
     cores.shutdown();
     
+//   fis = new FileInputStream(new File(getSolrXml().getParent(),
+//   SOLR_PERSIST_XML));
+//   String solrPersistXml = IOUtils.toString(fis);
+//   System.out.println("xml:" + solrPersistXml);
+//   fis.close();
+    
     cores = new CoreContainer(SOLR_HOME.getAbsolutePath(), new File(tempDir, SOLR_PERSIST_XML));
  
-    
     mcr = CoreAdminRequest.persist(SOLR_PERSIST_XML, getRenamedSolrAdmin());
     
 //     fis = new FileInputStream(new File(solrXml.getParent(),

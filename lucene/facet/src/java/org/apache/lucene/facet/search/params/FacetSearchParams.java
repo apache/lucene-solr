@@ -1,12 +1,10 @@
 package org.apache.lucene.facet.search.params;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.cache.CategoryListCache;
-import org.apache.lucene.facet.search.results.FacetResult;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,12 +24,13 @@ import org.apache.lucene.facet.search.results.FacetResult;
  */
 
 /**
- * Faceted search parameters indicate for which facets should info be gathered.
+ * Defines parameters that are needed for faceted search. The list of
+ * {@link FacetRequest facet requests} denotes the facets for which aggregated
+ * should be done.
  * <p>
- * The contained facet requests define for which facets should info be gathered.
- * <p>
- * Contained faceted indexing parameters provide required info on how
- * to read and interpret the underlying faceted information in the search index.   
+ * One can pass {@link FacetIndexingParams} in order to tell the search code how
+ * to read the facets information. Note that you must use the same
+ * {@link FacetIndexingParams} that were used for indexing.
  * 
  * @lucene.experimental
  */
@@ -39,64 +38,63 @@ public class FacetSearchParams {
 
   protected final FacetIndexingParams indexingParams;
   protected final List<FacetRequest> facetRequests;
-  private CategoryListCache clCache = null;
+  
+  /**
+   * Initializes with the given {@link FacetRequest requests} and default
+   * {@link FacetIndexingParams#ALL_PARENTS}. If you used a different
+   * {@link FacetIndexingParams}, you should use
+   * {@link #FacetSearchParams(List, FacetIndexingParams)}.
+   */
+  public FacetSearchParams(FacetRequest... facetRequests) {
+    this(Arrays.asList(facetRequests), FacetIndexingParams.ALL_PARENTS);
+  }
+  
+  /**
+   * Initializes with the given {@link FacetRequest requests} and default
+   * {@link FacetIndexingParams#ALL_PARENTS}. If you used a different
+   * {@link FacetIndexingParams}, you should use
+   * {@link #FacetSearchParams(List, FacetIndexingParams)}.
+   */
+  public FacetSearchParams(List<FacetRequest> facetRequests) {
+    this(facetRequests, FacetIndexingParams.ALL_PARENTS);
+  }
 
   /**
-   * Construct with specific faceted indexing parameters.
-   * It is important to know the indexing parameters so as to e.g. 
-   * read facets data correctly from the index.
-   * {@link #addFacetRequest(FacetRequest)} must be called at least once 
-   * for this faceted search to find any faceted result.
-   * @param indexingParams Indexing faceted parameters which were used at indexing time.
-   * @see #addFacetRequest(FacetRequest)
+   * Initilizes with the given {@link FacetRequest requests} and
+   * {@link FacetIndexingParams}.
    */
-  public FacetSearchParams(FacetIndexingParams indexingParams) {
+  public FacetSearchParams(List<FacetRequest> facetRequests, FacetIndexingParams indexingParams) {
+    if (facetRequests == null || facetRequests.size() == 0) {
+      throw new IllegalArgumentException("at least one FacetRequest must be defined");
+    }
     this.indexingParams = indexingParams;
-    facetRequests = new ArrayList<FacetRequest>();
+    this.facetRequests = facetRequests;
   }
 
   /**
-   * Construct with default faceted indexing parameters.
-   * Usage of this constructor is valid only if also during indexing the 
-   * default faceted indexing parameters were used.   
-   * {@link #addFacetRequest(FacetRequest)} must be called at least once 
-   * for this faceted search to find any faceted result.
-   * @see #addFacetRequest(FacetRequest)
+   * Returns the {@link CategoryListCache}. By default returns {@code null}, you
+   * should override if you want to use a cache.
    */
-  public FacetSearchParams() {
-    this(new DefaultFacetIndexingParams());
+  public CategoryListCache getCategoryListCache() {
+    return null;
   }
 
   /**
-   * A list of {@link FacetRequest} objects, determining what to count.
-   * If the returned collection is empty, the faceted search will return no facet results!
+   * Returns the {@link FacetIndexingParams} that were passed to the
+   * constructor.
    */
-  public final FacetIndexingParams getFacetIndexingParams() {
+  public FacetIndexingParams getFacetIndexingParams() {
     return indexingParams;
   }
-
+  
   /**
-   * Parameters which controlled the indexing of facets, and which are also
-   * needed during search.
+   * Returns the list of {@link FacetRequest facet requests} that were passed to
+   * the constructor.
    */
-  public final List<FacetRequest> getFacetRequests() {
+  public List<FacetRequest> getFacetRequests() {
     return facetRequests;
   }
 
-  /**
-   * Add a facet request to apply for this faceted search.
-   * This method must be called at least once for faceted search 
-   * to find any faceted result. <br>
-   * NOTE: The order of addition implies the order of the {@link FacetResult}s
-   * @param facetRequest facet request to be added.
-   */
-  public void addFacetRequest(FacetRequest facetRequest) {
-    if (facetRequest == null) {
-      throw new IllegalArgumentException("Provided facetRequest must not be null");
-    }
-    facetRequests.add(facetRequest);
-  }
-  
   @Override
   public String toString() {
     final char TAB = '\t';
@@ -111,20 +109,5 @@ public class FacetSearchParams {
     }
     
     return sb.toString();
-  }
-
-  /**
-   * @return the cldCache in effect
-   */
-  public CategoryListCache getClCache() {
-    return clCache;
-  }
-
-  /**
-   * Set Cached Category Lists data to be used in Faceted search.
-   * @param clCache the cldCache to set
-   */
-  public void setClCache(CategoryListCache clCache) {
-    this.clCache = clCache;
   }
 }

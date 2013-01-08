@@ -30,10 +30,12 @@ public class AbstractSolrEventListener implements SolrEventListener {
   }
   protected NamedList args;
 
+  @Override
   public void init(NamedList args) {
     this.args = args;
   }
 
+  @Override
   public void postCommit() {
     throw new UnsupportedOperationException();
   }
@@ -43,6 +45,7 @@ public class AbstractSolrEventListener implements SolrEventListener {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
     throw new UnsupportedOperationException();
   }

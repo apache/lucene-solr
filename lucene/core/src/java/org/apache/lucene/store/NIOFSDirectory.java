@@ -80,6 +80,7 @@ public class NIOFSDirectory extends FSDirectory {
     return new NIOFSIndexInput(new File(getDirectory(), name), context, getReadChunkSize());
   }
   
+  @Override
   public IndexInputSlicer createSlicer(final String name,
       final IOContext context) throws IOException {
     ensureOpen();

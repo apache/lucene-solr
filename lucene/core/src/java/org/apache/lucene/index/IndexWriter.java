@@ -336,7 +336,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     // obtained during this flush are pooled, the first time
     // this method is called:
     poolReaders = true;
-    final DirectoryReader r;
+    DirectoryReader r = null;
     doBeforeFlush();
     boolean anySegmentFlushed = false;
     /*
@@ -346,46 +346,54 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
      * We release the two stage full flush after we are done opening the
      * directory reader!
      */
-    synchronized (fullFlushLock) {
-      boolean success = false;
-      try {
-        anySegmentFlushed = docWriter.flushAllThreads();
-        if (!anySegmentFlushed) {
-          // prevent double increment since docWriter#doFlush increments the flushcount
-          // if we flushed anything.
-          flushCount.incrementAndGet();
-        }
-        success = true;
-        // Prevent segmentInfos from changing while opening the
-        // reader; in theory we could do similar retry logic,
-        // just like we do when loading segments_N
-        synchronized(this) {
-          maybeApplyDeletes(applyAllDeletes);
-          r = StandardDirectoryReader.open(this, segmentInfos, applyAllDeletes);
-          if (infoStream.isEnabled("IW")) {
-            infoStream.message("IW", "return reader version=" + r.getVersion() + " reader=" + r);
+    boolean success2 = false;
+    try {
+      synchronized (fullFlushLock) {
+        boolean success = false;
+        try {
+          anySegmentFlushed = docWriter.flushAllThreads();
+          if (!anySegmentFlushed) {
+            // prevent double increment since docWriter#doFlush increments the flushcount
+            // if we flushed anything.
+            flushCount.incrementAndGet();
           }
-        }
-      } catch (OutOfMemoryError oom) {
-        handleOOM(oom, "getReader");
-        // never reached but javac disagrees:
-        return null;
-      } finally {
-        if (!success) {
-          if (infoStream.isEnabled("IW")) {
-            infoStream.message("IW", "hit exception during NRT reader");
+          success = true;
+          // Prevent segmentInfos from changing while opening the
+          // reader; in theory we could do similar retry logic,
+          // just like we do when loading segments_N
+          synchronized(this) {
+            maybeApplyDeletes(applyAllDeletes);
+            r = StandardDirectoryReader.open(this, segmentInfos, applyAllDeletes);
+            if (infoStream.isEnabled("IW")) {
+              infoStream.message("IW", "return reader version=" + r.getVersion() + " reader=" + r);
+            }
           }
+        } catch (OutOfMemoryError oom) {
+          handleOOM(oom, "getReader");
+          // never reached but javac disagrees:
+          return null;
+        } finally {
+          if (!success) {
+            if (infoStream.isEnabled("IW")) {
+              infoStream.message("IW", "hit exception during NRT reader");
+            }
+          }
+          // Done: finish the full flush!
+          docWriter.finishFullFlush(success);
+          doAfterFlush();
         }
-        // Done: finish the full flush!
-        docWriter.finishFullFlush(success);
-        doAfterFlush();
       }
-    }
-    if (anySegmentFlushed) {
-      maybeMerge(MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
-    }
-    if (infoStream.isEnabled("IW")) {
-      infoStream.message("IW", "getReader took " + (System.currentTimeMillis() - tStart) + " msec");
+      if (anySegmentFlushed) {
+        maybeMerge(MergeTrigger.FULL_FLUSH, UNBOUNDED_MAX_MERGE_SEGMENTS);
+      }
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "getReader took " + (System.currentTimeMillis() - tStart) + " msec");
+      }
+      success2 = true;
+    } finally {
+      if (!success2) {
+        IOUtils.closeWhileHandlingException(r);
+      }
     }
     return r;
   }
@@ -445,15 +453,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     /** Remove all our references to readers, and commits
      *  any pending changes. */
     synchronized void dropAll(boolean doSave) throws IOException {
+      Throwable priorE = null;
       final Iterator<Map.Entry<SegmentInfoPerCommit,ReadersAndLiveDocs>> it = readerMap.entrySet().iterator();
       while(it.hasNext()) {
         final ReadersAndLiveDocs rld = it.next().getValue();
-        if (doSave && rld.writeLiveDocs(directory)) {
-          // Make sure we only write del docs for a live segment:
-          assert infoIsLive(rld.info);
-          // Must checkpoint w/ deleter, because we just
-          // created created new _X_N.del file.
-          deleter.checkpoint(segmentInfos, false);
+
+        try {
+          if (doSave && rld.writeLiveDocs(directory)) {
+            // Make sure we only write del docs for a live segment:
+            assert infoIsLive(rld.info);
+            // Must checkpoint w/ deleter, because we just
+            // created created new _X_N.del file.
+            deleter.checkpoint(segmentInfos, false);
+          }
+        } catch (Throwable t) {
+          if (priorE != null) {
+            priorE = t;
+          }
         }
 
         // Important to remove as-we-go, not with .clear()
@@ -466,9 +482,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         // actually close the SRs; this happens when a
         // near real-time reader is kept open after the
         // IndexWriter instance is closed:
-        rld.dropReaders();
+        try {
+          rld.dropReaders();
+        } catch (Throwable t) {
+          if (priorE != null) {
+            priorE = t;
+          }
+        }
       }
       assert readerMap.size() == 0;
+      if (priorE != null) {
+        throw new RuntimeException(priorE);
+      }
     }
 
     /**
@@ -812,6 +837,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *
    * @throws IOException if there is a low-level IO error
    */
+  @Override
   public void close() throws IOException {
     close(true);
   }
@@ -1905,6 +1931,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    * call to {@link #prepareCommit}.
    * @throws IOException if there is a low-level IO error
    */
+  @Override
   public void rollback() throws IOException {
     ensureOpen();
 
@@ -2570,6 +2597,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *  you should immediately close the writer.  See <a
    *  href="#OOME">above</a> for details.</p>
    */
+  @Override
   public final void prepareCommit() throws IOException {
     ensureOpen();
     prepareCommitInternal();
@@ -2727,6 +2755,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
    *
    * @see #prepareCommit
    */
+  @Override
   public final void commit() throws IOException {
     ensureOpen();
     commitInternal();
@@ -3045,13 +3074,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
         infoStream.message("IW", mergedDeletes.getPendingDeleteCount() + " new deletes since merge started");
       }
     }
-
-    // If new deletes were applied while we were merging
-    // (which happens if eg commit() or getReader() is
-    // called during our merge), then it better be the case
-    // that the delGen has increased for all our merged
-    // segments:
-    assert mergedDeletes == null || minGen > merge.info.getBufferedDeletesGen();
 
     merge.info.setBufferedDeletesGen(minGen);
 

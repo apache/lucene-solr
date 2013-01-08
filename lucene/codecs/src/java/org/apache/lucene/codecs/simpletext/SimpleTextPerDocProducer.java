@@ -79,6 +79,7 @@ public class SimpleTextPerDocProducer extends PerDocProducerBase {
     return docValues;
   }
 
+  @Override
   protected DocValues loadDocValues(int docCount, Directory dir, String id,
       DocValues.Type type, IOContext context) throws IOException {
     return new SimpleTextDocValues(dir, context, type, id, docCount, comp, segmentSuffix);

@@ -1,22 +1,15 @@
 package org.apache.lucene.facet.search.params;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.store.Directory;
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.CategoryListParams;
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.search.FacetArrays;
@@ -35,6 +28,12 @@ import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.util.ScoredDocIdsUtils;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -87,7 +86,7 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
     // Create a CLP which generates different CLIs according to the
     // FacetRequest's dimension
     CategoryListParams clp = new CategoryListParams();
-    FacetIndexingParams iParams = new DefaultFacetIndexingParams(clp);
+    FacetIndexingParams iParams = new FacetIndexingParams(clp);
     Directory indexDir = newDirectory();
     Directory taxoDir = newDirectory();
     populateIndex(iParams, indexDir, taxoDir);
@@ -135,16 +134,19 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
   }
 
   private void validateFacetedSearch(FacetIndexingParams iParams,
-      TaxonomyReader taxo, IndexReader reader,  CategoryListCache clCache, ScoredDocIDs allDocs,
-      String[] dimension, int[] expectedValue,
-      int[] expectedNumDescendants)
-      throws IOException {
-    FacetSearchParams sParams = new FacetSearchParams(iParams);
-    sParams.setClCache(clCache);
+      TaxonomyReader taxo, IndexReader reader, final CategoryListCache clCache,
+      ScoredDocIDs allDocs, String[] dimension, int[] expectedValue,
+      int[] expectedNumDescendants) throws IOException {
+    List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
     for (String dim : dimension) {
-      sParams.addFacetRequest(new PerDimCountFacetRequest(
-          new CategoryPath(dim), 10));
+      facetRequests.add(new PerDimCountFacetRequest(new CategoryPath(dim), 10));
     }
+    FacetSearchParams sParams = new FacetSearchParams(facetRequests, iParams) {
+      @Override
+      public CategoryListCache getCategoryListCache() {
+        return clCache;
+      }
+    };
     FacetsAccumulator acc = new StandardFacetsAccumulator(sParams, reader, taxo);
     
     // no use to test this with complement since at that mode all facets are taken
@@ -169,11 +171,11 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)));
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
 
+    FacetFields facetFields = new FacetFields(taxoWriter, iParams);
     for (CategoryPath[] categories : perDocCategories) {
-      writer.addDocument(new CategoryDocumentBuilder(taxoWriter, iParams)
-          .setCategoryPaths(Arrays.asList(categories)).build(
-              new Document()));
-
+      Document doc = new Document();
+      facetFields.addFields(doc, Arrays.asList(categories));
+      writer.addDocument(doc);
     }
     taxoWriter.commit();
     writer.commit();
@@ -229,7 +231,7 @@ public class MultiIteratorsPerCLParamsTest extends LuceneTestCase {
       if (requestedPath == null) {
         parentOrdinal = 0;
       } else {
-        CategoryPath cp = new CategoryPath(requestedPath.getComponent(0));
+        CategoryPath cp = new CategoryPath(requestedPath.components[0]);
         parentOrdinal = taxo.getOrdinal(cp);
       }
       parentArray = taxo.getParallelTaxonomyArrays().parents();

@@ -50,6 +50,7 @@ public class CoreAdminRequest extends SolrRequest
     protected String configName = null;
     protected String schemaName = null;
     protected String dataDir = null;
+    protected String ulogDir = null;
     protected String collection;
     private Integer numShards;
     private String shardId;
@@ -63,6 +64,7 @@ public class CoreAdminRequest extends SolrRequest
     public void setSchemaName(String schema) { this.schemaName = schema; }
     public void setConfigName(String config) { this.configName = config; }
     public void setDataDir(String dataDir) { this.dataDir = dataDir; }
+    public void setUlogDir(String ulogDir) { this.ulogDir = ulogDir; }
     public void setCollection(String collection) { this.collection = collection; }
     public void setNumShards(int numShards) {this.numShards = numShards;}
     public void setShardId(String shardId) {this.shardId = shardId;}
@@ -72,6 +74,7 @@ public class CoreAdminRequest extends SolrRequest
     public String getSchemaName()  { return schemaName; }
     public String getConfigName()  { return configName; }
     public String getDataDir() { return dataDir; }
+    public String getUlogDir() { return ulogDir; }
     public String getCollection() { return collection; }
     public String getShardId() { return shardId; }
     public String getRoles() { return roles; }
@@ -97,6 +100,9 @@ public class CoreAdminRequest extends SolrRequest
       }
       if (dataDir != null) {
         params.set( CoreAdminParams.DATA_DIR, dataDir);
+      }
+      if (ulogDir != null) {
+        params.set( CoreAdminParams.ULOG_DIR, ulogDir);
       }
       if (collection != null) {
         params.set( CoreAdminParams.COLLECTION, collection);
@@ -471,11 +477,21 @@ public class CoreAdminRequest extends SolrRequest
     return CoreAdminRequest.createCore(name, instanceDir, server, null, null);
   }
   
-  public static CoreAdminResponse createCore( String name, String instanceDir, SolrServer server, String configFile, String schemaFile ) throws SolrServerException, IOException 
+  public static CoreAdminResponse createCore( String name, String instanceDir, SolrServer server, String configFile, String schemaFile ) throws SolrServerException, IOException { 
+    return createCore(name, instanceDir, server, configFile, schemaFile, null, null);
+  }
+  
+  public static CoreAdminResponse createCore( String name, String instanceDir, SolrServer server, String configFile, String schemaFile, String dataDir, String tlogDir ) throws SolrServerException, IOException 
   {
     CoreAdminRequest.Create req = new CoreAdminRequest.Create();
     req.setCoreName( name );
     req.setInstanceDir(instanceDir);
+    if (dataDir != null) {
+      req.setDataDir(dataDir);
+    }
+    if (tlogDir != null) {
+      req.setUlogDir(tlogDir);
+    }
     if(configFile != null){
       req.setConfigName(configFile);
     }

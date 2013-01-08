@@ -50,8 +50,10 @@ public class SortedIntDocSet extends DocSetBase {
 
   public int[] getDocs() { return docs; }
 
+  @Override
   public int size()      { return docs.length; }
 
+  @Override
   public long memSize() {
     return (docs.length<<2)+8;
   }
@@ -219,6 +221,7 @@ public class SortedIntDocSet extends DocSetBase {
     return false;
   }
 
+  @Override
   public int intersectionSize(DocSet other) {
     if (!(other instanceof SortedIntDocSet)) {
       // assume other implementations are better at random access than we are,
@@ -567,6 +570,7 @@ public class SortedIntDocSet extends DocSetBase {
   }
 
 
+  @Override
   public boolean exists(int doc) {
     // this could be faster by estimating where in the list the doc is likely to appear,
     // but we should get away from using exists() anyway.
@@ -591,13 +595,16 @@ public class SortedIntDocSet extends DocSetBase {
   }
   
 
+  @Override
   public DocIterator iterator() {
     return new DocIterator() {
       int pos=0;
+      @Override
       public boolean hasNext() {
         return pos < docs.length;
       }
 
+      @Override
       public Integer next() {
         return nextDoc();
       }
@@ -605,14 +612,17 @@ public class SortedIntDocSet extends DocSetBase {
       /**
        * The remove  operation is not supported by this Iterator.
        */
+      @Override
       public void remove() {
         throw new UnsupportedOperationException("The remove  operation is not supported by this Iterator.");
       }
 
+      @Override
       public int nextDoc() {
         return docs[pos++];
       }
 
+      @Override
       public float score() {
         return 0.0f;
       }

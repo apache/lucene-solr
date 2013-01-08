@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.cl2o.Cl2oTaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.lru.LruTaxonomyWriterCache;
@@ -51,11 +52,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     @Override
     public int get(CategoryPath categoryPath) { return -1; }
     @Override
-    public int get(CategoryPath categoryPath, int length) { return -1; }
-    @Override
     public boolean put(CategoryPath categoryPath, int ordinal) { return true; }
-    @Override
-    public boolean put(CategoryPath categoryPath, int prefixLen, int ordinal) { return true; }
     @Override
     public boolean isFull() { return true; }
     @Override
@@ -265,10 +262,10 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
                   Integer.toString(value / 100000), Integer.toString(value));
               int ord = tw.addCategory(cp);
               assertTrue("invalid parent for ordinal " + ord + ", category " + cp, tw.getParent(ord) != -1);
-              String l1 = cp.toString('/', 1);
-              String l2 = cp.toString('/', 2);
-              String l3 = cp.toString('/', 3);
-              String l4 = cp.toString('/', 4);
+              String l1 = cp.subpath(1).toString('/');
+              String l2 = cp.subpath(2).toString('/');
+              String l3 = cp.subpath(3).toString('/');
+              String l4 = cp.subpath(4).toString('/');
               values.put(l1, l1);
               values.put(l2, l2);
               values.put(l3, l3);
@@ -291,11 +288,11 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     for (String cat : values.keySet()) {
       CategoryPath cp = new CategoryPath(cat, '/');
       assertTrue("category not found " + cp, dtr.getOrdinal(cp) > 0);
-      int level = cp.length();
+      int level = cp.length;
       int parentOrd = 0; // for root, parent is always virtual ROOT (ord=0)
-      CategoryPath path = new CategoryPath();
+      CategoryPath path = CategoryPath.EMPTY;
       for (int i = 0; i < level; i++) {
-        path.add(cp.getComponent(i));
+        path = cp.subpath(i + 1);
         int ord = dtr.getOrdinal(path);
         assertEquals("invalid parent for cp=" + path, parentOrd, parents[ord]);
         parentOrd = ord; // next level should have this parent
@@ -316,12 +313,12 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
   public void testReplaceTaxonomy() throws Exception {
     Directory input = newDirectory();
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(input);
-    taxoWriter.addCategory(new CategoryPath("a"));
+    int ordA = taxoWriter.addCategory(new CategoryPath("a"));
     taxoWriter.close();
     
     Directory dir = newDirectory();
     taxoWriter = new DirectoryTaxonomyWriter(dir);
-    int ordinal = taxoWriter.addCategory(new CategoryPath("b"));
+    int ordB = taxoWriter.addCategory(new CategoryPath("b"));
     taxoWriter.addCategory(new CategoryPath("c"));
     taxoWriter.commit();
     
@@ -330,11 +327,16 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     // replace the taxonomy with the input one
     taxoWriter.replaceTaxonomy(input);
     
+    // LUCENE-4633: make sure that category "a" is not added again in any case
+    taxoWriter.addTaxonomy(input, new MemoryOrdinalMap());
+    assertEquals("no categories should have been added", 2, taxoWriter.getSize()); // root + 'a'
+    assertEquals("category 'a' received new ordinal?", ordA, taxoWriter.addCategory(new CategoryPath("a")));
+
     // add the same category again -- it should not receive the same ordinal !
-    int newOrdinal = taxoWriter.addCategory(new CategoryPath("b"));
-    assertNotSame("new ordinal cannot be the original ordinal", ordinal, newOrdinal);
-    assertEquals("ordinal should have been 2 since only one category was added by replaceTaxonomy", 2, newOrdinal);
-    
+    int newOrdB = taxoWriter.addCategory(new CategoryPath("b"));
+    assertNotSame("new ordinal cannot be the original ordinal", ordB, newOrdB);
+    assertEquals("ordinal should have been 2 since only one category was added by replaceTaxonomy", 2, newOrdB);
+
     taxoWriter.close();
     
     long newEpoch = getEpoch(dir);

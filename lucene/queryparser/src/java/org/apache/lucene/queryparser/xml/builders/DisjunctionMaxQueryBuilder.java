@@ -40,6 +40,7 @@ public class DisjunctionMaxQueryBuilder implements QueryBuilder {
     * @see org.apache.lucene.xmlparser.QueryObjectBuilder#process(org.w3c.dom.Element)
     */
 
+  @Override
   public Query getQuery(Element e) throws ParserException {
     float tieBreaker = DOMUtils.getAttribute(e, "tieBreaker", 0.0f); 
     DisjunctionMaxQuery dq = new DisjunctionMaxQuery(tieBreaker);

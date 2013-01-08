@@ -59,8 +59,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   private final DirectoryReader indexReader;
 
   // TODO: test DoubleBarrelLRUCache and consider using it instead
-  private LRUHashMap<String, Integer> ordinalCache;
-  private LRUHashMap<Integer, String> categoryCache;
+  private LRUHashMap<CategoryPath, Integer> ordinalCache;
+  private LRUHashMap<Integer, CategoryPath> categoryCache;
 
   private volatile ParallelTaxonomyArrays taxoArrays;
 
@@ -72,15 +72,15 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
    * arrays.
    */
   DirectoryTaxonomyReader(DirectoryReader indexReader, DirectoryTaxonomyWriter taxoWriter,
-      LRUHashMap<String,Integer> ordinalCache, LRUHashMap<Integer,String> categoryCache,
+      LRUHashMap<CategoryPath,Integer> ordinalCache, LRUHashMap<Integer,CategoryPath> categoryCache,
       ParallelTaxonomyArrays taxoArrays) throws IOException {
     this.indexReader = indexReader;
     this.taxoWriter = taxoWriter;
     this.taxoEpoch = taxoWriter == null ? -1 : taxoWriter.getTaxonomyEpoch();
     
     // use the same instance of the cache, note the protective code in getOrdinal and getPath
-    this.ordinalCache = ordinalCache == null ? new LRUHashMap<String,Integer>(DEFAULT_CACHE_VALUE) : ordinalCache;
-    this.categoryCache = categoryCache == null ? new LRUHashMap<Integer,String>(DEFAULT_CACHE_VALUE) : categoryCache;
+    this.ordinalCache = ordinalCache == null ? new LRUHashMap<CategoryPath,Integer>(DEFAULT_CACHE_VALUE) : ordinalCache;
+    this.categoryCache = categoryCache == null ? new LRUHashMap<Integer,CategoryPath>(DEFAULT_CACHE_VALUE) : categoryCache;
     
     this.taxoArrays = taxoArrays != null ? new ParallelTaxonomyArrays(indexReader, taxoArrays) : null;
   }
@@ -102,8 +102,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
 
     // These are the default cache sizes; they can be configured after
     // construction with the cache's setMaxSize() method
-    ordinalCache = new LRUHashMap<String, Integer>(DEFAULT_CACHE_VALUE);
-    categoryCache = new LRUHashMap<Integer, String>(DEFAULT_CACHE_VALUE);
+    ordinalCache = new LRUHashMap<CategoryPath, Integer>(DEFAULT_CACHE_VALUE);
+    categoryCache = new LRUHashMap<Integer, CategoryPath>(DEFAULT_CACHE_VALUE);
   }
   
   /**
@@ -121,39 +121,8 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     
     // These are the default cache sizes; they can be configured after
     // construction with the cache's setMaxSize() method
-    ordinalCache = new LRUHashMap<String, Integer>(DEFAULT_CACHE_VALUE);
-    categoryCache = new LRUHashMap<Integer, String>(DEFAULT_CACHE_VALUE);
-  }
-  
-  private String getLabel(int catID) throws IOException {
-    ensureOpen();
-
-    // Since the cache is shared with DTR instances allocated from
-    // doOpenIfChanged, we need to ensure that the ordinal is one that this DTR
-    // instance recognizes. Therefore we do this check up front, before we hit
-    // the cache.
-    if (catID < 0 || catID >= indexReader.maxDoc()) {
-      return null;
-    }
-    
-    // TODO: can we use an int-based hash impl, such as IntToObjectMap,
-    // wrapped as LRU?
-    Integer catIDInteger = Integer.valueOf(catID);
-    synchronized (categoryCache) {
-      String res = categoryCache.get(catIDInteger);
-      if (res != null) {
-        return res;
-      }
-    }
-
-    final LoadFullPathOnly loader = new LoadFullPathOnly();
-    indexReader.document(catID, loader);
-    String ret = loader.getFullPath();
-    synchronized (categoryCache) {
-      categoryCache.put(catIDInteger, ret);
-    }
-
-    return ret;
+    ordinalCache = new LRUHashMap<CategoryPath, Integer>(DEFAULT_CACHE_VALUE);
+    categoryCache = new LRUHashMap<Integer, CategoryPath>(DEFAULT_CACHE_VALUE);
   }
   
   private synchronized void initTaxoArrays() throws IOException {
@@ -278,16 +247,15 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   }
 
   @Override
-  public int getOrdinal(CategoryPath categoryPath) throws IOException {
+  public int getOrdinal(CategoryPath cp) throws IOException {
     ensureOpen();
-    if (categoryPath.length() == 0) {
+    if (cp.length == 0) {
       return ROOT_ORDINAL;
     }
-    String path = categoryPath.toString(delimiter);
 
     // First try to find the answer in the LRU cache:
     synchronized (ordinalCache) {
-      Integer res = ordinalCache.get(path);
+      Integer res = ordinalCache.get(cp);
       if (res != null) {
         if (res.intValue() < indexReader.maxDoc()) {
           // Since the cache is shared with DTR instances allocated from
@@ -307,7 +275,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
     // If we're still here, we have a cache miss. We need to fetch the
     // value from disk, and then also put it in the cache:
     int ret = TaxonomyReader.INVALID_ORDINAL;
-    DocsEnum docs = MultiFields.getTermDocsEnum(indexReader, null, Consts.FULL, new BytesRef(path), 0);
+    DocsEnum docs = MultiFields.getTermDocsEnum(indexReader, null, Consts.FULL, new BytesRef(cp.toString(delimiter)), 0);
     if (docs != null && docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       ret = docs.docID();
       
@@ -317,7 +285,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
       // information about found categories, we cannot accidently tell a new
       // generation of DTR that a category does not exist.
       synchronized (ordinalCache) {
-        ordinalCache.put(path, Integer.valueOf(ret));
+        ordinalCache.put(cp, Integer.valueOf(ret));
       }
     }
 
@@ -333,31 +301,33 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   @Override
   public CategoryPath getPath(int ordinal) throws IOException {
     ensureOpen();
-    // TODO (Facet): Currently, the LRU cache we use (getCategoryCache) holds
-    // strings with delimiters, not CategoryPath objects, so even if
-    // we have a cache hit, we need to process the string and build a new
-    // CategoryPath object every time. What is preventing us from putting
-    // the actual CategoryPath object in the cache is the fact that these
-    // objects are mutable. So we should create an immutable (read-only)
-    // interface that CategoryPath implements, and this method should
-    // return this interface, not the writable CategoryPath.
-    String label = getLabel(ordinal);
-    if (label == null) {
+    
+    // Since the cache is shared with DTR instances allocated from
+    // doOpenIfChanged, we need to ensure that the ordinal is one that this DTR
+    // instance recognizes. Therefore we do this check up front, before we hit
+    // the cache.
+    if (ordinal < 0 || ordinal >= indexReader.maxDoc()) {
       return null;
     }
-    return new CategoryPath(label, delimiter);
-  }
-
-  @Override
-  public boolean getPath(int ordinal, CategoryPath result) throws IOException {
-    ensureOpen();
-    String label = getLabel(ordinal);
-    if (label == null) {
-      return false;
+    
+    // TODO: can we use an int-based hash impl, such as IntToObjectMap,
+    // wrapped as LRU?
+    Integer catIDInteger = Integer.valueOf(ordinal);
+    synchronized (categoryCache) {
+      CategoryPath res = categoryCache.get(catIDInteger);
+      if (res != null) {
+        return res;
+      }
     }
-    result.clear();
-    result.add(label, delimiter);
-    return true;
+    
+    final LoadFullPathOnly loader = new LoadFullPathOnly();
+    indexReader.document(ordinal, loader);
+    CategoryPath ret = new CategoryPath(loader.getFullPath(), delimiter);
+    synchronized (categoryCache) {
+      categoryCache.put(catIDInteger, ret);
+    }
+    
+    return ret;
   }
 
   @Override
@@ -411,7 +381,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
           sb.append(i + ": NULL!! \n");
           continue;
         } 
-        if (category.length() == 0) {
+        if (category.length == 0) {
           sb.append(i + ": EMPTY STRING!! \n");
           continue;
         }

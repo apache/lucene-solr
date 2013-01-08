@@ -44,6 +44,7 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
     assureMatchVersion();
   }
 
+  @Override
   public void inform(ResourceLoader loader) throws IOException {
     String wordFiles = args.get("words");
     ignoreCase = getBoolean("ignoreCase", false);
@@ -85,6 +86,7 @@ public class KeepWordFilterFactory extends TokenFilterFactory implements Resourc
     return words;
   }
 
+  @Override
   public TokenStream create(TokenStream input) {
     // if the set is null, it means it was empty
     return words == null ? input : new KeepWordFilter(enablePositionIncrements, input, words);

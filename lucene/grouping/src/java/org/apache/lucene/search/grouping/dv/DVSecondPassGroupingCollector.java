@@ -141,10 +141,12 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
       super(groupField, valueType, diskResident, searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
     }
 
+    @Override
     protected SearchGroupDocs<Long> retrieveGroup(int doc) throws IOException {
       return groupMap.get(source.getInt(doc));
     }
 
+    @Override
     protected void setDocValuesSources(DocValues.Source source, AtomicReaderContext readerContext) {
       this.source = source;
     }
@@ -158,10 +160,12 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
       super(groupField, valueType, diskResident, searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
     }
 
+    @Override
     protected SearchGroupDocs<Double> retrieveGroup(int doc) throws IOException {
       return groupMap.get(source.getFloat(doc));
     }
 
+    @Override
     protected void setDocValuesSources(DocValues.Source source, AtomicReaderContext readerContext) {
       this.source = source;
     }
@@ -176,6 +180,7 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
       super(groupField, valueType, diskResident, searchGroups, groupSort, withinGroupSort, maxDocsPerGroup, getScores, getMaxScores, fillSortFields);
     }
 
+    @Override
     protected SearchGroupDocs<BytesRef> retrieveGroup(int doc) throws IOException {
       return groupMap.get(source.getBytes(doc, spare));
     }
@@ -200,6 +205,7 @@ public abstract class DVSecondPassGroupingCollector<GROUP_VALUE> extends Abstrac
       groupDocs = (SearchGroupDocs<BytesRef>[]) new SearchGroupDocs[ordSet.keys.length];
     }
 
+    @Override
     protected SearchGroupDocs<BytesRef> retrieveGroup(int doc) throws IOException {
       int slot = ordSet.find(source.ord(doc));
       if (slot >= 0) {

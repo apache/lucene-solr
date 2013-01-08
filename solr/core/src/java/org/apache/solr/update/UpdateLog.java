@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -125,6 +126,7 @@ public class UpdateLog implements PluginInfoInitialized {
 
   // keep track of deletes only... this is not updated on an add
   private LinkedHashMap<BytesRef, LogPtr> oldDeletes = new LinkedHashMap<BytesRef, LogPtr>(numDeletesToKeep) {
+    @Override
     protected boolean removeEldestEntry(Map.Entry eldest) {
       return size() > numDeletesToKeep;
     }
@@ -167,6 +169,7 @@ public class UpdateLog implements PluginInfoInitialized {
       this.version = version;
     }
 
+    @Override
     public String toString() {
       return "LogPtr(" + pointer + ")";
     }
@@ -177,12 +180,19 @@ public class UpdateLog implements PluginInfoInitialized {
     return versionInfo;
   }
 
+  @Override
   public void init(PluginInfo info) {
     dataDir = (String)info.initArgs.get("dir");
     defaultSyncLevel = SyncLevel.getSyncLevel((String)info.initArgs.get("syncLevel"));
   }
 
   public void init(UpdateHandler uhandler, SolrCore core) {
+    // ulogDir from CoreDescriptor overrides
+    String ulogDir = core.getCoreDescriptor().getUlogDir();
+    if (ulogDir != null) {
+      dataDir = ulogDir;
+    }
+    
     if (dataDir == null || dataDir.length()==0) {
       dataDir = core.getDataDir();
     }
@@ -312,6 +322,7 @@ public class UpdateLog implements PluginInfoInitialized {
   public static String[] getLogList(File directory) {
     final String prefix = TLOG_NAME+'.';
     String[] names = directory.list(new FilenameFilter() {
+      @Override
       public boolean accept(File dir, String name) {
         return name.startsWith(prefix);
       }
@@ -803,10 +814,14 @@ public class UpdateLog implements PluginInfoInitialized {
   }
   
   public void close(boolean committed) {
+    close(committed, false);
+  }
+  
+  public void close(boolean committed, boolean deleteOnClose) {
     synchronized (this) {
       try {
-        recoveryExecutor.shutdownNow();
-      } catch (Exception e) {
+        ExecutorUtil.shutdownNowAndAwaitTermination(recoveryExecutor);
+      } catch (Throwable e) {
         SolrException.log(log, e);
       }
 
@@ -1097,6 +1112,7 @@ public class UpdateLog implements PluginInfoInitialized {
     return state;
   }
 
+  @Override
   public String toString() {
     return "FSUpdateLog{state="+getState()+", tlog="+tlog+"}";
   }
@@ -1378,6 +1394,22 @@ public class UpdateLog implements PluginInfoInitialized {
       }
     }
   }
+  
+  public static File getTlogDir(SolrCore core, PluginInfo info) {
+    String dataDir = (String) info.initArgs.get("dir");
+    if (dataDir == null) {
+      String ulogDir = core.getCoreDescriptor().getUlogDir();
+      if (ulogDir != null) {
+        dataDir = ulogDir;
+      }
+      
+      if (dataDir == null || dataDir.length() == 0) {
+        dataDir = core.getDataDir();
+      }
+    }
+    return new File(dataDir, TLOG_NAME);
+  }
+  
 }
 
 

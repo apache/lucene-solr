@@ -123,6 +123,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       }
     }
 
+    @Override
     protected void retrieveGroupHeadAndAddIfNotExist(int doc) throws IOException {
       final int ord = groupIndex.getOrd(doc);
       final BytesRef groupValue;
@@ -143,10 +144,12 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       temporalResult.groupHead = groupHead;
     }
 
+    @Override
     protected Collection<GroupHead> getCollectedGroupHeads() {
       return groups.values();
     }
 
+    @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
       this.readerContext = context;
       groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
@@ -158,6 +161,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       }
     }
 
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
       for (GroupHead groupHead : groups.values()) {
@@ -184,10 +188,12 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
         }
       }
 
+      @Override
       public int compare(int compIDX, int doc) throws IOException {
         return comparators[compIDX].compareBottom(doc);
       }
 
+      @Override
       public void updateDocHead(int doc) throws IOException {
         for (FieldComparator<?> comparator : comparators) {
           comparator.copy(0, doc);
@@ -224,14 +230,17 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       }
     }
 
+    @Override
     protected Collection<GroupHead> getCollectedGroupHeads() {
       return collectedGroups;
     }
 
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
     }
 
+    @Override
     protected void retrieveGroupHeadAndAddIfNotExist(int doc) throws IOException {
       int key = groupIndex.getOrd(doc);
       GroupHead groupHead;
@@ -255,6 +264,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       temporalResult.groupHead = groupHead;
     }
 
+    @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
       this.readerContext = context;
       groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
@@ -320,6 +330,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
         }
       }
 
+      @Override
       public int compare(int compIDX, int doc) throws IOException {
         if (fields[compIDX].getType() == SortField.Type.SCORE) {
           float score = scorer.score();
@@ -344,6 +355,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
         }
       }
 
+      @Override
       public void updateDocHead(int doc) throws IOException {
         for (int i = 0; i < sortsIndex.length; i++) {
           if (fields[i].getType() == SortField.Type.SCORE) {
@@ -387,13 +399,16 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       }
     }
 
+    @Override
     protected Collection<GroupHead> getCollectedGroupHeads() {
       return collectedGroups;
     }
 
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
     }
 
+    @Override
     protected void retrieveGroupHeadAndAddIfNotExist(int doc) throws IOException {
       int key = groupIndex.getOrd(doc);
       GroupHead groupHead;
@@ -417,6 +432,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       temporalResult.groupHead = groupHead;
     }
 
+    @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
       this.readerContext = context;
       groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
@@ -469,6 +485,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
         }
       }
 
+      @Override
       public int compare(int compIDX, int doc) throws IOException {
         if (sortOrds[compIDX] < 0) {
           // The current segment doesn't contain the sort value we encountered before. Therefore the ord is negative.
@@ -483,6 +500,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
         }
       }
 
+      @Override
       public void updateDocHead(int doc) throws IOException {
         for (int i = 0; i < sortsIndex.length; i++) {
           sortOrds[i] = sortsIndex[i].getOrd(doc);
@@ -523,14 +541,17 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       }
     }
 
+    @Override
     protected Collection<GroupHead> getCollectedGroupHeads() {
       return collectedGroups;
     }
 
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
     }
 
+    @Override
     protected void retrieveGroupHeadAndAddIfNotExist(int doc) throws IOException {
       int key = groupIndex.getOrd(doc);
       GroupHead groupHead;
@@ -554,6 +575,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
       temporalResult.groupHead = groupHead;
     }
 
+    @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
       this.readerContext = context;
       groupIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
@@ -588,6 +610,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
         }
       }
 
+      @Override
       public int compare(int compIDX, int doc) throws IOException {
         float score = scorer.score();
         if (scores[compIDX] < score) {
@@ -598,6 +621,7 @@ public abstract class TermAllGroupHeadsCollector<GH extends AbstractAllGroupHead
         return 0;
       }
 
+      @Override
       public void updateDocHead(int doc) throws IOException {
         float score = scorer.score();
         for (int i = 0; i < scores.length; i++) {

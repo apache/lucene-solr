@@ -27,10 +27,12 @@ import org.apache.solr.request.SolrQueryRequest;
  *
  */
 public class XMLResponseWriter implements QueryResponseWriter {
+  @Override
   public void init(NamedList n) {
     /* NOOP */
   }
 
+  @Override
   public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     XMLWriter w = new XMLWriter(writer, req, rsp);
     try {
@@ -40,6 +42,7 @@ public class XMLResponseWriter implements QueryResponseWriter {
     }
   }
 
+  @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return CONTENT_TYPE_XML_UTF8;
   }

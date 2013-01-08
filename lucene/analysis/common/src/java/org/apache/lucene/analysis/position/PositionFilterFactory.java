@@ -48,6 +48,7 @@ public class PositionFilterFactory extends TokenFilterFactory {
     positionIncrement = getInt("positionIncrement", 0);
   }
 
+  @Override
   public PositionFilter create(TokenStream input) {
     return new PositionFilter(input, positionIncrement);
   }

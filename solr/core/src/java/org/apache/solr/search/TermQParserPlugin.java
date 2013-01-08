@@ -43,6 +43,7 @@ import org.apache.solr.schema.FieldType;
 public class TermQParserPlugin extends QParserPlugin {
   public static String NAME = "term";
 
+  @Override
   public void init(NamedList args) {
   }
 

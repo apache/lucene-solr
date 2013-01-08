@@ -44,6 +44,7 @@ public class SpanOrTermsBuilder extends SpanBuilderBase {
     this.analyzer = analyzer;
   }
 
+  @Override
   public SpanQuery getSpanQuery(Element e) throws ParserException {
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     String value = DOMUtils.getNonBlankTextOrFail(e);

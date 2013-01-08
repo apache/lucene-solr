@@ -28,6 +28,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class FunctionQParserPlugin extends QParserPlugin {
   public static String NAME = "func";
 
+  @Override
   public void init(NamedList args) {
   }
 

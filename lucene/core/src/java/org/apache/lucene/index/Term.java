@@ -110,6 +110,7 @@ public final class Term implements Comparable<Term> {
     argument, and a positive integer if this term belongs after the argument.
 
     The ordering of terms is first by field, then by text.*/
+  @Override
   public final int compareTo(Term other) {
     if (field.equals(other.field)) {
       return bytes.compareTo(other.bytes);

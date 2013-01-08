@@ -56,6 +56,9 @@ public class ChaosMonkey {
   private static final int EXPIRE_PERCENT = 10; // 0 - 10 = 0 - 100%
   private Map<String,List<CloudJettyRunner>> shardToJetty;
   
+  private static final boolean CONN_LOSS = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.connloss", "true"));
+  private static final boolean EXP = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.exp", "true"));
+  
   private ZkTestServer zkServer;
   private ZkStateReader zkStateReader;
   private String collection;
@@ -83,9 +86,9 @@ public class ChaosMonkey {
     this.zkStateReader = zkStateReader;
     this.collection = collection;
     Random random = LuceneTestCase.random();
-    expireSessions = true; //= random.nextBoolean();
+    expireSessions = EXP; //= random.nextBoolean();
     
-    causeConnectionLoss = true;//= random.nextBoolean();
+    causeConnectionLoss = CONN_LOSS;//= random.nextBoolean();
     monkeyLog("init - expire sessions:" + expireSessions
         + " cause connection loss:" + causeConnectionLoss);
   }
@@ -347,7 +350,7 @@ public class ChaosMonkey {
       
       ZkNodeProps leader = null;
       try {
-        leader = zkStateReader.getLeaderProps(collection, slice);
+        leader = zkStateReader.getLeaderRetry(collection, slice);
       } catch (Throwable t) {
         log.error("Could not get leader", t);
         return null;

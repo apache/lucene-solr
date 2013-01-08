@@ -624,6 +624,7 @@ public class JSONParser {
     }
   }
 
+  @Override
   public String toString() {
     return "start="+start+",end="+end+",state="+state+"valstate="+valstate;
   }

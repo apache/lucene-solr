@@ -125,6 +125,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
     Comparator<AbstractDistinctValuesCollector.GroupCount<Comparable<Object>>> cmp = new Comparator<AbstractDistinctValuesCollector.GroupCount<Comparable<Object>>>() {
 
+      @Override
       public int compare(AbstractDistinctValuesCollector.GroupCount<Comparable<Object>> groupCount1, AbstractDistinctValuesCollector.GroupCount<Comparable<Object>> groupCount2) {
         if (groupCount1.groupValue == null) {
           if (groupCount2.groupValue == null) {
@@ -523,6 +524,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
 
   private static class NullComparator implements Comparator<Comparable<?>> {
 
+    @Override
     @SuppressWarnings({"unchecked","rawtypes"})
     public int compare(Comparable a, Comparable b) {
       if (a == b) {

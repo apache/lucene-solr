@@ -95,6 +95,7 @@ class PerSegmentSingleValuedFaceting {
       final SegFacet segFacet = new SegFacet(leave);
 
       Callable<SegFacet> task = new Callable<SegFacet>() {
+        @Override
         public SegFacet call() throws Exception {
           segFacet.countTerms();
           return segFacet;

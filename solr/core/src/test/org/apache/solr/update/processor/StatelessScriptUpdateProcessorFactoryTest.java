@@ -79,6 +79,7 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
     final StatelessScriptUpdateProcessorFactory factory = ((StatelessScriptUpdateProcessorFactory) chained.getFactories()[0]);
     final List<String> functionMessages = new ArrayList<String>();
     factory.setScriptEngineCustomizer(new ScriptEngineCustomizer() {
+      @Override
       public void customize(ScriptEngine engine) {
         engine.put("testCase", StatelessScriptUpdateProcessorFactoryTest.this);
         engine.put("functionMessages", functionMessages);
@@ -124,6 +125,7 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
         ((StatelessScriptUpdateProcessorFactory) chained.getFactories()[0]);
       final List<String> functionMessages = new ArrayList<String>();
       ScriptEngineCustomizer customizer = new ScriptEngineCustomizer() {
+          @Override
           public void customize(ScriptEngine engine) {
             engine.put("testCase", StatelessScriptUpdateProcessorFactoryTest.this);
             engine.put("functionMessages", functionMessages);

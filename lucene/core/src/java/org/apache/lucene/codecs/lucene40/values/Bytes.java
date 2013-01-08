@@ -469,6 +469,7 @@ public final class Bytes {
       }
     }
     
+    @Override
     public int getValueSize() {
       return size;
     }

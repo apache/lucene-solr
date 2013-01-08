@@ -383,6 +383,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
           "qt", "spellCheckCompRH",
           "indent", "true",
           SpellCheckComponent.COMPONENT_NAME, "true",
+          SpellCheckComponent.SPELLCHECK_BUILD, "true",
           SpellCheckComponent.SPELLCHECK_DICT, dictionary[i],
           SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true",
           SpellCheckComponent.SPELLCHECK_COUNT, "10",

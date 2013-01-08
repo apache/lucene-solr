@@ -43,6 +43,7 @@ public class LowerCaseFilterFactory extends TokenFilterFactory implements MultiT
     assureMatchVersion();
   }
 
+  @Override
   public LowerCaseFilter create(TokenStream input) {
     return new LowerCaseFilter(luceneMatchVersion,input);
   }

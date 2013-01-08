@@ -27,6 +27,7 @@ import org.apache.solr.common.params.SolrParams;
  */
 public class HtmlEncoder extends HighlightingPluginBase implements SolrEncoder {
 
+  @Override
   public Encoder getEncoder(String fieldName, SolrParams params) {
     return new SimpleHTMLEncoder();
   }

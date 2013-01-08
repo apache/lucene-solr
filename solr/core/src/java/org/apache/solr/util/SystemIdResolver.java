@@ -72,6 +72,7 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
   
   public URIResolver asURIResolver() {
     return new URIResolver() {
+      @Override
       public Source resolve(String href, String base) throws TransformerException {
         try {
           final InputSource src = SystemIdResolver.this.resolveEntity(null, null, base, href);
@@ -85,6 +86,7 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
   
   public XMLResolver asXMLResolver() {
     return new XMLResolver() {
+      @Override
       public Object resolveEntity(String publicId, String systemId, String baseURI, String namespace) throws XMLStreamException {
         try {
           final InputSource src = SystemIdResolver.this.resolveEntity(null, publicId, baseURI, systemId);
@@ -117,10 +119,12 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
   
   // *** EntityResolver(2) methods:
   
+  @Override
   public InputSource getExternalSubset(String name, String baseURI) {
     return null;
   }
   
+  @Override
   public InputSource resolveEntity(String name, String publicId, String baseURI, String systemId) throws IOException {
     if (systemId == null)
       return null;
@@ -152,6 +156,7 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
     }
   }
 
+  @Override
   public InputSource resolveEntity(String publicId, String systemId) throws IOException {
     return resolveEntity(null, publicId, null, systemId);
   }

@@ -39,6 +39,7 @@ public class KeywordMarkerFilterFactory extends TokenFilterFactory implements Re
   private CharArraySet protectedWords;
   private boolean ignoreCase;
   
+  @Override
   public void inform(ResourceLoader loader) throws IOException {
     String wordFiles = args.get(PROTECTED_TOKENS);
     ignoreCase = getBoolean("ignoreCase", false);
@@ -51,6 +52,7 @@ public class KeywordMarkerFilterFactory extends TokenFilterFactory implements Re
     return ignoreCase;
   }
 
+  @Override
   public TokenStream create(TokenStream input) {
     return protectedWords == null ? input : new KeywordMarkerFilter(input, protectedWords);
   }

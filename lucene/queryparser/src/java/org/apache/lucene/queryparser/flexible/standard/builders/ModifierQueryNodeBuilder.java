@@ -34,6 +34,7 @@ public class ModifierQueryNodeBuilder implements StandardQueryBuilder {
     // empty constructor
   }
 
+  @Override
   public Query build(QueryNode queryNode) throws QueryNodeException {
     ModifierQueryNode modifierNode = (ModifierQueryNode) queryNode;
 

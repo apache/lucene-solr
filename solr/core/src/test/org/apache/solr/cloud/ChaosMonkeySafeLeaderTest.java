@@ -20,6 +20,8 @@ package org.apache.solr.cloud;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase.BadApple;
+import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
@@ -29,12 +31,13 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
-@Ignore("SOLR-3126")
+@Slow
+@BadApple
 public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   private static final int BASE_RUN_LENGTH = 120000;
+  private static final int RUN_LENGTH = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.runlength", Integer.toString(BASE_RUN_LENGTH)));
 
   @BeforeClass
   public static void beforeSuperClass() {
@@ -49,6 +52,8 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   @Before
   @Override
   public void setUp() throws Exception {
+    useFactory("solr.StandardDirectoryFactory");
+
     super.setUp();
     
     System.setProperty("numShards", Integer.toString(sliceCount));
@@ -64,8 +69,8 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   
   public ChaosMonkeySafeLeaderTest() {
     super();
-    sliceCount = 3;//atLeast(2);
-    shardCount = 12;//atLeast(sliceCount*2);
+    sliceCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.slicecount", "3"));
+    shardCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.shardcount", "12"));
   }
   
   @Override
@@ -83,13 +88,13 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     List<StopableIndexingThread> threads = new ArrayList<StopableIndexingThread>();
     int threadCount = 2;
     for (int i = 0; i < threadCount; i++) {
-      StopableIndexingThread indexThread = new StopableIndexingThread(i * 50000, true);
+      StopableIndexingThread indexThread = new StopableIndexingThread(10000 + i*50000, true);
       threads.add(indexThread);
       indexThread.start();
     }
     
     chaosMonkey.startTheMonkey(false, 500);
-    int runLength = atLeast(BASE_RUN_LENGTH);
+    int runLength = RUN_LENGTH;
     Thread.sleep(runLength);
     
     chaosMonkey.stopTheMonkey();
@@ -108,8 +113,10 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     }
     
     // try and wait for any replications and what not to finish...
-    
-    waitForThingsToLevelOut(Integer.MAX_VALUE);//Math.round((runLength / 1000.0f / 3.0f)));
+
+    Thread.sleep(2000);
+
+    waitForThingsToLevelOut(180000);
 
     checkShardConsistency(true, true);
     
@@ -135,6 +142,7 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
   }
   
   // skip the randoms - they can deadlock...
+  @Override
   protected void indexr(Object... fields) throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     addFields(doc, fields);

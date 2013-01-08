@@ -38,9 +38,11 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase 
   protected CoreContainer cores = null;
   protected File tempDir;
 
-  private void createTempDir() {
-    tempDir = new File(TEMP_DIR, "solrtest-" + getTestClass().getSimpleName() + "-" + System.currentTimeMillis());
-    tempDir.mkdirs();
+  protected void createTempDir() {
+    if (tempDir == null) {
+      tempDir = new File(TEMP_DIR, "solrtest-" + getTestClass().getSimpleName() + "-" + System.currentTimeMillis());
+      tempDir.mkdirs();
+    }
   }
 
   @Override
@@ -52,6 +54,11 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase 
 
     //The index is always stored within a temporary directory
     createTempDir();
+    
+    File dataDir = new File(tempDir,"data1");
+    File dataDir2 = new File(tempDir,"data2");
+    System.setProperty("dataDir1", dataDir.getAbsolutePath());
+    System.setProperty("dataDir2", dataDir2.getAbsolutePath());
     System.setProperty("tempDir", tempDir.getAbsolutePath());
 
     cores = new CoreContainer(SOLR_HOME.getAbsolutePath(), getSolrXml());
@@ -65,6 +72,9 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends LuceneTestCase 
     if (cores != null)
       cores.shutdown();
 
+    System.clearProperty("dataDir1");
+    System.clearProperty("dataDir2");
+    
     deleteAdditionalFiles();
 
     File dataDir = new File(tempDir,"data");

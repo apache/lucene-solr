@@ -42,22 +42,16 @@ import org.apache.solr.response.SolrQueryResponse;
  * </p>
  *
  * <pre class="prettyprint">
- *  &lt;updateRequestProcessorChain&gt;
- *    &lt;processor class="solr.IgnoreFieldUpdateProcessorFactory" /&gt;
- *  &lt;/updateRequestProcessorChain&gt;
- * </pre>
+ * &lt;processor class="solr.IgnoreFieldUpdateProcessorFactory" /&gt;</pre>
  *
  * <p>
  * In this second example, any field name ending in "_raw" found in a 
  * document being added would be removed...
  * </p>
  * <pre class="prettyprint">
- *  &lt;updateRequestProcessorChain&gt;
- *    &lt;processor class="solr.IgnoreFieldUpdateProcessorFactory"&gt;
- *      &lt;str name="fieldRegex"&gt;.*_raw&lt;/str&gt;
- *    &lt;/processor&gt;
- *  &lt;/updateRequestProcessorChain&gt;
- * </pre>
+ * &lt;processor class="solr.IgnoreFieldUpdateProcessorFactory"&gt;
+ *   &lt;str name="fieldRegex"&gt;.*_raw&lt;/str&gt;
+ * &lt;/processor&gt;</pre>
  */
 public final class IgnoreFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
@@ -66,6 +60,7 @@ public final class IgnoreFieldUpdateProcessorFactory extends FieldMutatingUpdate
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
     return new FieldMutatingUpdateProcessor(getSelector(), next) {
+      @Override
       protected SolrInputField mutate(final SolrInputField src) {
         return null;
       }
@@ -78,6 +73,7 @@ public final class IgnoreFieldUpdateProcessorFactory extends FieldMutatingUpdate
 
     final IndexSchema schema = core.getSchema();
     return new FieldMutatingUpdateProcessor.FieldNameSelector() {
+      @Override
       public boolean shouldMutate(final String fieldName) {
 
         FieldType type = schema.getFieldTypeNoEx(fieldName);

@@ -43,6 +43,7 @@ public class MultiCategoryListIterator implements CategoryListIterator {
   }
 
   /** Fails if all given iterators fail to init */
+  @Override
   public boolean init() throws IOException {
     for (CategoryListIterator cli : iterators) {
       if (cli.init()) {
@@ -56,6 +57,7 @@ public class MultiCategoryListIterator implements CategoryListIterator {
    * Return a value larger than {@link Integer#MAX_VALUE} only if all
    * iterators are exhausted
    */
+  @Override
   public long nextCategory() throws IOException {
     while (!perDocValidIterators.isEmpty()) {
       long value = perDocValidIterators.get(0).nextCategory();
@@ -70,6 +72,7 @@ public class MultiCategoryListIterator implements CategoryListIterator {
   /**
    * Fails only if skipTo on all the provided iterators returned {@code false}
    */
+  @Override
   public boolean skipTo(int docId) throws IOException {
     perDocValidIterators.clear();
     for (CategoryListIterator cli : validIterators) {

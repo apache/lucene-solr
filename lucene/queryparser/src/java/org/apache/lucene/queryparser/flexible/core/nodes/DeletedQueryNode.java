@@ -32,6 +32,7 @@ public class DeletedQueryNode extends QueryNodeImpl {
     // empty constructor
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escaper) {
     return "[DELETEDCHILD]";
   }

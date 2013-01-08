@@ -124,6 +124,7 @@ public final class Lucene40StoredFieldsReader extends StoredFieldsReader impleme
    *
    * @throws IOException If an I/O error occurs
    */
+  @Override
   public final void close() throws IOException {
     if (!closed) {
       IOUtils.close(fieldsStream, indexStream);

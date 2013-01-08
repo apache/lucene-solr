@@ -122,7 +122,7 @@ public final class Lucene41PostingsReader extends PostingsReaderBase {
   /**
    * Read values that have been written using variable-length encoding instead of bit-packing.
    */
-  private static void readVIntBlock(IndexInput docIn, int[] docBuffer,
+  static void readVIntBlock(IndexInput docIn, int[] docBuffer,
       int[] freqBuffer, int num, boolean indexHasFreq) throws IOException {
     if (indexHasFreq) {
       for(int i=0;i<num;i++) {

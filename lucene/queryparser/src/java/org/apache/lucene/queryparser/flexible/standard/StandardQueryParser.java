@@ -198,6 +198,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
    * <p>
    * Default: false.
    */
+  @Override
   public void setLowercaseExpandedTerms(boolean lowercaseExpandedTerms) {
     getQueryConfigHandler().set(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS, lowercaseExpandedTerms);
   }
@@ -205,6 +206,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
   /**
    * @see #setLowercaseExpandedTerms(boolean)
    */
+  @Override
   public boolean getLowercaseExpandedTerms() {
     Boolean lowercaseExpandedTerms = getQueryConfigHandler().get(ConfigurationKeys.LOWERCASE_EXPANDED_TERMS);
     
@@ -226,6 +228,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
    * <p>
    * Default: false.
    */
+  @Override
   public void setAllowLeadingWildcard(boolean allowLeadingWildcard) {
     getQueryConfigHandler().set(ConfigurationKeys.ALLOW_LEADING_WILDCARD, allowLeadingWildcard);
   }
@@ -239,6 +242,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
    * <p>
    * Default: false.
    */
+  @Override
   public void setEnablePositionIncrements(boolean enabled) {
     getQueryConfigHandler().set(ConfigurationKeys.ENABLE_POSITION_INCREMENTS, enabled);
   }
@@ -246,6 +250,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
   /**
    * @see #setEnablePositionIncrements(boolean)
    */
+  @Override
   public boolean getEnablePositionIncrements() {
     Boolean enablePositionsIncrements = getQueryConfigHandler().get(ConfigurationKeys.ENABLE_POSITION_INCREMENTS);
     
@@ -268,6 +273,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
    * old-fashioned boolean queries expansion rewriting and the above points are
    * not relevant then use this change the rewrite method.
    */
+  @Override
   public void setMultiTermRewriteMethod(MultiTermQuery.RewriteMethod method) {
     getQueryConfigHandler().set(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD, method);
   }
@@ -275,6 +281,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
   /**
    * @see #setMultiTermRewriteMethod(org.apache.lucene.search.MultiTermQuery.RewriteMethod)
    */
+  @Override
   public MultiTermQuery.RewriteMethod getMultiTermRewriteMethod() {
     return getQueryConfigHandler().get(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD);
   }
@@ -311,6 +318,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
    * @param fuzzyPrefixLength
    *          The fuzzyPrefixLength to set.
    */
+  @Override
   public void setFuzzyPrefixLength(int fuzzyPrefixLength) {
     QueryConfigHandler config = getQueryConfigHandler();
     FuzzyConfig fuzzyConfig = config.get(ConfigurationKeys.FUZZY_CONFIG);
@@ -335,6 +343,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
   /**
    * Set locale used by date range parsing.
    */
+  @Override
   public void setLocale(Locale locale) {
     getQueryConfigHandler().set(ConfigurationKeys.LOCALE, locale);
   }
@@ -342,14 +351,17 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
   /**
    * Returns current locale, allowing access by subclasses.
    */
+  @Override
   public Locale getLocale() {
     return getQueryConfigHandler().get(ConfigurationKeys.LOCALE);
   }
   
+  @Override
   public void setTimeZone(TimeZone timeZone) {
     getQueryConfigHandler().set(ConfigurationKeys.TIMEZONE, timeZone);
   }
   
+  @Override
   public TimeZone getTimeZone() {
     return getQueryConfigHandler().get(ConfigurationKeys.TIMEZONE);
   }
@@ -369,6 +381,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
    * Sets the default slop for phrases. If zero, then exact phrase matches are
    * required. Default value is zero.
    */
+  @Override
   public void setPhraseSlop(int defaultPhraseSlop) {
     getQueryConfigHandler().set(ConfigurationKeys.PHRASE_SLOP, defaultPhraseSlop);
   }
@@ -377,6 +390,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
     getQueryConfigHandler().set(ConfigurationKeys.ANALYZER, analyzer);
   }
   
+  @Override
   public Analyzer getAnalyzer() {
     return getQueryConfigHandler().get(ConfigurationKeys.ANALYZER);       
   }
@@ -384,6 +398,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
   /**
    * @see #setAllowLeadingWildcard(boolean)
    */
+  @Override
   public boolean getAllowLeadingWildcard() {
     Boolean allowLeadingWildcard = getQueryConfigHandler().get(ConfigurationKeys.ALLOW_LEADING_WILDCARD);
     
@@ -398,6 +413,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
   /**
    * Get the minimal similarity for fuzzy queries.
    */
+  @Override
   public float getFuzzyMinSim() {
     FuzzyConfig fuzzyConfig = getQueryConfigHandler().get(ConfigurationKeys.FUZZY_CONFIG);
     
@@ -413,6 +429,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
    * 
    * @return Returns the fuzzyPrefixLength.
    */
+  @Override
   public int getFuzzyPrefixLength() {
     FuzzyConfig fuzzyConfig = getQueryConfigHandler().get(ConfigurationKeys.FUZZY_CONFIG);
     
@@ -426,6 +443,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
   /**
    * Gets the default slop for phrases.
    */
+  @Override
   public int getPhraseSlop() {
     Integer phraseSlop = getQueryConfigHandler().get(ConfigurationKeys.PHRASE_SLOP);
     
@@ -441,6 +459,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
    * Set the minimum similarity for fuzzy queries. Default is defined on
    * {@link FuzzyQuery#defaultMinSimilarity}.
    */
+  @Override
   public void setFuzzyMinSim(float fuzzyMinSim) {
     QueryConfigHandler config = getQueryConfigHandler();
     FuzzyConfig fuzzyConfig = config.get(ConfigurationKeys.FUZZY_CONFIG);
@@ -477,6 +496,7 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
    * 
    * @param dateResolution the default {@link Resolution}
    */
+  @Override
   public void setDateResolution(DateTools.Resolution dateResolution) {
     getQueryConfigHandler().set(ConfigurationKeys.DATE_RESOLUTION, dateResolution);
   }

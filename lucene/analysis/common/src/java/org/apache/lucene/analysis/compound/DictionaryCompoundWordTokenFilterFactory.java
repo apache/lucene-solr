@@ -56,9 +56,11 @@ public class DictionaryCompoundWordTokenFilterFactory extends TokenFilterFactory
     maxSubwordSize= getInt("maxSubwordSize",CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE);
     onlyLongestMatch = getBoolean("onlyLongestMatch",true);
   }
+  @Override
   public void inform(ResourceLoader loader) throws IOException {
     dictionary = super.getWordSet(loader, dictFile, false);
   }
+  @Override
   public TokenStream create(TokenStream input) {
     // if the dictionary is null, it means it was empty
     return dictionary == null ? input : new DictionaryCompoundWordTokenFilter(luceneMatchVersion,input,dictionary,minWordSize,minSubwordSize,maxSubwordSize,onlyLongestMatch);

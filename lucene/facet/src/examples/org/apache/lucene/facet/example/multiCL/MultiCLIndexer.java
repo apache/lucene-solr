@@ -1,27 +1,28 @@
 package org.apache.lucene.facet.example.multiCL;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
-
 import org.apache.lucene.facet.example.ExampleUtils;
 import org.apache.lucene.facet.example.simple.SimpleUtils;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -74,22 +75,18 @@ public class MultiCLIndexer {
       + "reprehenderit qui in ea voluptate velit esse quam nihil molestiae "
       + "consequatur vel illum qui dolorem eum fugiat quo voluptas nulla pariatur";
   // PerDimensionIndexingParams for multiple category lists
-  public static PerDimensionIndexingParams MULTI_IPARAMS = new PerDimensionIndexingParams();
+  public static final PerDimensionIndexingParams MULTI_IPARAMS;
 
   // Initialize PerDimensionIndexingParams
   static {
-    MULTI_IPARAMS.addCategoryListParams(new CategoryPath("0"),
-        new CategoryListParams(new Term("$Digits", "Zero")));
-    MULTI_IPARAMS.addCategoryListParams(new CategoryPath("1"),
-        new CategoryListParams(new Term("$Digits", "One")));
-    MULTI_IPARAMS.addCategoryListParams(new CategoryPath("2"),
-        new CategoryListParams(new Term("$Digits", "Two")));
-    MULTI_IPARAMS.addCategoryListParams(new CategoryPath("3"),
-        new CategoryListParams(new Term("$Digits", "Three")));
-    MULTI_IPARAMS.addCategoryListParams(new CategoryPath("4"),
-        new CategoryListParams(new Term("$Digits", "Four")));
-    MULTI_IPARAMS.addCategoryListParams(new CategoryPath("5"),
-        new CategoryListParams(new Term("$Digits", "Five")));
+    Map<CategoryPath, CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
+    paramsMap.put(new CategoryPath("0"), new CategoryListParams(new Term("$Digits", "Zero")));
+    paramsMap.put(new CategoryPath("1"), new CategoryListParams(new Term("$Digits", "One")));
+    paramsMap.put(new CategoryPath("2"), new CategoryListParams(new Term("$Digits", "Two")));
+    paramsMap.put(new CategoryPath("3"), new CategoryListParams(new Term("$Digits", "Three")));
+    paramsMap.put(new CategoryPath("4"), new CategoryListParams(new Term("$Digits", "Four")));
+    paramsMap.put(new CategoryPath("5"), new CategoryListParams(new Term("$Digits", "Five")));
+    MULTI_IPARAMS = new PerDimensionIndexingParams(paramsMap);
   }
   
   /**
@@ -164,10 +161,8 @@ public class MultiCLIndexer {
       List<CategoryPath> facetList = Arrays.asList(cPaths[docNum]);
 
       // we do not alter indexing parameters!
-      // a category document builder will add the categories to a document
-      // once build() is called
-      CategoryDocumentBuilder categoryDocBuilder = new CategoryDocumentBuilder(
-          taxo, iParams).setCategoryPaths(facetList);
+      // FacetFields adds the categories to the document in addFields()
+      FacetFields facetFields = new FacetFields(taxo, iParams);
 
       // create a plain Lucene document and add some regular Lucene fields
       // to it
@@ -176,7 +171,7 @@ public class MultiCLIndexer {
       doc.add(new TextField(SimpleUtils.TEXT, docTexts[docNum], Field.Store.NO));
 
       // finally add the document to the index
-      categoryDocBuilder.build(doc);
+      facetFields.addFields(doc, facetList);
       iw.addDocument(doc);
       
       nDocsAdded++;

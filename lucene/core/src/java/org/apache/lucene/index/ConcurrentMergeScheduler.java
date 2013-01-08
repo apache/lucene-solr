@@ -55,14 +55,15 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   // forcefully pause the larger ones, letting the smaller
   // ones run, up until maxMergeCount merges at which point
   // we forcefully pause incoming threads (that presumably
-  // are the ones causing so much merging).  We dynamically
-  // default this from 1 to 3, depending on how many cores
-  // you have:
-  private int maxThreadCount = Math.max(1, Math.min(3, Runtime.getRuntime().availableProcessors()/2));
+  // are the ones causing so much merging).  We default to 1
+  // here: tests on spinning-magnet drives showed slower
+  // indexing perf if more than one merge thread runs at
+  // once (though on an SSD it was faster):
+  private int maxThreadCount = 1;
 
   // Max number of merges we accept before forcefully
   // throttling the incoming threads
-  private int maxMergeCount = maxThreadCount+2;
+  private int maxMergeCount = 2;
 
   /** {@link Directory} that holds the index. */
   protected Directory dir;
@@ -144,6 +145,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   /** Sorts {@link MergeThread}s; larger merges come first. */
   protected static final Comparator<MergeThread> compareByMergeDocCount = new Comparator<MergeThread>() {
+    @Override
     public int compare(MergeThread t1, MergeThread t2) {
       final MergePolicy.OneMerge m1 = t1.getCurrentMerge();
       final MergePolicy.OneMerge m2 = t2.getCurrentMerge();
@@ -478,6 +480,14 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
           // Subsequent times through the loop we do any new
           // merge that writer says is necessary:
           merge = tWriter.getNextMerge();
+
+          // Notify here in case any threads were stalled;
+          // they will notice that the pending merge has
+          // been pulled and possibly resume:
+          synchronized(ConcurrentMergeScheduler.this) {
+            ConcurrentMergeScheduler.this.notifyAll();
+          }
+
           if (merge != null) {
             updateMergeThreads();
             if (verbose()) {

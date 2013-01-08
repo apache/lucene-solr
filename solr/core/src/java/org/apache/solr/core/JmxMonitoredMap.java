@@ -215,6 +215,7 @@ public class JmxMonitoredMap<K, V> extends
       this.coreHashCode = coreHashCode;
     }
 
+    @Override
     public MBeanInfo getMBeanInfo() {
       ArrayList<MBeanAttributeInfo> attrInfoList = new ArrayList<MBeanAttributeInfo>();
 
@@ -273,6 +274,7 @@ public class JmxMonitoredMap<K, V> extends
       return null;
     }
 
+    @Override
     public Object getAttribute(String attribute)
             throws AttributeNotFoundException, MBeanException, ReflectionException {
       Object val;
@@ -307,6 +309,7 @@ public class JmxMonitoredMap<K, V> extends
       return null;
     }
 
+    @Override
     public AttributeList getAttributes(String[] attributes) {
       AttributeList list = new AttributeList();
       for (String attribute : attributes) {
@@ -320,16 +323,19 @@ public class JmxMonitoredMap<K, V> extends
       return list;
     }
 
+    @Override
     public void setAttribute(Attribute attribute)
             throws AttributeNotFoundException, InvalidAttributeValueException,
             MBeanException, ReflectionException {
       throw new UnsupportedOperationException("Operation not Supported");
     }
 
+    @Override
     public AttributeList setAttributes(AttributeList attributes) {
       throw new UnsupportedOperationException("Operation not Supported");
     }
 
+    @Override
     public Object invoke(String actionName, Object[] params, String[] signature)
             throws MBeanException, ReflectionException {
       throw new UnsupportedOperationException("Operation not Supported");
