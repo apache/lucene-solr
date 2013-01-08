@@ -17,13 +17,24 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -32,7 +43,11 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
 
 /**
@@ -332,6 +347,103 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     waitForRecoveriesToFinish(false);
     
     checkShardConsistency(true, false);
+    
+    // try a backup command
+    final HttpSolrServer client = (HttpSolrServer) shardToJetty.get(SHARD2).get(0).client.solrClient;
+    System.out.println("base url: "+ client.getBaseURL());
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("qt", "/replication");
+    params.set("command", "backup");
+
+    QueryRequest request = new QueryRequest(params);
+    NamedList<Object> results = client.request(request );
+    System.out.println("results:" + results);
+    
+    
+    checkForBackupSuccess(client);
+    
+  }
+  private void checkForBackupSuccess(final HttpSolrServer client)
+      throws InterruptedException, IOException {
+    class CheckStatus extends Thread {
+      volatile String fail = null;
+      volatile String response = null;
+      volatile boolean success = false;
+      final Pattern p = Pattern
+          .compile("<str name=\"snapshotCompletedAt\">(.*?)</str>");
+      
+      CheckStatus() {}
+      
+      @Override
+      public void run() {
+        String masterUrl = client.getBaseURL() + "/replication?command="
+            + ReplicationHandler.CMD_DETAILS;
+        URL url;
+        InputStream stream = null;
+        try {
+          url = new URL(masterUrl);
+          stream = url.openStream();
+          response = IOUtils.toString(stream, "UTF-8");
+          if (response.contains("<str name=\"status\">success</str>")) {
+            Matcher m = p.matcher(response);
+            if (!m.find()) {
+              fail("could not find the completed timestamp in response.");
+            }
+            
+            success = true;
+          }
+          stream.close();
+        } catch (Exception e) {
+          e.printStackTrace();
+          fail = e.getMessage();
+        } finally {
+          IOUtils.closeQuietly(stream);
+        }
+        
+      };
+    }
+    ;
+    SolrCore core = ((SolrDispatchFilter) shardToJetty.get(SHARD2).get(0).jetty
+        .getDispatchFilter().getFilter()).getCores().getCore("collection1");
+    String ddir;
+    try {
+      ddir = core.getDataDir(); 
+    } finally {
+      core.close();
+    }
+    File dataDir = new File(ddir);
+    
+    int waitCnt = 0;
+    CheckStatus checkStatus = new CheckStatus();
+    while (true) {
+      checkStatus.run();
+      if (checkStatus.fail != null) {
+        fail(checkStatus.fail);
+      }
+      if (checkStatus.success) {
+        break;
+      }
+      Thread.sleep(200);
+      if (waitCnt == 20) {
+        fail("Backup success not detected:" + checkStatus.response);
+      }
+      waitCnt++;
+    }
+    
+    File[] files = dataDir.listFiles(new FilenameFilter() {
+      
+      @Override
+      public boolean accept(File dir, String name) {
+        if (name.startsWith("snapshot")) {
+          return true;
+        }
+        return false;
+      }
+    });
+    assertEquals(Arrays.asList(files).toString(), 1, files.length);
+    File snapDir = files[0];
+    
+    AbstractSolrTestCase.recurseDelete(snapDir); // clean up the snap dir
   }
   
   private void addNewReplica() throws Exception {

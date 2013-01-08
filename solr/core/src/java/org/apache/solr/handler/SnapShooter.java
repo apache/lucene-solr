@@ -80,7 +80,7 @@ public class SnapShooter {
   }
 
   void createSnapshot(final IndexCommit indexCommit, int numberToKeep, ReplicationHandler replicationHandler) {
-
+    LOG.info("Creating backup snapshot...");
     NamedList<Object> details = new NamedList<Object>();
     details.add("startTime", new Date().toString());
     File snapShotDir = null;
@@ -102,7 +102,7 @@ public class SnapShooter {
       Collection<String> files = indexCommit.getFileNames();
       FileCopier fileCopier = new FileCopier();
       
-      Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), solrCore.getSolrConfig().indexConfig.lockType);
+      Directory dir = solrCore.getDirectoryFactory().get(solrCore.getNewIndexDir(), solrCore.getSolrConfig().indexConfig.lockType);
       try {
         fileCopier.copyFiles(dir, files, snapShotDir);
       } finally {
