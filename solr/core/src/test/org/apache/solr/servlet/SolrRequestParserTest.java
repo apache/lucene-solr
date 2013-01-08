@@ -25,7 +25,6 @@ import java.io.ByteArrayInputStream;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -115,7 +114,6 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   @Test
   public void testStreamURL() throws Exception
   {
-    boolean ok = false;
     String url = "http://www.apache.org/dist/lucene/solr/";
     byte[] bytes = null;
     try {
@@ -152,19 +150,51 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  public void testUrlParamParsing()
+  public void testUrlParamParsing() throws Exception
   {
-    String[][] teststr = new String[][] {
+    final String[][] teststr = new String[][] {
       { "this is simple", "this%20is%20simple" },
       { "this is simple", "this+is+simple" },
       { "\u00FC", "%C3%BC" },   // lower-case "u" with diaeresis/umlaut
       { "\u0026", "%26" },      // &
-      { "\u20AC", "%E2%82%AC" } // euro
+      { "", "" },               // empty
+      { "\u20AC", "%E2%82%ac" } // euro, also with lowercase escapes
     };
     
     for( String[] tst : teststr ) {
-      MultiMapSolrParams params = SolrRequestParsers.parseQueryString( "val="+tst[1] );
+      SolrParams params = SolrRequestParsers.parseQueryString( "val="+tst[1] );
       assertEquals( tst[0], params.get( "val" ) );
+      params = SolrRequestParsers.parseQueryString( "val="+tst[1]+"&" );
+      assertEquals( tst[0], params.get( "val" ) );
+      params = SolrRequestParsers.parseQueryString( "&&val="+tst[1]+"&" );
+      assertEquals( tst[0], params.get( "val" ) );
+      params = SolrRequestParsers.parseQueryString( "&&val="+tst[1]+"&&&val="+tst[1]+"&" );
+      assertArrayEquals(new String[]{tst[0],tst[0]}, params.getParams("val") );
+   }
+    
+    SolrParams params = SolrRequestParsers.parseQueryString("val");
+    assertEquals("", params.get("val"));
+    
+    params = SolrRequestParsers.parseQueryString("val&foo=bar=bar&muh&");
+    assertEquals("", params.get("val"));
+    assertEquals("bar=bar", params.get("foo"));
+    assertEquals("", params.get("muh"));
+    
+    final String[] invalid = {
+      "q=h%FCllo",     // non-UTF-8
+      "q=h\u00FCllo",  // encoded string is not pure US-ASCII
+      "q=hallo%",      // incomplete escape
+      "q=hallo%1",     // incomplete escape
+      "q=hallo%XX123", // invalid digit 'X' in escape
+      "=hallo"         // missing key
+    };
+    for (String s : invalid) {
+      try {
+        SolrRequestParsers.parseQueryString(s);
+        fail("Should throw SolrException");
+      } catch (SolrException se) {
+        // pass
+      }
     }
   }
   
@@ -172,7 +202,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   public void testStandardParseParamsAndFillStreams() throws Exception
   {
     final String getParams = "qt=%C3%BC&dup=foo", postParams = "q=hello&d%75p=bar";
-    final byte[] postBytes = postParams.getBytes("UTF-8");
+    final byte[] postBytes = postParams.getBytes("US-ASCII");
     
     // Set up the expected behavior
     final String[] ct = new String[] {
@@ -224,7 +254,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     expect(request.getContentLength()).andReturn(-1).anyTimes();
     expect(request.getQueryString()).andReturn(null).anyTimes();
     expect(request.getInputStream()).andReturn(new ServletInputStream() {
-      private final ByteArrayInputStream in = new ByteArrayInputStream(large.toString().getBytes("UTF-8"));
+      private final ByteArrayInputStream in = new ByteArrayInputStream(large.toString().getBytes("US-ASCII"));
       @Override public int read() { return in.read(); }
     });
     replay(request);
