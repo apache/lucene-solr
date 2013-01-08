@@ -436,7 +436,7 @@ var prepare_graph = function( graph_element, callback )
                   var shard = {
                     name: s,
                     data: {
-                      type : 'shard',
+                      type : 'shard'
                     },
                     children: nodes
                   };
@@ -446,7 +446,7 @@ var prepare_graph = function( graph_element, callback )
                 var collection = {
                   name: c,
                   data: {
-                    type : 'collection',
+                    type : 'collection'
                   },
                   children: shards
                 };

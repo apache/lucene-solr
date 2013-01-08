@@ -472,6 +472,8 @@ Bug Fixes
 * SOLR-4170: The 'backup' ReplicationHandler command can sometimes use a stale
   index directory rather than the current one. (Mark Miller, Marcin Rzewuck)
 
+* SOLR-3876: Solr Admin UI is completely dysfunctional on IE 9 (steffkes)
+
 Other Changes
 ----------------------
 
