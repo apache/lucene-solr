@@ -84,11 +84,11 @@ public class Builder<T> {
   /**
    * Instantiates an FST/FSA builder without any pruning. A shortcut
    * to {@link #Builder(FST.INPUT_TYPE, int, int, boolean,
-   * boolean, int, Outputs, FreezeTail, boolean)} with
+   * boolean, int, Outputs, FreezeTail, boolean, boolean)} with
    * pruning options turned off.
    */
   public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
-    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, false, PackedInts.COMPACT);
+    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, false, PackedInts.COMPACT, true);
   }
 
   /**
@@ -97,9 +97,9 @@ public class Builder<T> {
    */
   public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
       boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
-      FreezeTail<T> freezeTail, boolean willPackFST) {
+      FreezeTail<T> freezeTail, boolean willPackFST, boolean allowArrayArcs) {
     this(inputType, minSuffixCount1, minSuffixCount2, doShareSuffix, doShareNonSingletonNodes,
-        shareMaxTailLength, outputs, freezeTail, willPackFST, PackedInts.DEFAULT);
+         shareMaxTailLength, outputs, freezeTail, willPackFST, PackedInts.DEFAULT, allowArrayArcs);
   }
 
   /**
@@ -143,10 +143,14 @@ public class Builder<T> {
    * 
    * @param acceptableOverheadRatio How to trade speed for space when building the FST. This option
    *    is only relevant when doPackFST is true. @see PackedInts#getMutable(int, int, float)
+   *
+   * @param allowArrayArcs Pass false to disable the array arc optimization
+   *    while building the FST; this will make the resulting
+   *    FST smaller but slower to traverse.
    */
   public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
                  boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
-                 FreezeTail<T> freezeTail, boolean doPackFST, float acceptableOverheadRatio) {
+                 FreezeTail<T> freezeTail, boolean doPackFST, float acceptableOverheadRatio, boolean allowArrayArcs) {
     this.minSuffixCount1 = minSuffixCount1;
     this.minSuffixCount2 = minSuffixCount2;
     this.freezeTail = freezeTail;
@@ -154,7 +158,7 @@ public class Builder<T> {
     this.shareMaxTailLength = shareMaxTailLength;
     this.doPackFST = doPackFST;
     this.acceptableOverheadRatio = acceptableOverheadRatio;
-    fst = new FST<T>(inputType, outputs, doPackFST, acceptableOverheadRatio);
+    fst = new FST<T>(inputType, outputs, doPackFST, acceptableOverheadRatio, allowArrayArcs);
     if (doShareSuffix) {
       dedupHash = new NodeHash<T>(fst);
     } else {
@@ -180,13 +184,6 @@ public class Builder<T> {
 
   public int getMappedStateCount() {
     return dedupHash == null ? 0 : fst.nodeCount;
-  }
-
-  /** Pass false to disable the array arc optimization
-   *  while building the FST; this will make the resulting
-   *  FST smaller but slower to traverse. */
-  public void setAllowArrayArcs(boolean b) {
-    fst.setAllowArrayArcs(b);
   }
 
   private CompiledNode compileNode(UnCompiledNode<T> nodeIn, int tailLength) throws IOException {

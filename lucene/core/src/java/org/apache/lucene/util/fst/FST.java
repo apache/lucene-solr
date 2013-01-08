@@ -146,6 +146,10 @@ public final class FST<T> {
 
   public final Outputs<T> outputs;
 
+  // Used for the BIT_TARGET_NEXT optimization (whereby
+  // instead of storing the address of the target node for
+  // a given arc, we mark a single bit noting that the next
+  // node in the byte[] is the target node):
   private int lastFrozenNode;
 
   private final T NO_OUTPUT;
@@ -160,7 +164,7 @@ public final class FST<T> {
   /** If arc has this label then that arc is final/accepted */
   public static final int END_LABEL = -1;
 
-  private boolean allowArrayArcs = true;
+  private final boolean allowArrayArcs;
 
   private Arc<T> cachedRootArcs[];
 
@@ -261,9 +265,10 @@ public final class FST<T> {
 
   // make a new empty FST, for building; Builder invokes
   // this ctor
-  FST(INPUT_TYPE inputType, Outputs<T> outputs, boolean willPackFST, float acceptableOverheadRatio) {
+  FST(INPUT_TYPE inputType, Outputs<T> outputs, boolean willPackFST, float acceptableOverheadRatio, boolean allowArrayArcs) {
     this.inputType = inputType;
     this.outputs = outputs;
+    this.allowArrayArcs = allowArrayArcs;
     bytes = new byte[128];
     NO_OUTPUT = outputs.getNoOutput();
     if (willPackFST) {
@@ -335,6 +340,11 @@ public final class FST<T> {
     NO_OUTPUT = outputs.getNoOutput();
 
     cacheRootArcs();
+
+    // NOTE: bogus because this is only used during
+    // building; we need to break out mutable FST from
+    // immutable
+    allowArrayArcs = false;
   }
 
   public INPUT_TYPE getInputType() {
@@ -1160,10 +1170,6 @@ public final class FST<T> {
     return arcWithOutputCount;
   }
 
-  public void setAllowArrayArcs(boolean v) {
-    allowArrayArcs = v;
-  }
-  
   /**
    * Nodes will be expanded if their depth (distance from the root node) is
    * &lt;= this value and their number of arcs is &gt;=
@@ -1453,6 +1459,11 @@ public final class FST<T> {
     this.outputs = outputs;
     NO_OUTPUT = outputs.getNoOutput();
     writer = new DefaultBytesWriter();
+    
+    // NOTE: bogus because this is only used during
+    // building; we need to break out mutable FST from
+    // immutable
+    allowArrayArcs = false;
   }
 
   /** Expert: creates an FST by packing this one.  This
