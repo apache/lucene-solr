@@ -131,7 +131,7 @@ var sammy = $.sammy
 
 var solr_admin = function( app_config )
 {
-  self = this,
+  that = this,
 
   menu_element = null,
 
@@ -196,13 +196,13 @@ var solr_admin = function( app_config )
 
   this.set_cores_data = function set_cores_data( cores )
   {
-    self.cores_data = sort_cores_data( cores.status );
+    that.cores_data = sort_cores_data( cores.status );
     
-    self.menu_element
+    that.menu_element
       .empty();
 
     var core_count = 0;
-    for( var core_name in self.cores_data )
+    for( var core_name in that.cores_data )
     {
       core_count++;
       var core_path = config.solr_path + '/' + core_name;
@@ -240,7 +240,7 @@ var solr_admin = function( app_config )
                    + '    </ul>' + "\n"
                    + '</li>';
 
-      self.menu_element
+      that.menu_element
         .append( core_tpl );
     }
 
@@ -290,7 +290,7 @@ var solr_admin = function( app_config )
         },
         success : function( response )
         {
-          self.set_cores_data( response );
+          that.set_cores_data( response );
 
           for( var core_name in response.status )
           {
@@ -312,7 +312,7 @@ var solr_admin = function( app_config )
               },
               success : function( response )
               {
-                self.dashboard_values = response;
+                that.dashboard_values = response;
 
                 var environment_args = null;
                 var cloud_args = null;

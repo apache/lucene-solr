@@ -287,7 +287,7 @@ var render_plugin_data = function( plugin_data, plugin_sort, types )
     var txt = $(this).html();
     if(txt.indexOf("http") >= 0) {
       $(this).linker({
-         className : 'linker',
+         className : 'linker'
       });
     }
   });
