@@ -569,6 +569,9 @@ Other Changes
 * SOLR-4226: Extract fl parsing code out of ReturnFields constructor.
   (Ryan Ernst via Robert Muir)
 
+* SOLR-4208: ExtendedDismaxQParserPlugin has been refactored to make 
+  subclassing easier. (Tomás Fernández Löbbe, hossman)
+
 ==================  4.0.0 ==================
 
 Versions of Major Components
