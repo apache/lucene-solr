@@ -444,7 +444,7 @@ public final class FST<T> {
       byte[] emptyOutputBytes = new byte[(int) ros.getFilePointer()];
       ros.writeTo(emptyOutputBytes, 0);
 
-      if (true || !packed) {
+      if (!packed) {
         // reverse
         final int stopAt = emptyOutputBytes.length/2;
         int upto = 0;
