@@ -42,6 +42,18 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
 
+// nocommit fix this
+/**
+ * Internally there are only 2 field types:
+ * BINARY: a big byte[]
+ * NUMERIC: packed ints
+ *
+ * NumericField = NUMERIC
+ * fixedLength BinaryField = BINARY
+ * variableLength BinaryField = BINARY + NUMERIC (addresses)
+ * fixedLength SortedField = BINARY + NUMERIC (ords)
+ * variableLength SortedField = BINARY + NUMERIC (addresses) + NUMERIC (ords) 
+ */
 public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
 
   public Lucene41SimpleDocValuesFormat() {
@@ -266,7 +278,7 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
 
     @Override
     public NumericDocValues getNumeric(FieldInfo field) throws IOException {
-      // nocommit: user can currently get back a numericDV of the addresses...
+      // nocommit: user can currently get back a numericDV of the addresses...?
       NumericEntry entry = numerics.get(field.number);
       return getNumeric(field, entry);
     }
@@ -291,6 +303,7 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
 
     @Override
     public BinaryDocValues getBinary(FieldInfo field) throws IOException {
+      // nocommit: user can currently get back a binaryDV of the uniqueValues...?
       BinaryEntry bytes = binaries.get(field.number);
       if (bytes.minLength == bytes.maxLength) {
         return getFixedBinary(field, bytes);
