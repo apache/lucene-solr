@@ -21,6 +21,7 @@ import java.util.Random;
 
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.StoredFieldsFormat;
+import org.apache.lucene.codecs.compressing.dummy.DummyCompressingCodec;
 import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
