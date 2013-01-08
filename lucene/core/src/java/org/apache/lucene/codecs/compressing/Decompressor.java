@@ -24,9 +24,12 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * An decompressor.
+ * A decompressor.
  */
-abstract class Decompressor implements Cloneable {
+public abstract class Decompressor implements Cloneable {
+
+  /** Sole constructor, typically called from sub-classes. */
+  protected Decompressor() {}
 
   /**
    * Decompress bytes that were stored between offsets <code>offset</code> and
