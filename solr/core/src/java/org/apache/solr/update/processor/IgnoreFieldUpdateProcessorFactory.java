@@ -42,22 +42,16 @@ import org.apache.solr.response.SolrQueryResponse;
  * </p>
  *
  * <pre class="prettyprint">
- *  &lt;updateRequestProcessorChain&gt;
- *    &lt;processor class="solr.IgnoreFieldUpdateProcessorFactory" /&gt;
- *  &lt;/updateRequestProcessorChain&gt;
- * </pre>
+ * &lt;processor class="solr.IgnoreFieldUpdateProcessorFactory" /&gt;</pre>
  *
  * <p>
  * In this second example, any field name ending in "_raw" found in a 
  * document being added would be removed...
  * </p>
  * <pre class="prettyprint">
- *  &lt;updateRequestProcessorChain&gt;
- *    &lt;processor class="solr.IgnoreFieldUpdateProcessorFactory"&gt;
- *      &lt;str name="fieldRegex"&gt;.*_raw&lt;/str&gt;
- *    &lt;/processor&gt;
- *  &lt;/updateRequestProcessorChain&gt;
- * </pre>
+ * &lt;processor class="solr.IgnoreFieldUpdateProcessorFactory"&gt;
+ *   &lt;str name="fieldRegex"&gt;.*_raw&lt;/str&gt;
+ * &lt;/processor&gt;</pre>
  */
 public final class IgnoreFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
