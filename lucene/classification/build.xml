@@ -24,22 +24,24 @@
 
   <import file="../module-build.xml"/>
 
-  <path id="base.classpath">
-    <pathelement location="${common.dir}/build/core/classes/java"/>
+  <path id="classpath">
+    <path refid="base.classpath"/>
+    <pathelement path="${lucene-core.jar}"/>
     <pathelement path="${queries.jar}"/>
     <pathelement path="${project.classpath}"/>
+    <pathelement location="${build.dir}/classes/java" />
   </path>
 
   <path id="test.classpath">
     <pathelement path="${analyzers-common.jar}"/>
-    <pathelement location="${common.dir}/build/test-framework/classes/java"/>
-    <pathelement location="${common.dir}/build/codecs/classes/java"/>
-    <path refid="classpath"/>
-    <path refid="junit-path"/>
-    <pathelement location="${build.dir}/classes/java"/>
+    <pathelement location="${test-framework.jar}"/>
+    <pathelement location="${codecs.jar}"/>
+    <path refid="test.base.classpath"/>
   </path>
 
   <target name="compile-core" depends="jar-queries,jar-analyzers-common,common.compile-core" />
+
+  <target name="jar-core" depends="common.jar-core" />
 
   <target name="javadocs" depends="javadocs-queries,compile-core">
     <invoke-module-javadoc>
