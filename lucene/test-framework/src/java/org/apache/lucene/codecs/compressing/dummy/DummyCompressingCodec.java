@@ -67,11 +67,6 @@ public class DummyCompressingCodec extends CompressingCodec {
     }
 
     @Override
-    public void copyCompressedData(DataInput in, int originalLength, DataOutput out) throws IOException {
-      out.copyBytes(in, originalLength);
-    }
-
-    @Override
     public Decompressor clone() {
       return this;
     }

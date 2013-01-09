@@ -80,16 +80,6 @@ public abstract class AbstractTestCompressionMode extends LuceneTestCase {
     return Arrays.copyOfRange(bytes.bytes, bytes.offset, bytes.offset + bytes.length);
   }
 
-  static byte[] copyCompressedData(Decompressor decompressor, byte[] compressed, int originalLength) throws IOException {
-    GrowableByteArrayDataOutput out = new GrowableByteArrayDataOutput(compressed.length);
-    decompressor.copyCompressedData(new ByteArrayDataInput(compressed), originalLength, out);
-    return Arrays.copyOf(out.bytes, out.length);
-  }
-
-  byte[] copyCompressedData(byte[] compressed, int originalLength) throws IOException {
-    return copyCompressedData(mode.newDecompressor(), compressed, originalLength);
-  }
-
   public void testDecompress() throws IOException {
     final int iterations = atLeast(10);
     for (int i = 0; i < iterations; ++i) {
@@ -117,17 +107,10 @@ public abstract class AbstractTestCompressionMode extends LuceneTestCase {
     }
   }
 
-  public void testCopyCompressedData() throws IOException {
-    final byte[] decompressed = randomArray();
-    final byte[] compressed = compress(decompressed);
-    assertArrayEquals(compressed, copyCompressedData(compressed, decompressed.length));
-  }
-
   public byte[] test(byte[] decompressed) throws IOException {
     final byte[] compressed = compress(decompressed);
     final byte[] restored = decompress(compressed, decompressed.length);
     assertEquals(decompressed.length, restored.length);
-    assertArrayEquals(compressed, copyCompressedData(compressed, decompressed.length));
     return compressed;
   }
 
