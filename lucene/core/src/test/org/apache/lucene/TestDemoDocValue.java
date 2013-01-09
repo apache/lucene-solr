@@ -596,10 +596,13 @@ public class TestDemoDocValue extends LuceneTestCase {
     assertEquals(3, dv.size());
     assertEquals(2, dv.getValueCount());
     BytesRef scratch = new BytesRef();
-    dv.lookupOrd(dv.getOrd(0), scratch);
+    assertEquals(0, dv.getOrd(0));
+    dv.lookupOrd(0, scratch);
     assertEquals("hello world 1", scratch.utf8ToString());
-    dv.lookupOrd(dv.getOrd(1), scratch);
+    assertEquals(1, dv.getOrd(1));
+    dv.lookupOrd(1, scratch);
     assertEquals("hello world 2", scratch.utf8ToString());
+    assertEquals(0, dv.getOrd(2));
 
     ireader.close();
     directory.close();
