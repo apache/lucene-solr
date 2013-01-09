@@ -36,13 +36,15 @@ var generate_bar = function( bar_container, bar_data, convert_label_values )
   $( '.bar-max.val', bar_holder ).text( bar_data['max'] );
     
   bar_level++;
-  $( '.bar-total.bar', bar_holder ).width( new String( (bar_data['total']/bar_data['max'])*100 ) + '%' );
+  var total_calc = bar_data['total']/bar_data['max'];
+  $( '.bar-total.bar', bar_holder ).width( new String( total_calc*100 ) + '%' );
   $( '.bar-total.val', bar_holder ).text( bar_data['total'] );
 
   if( bar_data['used'] )
   {
     bar_level++;
-    $( '.bar-used.bar', bar_holder ).width( new String( (bar_data['used']/bar_data['max'])*100 ) + '%' );
+    var used_calc = (bar_data['used']/bar_data['max'])/total_calc;
+    $( '.bar-used.bar', bar_holder ).width( new String( used_calc*100 ) + '%' );
     $( '.bar-used.val', bar_holder ).text( bar_data['used'] );
   }
 

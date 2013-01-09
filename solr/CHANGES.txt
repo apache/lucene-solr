@@ -1668,6 +1668,8 @@ Bug Fixes
 * SOLR-1958: When using the MailEntityProcessor, import would fail if 
   fetchMailsSince was not specified. (Max Lynch via James Dyer) 
 
+* SOLR-4289: Admin UI - JVM memory bar - dark grey "used" width is too small
+  (steffkes)
 
 Other Changes
 ----------------------
