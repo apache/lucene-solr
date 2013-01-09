@@ -67,6 +67,8 @@ import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.hunspell.HunspellDictionary;
 import org.apache.lucene.analysis.hunspell.HunspellDictionaryTest;
 import org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilter;
+import org.apache.lucene.analysis.miscellaneous.KeepWordFilter;
+import org.apache.lucene.analysis.miscellaneous.LengthFilter;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountFilter;
 import org.apache.lucene.analysis.miscellaneous.TrimFilter;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter;
@@ -189,6 +191,26 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           });
       brokenOffsetsConstructors.put(
           TypeTokenFilter.class.getConstructor(boolean.class, TokenStream.class, Set.class),
+          new Predicate<Object[]>() {
+            @Override
+            public boolean apply(Object[] args) {
+              assert args.length == 3;
+              // LUCENE-4065: only if you pass 'false' to enablePositionIncrements!
+              return !(Boolean) args[0];
+            }
+          });
+      brokenOffsetsConstructors.put(
+          LengthFilter.class.getConstructor(boolean.class, TokenStream.class, int.class, int.class),
+          new Predicate<Object[]>() {
+            @Override
+            public boolean apply(Object[] args) {
+              assert args.length == 4;
+              // LUCENE-4065: only if you pass 'false' to enablePositionIncrements!
+              return !(Boolean) args[0];
+            }
+          });
+      brokenOffsetsConstructors.put(
+          KeepWordFilter.class.getConstructor(boolean.class, TokenStream.class, CharArraySet.class),
           new Predicate<Object[]>() {
             @Override
             public boolean apply(Object[] args) {
