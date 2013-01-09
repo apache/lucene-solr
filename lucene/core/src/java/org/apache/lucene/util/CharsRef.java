@@ -218,7 +218,7 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
     if (start < 0 || end > length || start > end) {
       throw new IndexOutOfBoundsException();
     }
-    return new CharsRef(chars, offset + start, offset + end);
+    return new CharsRef(chars, offset + start, end - start);
   }
   
   /** @deprecated This comparator is only a transition mechanism */
