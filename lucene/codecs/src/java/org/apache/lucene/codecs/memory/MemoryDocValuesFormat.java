@@ -36,6 +36,7 @@ import org.apache.lucene.util.packed.PackedInts;
 /** Indexes doc values to disk and loads them in RAM at
  *  search time. */
 
+// nocommit: nuke this wrapper and just make a nice impl (e.g. FST for sortedbytes)
 public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
 
   public MemoryDocValuesFormat() {
@@ -48,6 +49,9 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
     return new SimpleTextDocValuesWriter(state, "dat");
   }
 
+  // nocommit the get's of this thing need to use a map. its returning new ram instances
+  // per-thread!
+  
   @Override
   public SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException {
     final SimpleDVProducer producer = new SimpleTextDocValuesReader(state, "dat");
@@ -162,12 +166,6 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
             return maxDoc;
           }
         };
-      }
-
-      @Override
-      public SimpleDVProducer clone() {
-        // We are already thread-safe:
-        return this;
       }
 
       @Override
