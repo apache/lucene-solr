@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
@@ -48,6 +49,9 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
     IndexInput in = state.directory.openInput(metaName, state.context);
     boolean success = false;
     try {
+      CodecUtil.checkHeader(in, Lucene41SimpleDocValuesFormat.METADATA_CODEC, 
+                                Lucene41SimpleDocValuesFormat.VERSION_START,
+                                Lucene41SimpleDocValuesFormat.VERSION_START);
       numerics = new HashMap<Integer,NumericEntry>();
       ords = new HashMap<Integer,NumericEntry>();
       binaries = new HashMap<Integer,BinaryEntry>();
@@ -63,6 +67,9 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
     
     String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "dvd");
     data = state.directory.openInput(dataName, state.context);
+    CodecUtil.checkHeader(data, Lucene41SimpleDocValuesFormat.DATA_CODEC, 
+                                Lucene41SimpleDocValuesFormat.VERSION_START,
+                                Lucene41SimpleDocValuesFormat.VERSION_START);
   }
   
   private void readFields(IndexInput meta, FieldInfos infos) throws IOException {

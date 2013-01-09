@@ -38,7 +38,6 @@ import org.junit.Ignore;
 /**
  * Test that a plain default puts codec headers in all files.
  */
-@Ignore("re-enable once Lucene41 doesn't secretly wrap SimpleText anymore")
 public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
   public void test() throws Exception {
     Directory dir = newDirectory();

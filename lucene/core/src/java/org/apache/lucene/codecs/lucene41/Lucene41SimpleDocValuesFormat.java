@@ -52,4 +52,9 @@ public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
   public SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException {
     return new Lucene41SimpleDocValuesProducer(state);
   }
+  
+  static final String DATA_CODEC = "Lucene41DocValuesData";
+  static final String METADATA_CODEC = "Lucene41DocValuesMetadata";
+  static final int VERSION_START = 0;
+  static final int VERSION_CURRENT = VERSION_START;
 }

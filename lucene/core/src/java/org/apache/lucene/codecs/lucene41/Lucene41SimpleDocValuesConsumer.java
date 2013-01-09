@@ -38,8 +38,12 @@ class Lucene41SimpleDocValuesConsumer extends SimpleDVConsumer {
   Lucene41SimpleDocValuesConsumer(SegmentWriteState state) throws IOException {
     String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "dvd");
     data = state.directory.createOutput(dataName, state.context);
+    CodecUtil.writeHeader(data, Lucene41SimpleDocValuesFormat.DATA_CODEC, 
+                                Lucene41SimpleDocValuesFormat.VERSION_CURRENT);
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "dvm");
     meta = state.directory.createOutput(metaName, state.context);
+    CodecUtil.writeHeader(meta, Lucene41SimpleDocValuesFormat.METADATA_CODEC, 
+                                Lucene41SimpleDocValuesFormat.VERSION_CURRENT);
     maxDoc = state.segmentInfo.getDocCount();
   }
   
