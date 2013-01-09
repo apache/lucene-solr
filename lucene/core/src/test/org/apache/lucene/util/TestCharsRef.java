@@ -116,11 +116,28 @@ public class TestCharsRef extends LuceneTestCase {
   }
   
   // LUCENE-3590: fix off-by-one in subsequence, and fully obey interface
+  // LUCENE-4671: fix subSequence
   public void testCharSequenceSubSequence() {
-    CharSequence c = new CharsRef("abc");
+    CharSequence sequences[] =  {
+        new CharsRef("abc"),
+        new CharsRef("0abc".toCharArray(), 1, 3),
+        new CharsRef("abc0".toCharArray(), 0, 3),
+        new CharsRef("0abc0".toCharArray(), 1, 3)
+    };
+    
+    for (CharSequence c : sequences) {
+      doTestSequence(c);
+    }
+  }
+    
+  private void doTestSequence(CharSequence c) {
     
     // slice
     assertEquals("a", c.subSequence(0, 1).toString());
+    // mid subsequence
+    assertEquals("b", c.subSequence(1, 2).toString());
+    // end subsequence
+    assertEquals("bc", c.subSequence(1, 3).toString());
     // empty subsequence
     assertEquals("", c.subSequence(0, 0).toString());
     
