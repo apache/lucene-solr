@@ -19,24 +19,11 @@ package org.apache.lucene.index;
 
 public abstract class NumericDocValues {
   public abstract long get(int docID);
-  
-  public abstract int size();
-  
-  public static final class EMPTY extends NumericDocValues {
-    private final int size;
-    
-    public EMPTY(int size) {
-      this.size = size;
-    }
 
+  public static final NumericDocValues EMPTY = new NumericDocValues() {
     @Override
     public long get(int docID) {
       return 0;
-    }
-
-    @Override
-    public int size() {
-      return size;
     }
   };
 }

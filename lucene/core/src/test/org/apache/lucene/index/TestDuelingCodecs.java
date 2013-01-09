@@ -535,7 +535,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
       NumericDocValues leftNorms = MultiSimpleDocValues.simpleNormValues(leftReader, field);
       NumericDocValues rightNorms = MultiSimpleDocValues.simpleNormValues(rightReader, field);
       if (leftNorms != null && rightNorms != null) {
-        assertDocValues(leftNorms, rightNorms);
+        assertDocValues(leftReader.maxDoc(), leftNorms, rightNorms);
       } else {
         assertNull(leftNorms);
         assertNull(rightNorms);
@@ -624,7 +624,7 @@ public class TestDuelingCodecs extends LuceneTestCase {
         NumericDocValues leftValues = MultiSimpleDocValues.simpleNumericValues(leftReader, field);
         NumericDocValues rightValues = MultiSimpleDocValues.simpleNumericValues(rightReader, field);
         if (leftValues != null && rightValues != null) {
-          assertDocValues(leftValues, rightValues);
+          assertDocValues(leftReader.maxDoc(), leftValues, rightValues);
         } else {
           assertNull(leftValues);
           assertNull(rightValues);
@@ -635,10 +635,9 @@ public class TestDuelingCodecs extends LuceneTestCase {
         BinaryDocValues leftValues = MultiSimpleDocValues.simpleBinaryValues(leftReader, field);
         BinaryDocValues rightValues = MultiSimpleDocValues.simpleBinaryValues(rightReader, field);
         if (leftValues != null && rightValues != null) {
-          assertEquals(leftValues.size(), rightValues.size());
           BytesRef scratchLeft = new BytesRef();
           BytesRef scratchRight = new BytesRef();
-          for(int docID=0;docID<leftValues.size();docID++) {
+          for(int docID=0;docID<leftReader.maxDoc();docID++) {
             leftValues.get(docID, scratchLeft);
             rightValues.get(docID, scratchRight);
             assertEquals(scratchLeft, scratchRight);
@@ -651,11 +650,10 @@ public class TestDuelingCodecs extends LuceneTestCase {
     }
   }
   
-  public void assertDocValues(NumericDocValues leftDocValues, NumericDocValues rightDocValues) throws Exception {
+  public void assertDocValues(int num, NumericDocValues leftDocValues, NumericDocValues rightDocValues) throws Exception {
     assertNotNull(info, leftDocValues);
     assertNotNull(info, rightDocValues);
-    assertEquals(info, leftDocValues.size(), rightDocValues.size());
-    for(int docID=0;docID<leftDocValues.size();docID++) {
+    for(int docID=0;docID<num;docID++) {
       assertEquals(leftDocValues.get(docID),
                    rightDocValues.get(docID));
     }

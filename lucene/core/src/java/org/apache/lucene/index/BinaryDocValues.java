@@ -25,23 +25,10 @@ public abstract class BinaryDocValues {
 
   public static final byte[] MISSING = new byte[0];
   
-  public abstract int size();
-  
-  public static class EMPTY extends BinaryDocValues {
-    private final int size;
-    
-    public EMPTY(int size) {
-      this.size = size;
-    }
-    
+  public static final BinaryDocValues EMPTY = new BinaryDocValues() {
     @Override
     public void get(int docID, BytesRef result) {
       result.length = 0;
-    }
-
-    @Override
-    public int size() {
-      return size;
     }
   };
 }

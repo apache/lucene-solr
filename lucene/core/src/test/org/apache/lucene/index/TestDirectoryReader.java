@@ -570,8 +570,7 @@ public void testFilesOpenClose() throws IOException {
       NumericDocValues norms2 = MultiSimpleDocValues.simpleNormValues(index2, curField);
       if (norms1 != null && norms2 != null) {
         // todo: generalize this (like TestDuelingCodecs assert)
-        assertEquals(norms1.size(), norms2.size());
-        for (int i = 0; i < norms1.size(); i++) {
+        for (int i = 0; i < index1.maxDoc(); i++) {
           assertEquals("Norm different for doc " + i + " and field '" + curField + "'.", norms1.get(i), norms2.get(i));
         }
       } else {

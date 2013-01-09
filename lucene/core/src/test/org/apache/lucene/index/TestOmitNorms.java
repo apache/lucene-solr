@@ -303,8 +303,7 @@ public class TestOmitNorms extends LuceneTestCase {
     if (norms1 == null) {
       assertNull(norms2);
     } else {
-      assertEquals(norms1.size(), norms2.size());
-      for(int docID=0;docID<norms1.size();docID++) {
+      for(int docID=0;docID<ir1.maxDoc();docID++) {
         assertEquals(norms1.get(docID), norms2.get(docID));
       }
     }

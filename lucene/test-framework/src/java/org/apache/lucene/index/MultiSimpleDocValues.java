@@ -31,7 +31,7 @@ public class MultiSimpleDocValues {
       NumericDocValues norms = ctx.reader().simpleNormValues(field);
 
       if (norms == null) {
-        norms = new NumericDocValues.EMPTY(ctx.reader().maxDoc());
+        norms = NumericDocValues.EMPTY;
       } else {
         anyReal = true;
       }
@@ -56,11 +56,6 @@ public class MultiSimpleDocValues {
             return norms.get(docID - leaves.get(subIndex).docBase);
           }
         }
-
-        @Override
-        public int size() {
-          return r.maxDoc();
-        }
       };
     }
   }
@@ -72,7 +67,7 @@ public class MultiSimpleDocValues {
       NumericDocValues values = ctx.reader().getNumericDocValues(field);
 
       if (values == null) {
-        values = new NumericDocValues.EMPTY(ctx.reader().maxDoc());
+        values = NumericDocValues.EMPTY;
       } else {
         anyReal = true;
       }
@@ -97,11 +92,6 @@ public class MultiSimpleDocValues {
             return values.get(docID - leaves.get(subIndex).docBase);
           }
         }
-
-        @Override
-        public int size() {
-          return r.maxDoc();
-        }
       };
     }
   }
@@ -114,7 +104,7 @@ public class MultiSimpleDocValues {
       BinaryDocValues values = ctx.reader().getBinaryDocValues(field);
 
       if (values == null) {
-        values = new BinaryDocValues.EMPTY(ctx.reader().maxDoc());
+        values = BinaryDocValues.EMPTY;
       } else {
         anyReal = true;
       }
@@ -140,11 +130,6 @@ public class MultiSimpleDocValues {
             result.length = 0;
             result.bytes = BinaryDocValues.MISSING;
           }
-        }
-
-        @Override
-        public int size() {
-          return r.maxDoc();
         }
       };
     }

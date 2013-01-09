@@ -133,11 +133,6 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
       public long get(int docID) {
         return entry.minValue + reader.get(docID);
       }
-
-      @Override
-      public int size() {
-        return entry.header.getValueCount();
-      }
     };
   }
 
@@ -169,11 +164,6 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
           throw new RuntimeException(e);
         }
       }
-
-      @Override
-      public int size() {
-        return bytes.count;
-      }
     };
   }
   
@@ -198,16 +188,13 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
           throw new RuntimeException(e);
         }
       }
-
-      @Override
-      public int size() {
-        return bytes.count;
-      }
     };
   }
 
   @Override
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
+    // nocommit: ugly hack to nuke size()
+    final BinaryEntry binaryEntry = binaries.get(field.number);
     final BinaryDocValues binary = getBinary(field);
     final NumericDocValues ordinals = getNumeric(field, ords.get(field.number));
     return new SortedDocValues() {
@@ -224,12 +211,7 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
 
       @Override
       public int getValueCount() {
-        return binary.size();
-      }
-
-      @Override
-      public int size() {
-        return ordinals.size();
+        return binaryEntry.count;
       }
     };
   }

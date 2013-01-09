@@ -959,11 +959,6 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    public int size() {
-      return docToTermOrd.size();
-    }
-
-    @Override
     public void lookupOrd(int ord, BytesRef ret) {
       if (ord < 0) {
         throw new IllegalArgumentException("ord must be >=0 (got ord=" + ord + ")");
@@ -1245,11 +1240,6 @@ class FieldCacheImpl implements FieldCache {
     public BinaryDocValuesImpl(PagedBytes.Reader bytes, PackedInts.Reader docToOffset) {
       this.bytes = bytes;
       this.docToOffset = docToOffset;
-    }
-
-    @Override
-    public int size() {
-      return docToOffset.size();
     }
 
     @Override

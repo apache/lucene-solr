@@ -181,7 +181,7 @@ final class SegmentMerger {
               for (AtomicReader reader : mergeState.readers) {
                 NumericDocValues values = reader.getNumericDocValues(field.name);
                 if (values == null) {
-                  values = new NumericDocValues.EMPTY(reader.maxDoc());
+                  values = NumericDocValues.EMPTY;
                 }
                 toMerge.add(values);
               }
@@ -191,7 +191,7 @@ final class SegmentMerger {
               for (AtomicReader reader : mergeState.readers) {
                 BinaryDocValues values = reader.getBinaryDocValues(field.name);
                 if (values == null) {
-                  values = new BinaryDocValues.EMPTY(reader.maxDoc());
+                  values = BinaryDocValues.EMPTY;
                 }
                 toMerge.add(values);
               }
@@ -201,7 +201,7 @@ final class SegmentMerger {
               for (AtomicReader reader : mergeState.readers) {
                 SortedDocValues values = reader.getSortedDocValues(field.name);
                 if (values == null) {
-                  values = new SortedDocValues.EMPTY(reader.maxDoc());
+                  values = SortedDocValues.EMPTY;
                 }
                 toMerge.add(values);
               }
@@ -233,7 +233,7 @@ final class SegmentMerger {
             for (AtomicReader reader : mergeState.readers) {
               NumericDocValues norms = reader.simpleNormValues(field.name);
               if (norms == null) {
-                norms = new NumericDocValues.EMPTY(reader.maxDoc());
+                norms = NumericDocValues.EMPTY;
               }
               toMerge.add(norms);
             }

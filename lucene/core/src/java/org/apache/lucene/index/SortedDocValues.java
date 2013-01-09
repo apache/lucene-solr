@@ -144,13 +144,7 @@ public abstract class SortedDocValues extends BinaryDocValues {
     };
   }
 
-  public static class EMPTY extends SortedDocValues {
-    private final int size;
-    
-    public EMPTY(int size) {
-      this.size = size;
-    }
-
+  public static final SortedDocValues EMPTY = new SortedDocValues() {
     @Override
     public int getOrd(int docID) {
       return 0;
@@ -165,12 +159,7 @@ public abstract class SortedDocValues extends BinaryDocValues {
     public int getValueCount() {
       return 1;
     }
-
-    @Override
-    public int size() {
-      return size;
-    }
-  }
+  };
 
   /** If {@code key} exists, returns its ordinal, else
    *  returns {@code -insertionPoint-1}, like {@code

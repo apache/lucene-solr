@@ -54,6 +54,7 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
   
   @Override
   public SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException {
+    final int maxDoc = state.segmentInfo.getDocCount();
     final SimpleDVProducer producer = new SimpleTextDocValuesReader(state, "dat");
 
     return new SimpleDVProducer() {
@@ -62,7 +63,6 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
       public NumericDocValues getNumeric(FieldInfo field) throws IOException {
         NumericDocValues valuesIn = producer.getNumeric(field);
 
-        final int maxDoc = valuesIn.size();
         long minValue = Long.MAX_VALUE;
         long maxValue = Long.MIN_VALUE;
         for(int docID=0;docID<maxDoc;docID++) {
@@ -86,18 +86,12 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
           public long get(int docID) {
             return finalMinValue + values.get(docID);
           }
-
-          @Override
-          public int size() {
-            return maxDoc;
-          }
         };
       }
       
       @Override
       public BinaryDocValues getBinary(FieldInfo field) throws IOException {
         BinaryDocValues valuesIn = producer.getBinary(field);
-        final int maxDoc = valuesIn.size();
         // nocommit more ram efficient
         final byte[][] values = new byte[maxDoc][];
         BytesRef scratch = new BytesRef();
@@ -115,18 +109,12 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
             result.offset = 0;
             result.length = result.bytes.length;
           }
-
-          @Override
-          public int size() {
-            return maxDoc;
-          }
         };
       }
 
       @Override
       public SortedDocValues getSorted(FieldInfo field) throws IOException {
         SortedDocValues valuesIn = producer.getSorted(field);
-        final int maxDoc = valuesIn.size();
         final int valueCount = valuesIn.getValueCount();
 
         // nocommit used packed ints and so on
@@ -159,11 +147,6 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
           @Override
           public int getValueCount() {
             return valueCount;
-          }
-
-          @Override
-          public int size() {
-            return maxDoc;
           }
         };
       }

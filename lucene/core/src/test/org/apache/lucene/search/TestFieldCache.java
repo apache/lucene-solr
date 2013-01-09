@@ -191,7 +191,6 @@ public class TestFieldCache extends LuceneTestCase {
     // getTermsIndex
     SortedDocValues termsIndex = cache.getTermsIndex(reader, "theRandomUnicodeString");
     assertSame("Second request to cache return same array", termsIndex, cache.getTermsIndex(reader, "theRandomUnicodeString"));
-    assertTrue("doubles Size: " + termsIndex.size() + " is not: " + NUM_DOCS, termsIndex.size() == NUM_DOCS);
     final BytesRef br = new BytesRef();
     for (int i = 0; i < NUM_DOCS; i++) {
       final BytesRef term;
@@ -233,7 +232,6 @@ public class TestFieldCache extends LuceneTestCase {
     // getTerms
     BinaryDocValues terms = cache.getTerms(reader, "theRandomUnicodeString");
     assertSame("Second request to cache return same array", terms, cache.getTerms(reader, "theRandomUnicodeString"));
-    assertTrue("doubles Size: " + terms.size() + " is not: " + NUM_DOCS, terms.size() == NUM_DOCS);
     for (int i = 0; i < NUM_DOCS; i++) {
       terms.get(i, br);
       final BytesRef term;

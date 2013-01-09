@@ -1688,7 +1688,6 @@ public class TestIndexWriter extends LuceneTestCase {
 
     SortedDocValues dti = FieldCache.DEFAULT.getTermsIndex(SlowCompositeReaderWrapper.wrap(reader), "content", random().nextFloat() * PackedInts.FAST);
     assertEquals(4, dti.getValueCount());
-    assertEquals(4, dti.size());
     BytesRef br = new BytesRef();
     dti.lookupOrd(2, br);
     assertEquals(bigTermBytesRef, br);

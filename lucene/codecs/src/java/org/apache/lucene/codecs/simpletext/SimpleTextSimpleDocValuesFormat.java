@@ -505,11 +505,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
             throw new RuntimeException(ioe);
           }
         }
-
-        @Override
-        public int size() {
-          return maxDoc;
-        }
       };
     }
 
@@ -550,11 +545,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           } catch (IOException ioe) {
             throw new RuntimeException(ioe);
           }
-        }
-
-        @Override
-        public int size() {
-          return maxDoc;
         }
       };
     }
@@ -622,11 +612,6 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         @Override
         public int getValueCount() {
           return field.numValues;
-        }
-
-        @Override
-        public int size() {
-          return maxDoc;
         }
       };
     }
