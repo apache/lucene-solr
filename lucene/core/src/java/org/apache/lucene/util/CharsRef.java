@@ -210,7 +210,7 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
     if (start < 0 || end > length || start > end) {
       throw new IndexOutOfBoundsException();
     }
-    return new CharsRef(chars, offset + start, offset + end);
+    return new CharsRef(chars, offset + start, end - start);
   }
   
   private final static Comparator<CharsRef> utf16SortedAsUTF8SortOrder = new UTF16SortedAsUTF8Comparator();

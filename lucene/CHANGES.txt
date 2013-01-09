@@ -5,7 +5,9 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 3.6.3 =======================
 
-(No Changes)
+Bug Fixes
+
+* LUCENE-4671: Fix CharsRef.subSequence method.  (Tim Smith via Robert Muir)
 
 ======================= Lucene 3.6.2 =======================
 
