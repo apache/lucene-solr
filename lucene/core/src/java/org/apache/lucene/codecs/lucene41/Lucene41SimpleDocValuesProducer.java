@@ -193,8 +193,7 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
 
   @Override
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
-    // nocommit: ugly hack to nuke size()
-    final BinaryEntry binaryEntry = binaries.get(field.number);
+    final int valueCount = binaries.get(field.number).count;
     final BinaryDocValues binary = getBinary(field);
     final NumericDocValues ordinals = getNumeric(field, ords.get(field.number));
     return new SortedDocValues() {
@@ -211,7 +210,7 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
 
       @Override
       public int getValueCount() {
-        return binaryEntry.count;
+        return valueCount;
       }
     };
   }
