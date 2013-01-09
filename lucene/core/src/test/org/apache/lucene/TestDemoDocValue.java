@@ -51,8 +51,8 @@ import org.apache.lucene.util.LuceneTestCase;
  * Please try to keep src/java/overview.html up-to-date when making changes
  * to this class.
  */
-// nocommit don't suppress any:
-@SuppressCodecs({"Asserting", "Direct", "MockRandom", "Lucene40", "Compressing"})
+// nocommit
+@SuppressCodecs("Lucene40")
 public class TestDemoDocValue extends LuceneTestCase {
 
   public void testDemoNumber() throws IOException {
@@ -451,8 +451,6 @@ public class TestDemoDocValue extends LuceneTestCase {
 
     ireader.close();
     directory.close();
-    
-    //nocommit fails with Lucene41 Codec since "dv" is created with var len but is in fact fixed len
   }
   
   public void testBytesTwoDocumentsMerged() throws IOException {
@@ -707,7 +705,6 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  // nocommit: fix e.g. Lucene41's impl to actually handle suffixes correctly
   // nocommit: if we are going to pass down suffixes to segmentread/writestate,
   // then they should be respected by *all* codec apis!
   public void testDemoTwoFieldsTwoFormats() throws IOException {
