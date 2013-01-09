@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -103,67 +104,125 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
   static List<Constructor<? extends TokenFilter>> tokenfilters;
   static List<Constructor<? extends CharFilter>> charfilters;
 
-  // TODO: fix those and remove
-  private static final Set<Class<?>> brokenComponents = Collections.newSetFromMap(new IdentityHashMap<Class<?>,Boolean>());
+  private static interface Predicate<T> {
+    boolean apply(T o);
+  }
+
+  private static final Predicate<Object[]> ALWAYS = new Predicate<Object[]>() {
+    public boolean apply(Object[] args) {
+      return true;
+    };
+  };
+
+  private static final Map<Constructor<?>,Predicate<Object[]>> brokenConstructors = new HashMap<Constructor<?>, Predicate<Object[]>>();
   static {
-    // TODO: can we promote some of these to be only
-    // offsets offenders?
-    Collections.<Class<?>>addAll(brokenComponents,
-      // doesn't actual reset itself!
-      CachingTokenFilter.class,
-      // doesn't consume whole stream!
-      LimitTokenCountFilter.class,
-      // Not broken: we forcefully add this, so we shouldn't
-      // also randomly pick it:
-      ValidatingTokenFilter.class,
-      // NOTE: these by themselves won't cause any 'basic assertions' to fail.
-      // but see https://issues.apache.org/jira/browse/LUCENE-3920, if any 
-      // tokenfilter that combines words (e.g. shingles) comes after them,
-      // this will create bogus offsets because their 'offsets go backwards',
-      // causing shingle or whatever to make a single token with a 
-      // startOffset thats > its endOffset
-      // (see LUCENE-3738 for a list of other offenders here)
-      // broken!
-      NGramTokenizer.class,
-      // broken!
-      NGramTokenFilter.class,
-      // broken!
-      EdgeNGramTokenizer.class,
-      // broken!
-      EdgeNGramTokenFilter.class,
-      // broken!
-      WordDelimiterFilter.class,
-      // broken!
-      TrimFilter.class
-    );
+    try {
+      brokenConstructors.put(
+          LimitTokenCountFilter.class.getConstructor(TokenStream.class, int.class),
+          ALWAYS);
+      brokenConstructors.put(
+          LimitTokenCountFilter.class.getConstructor(TokenStream.class, int.class, boolean.class),
+          new Predicate<Object[]>() {
+            @Override
+            public boolean apply(Object[] args) {
+              assert args.length == 3;
+              return !((Boolean) args[2]); // args are broken if consumeAllTokens is false
+            }
+          });
+      for (Class<?> c : Arrays.<Class<?>>asList(
+          // TODO: can we promote some of these to be only
+          // offsets offenders?
+          // doesn't actual reset itself!
+          CachingTokenFilter.class,
+          // Not broken: we forcefully add this, so we shouldn't
+          // also randomly pick it:
+          ValidatingTokenFilter.class,
+          // NOTE: these by themselves won't cause any 'basic assertions' to fail.
+          // but see https://issues.apache.org/jira/browse/LUCENE-3920, if any 
+          // tokenfilter that combines words (e.g. shingles) comes after them,
+          // this will create bogus offsets because their 'offsets go backwards',
+          // causing shingle or whatever to make a single token with a 
+          // startOffset thats > its endOffset
+          // (see LUCENE-3738 for a list of other offenders here)
+          // broken!
+          NGramTokenizer.class,
+          // broken!
+          NGramTokenFilter.class,
+          // broken!
+          EdgeNGramTokenizer.class,
+          // broken!
+          EdgeNGramTokenFilter.class,
+          // broken!
+          WordDelimiterFilter.class)) {
+        for (Constructor<?> ctor : c.getConstructors()) {
+          brokenConstructors.put(ctor, ALWAYS);
+        }
+      }  
+    } catch (Exception e) {
+      throw new Error(e);
+    }
   }
 
   // TODO: also fix these and remove (maybe):
-  // Classes that don't produce consistent graph offsets:
-  private static final Set<Class<?>> brokenOffsetsComponents = Collections.newSetFromMap(new IdentityHashMap<Class<?>,Boolean>());
+  // Classes/options that don't produce consistent graph offsets:
+  private static final Map<Constructor<?>,Predicate<Object[]>> brokenOffsetsConstructors = new HashMap<Constructor<?>, Predicate<Object[]>>();
   static {
-    Collections.<Class<?>>addAll(brokenOffsetsComponents,
-      ReversePathHierarchyTokenizer.class,
-      PathHierarchyTokenizer.class,
-      HyphenationCompoundWordTokenFilter.class,
-      DictionaryCompoundWordTokenFilter.class,
-      // TODO: corrumpts graphs (offset consistency check):
-      PositionFilter.class,
-      // TODO: it seems to mess up offsets!?
-      WikipediaTokenizer.class,
-      // TODO: doesn't handle graph inputs
-      ThaiWordFilter.class,
-      // TODO: doesn't handle graph inputs
-      CJKBigramFilter.class,
-      // TODO: doesn't handle graph inputs (or even look at positionIncrement)
-      HyphenatedWordsFilter.class,
-      // LUCENE-4065: only if you pass 'false' to enablePositionIncrements!
-      TypeTokenFilter.class,
-      // TODO: doesn't handle graph inputs
-      CommonGramsQueryFilter.class
-    );
+    try {
+      brokenOffsetsConstructors.put(
+          TrimFilter.class.getConstructor(TokenStream.class, boolean.class),
+          new Predicate<Object[]>() {
+            @Override
+            public boolean apply(Object[] args) {
+              assert args.length == 2;
+              return (Boolean) args[1]; // args are broken if updateOffsets is true
+            }
+          });
+      brokenOffsetsConstructors.put(
+          TypeTokenFilter.class.getConstructor(boolean.class, TokenStream.class, Set.class, boolean.class),
+          new Predicate<Object[]>() {
+            @Override
+            public boolean apply(Object[] args) {
+              assert args.length == 4;
+              // LUCENE-4065: only if you pass 'false' to enablePositionIncrements!
+              return !(Boolean) args[0];
+            }
+          });
+      brokenOffsetsConstructors.put(
+          TypeTokenFilter.class.getConstructor(boolean.class, TokenStream.class, Set.class),
+          new Predicate<Object[]>() {
+            @Override
+            public boolean apply(Object[] args) {
+              assert args.length == 3;
+              // LUCENE-4065: only if you pass 'false' to enablePositionIncrements!
+              return !(Boolean) args[0];
+            }
+          });
+      for (Class<?> c : Arrays.<Class<?>>asList(
+          ReversePathHierarchyTokenizer.class,
+          PathHierarchyTokenizer.class,
+          HyphenationCompoundWordTokenFilter.class,
+          DictionaryCompoundWordTokenFilter.class,
+          // TODO: corrumpts graphs (offset consistency check):
+          PositionFilter.class,
+          // TODO: it seems to mess up offsets!?
+          WikipediaTokenizer.class,
+          // TODO: doesn't handle graph inputs
+          ThaiWordFilter.class,
+          // TODO: doesn't handle graph inputs
+          CJKBigramFilter.class,
+          // TODO: doesn't handle graph inputs (or even look at positionIncrement)
+          HyphenatedWordsFilter.class,
+          // TODO: doesn't handle graph inputs
+          CommonGramsQueryFilter.class)) {
+        for (Constructor<?> ctor : c.getConstructors()) {
+          brokenOffsetsConstructors.put(ctor, ALWAYS);
+        }
+      }
+    } catch (Exception e) {
+      throw new Error(e);
+    }
   }
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     List<Class<?>> analysisClasses = getClassesForPackage("org.apache.lucene.analysis");
@@ -176,7 +235,6 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         // don't waste time with abstract classes or deprecated known-buggy ones
         Modifier.isAbstract(modifiers) || !Modifier.isPublic(modifiers)
         || c.isSynthetic() || c.isAnonymousClass() || c.isMemberClass() || c.isInterface()
-        || brokenComponents.contains(c)
         || c.isAnnotationPresent(Deprecated.class)
         || !(Tokenizer.class.isAssignableFrom(c) || TokenFilter.class.isAssignableFrom(c) || CharFilter.class.isAssignableFrom(c))
       ) {
@@ -185,7 +243,7 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       
       for (final Constructor<?> ctor : c.getConstructors()) {
         // don't test synthetic or deprecated ctors, they likely have known bugs:
-        if (ctor.isSynthetic() || ctor.isAnnotationPresent(Deprecated.class)) {
+        if (ctor.isSynthetic() || ctor.isAnnotationPresent(Deprecated.class) || brokenConstructors.get(ctor) == ALWAYS) {
           continue;
         }
         if (Tokenizer.class.isAssignableFrom(c)) {
@@ -679,7 +737,17 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
       }
       return null; // no success
     }
-    
+
+    private boolean broken(Constructor<?> ctor, Object[] args) {
+      final Predicate<Object[]> pred = brokenConstructors.get(ctor);
+      return pred != null && pred.apply(args);
+    }
+
+    private boolean brokenOffsets(Constructor<?> ctor, Object[] args) {
+      final Predicate<Object[]> pred = brokenOffsetsConstructors.get(ctor);
+      return pred != null && pred.apply(args);
+    }
+
     // create a new random tokenizer from classpath
     private TokenizerSpec newTokenizer(Random random, Reader reader) {
       TokenizerSpec spec = new TokenizerSpec();
@@ -688,11 +756,12 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         final StringBuilder descr = new StringBuilder();
         final CheckThatYouDidntReadAnythingReaderWrapper wrapper = new CheckThatYouDidntReadAnythingReaderWrapper(reader);
         final Object args[] = newTokenizerArgs(random, wrapper, ctor.getParameterTypes());
+        if (broken(ctor, args)) {
+          continue;
+        }
         spec.tokenizer = createComponent(ctor, args, descr);
         if (spec.tokenizer != null) {
-          if (brokenOffsetsComponents.contains(ctor.getDeclaringClass())) {
-            spec.offsetsAreCorrect = false;
-          }
+          spec.offsetsAreCorrect &= !brokenOffsets(ctor, args);
           spec.toString = descr.toString();
         } else {
           assertFalse(ctor.getDeclaringClass().getName() + " has read something in ctor but failed with UOE/IAE", wrapper.readSomething);
@@ -710,6 +779,9 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
         while (true) {
           final Constructor<? extends CharFilter> ctor = charfilters.get(random.nextInt(charfilters.size()));
           final Object args[] = newCharFilterArgs(random, spec.reader, ctor.getParameterTypes());
+          if (broken(ctor, args)) {
+            continue;
+          }
           reader = createComponent(ctor, args, descr);
           if (reader != null) {
             spec.reader = reader;
@@ -746,11 +818,12 @@ public class TestRandomChains extends BaseTokenStreamTestCase {
           }
           
           final Object args[] = newFilterArgs(random, spec.stream, ctor.getParameterTypes());
+          if (broken(ctor, args)) {
+            continue;
+          }
           final TokenFilter flt = createComponent(ctor, args, descr);
           if (flt != null) {
-            if (brokenOffsetsComponents.contains(ctor.getDeclaringClass())) {
-              spec.offsetsAreCorrect = false;
-            }
+            spec.offsetsAreCorrect &= !brokenOffsets(ctor, args);
             spec.stream = flt;
             break;
           }
