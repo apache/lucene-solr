@@ -568,6 +568,42 @@ public class TestDemoDocValue extends LuceneTestCase {
     ireader.close();
     directory.close();
   }
+  
+  public void testSortedBytesThreeDocuments() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    Directory directory = newDirectory();
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world 1")));
+    iwriter.addDocument(doc);
+    doc = new Document();
+    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world 2")));
+    iwriter.addDocument(doc);
+    doc = new Document();
+    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world 1")));
+    iwriter.addDocument(doc);
+    iwriter.forceMerge(1);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    assert ireader.leaves().size() == 1;
+    SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
+    assertEquals(3, dv.size());
+    assertEquals(2, dv.getValueCount());
+    BytesRef scratch = new BytesRef();
+    dv.lookupOrd(dv.getOrd(0), scratch);
+    assertEquals("hello world 1", scratch.utf8ToString());
+    dv.lookupOrd(dv.getOrd(1), scratch);
+    assertEquals("hello world 2", scratch.utf8ToString());
+
+    ireader.close();
+    directory.close();
+  }
 
   public void testSortedBytesTwoDocumentsMerged() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
