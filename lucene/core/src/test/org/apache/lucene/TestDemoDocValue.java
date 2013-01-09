@@ -494,11 +494,6 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
 
-  // nocommit tests should fail if a codec makes the [easy]
-  // mistake of NOT opening all files when SimpleDVProducer
-  // is created ... frist cut of Lucene41 had this bug but
-  // no tests failed!?
-
   public void testDemoSortedBytes() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 

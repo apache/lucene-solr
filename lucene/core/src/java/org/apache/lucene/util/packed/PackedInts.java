@@ -1152,6 +1152,7 @@ public class PackedInts {
       this.version = version;
     }
     
+    // nocommit 
     public int getValueCount() {
       return valueCount;
     }

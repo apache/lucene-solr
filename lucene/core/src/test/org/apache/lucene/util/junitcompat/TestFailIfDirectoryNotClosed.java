@@ -25,8 +25,7 @@ import org.junit.runner.Result;
 
 public class TestFailIfDirectoryNotClosed extends WithNestedTests {
   public TestFailIfDirectoryNotClosed() {
-    // nocommit true
-    super(false);
+    super(true);
   }
   
   public static class Nested1 extends WithNestedTests.AbstractNestedTest {

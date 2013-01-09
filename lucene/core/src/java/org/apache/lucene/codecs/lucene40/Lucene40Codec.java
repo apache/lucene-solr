@@ -25,6 +25,7 @@ import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.SimpleDocValuesFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
@@ -98,6 +99,11 @@ public final class Lucene40Codec extends Codec {
     return normsFormat;
   }
   
+  @Override
+  public SimpleDocValuesFormat simpleDocValuesFormat() {
+    return null; // nocommit
+  }
+
   @Override
   public final LiveDocsFormat liveDocsFormat() {
     return liveDocsFormat;

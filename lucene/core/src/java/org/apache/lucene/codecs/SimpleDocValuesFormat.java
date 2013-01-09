@@ -43,7 +43,6 @@ public abstract class SimpleDocValuesFormat implements NamedSPILoader.NamedSPI {
    * SPI mechanism (registered in META-INF/ of your jar file, etc).
    * @param name must be all ascii alphanumeric, and less than 128 characters in length.
    */
-  // nocommit: @code -> @link
   protected SimpleDocValuesFormat(String name) {
     NamedSPILoader.checkServiceName(name);
     this.name = name;
@@ -51,7 +50,6 @@ public abstract class SimpleDocValuesFormat implements NamedSPILoader.NamedSPI {
 
   public abstract SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException;
 
-  // nocommit do this:
   public abstract SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException;
 
   @Override
