@@ -55,7 +55,10 @@ public abstract class StoredFieldsWriter implements Closeable {
    *  called even if the document has no stored fields, in
    *  this case <code>numStoredFields</code> will be zero. */
   public abstract void startDocument(int numStoredFields) throws IOException;
-  
+
+  /** Called when a document and all its fields have been added. */
+  public void finishDocument() throws IOException {}
+
   /** Writes a single stored field. */
   public abstract void writeField(FieldInfo info, IndexableField field) throws IOException;
 
@@ -120,6 +123,8 @@ public abstract class StoredFieldsWriter implements Closeable {
       writeField(fieldInfos.fieldInfo(field.name()), field);
       }
     }
+
+    finishDocument();
   }
 
   @Override

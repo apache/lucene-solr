@@ -105,6 +105,7 @@ final class StoredFieldsConsumer {
     while(lastDocID < docID) {
       fieldsWriter.startDocument(0);
       lastDocID++;
+      fieldsWriter.finishDocument();
     }
   }
 
@@ -119,6 +120,7 @@ final class StoredFieldsConsumer {
       for (int i = 0; i < numStoredFields; i++) {
         fieldsWriter.writeField(fieldInfos[i], storedFields[i]);
       }
+      fieldsWriter.finishDocument();
       lastDocID++;
     }
 
