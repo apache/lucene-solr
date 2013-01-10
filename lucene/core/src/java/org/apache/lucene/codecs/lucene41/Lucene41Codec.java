@@ -26,6 +26,7 @@ import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
+import org.apache.lucene.codecs.SimpleNormsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat;
@@ -145,5 +146,10 @@ public class Lucene41Codec extends Codec {
   // nocommit
   private final SimpleDocValuesFormat defaultDVFormat = SimpleDocValuesFormat.forName("Lucene41");
 
-  // nocommit need simpleNormsFormat
+  private final SimpleNormsFormat simpleNormsFormat = new Lucene41SimpleNormsFormat();
+
+  @Override
+  public SimpleNormsFormat simpleNormsFormat() {
+    return simpleNormsFormat;
+  }
 }

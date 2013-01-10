@@ -49,6 +49,7 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
+//nocommit: make this tests DV2.0
 public class TestIndexWriterExceptions extends LuceneTestCase {
 
   private static class DocCopyIterator implements Iterable<Document> {

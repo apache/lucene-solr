@@ -1149,6 +1149,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
   }
 
+  //nocommit: make this tests DV2.0
   public void testThreadInterruptDeadlock() throws Exception {
     IndexerThreadInterrupt t = new IndexerThreadInterrupt();
     t.setDaemon(true);

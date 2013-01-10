@@ -46,6 +46,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 /**
  * MultiThreaded IndexWriter tests
  */
+// nocommit: make sure disk full etc tests here test DV2.0
 @Slow
 public class TestIndexWriterWithThreads extends LuceneTestCase {
 

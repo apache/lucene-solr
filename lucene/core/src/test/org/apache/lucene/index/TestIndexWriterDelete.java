@@ -43,6 +43,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
+//nocommit: make sure disk full etc tests here test DV2.0
 public class TestIndexWriterDelete extends LuceneTestCase {
 
   // test the simple case

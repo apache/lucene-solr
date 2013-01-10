@@ -40,6 +40,7 @@ import static org.apache.lucene.index.TestIndexWriter.assertNoUnreferencedFiles;
 /**
  * Tests for IndexWriter when the disk runs out of space
  */
+//nocommit: make sure disk full etc tests here test DV2.0
 public class TestIndexWriterOnDiskFull extends LuceneTestCase {
 
   /*

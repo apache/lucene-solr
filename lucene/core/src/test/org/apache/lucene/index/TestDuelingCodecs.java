@@ -537,6 +537,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
       if (leftNorms != null && rightNorms != null) {
         assertDocValues(leftReader.maxDoc(), leftNorms, rightNorms);
       } else {
+        // nocommit: figure out WTF is going on here, maybe a bug in MultiSimpleDocValues?
+        // ant test  -Dtestcase=TestDuelingCodecs -Dtests.method=testEquals -Dtests.seed=CCA808E6ADF64354 -Dtests.slow=true -Dtests.codec=Lucene41 -Dtests.locale=en_GB -Dtests.timezone=Asia/Pyongyang -Dtests.file.encoding=US-ASCII
         assertNull(leftNorms);
         assertNull(rightNorms);
       }
