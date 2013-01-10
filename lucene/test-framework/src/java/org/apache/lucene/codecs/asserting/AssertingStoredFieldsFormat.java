@@ -72,26 +72,43 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
       return new AssertingStoredFieldsReader(in.clone(), maxDoc);
     }
   }
-  
+
+  enum Status {
+    UNDEFINED, STARTED, FINISHED;
+  }
+
   static class AssertingStoredFieldsWriter extends StoredFieldsWriter {
     private final StoredFieldsWriter in;
     private int numWritten;
     private int fieldCount;
+    private Status docStatus;
     
     AssertingStoredFieldsWriter(StoredFieldsWriter in) {
       this.in = in;
+      this.docStatus = Status.UNDEFINED;
     }
 
     @Override
     public void startDocument(int numStoredFields) throws IOException {
+      assert docStatus != Status.STARTED;
       in.startDocument(numStoredFields);
       assert fieldCount == 0;
       fieldCount = numStoredFields;
       numWritten++;
+      docStatus = Status.STARTED;
+    }
+
+    @Override
+    public void finishDocument() throws IOException {
+      assert docStatus == Status.STARTED;
+      assert fieldCount == 0;
+      in.finishDocument();
+      docStatus = Status.FINISHED;
     }
 
     @Override
     public void writeField(FieldInfo info, StorableField field) throws IOException {
+      assert docStatus == Status.STARTED;
       in.writeField(info, field);
       assert fieldCount > 0;
       fieldCount--;
@@ -104,6 +121,7 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
 
     @Override
     public void finish(FieldInfos fis, int numDocs) throws IOException {
+      assert docStatus == (numDocs > 0 ? Status.FINISHED : Status.UNDEFINED);
       in.finish(fis, numDocs);
       assert fieldCount == 0;
       assert numDocs == numWritten;
@@ -112,6 +130,7 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     @Override
     public void close() throws IOException {
       in.close();
+      assert docStatus != Status.STARTED;
     }
   }
 }

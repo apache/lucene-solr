@@ -182,7 +182,9 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
         }
         tv.addProx(freq, posReader, offReader);
       }
+      tv.finishTerm();
     }
+    tv.finishField();
 
     termsHashPerField.reset();
 

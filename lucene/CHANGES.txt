@@ -106,7 +106,11 @@ Changes in backwards compatibility policy
 
 * LUCENE-4659: Massive cleanup to CategoryPath API. Additionally, CategoryPath is 
   now immutable, so you don't need to clone() it. (Shai Erera)
-  
+
+* LUCENE-4670: StoredFieldsWriter and TermVectorsWriter have new finish* callbacks
+  which are called after a doc/field/term has been completely added.
+  (Adrien Grand, Robert Muir)
+
 New Features
 
 * LUCENE-4226: New experimental StoredFieldsFormat that compresses chunks of
