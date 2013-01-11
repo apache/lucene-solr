@@ -1,21 +1,12 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.Arrays;
 import java.util.Locale;
 
-import org.apache.lucene.util.encoding.DGapIntEncoder;
-import org.apache.lucene.util.encoding.EightFlagsIntEncoder;
-import org.apache.lucene.util.encoding.FourFlagsIntEncoder;
-import org.apache.lucene.util.encoding.IntDecoder;
-import org.apache.lucene.util.encoding.IntEncoder;
-import org.apache.lucene.util.encoding.NOnesIntEncoder;
-import org.apache.lucene.util.encoding.SortingIntEncoder;
-import org.apache.lucene.util.encoding.UniqueValuesIntEncoder;
-import org.apache.lucene.util.encoding.VInt8IntEncoder;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -40,8 +31,8 @@ public class EncodingSpeed {
   private static int[] data9910 = null;
   private static int[] data501871 = null;
   private static int[] data10k = null;
-  private static String resultsFormat = "%-20s %10s %20d %26s %20d %26s";
-  private static String headerFormat = "%-20s %10s %20s %26s %20s %26s";
+  private static String resultsFormat = "%-60s %10s %20d %26s %20d %26s";
+  private static String headerFormat = "%-60s %10s %20s %26s %20s %26s";
   private static int integers = 100000000;
 
   private static NumberFormat nf;
@@ -53,8 +44,14 @@ public class EncodingSpeed {
     testFacetIDs(data501871, 501871);
   }
 
-  private static void testFacetIDs(int[] facetIDs, int docID)
-      throws IOException {
+  private static IntsRef newIntsRef(int[] data) {
+    IntsRef res = new IntsRef(data.length);
+    System.arraycopy(data, 0, res.ints, 0, data.length);
+    res.length = data.length;
+    return res;
+  }
+  
+  private static void testFacetIDs(int[] facetIDs, int docID) throws IOException {
     int loopFactor = integers / facetIDs.length;
     System.out
         .println("\nEstimating ~"
@@ -88,68 +85,53 @@ public class EncodingSpeed {
     System.out.println();
   }
 
-  private static void encoderTest(IntEncoder encoder, int[] data,
-      int loopFactor) throws IOException {
+  private static void encoderTest(IntEncoder encoder, int[] values, int loopFactor) throws IOException {
 
-    long startTime, endTime;
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    BytesRef bytes = new BytesRef(values.length); // at least one byte per value
 
     // -- Looping 100 times as a warm up --------------------------
     for (int i = 100; i != 0; --i) {
-      baos.reset();
-      encoder.reInit(baos);
-      for (int value : data) {
-        encoder.encode(value);
-      }
-      encoder.close();
+      IntsRef data = newIntsRef(values);
+      encoder.encode(data, bytes);
     }
     // -----------------------------------------------------------
 
-    startTime = System.currentTimeMillis();
+    long encodeTime = 0;
     for (int factor = loopFactor; factor > 0; --factor) {
-      baos.reset();
-      encoder.reInit(baos);
-      for (int value : data) {
-        encoder.encode(value);
-      }
-      encoder.close();
+      IntsRef data = newIntsRef(values);
+      long start = System.currentTimeMillis();
+      encoder.encode(data, bytes);
+      encodeTime += System.currentTimeMillis() - start;
     }
-    endTime = System.currentTimeMillis();
 
-    long encodeTime = endTime - startTime;
-
-    ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+    IntsRef decoded = new IntsRef(values.length);
+    int encodedSize = bytes.length;
     IntDecoder decoder = encoder.createMatchingDecoder();
-    decoder.reInit(bais);
     
     // -- Looping 100 times as a warm up --------------------------
     for (int i = 100; i != 0; --i) {
-      bais.mark(baos.size());
-      while (decoder.decode() != IntDecoder.EOS) {
-      }
-      bais.reset();
-      decoder.reInit(bais);
+      decoder.decode(bytes, decoded);
     }
     // -----------------------------------------------------------
 
-    decoder.reInit(bais);
-    startTime = System.currentTimeMillis();
+    long decodeTime = 0;
     for (int i = loopFactor; i > 0; --i) {
-      bais.mark(baos.size());
-      while (decoder.decode() != IntDecoder.EOS) {
-      }
-      bais.reset();
-      decoder.reInit(bais);
+      long start = System.currentTimeMillis();
+      decoder.decode(bytes, decoded);
+      decodeTime += System.currentTimeMillis() - start;
+    }
+    
+    if (decoded.length != values.length) {
+      throw new RuntimeException("wrong num values. expected=" + values.length + " actual=" + decoded.length + 
+          " decoder=" + decoder);
     }
 
-    endTime = System.currentTimeMillis();
-    long decodeTime = endTime - startTime;
-
-    System.out.println(String.format(Locale.ROOT, resultsFormat, encoder, nf.format(baos
-        .size()
-        * 8.0 / data.length), encodeTime, nf.format(encodeTime
-        * 1000000.0 / (loopFactor * data.length)), decodeTime, nf
-        .format(decodeTime * 1000000.0 / (loopFactor * data.length))));
+    System.out.println(String.format(Locale.ROOT, resultsFormat, encoder, 
+        nf.format(encodedSize * 8.0 / values.length), 
+        encodeTime, 
+        nf.format(encodeTime * 1000000.0 / (loopFactor * values.length)), 
+        decodeTime, 
+        nf.format(decodeTime * 1000000.0 / (loopFactor * values.length))));
   }
 
   static {

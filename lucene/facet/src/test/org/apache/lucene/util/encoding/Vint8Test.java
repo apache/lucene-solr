@@ -1,9 +1,8 @@
 package org.apache.lucene.util.encoding;
 
-import java.util.Arrays;
-
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,32 +22,33 @@ import org.apache.lucene.util.IntsRef;
  */
 
 /**
- * An {@link IntEncoderFilter} which sorts the values to encode in ascending
- * order before encoding them.
- * 
- * @lucene.experimental
+ * Tests the {@link VInt8} class.
  */
-public class SortingIntEncoder extends IntEncoderFilter {
+public class Vint8Test extends LuceneTestCase {
 
-  /** Initializes with the given encoder. */
-  public SortingIntEncoder(IntEncoder encoder) {
-    super(encoder);
-  }
+  private static final int[] TEST_VALUES = {
+    -1000000000,
+    -1, 0, (1 << 7) - 1, 1 << 7, (1 << 14) - 1, 1 << 14,
+    (1 << 21) - 1, 1 << 21, (1 << 28) - 1, 1 << 28
+  };
+  private static int[] BYTES_NEEDED_TEST_VALUES = {
+    5, 5, 1, 1, 2, 2, 3, 3, 4, 4, 5
+  };
 
-  @Override
-  protected void doEncode(IntsRef values, BytesRef buf, int upto) {
-    Arrays.sort(values.ints, values.offset, upto);
-    encoder.doEncode(values, buf, upto);
-  }
-
-  @Override
-  public IntDecoder createMatchingDecoder() {
-    return encoder.createMatchingDecoder();
-  }
-  
-  @Override
-  public String toString() {
-    return "Sorting (" + encoder.toString() + ")";
+  @Test
+  public void testBytesRef() throws Exception {
+    BytesRef bytes = new BytesRef(256);
+    int expectedSize = 0;
+    for (int j = 0; j < TEST_VALUES.length; j++) {
+      VInt8.encode(TEST_VALUES[j], bytes);
+      expectedSize += BYTES_NEEDED_TEST_VALUES[j];
+    }
+    assertEquals(expectedSize, bytes.length);
+    
+    for (int j = 0; j < TEST_VALUES.length; j++) {
+      assertEquals(TEST_VALUES[j], VInt8.decode(bytes));
+    }
+    assertEquals(bytes.offset, bytes.length);
   }
   
 }

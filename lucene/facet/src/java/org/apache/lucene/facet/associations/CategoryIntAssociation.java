@@ -72,4 +72,9 @@ public class CategoryIntAssociation implements CategoryAssociation {
     return value;
   }
   
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(" + value + ")";
+  }
+  
 }

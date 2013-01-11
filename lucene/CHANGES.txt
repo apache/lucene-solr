@@ -111,6 +111,10 @@ Changes in backwards compatibility policy
   which are called after a doc/field/term has been completely added.
   (Adrien Grand, Robert Muir)
 
+* LUCENE-4620: IntEncoder/Decoder were changed to do bulk encoding/decoding. As a
+  result, few other classes such as Aggregator and CategoryListIterator were
+  changed to handle bulk category ordinals. (Shai Erera)
+
 New Features
 
 * LUCENE-4226: New experimental StoredFieldsFormat that compresses chunks of

@@ -31,15 +31,15 @@ import org.apache.lucene.facet.search.results.FacetResult;
  * 
  * @lucene.experimental
  */
-public class AssociationMain {
+public class CategoryAssociationsMain {
 
   /**
    * Driver for the simple sample.
    * @throws Exception on error (no detailed exception handling here for sample simplicity
    */
   public static void main(String[] args) throws Exception {
-    new AssociationMain().runSumIntAssociationSample();
-    new AssociationMain().runSumFloatAssociationSample();
+    new CategoryAssociationsMain().runSumIntAssociationSample();
+    new CategoryAssociationsMain().runSumFloatAssociationSample();
     ExampleUtils.log("DONE");
   }
 
@@ -51,10 +51,10 @@ public class AssociationMain {
 
     // index the sample documents
     ExampleUtils.log("index the sample documents...");
-    AssociationIndexer.index(indexDir, taxoDir);
+    CategoryAssociationsIndexer.index(indexDir, taxoDir);
 
     ExampleUtils.log("search the sample documents...");
-    List<FacetResult> facetRes = AssociationSearcher.searchSumIntAssociation(indexDir, taxoDir);
+    List<FacetResult> facetRes = CategoryAssociationsSearcher.searchSumIntAssociation(indexDir, taxoDir);
 
     ExampleResult res = new ExampleResult();
     res.setFacetResults(facetRes);
@@ -69,10 +69,10 @@ public class AssociationMain {
     
     // index the sample documents
     ExampleUtils.log("index the sample documents...");
-    AssociationIndexer.index(indexDir, taxoDir);
+    CategoryAssociationsIndexer.index(indexDir, taxoDir);
     
     ExampleUtils.log("search the sample documents...");
-    List<FacetResult> facetRes = AssociationSearcher.searchSumFloatAssociation(indexDir, taxoDir);
+    List<FacetResult> facetRes = CategoryAssociationsSearcher.searchSumFloatAssociation(indexDir, taxoDir);
     
     ExampleResult res = new ExampleResult();
     res.setFacetResults(facetRes);

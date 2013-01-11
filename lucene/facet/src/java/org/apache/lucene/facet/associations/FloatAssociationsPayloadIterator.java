@@ -40,23 +40,17 @@ public class FloatAssociationsPayloadIterator extends AssociationsPayloadIterato
   protected void handleAssociation(int ordinal, CategoryFloatAssociation association) {
     ordinalAssociations.put(ordinal, association.getValue());
   }
-  
-  @Override
-  public boolean setNextDoc(int docId) throws IOException {
-    ordinalAssociations.clear();
-    return super.setNextDoc(docId);
-  }
 
   /**
-   * Get the float association value for the given ordinal, or
-   * {@link Float#NaN} in case the ordinal has no association value.
+   * Returns the float association values of the categories that are associated
+   * with the given document, or {@code null} if the document has no
+   * associations.
+   * <p>
+   * <b>NOTE:</b> you are not expected to modify the returned map.
    */
-  public float getAssociation(int ordinal) {
-    if (ordinalAssociations.containsKey(ordinal)) {
-      return ordinalAssociations.get(ordinal);
-    }
-
-    return Float.NaN;
+  public IntToFloatMap getAssociations(int docID) throws IOException {
+    ordinalAssociations.clear();
+    return setNextDoc(docID) ? ordinalAssociations : null;
   }
-
+  
 }

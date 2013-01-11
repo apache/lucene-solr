@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.util.IntsRef;
 
 import org.junit.After;
 import org.junit.Before;
@@ -118,18 +119,17 @@ public class TestCategoryListCache extends FacetTestBase {
       @Override
       public CategoryListIterator iterator(int partition)  throws IOException {
         final CategoryListIterator it = cld.iterator(partition);
-        return new CategoryListIterator() {              
+        return new CategoryListIterator() {
           @Override
-          public boolean skipTo(int docId) throws IOException {
-            return it.skipTo(docId);
-          }
-          @Override
-          public long nextCategory() throws IOException {
-            long res = it.nextCategory();
-            if (res>Integer.MAX_VALUE) {
-              return res;
+          public void getOrdinals(int docID, IntsRef ints) throws IOException {
+            it.getOrdinals(docID, ints);
+            for (int i = 0; i < ints.length; i++) {
+              if (ints.ints[i] > 1) {
+                ints.ints[i]--;
+              } else {
+                ints.ints[i]++;
+              }
             }
-            return res>1 ? res-1 : res+1;
           }
           @Override
           public boolean init() throws IOException {

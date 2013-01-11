@@ -1,5 +1,9 @@
 package org.apache.lucene.facet.search.aggregator;
 
+import java.io.IOException;
+
+import org.apache.lucene.util.IntsRef;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,20 +31,16 @@ package org.apache.lucene.facet.search.aggregator;
 public class CountingAggregator implements Aggregator {
 
   protected int[] counterArray;
-
-  @Override
-  public void aggregate(int ordinal) {
-    ++counterArray[ordinal];
-  }
-
-  @Override
-  public void setNextDoc(int docid, float score) {
-    // There's nothing for us to do here since we only increment the count by 1
-    // in this aggregator.
-  }
-
+  
   public CountingAggregator(int[] counterArray) {
     this.counterArray = counterArray;
+  }
+  
+  @Override
+  public void aggregate(int docID, float score, IntsRef ordinals) throws IOException {
+    for (int i = 0; i < ordinals.length; i++) {
+      counterArray[ordinals.ints[i]]++;
+    }
   }
 
   @Override
@@ -54,8 +54,7 @@ public class CountingAggregator implements Aggregator {
 
   @Override
   public int hashCode() {
-    int hashCode = counterArray == null ? 0 : counterArray.hashCode();
-
-    return hashCode;
+    return counterArray == null ? 0 : counterArray.hashCode();
   }
+  
 }

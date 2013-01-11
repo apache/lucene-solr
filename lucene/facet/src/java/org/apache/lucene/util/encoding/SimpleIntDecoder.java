@@ -1,7 +1,7 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
-import java.io.StreamCorruptedException;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,41 +21,24 @@ import java.io.StreamCorruptedException;
  */
 
 /**
- * A simple stream decoder which can decode values encoded with
- * {@link SimpleIntEncoder}.
+ * Decodes values encoded with {@link SimpleIntEncoder}.
  * 
  * @lucene.experimental
  */
 public class SimpleIntDecoder extends IntDecoder {
 
-  /**
-   * reusable buffer - allocated only once as this is not a thread-safe object
-   */
-  private byte[] buffer = new byte[4];
-
   @Override
-  public long decode() throws IOException {
-
-    // we need exactly 4 bytes to decode an int in this decoder impl, otherwise, throw an exception
-    int offset = 0;
-    while (offset < 4) {
-      int nRead = in.read(buffer, offset, 4 - offset);
-      if (nRead == -1) {
-        if (offset > 0) {
-          throw new StreamCorruptedException(
-              "Need 4 bytes for decoding an int, got only " + offset);
-        }
-        return EOS;
+  protected void doDecode(BytesRef buf, IntsRef values, int upto) {
+    while (buf.offset < upto) {
+      if (values.length == values.ints.length) {
+        values.grow(values.length + 10); // grow by few items, however not too many
       }
-      offset += nRead;
+      values.ints[values.length++] = 
+          ((buf.bytes[buf.offset++] & 0xFF) << 24) | 
+          ((buf.bytes[buf.offset++] & 0xFF) << 16) | 
+          ((buf.bytes[buf.offset++] & 0xFF) <<  8) | 
+          (buf.bytes[buf.offset++] & 0xFF);
     }
-
-    int v = buffer[3] & 0xff;
-    v |= (buffer[2] << 8) & 0xff00;
-    v |= (buffer[1] << 16) & 0xff0000;
-    v |= (buffer[0] << 24) & 0xff000000;
-
-    return v;
   }
 
   @Override

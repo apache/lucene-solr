@@ -55,5 +55,10 @@ public class CategoryAssociationsContainer implements Iterable<CategoryPath> {
   public void clear() {
     categoryAssociations.clear();
   }
+
+  @Override
+  public String toString() {
+    return categoryAssociations.toString();
+  }
   
 }

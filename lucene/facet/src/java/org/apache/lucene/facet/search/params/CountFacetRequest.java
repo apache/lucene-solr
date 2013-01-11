@@ -48,8 +48,7 @@ public class CountFacetRequest extends FacetRequest {
 
   @Override
   public Aggregator createAggregator(boolean useComplements,
-                                      FacetArrays arrays, IndexReader reader,
-                                      TaxonomyReader taxonomy) {
+      FacetArrays arrays, IndexReader reader, TaxonomyReader taxonomy) {
     // we rely on that, if needed, result is cleared by arrays!
     int[] a = arrays.getIntArray();
     if (useComplements) {

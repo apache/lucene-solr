@@ -19,8 +19,8 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.UnsafeByteArrayOutputStream;
 import org.apache.lucene.util.encoding.DGapIntEncoder;
 import org.apache.lucene.util.encoding.IntEncoder;
 import org.apache.lucene.util.encoding.SortingIntEncoder;
@@ -49,17 +49,19 @@ public class CategoryListIteratorTest extends LuceneTestCase {
 
   private static final class DataTokenStream extends TokenStream {
 
+    private final PayloadAttribute payload = addAttribute(PayloadAttribute.class);
+    private final BytesRef buf;
+    private final IntEncoder encoder;
+    private final CharTermAttribute term = addAttribute(CharTermAttribute.class);
+    
     private int idx;
-    private PayloadAttribute payload = addAttribute(PayloadAttribute.class);
-    private byte[] buf = new byte[20];
-    UnsafeByteArrayOutputStream ubaos = new UnsafeByteArrayOutputStream(buf);
-    IntEncoder encoder;
     private boolean exhausted = false;
-    private CharTermAttribute term = addAttribute(CharTermAttribute.class);
 
     public DataTokenStream(String text, IntEncoder encoder) {
       this.encoder = encoder;
       term.setEmpty().append(text);
+      buf = new BytesRef();
+      payload.setPayload(buf);
     }
 
     public void setIdx(int idx) {
@@ -73,30 +75,26 @@ public class CategoryListIteratorTest extends LuceneTestCase {
         return false;
       }
 
-      int[] values = data[idx];
-      ubaos.reInit(buf);
-      encoder.reInit(ubaos);
-      for (int val : values) {
-        encoder.encode(val);
-      }
-      encoder.close();
-      payload.setPayload(new BytesRef(buf, 0, ubaos.length()));
-
+      // must copy because encoders may change the buffer
+      encoder.encode(IntsRef.deepCopyOf(data[idx]), buf);
       exhausted = true;
       return true;
     }
 
   }
 
-  static final int[][] data = new int[][] {
-    new int[] { 1, 2 }, new int[] { 3, 4 }, new int[] { 1, 3 }, new int[] { 1, 2, 3, 4 },
+  static final IntsRef[] data = new IntsRef[] {
+    new IntsRef(new int[] { 1, 2 }, 0, 2), 
+    new IntsRef(new int[] { 3, 4 }, 0, 2),
+    new IntsRef(new int[] { 1, 3 }, 0, 2),
+    new IntsRef(new int[] { 1, 2, 3, 4 }, 0, 4)
   };
 
   @Test
-  public void testPayloadIntDecodingIterator() throws Exception {
+  public void testPayloadCategoryListIteraor() throws Exception {
     Directory dir = newDirectory();
-    DataTokenStream dts = new DataTokenStream("1",new SortingIntEncoder(
-        new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder()))));
+    final IntEncoder encoder = new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder())));
+    DataTokenStream dts = new DataTokenStream("1",encoder);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, 
         new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < data.length; i++) {
@@ -108,21 +106,21 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    CategoryListIterator cli = new PayloadIntDecodingIterator(reader, new Term(
-        "f","1"), dts.encoder.createMatchingDecoder());
+    IntsRef ordinals = new IntsRef();
+    CategoryListIterator cli = new PayloadCategoryListIteraor(reader, new Term("f","1"), encoder.createMatchingDecoder());
     cli.init();
     int totalCategories = 0;
     for (int i = 0; i < data.length; i++) {
       Set<Integer> values = new HashSet<Integer>();
       for (int j = 0; j < data[i].length; j++) {
-        values.add(data[i][j]);
+        values.add(data[i].ints[j]);
       }
-      cli.skipTo(i);
-      long cat;
-      while ((cat = cli.nextCategory()) < Integer.MAX_VALUE) {
-        assertTrue("expected category not found: " + cat, values.contains((int) cat));
-        totalCategories ++;
+      cli.getOrdinals(i, ordinals);
+      assertTrue("no ordinals for document " + i, ordinals.length > 0);
+      for (int j = 0; j < ordinals.length; j++) {
+        assertTrue("expected category not found: " + ordinals.ints[j], values.contains(ordinals.ints[j]));
       }
+      totalCategories += ordinals.length;
     }
     assertEquals("Missing categories!",10,totalCategories);
     reader.close();
@@ -135,8 +133,8 @@ public class CategoryListIteratorTest extends LuceneTestCase {
   @Test
   public void testPayloadIteratorWithInvalidDoc() throws Exception {
     Directory dir = newDirectory();
-    DataTokenStream dts = new DataTokenStream("1",new SortingIntEncoder(
-        new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder()))));
+    final IntEncoder encoder = new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder())));
+    DataTokenStream dts = new DataTokenStream("1", encoder);
     // this test requires that no payloads ever be randomly present!
     final Analyzer noPayloadsAnalyzer = new Analyzer() {
       @Override
@@ -162,30 +160,27 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    CategoryListIterator cli = new PayloadIntDecodingIterator(reader, new Term(
-        "f","1"), dts.encoder.createMatchingDecoder());
+    IntsRef ordinals = new IntsRef();
+    CategoryListIterator cli = new PayloadCategoryListIteraor(reader, new Term("f","1"), encoder.createMatchingDecoder());
     assertTrue("Failed to initialize payload iterator", cli.init());
-    int totalCats = 0;
+    int totalCategories = 0;
     for (int i = 0; i < data.length; i++) {
-      // doc no. i
       Set<Integer> values = new HashSet<Integer>();
       for (int j = 0; j < data[i].length; j++) {
-        values.add(data[i][j]);
+        values.add(data[i].ints[j]);
       }
-      boolean hasDoc = cli.skipTo(i);
-      if (hasDoc) {
-        assertTrue("Document " + i + " must not have a payload!", i == 0);
-        long cat;
-        while ((cat = cli.nextCategory()) < Integer.MAX_VALUE) {
-          assertTrue("expected category not found: " + cat, values.contains((int) cat));
-          ++totalCats;
+      cli.getOrdinals(i, ordinals);
+      if (i == 0) {
+        assertTrue("document 0 must have a payload", ordinals.length > 0);
+        for (int j = 0; j < ordinals.length; j++) {
+          assertTrue("expected category not found: " + ordinals.ints[j], values.contains(ordinals.ints[j]));
         }
+        totalCategories += ordinals.length;
       } else {
-        assertFalse("Document " + i + " must have a payload!", i == 0);
+        assertTrue("only document 0 should have a payload", ordinals.length == 0);
       }
-
     }
-    assertEquals("Wrong number of total categories!", 2, totalCats);
+    assertEquals("Wrong number of total categories!", 2, totalCategories);
 
     reader.close();
     dir.close();

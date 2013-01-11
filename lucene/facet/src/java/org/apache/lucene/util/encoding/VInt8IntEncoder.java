@@ -1,6 +1,7 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -49,27 +50,14 @@ import java.io.IOException;
 public class VInt8IntEncoder extends IntEncoder {
 
   @Override
-  public void encode(int value) throws IOException {
-    if ((value & ~0x7F) == 0) {
-      out.write(value);
-    } else if ((value & ~0x3FFF) == 0) {
-      out.write(0x80 | (value >> 7));
-      out.write(0x7F & value);
-    } else if ((value & ~0x1FFFFF) == 0) {
-      out.write(0x80 | (value >> 14));
-      out.write(0x80 | (value >> 7));
-      out.write(0x7F & value);
-    } else if ((value & ~0xFFFFFFF) == 0) {
-      out.write(0x80 | (value >> 21));
-      out.write(0x80 | (value >> 14));
-      out.write(0x80 | (value >> 7));
-      out.write(0x7F & value);
-    } else {
-      out.write(0x80 | (value >> 28));
-      out.write(0x80 | (value >> 21));
-      out.write(0x80 | (value >> 14));
-      out.write(0x80 | (value >> 7));
-      out.write(0x7F & value);
+  protected void doEncode(IntsRef values, BytesRef buf, int upto) {
+    int maxBytesNeeded = 5 * values.length; // at most 5 bytes per VInt
+    if (buf.bytes.length < maxBytesNeeded) {
+      buf.grow(maxBytesNeeded);
+    }
+    
+    for (int i = values.offset; i < upto; i++) {
+      VInt8.encode(values.ints[i], buf);
     }
   }
 

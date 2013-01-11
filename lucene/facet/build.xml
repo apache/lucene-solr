@@ -81,5 +81,12 @@
       </links>
     </invoke-module-javadoc>
   </target>
-    
+
+  <target name="run-encoding-benchmark" depends="compile-test">
+    <java classname="org.apache.lucene.util.encoding.EncodingSpeed" fork="true" failonerror="true">
+      <classpath refid="test.classpath" />
+    	<classpath path="${build.dir}/classes/test" />
+    </java>
+  </target>
+	
 </project>
