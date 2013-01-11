@@ -503,6 +503,8 @@ Bug Fixes
   import works fine with SolrCloud clusters (Deniz Durmus, James Dyer,
   Erick Erickson, shalin)
 
+* SOLR-4291: Harden the Overseer work queue thread loop. (Mark Miller)
+
 Other Changes
 ----------------------
 
