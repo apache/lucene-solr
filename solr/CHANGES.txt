@@ -476,6 +476,10 @@ Bug Fixes
 
 * SOLR-3876: Solr Admin UI is completely dysfunctional on IE 9 (steffkes)
 
+* SOLR-4112: Fixed DataImportHandler ZKAwarePropertiesWriter implementation so
+  import works fine with SolrCloud clusters (Deniz Durmus, James Dyer,
+  Erick Erickson, shalin)
+
 Other Changes
 ----------------------
 
