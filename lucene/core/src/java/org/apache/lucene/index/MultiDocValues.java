@@ -623,7 +623,7 @@ class MultiDocValues extends DocValues {
       }
     }
     
-    assert anyReal; // nocommit: is this assert safe?
+    // assert anyReal; // nocommit: unsafe until 4.0 is done
 
     return new NumericDocValues() {
       @Override
