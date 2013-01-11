@@ -364,7 +364,20 @@
   <target name="prepare-release" depends="prepare-release-no-sign, sign-artifacts"/>
  
   <!-- make a distribution -->
-  <target name="package" depends="package-src-tgz,create-package"/>
+  <target name="package" depends="package-src-tgz,create-package,-dist-changes,-dist-keys"/>
+
+  <!-- copy changes/ to the release folder -->
+  <target name="-dist-changes">
+   <copy todir="${package.dir}/changes">
+     <fileset dir="build/docs/changes"/>
+   </copy>
+  </target>
+
+  <!-- copy KEYS to the release folder -->
+  <target name="-dist-keys">
+   <get src="http://people.apache.org/keys/group/lucene.asc" 
+        dest="${package.dir}/KEYS"/>
+  </target>
  
   <!-- Makes a tarball from running "svn export" at the root level.    -->
   <!-- Copies NOTICE.txt and LICENSE.txt from solr/ to the root level. -->
