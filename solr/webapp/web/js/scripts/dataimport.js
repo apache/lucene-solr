@@ -15,48 +15,8 @@
  limitations under the License.
 */
 
-var convert_duration_to_seconds = function( str )
-{
-  var ret = 0;
-  var parts = new String( str ).split( '.' ).shift().split( ':' ).reverse();
-  var parts_count = parts.length;
-    
-  for( var i = 0; i < parts_count; i++ )
-  {
-    ret += parseInt( parts[i], 10 ) * Math.pow( 60, i );
-  }
-
-  return ret;
-}
-
-var convert_seconds_to_readable_time = function( value )
-{
-  var text = [];
-  value = parseInt( value );
-
-  var minutes = Math.floor( value / 60 );
-  var hours = Math.floor( minutes / 60 );
-
-  if( 0 !== hours )
-  {
-    text.push( hours + 'h' );
-    value -= hours * 60 * 60;
-    minutes -= hours * 60;
-  }
-
-  if( 0 !== minutes )
-  {
-    text.push( minutes + 'm' );
-    value -= minutes * 60;
-  }
-
-  if( 0 !== value )
-  {
-    text.push( value + 's' );
-  }
-
-  return text.join( ' ' );
-}
+var dataimport_timeout = 2000;
+var cookie_dataimport_autorefresh = 'dataimport_autorefresh';
 
 sammy.bind
 (
@@ -152,7 +112,11 @@ sammy.get
         var dataimport_element = $( '#dataimport', content_element );
         var form_element = $( '#form', dataimport_element );
         var config_element = $( '#config', dataimport_element );
-        var config_error_element = $( '#config-error', dataimport_element );
+        var error_element = $( '#error', dataimport_element );
+        var debug_response_element = $( '#debug_response', dataimport_element );
+
+        var autorefresh_status = false;
+        var debug_mode = false;
 
         // handler
 
@@ -195,23 +159,22 @@ sammy.get
           $.ajax
           (
             {
-              url : handler_url + '?command=show-config',
+              url : handler_url + '?command=show-config&indent=true',
               dataType : 'xml',
               context : $( '#dataimport_config', config_element ),
               beforeSend : function( xhr, settings )
               {
+                error_element
+                  .empty()
+                  .hide();
               },
               success : function( config, text_status, xhr )
               {
                 dataimport_element
                   .removeClass( 'error' );
-                                    
-                config_error_element
-                  .hide();
 
                 config_element
                   .addClass( 'hidden' );
-
 
                 var entities = [ '<option value=""></option>' ];
 
@@ -226,6 +189,9 @@ sammy.get
                                 
                 $( '#entity', form_element )
                   .html( entities.join( "\n" ) );
+
+                $( '.editable textarea', this )
+                  .val( xhr.responseText.replace( /\n+$/, '' ) );
               },
               error : function( xhr, text_status, error_thrown )
               {
@@ -234,7 +200,8 @@ sammy.get
                   dataimport_element
                     .addClass( 'error' );
                                     
-                  config_error_element
+                  error_element
+                    .text( 'Dataimport XML-Configuration is not valid' )
                     .show();
 
                   config_element
@@ -248,7 +215,7 @@ sammy.get
                   xhr.responseText.esc() +
                   '</code></pre>'
                 );
-                this.html( code );
+                $( '.formatted', this ).html( code );
 
                 if( 'success' === text_status )
                 {
@@ -260,7 +227,7 @@ sammy.get
         }
         dataimport_fetch_config();
 
-        $( '.toggle', config_element )
+        $( '.block .toggle', dataimport_element )
           .die( 'click' )
           .live
           (
@@ -325,160 +292,339 @@ sammy.get
               );
               return false;
             }
-          )
+          );
+
+        var debug_mode_element = $( '.debug_mode', config_element );
+        debug_mode_element
+          .die( 'click' )
+          .live
+          (
+            'click',
+            function( event )
+            {
+              var self = $( this );
+              var block = self.closest( '.block' )
+
+              var debug_checkbox = $( 'input[name="debug"]', form_element );
+              var submit_span = $( 'button[type="submit"] span', form_element );
+
+              debug_mode = !debug_mode;
+
+              block.toggleClass( 'debug_mode', debug_mode );
+
+              if( debug_mode )
+              {
+                block.removeClass( 'hidden' );
+
+                debug_checkbox
+                  .attr( 'checked', 'checked' )
+                  .trigger( 'change' );
+                  
+                submit_span
+                  .data( 'original', submit_span.text() )
+                  .text( submit_span.data( 'debugmode' ) );
+
+                $( 'textarea', block )
+                  .autogrow()
+              }
+              else
+              {
+                submit_span
+                  .text( submit_span.data( 'original' ) )
+                  .removeData( 'original' );
+              }
+            }
+          );
+
+        // abort
+
+        var abort_import_element = $( '.abort-import', dataimport_element );
+        abort_import_element
+          .off( 'click' )
+          .on
+          (
+            'click',
+            function( event )
+            {
+              var span_element = $( 'span', this );
+
+              $.ajax
+              (
+                {
+                  url : handler_url + '?command=abort&wt=json',
+                  dataType : 'json',
+                  type: 'POST',
+                  context: $( this ),
+                  beforeSend : function( xhr, settings )
+                  {
+                    span_element
+                      .addClass( 'loader' );
+                  },
+                  success : function( response, text_status, xhr )
+                  {
+                    span_element
+                      .data( 'original', span_element.text() )
+                      .text( span_element.data( 'aborting' ) );
+
+                    this
+                      .removeClass( 'warn' )
+                      .addClass( 'success' );
+
+                    window.setTimeout
+                    (
+                      function()
+                      {
+                        $( 'span', abort_import_element )
+                          .removeClass( 'loader' )
+                          .text( span_element.data( 'original' ) )
+                          .removeData( 'original' );
+
+                        abort_import_element
+                          .removeClass( 'success' )
+                          .addClass( 'warn' );
+                      },
+                      dataimport_timeout * 2
+                    );
+
+                    dataimport_fetch_status();
+                  }
+                }
+              );
+              return false;
+            }
+          );
 
         // state
+
+        var status_button = $( 'form button.refresh-status', form_element );
+
+        status_button
+          .off( 'click' )
+          .on
+          (
+            'click',
+            function( event )
+            {
+              dataimport_fetch_status();
+              return false;
+            }
+          )
+          .trigger( 'click' );
                 
-        function dataimport_fetch_status()
+        function dataimport_fetch_status( clear_timeout )
         {
+          if( clear_timeout )
+          {
+            app.clear_timeout();
+          }
+
           $.ajax
           (
             {
-              url : handler_url + '?command=status',
-              dataType : 'xml',
+              url : handler_url + '?command=status&indent=true&wt=json',
+              dataType : 'json',
               beforeSend : function( xhr, settings )
               {
+                $( 'span', status_button )
+                  .addClass( 'loader' );
               },
               success : function( response, text_status, xhr )
               {
                 var state_element = $( '#current_state', content_element );
+                var time_element = $( '.time', state_element );
 
-                var status = $( 'str[name="status"]', response ).text();
-                var rollback_element = $( 'str[name="Rolledback"]', response );
-                var messages_count = $( 'lst[name="statusMessages"] str', response ).size();
+                var status = response.status;
+                var rollback_time = response.statusMessages.Rolledback || null;
+                var abort_time = response.statusMessages.Aborted || null;
+                
+                var messages = response.statusMessages;
+                var messages_count = 0;
+                for( var key in messages ) { messages_count++; }
 
-                var started_at = $( 'str[name="Full Dump Started"]', response ).text();
-                if( !started_at )
+                var format_number = function format_number( number )
                 {
-                  started_at = (new Date()).toGMTString();
-                }
+                  return ( number || 0 ).toString().replace( /\B(?=(\d{3})+(?!\d))/g, '\'' );
+                };
 
-                function dataimport_compute_details( response, details_element )
+                function dataimport_compute_details( response, details_element, elapsed_seconds )
                 {
+                  var config = {
+                    'Requests' : 'Total Requests made to DataSource',
+                    'Fetched' : 'Total Rows Fetched',
+                    'Skipped' : 'Total Documents Skipped',
+                    'Processed' : 'Total Documents Processed'
+                  };
+
                   var details = [];
-                                    
-                  var requests = parseInt( $( 'str[name="Total Requests made to DataSource"]', response ).text(), 10 );
-                  if( requests )
+                  for( var key in config )
                   {
-                    details.push
-                    (
-                      '<abbr title="Total Requests made to DataSource">Requests</abbr>: ' +
-                      requests
-                    );
-                  }
+                    var value = parseInt( response.statusMessages[config[key]], 10 );
 
-                  var fetched = parseInt( $( 'str[name="Total Rows Fetched"]', response ).text(), 10 );
-                  if( fetched )
-                  {
-                    details.push
-                    (
-                      '<abbr title="Total Rows Fetched">Fetched</abbr>: ' +
-                      fetched
-                    );
-                  }
+                    var detail = '<abbr title="' + config[key].esc() + '">' + key.esc() + '</abbr>: ' +  format_number( value ).esc();
+                    if( elapsed_seconds && 'skipped' !== key.toLowerCase() )
+                    {
+                      detail += ' <span>(' + format_number( Math.round( value / elapsed_seconds ) ).esc() + '/s)</span>'
+                    }
 
-                  var skipped = parseInt( $( 'str[name="Total Documents Skipped"]', response ).text(), 10 );
-                  if( requests )
-                  {
-                    details.push
-                    (
-                      '<abbr title="Total Documents Skipped">Skipped</abbr>: ' +
-                      skipped
-                    );
-                  }
-
-                  var processed = parseInt( $( 'str[name="Total Documents Processed"]', response ).text(), 10 );
-                  if( processed )
-                  {
-                    details.push
-                    (
-                      '<abbr title="Total Documents Processed">Processed</abbr>: ' +
-                      processed
-                    );
-                  }
+                    details.push( detail );
+                  };
 
                   details_element
                     .html( details.join( ', ' ) )
                     .show();
+                };
+
+                var get_time_taken = function get_default_time_taken()
+                {
+                  var time_taken_text = response.statusMessages['Time taken'];
+                  return app.convert_duration_to_seconds( time_taken_text );
+                };
+
+                var get_default_info_text = function default_info_text()
+                {
+                  var info_text = response.statusMessages[''] || '';
+
+                  // format numbers included in status nicely
+                  info_text = info_text.replace
+                  (
+                    /\d{4,}/g,
+                    function( match, position, string )
+                    {
+                      return format_number( parseInt( match, 10 ) );
+                    }
+                  );
+
+                  var time_taken_text = app.convert_seconds_to_readable_time( get_time_taken() );
+                  if( time_taken_text )
+                  {
+                    info_text += ' (Duration: ' + time_taken_text.esc() + ')';
+                  }
+
+                  return info_text;
+                };
+
+                var show_info = function show_info( info_text, elapsed_seconds )
+                {
+                  $( '.info strong', state_element )
+                    .text( info_text || get_default_info_text() );
+
+                  $( '.info .details', state_element )
+                    .hide();
+                };
+
+                var show_full_info = function show_full_info( info_text, elapsed_seconds )
+                {
+                  show_info( info_text, elapsed_seconds );
+
+                  dataimport_compute_details
+                  (
+                    response,
+                    $( '.info .details', state_element ),
+                    elapsed_seconds || get_time_taken()
+                  );
+                };
+
+                var set_time = function set_time( time_text )
+                {
+                  time_element
+                    .text( time_text )
+                    .removeData( 'timeago' )
+                    .timeago()
+                    .show();
                 }
 
                 state_element
-                  .removeClass( 'indexing' )
-                  .removeClass( 'success' )
-                  .removeClass( 'failure' );
+                  .removeAttr( 'class' );
+
+                 time_element
+                    .empty()
+                    .hide();
                                 
                 $( '.info', state_element )
                   .removeClass( 'loader' );
 
-                if( 0 !== rollback_element.size() )
+                if( 'busy' === status )
                 {
                   state_element
-                    .addClass( 'failure' )
-                    .show();
+                    .addClass( 'indexing' );
 
-                  $( '.time', state_element )
-                    .text( rollback_element.text() )
-                    .timeago()
-                    .show();
+                  if( autorefresh_status )
+                  {
+                    $( '.info', state_element )
+                      .addClass( 'loader' );
+                  }
 
-                  $( '.info strong', state_element )
-                    .text( $( 'str[name=""]', response ).text() );
+                  var time_elapsed_text = response.statusMessages['Time Elapsed'];
+                  var elapsed_seconds = app.convert_duration_to_seconds( time_elapsed_text );
+                  time_elapsed_text = app.convert_seconds_to_readable_time( elapsed_seconds );
 
-                  $( '.info .details', state_element )
-                    .hide();
-                                    
-                  console.debug( 'rollback @ ', rollback_element.text() );
+                  var info_text = time_elapsed_text
+                                ? 'Indexing since ' + time_elapsed_text
+                                : 'Indexing ...';
+
+                  show_full_info( info_text, elapsed_seconds );
+
+                  if( !app.timeout && autorefresh_status )
+                  {
+                    app.timeout = window.setTimeout
+                    (
+                      function()
+                      {
+                        dataimport_fetch_status( true )
+                      },
+                      dataimport_timeout
+                    );
+                  }
+                }
+                else if( rollback_time )
+                {
+                  state_element
+                    .addClass( 'failure' );
+
+                  set_time( rollback_time );
+
+                  show_full_info();
+                }
+                else if( abort_time )
+                {
+                  state_element
+                    .addClass( 'aborted' );
+
+                  set_time( abort_time );
+
+                  show_full_info( 'Aborting current Import ...' );
                 }
                 else if( 'idle' === status && 0 !== messages_count )
                 {
                   state_element
-                    .addClass( 'success' )
-                    .show();
+                    .addClass( 'success' );
 
-                  $( '.time', state_element )
-                    .text( started_at )
-                    .timeago()
-                    .show();
-
-                  $( '.info strong', state_element )
-                    .text( $( 'str[name=""]', response ).text() );
-
-                  dataimport_compute_details( response, $( '.info .details', state_element ) );
-                }
-                else if( 'busy' === status )
-                {
-                  state_element
-                    .addClass( 'indexing' )
-                    .show();
-
-                  $( '.time', state_element )
-                    .text( started_at )
-                    .timeago()
-                    .show();
-
-                  $( '.info', state_element )
-                    .addClass( 'loader' );
-
-                  var indexing_text = 'Indexing ...';
-
-                  var time_elapsed_text = $( 'str[name="Time Elapsed"]', response ).text();
-                  time_elapsed_text = convert_seconds_to_readable_time( convert_duration_to_seconds( time_elapsed_text ) );
-                  if( time_elapsed_text.length )
+                  var started_at = response.statusMessages['Full Dump Started'];
+                  if( started_at )
                   {
-                    indexing_text = 'Indexing since ' + time_elapsed_text
+                    set_time( started_at );
                   }
 
-                  $( '.info strong', state_element )
-                    .text( indexing_text );
-                                    
-                  dataimport_compute_details( response, $( '.info .details', state_element ) );
-
-                  window.setTimeout( dataimport_fetch_status, 2000 );
+                  show_full_info();
                 }
-                else
+                else 
                 {
-                  state_element.hide();
+                  state_element
+                    .addClass( 'idle' );
+
+                  show_info( 'No information available (idle)' );
                 }
+
+                // show raw status
+
+                var code = $(
+                  '<pre class="syntax language-json"><code>' +
+                  app.format_json( xhr.responseText ).esc() +
+                  '</code></pre>'
+                );
+
+                $( '#raw_output_container', content_element ).html( code );
+                hljs.highlightBlock( code.get(0) );
               },
               error : function( xhr, text_status, error_thrown )
               {
@@ -489,24 +635,47 @@ sammy.get
               },
               complete : function( xhr, text_status )
               {
+                $( 'span', status_button )
+                  .removeClass( 'loader' )
+                  .addClass( 'success' );
+
+                window.setTimeout
+                (
+                  function()
+                  {
+                    $( 'span', status_button )
+                      .removeClass( 'success' );
+                  },
+                  dataimport_timeout / 2
+                );
               }
             }
           );
         }
-        dataimport_fetch_status();
 
         // form
 
-        $( 'form', form_element )
+        var form = $( 'form', form_element );
+
+        form
           .ajaxForm
           (
             {
               url : handler_url,
-              dataType : 'xml',
+              data : {
+                wt : 'json',
+                indent : 'true'
+              },
+              dataType : 'json',
+              type: 'POST',
               beforeSend : function( xhr, settings )
               {
-                $( 'form button', form_element )
+                $( 'button[type="submit"] span', form_element )
                   .addClass( 'loader' );
+
+                error_element
+                  .empty()
+                  .hide();
               },
               beforeSubmit : function( array, form, options )
               {
@@ -545,22 +714,91 @@ sammy.get
                     array.push( { name : tmp[0], value: tmp[1] } );
                   }
                 }
+
+                if( debug_mode )
+                {
+                  array.push( { name: 'dataConfig', value: $( '#dataimport_config .editable textarea' ).val() } );
+                }
               },
               success : function( response, text_status, xhr )
               {
-                dataimport_fetch_status();
               },
               error : function( xhr, text_status, error_thrown )
               {
-                console.debug( arguments );
+                var response = null;
+                try
+                {
+                  eval( 'response = ' + xhr.responseText + ';' );
+                }
+                catch( e ){}
+
+                error_element
+                  .text( response.error.msg || 'Unknown Error (Exception w/o Message)' )
+                  .show();
               },
               complete : function( xhr, text_status )
               {
-                $( 'form button', form_element )
+                $( 'button[type="submit"] span', form_element )
                   .removeClass( 'loader' );
+
+                var debug = $( 'input[name="debug"]:checked', form );
+                if( 0 !== debug.size() )
+                {
+                  var code = $(
+                    '<pre class="syntax language-json"><code>' +
+                    app.format_json( xhr.responseText ).esc() +
+                    '</code></pre>'
+                  );
+
+                  $( '.content', debug_response_element ).html( code );
+                  hljs.highlightBlock( code.get(0) );
+                }
+
+                dataimport_fetch_status();
               }
             }
           );
+
+        $( 'input[name="debug"]', form )
+          .off( 'change' )
+          .on
+          (
+            'change',
+            function( event )
+            {
+              debug_response_element.toggle( this.checked );
+            }
+          );
+
+        $( '#auto-refresh-status a', form_element )
+          .off( 'click' )
+          .on
+          (
+            'click',
+            function( event )
+            {
+              $.cookie( cookie_dataimport_autorefresh, $.cookie( cookie_dataimport_autorefresh ) ? null : true );
+              $( this ).trigger( 'state' );
+
+              dataimport_fetch_status();
+
+              return false;
+            }
+          )
+          .off( 'state' )
+          .on
+          (
+            'state',
+            function( event )
+            {
+              autorefresh_status = !!$.cookie( cookie_dataimport_autorefresh );
+
+              $.cookie( cookie_dataimport_autorefresh )
+                ? $( this ).addClass( 'on' )
+                : $( this ).removeClass( 'on' );
+            }
+          )
+          .trigger( 'state' );
       }
     );
   }

@@ -228,6 +228,8 @@ Optimizations
 * SOLR-3840: XML query response display is unreadable in Solr Admin Query UI
   (steffkes)
 
+* SOLR-3982: Admin UI: Various Dataimport Improvements (steffkes)
+
 Bug Fixes
 ----------------------
 
