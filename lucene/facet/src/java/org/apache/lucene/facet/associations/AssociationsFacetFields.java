@@ -7,7 +7,7 @@ import java.util.Map;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.facet.index.CategoryListBuilder;
+import org.apache.lucene.facet.index.CountingListBuilder;
 import org.apache.lucene.facet.index.DrillDownStream;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.CategoryListParams;
@@ -15,6 +15,8 @@ import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -94,15 +96,16 @@ public class AssociationsFacetFields extends FacetFields {
     return categoryLists;
   }
   
-  /**
-   * Returns a {@link CategoryListBuilder} for encoding the given categories and
-   * associations.
-   */
   @Override
-  protected CategoryListBuilder getCategoryListBuilder(CategoryListParams categoryListParams, 
-      Iterable<CategoryPath> categories) {
-    return new AssociationsCategoryListBuilder((CategoryAssociationsContainer) categories, categoryListParams, 
-        indexingParams, taxonomyWriter);
+  protected Map<String,BytesRef> getCategoryListData(CategoryListParams categoryListParams, IntsRef ordinals,
+      Iterable<CategoryPath> categories) throws IOException {
+    AssociationsListBuilder associations = new AssociationsListBuilder((CategoryAssociationsContainer) categories);
+    CountingListBuilder counting = new CountingListBuilder(categoryListParams, indexingParams, taxonomyWriter);
+    // CountingListBuilder modifies the ordinals array, by e.g. adding parent ordinals, sorting etc.
+    // Therefore first build the associations list and only afterwards the counting list.
+    final Map<String,BytesRef> res = associations.build(ordinals, categories);
+    res.putAll(counting.build(ordinals, categories));
+    return res;
   }
   
   @Override

@@ -1,7 +1,7 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
-import java.io.InputStream;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,33 +21,50 @@ import java.io.InputStream;
  */
 
 /**
- * Decodes integers from a set {@link InputStream}. For re-usability, the
- * decoder's input stream can be set by ({@link #reInit(InputStream)}).
- * By design, Decoders are NOT thread-safe.
+ * Decodes integers from a set {@link BytesRef}.
  * 
  * @lucene.experimental
  */
 public abstract class IntDecoder {
   
-  /** A special long value which is used to indicate end-of-stream has reached. */
-  public static final long EOS = 0x100000000L;
-
-  /** Input stream from which the encoded bytes are read */
-  protected InputStream in;
-
-  /** Sets the input stream from which the encoded data is read. */
-  public void reInit(InputStream in) {
-    this.in = in;
+  /**
+   * Performs the actual decoding. Values should be read from
+   * {@link BytesRef#offset} up to {@code upto}. Also, {@code values} offset and
+   * length are set to 0 and the encoder is expected to update
+   * {@link IntsRef#length}, but not {@link IntsRef#offset}.
+   * 
+   * <p>
+   * <b>NOTE:</b> it is ok to use the buffer's offset as the current position in
+   * the buffer (and modify it), it will be reset by
+   * {@link #decode(BytesRef, IntsRef)}.
+   */
+  protected abstract void doDecode(BytesRef buf, IntsRef values, int upto);
+  
+  /**
+   * Called before {@link #doDecode(BytesRef, IntsRef, int)} so that decoders
+   * can reset their state.
+   */
+  protected void reset() {
+    // do nothing by default
   }
   
   /**
-   * Decodes data received from the input stream, and returns one decoded
-   * integer. If end of stream is reached, {@link #EOS} is returned.
-   * 
-   * @return one decoded integer as long or {@link #EOS} if end-of-stream
-   *         reached.
-   * @throws IOException if an I/O error occurs
+   * Decodes the values from the buffer into the given {@link IntsRef}. Note
+   * that {@code values.offset} and {@code values.length} are set to 0.
    */
-  public abstract long decode() throws IOException;
+  public final void decode(BytesRef buf, IntsRef values) {
+    values.offset = values.length = 0; // must do that because we cannot grow() them otherwise
+    
+    // some decoders may use the buffer's offset as a position index, so save
+    // current offset.
+    int bufOffset = buf.offset;
+    
+    reset();
+    doDecode(buf, values, buf.offset + buf.length);
+    assert values.offset == 0 : "offset should not have been modified by the decoder.";
+    
+    // fix offset
+    buf.offset = bufOffset;
+  }
 
 }

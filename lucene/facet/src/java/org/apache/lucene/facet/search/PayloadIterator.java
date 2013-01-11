@@ -34,9 +34,9 @@ import org.apache.lucene.util.BytesRef;
  * A utility class for iterating through a posting list of a given term and
  * retrieving the payload of the first position in every document. For
  * efficiency, this class does not check if documents passed to
- * {@link #setdoc(int)} are deleted, since it is usually used to iterate on
+ * {@link #getPayload(int)} are deleted, since it is usually used to iterate on
  * payloads of documents that matched a query. If you need to skip over deleted
- * documents, you should do so before calling {@link #setdoc(int)}.
+ * documents, you should do so before calling {@link #getPayload(int)}.
  * 
  * @lucene.experimental
  */
@@ -84,8 +84,8 @@ public class PayloadIterator {
   
   /**
    * Initialize the iterator. Should be done before the first call to
-   * {@link #setdoc(int)}. Returns {@code false} if no category list is found,
-   * or the category list has no documents.
+   * {@link #getPayload(int)}. Returns {@code false} if no category list is
+   * found, or the category list has no documents.
    */
   public boolean init() throws IOException {
     nextSegment();
@@ -93,30 +93,29 @@ public class PayloadIterator {
   }
 
   /**
-   * Skip forward to document docId. Return true if this document exists and
-   * has any payload.
-   * <P>
-   * Users should call this method with increasing docIds, and implementations
-   * can assume that this is the case.
+   * Returns the {@link BytesRef payload} of the given document, or {@code null}
+   * if the document does not exist, there are no more documents in the posting
+   * list, or the document exists but has not payload. You should call
+   * {@link #init()} before the first call to this method.
    */
-  public boolean setdoc(int docId) throws IOException {
+  public BytesRef getPayload(int docID) throws IOException {
     if (!hasMore) {
-      return false;
+      return null;
     }
 
     // re-basing docId->localDocID is done fewer times than currentDoc->globalDoc
-    int localDocID = docId - curDocBase;
+    int localDocID = docID - curDocBase;
     
     if (curDocID > localDocID) {
       // document does not exist
-      return false;
+      return null;
     }
     
     if (curDocID < localDocID) {
       // look for the document either in that segment, or others
       while (hasMore && (curDocID = currentDPE.advance(localDocID)) == DocIdSetIterator.NO_MORE_DOCS) {
         nextSegment(); // also updates curDocID
-        localDocID = docId - curDocBase;
+        localDocID = docID - curDocBase;
         // nextSegment advances to nextDoc, so check if we still need to advance
         if (curDocID >= localDocID) {
           break;
@@ -127,7 +126,7 @@ public class PayloadIterator {
       // 1. we iterated over all segments (hasMore=false)
       // 2. current segment advanced to a doc, either requested or higher
       if (!hasMore || curDocID != localDocID) {
-        return false;
+        return null;
       }
     }
 
@@ -135,12 +134,7 @@ public class PayloadIterator {
     assert currentDPE.freq() == 1 : "expecting freq=1 (got " + currentDPE.freq() + ") term=" + term + " doc=" + (curDocID + curDocBase);
     int pos = currentDPE.nextPosition();
     assert pos != -1 : "no positions for term=" + term + " doc=" + (curDocID + curDocBase);
-    data = currentDPE.getPayload();
-    return data != null;
+    return currentDPE.getPayload();
   }
   
-  public BytesRef getPayload() {
-    return data;
-  }
-
 }

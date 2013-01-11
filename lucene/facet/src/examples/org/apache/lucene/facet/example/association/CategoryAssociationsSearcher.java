@@ -37,18 +37,15 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
  * 
  * @lucene.experimental
  */
-public class AssociationSearcher {
+public class CategoryAssociationsSearcher {
 
   /** Search an index with a sum of int-association. */
-  public static List<FacetResult> searchSumIntAssociation(Directory indexDir,
-      Directory taxoDir) throws Exception {
+  public static List<FacetResult> searchSumIntAssociation(Directory indexDir, Directory taxoDir) throws Exception {
     // prepare index reader 
     IndexReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
-    AssociationIntSumFacetRequest facetRequest = new AssociationIntSumFacetRequest(
-        new CategoryPath("tags"), 10);
-    
+    AssociationIntSumFacetRequest facetRequest = new AssociationIntSumFacetRequest(new CategoryPath("tags"), 10);
     List<FacetResult> res = SimpleSearcher.searchWithRequest(indexReader, taxo, null, facetRequest);
     
     // close readers
@@ -59,14 +56,12 @@ public class AssociationSearcher {
   }
   
   /** Search an index with a sum of float-association. */
-  public static List<FacetResult> searchSumFloatAssociation(Directory indexDir,
-      Directory taxoDir) throws Exception {
+  public static List<FacetResult> searchSumFloatAssociation(Directory indexDir, Directory taxoDir) throws Exception {
     // prepare index reader 
     IndexReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
-    AssociationFloatSumFacetRequest facetRequest = new AssociationFloatSumFacetRequest(
-        new CategoryPath("genre"), 10);
+    AssociationFloatSumFacetRequest facetRequest = new AssociationFloatSumFacetRequest(new CategoryPath("genre"), 10);
     
     List<FacetResult> res = SimpleSearcher.searchWithRequest(indexReader, taxo, null, facetRequest);
     

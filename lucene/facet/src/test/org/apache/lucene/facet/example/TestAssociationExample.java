@@ -4,7 +4,7 @@ import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.facet.example.ExampleResult;
-import org.apache.lucene.facet.example.association.AssociationMain;
+import org.apache.lucene.facet.example.association.CategoryAssociationsMain;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 
 /*
@@ -35,8 +35,8 @@ public class TestAssociationExample extends LuceneTestCase {
 
   @Test
   public void testAssociationExamples() throws Exception {
-    assertExampleResult(new AssociationMain().runSumIntAssociationSample(), EXPECTED_INT_SUM_RESULTS);
-    assertExampleResult(new AssociationMain().runSumFloatAssociationSample(), EXPECTED_FLOAT_SUM_RESULTS);
+    assertExampleResult(new CategoryAssociationsMain().runSumIntAssociationSample(), EXPECTED_INT_SUM_RESULTS);
+    assertExampleResult(new CategoryAssociationsMain().runSumFloatAssociationSample(), EXPECTED_FLOAT_SUM_RESULTS);
   }
 
   private void assertExampleResult(ExampleResult res, double[] expectedResults) {

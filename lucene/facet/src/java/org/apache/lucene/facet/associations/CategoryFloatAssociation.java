@@ -71,5 +71,10 @@ public class CategoryFloatAssociation implements CategoryAssociation {
   public float getValue() {
     return value;
   }
+
+  @Override
+  public String toString() {
+    return getClass().getSimpleName() + "(" + value + ")";
+  }
   
 }

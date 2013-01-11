@@ -1,7 +1,7 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,38 +27,31 @@ import java.io.OutputStream;
  * read more on the two implementations {@link FourFlagsIntEncoder} and
  * {@link EightFlagsIntEncoder}.
  * <p>
- * Extensions of this class need to implement {@link #encode(int)} in order to
- * build the proper indicator (flags). When enough values were accumulated
- * (typically the batch size), extensions can call {@link #encodeChunk()} to
- * flush the indicator and the rest of the values.
+ * Extensions of this class need to implement {@link #encode(IntsRef, BytesRef)}
+ * in order to build the proper indicator (flags). When enough values were
+ * accumulated (typically the batch size), extensions can call
+ * {@link #encodeChunk(BytesRef)} to flush the indicator and the rest of the
+ * values.
  * <p>
  * <b>NOTE:</b> flags encoders do not accept values &le; 0 (zero) in their
- * {@link #encode(int)}. For performance reasons they do not check that
- * condition, however if such value is passed the result stream may be corrupt
- * or an exception will be thrown. Also, these encoders perform the best when
- * there are many consecutive small values (depends on the encoder
+ * {@link #encode(IntsRef, BytesRef)}. For performance reasons they do not check
+ * that condition, however if such value is passed the result stream may be
+ * corrupt or an exception will be thrown. Also, these encoders perform the best
+ * when there are many consecutive small values (depends on the encoder
  * implementation). If that is not the case, the encoder will occupy 1 more byte
  * for every <i>batch</i> number of integers, over whatever
  * {@link VInt8IntEncoder} would have occupied. Therefore make sure to check
  * whether your data fits into the conditions of the specific encoder.
  * <p>
  * For the reasons mentioned above, these encoders are usually chained with
- * {@link UniqueValuesIntEncoder} and {@link DGapIntEncoder} in the following
- * manner: <code><pre class="prettyprint">
- * IntEncoder fourFlags = 
- *         new SortingEncoderFilter(new UniqueValuesIntEncoder(new DGapIntEncoder(new FlagsIntEncoderImpl())));
- * </pre></code>
+ * {@link UniqueValuesIntEncoder} and {@link DGapIntEncoder}.
  * 
  * @lucene.experimental
  */
 public abstract class ChunksIntEncoder extends IntEncoder {
 
   /** Holds the values which must be encoded, outside the indicator. */
-  protected final int[] encodeQueue;
-  protected int encodeQueueSize = 0;
-
-  /** Encoder used to encode values outside the indicator. */
-  protected final IntEncoder encoder = new VInt8IntEncoder();
+  protected final IntsRef encodeQueue;
 
   /** Represents bits flag byte. */
   protected int indicator = 0;
@@ -67,39 +60,33 @@ public abstract class ChunksIntEncoder extends IntEncoder {
   protected byte ordinal = 0;
 
   protected ChunksIntEncoder(int chunkSize) {
-    encodeQueue = new int[chunkSize];
+    encodeQueue = new IntsRef(chunkSize);
   }
 
   /**
    * Encodes the values of the current chunk. First it writes the indicator, and
    * then it encodes the values outside the indicator.
    */
-  protected void encodeChunk() throws IOException {
-    out.write(indicator);
-    for (int i = 0; i < encodeQueueSize; ++i) {
-      encoder.encode(encodeQueue[i]);
+  protected void encodeChunk(BytesRef buf) {
+    // ensure there's enough room in the buffer
+    int maxBytesRequired = buf.length + 1 + encodeQueue.length * 4; /* indicator + at most 4 bytes per positive VInt */
+    if (buf.bytes.length < maxBytesRequired) {
+      buf.grow(maxBytesRequired);
     }
-    encodeQueueSize = 0;
-    ordinal = 0;
-    indicator = 0;
+    
+    buf.bytes[buf.length++] = ((byte) indicator);
+    for (int i = 0; i < encodeQueue.length; i++) {
+      VInt8.encode(encodeQueue.ints[i], buf);
+    }
+    
+    reset();
   }
 
   @Override
-  public void close() throws IOException {
-    if (ordinal != 0) {
-      encodeChunk();
-    }
-    encoder.close();
-    super.close();
-  }
-
-  @Override
-  public void reInit(OutputStream out) {
-    encoder.reInit(out);
-    super.reInit(out);
+  protected void reset() {
     ordinal = 0;
     indicator = 0;
-    encodeQueueSize = 0;
+    encodeQueue.length = 0;
   }
 
 }

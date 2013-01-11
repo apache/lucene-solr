@@ -7,7 +7,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 
 import org.apache.lucene.facet.search.CategoryListIterator;
-import org.apache.lucene.facet.search.PayloadIntDecodingIterator;
+import org.apache.lucene.facet.search.PayloadCategoryListIteraor;
 import org.apache.lucene.facet.search.TotalFacetCounts;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.util.encoding.DGapIntEncoder;
@@ -142,7 +142,7 @@ public class CategoryListParams implements Serializable {
       int partition) throws IOException {
     String categoryListTermStr = PartitionsUtils.partitionName(this, partition);
     Term payloadTerm = new Term(term.field(), categoryListTermStr);
-    return new PayloadIntDecodingIterator(reader, payloadTerm,
+    return new PayloadCategoryListIteraor(reader, payloadTerm,
         createEncoder().createMatchingDecoder());
   }
   

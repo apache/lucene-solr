@@ -2,6 +2,8 @@ package org.apache.lucene.facet.search.aggregator;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.IntsRef;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -36,16 +38,9 @@ import java.io.IOException;
 public interface Aggregator {
 
   /**
-   * Specify the document (and its score in the search) that the following
-   * {@link #aggregate(int)} calls will pertain to.
+   * Aggregate the ordinals of the given document ID (and its score). The given
+   * ordinals offset is always zero.
    */
-  void setNextDoc(int docid, float score) throws IOException;
-
-  /**
-   * Collect (and do whatever an implementation deems appropriate) the
-   * category given by its ordinal. This category belongs to a document
-   * given earlier by {@link #setNextDoc(int, float)}.
-   */
-  void aggregate(int ordinal);
-
+  public void aggregate(int docID, float score, IntsRef ordinals) throws IOException;
+  
 }

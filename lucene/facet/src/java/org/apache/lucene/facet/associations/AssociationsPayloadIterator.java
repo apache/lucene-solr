@@ -53,20 +53,22 @@ public abstract class AssociationsPayloadIterator<T extends CategoryAssociation>
   }
 
   /**
-   * Skip to the requested document. Returns true iff the document has categort
-   * association values and they were read successfully.
+   * Skip to the requested document. Returns true iff the document has category
+   * association values and they were read successfully. Associations are
+   * handled through {@link #handleAssociation(int, CategoryAssociation)} by
+   * extending classes.
    */
-  public boolean setNextDoc(int docId) throws IOException {
+  protected final boolean setNextDoc(int docID) throws IOException {
     if (!hasAssociations) { // there are no associations at all
       return false;
     }
 
-    if (!pi.setdoc(docId)) { // no associations for the requested document
+    BytesRef bytes = pi.getPayload(docID);
+    if (bytes == null) { // no associations for the requested document
       return false;
     }
-
-    BytesRef associations = pi.getPayload();
-    ByteArrayDataInput in = new ByteArrayDataInput(associations.bytes, associations.offset, associations.length);
+    
+    ByteArrayDataInput in = new ByteArrayDataInput(bytes.bytes, bytes.offset, bytes.length);
     while (!in.eof()) {
       int ordinal = in.readInt();
       association.deserialize(in);

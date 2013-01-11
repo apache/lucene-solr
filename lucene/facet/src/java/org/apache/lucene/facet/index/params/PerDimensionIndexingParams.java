@@ -78,7 +78,9 @@ public class PerDimensionIndexingParams extends FacetIndexingParams {
 
   /**
    * Returns the {@link CategoryListParams} for the corresponding dimension
-   * which is returned by {@code category.getComponent(0)}.
+   * which is returned by {@code category.getComponent(0)}. If {@code category}
+   * is {@code null}, or was not specified in the map given to the constructor,
+   * returns the default {@link CategoryListParams}.
    */
   @Override
   public CategoryListParams getCategoryListParams(CategoryPath category) {

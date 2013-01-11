@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.UnsafeByteArrayInputStream;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.encoding.IntDecoder;
 
 /*
@@ -26,44 +26,21 @@ import org.apache.lucene.util.encoding.IntDecoder;
  */
 
 /**
- * A payload deserializer comes with its own working space (buffer). One need to
- * define the {@link IndexReader} and {@link Term} in which the payload resides.
- * The iterator then consumes the payload information of each document and
- * decodes it into categories. A typical use case of this class is:
- * 
- * <pre class="prettyprint">
- * IndexReader reader = [open your reader];
- * Term t = new Term(&quot;field&quot;, &quot;where-payload-exists&quot;);
- * CategoryListIterator cli = new PayloadIntDecodingIterator(reader, t);
- * if (!cli.init()) {
- *   // it means there are no payloads / documents associated with that term.
- *   // Usually a sanity check. However, init() must be called.
- * }
- * DocIdSetIterator disi = [you usually iterate on something else, such as a Scorer];
- * int doc;
- * while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
- *   cli.setdoc(doc);
- *   long category;
- *   while ((category = cli.nextCategory()) &lt; Integer.MAX_VALUE) {
- *   }
- * }
- * </pre>
+ * A {@link CategoryListIterator} which reads the category ordinals from a
+ * payload.
  * 
  * @lucene.experimental
  */
-public class PayloadIntDecodingIterator implements CategoryListIterator {
+public class PayloadCategoryListIteraor implements CategoryListIterator {
 
-  private final UnsafeByteArrayInputStream ubais;
   private final IntDecoder decoder;
-
   private final IndexReader indexReader;
   private final Term term;
   private final PayloadIterator pi;
   private final int hashCode;
   
-  public PayloadIntDecodingIterator(IndexReader indexReader, Term term, IntDecoder decoder) throws IOException {
+  public PayloadCategoryListIteraor(IndexReader indexReader, Term term, IntDecoder decoder) throws IOException {
     pi = new PayloadIterator(indexReader, term);
-    ubais = new UnsafeByteArrayInputStream();
     this.decoder = decoder;
     hashCode = indexReader.hashCode() ^ term.hashCode();
     this.term = term;
@@ -72,10 +49,10 @@ public class PayloadIntDecodingIterator implements CategoryListIterator {
 
   @Override
   public boolean equals(Object other) {
-    if (!(other instanceof PayloadIntDecodingIterator)) {
+    if (!(other instanceof PayloadCategoryListIteraor)) {
       return false;
     }
-    PayloadIntDecodingIterator that = (PayloadIntDecodingIterator) other;
+    PayloadCategoryListIteraor that = (PayloadCategoryListIteraor) other;
     if (hashCode != that.hashCode) {
       return false;
     }
@@ -95,21 +72,12 @@ public class PayloadIntDecodingIterator implements CategoryListIterator {
   }
   
   @Override
-  public long nextCategory() throws IOException {
-    return decoder.decode();
-  }
-
-  @Override
-  public boolean skipTo(int docId) throws IOException {
-    if (!pi.setdoc(docId)) {
-      return false;
+  public void getOrdinals(int docID, IntsRef ints) throws IOException {
+    ints.length = 0;
+    BytesRef payload = pi.getPayload(docID);
+    if (payload != null) {
+      decoder.decode(payload, ints);
     }
-
-    // Initializing the decoding mechanism with the new payload data
-    BytesRef data = pi.getPayload();
-    ubais.reInit(data.bytes, data.offset, data.length + data.offset);
-    decoder.reInit(ubais);
-    return true;
   }
 
 }

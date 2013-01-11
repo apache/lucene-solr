@@ -1,5 +1,9 @@
 package org.apache.lucene.facet.search.aggregator;
 
+import java.io.IOException;
+
+import org.apache.lucene.util.IntsRef;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -29,9 +33,12 @@ public class ComplementCountingAggregator extends CountingAggregator {
   }
 
   @Override
-  public void aggregate(int ordinal) {
-    assert counterArray[ordinal]!=0:"complement aggregation: count is about to become negative for ordinal "+ordinal;
-    --counterArray[ordinal];
+  public void aggregate(int docID, float score, IntsRef ordinals) throws IOException {
+    for (int i = 0; i < ordinals.length; i++) {
+      int ord = ordinals.ints[i];
+      assert counterArray[ord] != 0 : "complement aggregation: count is about to become negative for ordinal " + ord;
+      --counterArray[ord];
+    }
   }
 
 }
