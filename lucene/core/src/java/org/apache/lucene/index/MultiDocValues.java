@@ -607,18 +607,19 @@ class MultiDocValues extends DocValues {
   }
   
   public static NumericDocValues simpleNormValues(final IndexReader r, final String field) throws IOException {
+    final List<AtomicReaderContext> leaves = r.leaves();
+    if (leaves.size() == 1) {
+      return leaves.get(0).reader().simpleNormValues(field);
+    }
     FieldInfo fi = MultiFields.getMergedFieldInfos(r).fieldInfo(field);
     if (fi == null || fi.hasNorms() == false) {
       return null;
     }
-    final List<AtomicReaderContext> leaves = r.leaves();
     boolean anyReal = false;
     for(AtomicReaderContext ctx : leaves) {
       NumericDocValues norms = ctx.reader().simpleNormValues(field);
 
-      if (norms == null) {
-        norms = NumericDocValues.EMPTY;
-      } else {
+      if (norms != null) {
         anyReal = true;
       }
     }

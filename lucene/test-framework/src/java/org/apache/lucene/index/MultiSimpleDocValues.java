@@ -31,13 +31,14 @@ public class MultiSimpleDocValues {
 
   public static NumericDocValues simpleNumericValues(final IndexReader r, final String field) throws IOException {
     final List<AtomicReaderContext> leaves = r.leaves();
+    if (leaves.size() == 1) {
+      return leaves.get(0).reader().getNumericDocValues(field);
+    }
     boolean anyReal = false;
     for(AtomicReaderContext ctx : leaves) {
       NumericDocValues values = ctx.reader().getNumericDocValues(field);
 
-      if (values == null) {
-        values = NumericDocValues.EMPTY;
-      } else {
+      if (values != null) {
         anyReal = true;
       }
     }
@@ -67,14 +68,15 @@ public class MultiSimpleDocValues {
 
   public static BinaryDocValues simpleBinaryValues(final IndexReader r, final String field) throws IOException {
     final List<AtomicReaderContext> leaves = r.leaves();
+    if (leaves.size() == 1) {
+      return leaves.get(0).reader().getBinaryDocValues(field);
+    }
     boolean anyReal = false;
 
     for(AtomicReaderContext ctx : leaves) {
       BinaryDocValues values = ctx.reader().getBinaryDocValues(field);
 
-      if (values == null) {
-        values = BinaryDocValues.EMPTY;
-      } else {
+      if (values != null) {
         anyReal = true;
       }
     }
@@ -103,5 +105,4 @@ public class MultiSimpleDocValues {
       };
     }
   }
-
 }
