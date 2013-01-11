@@ -56,7 +56,7 @@ sammy.get
 
                 json : function( xhr )
                 {
-                  return JSON.stringify( JSON.parse( xhr.responseText ), undefined, 2 );
+                  return app.format_json( xhr.responseText );
                 }
 
               };
