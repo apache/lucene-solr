@@ -23,41 +23,10 @@ import java.util.List;
 import org.apache.lucene.util.BytesRef;
 
 public class MultiSimpleDocValues {
-
+  
+  // moved to src/java so SlowWrapper can use it... uggggggh
   public static NumericDocValues simpleNormValues(final IndexReader r, final String field) throws IOException {
-    final List<AtomicReaderContext> leaves = r.leaves();
-    boolean anyReal = false;
-    for(AtomicReaderContext ctx : leaves) {
-      NumericDocValues norms = ctx.reader().simpleNormValues(field);
-
-      if (norms == null) {
-        norms = NumericDocValues.EMPTY;
-      } else {
-        anyReal = true;
-      }
-    }
-
-    if (!anyReal) {
-      return null;
-    } else {
-      return new NumericDocValues() {
-        @Override
-        public long get(int docID) {
-          int subIndex = ReaderUtil.subIndex(docID, leaves);
-          NumericDocValues norms;
-          try {
-            norms = leaves.get(subIndex).reader().simpleNormValues(field);
-          } catch (IOException ioe) {
-            throw new RuntimeException(ioe);
-          }
-          if (norms == null) {
-            return 0;
-          } else {
-            return norms.get(docID - leaves.get(subIndex).docBase);
-          }
-        }
-      };
-    }
+    return MultiDocValues.simpleNormValues(r, field);
   }
 
   public static NumericDocValues simpleNumericValues(final IndexReader r, final String field) throws IOException {

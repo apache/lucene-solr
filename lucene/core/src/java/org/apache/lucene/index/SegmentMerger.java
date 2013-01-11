@@ -228,7 +228,7 @@ final class SegmentMerger {
       boolean success = false;
       try {
         for (FieldInfo field : mergeState.fieldInfos) {
-          if (field.isIndexed() && !field.omitsNorms() && field.getNormType() != null) {
+          if (field.hasNorms()) {
             List<NumericDocValues> toMerge = new ArrayList<NumericDocValues>();
             for (AtomicReader reader : mergeState.readers) {
               NumericDocValues norms = reader.simpleNormValues(field.name);

@@ -91,19 +91,19 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
     ensureOpen();
-    return null;
+    return null; // nocommit: UOE
   }
 
   @Override
   public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     ensureOpen();
-    return null;
+    return null; // nocommit: UOE
   }
 
   @Override
   public SortedDocValues getSortedDocValues(String field) throws IOException {
     ensureOpen();
-    return null;
+    return null; // nocommit: UOE
   }
   
   @Override
@@ -121,7 +121,7 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   public NumericDocValues simpleNormValues(String field) throws IOException {
     ensureOpen();
     // nocommit hmm
-    return null;
+    return MultiDocValues.simpleNormValues(in, field);
   }
   
   @Override

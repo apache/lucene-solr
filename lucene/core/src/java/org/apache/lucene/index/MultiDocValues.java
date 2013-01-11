@@ -606,5 +606,43 @@ class MultiDocValues extends DocValues {
     return new MultiSource(slices, starts, true, type);
   }
   
+  public static NumericDocValues simpleNormValues(final IndexReader r, final String field) throws IOException {
+    FieldInfo fi = MultiFields.getMergedFieldInfos(r).fieldInfo(field);
+    if (fi == null || fi.hasNorms() == false) {
+      return null;
+    }
+    final List<AtomicReaderContext> leaves = r.leaves();
+    boolean anyReal = false;
+    for(AtomicReaderContext ctx : leaves) {
+      NumericDocValues norms = ctx.reader().simpleNormValues(field);
+
+      if (norms == null) {
+        norms = NumericDocValues.EMPTY;
+      } else {
+        anyReal = true;
+      }
+    }
+    
+    assert anyReal; // nocommit: is this assert safe?
+
+    return new NumericDocValues() {
+      @Override
+      public long get(int docID) {
+        int subIndex = ReaderUtil.subIndex(docID, leaves);
+        NumericDocValues norms;
+        try {
+          norms = leaves.get(subIndex).reader().simpleNormValues(field);
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+        if (norms == null) { // WTF? should be EMPTY?
+          return 0;
+        } else {
+          return norms.get(docID - leaves.get(subIndex).docBase);
+        }
+      }
+    };
+  }
+  
   
 }

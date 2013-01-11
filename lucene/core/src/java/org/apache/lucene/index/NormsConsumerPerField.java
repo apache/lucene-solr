@@ -61,15 +61,7 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
       }
 
       long norm = similarity.computeSimpleNorm(fieldState);
-      if (norm != -1) {
-        // nocommit is -1 really a safe "not set" value!?
-        // nocommit shouldn't we require that it's either
-        // all -1's or none?  a sim can't not compute norms
-        // for only some docs?  hmm unless the field is
-        // missing for this doc... but then finish() isn't
-        // called?
-        simpleNormsWriter.addValue(docState.docID, norm);
-      }
+      simpleNormsWriter.addValue(docState.docID, norm);
     }
   }
   
