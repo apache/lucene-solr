@@ -18,15 +18,58 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.IndexReader.ReaderClosedListener;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.Version;
 
 public class MultiSimpleDocValues {
   
   // moved to src/java so SlowWrapper can use it... uggggggh
   public static NumericDocValues simpleNormValues(final IndexReader r, final String field) throws IOException {
-    return MultiDocValues.simpleNormValues(r, field);
+    final List<AtomicReaderContext> leaves = r.leaves();
+    if (leaves.size() == 1) {
+      return leaves.get(0).reader().simpleNormValues(field);
+    }
+    FieldInfo fi = MultiFields.getMergedFieldInfos(r).fieldInfo(field);
+    if (fi == null || fi.hasNorms() == false) {
+      return null;
+    }
+    boolean anyReal = false;
+    for(AtomicReaderContext ctx : leaves) {
+      NumericDocValues norms = ctx.reader().simpleNormValues(field);
+
+      if (norms != null) {
+        anyReal = true;
+      }
+    }
+    
+    // assert anyReal; // nocommit: unsafe until 4.0 is done
+
+    return new NumericDocValues() {
+      @Override
+      public long get(int docID) {
+        int subIndex = ReaderUtil.subIndex(docID, leaves);
+        NumericDocValues norms;
+        try {
+          norms = leaves.get(subIndex).reader().simpleNormValues(field);
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+        if (norms == null) { // WTF? should be EMPTY?
+          return 0;
+        } else {
+          return norms.get(docID - leaves.get(subIndex).docBase);
+        }
+      }
+    };
   }
 
   public static NumericDocValues simpleNumericValues(final IndexReader r, final String field) throws IOException {
@@ -103,6 +146,53 @@ public class MultiSimpleDocValues {
           }
         }
       };
+    }
+  }
+  
+  public static SortedDocValues simpleSortedValues(final IndexReader r, final String field) throws IOException {
+    final List<AtomicReaderContext> leaves = r.leaves();
+    if (leaves.size() == 1) {
+      return leaves.get(0).reader().getSortedDocValues(field);
+    }
+    boolean anyReal = false;
+
+    for(AtomicReaderContext ctx : leaves) {
+      SortedDocValues values = ctx.reader().getSortedDocValues(field);
+
+      if (values != null) {
+        anyReal = true;
+      }
+    }
+
+    if (!anyReal) {
+      return null;
+    } else {
+      // its called slow-wrapper for a reason right?
+      final Directory scratch = new RAMDirectory();
+      IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_50, null);
+      config.setCodec(Codec.forName("SimpleText"));
+      IndexWriter writer = new IndexWriter(scratch, config);
+      List<AtomicReader> newLeaves = new ArrayList<AtomicReader>();
+      for (AtomicReaderContext ctx : leaves) {
+        final AtomicReader a = ctx.reader();
+        newLeaves.add(new FilterAtomicReader(a) {
+          @Override
+          public Bits getLiveDocs() {
+            return null; // lie
+          }
+        });
+      }
+      writer.addIndexes(newLeaves.toArray(new AtomicReader[0]));
+      writer.close();
+      final IndexReader newR = DirectoryReader.open(scratch);
+      assert newR.leaves().size() == 1;
+      r.addReaderClosedListener(new ReaderClosedListener() {
+        @Override
+        public void onClose(IndexReader reader) {
+          IOUtils.closeWhileHandlingException(newR, scratch);
+        }
+      });
+      return newR.leaves().get(0).reader().getSortedDocValues(field);
     }
   }
 }

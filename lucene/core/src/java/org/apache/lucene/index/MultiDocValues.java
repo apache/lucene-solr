@@ -604,46 +604,5 @@ class MultiDocValues extends DocValues {
   @Override
   protected Source loadDirectSource() throws IOException {
     return new MultiSource(slices, starts, true, type);
-  }
-  
-  public static NumericDocValues simpleNormValues(final IndexReader r, final String field) throws IOException {
-    final List<AtomicReaderContext> leaves = r.leaves();
-    if (leaves.size() == 1) {
-      return leaves.get(0).reader().simpleNormValues(field);
-    }
-    FieldInfo fi = MultiFields.getMergedFieldInfos(r).fieldInfo(field);
-    if (fi == null || fi.hasNorms() == false) {
-      return null;
-    }
-    boolean anyReal = false;
-    for(AtomicReaderContext ctx : leaves) {
-      NumericDocValues norms = ctx.reader().simpleNormValues(field);
-
-      if (norms != null) {
-        anyReal = true;
-      }
-    }
-    
-    // assert anyReal; // nocommit: unsafe until 4.0 is done
-
-    return new NumericDocValues() {
-      @Override
-      public long get(int docID) {
-        int subIndex = ReaderUtil.subIndex(docID, leaves);
-        NumericDocValues norms;
-        try {
-          norms = leaves.get(subIndex).reader().simpleNormValues(field);
-        } catch (IOException ioe) {
-          throw new RuntimeException(ioe);
-        }
-        if (norms == null) { // WTF? should be EMPTY?
-          return 0;
-        } else {
-          return norms.get(docID - leaves.get(subIndex).docBase);
-        }
-      }
-    };
-  }
-  
-  
+  }  
 }
