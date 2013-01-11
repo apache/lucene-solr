@@ -25,7 +25,7 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
 /**
  * @lucene.experimental
  */
-public class AssociationUtils {
+public class CategoryAssociationsUtils {
 
   /**
    * Categories: categories[D][N] == category-path with association no. N for

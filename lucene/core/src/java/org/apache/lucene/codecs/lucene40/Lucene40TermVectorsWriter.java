@@ -124,17 +124,16 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
     if (payloads)
       bits |= Lucene40TermVectorsReader.STORE_PAYLOAD_WITH_TERMVECTOR;
     tvf.writeByte(bits);
-    
-    assert fieldCount <= numVectorFields;
-    if (fieldCount == numVectorFields) {
-      // last field of the document
-      // this is crazy because the file format is crazy!
-      for (int i = 1; i < fieldCount; i++) {
-        tvd.writeVLong(fps[i] - fps[i-1]);
-      }
-    }
   }
   
+  @Override
+  public void finishDocument() throws IOException {
+    assert fieldCount == numVectorFields;
+    for (int i = 1; i < fieldCount; i++) {
+      tvd.writeVLong(fps[i] - fps[i-1]);
+    }
+  }
+
   private final BytesRef lastTerm = new BytesRef(10);
 
   // NOTE: we override addProx, so we don't need to buffer when indexing.
@@ -222,20 +221,6 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
       }
       
       bufferedIndex++;
-      
-      // dump buffer if we are done
-      if (bufferedIndex == bufferedFreq) {
-        if (payloads) {
-          tvf.writeBytes(payloadData.bytes, payloadData.offset, payloadData.length);
-        }
-        for (int i = 0; i < bufferedIndex; i++) {
-          if (offsets) {
-            tvf.writeVInt(offsetStartBuffer[i] - lastOffset);
-            tvf.writeVInt(offsetEndBuffer[i] - offsetStartBuffer[i]);
-            lastOffset = offsetEndBuffer[i];
-          }
-        }
-      }
     } else if (positions) {
       // write position delta
       writePosition(position - lastPosition, payload);
@@ -248,6 +233,25 @@ public final class Lucene40TermVectorsWriter extends TermVectorsWriter {
     }
   }
   
+  @Override
+  public void finishTerm() throws IOException {
+    if (bufferedIndex > 0) {
+      // dump buffer
+      assert positions && (offsets || payloads);
+      assert bufferedIndex == bufferedFreq;
+      if (payloads) {
+        tvf.writeBytes(payloadData.bytes, payloadData.offset, payloadData.length);
+      }
+      for (int i = 0; i < bufferedIndex; i++) {
+        if (offsets) {
+          tvf.writeVInt(offsetStartBuffer[i] - lastOffset);
+          tvf.writeVInt(offsetEndBuffer[i] - offsetStartBuffer[i]);
+          lastOffset = offsetEndBuffer[i];
+        }
+      }
+    }
+  }
+
   private void writePosition(int delta, BytesRef payload) throws IOException {
     if (payloads) {
       int payloadLength = payload == null ? 0 : payload.length;

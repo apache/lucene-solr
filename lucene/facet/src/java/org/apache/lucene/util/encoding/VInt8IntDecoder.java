@@ -1,6 +1,7 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,33 +21,19 @@ import java.io.IOException;
  */
 
 /**
- * An {@link IntDecoder} which can decode values encoded by
- * {@link VInt8IntEncoder}.
+ * Decodes values encoded by {@link VInt8IntEncoder}.
  * 
  * @lucene.experimental
  */
 public class VInt8IntDecoder extends IntDecoder {
 
-  private boolean legalEOS = true;
-
   @Override
-  public long decode() throws IOException {
-    int value = 0;
-    while (true) {
-      int first = in.read();
-      if (first < 0) {
-        if (!legalEOS) {
-          throw new IOException("Unexpected End-Of-Stream");
-        }
-        return EOS;
+  protected void doDecode(BytesRef buf, IntsRef values, int upto) {
+    while (buf.offset < upto) {
+      if (values.length == values.ints.length) {
+        values.grow(values.length + 10); // grow by few items, however not too many
       }
-      value |= first & 0x7F;
-      if ((first & 0x80) == 0) {
-        legalEOS = true;
-        return value;
-      }
-      legalEOS = false;
-      value <<= 7;
+      values.ints[values.length++] = VInt8.decode(buf);
     }
   }
 

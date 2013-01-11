@@ -2,6 +2,7 @@ package org.apache.lucene.facet.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -21,6 +22,7 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -69,7 +71,7 @@ public class FacetFields {
       return true;
     }
     
-    void setCategoriesData(HashMap<String,BytesRef> categoriesData) {
+    void setCategoriesData(Map<String,BytesRef> categoriesData) {
       this.categoriesData = categoriesData.entrySet().iterator();
     }
     
@@ -132,6 +134,9 @@ public class FacetFields {
    */
   protected Map<CategoryListParams,Iterable<CategoryPath>> createCategoryListMapping(
       Iterable<CategoryPath> categories) {
+    if (indexingParams.getAllCategoryListParams().size() == 1) {
+      return Collections.singletonMap(indexingParams.getCategoryListParams(null), categories);
+    }
     HashMap<CategoryListParams,Iterable<CategoryPath>> categoryLists = 
         new HashMap<CategoryListParams,Iterable<CategoryPath>>();
     for (CategoryPath cp : categories) {
@@ -147,10 +152,15 @@ public class FacetFields {
     return categoryLists;
   }
   
-  /** Returns a {@link CategoryListBuilder} for encoding the given categories. */
-  protected CategoryListBuilder getCategoryListBuilder(CategoryListParams categoryListParams, 
-      Iterable<CategoryPath> categories /* needed for AssociationsFacetFields */) {
-    return new CategoryListBuilder(categoryListParams, indexingParams, taxonomyWriter);
+  /**
+   * Returns the category list data, as a mapping from key to {@link BytesRef}
+   * which includes the encoded data. Every ordinal in {@code ordinals}
+   * corrspond to a {@link CategoryPath} returned from {@code categories}.
+   */
+  protected Map<String,BytesRef> getCategoryListData(CategoryListParams categoryListParams, 
+      IntsRef ordinals, Iterable<CategoryPath> categories /* needed for AssociationsFacetFields */) 
+      throws IOException {
+    return new CountingListBuilder(categoryListParams, indexingParams, taxonomyWriter).build(ordinals, categories);
   }
   
   /**
@@ -185,17 +195,25 @@ public class FacetFields {
 
     // for each CLP we add a different field for drill-down terms as well as for
     // counting list data.
+    IntsRef ordinals = new IntsRef(32); // should be enough for most common applications
     for (Entry<CategoryListParams, Iterable<CategoryPath>> e : categoryLists.entrySet()) {
       final CategoryListParams clp = e.getKey();
       final String field = clp.getTerm().field();
 
-      // add the counting list data
-      CategoryListBuilder categoriesPayloadBuilder = getCategoryListBuilder(clp, e.getValue());
+      // build category list data
+      ordinals.length = 0; // reset
+      int maxNumOrds = 0;
       for (CategoryPath cp : e.getValue()) {
         int ordinal = taxonomyWriter.addCategory(cp);
-        categoriesPayloadBuilder.handle(ordinal , cp);
+        maxNumOrds += cp.length; // ordinal and potentially all parents
+        if (ordinals.ints.length < maxNumOrds) {
+          ordinals.grow(maxNumOrds);
+        }
+        ordinals.ints[ordinals.length++] = ordinal;
       }
-      HashMap<String,BytesRef> categoriesData = categoriesPayloadBuilder.finish();
+      Map<String,BytesRef> categoriesData = getCategoryListData(clp, ordinals, e.getValue());
+      
+      // add the counting list data
       CountingListStream ts = new CountingListStream();
       ts.setCategoriesData(categoriesData);
       doc.add(new Field(field, ts, COUNTING_LIST_PAYLOAD_TYPE));

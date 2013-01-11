@@ -10,6 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.IntsRef;
 
 import org.apache.lucene.facet.search.aggregator.Aggregator;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
@@ -231,9 +232,9 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
       facetArrays.free(); // to get a cleared array for this partition
     }
 
-    HashMap<CategoryListIterator, Aggregator> categoryLists = getCategoryListMap(
-        facetArrays, partition);
+    HashMap<CategoryListIterator, Aggregator> categoryLists = getCategoryListMap(facetArrays, partition);
 
+    IntsRef ordinals = new IntsRef(32); // a reasonable start capacity for most common apps
     for (Entry<CategoryListIterator, Aggregator> entry : categoryLists.entrySet()) {
       CategoryListIterator categoryList = entry.getKey();
       if (!categoryList.init()) {
@@ -244,14 +245,11 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
       ScoredDocIDsIterator iterator = docids.iterator();
       while (iterator.next()) {
         int docID = iterator.getDocID();
-        if (!categoryList.skipTo(docID)) {
+        categoryList.getOrdinals(docID, ordinals);
+        if (ordinals.length == 0) {
           continue;
         }
-        categorator.setNextDoc(docID, iterator.getScore());
-        long ordinal;
-        while ((ordinal = categoryList.nextCategory()) <= Integer.MAX_VALUE) {
-          categorator.aggregate((int) ordinal);
-        }
+        categorator.aggregate(docID, iterator.getScore(), ordinals);
       }
     }
   }

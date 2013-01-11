@@ -1,5 +1,9 @@
 package org.apache.lucene.facet.search.aggregator;
 
+import java.io.IOException;
+
+import org.apache.lucene.util.IntsRef;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,7 +30,6 @@ package org.apache.lucene.facet.search.aggregator;
 public class ScoringAggregator implements Aggregator {
 
   private final float[] scoreArray;
-  private float score;
   private final int hashCode;
   
   public ScoringAggregator(float[] counterArray) {
@@ -35,10 +38,12 @@ public class ScoringAggregator implements Aggregator {
   }
 
   @Override
-  public void aggregate(int ordinal) {
-    scoreArray[ordinal] += score;
+  public void aggregate(int docID, float score, IntsRef ordinals) throws IOException {
+    for (int i = 0; i < ordinals.length; i++) {
+      scoreArray[ordinals.ints[i]] += score;
+    }
   }
-
+  
   @Override
   public boolean equals(Object obj) {
     if (obj == null || obj.getClass() != this.getClass()) {
@@ -53,8 +58,4 @@ public class ScoringAggregator implements Aggregator {
     return hashCode;
   }
 
-  @Override
-  public void setNextDoc(int docid, float score) {
-    this.score = score;
-  }
 }

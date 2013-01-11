@@ -20,9 +20,13 @@ package org.apache.solr.servlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -32,20 +36,20 @@ import java.util.Locale;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.BoundedInputStream;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -71,7 +75,7 @@ public class SolrRequestParsers
   
   /** Default instance for e.g. admin requests. Limits to 2 MB uploads and does not allow remote streams. */
   public static final SolrRequestParsers DEFAULT = new SolrRequestParsers();
-
+  
   /**
    * Pass in an xml configuration.  A null configuration will enable
    * everything with maximum values.
@@ -197,37 +201,140 @@ public class SolrRequestParsers
    */
   public static MultiMapSolrParams parseQueryString(String queryString) {
     Map<String,String[]> map = new HashMap<String, String[]>();
-    parseQueryString(queryString, "UTF-8", map);
+    parseQueryString(queryString, map);
     return new MultiMapSolrParams(map);
   }
 
   /**
-   * Given a url-encoded query string, map it into the given map
+   * Given a url-encoded query string (UTF-8), map it into the given map
    * @param queryString as given from URL
-   * @param charset to be used to decode %-encoding
    * @param map place all parameters in this map
    */
-  static void parseQueryString(String queryString, String charset, Map<String,String[]> map) {
-    if( queryString != null && queryString.length() > 0 ) {
+  static void parseQueryString(final String queryString, final Map<String,String[]> map) {
+    if (queryString != null && queryString.length() > 0) {
       try {
-        for( String kv : queryString.split( "&" ) ) {
-          int idx = kv.indexOf( '=' );
-          if( idx >= 0 ) {
-            String name = URLDecoder.decode( kv.substring( 0, idx ), charset);
-            String value = URLDecoder.decode( kv.substring( idx+1 ), charset);
-            MultiMapSolrParams.addParam( name, value, map );
-          } else {
-            String name = URLDecoder.decode( kv, charset );
-            MultiMapSolrParams.addParam( name, "", map );
+        final int len = queryString.length();
+        // this input stream emulates to get the raw bytes from the URL as passed to servlet container, it disallows any byte > 127 and enforces to %-escape them:
+        final InputStream in = new InputStream() {
+          int pos = 0;
+          @Override
+          public int read() {
+            if (pos < len) {
+              final char ch = queryString.charAt(pos);
+              if (ch > 127) {
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "URLDecoder: The query string contains a not-%-escaped byte > 127 at position " + pos);
+              }
+              pos++;
+              return ch;
+            } else {
+              return -1;
+            }
           }
-        }
-      }
-      catch( UnsupportedEncodingException uex ) {
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, uex );
+        };
+        parseFormDataContent(in, Long.MAX_VALUE, IOUtils.CHARSET_UTF_8, map);
+      } catch (IOException ioe) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ioe);
       }
     }
   }
-
+  
+  /**
+   * Given a url-encoded form from POST content (as InputStream), map it into the given map.
+   * The given InputStream should be buffered!
+   * @param postContent to be parsed
+   * @param charset to be used to decode resulting bytes after %-decoding
+   * @param map place all parameters in this map
+   */
+  @SuppressWarnings("fallthrough")
+  static long parseFormDataContent(final InputStream postContent, final long maxLen, final Charset charset, final Map<String,String[]> map) throws IOException {
+    final CharsetDecoder charsetDecoder = charset.newDecoder()
+      .onMalformedInput(CodingErrorAction.REPORT)
+      .onUnmappableCharacter(CodingErrorAction.REPORT);
+    long len = 0L, keyPos = 0L, valuePos = 0L;
+    final ByteArrayOutputStream2 keyStream = new ByteArrayOutputStream2(),
+      valueStream = new ByteArrayOutputStream2();
+    ByteArrayOutputStream2 currentStream = keyStream;
+    for(;;) {
+      int b = postContent.read();
+      switch (b) {
+        case -1: // end of stream
+        case '&': // separator
+          if (keyStream.size() > 0) {
+            final String key = decodeChars(keyStream, keyPos, charsetDecoder), value = decodeChars(valueStream, valuePos, charsetDecoder);
+            MultiMapSolrParams.addParam(key, value, map);
+          } else if (valueStream.size() > 0) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded invalid: missing key");
+          }
+          keyStream.reset();
+          valueStream.reset();
+          keyPos = valuePos = len + 1;
+          currentStream = keyStream;
+          break;
+        case '+': // space replacement
+          currentStream.write(' ');
+          break;
+        case '%': // escape
+          final int upper = digit16(b = postContent.read());
+          len++;
+          final int lower = digit16(b = postContent.read());
+          len++;
+          currentStream.write(((upper << 4) + lower));
+          break;
+        case '=': // kv separator
+          if (currentStream == keyStream) {
+            valuePos = len + 1;
+            currentStream = valueStream;
+            break;
+          }
+          // fall-through
+        default:
+          currentStream.write(b);
+      }
+      if (b == -1) {
+        break;
+      }
+      len++;
+      if (len > maxLen) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded content exceeds upload limit of " + (maxLen/1024L) + " KB");
+      }
+    }
+    return len;
+  }
+  
+  private static String decodeChars(ByteArrayOutputStream2 stream, long position, CharsetDecoder charsetDecoder) {
+    try {
+      return charsetDecoder.decode(ByteBuffer.wrap(stream.buffer(), 0, stream.size())).toString();
+    } catch (CharacterCodingException cce) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        "URLDecoder: Invalid character encoding detected after position " + position +
+        " of query string / form data (while parsing as " + charsetDecoder.charset().name() + ")"
+      );
+    }
+  }
+  
+  /** Makes the buffer of ByteArrayOutputStream available without copy. */
+  static final class ByteArrayOutputStream2 extends ByteArrayOutputStream {
+    byte[] buffer() {
+      return buf;
+    }
+  }
+  
+  private static int digit16(int b) {
+    if (b == -1) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "URLDecoder: Incomplete trailing escape (%) pattern");
+    }
+    if (b >= '0' && b <= '9') {
+      return b - '0';
+    }
+    if (b >= 'A' && b <= 'F') {
+      return b - ('A' - 10);
+    }
+    if (b >= 'a' && b <= 'f') {
+      return b - ('a' - 10);
+    }
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "URLDecoder: Invalid digit (" + ((char) b) + ") in escape (%) pattern");
+  }
+  
   public boolean isHandleSelect() {
     return handleSelect;
   }
@@ -404,15 +511,12 @@ class FormDataRequestParser implements SolrRequestParser
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Not application/x-www-form-urlencoded content: "+req.getContentType() );
     }
     
-    String charset = ContentStreamBase.getCharsetFromContentType(req.getContentType());
-    if (charset == null) charset = "UTF-8";
-    
     final Map<String,String[]> map = new HashMap<String, String[]>();
     
     // also add possible URL parameters and include into the map (parsed using UTF-8):
     final String qs = req.getQueryString();
     if (qs != null) {
-      SolrRequestParsers.parseQueryString(qs, "UTF-8", map);
+      SolrRequestParsers.parseQueryString(qs, map);
     }
     
     // may be -1, so we check again later. But if its already greater we can stop processing!
@@ -424,26 +528,21 @@ class FormDataRequestParser implements SolrRequestParser
     }
     
     // get query String from request body, using the charset given in content-type:
-    final InputStream in;
+    final String cs = ContentStreamBase.getCharsetFromContentType(req.getContentType());
+    final Charset charset = (cs == null) ? IOUtils.CHARSET_UTF_8 : Charset.forName(cs);
+    InputStream in = null;
     try {
       in = req.getInputStream();
-    } catch (IllegalStateException ise) {
-      throw (SolrException) getParameterIncompatibilityException().initCause(ise);
-    }
-    try {
-      final String data = IOUtils.toString(new BoundedInputStream(in, maxLength), charset);
-      // if there is remaining data in the underlying stream, throw exception:
-      if (in.read() != -1) {
-        // read remaining data and throw away:
-        while (IOUtils.skip(in, 1024L) > 0);
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "application/x-www-form-urlencoded content exceeds upload limit of " + uploadLimitKB + " KB");
-      }
-      if (data.length() == 0 && totalLength > 0L) {
+      final long bytesRead = SolrRequestParsers.parseFormDataContent(FastInputStream.wrap(in), maxLength, charset, map);
+      if (bytesRead == 0L && totalLength > 0L) {
         throw getParameterIncompatibilityException();
       }
-      SolrRequestParsers.parseQueryString(data, charset, map);
+    } catch (IOException ioe) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ioe);
+    } catch (IllegalStateException ise) {
+      throw (SolrException) getParameterIncompatibilityException().initCause(ise);
     } finally {
-      IOUtils.closeQuietly(in);
+      IOUtils.closeWhileHandlingException(in);
     }
     
     return new MultiMapSolrParams(map);

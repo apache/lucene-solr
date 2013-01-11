@@ -42,7 +42,7 @@ var generate_bar = function( bar_container, bar_data, convert_label_values )
   if( bar_data['used'] )
   {
     bar_level++;
-    $( '.bar-used.bar', bar_holder ).width( new String( (bar_data['used']/bar_data['max'])*100 ) + '%' );
+    $( '.bar-used.bar', bar_holder ).width( new String( (bar_data['used']/bar_data['total'])*100 ) + '%' );
     $( '.bar-used.val', bar_holder ).text( bar_data['used'] );
   }
 

@@ -31,12 +31,6 @@ public class IntAssociationsPayloadIterator extends AssociationsPayloadIterator<
 
   private final IntToIntMap ordinalAssociations = new IntToIntMap();
 
-  /**
-   * The long-special-value returned for ordinals which have no associated int
-   * value. It is not in the int range of values making it a valid mark.
-   */
-  public final static long NO_ASSOCIATION = Integer.MAX_VALUE + 1;
-
   public IntAssociationsPayloadIterator(IndexReader reader, String field, CategoryIntAssociation association) 
       throws IOException {
     super(reader, field, association);
@@ -47,22 +41,16 @@ public class IntAssociationsPayloadIterator extends AssociationsPayloadIterator<
     ordinalAssociations.put(ordinal, association.getValue());
   }
   
-  @Override
-  public boolean setNextDoc(int docId) throws IOException {
-    ordinalAssociations.clear();
-    return super.setNextDoc(docId);
-  }
-
   /**
-   * Get the integer association value for the given ordinal, or
-   * {@link #NO_ASSOCIATION} in case the ordinal has no association value.
+   * Returns the integer association values of the categories that are
+   * associated with the given document, or {@code null} if the document has no
+   * associations.
+   * <p>
+   * <b>NOTE:</b> you are not expected to modify the returned map.
    */
-  public long getAssociation(int ordinal) {
-    if (ordinalAssociations.containsKey(ordinal)) {
-      return ordinalAssociations.get(ordinal);
-    }
-
-    return NO_ASSOCIATION;
+  public IntToIntMap getAssociations(int docID) throws IOException {
+    ordinalAssociations.clear();
+    return setNextDoc(docID) ? ordinalAssociations : null;
   }
 
 }

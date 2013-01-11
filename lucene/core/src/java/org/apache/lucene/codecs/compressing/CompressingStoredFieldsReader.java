@@ -395,8 +395,10 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
      * Copy compressed data.
      */
     void copyCompressedData(DataOutput out) throws IOException {
-      final int chunkSize = chunkSize();
-      decompressor.copyCompressedData(fieldsStream, chunkSize, out);
+      final long chunkEnd = docBase + chunkDocs == numDocs
+          ? fieldsStream.length()
+          : indexReader.getStartPointer(docBase + chunkDocs);
+      out.copyBytes(fieldsStream, chunkEnd - fieldsStream.getFilePointer());
     }
 
   }

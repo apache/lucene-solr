@@ -2,6 +2,8 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.IntsRef;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,20 +22,10 @@ import java.io.IOException;
  */
 
 /**
- * An interface for iterating over a "category list", i.e., the list of
- * categories per document.
+ * An interface for obtaining the category ordinals of documents.
  * <p>
- * <b>NOTE:</b>
- * <ul>
- * <li>This class operates as a key to a Map. Appropriate implementation of
- * <code>hashCode()</code> and <code>equals()</code> must be provided.
- * <li>{@link #init()} must be called before you consume any categories, or call
- * {@link #skipTo(int)}.
- * <li>{@link #skipTo(int)} must be called before any calls to
- * {@link #nextCategory()}.
- * <li>{@link #nextCategory()} returns values &lt; {@link Integer#MAX_VALUE}, so
- * you can use it as a stop condition.
- * </ul>
+ * <b>NOTE:</b> this class operates as a key to a map, and therefore you should
+ * implement {@code equals()} and {@code hashCode()} for proper behavior.
  * 
  * @lucene.experimental
  */
@@ -41,29 +33,20 @@ public interface CategoryListIterator {
 
   /**
    * Initializes the iterator. This method must be called before any calls to
-   * {@link #skipTo(int)}, and its return value indicates whether there are
-   * any relevant documents for this iterator. If it returns false, any call
-   * to {@link #skipTo(int)} will return false as well.<br>
-   * <b>NOTE:</b> calling this method twice may result in skipping over
-   * documents for some implementations. Also, calling it again after all
-   * documents were consumed may yield unexpected behavior.
+   * {@link #getOrdinals(int, IntsRef)}, and its return value indicates whether there are
+   * any relevant documents for this iterator.
    */
   public boolean init() throws IOException;
 
   /**
-   * Skips forward to document docId. Returns true iff this document exists
-   * and has any categories. This method must be called before calling
-   * {@link #nextCategory()} for a particular document.<br>
-   * <b>NOTE:</b> Users should call this method with increasing docIds, and
-   * implementations can assume that this is the case.
+   * Stores the category ordinals of the given document ID in the given
+   * {@link IntsRef}, starting at position 0 upto {@link IntsRef#length}. Grows
+   * the {@link IntsRef} if it is not large enough.
+   * 
+   * <p>
+   * <b>NOTE:</b> if the requested document does not category ordinals
+   * associated with it, {@link IntsRef#length} is set to zero.
    */
-  public boolean skipTo(int docId) throws IOException;
-
-  /**
-   * Returns the next category for the current document that is set through
-   * {@link #skipTo(int)}, or a number higher than {@link Integer#MAX_VALUE}.
-   * No assumptions can be made on the order of the categories.
-   */
-  public long nextCategory() throws IOException;
-
+  public void getOrdinals(int docID, IntsRef ints) throws IOException;
+  
 }

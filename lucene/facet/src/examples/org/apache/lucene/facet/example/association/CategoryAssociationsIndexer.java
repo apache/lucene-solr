@@ -39,7 +39,7 @@ import org.apache.lucene.store.Directory;
  * 
  * @lucene.experimental
  */
-public class AssociationIndexer {
+public class CategoryAssociationsIndexer {
 
   /**
    * Create an index, and adds to it sample documents and categories.
@@ -75,13 +75,11 @@ public class AssociationIndexer {
         ++nFacetsAdded;
       }
       // and also those with associations
-      CategoryPath[] associationsPaths = AssociationUtils.categories[docNum];
-      CategoryAssociation[] associationsValues = AssociationUtils.associations[docNum];
+      CategoryPath[] associationsPaths = CategoryAssociationsUtils.categories[docNum];
+      CategoryAssociation[] associationsValues = CategoryAssociationsUtils.associations[docNum];
       for (int i = 0; i < associationsPaths.length; i++) {
         associations.setAssociation(associationsPaths[i], associationsValues[i]);
-        ExampleUtils.log("\t $$$$ Association: ("
-            + associationsPaths[i] + "," + associationsValues[i]
-            + ")");
+        ExampleUtils.log("\t $$$$ Association: (" + associationsPaths[i] + "," + associationsValues[i] + ")");
         ++nFacetsAdded;
       }
 

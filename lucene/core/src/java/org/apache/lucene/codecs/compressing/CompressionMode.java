@@ -141,14 +141,6 @@ public abstract class CompressionMode {
     }
 
     @Override
-    public void copyCompressedData(DataInput in, int originalLength, DataOutput out) throws IOException {
-      final int copied = LZ4.copyCompressedData(in, originalLength, out);
-      if (copied != originalLength) {
-        throw new CorruptIndexException("Currupted compressed stream: expected " + originalLength + " bytes, but got at least" + copied);
-      }
-    }
-
-    @Override
     public Decompressor clone() {
       return this;
     }
@@ -222,13 +214,6 @@ public abstract class CompressionMode {
       }
       bytes.offset = offset;
       bytes.length = length;
-    }
-
-    @Override
-    public void copyCompressedData(DataInput in, int originalLength, DataOutput out) throws IOException {
-      final int compressedLength = in.readVInt();
-      out.writeVInt(compressedLength);
-      out.copyBytes(in, compressedLength);
     }
 
     @Override

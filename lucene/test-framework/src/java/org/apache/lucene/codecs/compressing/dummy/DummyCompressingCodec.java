@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.compressing;
+package org.apache.lucene.codecs.compressing.dummy;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,12 +19,18 @@ package org.apache.lucene.codecs.compressing;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.compressing.CompressingCodec;
+import org.apache.lucene.codecs.compressing.CompressionMode;
+import org.apache.lucene.codecs.compressing.Compressor;
+import org.apache.lucene.codecs.compressing.Decompressor;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
 /** CompressionCodec that does not compress data, useful for testing. */
+// In its own package to make sure the oal.codecs.compressing classes are
+// visible enough to let people write their own CompressionMode
 public class DummyCompressingCodec extends CompressingCodec {
 
   public static final CompressionMode DUMMY = new CompressionMode() {
@@ -58,11 +64,6 @@ public class DummyCompressingCodec extends CompressingCodec {
       in.readBytes(bytes.bytes, 0, offset + length);
       bytes.offset = offset;
       bytes.length = length;
-    }
-
-    @Override
-    public void copyCompressedData(DataInput in, int originalLength, DataOutput out) throws IOException {
-      out.copyBytes(in, originalLength);
     }
 
     @Override

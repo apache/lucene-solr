@@ -106,7 +106,15 @@ Changes in backwards compatibility policy
 
 * LUCENE-4659: Massive cleanup to CategoryPath API. Additionally, CategoryPath is 
   now immutable, so you don't need to clone() it. (Shai Erera)
-  
+
+* LUCENE-4670: StoredFieldsWriter and TermVectorsWriter have new finish* callbacks
+  which are called after a doc/field/term has been completely added.
+  (Adrien Grand, Robert Muir)
+
+* LUCENE-4620: IntEncoder/Decoder were changed to do bulk encoding/decoding. As a
+  result, few other classes such as Aggregator and CategoryListIterator were
+  changed to handle bulk category ordinals. (Shai Erera)
+
 New Features
 
 * LUCENE-4226: New experimental StoredFieldsFormat that compresses chunks of
@@ -324,6 +332,8 @@ Bug Fixes
 
 * LUCENE-4662: Add missing elided articles and prepositions to FrenchAnalyzer's
   DEFAULT_ARTICLES list passed to ElisionFilter.  (David Leunen via Steve Rowe)
+
+* LUCENE-4671: Fix CharsRef.subSequence method.  (Tim Smith via Robert Muir)
     
 Changes in Runtime Behavior
   

@@ -82,11 +82,7 @@ var sammy = $.sammy
       {},
       function( context )
       {
-        if( app.timeout )
-        {
-          console.debug( 'Clearing Timeout #' + app.timeout );
-          clearTimeout( app.timeout );
-        }
+        app.clear_timeout();
 
         var menu_wrapper = $( '#menu-wrapper' );
 
@@ -131,7 +127,7 @@ var sammy = $.sammy
 
 var solr_admin = function( app_config )
 {
-  self = this,
+  that = this,
 
   menu_element = null,
 
@@ -196,13 +192,13 @@ var solr_admin = function( app_config )
 
   this.set_cores_data = function set_cores_data( cores )
   {
-    self.cores_data = sort_cores_data( cores.status );
+    that.cores_data = sort_cores_data( cores.status );
     
-    self.menu_element
+    that.menu_element
       .empty();
 
     var core_count = 0;
-    for( var core_name in self.cores_data )
+    for( var core_name in that.cores_data )
     {
       core_count++;
       var core_path = config.solr_path + '/' + core_name;
@@ -240,7 +236,7 @@ var solr_admin = function( app_config )
                    + '    </ul>' + "\n"
                    + '</li>';
 
-      self.menu_element
+      that.menu_element
         .append( core_tpl );
     }
 
@@ -290,7 +286,7 @@ var solr_admin = function( app_config )
         },
         success : function( response )
         {
-          self.set_cores_data( response );
+          that.set_cores_data( response );
 
           for( var core_name in response.status )
           {
@@ -312,7 +308,7 @@ var solr_admin = function( app_config )
               },
               success : function( response )
               {
-                self.dashboard_values = response;
+                that.dashboard_values = response;
 
                 var environment_args = null;
                 var cloud_args = null;
@@ -399,7 +395,78 @@ var solr_admin = function( app_config )
         }
       }
     );
-  }
+  };
+
+  this.convert_duration_to_seconds = function convert_duration_to_seconds( str )
+  {
+    var seconds = 0;
+    var arr = new String( str || '' ).split( '.' );
+    var parts = arr[0].split( ':' ).reverse();
+    var parts_count = parts.length;
+
+    for( var i = 0; i < parts_count; i++ )
+    {
+      seconds += ( parseInt( parts[i], 10 ) || 0 ) * Math.pow( 60, i );
+    }
+
+    // treat more or equal than .5 as additional second
+    if( arr[1] && 5 <= parseInt( arr[1][0], 10 ) )
+    {
+      seconds++;
+    }
+
+    return seconds;
+  };
+
+  this.convert_seconds_to_readable_time = function convert_seconds_to_readable_time( seconds )
+  {
+    seconds = parseInt( seconds || 0, 10 );
+    var minutes = Math.floor( seconds / 60 );
+    var hours = Math.floor( minutes / 60 );
+
+    var text = [];
+    if( 0 !== hours )
+    {
+      text.push( hours + 'h' );
+      seconds -= hours * 60 * 60;
+      minutes -= hours * 60;
+    }
+
+    if( 0 !== minutes )
+    {
+      text.push( minutes + 'm' );
+      seconds -= minutes * 60;
+    }
+
+    if( 0 !== seconds )
+    {
+      text.push( ( '0' + seconds ).substr( -2 ) + 's' );
+    }
+
+    return text.join( ' ' );
+  };
+
+  this.clear_timeout = function clear_timeout()
+  {
+    if( !app.timeout )
+    {
+      return false;
+    }
+
+    console.debug( 'Clearing Timeout #' + this.timeout );
+    clearTimeout( this.timeout );
+    this.timeout = null;
+  };
+
+  this.format_json = function format_json( json_str )
+  {
+    if( JSON.stringify && JSON.parse )
+    {
+      json_str = JSON.stringify( JSON.parse( json_str ), undefined, 2 );
+    }
+
+    return json_str;
+  };
 
 };
 

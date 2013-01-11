@@ -7,6 +7,8 @@ import org.apache.lucene.facet.associations.IntAssociationsPayloadIterator;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.collections.IntToIntMap;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -48,13 +50,18 @@ public class AssociationIntSumAggregator implements Aggregator {
   }
 
   @Override
-  public void aggregate(int ordinal) {
-    long association = associations.getAssociation(ordinal);
-    if (association != IntAssociationsPayloadIterator.NO_ASSOCIATION) {
-      sumArray[ordinal] += association;
+  public void aggregate(int docID, float score, IntsRef ordinals) throws IOException {
+    IntToIntMap values = associations.getAssociations(docID);
+    if (values != null) {
+      for (int i = 0; i < ordinals.length; i++) {
+        int ord = ordinals.ints[i];
+        if (values.containsKey(ord)) {
+          sumArray[ord] += values.get(ord);
+        }
+      }
     }
   }
-
+  
   @Override
   public boolean equals(Object obj) {
     if (obj == null || obj.getClass() != this.getClass()) {
@@ -69,9 +76,4 @@ public class AssociationIntSumAggregator implements Aggregator {
     return field.hashCode();
   }
 
-  @Override
-  public void setNextDoc(int docid, float score) throws IOException {
-    associations.setNextDoc(docid);
-  }
-  
 }

@@ -1,8 +1,9 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Arrays;
+
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,17 +24,11 @@ import java.util.Arrays;
 
 /**
  * An {@link IntEncoderFilter} which sorts the values to encode in ascending
- * order before encoding them. Encoding therefore happens upon calling
- * {@link #close()}. Since this encoder is usually chained with another encoder
- * that relies on sorted values, it does not offer a default constructor.
+ * order before encoding them.
  * 
  * @lucene.experimental
  */
 public class SortingIntEncoder extends IntEncoderFilter {
-
-  private float grow = 2.0f;
-  private int index = 0;
-  private int[] set = new int[1024];
 
   /** Initializes with the given encoder. */
   public SortingIntEncoder(IntEncoder encoder) {
@@ -41,29 +36,9 @@ public class SortingIntEncoder extends IntEncoderFilter {
   }
 
   @Override
-  public void close() throws IOException {
-    if (index == 0) {
-      return;
-    }
-
-    Arrays.sort(set, 0, index);
-    for (int i = 0; i < index; i++) {
-      encoder.encode(set[i]);
-    }
-    encoder.close();
-    index = 0;
-
-    super.close();
-  }
-
-  @Override
-  public void encode(int value) throws IOException {
-    if (index == set.length) {
-      int[] newSet = new int[(int) (set.length * grow)];
-      System.arraycopy(set, 0, newSet, 0, set.length);
-      set = newSet;
-    }
-    set[index++] = value;
+  protected void doEncode(IntsRef values, BytesRef buf, int upto) {
+    Arrays.sort(values.ints, values.offset, upto);
+    encoder.doEncode(values, buf, upto);
   }
 
   @Override
@@ -71,12 +46,6 @@ public class SortingIntEncoder extends IntEncoderFilter {
     return encoder.createMatchingDecoder();
   }
   
-  @Override
-  public void reInit(OutputStream out) {
-    super.reInit(out);
-    index = 0;
-  }
-
   @Override
   public String toString() {
     return "Sorting (" + encoder.toString() + ")";

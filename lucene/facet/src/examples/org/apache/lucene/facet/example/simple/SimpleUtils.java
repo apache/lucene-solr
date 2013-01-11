@@ -1,11 +1,7 @@
 package org.apache.lucene.facet.example.simple;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-
 import org.apache.lucene.facet.example.ExampleUtils;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 

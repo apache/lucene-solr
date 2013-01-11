@@ -90,7 +90,9 @@ public class DrillDownTest extends LuceneTestCase {
         paths.add(new CategoryPath("b"));
       }
       FacetFields facetFields = new FacetFields(taxoWriter);
-      facetFields.addFields(doc, paths);
+      if (paths.size() > 0) {
+        facetFields.addFields(doc, paths);
+      }
       writer.addDocument(doc);
     }
     

@@ -1,7 +1,7 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,7 +22,7 @@ import java.io.OutputStream;
 
 /**
  * An {@link IntEncoderFilter} which ensures only unique values are encoded. The
- * implementation assumes the values given to {@link #encode(int)} are sorted.
+ * implementation assumes the values given to {@link #encode(IntsRef, BytesRef)} are sorted.
  * If this is not the case, you can chain this encoder with
  * {@link SortingIntEncoder}.
  * 
@@ -30,26 +30,23 @@ import java.io.OutputStream;
  */
 public final class UniqueValuesIntEncoder extends IntEncoderFilter {
 
-  /**
-   * Denotes an illegal value which we can use to init 'prev' to. Since all
-   * encoded values are integers, this value is init to MAX_INT+1 and is of type
-   * long. Therefore we are guaranteed not to get this value in encode.
-   */
-  private static final long ILLEGAL_VALUE = Integer.MAX_VALUE + 1;
-
-  private long prev = ILLEGAL_VALUE;
-  
   /** Constructs a new instance with the given encoder. */
   public UniqueValuesIntEncoder(IntEncoder encoder) {
     super(encoder);
   }
 
   @Override
-  public void encode(int value) throws IOException {
-    if (prev != value) {
-      encoder.encode(value);
-      prev = value;
+  protected void doEncode(IntsRef values, BytesRef buf, int upto) {
+    int prev = values.ints[values.offset];
+    int idx = values.offset + 1;
+    for (int i = idx; i < upto; i++) {
+      if (values.ints[i] != prev) {
+        values.ints[idx++] = values.ints[i];
+        prev = values.ints[i];
+      }
     }
+    values.length = idx - values.offset;
+    encoder.doEncode(values, buf, idx);
   }
 
   @Override
@@ -57,12 +54,6 @@ public final class UniqueValuesIntEncoder extends IntEncoderFilter {
     return encoder.createMatchingDecoder();
   }
   
-  @Override
-  public void reInit(OutputStream out) {
-    super.reInit(out);
-    prev = ILLEGAL_VALUE;
-  }
-
   @Override
   public String toString() {
     return "Unique (" + encoder.toString() + ")";

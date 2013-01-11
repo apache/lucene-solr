@@ -42,12 +42,16 @@ public class ZKPropertiesWriter extends SimplePropertiesWriter {
   
   @Override
   public void init(DataImporter dataImporter, Map<String, String> params) {
-    super.init(dataImporter, params);
+    super.init(dataImporter, params);    
+    zkClient = dataImporter.getCore().getCoreDescriptor().getCoreContainer()
+        .getZkController().getZkClient();
+  }
+  
+  @Override
+  protected void findDirectory(DataImporter dataImporter, Map<String, String> params) {
     String collection = dataImporter.getCore().getCoreDescriptor()
         .getCloudDescriptor().getCollectionName();
     path = "/configs/" + collection + "/" + filename;
-    zkClient = dataImporter.getCore().getCoreDescriptor().getCoreContainer()
-        .getZkController().getZkClient();
   }
   
   @Override

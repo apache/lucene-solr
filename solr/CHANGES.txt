@@ -195,12 +195,14 @@ New Features
   that can be set to false to not filter. Its useful when there is already a spatial
   filter query but you also need to sort or boost by distance. (David Smiley)
 
-* SOLR-4265: Solr now parses request parameters (in URL or sent with POST using
-  content-type application/x-www-form-urlencoded) in its dispatcher code. It no
+* SOLR-4265, SOLR-4283: Solr now parses request parameters (in URL or sent with POST
+  using content-type application/x-www-form-urlencoded) in its dispatcher code. It no
   longer relies on special configuration settings in Tomcat or other web containers
-  to enable UTF-8 encoding, which is mandatory for correct Solr behaviour. Also
-  the maximum length of x-www-form-urlencoded POST parameters can now be configured
-  through the requestDispatcher/requestParsers/@formdataUploadLimitInKB setting in
+  to enable UTF-8 encoding, which is mandatory for correct Solr behaviour. Query
+  strings passed in via the URL need to be properly-%-escaped, UTF-8 encoded
+  bytes, otherwise Solr refuses to handle the request. The maximum length of
+  x-www-form-urlencoded POST parameters can now be configured through the
+  requestDispatcher/requestParsers/@formdataUploadLimitInKB setting in
   solrconfig.xml (defaults to 2 MiB). Solr now works out of the box with
   e.g. Tomcat, JBoss,...  (Uwe Schindler, Dawid Weiss, Alex Rocher)
 
@@ -245,6 +247,8 @@ Optimizations
 
 * SOLR-3840: XML query response display is unreadable in Solr Admin Query UI
   (steffkes)
+
+* SOLR-3982: Admin UI: Various Dataimport Improvements (steffkes)
 
 Bug Fixes
 ----------------------
@@ -493,6 +497,12 @@ Bug Fixes
 * SOLR-4170: The 'backup' ReplicationHandler command can sometimes use a stale
   index directory rather than the current one. (Mark Miller, Marcin Rzewuck)
 
+* SOLR-3876: Solr Admin UI is completely dysfunctional on IE 9 (steffkes)
+
+* SOLR-4112: Fixed DataImportHandler ZKAwarePropertiesWriter implementation so
+  import works fine with SolrCloud clusters (Deniz Durmus, James Dyer,
+  Erick Erickson, shalin)
+
 Other Changes
 ----------------------
 
@@ -566,6 +576,9 @@ Other Changes
 
 * SOLR-4226: Extract fl parsing code out of ReturnFields constructor.
   (Ryan Ernst via Robert Muir)
+
+* SOLR-4208: ExtendedDismaxQParserPlugin has been refactored to make 
+  subclassing easier. (Tomás Fernández Löbbe, hossman)
 
 ==================  4.0.0 ==================
 
@@ -1684,6 +1697,8 @@ Bug Fixes
 * SOLR-1958: When using the MailEntityProcessor, import would fail if 
   fetchMailsSince was not specified. (Max Lynch via James Dyer) 
 
+* SOLR-4289: Admin UI - JVM memory bar - dark grey "used" width is too small
+  (steffkes, elyograg)
 
 Other Changes
 ----------------------
