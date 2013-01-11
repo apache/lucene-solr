@@ -47,8 +47,6 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
 
   @BeforeClass
   public static void dihZk_beforeClass() throws Exception {
-    System.out.println("Initializing DIH ZK stuff");
-
     createTempDir();
     zkDir = dataDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
