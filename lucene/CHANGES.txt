@@ -152,11 +152,6 @@ New Features
 * LUCENE-4515: MemoryIndex now supports adding the same field multiple
   times. (Simon Willnauer)
 
-* LUCENE-4540: Added an experimental Norm.setPackedLong, which allows
-  the use of VAR_INTS-encoded norms. This can be useful for cases where
-  you only need a few bits per-document, or where you might want exact
-  document length, and so on.  (Robert Muir)
-
 * LUCENE-4489: Added consumeAllTokens option to LimitTokenCountFilter
   (hossman, Robert Muir)
 
