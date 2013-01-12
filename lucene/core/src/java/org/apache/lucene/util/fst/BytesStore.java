@@ -374,7 +374,11 @@ class BytesStore extends DataOutput {
   }
 
   public FST.BytesReader getReverseReader() {
-    if (blocks.size() == 1) {
+    return getReverseReader(true);
+  }
+
+  FST.BytesReader getReverseReader(boolean allowSingle) {
+    if (allowSingle && blocks.size() == 1) {
       return new ReverseBytesReader(blocks.get(0));
     }
     return new FST.BytesReader() {

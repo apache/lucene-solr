@@ -146,7 +146,7 @@ public final class FST<T> {
   // produces this output
   T emptyOutput;
 
-  private final BytesStore bytes;
+  final BytesStore bytes;
 
   private int startNode = -1;
 

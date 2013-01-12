@@ -27,14 +27,16 @@ final class NodeHash<T> {
   private int mask;
   private final FST<T> fst;
   private final FST.Arc<T> scratchArc = new FST.Arc<T>();
+  private final FST.BytesReader in;
 
-  public NodeHash(FST<T> fst) {
+  public NodeHash(FST<T> fst, FST.BytesReader in) {
     table = new int[16];
     mask = 15;
     this.fst = fst;
+    this.in = in;
   }
 
-  private boolean nodesEqual(Builder.UnCompiledNode<T> node, int address, FST.BytesReader in) throws IOException {
+  private boolean nodesEqual(Builder.UnCompiledNode<T> node, int address) throws IOException {
     fst.readFirstRealTargetArc(address, scratchArc, in);
     if (scratchArc.bytesPerArc != 0 && node.numArcs != scratchArc.numArcs) {
       return false;
@@ -87,7 +89,6 @@ final class NodeHash<T> {
   // hash code for a frozen node
   private int hash(int node) throws IOException {
     final int PRIME = 31;
-    final FST.BytesReader in = fst.getBytesReader(0);
     //System.out.println("hash frozen node=" + node);
     int h = 0;
     fst.readFirstRealTargetArc(node, scratchArc, in);
@@ -111,7 +112,6 @@ final class NodeHash<T> {
 
   public int add(Builder.UnCompiledNode<T> nodeIn) throws IOException {
     // System.out.println("hash: add count=" + count + " vs " + table.length);
-    final FST.BytesReader in = fst.getBytesReader(0);
     final int h = hash(nodeIn);
     int pos = h & mask;
     int c = 0;
@@ -128,7 +128,7 @@ final class NodeHash<T> {
           rehash();
         }
         return node;
-      } else if (nodesEqual(nodeIn, v, in)) {
+      } else if (nodesEqual(nodeIn, v)) {
         // same node is already here
         return v;
       }

@@ -160,7 +160,7 @@ public class Builder<T> {
     this.acceptableOverheadRatio = acceptableOverheadRatio;
     fst = new FST<T>(inputType, outputs, doPackFST, acceptableOverheadRatio, allowArrayArcs);
     if (doShareSuffix) {
-      dedupHash = new NodeHash<T>(fst);
+      dedupHash = new NodeHash<T>(fst, fst.bytes.getReverseReader(false));
     } else {
       dedupHash = null;
     }
