@@ -52,7 +52,7 @@ Changes in backwards compatibility policy
     Instead of calling refresh(), you should write similar code to how you reopen
     a regular DirectoryReader.
   - TaxonomyReader.openIfChanged (previously refresh()) no longer throws
-    IncosistentTaxonomyException, and supports recreate. InconsistentTaxoEx
+    InconsistentTaxonomyException, and supports recreate. InconsistentTaxoEx
     was removed.
   - ChildrenArrays was pulled out of TaxonomyReader into a top-level class.
   - TaxonomyReader was made an abstract class (instead of an interface), with
@@ -101,7 +101,7 @@ Changes in backwards compatibility policy
   Also, the entire IndexingParams chain is now immutable. If you need to override
   a setting, you should extend the relevant class.
   Additionally, FacetSearchParams is now immutable, and requires all FacetRequests
-  to speified at initialization time. (Shai Erera)
+  to specified at initialization time. (Shai Erera)
 
 * LUCENE-4647: CategoryDocumentBuilder and EnhancementsDocumentBuilder are replaced
   by FacetFields and AssociationsFacetFields respectively. CategoryEnhancement and
@@ -269,7 +269,7 @@ Bug Fixes
   allow 1+maxMergeCount merges threads to be created, instead of just
   maxMergeCount (Radim Kolar, Mike McCandless)
 
-* LUCENE-4567: Fixed NullPointerException in analzying, fuzzy, and
+* LUCENE-4567: Fixed NullPointerException in analyzing, fuzzy, and
   WFST suggesters when no suggestions were added (selckin via Mike
   McCandless)
 
@@ -529,7 +529,7 @@ API Changes
   StoredFieldVisitor API.  (Mike McCandless)
 
 * LUCENE-4343: Made Tokenizer.setReader final. This is a setter that should
-  not be overriden by subclasses: per-stream initialization should happen
+  not be overridden by subclasses: per-stream initialization should happen
   in reset().  (Robert Muir)
 
 * LUCENE-4377: Remove IndexInput.copyBytes(IndexOutput, long). 
@@ -755,7 +755,7 @@ API Changes
 
 * LUCENE-4273: When pulling a DocsEnum, you can pass an int flags
   instead of the previous boolean needsFlags; consistent with the changes
-  for DocsAndPositionsEnum in LUCENE-4230. Currently othe only flag
+  for DocsAndPositionsEnum in LUCENE-4230. Currently the only flag
   is DocsEnum.FLAG_FREQS. (Robert Muir, Mike McCandless)
   
 * LUCENE-3616: TextField(String, Reader, Store) was reduced to TextField(String, Reader),
@@ -827,7 +827,7 @@ Bug Fixes
   instance are already checked out and queued up but not yet flushed. 
   (Simon Willnauer)
 
-* LUCENE-4282: Automaton FuzzyQuery didnt always deliver all results.
+* LUCENE-4282: Automaton FuzzyQuery didn't always deliver all results.
   (Johannes Christen, Uwe Schindler, Robert Muir)
 
 * LUCENE-4289: Fix minor idf inconsistencies/inefficiencies in highlighter.
@@ -1057,7 +1057,7 @@ Changes in backwards compatibility policy
   Query/Weight/Scorer. If you extended Similarity directly before, you should 
   extend TFIDFSimilarity instead.  Similarity is now a lower-level API to 
   implement other scoring algorithms.  See MIGRATE.txt for more details.
-  (David Nemeskey, Simon Willnauer, Mike Mccandless, Robert Muir)
+  (David Nemeskey, Simon Willnauer, Mike McCandless, Robert Muir)
 
 * LUCENE-3330: The expert visitor API in Scorer has been simplified and
   extended to support arbitrary relationships. To navigate to a scorer's 
@@ -1165,12 +1165,12 @@ Changes in Runtime Behavior
   omitNorms(true) for field "a" for 1000 documents, but then add a document with
   omitNorms(false) for field "a", all documents for field "a" will have no 
   norms.  Previously, Lucene would fill the first 1000 documents with 
-  "fake norms" from Similarity.getDefault(). (Robert Muir, Mike Mccandless)
+  "fake norms" from Similarity.getDefault(). (Robert Muir, Mike McCandless)
 
 * LUCENE-2846: When some documents contain field "a", and others do not, the
   documents that don't have the field get a norm byte value of 0. Previously, 
   Lucene would populate "fake norms" with Similarity.getDefault() for these 
-  documents.  (Robert Muir, Mike Mccandless)
+  documents.  (Robert Muir, Mike McCandless)
   
 * LUCENE-2720: IndexWriter throws IndexFormatTooOldException on open, rather 
   than later when e.g. a merge starts. 
@@ -1203,13 +1203,13 @@ Changes in Runtime Behavior
     update or delete on IndexWriter. By default DWPTs are flushed either on
     maxBufferedDocs per DWPT or the global active used memory. Once the active
     memory exceeds ramBufferSizeMB only the largest DWPT is selected for
-    flushing and the memory used by this DWPT is substracted from the active
+    flushing and the memory used by this DWPT is subtracted from the active
     memory and added to a flushing memory pool, which can lead to temporarily
     higher memory usage due to ongoing indexing.
     
   - IndexWriter now can utilize ramBufferSize > 2048 MB. Each DWPT can address
     up to 2048 MB memory such that the ramBufferSize is now bounded by the max
-    number of DWPT avaliable in the used DocumentsWriterPerThreadPool.
+    number of DWPT available in the used DocumentsWriterPerThreadPool.
     IndexWriters net memory consumption can grow far beyond the 2048 MB limit if
     the application can use all available DWPTs. To prevent a DWPT from
     exhausting its address space IndexWriter will forcefully flush a DWPT if its
@@ -1217,7 +1217,7 @@ Changes in Runtime Behavior
     via IndexWriterConfig and defaults to 1945 MB. 
     Since IndexWriter flushes DWPT concurrently not all memory is released
     immediately. Applications should still use a ramBufferSize significantly
-    lower than the JVMs avaliable heap memory since under high load multiple
+    lower than the JVMs available heap memory since under high load multiple
     flushing DWPT can consume substantial transient memory when IO performance
     is slow relative to indexing rate.
     
@@ -1225,7 +1225,7 @@ Changes in Runtime Behavior
     'currently' RAM resident documents to disk. Yet, flushes that occur while a
     a full flush is running are queued and will happen after all DWPT involved
     in the full flush are done flushing. Applications using multiple threads
-    during indexing and trigger a full flush (eg call commmit() or open a new
+    during indexing and trigger a full flush (eg call commit() or open a new
     NRT reader) can use significantly more transient memory.
     
   - IndexWriter#addDocument and IndexWriter.updateDocument can block indexing
@@ -1268,7 +1268,7 @@ Changes in Runtime Behavior
 
 * LUCENE-3455: QueryParserBase.newFieldQuery() will throw a ParseException if
   any of the calls to the Analyzer throw an IOException.  QueryParseBase.analyzeRangePart()
-  will throw a RuntimException if an IOException is thrown by the Analyzer.
+  will throw a RuntimeException if an IOException is thrown by the Analyzer.
 
 * LUCENE-4127: IndexWriter will now throw IllegalArgumentException if
   the first token of an indexed field has 0 positionIncrement
@@ -1358,7 +1358,7 @@ API Changes
   customized on a per-field basis.  (Robert Muir)
 
 * LUCENE-3308: DuplicateFilter keepMode and processingMode have been converted to
-  enums DuplicateFilter.KeepMode and DuplicateFilter.ProcessingMode repsectively.
+  enums DuplicateFilter.KeepMode and DuplicateFilter.ProcessingMode respectively.
 
 * LUCENE-3483: Move Function grouping collectors from Solr to grouping module.
   (Martijn van Groningen)
@@ -1516,7 +1516,7 @@ New features
 
 * LUCENE-2742: Add native per-field postings format support. Codec lets you now
   register a postings format for each field and which is in turn recorded 
-  into the index. Postings formtas are maintained on a per-segment basis and be
+  into the index. Postings formats are maintained on a per-segment basis and be
   resolved without knowing the actual postings format used for writing the segment.
   (Simon Willnauer)
 
@@ -1724,7 +1724,7 @@ New features
    - o.a.l.analysis.miscellaneous.CapitalizationFilter: A TokenFilter that applies
      capitalization rules to tokens.
    - o.a.l.analysis.pattern: Package for pattern-based analysis, containing a 
-     CharFilter, Tokenizer, and Tokenfilter for transforming text with regexes.
+     CharFilter, Tokenizer, and TokenFilter for transforming text with regexes.
    - o.a.l.analysis.synonym.SynonymFilter: A synonym filter that supports multi-word
      synonyms.
    - o.a.l.analysis.phonetic: Package for phonetic search, containing various
@@ -1896,7 +1896,7 @@ Bug fixes
   DocsAndPositionsEnum while merging (Marc Sturlese, Erick Erickson,
   Robert Muir, Simon Willnauer, Mike McCandless)
 
-* LUCENE-3589: BytesRef copy(short) didnt set length.
+* LUCENE-3589: BytesRef copy(short) didn't set length.
   (Peter Chang via Robert Muir)
 
 * LUCENE-3045: fixed QueryNodeImpl.containsTag(String key) that was
@@ -2045,7 +2045,7 @@ Tests
   random graph tokens.  (Mike McCandless)
 
 * LUCENE-3968: factor out LookaheadTokenFilter from 
-  MockGraphTokenFilter (Mike Mccandless)
+  MockGraphTokenFilter (Mike McCandless)
 
 
 ======================= Lucene 3.6.0 =======================
@@ -2325,7 +2325,7 @@ Bug fixes
 
 * LUCENE-3876: Fix bug where positions for a document exceeding
   Integer.MAX_VALUE/2 would produce a corrupt index.  
-  (Simon Willnauer, Mike Mccandless, Robert Muir)
+  (Simon Willnauer, Mike McCandless, Robert Muir)
 
 * LUCENE-3880: UAX29URLEmailTokenizer now recognizes emails when the mailto:
   scheme is prepended. (Kai Gülzau, Steve Rowe)
