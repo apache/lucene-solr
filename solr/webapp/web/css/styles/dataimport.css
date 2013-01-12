@@ -139,14 +139,14 @@
   display: none !important;
 }
 
-#content #dataimport #current_state .time,
+#content #dataimport #current_state .last_update,
 #content #dataimport #current_state .info
 {
   display: block;
   padding-left: 21px;
 }
 
-#content #dataimport #current_state .time
+#content #dataimport #current_state .last_update
 {
   color: #c0c0c0;
   font-size: 11px;

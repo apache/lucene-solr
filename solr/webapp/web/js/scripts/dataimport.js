@@ -431,7 +431,6 @@ sammy.get
               success : function( response, text_status, xhr )
               {
                 var state_element = $( '#current_state', content_element );
-                var time_element = $( '.time', state_element );
 
                 var status = response.status;
                 var rollback_time = response.statusMessages.Rolledback || null;
@@ -448,30 +447,64 @@ sammy.get
 
                 function dataimport_compute_details( response, details_element, elapsed_seconds )
                 {
-                  var config = {
+                  details_element
+                    .show();
+
+                  // --
+
+                  var document_config = {
                     'Requests' : 'Total Requests made to DataSource',
                     'Fetched' : 'Total Rows Fetched',
                     'Skipped' : 'Total Documents Skipped',
                     'Processed' : 'Total Documents Processed'
                   };
 
-                  var details = [];
-                  for( var key in config )
+                  var document_details = [];
+                  for( var key in document_config )
                   {
-                    var value = parseInt( response.statusMessages[config[key]], 10 );
+                    var value = parseInt( response.statusMessages[document_config[key]], 10 );
 
-                    var detail = '<abbr title="' + config[key].esc() + '">' + key.esc() + '</abbr>: ' +  format_number( value ).esc();
+                    var detail = '<abbr title="' + document_config[key].esc() + '">' + key.esc() + '</abbr>: ' +  format_number( value ).esc();
                     if( elapsed_seconds && 'skipped' !== key.toLowerCase() )
                     {
                       detail += ' <span>(' + format_number( Math.round( value / elapsed_seconds ) ).esc() + '/s)</span>'
                     }
 
-                    details.push( detail );
+                    document_details.push( detail );
                   };
 
-                  details_element
-                    .html( details.join( ', ' ) )
-                    .show();
+                  $( '.docs', details_element )
+                    .html( document_details.join( ', ' ) );
+
+                  // --
+
+                  var dates_config = {
+                      'Started' : 'Full Dump Started',
+                      'Aborted' : 'Aborted',
+                      'Rolledback' : 'Rolledback'
+                  };
+
+                  var dates_details = [];
+                  for( var key in dates_config )
+                  {
+                    var value = response.statusMessages[dates_config[key]];
+
+                    if( value )
+                    {
+                      var detail = '<abbr title="' + dates_config[key].esc() + '">' + key.esc() + '</abbr>: '
+                                 + '<abbr class="time">' +  value.esc() + '</abbr>';
+                      dates_details.push( detail );                      
+                    }
+                  };
+
+                  var dates_element = $( '.dates', details_element );
+
+                  dates_element
+                    .html( dates_details.join( ', ' ) );
+
+                  $( '.time', dates_element )
+                    .removeData( 'timeago' )
+                    .timeago();
                 };
 
                 var get_time_taken = function get_default_time_taken()
@@ -524,22 +557,14 @@ sammy.get
                   );
                 };
 
-                var set_time = function set_time( time_text )
-                {
-                  time_element
-                    .text( time_text )
-                    .removeData( 'timeago' )
-                    .timeago()
-                    .show();
-                }
-
                 state_element
                   .removeAttr( 'class' );
 
-                 time_element
-                    .empty()
-                    .hide();
-                                
+                var current_time = new Date();
+                $( '.last_update abbr', state_element )
+                  .text( current_time.toTimeString().split( ' ' ).shift() )
+                  .attr( 'title', current_time.toUTCString() );
+
                 $( '.info', state_element )
                   .removeClass( 'loader' );
 
@@ -563,25 +588,11 @@ sammy.get
                                 : 'Indexing ...';
 
                   show_full_info( info_text, elapsed_seconds );
-
-                  if( !app.timeout && autorefresh_status )
-                  {
-                    app.timeout = window.setTimeout
-                    (
-                      function()
-                      {
-                        dataimport_fetch_status( true )
-                      },
-                      dataimport_timeout
-                    );
-                  }
                 }
                 else if( rollback_time )
                 {
                   state_element
                     .addClass( 'failure' );
-
-                  set_time( rollback_time );
 
                   show_full_info();
                 }
@@ -590,20 +601,12 @@ sammy.get
                   state_element
                     .addClass( 'aborted' );
 
-                  set_time( abort_time );
-
                   show_full_info( 'Aborting current Import ...' );
                 }
                 else if( 'idle' === status && 0 !== messages_count )
                 {
                   state_element
                     .addClass( 'success' );
-
-                  var started_at = response.statusMessages['Full Dump Started'];
-                  if( started_at )
-                  {
-                    set_time( started_at );
-                  }
 
                   show_full_info();
                 }
@@ -625,6 +628,18 @@ sammy.get
 
                 $( '#raw_output_container', content_element ).html( code );
                 hljs.highlightBlock( code.get(0) );
+
+                if( !app.timeout && autorefresh_status )
+                {
+                  app.timeout = window.setTimeout
+                  (
+                    function()
+                    {
+                      dataimport_fetch_status( true )
+                    },
+                    dataimport_timeout
+                  );
+                }
               },
               error : function( xhr, text_status, error_thrown )
               {
