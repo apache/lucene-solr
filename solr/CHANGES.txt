@@ -232,6 +232,8 @@ Optimizations
 
 * SOLR-4296: Admin UI: Improve Dataimport Auto-Refresh (steffkes)
 
+* SOLR-3458: Allow multiple Items to stay open on Plugins-Page (steffkes)
+
 Bug Fixes
 ----------------------
 
