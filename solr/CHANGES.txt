@@ -33,7 +33,7 @@ Apache ZooKeeper 3.4.5
 Upgrading from Solr 4.0.0
 ----------------------
 
-Custom java parsing plugins need to migrade from throwing the internal
+Custom java parsing plugins need to migrate from throwing the internal
 ParseException to throwing SyntaxError.
 
 BaseDistributedSearchTestCase now randomizes the servlet context it uses when 
@@ -126,7 +126,7 @@ New Features
   CoreAdmin API the same way as the data directory. (Mark Miller)
   
 * SOLR-4028: When using ZK chroot, it would be nice if Solr would create the 
-  initial path when it doesn't exist. (Tomas Fernandez Lobbe via Mark Miller)
+  initial path when it doesn't exist. (Tomás Fernández Löbbe via Mark Miller)
 
 * SOLR-3948: Calculate/display deleted documents in admin interface.
   (Shawn Heisey via Mark Miller)
@@ -202,12 +202,12 @@ Optimizations
   dynamicField's (steffkes)
   
 * SOLR-3941: The "commitOnLeader" part of distributed recovery can use
-  openSearcher=false. (Tomas Fernandez Lobbe via Mark Miller)
+  openSearcher=false. (Tomás Fernández Löbbe via Mark Miller)
   
 * SOLR-4063: Allow CoreContainer to load multiple SolrCores in parallel rather
   than just serially. (Mark Miller)
   
-* SOLR-4199: When doing zk retries due to connectionloss, rather than just 
+* SOLR-4199: When doing zk retries due to connection loss, rather than just
   retrying for 2 minutes, retry in proportion to the session timeout.
   (Mark Miller)
 
@@ -342,7 +342,7 @@ Bug Fixes
 
 * SOLR-4081: QueryParsing.toString, used during debugQuery=true, did not
   correctly handle ExtendedQueries such as WrappedQuery
-  (used when cache=false), spatial queries, and frange queires.
+  (used when cache=false), spatial queries, and frange queries.
   (Eirik Lygre, yonik)
 
 * SOLR-3959: Ensure the internal comma separator of poly fields is escaped
@@ -383,7 +383,7 @@ Bug Fixes
 
 * SOLR-4162: ZkCli usage examples are not correct because the zkhost parameter 
   is not present and it is mandatory for all commands. 
-  (Tomas Fernandez Lobbe via Mark Miller)
+  (Tomás Fernández Löbbe via Mark Miller)
 
 * SOLR-4071: Validate that name is pass to Collections API create, and behave the
   same way as on startup when collection.configName is not explicitly passed.
@@ -472,7 +472,7 @@ Bug Fixes
 * SOLR-4279: Wrong exception message if _version_ field is multivalued (shalin)
 
 * SOLR-4170: The 'backup' ReplicationHandler command can sometimes use a stale
-  index directory rather than the current one. (Mark Miller, Marcin Rzewuck)
+  index directory rather than the current one. (Mark Miller, Marcin Rzewucki)
 
 * SOLR-3876: Solr Admin UI is completely dysfunctional on IE 9 (steffkes)
 
@@ -850,7 +850,7 @@ Bug Fixes
 
 * SOLR-3527: SolrCmdDistributor drops some of the important commit attributes
   (maxOptimizeSegments, softCommit, expungeDeletes) when sending a commit to
-  replicas. (Andy Laird, Tomas Fernandez Lobbe, Mark Miller)
+  replicas. (Andy Laird, Tomás Fernández Löbbe, Mark Miller)
 
 * SOLR-3844: SolrCore reload can fail because it tries to remove the index 
   write lock while already holding it. (Mark Miller)
@@ -1261,7 +1261,7 @@ New Features
 * SOLR-571: The autowarmCount for LRUCaches (LRUCache and FastLRUCache) now 
   supports "percentages" which get evaluated  relative the current size of 
   the cache when warming happens. 
-  (Tomas Fernandez Lobbe and hossman)
+  (Tomás Fernández Löbbe and hossman)
 
 * SOLR-1932: New relevancy function queries: termfreq, tf, docfreq, idf
   norm, maxdoc, numdocs. (yonik)
@@ -1632,12 +1632,12 @@ Bug Fixes
   down to it via acceptDocs since LUCENE-1536. (Mike Hugo, yonik)
   
 * SOLR-3214: If you use multiple fl entries rather than a comma separated list, all but the first
-  entry can be ignored if you are using distributed search. (Tomas Fernandez Lobbe via Mark Miller)
+  entry can be ignored if you are using distributed search. (Tomás Fernández Löbbe via Mark Miller)
  
 * SOLR-3352: eDismax: pf2 should kick in for a query with 2 terms (janhoy)
 
 * SOLR-3361: ReplicationHandler "maxNumberOfBackups" doesn't work if backups are triggered on commit
-  (James Dyer, Tomas Fernandez Lobbe)
+  (James Dyer, Tomás Fernández Löbbe)
 
 * SOLR-2605: fixed tracking of the 'defaultCoreName' in CoreContainer so that
   CoreAdminHandler could return consistent information regardless of wether
@@ -1865,7 +1865,7 @@ Bug Fixes
   (Uwe Schindler, Mike McCandless, Robert Muir)
   
 * SOLR-3361: ReplicationHandler "maxNumberOfBackups" doesn't work if backups are triggered on commit
-  (James Dyer, Tomas Fernandez Lobbe)
+  (James Dyer, Tomás Fernández Löbbe)
 
 * SOLR-3375: Fix charset problems with HttpSolrServer (Roger Håkansson, yonik, siren)
 
