@@ -20,17 +20,13 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
-==================  5.0.0 ==================
-
-(No changes)
-
 ==================  4.1.0 ==================
 
 Versions of Major Components
 ---------------------
 Apache Tika 1.2
 Carrot2 3.6.2
-Velocity 1.6.4 and Velocity Tools 2.0
+Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.5
 
@@ -565,6 +561,10 @@ Other Changes
 
 * SOLR-4208: ExtendedDismaxQParserPlugin has been refactored to make 
   subclassing easier. (Tomás Fernández Löbbe, hossman)
+  
+* SOLR-3735: Relocate the example mime-to-extension mapping, and
+  upgrade Velocity Engine to 1.7 (ehatcher)
+  
 
 ==================  4.0.0 ==================
 
