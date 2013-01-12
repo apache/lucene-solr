@@ -1877,7 +1877,17 @@ Documentation
 
 * SOLR-2232: Improved README info on solr.solr.home in examples
   (Eric Pugh and hossman)
-  
+
+==================  3.6.2  ==================
+
+Bug Fixes
+----------------------
+* SOLR-3790: ConcurrentModificationException could be thrown when using hl.fl=*.
+  (yonik, koji)
+
+* SOLR-3589: Edismax parser does not honor mm parameter if analyzer splits a token.
+  (Tom Burton-West, Robert Muir)
+
 ==================  3.6.1  ==================
 More information about this release, including any errata related to the 
 release notes, upgrade instructions, or other changes may be found online at:
