@@ -24,7 +24,7 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
   <lib dir="../../contrib/velocity/lib" />
-  <lib dir="../../dist/" regex="apache-solr-velocity-\d.*\.jar" />
+  <lib dir="../../dist/" regex="solr-velocity-\d.*\.jar" />
   <dataDir>${solr.data.dir:}</dataDir>
 
 

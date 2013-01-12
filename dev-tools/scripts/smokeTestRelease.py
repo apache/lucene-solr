@@ -308,7 +308,7 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
       artifact = text
       artifactURL = subURL
       if project == 'solr':
-        expected = 'apache-solr-%s' % version
+        expected = 'solr-%s' % version
       else:
         expected = 'lucene-%s' % version
       if not artifact.startswith(expected):
@@ -334,9 +334,9 @@ def checkSigs(project, urlString, version, tmpDir, isSigned):
                 'lucene-%s.tgz' % version,
                 'lucene-%s.zip' % version]
   else:
-    expected = ['apache-solr-%s-src.tgz' % version,
-                'apache-solr-%s.tgz' % version,
-                'apache-solr-%s.zip' % version]
+    expected = ['solr-%s-src.tgz' % version,
+                'solr-%s.tgz' % version,
+                'solr-%s.zip' % version]
 
   actual = [x[0] for x in artifacts]
   if expected != actual:
@@ -556,10 +556,7 @@ def unpackAndVerify(project, tmpDir, artifact, version):
 
   # make sure it unpacks to proper subdir
   l = os.listdir(destDir)
-  if project == 'solr':
-    expected = 'apache-%s-%s' % (project, version)
-  else:
-    expected = '%s-%s' % (project, version)
+  expected = '%s-%s' % (project, version)
   if l != [expected]:
     raise RuntimeError('unpack produced entries %s; expected only %s' % (l, expected))
 
@@ -956,7 +953,6 @@ def getDistributionsForMavenChecks(tmpDir, version, baseURL):
   distributionFiles = defaultdict()
   for project in ('lucene', 'solr'):
     distribution = '%s-%s.tgz' % (project, version)
-    if project == 'solr': distribution = 'apache-' + distribution
     if not os.path.exists('%s/%s' % (tmpDir, distribution)):
       distURL = '%s/%s/%s' % (baseURL, project, distribution)
       print('    download %s...' % distribution, end=' ')
@@ -1010,8 +1006,6 @@ def checkIdenticalMavenArtifacts(distributionFiles, nonMavenizedDeps, artifacts,
     distFilenames = dict()
     for file in distributionFiles[project]:
       baseName = os.path.basename(file)
-      if project == 'solr': # Remove 'apache-' prefix to allow comparison to Maven artifacts
-        baseName = baseName.replace('apache-', '')
       distFilenames[baseName] = file
     for artifact in artifacts[project]:
       if reJarWar.search(artifact):
@@ -1348,9 +1342,9 @@ def smokeTest(baseURL, version, tmpDir, isSigned):
   print()
   print('Test Solr...')
   checkSigs('solr', solrPath, version, tmpDir, isSigned)
-  for artifact in ('apache-solr-%s.tgz' % version, 'apache-solr-%s.zip' % version):
+  for artifact in ('solr-%s.tgz' % version, 'solr-%s.zip' % version):
     unpackAndVerify('solr', tmpDir, artifact, version)
-  unpackAndVerify('solr', tmpDir, 'apache-solr-%s-src.tgz' % version, version)
+  unpackAndVerify('solr', tmpDir, 'solr-%s-src.tgz' % version, version)
 
   print()
   print('Test Maven artifacts for Lucene and Solr...')

@@ -564,7 +564,9 @@ Other Changes
   
 * SOLR-3735: Relocate the example mime-to-extension mapping, and
   upgrade Velocity Engine to 1.7 (ehatcher)
-  
+
+* SOLR-4287: Removed "apache-" prefix from Solr distribution and artifact
+  filenames. (Ryan Ernst, Robert Muir, Steve Rowe)
 
 ==================  4.0.0 ==================
 
