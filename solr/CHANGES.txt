@@ -509,6 +509,9 @@ Bug Fixes
 
 * SOLR-4291: Harden the Overseer work queue thread loop. (Mark Miller)
 
+* SOLR-3820: Solr Admin Query form is missing some edismax request parameters
+  (steffkes)
+
 Other Changes
 ----------------------
 
