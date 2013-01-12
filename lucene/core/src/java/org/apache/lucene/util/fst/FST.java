@@ -1619,7 +1619,9 @@ public final class FST<T> {
               absPtr = 0;
             }
 
+            assert flags != ARCS_AS_FIXED_ARRAY;
             buffer.writeByte(flags);
+
             fst.writeLabel(buffer, arc.label);
 
             if (arc.output != NO_OUTPUT) {
