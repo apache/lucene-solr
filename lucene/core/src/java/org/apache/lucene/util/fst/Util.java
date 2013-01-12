@@ -39,7 +39,7 @@ public final class Util {
     // TODO: would be nice not to alloc this on every lookup
     final FST.Arc<T> arc = fst.getFirstArc(new FST.Arc<T>());
 
-    final FST.BytesReader fstReader = fst.getBytesReader(0);
+    final BytesReader fstReader = fst.getBytesReader(0);
 
     // Accumulate output as we go
     T output = fst.outputs.getNoOutput();
@@ -64,7 +64,7 @@ public final class Util {
   public static<T> T get(FST<T> fst, BytesRef input) throws IOException {
     assert fst.inputType == FST.INPUT_TYPE.BYTE1;
 
-    final FST.BytesReader fstReader = fst.getBytesReader(0);
+    final BytesReader fstReader = fst.getBytesReader(0);
 
     // TODO: would be nice not to alloc this on every lookup
     final FST.Arc<T> arc = fst.getFirstArc(new FST.Arc<T>());
@@ -101,7 +101,7 @@ public final class Util {
    *  fit this. */
   public static IntsRef getByOutput(FST<Long> fst, long targetOutput) throws IOException {
 
-    final FST.BytesReader in = fst.getBytesReader(0);
+    final BytesReader in = fst.getBytesReader(0);
 
     // TODO: would be nice not to alloc this on every lookup
     FST.Arc<Long> arc = fst.getFirstArc(new FST.Arc<Long>());
@@ -147,8 +147,8 @@ public final class Util {
           boolean exact = false;
           while (low <= high) {
             mid = (low + high) >>> 1;
-            in.pos = arc.posArcsStart;
-            in.skip(arc.bytesPerArc*mid);
+            in.setPosition(arc.posArcsStart);
+            in.skipBytes(arc.bytesPerArc*mid);
             final byte flags = in.readByte();
             fst.readLabel(in);
             final long minArcOutput;
@@ -273,7 +273,7 @@ public final class Util {
   public static class TopNSearcher<T> {
 
     private final FST<T> fst;
-    private final FST.BytesReader bytesReader;
+    private final BytesReader bytesReader;
     private final int topN;
     private final int maxQueueDepth;
 
@@ -374,7 +374,7 @@ public final class Util {
 
       //System.out.println("search topN=" + topN);
 
-      final FST.BytesReader fstReader = fst.getBytesReader(0);
+      final BytesReader fstReader = fst.getBytesReader(0);
       final T NO_OUTPUT = fst.outputs.getNoOutput();
 
       // TODO: we could enable FST to sorting arcs by weight
@@ -595,7 +595,7 @@ public final class Util {
     emitDotState(out, "initial", "point", "white", "");
 
     final T NO_OUTPUT = fst.outputs.getNoOutput();
-    final FST.BytesReader r = fst.getBytesReader(0);
+    final BytesReader r = fst.getBytesReader(0);
 
     // final FST.Arc<T> scratchArc = new FST.Arc<T>();
 
@@ -893,8 +893,8 @@ public final class Util {
       // " targetLabel=" + targetLabel);
       while (low <= high) {
         mid = (low + high) >>> 1;
-        in.pos = arc.posArcsStart;
-        in.skip(arc.bytesPerArc * mid + 1);
+        in.setPosition(arc.posArcsStart);
+        in.skipBytes(arc.bytesPerArc * mid + 1);
         final int midLabel = fst.readLabel(in);
         final int cmp = midLabel - label;
         // System.out.println("  cycle low=" + low + " high=" + high + " mid=" +

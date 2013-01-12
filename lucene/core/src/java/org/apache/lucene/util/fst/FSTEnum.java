@@ -17,10 +17,10 @@ package org.apache.lucene.util.fst;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
-
-import java.io.IOException;
 
 /** Can next() and advance() through the terms in an FST
  *
@@ -153,8 +153,8 @@ abstract class FSTEnum<T> {
         boolean found = false;
         while (low <= high) {
           mid = (low + high) >>> 1;
-          in.pos = arc.posArcsStart;
-          in.skip(arc.bytesPerArc*mid+1);
+          in.setPosition(arc.posArcsStart);
+          in.skipBytes(arc.bytesPerArc*mid+1);
           final int midLabel = fst.readLabel(in);
           final int cmp = midLabel - targetLabel;
           //System.out.println("  cycle low=" + low + " high=" + high + " mid=" + mid + " midLabel=" + midLabel + " cmp=" + cmp);
@@ -292,8 +292,8 @@ abstract class FSTEnum<T> {
         boolean found = false;
         while (low <= high) {
           mid = (low + high) >>> 1;
-          in.pos = arc.posArcsStart;
-          in.skip(arc.bytesPerArc*mid+1);
+          in.setPosition(arc.posArcsStart);
+          in.skipBytes(arc.bytesPerArc*mid+1);
           final int midLabel = fst.readLabel(in);
           final int cmp = midLabel - targetLabel;
           //System.out.println("  cycle low=" + low + " high=" + high + " mid=" + mid + " midLabel=" + midLabel + " cmp=" + cmp);

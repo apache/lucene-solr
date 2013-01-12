@@ -483,6 +483,8 @@ public class TestFSTs extends LuceneTestCase {
             break;
           }
         }
+        long t = System.currentTimeMillis() - tStart;
+        System.out.println((t / 1000.0) + " sec to build");
 
         assert builder.getTermCount() == ord;
         FST<T> fst = builder.finish();
@@ -512,6 +514,12 @@ public class TestFSTs extends LuceneTestCase {
         if (!verify) {
           return;
         }
+
+        /*
+        IndexInput in = dir.openInput("fst.bin", IOContext.DEFAULT);
+        fst = new FST<T>(in, outputs);
+        in.close();
+        */
 
         System.out.println("\nNow verify...");
 
@@ -576,7 +584,7 @@ public class TestFSTs extends LuceneTestCase {
     }
   }
 
-  // java -cp build/classes/test:build/classes/test-framework:build/classes/java:lib/junit-4.10.jar org.apache.lucene.util.fst.TestFSTs /x/tmp/allTerms3.txt out
+  // java -cp ../build/codecs/classes/java:../test-framework/lib/randomizedtesting-runner-2.0.8.jar:../build/core/classes/test:../build/core/classes/test-framework:../build/core/classes/java:../build/test-framework/classes/java:../test-framework/lib/junit-4.10.jar org.apache.lucene.util.fst.TestFSTs /xold/tmp/allTerms3.txt out
   public static void main(String[] args) throws IOException {
     int prune = 0;
     int limit = Integer.MAX_VALUE;
@@ -1022,7 +1030,7 @@ public class TestFSTs extends LuceneTestCase {
         throws IOException {
         if (FST.targetHasArcs(arc)) {
           int childCount = 0;
-          FST.BytesReader fstReader = fst.getBytesReader(0);
+          BytesReader fstReader = fst.getBytesReader(0);
           for (arc = fst.readFirstTargetArc(arc, arc, fstReader);; 
                arc = fst.readNextArc(arc, fstReader), childCount++)
           {

@@ -19,8 +19,8 @@ package org.apache.lucene.analysis.ja.dict;
 
 import java.io.IOException;
 
-import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
+import org.apache.lucene.util.fst.FST;
 
 /**
  * Thin wrapper around an FST with root-arc caching for Japanese.
@@ -48,7 +48,7 @@ public final class TokenInfoFST {
     rootCache = cacheRootArcs();
   }
   
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"rawtypes","unchecked"})
   private FST.Arc<Long>[] cacheRootArcs() throws IOException {
     FST.Arc<Long> rootCache[] = new FST.Arc[1+(cacheCeiling-0x3040)];
     FST.Arc<Long> firstArc = new FST.Arc<Long>();

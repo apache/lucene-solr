@@ -92,7 +92,7 @@ final class NodeHash<T> {
     int h = 0;
     fst.readFirstRealTargetArc(node, scratchArc, in);
     while(true) {
-      //System.out.println("  label=" + scratchArc.label + " target=" + scratchArc.target + " h=" + h + " output=" + fst.outputs.outputToString(scratchArc.output) + " next?=" + scratchArc.flag(4) + " final?=" + scratchArc.isFinal());
+      //System.out.println("  label=" + scratchArc.label + " target=" + scratchArc.target + " h=" + h + " output=" + fst.outputs.outputToString(scratchArc.output) + " next?=" + scratchArc.flag(4) + " final?=" + scratchArc.isFinal() + " pos=" + in.getPosition());
       h = PRIME * h + scratchArc.label;
       h = PRIME * h + scratchArc.target;
       h = PRIME * h + scratchArc.output.hashCode();
