@@ -34,6 +34,7 @@ import java.io.FileOutputStream;
 */
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.InputStreamDataInput;
@@ -129,7 +130,8 @@ public final class FST<T> {
   /** Added optional packed format. */
   private final static int VERSION_PACKED = 3;
 
-  /** Changed from int to vInt for encoding arc targets. */
+  /** Changed from int to vInt for encoding arc targets. 
+   *  Also changed maxBytesPerArc from int to vInt in the array case. */
   private final static int VERSION_VINT_TARGET = 4;
 
   private final static int VERSION_CURRENT = VERSION_VINT_TARGET;
@@ -595,27 +597,15 @@ public final class FST<T> {
       }
     }
 
-    int startAddress = bytes.getPosition();
+    final int startAddress = bytes.getPosition();
     //System.out.println("  startAddr=" + startAddress);
 
-    final boolean doFixedArray = shouldExpand(nodeIn);
-    final int fixedArrayStart;
+    boolean doFixedArray = shouldExpand(nodeIn);
     if (doFixedArray) {
       //System.out.println("  fixedArray");
       if (bytesPerArc.length < nodeIn.numArcs) {
         bytesPerArc = new int[ArrayUtil.oversize(nodeIn.numArcs, 1)];
       }
-      // write a "false" first arc:
-      bytes.writeByte(ARCS_AS_FIXED_ARRAY);
-      bytes.writeVInt(nodeIn.numArcs);
-      // placeholder -- we'll come back and write the number
-      // of bytes per arc (int) here:
-      // TODO: we could make this a vInt instead
-      bytes.writeInt(0);
-      fixedArrayStart = bytes.getPosition();
-      //System.out.println("  do fixed arcs array arcsStart=" + fixedArrayStart);
-    } else {
-      fixedArrayStart = 0;
     }
 
     arcCount += nodeIn.numArcs;
@@ -694,22 +684,46 @@ public final class FST<T> {
         //System.out.println("    bytes=" + bytesPerArc[arcIdx]);
       }
     }
-
-    // TODO: if arc'd arrays will be "too wasteful" by some
-    // measure, eg if arcs have vastly different sized
-    // outputs, then we should selectively disable array for
-    // such cases
+    
+    // TODO: try to avoid wasteful cases: disable doFixedArray in that case
+    /* 
+     * 
+     * LUCENE-4682: what is a fair heuristic here?
+     * It could involve some of these:
+     * 1. how "busy" the node is: nodeIn.inputCount relative to frontier[0].inputCount?
+     * 2. how much binSearch saves over scan: nodeIn.numArcs
+     * 3. waste: numBytes vs numBytesExpanded
+     * 
+     * the one below just looks at #3
+    if (doFixedArray) {
+      // rough heuristic: make this 1.25 "waste factor" a parameter to the phd ctor????
+      int numBytes = lastArcStart - startAddress;
+      int numBytesExpanded = maxBytesPerArc * nodeIn.numArcs;
+      if (numBytesExpanded > numBytes*1.25) {
+        doFixedArray = false;
+      }
+    }
+    */
 
     if (doFixedArray) {
+      final int MAX_HEADER_SIZE = 11; // header(byte) + numArcs(vint) + numBytes(vint)
       assert maxBytesPerArc > 0;
       // 2nd pass just "expands" all arcs to take up a fixed
       // byte size
-      final int sizeNeeded = fixedArrayStart + nodeIn.numArcs * maxBytesPerArc;
-      assert ((long) fixedArrayStart) + ((long) nodeIn.numArcs) * maxBytesPerArc < Integer.MAX_VALUE: "FST too large (> 2.1 GB)";
+      assert ((long) startAddress+MAX_HEADER_SIZE) + ((long) nodeIn.numArcs) * maxBytesPerArc < Integer.MAX_VALUE: "FST too large (> 2.1 GB)";
 
       //System.out.println("write int @pos=" + (fixedArrayStart-4) + " numArcs=" + nodeIn.numArcs);
-      // TODO: we could make this a vInt instead
-      bytes.writeInt(fixedArrayStart-4, maxBytesPerArc);
+      // create the header
+      // TODO: clean this up: or just rewind+reuse and deal with it
+      byte header[] = new byte[MAX_HEADER_SIZE]; 
+      ByteArrayDataOutput bad = new ByteArrayDataOutput(header);
+      // write a "false" first arc:
+      bad.writeByte(ARCS_AS_FIXED_ARRAY);
+      bad.writeVInt(nodeIn.numArcs);
+      bad.writeVInt(maxBytesPerArc);
+      int headerLen = bad.getPosition();
+      
+      final int fixedArrayStart = startAddress + headerLen;
 
       // expand the arcs in place, backwards
       int srcPos = bytes.getPosition();
@@ -728,6 +742,9 @@ public final class FST<T> {
           }
         }
       }
+      
+      // now write the header
+      bytes.writeBytes(startAddress, header, 0, headerLen);
     }
 
     final int thisNodeAddress = bytes.getPosition()-1;
@@ -796,7 +813,7 @@ public final class FST<T> {
       if (b == ARCS_AS_FIXED_ARRAY) {
         // array: jump straight to end
         arc.numArcs = in.readVInt();
-        if (packed) {
+        if (packed || version >= VERSION_VINT_TARGET) {
           arc.bytesPerArc = in.readVInt();
         } else {
           arc.bytesPerArc = in.readInt();
@@ -889,7 +906,7 @@ public final class FST<T> {
       //System.out.println("  fixedArray");
       // this is first arc in a fixed-array
       arc.numArcs = in.readVInt();
-      if (packed) {
+      if (packed || version >= VERSION_VINT_TARGET) {
         arc.bytesPerArc = in.readVInt();
       } else {
         arc.bytesPerArc = in.readInt();
@@ -952,7 +969,7 @@ public final class FST<T> {
         in.readVInt();
 
         // Skip bytesPerArc:
-        if (packed) {
+        if (packed || version >= VERSION_VINT_TARGET) {
           in.readVInt();
         } else {
           in.readInt();
@@ -1108,7 +1125,7 @@ public final class FST<T> {
     if (in.readByte() == ARCS_AS_FIXED_ARRAY) {
       // Arcs are full array; do binary search:
       arc.numArcs = in.readVInt();
-      if (packed) {
+      if (packed || version >= VERSION_VINT_TARGET) {
         arc.bytesPerArc = in.readVInt();
       } else {
         arc.bytesPerArc = in.readInt();

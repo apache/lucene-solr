@@ -19,7 +19,7 @@ Changes in backwards compatibility policy
   (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
   Robert Muir)
 
-* LUCENE-4677: unpacked FSTs now use vInt to encode the node target,
+* LUCENE-4677, LUCENE-4682: unpacked FSTs now use vInt to encode the node target,
   to reduce their size (Mike McCandless)
 
 * LUCENE-4678: FST now uses a paged byte[] structure instead of a
