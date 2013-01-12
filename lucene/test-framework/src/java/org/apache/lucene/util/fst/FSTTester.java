@@ -289,6 +289,13 @@ public class FSTTester<T> {
                                               null,
                                               willRewrite,
                                               true);
+    if (LuceneTestCase.VERBOSE) {
+      if (willRewrite) {
+        System.out.println("TEST: packed FST");
+      } else {
+        System.out.println("TEST: non-packed FST");
+      }
+    }
 
     for(InputOutput<T> pair : pairs) {
       if (pair.output instanceof List) {

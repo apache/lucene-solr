@@ -58,7 +58,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -100,7 +99,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     createIndex("index.nocfs", false, false);
   }
   */
-  
+
 /*
   // These are only needed for the special upgrade test to verify
   // that also single-segment indexes are correctly upgraded by IndexUpgrader.
@@ -116,8 +115,40 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
 */  
+
+  /*
+  public void testCreateMoreTermsIndex() throws Exception {
+    // we use a real directory name that is not cleaned up,
+    // because this method is only used to create backwards
+    // indexes:
+    File indexDir = new File("moreterms");
+    _TestUtil.rmDir(indexDir);
+    Directory dir = newFSDirectory(indexDir);
+
+    LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();
+    mp.setUseCompoundFile(false);
+    mp.setNoCFSRatio(1.0);
+    mp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
+    // TODO: remove randomness
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()))
+      .setMergePolicy(mp);
+    conf.setCodec(Codec.forName("Lucene40"));
+    IndexWriter writer = new IndexWriter(dir, conf);
+    LineFileDocs docs = new LineFileDocs(null, true);
+    for(int i=0;i<50;i++) {
+      writer.addDocument(docs.nextDoc());
+    }
+    writer.close();
+    dir.close();
+
+    // Gives you time to copy the index out!: (there is also
+    // a test option to not remove temp dir...):
+    Thread.sleep(100000);
+  }
+  */
+  
   final static String[] oldNames = {"40.cfs",
-                             "40.nocfs",
+                                    "40.nocfs",
   };
   
   final String[] unsupportedNames = {"19.cfs",
@@ -145,7 +176,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   };
   
   final static String[] oldSingleSegmentNames = {"40.optimized.cfs",
-                                          "40.optimized.nocfs",
+                                                 "40.optimized.nocfs",
   };
   
   static Map<String,Directory> oldIndexDirs;
@@ -907,5 +938,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       
       dir.close();
     }
+  }
+
+  public static final String moreTermsIndex = "moreterms.40.zip";
+
+  public void testMoreTerms() throws Exception {
+    File oldIndexDir = _TestUtil.getTempDir("moreterms");
+    _TestUtil.unzip(getDataFile(moreTermsIndex), oldIndexDir);
+    Directory dir = newFSDirectory(oldIndexDir);
+    // TODO: more tests
+    _TestUtil.checkIndex(dir);
+    dir.close();
   }
 }

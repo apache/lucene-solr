@@ -27,6 +27,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
+/*
+import java.io.Writer;
+import java.io.OutputStreamWriter;
+import java.io.FileOutputStream;
+*/
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
@@ -124,7 +129,10 @@ public final class FST<T> {
   /** Added optional packed format. */
   private final static int VERSION_PACKED = 3;
 
-  private final static int VERSION_CURRENT = VERSION_PACKED;
+  /** Changed from int to vInt for encoding arc targets. */
+  private final static int VERSION_VINT_TARGET = 4;
+
+  private final static int VERSION_CURRENT = VERSION_VINT_TARGET;
 
   // Never serialized; just used to represent the virtual
   // final node w/ no arcs:
@@ -259,12 +267,15 @@ public final class FST<T> {
   // clear early on:
   private GrowableWriter inCounts;
 
+  private final int version;
+
   // make a new empty FST, for building; Builder invokes
   // this ctor
   FST(INPUT_TYPE inputType, Outputs<T> outputs, boolean willPackFST, float acceptableOverheadRatio, boolean allowArrayArcs) {
     this.inputType = inputType;
     this.outputs = outputs;
     this.allowArrayArcs = allowArrayArcs;
+    version = VERSION_CURRENT;
     // 32 KB blocks:
     bytes = new BytesStore(15);
     // pad: ensure no node gets address 0 which is reserved to mean
@@ -289,7 +300,7 @@ public final class FST<T> {
     this.outputs = outputs;
     // NOTE: only reads most recent format; we don't have
     // back-compat promise for FSTs (they are experimental):
-    CodecUtil.checkHeader(in, FILE_FORMAT_NAME, VERSION_PACKED, VERSION_PACKED);
+    version = CodecUtil.checkHeader(in, FILE_FORMAT_NAME, VERSION_PACKED, VERSION_VINT_TARGET);
     packed = in.readByte() == 1;
     if (in.readByte() == 1) {
       // accepts empty string
@@ -350,6 +361,15 @@ public final class FST<T> {
     // building; we need to break out mutable FST from
     // immutable
     allowArrayArcs = false;
+
+    /*
+    if (bytes.length == 665) {
+      Writer w = new OutputStreamWriter(new FileOutputStream("out.dot"), "UTF-8");
+      Util.toDot(this, w, false, false);
+      w.close();
+      System.out.println("Wrote FST to out.dot");
+    }
+    */
   }
 
   public INPUT_TYPE getInputType() {
@@ -661,7 +681,7 @@ public final class FST<T> {
       if (targetHasArcs && (flags & BIT_TARGET_NEXT) == 0) {
         assert target.node > 0;
         //System.out.println("    write target");
-        bytes.writeInt(target.node);
+        bytes.writeVInt(target.node);
       }
 
       // just write the arcs "like normal" on first pass,
@@ -800,12 +820,10 @@ public final class FST<T> {
           }
           if (arc.flag(BIT_STOP_NODE)) {
           } else if (arc.flag(BIT_TARGET_NEXT)) {
+          } else if (packed) {
+            in.readVInt();
           } else {
-            if (packed) {
-              in.readVInt();
-            } else {
-              in.skipBytes(4);
-            }
+            readUnpackedNodeTarget(in);
           }
           arc.flags = in.readByte();
         }
@@ -817,6 +835,16 @@ public final class FST<T> {
       assert arc.isLast();
       return arc;
     }
+  }
+
+  private int readUnpackedNodeTarget(BytesReader in) throws IOException {
+    int target;
+    if (version < VERSION_VINT_TARGET) {
+      target = in.readInt();
+    } else {
+      target = in.readVInt();
+    }
+    return target;
   }
 
   /**
@@ -920,8 +948,10 @@ public final class FST<T> {
 
       final byte b = in.readByte();
       if (b == ARCS_AS_FIXED_ARRAY) {
-        //System.out.println("    nextArc fake array");
+        //System.out.println("    nextArc fixed array");
         in.readVInt();
+
+        // Skip bytesPerArc:
         if (packed) {
           in.readVInt();
         } else {
@@ -1024,7 +1054,7 @@ public final class FST<T> {
           //System.out.println("    abs code=" + code);
         }
       } else {
-        arc.target = in.readInt();
+        arc.target = readUnpackedNodeTarget(in);
       }
       arc.nextArc = in.getPosition();
     }
@@ -1147,7 +1177,7 @@ public final class FST<T> {
         if (packed) {
           in.readVInt();
         } else {
-          in.readInt();
+          readUnpackedNodeTarget(in);
         }
       }
 
@@ -1354,6 +1384,7 @@ public final class FST<T> {
 
   // Creates a packed FST
   private FST(INPUT_TYPE inputType, Outputs<T> outputs) {
+    version = VERSION_CURRENT;
     packed = true;
     this.inputType = inputType;
     // 32 KB blocks:
