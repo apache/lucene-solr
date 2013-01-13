@@ -483,11 +483,14 @@ public class TestFSTs extends LuceneTestCase {
             break;
           }
         }
-        long t = System.currentTimeMillis() - tStart;
-        System.out.println((t / 1000.0) + " sec to build");
+
+        long tMid = System.currentTimeMillis();
+        System.out.println(((tMid-tStart) / 1000.0) + " sec to add all terms");
 
         assert builder.getTermCount() == ord;
         FST<T> fst = builder.finish();
+        long tEnd = System.currentTimeMillis();
+        System.out.println(((tEnd-tMid) / 1000.0) + " sec to finish/pack");
         if (fst == null) {
           System.out.println("FST was fully pruned!");
           System.exit(0);

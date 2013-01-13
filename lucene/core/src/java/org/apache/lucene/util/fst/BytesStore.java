@@ -69,6 +69,14 @@ class BytesStore extends DataOutput {
     nextWrite = blocks.get(blocks.size()-1).length;
   }
 
+  /** Absolute write byte; you must ensure dest is < max
+   *  position written so far. */
+  public void writeByte(int dest, byte b) {
+    int blockIndex = dest >> blockBits;
+    byte[] block = blocks.get(blockIndex);
+    block[dest & blockMask] = b;
+  }
+
   @Override
   public void writeByte(byte b) {
     if (nextWrite == blockSize) {
@@ -237,9 +245,10 @@ class BytesStore extends DataOutput {
     }
   }
 
-  /** Reverse the last numBytes. */
+  /** Reverse from srcPos, inclusive, to destPos, inclusive. */
   public void reverse(int srcPos, int destPos) {
     assert srcPos < destPos;
+    assert destPos < getPosition();
     //System.out.println("reverse src=" + srcPos + " dest=" + destPos);
 
     int srcBlockIndex = srcPos >> blockBits;
@@ -275,7 +284,7 @@ class BytesStore extends DataOutput {
     }
   }
 
-  public void skip(int len) {
+  public void skipBytes(int len) {
     while (len > 0) {
       int chunk = blockSize - nextWrite;
       if (len <= chunk) {
@@ -292,6 +301,26 @@ class BytesStore extends DataOutput {
 
   public int getPosition() {
     return (blocks.size()-1) * blockSize + nextWrite;
+  }
+
+  /** Pos must be less than the max position written so far!
+   *  Ie, you cannot "grow" the file with this! */
+  public void truncate(int newLen) {
+    assert newLen <= getPosition();
+    assert newLen >= 0;
+    int blockIndex = newLen >> blockBits;
+    nextWrite = newLen & blockMask;
+    if (nextWrite == 0) {
+      blockIndex--;
+      nextWrite = blockSize;
+    }
+    blocks.subList(blockIndex+1, blocks.size()).clear();
+    if (newLen == 0) {
+      current = null;
+    } else {
+      current = blocks.get(blockIndex);
+    }
+    assert newLen == getPosition();
   }
 
   public void finish() {

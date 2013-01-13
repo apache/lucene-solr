@@ -730,7 +730,7 @@ public final class FST<T> {
       int destPos = fixedArrayStart + nodeIn.numArcs*maxBytesPerArc;
       assert destPos >= srcPos;
       if (destPos > srcPos) {
-        bytes.skip(destPos - srcPos);
+        bytes.skipBytes(destPos - srcPos);
         for(int arcIdx=nodeIn.numArcs-1;arcIdx>=0;arcIdx--) {
           destPos -= maxBytesPerArc;
           srcPos -= bytesPerArc[arcIdx];
@@ -1444,9 +1444,6 @@ public final class FST<T> {
       throw new IllegalArgumentException("this FST was not built with willPackFST=true");
     }
 
-    final RAMOutputStream buffer = new RAMOutputStream();
-    byte[] bufferBytes = new byte[64];
-
     Arc<T> arc = new Arc<T>();
 
     final BytesReader r = getBytesReader(0);
@@ -1553,7 +1550,7 @@ public final class FST<T> {
         // this is an array'd node and bytesPerArc changes:
         writeNode:
         while(true) { // retry writing this node
-          assert buffer.getFilePointer() == 0;
+
           //System.out.println("  cycle: retry");
           readFirstRealTargetArc(node, arc, r);
 
@@ -1563,9 +1560,9 @@ public final class FST<T> {
             if (bytesPerArc == 0) {
               bytesPerArc = arc.bytesPerArc;
             }
-            buffer.writeByte(ARCS_AS_FIXED_ARRAY);
-            buffer.writeVInt(arc.numArcs);
-            buffer.writeVInt(bytesPerArc);
+            writer.writeByte(ARCS_AS_FIXED_ARRAY);
+            writer.writeVInt(arc.numArcs);
+            writer.writeVInt(bytesPerArc);
             //System.out.println("node " + node + ": " + arc.numArcs + " arcs");
           }
 
@@ -1574,7 +1571,7 @@ public final class FST<T> {
           while(true) {  // iterate over all arcs for this node
             //System.out.println("    cycle next arc");
 
-            final int arcStartPos = (int) buffer.getFilePointer();
+            final int arcStartPos = writer.getPosition();
             nodeArcCount++;
 
             byte flags = 0;
@@ -1621,7 +1618,7 @@ public final class FST<T> {
                 absPtr = topNodeMap.size() + (int) newNodeAddress.get(arc.target) + addressError;
               }
 
-              int delta = (int) (newNodeAddress.get(arc.target) + addressError - buffer.getFilePointer() - address - 2);
+              int delta = (int) (newNodeAddress.get(arc.target) + addressError - writer.getPosition() - 2);
               if (delta < 0) {
                 //System.out.println("neg: " + delta);
                 anyNegDelta = true;
@@ -1637,23 +1634,23 @@ public final class FST<T> {
             }
 
             assert flags != ARCS_AS_FIXED_ARRAY;
-            buffer.writeByte(flags);
+            writer.writeByte(flags);
 
-            fst.writeLabel(buffer, arc.label);
+            fst.writeLabel(writer, arc.label);
 
             if (arc.output != NO_OUTPUT) {
-              outputs.write(arc.output, buffer);
+              outputs.write(arc.output, writer);
               if (!retry) {
                 fst.arcWithOutputCount++;
               }
             }
             if (arc.nextFinalOutput != NO_OUTPUT) {
-              outputs.writeFinalOutput(arc.nextFinalOutput, buffer);
+              outputs.writeFinalOutput(arc.nextFinalOutput, writer);
             }
 
             if (doWriteTarget) {
 
-              int delta = (int) (newNodeAddress.get(arc.target) + addressError - buffer.getFilePointer() - address);
+              int delta = (int) (newNodeAddress.get(arc.target) + addressError - writer.getPosition());
               if (delta < 0) {
                 anyNegDelta = true;
                 //System.out.println("neg: " + delta);
@@ -1662,7 +1659,7 @@ public final class FST<T> {
 
               if (flag(flags, BIT_TARGET_DELTA)) {
                 //System.out.println("        delta");
-                buffer.writeVInt(delta);
+                writer.writeVInt(delta);
                 if (!retry) {
                   deltaCount++;
                 }
@@ -1674,7 +1671,7 @@ public final class FST<T> {
                   System.out.println("        abs");
                 }
                 */
-                buffer.writeVInt(absPtr);
+                writer.writeVInt(absPtr);
                 if (!retry) {
                   if (absPtr >= topNodeMap.size()) {
                     absCount++;
@@ -1686,7 +1683,7 @@ public final class FST<T> {
             }
 
             if (useArcArray) {
-              final int arcBytes = (int) (buffer.getFilePointer() - arcStartPos);
+              final int arcBytes = writer.getPosition() - arcStartPos;
               //System.out.println("  " + arcBytes + " bytes");
               maxBytesPerArc = Math.max(maxBytesPerArc, arcBytes);
               // NOTE: this may in fact go "backwards", if
@@ -1696,11 +1693,7 @@ public final class FST<T> {
               // will retry (below) so it's OK to ovewrite
               // bytes:
               //wasted += bytesPerArc - arcBytes;
-              int skip = (int) (arcStartPos + bytesPerArc - buffer.getFilePointer());
-              while(skip > 0) {
-                buffer.writeByte((byte) 0);
-                skip--;
-              }
+              writer.skipBytes(arcStartPos + bytesPerArc - writer.getPosition());
             }
 
             if (arc.isLast()) {
@@ -1725,18 +1718,11 @@ public final class FST<T> {
 
           // Retry:
           bytesPerArc = maxBytesPerArc;
-          buffer.reset();
+          writer.truncate(address);
           nodeArcCount = 0;
           retry = true;
           anyNegDelta = false;
         }
-
-        if (bufferBytes.length < (int) buffer.getFilePointer()) {
-          bufferBytes = ArrayUtil.grow(bufferBytes, (int) buffer.getFilePointer());
-        }
-        buffer.writeTo(bufferBytes, 0);
-        writer.writeBytes(bufferBytes, 0, (int) buffer.getFilePointer());
-        buffer.reset();
 
         negDelta |= anyNegDelta;
 

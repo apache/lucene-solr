@@ -42,7 +42,7 @@ public class TestBytesStore extends LuceneTestCase {
 
       int pos = 0;
       while(pos < numBytes) {
-        int op = random().nextInt(7);
+        int op = random().nextInt(8);
         if (VERBOSE) {
           System.out.println("  cycle pos=" + pos);
         }
@@ -97,21 +97,21 @@ public class TestBytesStore extends LuceneTestCase {
         case 3:
           {
             // reverse bytes
-            if (pos > 0) {
-              int len = _TestUtil.nextInt(random(), 1, Math.min(100, pos));
+            if (pos > 1) {
+              int len = _TestUtil.nextInt(random(), 2, Math.min(100, pos));
               int start;
               if (len == pos) {
                 start = 0;
               } else {
                 start = random().nextInt(pos - len);
               }
-              int end = start + len;
+              int end = start + len - 1;
               if (VERBOSE) {
-                System.out.println("    reverse start=" + start + " end=" + end + " len=" + len);
+                System.out.println("    reverse start=" + start + " end=" + end + " len=" + len + " pos=" + pos);
               }
               bytes.reverse(start, end);
 
-              while(start < end) {
+              while(start <= end) {
                 byte b = expected[end];
                 expected[end] = expected[start];
                 expected[start] = b;
@@ -159,16 +159,48 @@ public class TestBytesStore extends LuceneTestCase {
           {
             // skip
             int len = random().nextInt(Math.min(100, numBytes - pos));
-            pos += len;
-            bytes.skip(len);
+
             if (VERBOSE) {
               System.out.println("    skip len=" + len);
             }
+
+            pos += len;
+            bytes.skipBytes(len);
+
+            // NOTE: must fill in zeros in case truncate was
+            // used, else we get false fails:
+            if (len > 0) {
+              byte[] zeros = new byte[len];
+              bytes.writeBytes(pos-len, zeros, 0, len);
+            }
           }
           break;
+
+        case 7:
+          {
+            // absWriteByte
+            if (pos > 0) {
+              int dest = random().nextInt(pos);
+              byte b = (byte) random().nextInt(256);
+              expected[dest] = b;
+              bytes.writeByte(dest, b);
+            }
+            break;
+          }
         }
 
         assertEquals(pos, bytes.getPosition());
+
+        if (pos > 0 && random().nextInt(50) == 17) {
+          // truncate
+          int len = _TestUtil.nextInt(random(), 1, Math.min(pos, 100));
+          bytes.truncate(pos - len);
+          pos -= len;
+          Arrays.fill(expected, pos, pos+len, (byte) 0);
+          if (VERBOSE) {
+            System.out.println("    truncate len=" + len + " newPos=" + pos);
+          }
+        }
 
         if ((pos > 0 && random().nextInt(200) == 17)) {
           verify(bytes, expected, pos);
