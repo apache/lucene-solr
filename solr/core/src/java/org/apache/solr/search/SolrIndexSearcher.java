@@ -49,6 +49,7 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -119,7 +120,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
   public SolrIndexSearcher(SolrCore core, String path, IndexSchema schema, SolrIndexConfig config, String name, boolean enableCache, DirectoryFactory directoryFactory) throws IOException {
     // we don't need to reserve the directory because we get it from the factory
-    this(core, schema,name, core.getIndexReaderFactory().newReader(directoryFactory.get(path, config.lockType), core), true, enableCache, false, directoryFactory);
+    this(core, schema,name, core.getIndexReaderFactory().newReader(directoryFactory.get(path, DirContext.DEFAULT, config.lockType), core), true, enableCache, false, directoryFactory);
   }
 
   private static String getIndexDir(Directory dir) {

@@ -29,7 +29,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class MockDirectoryFactory extends EphemeralDirectoryFactory {
 
   @Override
-  protected Directory create(String path) throws IOException {
+  protected Directory create(String path, DirContext dirContext) throws IOException {
     Directory dir = LuceneTestCase.newDirectory();
     if (dir instanceof MockDirectoryWrapper) {
       MockDirectoryWrapper mockDirWrapper = (MockDirectoryWrapper) dir;
