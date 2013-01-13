@@ -57,6 +57,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -367,7 +368,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
           dirsToBeReleased = new Directory[dirNames.length];
           DirectoryFactory dirFactory = core.getDirectoryFactory();
           for (int i = 0; i < dirNames.length; i++) {
-            Directory dir = dirFactory.get(dirNames[i], core.getSolrConfig().indexConfig.lockType);
+            Directory dir = dirFactory.get(dirNames[i], DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
             dirsToBeReleased[i] = dir;
             // TODO: why doesn't this use the IR factory? what is going on here?
             readersToBeClosed[i] = DirectoryReader.open(dir);
@@ -1022,9 +1023,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
     long size = 0;
     try {
       if (!core.getDirectoryFactory().exists(core.getIndexDir())) {
-        dir = core.getDirectoryFactory().get(core.getNewIndexDir(), core.getSolrConfig().indexConfig.lockType);
+        dir = core.getDirectoryFactory().get(core.getNewIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       } else {
-        dir = core.getDirectoryFactory().get(core.getIndexDir(), core.getSolrConfig().indexConfig.lockType); 
+        dir = core.getDirectoryFactory().get(core.getIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType); 
       }
 
       try {

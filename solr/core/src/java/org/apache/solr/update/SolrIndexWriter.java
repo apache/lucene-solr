@@ -32,6 +32,7 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.schema.IndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +59,7 @@ public class SolrIndexWriter extends IndexWriter {
   public static SolrIndexWriter create(String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec, boolean forceNewDirectory) throws IOException {
 
     SolrIndexWriter w = null;
-    final Directory d = directoryFactory.get(path, config.lockType, forceNewDirectory);
+    final Directory d = directoryFactory.get(path, DirContext.DEFAULT, config.lockType, forceNewDirectory);
     try {
       w = new SolrIndexWriter(name, path, d, create, schema, 
                               config, delPolicy, codec);

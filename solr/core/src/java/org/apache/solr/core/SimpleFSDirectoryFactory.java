@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,7 +31,7 @@ import java.io.IOException;
 public class SimpleFSDirectoryFactory extends StandardDirectoryFactory {
 
   @Override
-  protected Directory create(String path) throws IOException {
+  protected Directory create(String path, DirContext dirContext) throws IOException {
     return new SimpleFSDirectory(new File(path));
   }
 

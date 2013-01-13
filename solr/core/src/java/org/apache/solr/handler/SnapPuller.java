@@ -86,6 +86,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -374,11 +375,11 @@ public class SnapPuller {
       String tmpIdxDirName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
       tmpIndex = createTempindexDir(core, tmpIdxDirName);
 
-      tmpIndexDir = core.getDirectoryFactory().get(tmpIndex, core.getSolrConfig().indexConfig.lockType);
+      tmpIndexDir = core.getDirectoryFactory().get(tmpIndex, DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       
       // make sure it's the newest known index dir...
       indexDirPath = core.getNewIndexDir();
-      indexDir = core.getDirectoryFactory().get(indexDirPath, core.getSolrConfig().indexConfig.lockType);
+      indexDir = core.getDirectoryFactory().get(indexDirPath, DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       Directory oldDirectory = null;
 
       try {
@@ -542,7 +543,7 @@ public class SnapPuller {
     long replicationTimeTaken = (replicationTime - getReplicationStartTime()) / 1000;
     Directory dir = null;
     try {
-      dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), solrCore.getSolrConfig().indexConfig.lockType);
+      dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), DirContext.META_DATA, solrCore.getSolrConfig().indexConfig.lockType);
       
       int indexCount = 1, confFilesCount = 1;
       if (props.containsKey(TIMES_INDEX_REPLICATED)) {
@@ -725,7 +726,7 @@ public class SnapPuller {
     String indexDir = solrCore.getIndexDir();
     
     // it's okay to use null for lock factory since we know this dir will exist
-    Directory dir = solrCore.getDirectoryFactory().get(indexDir, solrCore.getSolrConfig().indexConfig.lockType);
+    Directory dir = solrCore.getDirectoryFactory().get(indexDir, DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
     try {
       for (Map<String,Object> file : filesToDownload) {
         if (!dir.fileExists((String) file.get(NAME)) || downloadCompleteIndex) {
@@ -848,7 +849,7 @@ public class SnapPuller {
     Properties p = new Properties();
     Directory dir = null;
     try {
-      dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), solrCore.getSolrConfig().indexConfig.lockType);
+      dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), DirContext.META_DATA, solrCore.getSolrConfig().indexConfig.lockType);
       if (dir.fileExists(SnapPuller.INDEX_PROPERTIES)){
         final IndexInput input = dir.openInput(SnapPuller.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
   

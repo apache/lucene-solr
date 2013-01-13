@@ -41,6 +41,8 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   // A large estimate should currently have no other side effects.
   public static final IOContext IOCONTEXT_NO_CACHE = new IOContext(new FlushInfo(10*1000*1000, 100L*1000*1000*1000));
 
+  // hint about what the directory contains - default is index directory
+  public enum DirContext {DEFAULT, META_DATA}
 
   private static final Logger log = LoggerFactory.getLogger(DirectoryFactory.class.getName());
   
@@ -71,7 +73,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * 
    * @throws IOException If there is a low-level I/O error.
    */
-  protected abstract Directory create(String path) throws IOException;
+  protected abstract Directory create(String path,  DirContext dirContext) throws IOException;
   
   /**
    * Returns true if a Directory exists for a given path.
@@ -118,7 +120,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * 
    * @throws IOException If there is a low-level I/O error.
    */
-  public abstract Directory get(String path, String rawLockType)
+  public abstract Directory get(String path, DirContext dirContext, String rawLockType)
       throws IOException;
   
   /**
@@ -130,7 +132,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * 
    * @throws IOException If there is a low-level I/O error.
    */
-  public abstract Directory get(String path, String rawLockType,
+  public abstract Directory get(String path,  DirContext dirContext, String rawLockType,
       boolean forceNew) throws IOException;
   
   /**
