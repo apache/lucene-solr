@@ -2,6 +2,7 @@ package org.apache.lucene.facet.search.aggregator;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.util.IntsRef;
 
 /*
@@ -58,4 +59,9 @@ public class ScoringAggregator implements Aggregator {
     return hashCode;
   }
 
+  @Override
+  public boolean setNextReader(AtomicReaderContext context) throws IOException {
+    return true;
+  }
+  
 }

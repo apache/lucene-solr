@@ -24,6 +24,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.*;
+import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Finite state automata based implementation of "autocomplete" functionality.
@@ -237,7 +238,8 @@ public class FSTCompletionBuilder {
     final Object empty = outputs.getNoOutput();
     final Builder<Object> builder = new Builder<Object>(
         FST.INPUT_TYPE.BYTE1, 0, 0, true, true, 
-        shareMaxTailLength, outputs, null, false, true);
+        shareMaxTailLength, outputs, null, false, 
+        PackedInts.DEFAULT, true, 15);
     
     BytesRef scratch = new BytesRef();
     BytesRef entry;

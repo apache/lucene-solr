@@ -28,7 +28,7 @@ import org.apache.lucene.store.RAMDirectory;
 public class RAMDirectoryFactory extends EphemeralDirectoryFactory {
 
   @Override
-  protected Directory create(String path) throws IOException {
+  protected Directory create(String path, DirContext dirContext) throws IOException {
     return new RAMDirectory();
   }
 

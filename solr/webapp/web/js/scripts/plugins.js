@@ -206,7 +206,7 @@ var render_plugin_data = function( plugin_data, plugin_sort, types )
       }
 
       content += '<li class="' + classes.join( ' ' ) + '">' + "\n";
-      content += '<a href="' + context_path + '?entry=' + bean.esc() + '">';
+      content += '<a href="' + context_path + '?entry=' + bean.esc() + '" data-bean="' + bean.esc() + '">';
       content += '<span>' + bean.esc() + '</span>';
       content += '</a>' + "\n";
       content += '<ul class="detail">' + "\n";
@@ -279,8 +279,48 @@ var render_plugin_data = function( plugin_data, plugin_sort, types )
   frame_element
     .html( content );
 
-  $( 'a[href="' + decodeURIComponent( active_context.path ) + '"]', frame_element )
-    .parent().addClass( 'expanded' );
+  
+  var path = active_context.path.split( '?entry=' );
+  var entries = ( path[1] || '' ).split( ',' );
+  
+  var entry_count = entries.length;
+  for( var i = 0; i < entry_count; i++ )
+  {
+    $( 'a[data-bean="' + entries[i] + '"]', frame_element )
+      .parent().addClass( 'expanded' );
+  }
+
+  $( 'a', frame_element )
+    .off( 'click' )
+    .on
+    (
+      'click',
+      function( event )
+      { 
+        var self = $( this );
+        var bean = self.data( 'bean' );
+
+        var split = '?entry=';
+        var path = active_context.path.split( split );
+        var entry = ( path[1] || '' );
+
+        var regex = new RegExp( bean.replace( /\//g, '\\/' ) + '(,|$)' );
+        var match = regex.test( entry );
+
+        var url = path[0] + split;
+
+        url += match
+             ? entry.replace( regex, '' )
+             : entry + ',' + bean;
+
+        url = url.replace( /=,/, '=' );
+        url = url.replace( /,$/, '' );
+        url = url.replace( /\?entry=$/, '' );
+
+        active_context.redirect( url );
+        return false;
+      }
+    );
   
   // Try to make links for anything with http (but leave the rest alone)
   $( '.detail dd' ).each(function(index) {

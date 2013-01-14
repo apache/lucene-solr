@@ -1,8 +1,6 @@
 package org.apache.lucene.facet.util;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -26,43 +24,42 @@ import org.apache.lucene.util.IntsRef;
  */
 
 /**
- * Iterates over multiple {@link CategoryListIterator}s, consuming the provided
- * iterators in order.
- * 
- * @lucene.experimental
+ * A {@link CategoryListIterator} which asserts that
+ * {@link #getOrdinals(int, IntsRef)} is not called before
+ * {@link #setNextReader(AtomicReaderContext)} and that if
+ * {@link #setNextReader(AtomicReaderContext)} returns false,
+ * {@link #getOrdinals(int, IntsRef)} isn't called.
  */
-public class MultiCategoryListIterator implements CategoryListIterator {
-
-  private final CategoryListIterator[] iterators;
-  private final List<CategoryListIterator> validIterators;
-
-  /** Receives the iterators to iterate on */
-  public MultiCategoryListIterator(CategoryListIterator... iterators) {
-    this.iterators = iterators;
-    this.validIterators = new ArrayList<CategoryListIterator>();
+public class AssertingCategoryListIterator implements CategoryListIterator {
+ 
+  private final CategoryListIterator delegate;
+  private boolean setNextReaderCalled = false;
+  private boolean validSegment = false;
+  private int maxDoc;
+  
+  public AssertingCategoryListIterator(CategoryListIterator delegate) {
+    this.delegate = delegate;
   }
-
+  
   @Override
   public boolean setNextReader(AtomicReaderContext context) throws IOException {
-    validIterators.clear();
-    for (CategoryListIterator cli : iterators) {
-      if (cli.setNextReader(context)) {
-        validIterators.add(cli);
-      }
-    }
-    return !validIterators.isEmpty();
+    setNextReaderCalled = true;
+    maxDoc = context.reader().maxDoc();
+    return validSegment = delegate.setNextReader(context);
   }
   
   @Override
   public void getOrdinals(int docID, IntsRef ints) throws IOException {
-    IntsRef tmp = new IntsRef(ints.length);
-    for (CategoryListIterator cli : validIterators) {
-      cli.getOrdinals(docID, tmp);
-      if (ints.ints.length < ints.length + tmp.length) {
-        ints.grow(ints.length + tmp.length);
-      }
-      ints.length += tmp.length;
+    if (!setNextReaderCalled) {
+      throw new RuntimeException("should not call getOrdinals without setNextReader first");
     }
+    if (!validSegment) {
+      throw new RuntimeException("should not call getOrdinals if setNextReader returned false");
+    }
+    if (docID >= maxDoc) {
+      throw new RuntimeException("docID is larger than current maxDoc; forgot to call setNextReader?");
+    }
+    delegate.getOrdinals(docID, ints);
   }
-
+  
 }

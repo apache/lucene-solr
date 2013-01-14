@@ -1,4 +1,5 @@
-package org.apache.solr.core;
+package org.apache.lucene.util.fst;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,23 +17,45 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.solr.core.DirectoryFactory.DirContext;
+/** Reads in reverse from a single byte[]. */
+final class ReverseBytesReader extends FST.BytesReader {
+  private final byte[] bytes;
+  private int pos;
 
-import java.io.File;
-import java.io.IOException;
-
-
-/**
- * Factory to instantiate {@link org.apache.lucene.store.NIOFSDirectory}
- *
- **/
-public class NIOFSDirectoryFactory extends StandardDirectoryFactory {
+  public ReverseBytesReader(byte[] bytes) {
+    this.bytes = bytes;
+  }
 
   @Override
-  protected Directory create(String path, DirContext dirContext) throws IOException {
-    return new NIOFSDirectory(new File(path));
+  public byte readByte() {
+    return bytes[pos--];
   }
-  
+
+  @Override
+  public void readBytes(byte[] b, int offset, int len) {
+    for(int i=0;i<len;i++) {
+      b[offset+i] = bytes[pos--];
+    }
+  }
+
+  @Override
+  public void skipBytes(int count) {
+    pos -= count;
+  }
+
+  @Override
+  public long getPosition() {
+    return pos;
+  }
+
+  @Override
+  public void setPosition(long pos) {
+    this.pos = (int) pos;
+  }
+
+  @Override
+  public boolean reversed() {
+    return true;
+  }
 }
+

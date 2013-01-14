@@ -113,27 +113,38 @@ sammy.get
             'submit',
             function( event )
             {
-              var form_map = {};
               var form_values = [];
-              var all_form_values = query_form.formToArray();
-
-              for( var i = 0; i < all_form_values.length; i++ )
+ 
+              var add_to_form_values = function add_to_form_values( fields )
               {
-                if( !all_form_values[i].value || 0 === all_form_values[i].value.length )
-                {
-                  continue;
-                }
+                 for( var i in fields )
+                 {
+                  if( !fields[i].value || 0 === fields[i].value.length )
+                  {
+                    continue;
+                  }
+ 
+                  form_values.push( fields[i] );
+                 }
+              };
+ 
+              var fieldsets = $( '> fieldset', query_form );
+ 
+              var fields = fieldsets.first().formToArray();
+              add_to_form_values( fields );
 
-                var name_parts = all_form_values[i].name.split( '.' );
-                if( 1 < name_parts.length && !form_map[name_parts[0]] )
-                {
-                  console.debug( 'skip "' + all_form_values[i].name + '", parent missing' );
-                  continue;
-                }
-
-                form_map[all_form_values[i].name] = all_form_values[i].value;
-                form_values.push( all_form_values[i] );
-              }
+              fieldsets.not( '.common' )
+                .each
+                (
+                  function( i, set )
+                  {
+                    if( $( 'legend input', set ).is( ':checked' ) )
+                    {
+                      var fields = $( set ).formToArray();
+                      add_to_form_values( fields );
+                    }
+                  }
+                );
 
               var handler_path = $( '#qt', query_form ).val();
               if( '/' !== handler_path[0] )
@@ -144,7 +155,13 @@ sammy.get
 
               var query_url = window.location.protocol + '//' + window.location.host
                             + core_basepath + handler_path + '?' + $.param( form_values );
-                            
+
+              var custom_parameters = $( '#custom_parameters', query_form ).val();
+              if( custom_parameters && 0 !== custom_parameters.length )
+              {
+                query_url += '&' + custom_parameters.replace( /^&/, '' ); 
+              }
+
               url_element
                 .attr( 'href', query_url )
                 .text( query_url )

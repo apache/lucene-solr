@@ -9,6 +9,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.facet.search.ScoredDocIDs;
+import org.apache.lucene.facet.search.ScoredDocIDsIterator;
+import org.apache.lucene.facet.search.ScoredDocIdCollector;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
@@ -21,14 +24,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.OpenBitSetDISI;
-import org.junit.Test;
-
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.search.ScoredDocIDs;
-import org.apache.lucene.facet.search.ScoredDocIDsIterator;
-import org.apache.lucene.facet.search.ScoredDocIdCollector;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -52,21 +50,21 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
   @Test
   public void testComplementIterator() throws Exception {
     final int n = atLeast(10000);
-    final OpenBitSet bits = new OpenBitSet(n);
-    for (int i = 0; i < 5 * n; i++) {
-      bits.flip(random().nextInt(n));
+    final FixedBitSet bits = new FixedBitSet(n);
+    Random random = random();
+    for (int i = 0; i < n; i++) {
+      int idx = random.nextInt(n);
+      bits.flip(idx, idx + 1);
     }
     
-    OpenBitSet verify = new OpenBitSet(n);
-    verify.or(bits);
+    FixedBitSet verify = new FixedBitSet(bits);
 
     ScoredDocIDs scoredDocIDs = ScoredDocIdsUtils.createScoredDocIds(bits, n); 
 
     Directory dir = newDirectory();
-    IndexReader reader = createReaderWithNDocs(random(), n, dir);
+    IndexReader reader = createReaderWithNDocs(random, n, dir);
     try { 
-      assertEquals(n - verify.cardinality(), ScoredDocIdsUtils.getComplementSet(scoredDocIDs, 
-        reader).size());
+      assertEquals(n - verify.cardinality(), ScoredDocIdsUtils.getComplementSet(scoredDocIDs, reader).size());
     } finally {
       reader.close();
       dir.close();
@@ -147,7 +145,7 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
       searcher.search(q, collector);
 
       ScoredDocIDs scoredDocIds = collector.getScoredDocIDs();
-      OpenBitSet resultSet = new OpenBitSetDISI(scoredDocIds.getDocIDs().iterator(), reader.maxDoc());
+      FixedBitSet resultSet = (FixedBitSet) scoredDocIds.getDocIDs();
       
       // Getting the complement set of the query result
       ScoredDocIDs complementSet = ScoredDocIdsUtils.getComplementSet(scoredDocIds, reader);
@@ -164,12 +162,11 @@ public class TestScoredDocIDsUtils extends LuceneTestCase {
         assertFalse(
             "Complement-Set must not contain deleted documents (doc="+docNum+")",
             live != null && !live.get(docNum));
-        assertNull(
-            "Complement-Set must not contain docs from the original set (doc="+ docNum+")",
+        assertNull("Complement-Set must not contain docs from the original set (doc="+ docNum+")", 
             reader.document(docNum).getField("del"));
         assertFalse(
             "Complement-Set must not contain docs from the original set (doc="+docNum+")",
-            resultSet.fastGet(docNum));
+            resultSet.get(docNum));
       }
     } finally {
       reader.close();

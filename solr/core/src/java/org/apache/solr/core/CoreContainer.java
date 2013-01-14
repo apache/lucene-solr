@@ -1626,10 +1626,15 @@ public class CoreContainer
     return schema;
   }
   
-  private static final String DEF_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-          "<solr persistent=\"false\">\n" +
-          "  <cores adminPath=\"/admin/cores\" defaultCoreName=\"" + DEFAULT_DEFAULT_CORE_NAME + "\">\n" +
-          "    <core name=\""+ DEFAULT_DEFAULT_CORE_NAME + "\" shard=\"${shard:}\" instanceDir=\"collection1\" />\n" +
-          "  </cores>\n" +
-          "</solr>";
+  private static final String DEF_SOLR_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
+      + "<solr persistent=\"false\">\n"
+      + "  <cores adminPath=\"/admin/cores\" defaultCoreName=\""
+      + DEFAULT_DEFAULT_CORE_NAME
+      + "\""
+      + " host=\"${host:}\" hostPort=\"${hostPort:}\" hostContext=\"${hostContext:}\" zkClientTimeout=\"${zkClientTimeout:15000}\""
+      + ">\n"
+      + "    <core name=\""
+      + DEFAULT_DEFAULT_CORE_NAME
+      + "\" shard=\"${shard:}\" collection=\"${collection:}\" instanceDir=\"collection1\" />\n"
+      + "  </cores>\n" + "</solr>";
 }

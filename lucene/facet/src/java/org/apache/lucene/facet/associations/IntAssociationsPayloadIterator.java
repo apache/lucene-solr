@@ -2,7 +2,6 @@ package org.apache.lucene.facet.associations;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.collections.IntToIntMap;
 
 /*
@@ -31,9 +30,8 @@ public class IntAssociationsPayloadIterator extends AssociationsPayloadIterator<
 
   private final IntToIntMap ordinalAssociations = new IntToIntMap();
 
-  public IntAssociationsPayloadIterator(IndexReader reader, String field, CategoryIntAssociation association) 
-      throws IOException {
-    super(reader, field, association);
+  public IntAssociationsPayloadIterator(String field, CategoryIntAssociation association) throws IOException {
+    super(field, association);
   }
 
   @Override

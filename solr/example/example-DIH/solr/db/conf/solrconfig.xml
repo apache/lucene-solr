@@ -28,7 +28,7 @@
 
   <jmx />
 
-  <lib dir="../../../../dist/" regex="apache-solr-dataimporthandler-.*\.jar" />
+  <lib dir="../../../../dist/" regex="solr-dataimporthandler-.*\.jar" />
 
   <!-- <indexConfig> section could go here, but we want the defaults -->
 

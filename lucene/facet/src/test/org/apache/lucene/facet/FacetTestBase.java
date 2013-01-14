@@ -317,8 +317,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
   }
   
   /** Validate results equality */
-  protected static void assertSameResults(List<FacetResult> expected,
-                                          List<FacetResult> actual) {
+  protected static void assertSameResults(List<FacetResult> expected, List<FacetResult> actual) {
     String expectedResults = resStringValueOnly(expected);
     String actualResults = resStringValueOnly(actual);
     if (!expectedResults.equals(actualResults)) {

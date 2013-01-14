@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -3475,6 +3476,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit {
     diagnostics.put("os.version", Constants.OS_VERSION);
     diagnostics.put("java.version", Constants.JAVA_VERSION);
     diagnostics.put("java.vendor", Constants.JAVA_VENDOR);
+    diagnostics.put("timestamp", Long.toString(new Date().getTime()));
     if (details != null) {
       diagnostics.putAll(details);
     }

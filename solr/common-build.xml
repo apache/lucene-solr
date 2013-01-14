@@ -25,7 +25,7 @@
   
   <property name="Name" value="Solr" />
   <property name="version" value="5.0-SNAPSHOT"/>
-  <property name="fullname" value="apache-${ant.project.name}"/>
+  <property name="fullname" value="${ant.project.name}"/>
   <property name="fullnamever" value="${fullname}-${version}"/>
   <property name="final.name" value="${fullnamever}"/>
   
@@ -114,7 +114,7 @@
     <attribute name="property" default="@{name}.uptodate"/>
     <attribute name="classpath.property" default="@{name}.jar"/>
     <!-- set jarfile only, if the target jar file has no generic name -->
-    <attribute name="jarfile" default="${common-solr.dir}/build/contrib/solr-@{name}/apache-solr-@{name}-${version}.jar"/>
+    <attribute name="jarfile" default="${common-solr.dir}/build/contrib/solr-@{name}/solr-@{name}-${version}.jar"/>
     <sequential>
       <!--<echo message="Checking '@{jarfile}' against source folder '${common.dir}/contrib/@{name}/src/java'"/>-->
       <property name="@{classpath.property}" location="@{jarfile}"/>
@@ -214,13 +214,13 @@
   </target>
 
   <target name="check-solr-core-javadocs-uptodate" unless="solr-core-javadocs.uptodate">
-    <uptodate property="solr-core-javadocs.uptodate" targetfile="${build.dir}/solr-core/apache-solr-core-${version}-javadoc.jar">
+    <uptodate property="solr-core-javadocs.uptodate" targetfile="${build.dir}/solr-core/solr-core-${version}-javadoc.jar">
        <srcfiles dir="${common-solr.dir}/core/src/java" includes="**/*.java"/>
     </uptodate>
   </target>
 
   <target name="check-solrj-javadocs-uptodate" unless="solrj-javadocs.uptodate">
-    <uptodate property="solrj-javadocs.uptodate" targetfile="${build.dir}/solr-solrj/apache-solr-solrj-${version}-javadoc.jar">
+    <uptodate property="solrj-javadocs.uptodate" targetfile="${build.dir}/solr-solrj/solr-solrj-${version}-javadoc.jar">
        <srcfiles dir="${common-solr.dir}/solrj/src/java" includes="**/*.java"/>
     </uptodate>
   </target>

@@ -59,9 +59,8 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
     return res;
   }
   
-  protected abstract FacetsAccumulator getSamplingAccumulator(Sampler sampler,
-      TaxonomyReader taxoReader, IndexReader indexReader,
-      FacetSearchParams searchParams);
+  protected abstract FacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
+      IndexReader indexReader, FacetSearchParams searchParams);
   
   /**
    * Try out faceted search with sampling enabled and complements either disabled or enforced
@@ -89,7 +88,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
         
         // try several times in case of failure, because the test has a chance to fail 
         // if the top K facets are not sufficiently common with the sample set
-        for (int nTrial=0; nTrial<RETRIES; nTrial++) {
+        for (int nTrial = 0; nTrial < RETRIES; nTrial++) {
           try {
             // complement with sampling!
             final Sampler sampler = createSampler(nTrial, docCollector.getScoredDocIDs(), useRandomSampler);
@@ -99,7 +98,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
             
             break; // succeeded
           } catch (NotSameResultError e) {
-            if (nTrial>=RETRIES-1) {
+            if (nTrial >= RETRIES - 1) {
               throw e; // no more retries allowed, must fail
             }
           }
@@ -119,14 +118,11 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
     assertSameResults(expected, sampledResults);
   }
   
-  private FacetsCollector samplingCollector(
-      final boolean complement,
-      final Sampler sampler,
+  private FacetsCollector samplingCollector(final boolean complement, final Sampler sampler,
       FacetSearchParams samplingSearchParams) {
     FacetsCollector samplingFC = new FacetsCollector(samplingSearchParams, indexReader, taxoReader) {
       @Override
-      protected FacetsAccumulator initFacetsAccumulator(
-          FacetSearchParams facetSearchParams, IndexReader indexReader,
+      protected FacetsAccumulator initFacetsAccumulator(FacetSearchParams facetSearchParams, IndexReader indexReader,
           TaxonomyReader taxonomyReader) {
         FacetsAccumulator acc = getSamplingAccumulator(sampler, taxonomyReader, indexReader, facetSearchParams);
         acc.setComplementThreshold(complement ? FacetsAccumulator.FORCE_COMPLEMENT : FacetsAccumulator.DISABLE_COMPLEMENT);
@@ -144,12 +140,13 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
     samplingParams.setMinSampleSize((int) (100 * retryFactor));
     samplingParams.setMaxSampleSize((int) (10000 * retryFactor));
     samplingParams.setOversampleFactor(5.0 * retryFactor);
+    samplingParams.setSamplingThreshold(11000); //force sampling
 
-    samplingParams.setSamplingThreshold(11000); //force sampling 
     Sampler sampler = useRandomSampler ? 
         new RandomSampler(samplingParams, new Random(random().nextLong())) :
           new RepeatableSampler(samplingParams);
     assertTrue("must enable sampling for this test!",sampler.shouldSample(scoredDocIDs));
     return sampler;
   }
+  
 }

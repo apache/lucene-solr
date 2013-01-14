@@ -57,6 +57,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -367,7 +368,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
           dirsToBeReleased = new Directory[dirNames.length];
           DirectoryFactory dirFactory = core.getDirectoryFactory();
           for (int i = 0; i < dirNames.length; i++) {
-            Directory dir = dirFactory.get(dirNames[i], core.getSolrConfig().indexConfig.lockType);
+            Directory dir = dirFactory.get(dirNames[i], DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
             dirsToBeReleased[i] = dir;
             // TODO: why doesn't this use the IR factory? what is going on here?
             readersToBeClosed[i] = DirectoryReader.open(dir);
@@ -688,6 +689,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
     SolrParams params = req.getParams();
 
     String cname = params.get(CoreAdminParams.CORE);
+    String indexInfo = params.get(CoreAdminParams.INDEX_INFO);
+    boolean isIndexInfoNeeded = Boolean.parseBoolean(null == indexInfo ? "true" : indexInfo);
     boolean doPersist = false;
     NamedList<Object> status = new SimpleOrderedMap<Object>();
     Map<String,Exception> allFailures = coreContainer.getCoreInitFailures();
@@ -695,7 +698,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       if (cname == null) {
         rsp.add("defaultCoreName", coreContainer.getDefaultCoreName());
         for (String name : coreContainer.getCoreNames()) {
-          status.add(name, getCoreStatus(coreContainer, name));
+          status.add(name, getCoreStatus(coreContainer, name, isIndexInfoNeeded));
         }
         rsp.add("initFailures", allFailures);
       } else {
@@ -703,7 +706,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
           ? Collections.singletonMap(cname, allFailures.get(cname))
           : Collections.emptyMap();
         rsp.add("initFailures", failures);
-        status.add(cname, getCoreStatus(coreContainer, cname));
+        status.add(cname, getCoreStatus(coreContainer, cname, isIndexInfoNeeded));
       }
       rsp.add("status", status);
       doPersist = false; // no state change
@@ -987,7 +990,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     
   }
 
-  protected NamedList<Object> getCoreStatus(CoreContainer cores, String cname) throws IOException {
+  protected NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<Object>();
     SolrCore core = cores.getCore(cname);
     if (core != null) {
@@ -1000,15 +1003,17 @@ public class CoreAdminHandler extends RequestHandlerBase {
         info.add("schema", core.getSchemaResource());
         info.add("startTime", new Date(core.getStartTime()));
         info.add("uptime", System.currentTimeMillis() - core.getStartTime());
-        RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-        try {
-          SimpleOrderedMap<Object> indexInfo = LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader());
-          long size = getIndexSize(core);
-          indexInfo.add("sizeInBytes", size);
-          indexInfo.add("size", NumberUtils.readableSize(size));
-          info.add("index", indexInfo);
-        } finally {
-          searcher.decref();
+        if (isIndexInfoNeeded) {
+          RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
+          try {
+            SimpleOrderedMap<Object> indexInfo = LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader());
+            long size = getIndexSize(core);
+            indexInfo.add("sizeInBytes", size);
+            indexInfo.add("size", NumberUtils.readableSize(size));
+            info.add("index", indexInfo);
+          } finally {
+            searcher.decref();
+          }
         }
       } finally {
         core.close();
@@ -1022,9 +1027,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
     long size = 0;
     try {
       if (!core.getDirectoryFactory().exists(core.getIndexDir())) {
-        dir = core.getDirectoryFactory().get(core.getNewIndexDir(), core.getSolrConfig().indexConfig.lockType);
+        dir = core.getDirectoryFactory().get(core.getNewIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       } else {
-        dir = core.getDirectoryFactory().get(core.getIndexDir(), core.getSolrConfig().indexConfig.lockType); 
+        dir = core.getDirectoryFactory().get(core.getIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType); 
       }
 
       try {

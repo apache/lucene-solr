@@ -132,7 +132,7 @@ public class TokenInfoDictionaryBuilder {
     System.out.println("  encode...");
 
     PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton(true);
-    Builder<Long> fstBuilder = new Builder<Long>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, null, true, true);
+    Builder<Long> fstBuilder = new Builder<Long>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, null, true, PackedInts.DEFAULT, true, 15);
     IntsRef scratch = new IntsRef();
     long ord = -1; // first ord will be 0
     String lastValue = null;

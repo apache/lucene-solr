@@ -25,6 +25,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 
 /**
  * Factory to instantiate {@link org.apache.lucene.store.NRTCachingDirectory}
@@ -48,7 +49,7 @@ public class NRTCachingDirectoryFactory extends StandardDirectoryFactory {
   }
 
   @Override
-  protected Directory create(String path) throws IOException {
+  protected Directory create(String path, DirContext dirContext) throws IOException {
     return new NRTCachingDirectory(FSDirectory.open(new File(path)), maxMergeSizeMB, maxCachedMB);
   }
 

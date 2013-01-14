@@ -14,6 +14,7 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -106,30 +107,31 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    IntsRef ordinals = new IntsRef();
-    CategoryListIterator cli = new PayloadCategoryListIteraor(reader, new Term("f","1"), encoder.createMatchingDecoder());
-    cli.init();
     int totalCategories = 0;
-    for (int i = 0; i < data.length; i++) {
-      Set<Integer> values = new HashSet<Integer>();
-      for (int j = 0; j < data[i].length; j++) {
-        values.add(data[i].ints[j]);
+    IntsRef ordinals = new IntsRef();
+    CategoryListIterator cli = new PayloadCategoryListIteraor(new Term("f","1"), encoder.createMatchingDecoder());
+    for (AtomicReaderContext context : reader.leaves()) {
+      cli.setNextReader(context);
+      int maxDoc = context.reader().maxDoc();
+      int dataIdx = context.docBase;
+      for (int doc = 0; doc < maxDoc; doc++, dataIdx++) {
+        Set<Integer> values = new HashSet<Integer>();
+        for (int j = 0; j < data[dataIdx].length; j++) {
+          values.add(data[dataIdx].ints[j]);
+        }
+        cli.getOrdinals(doc, ordinals);
+        assertTrue("no ordinals for document " + doc, ordinals.length > 0);
+        for (int j = 0; j < ordinals.length; j++) {
+          assertTrue("expected category not found: " + ordinals.ints[j], values.contains(ordinals.ints[j]));
+        }
+        totalCategories += ordinals.length;
       }
-      cli.getOrdinals(i, ordinals);
-      assertTrue("no ordinals for document " + i, ordinals.length > 0);
-      for (int j = 0; j < ordinals.length; j++) {
-        assertTrue("expected category not found: " + ordinals.ints[j], values.contains(ordinals.ints[j]));
-      }
-      totalCategories += ordinals.length;
     }
-    assertEquals("Missing categories!",10,totalCategories);
+    assertEquals("Missing categories!", 10, totalCategories);
     reader.close();
     dir.close();
   }
 
-  /**
-   * Test that a document with no payloads does not confuse the payload decoder.
-   */
   @Test
   public void testPayloadIteratorWithInvalidDoc() throws Exception {
     Directory dir = newDirectory();
@@ -160,24 +162,28 @@ public class CategoryListIteratorTest extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
 
-    IntsRef ordinals = new IntsRef();
-    CategoryListIterator cli = new PayloadCategoryListIteraor(reader, new Term("f","1"), encoder.createMatchingDecoder());
-    assertTrue("Failed to initialize payload iterator", cli.init());
     int totalCategories = 0;
-    for (int i = 0; i < data.length; i++) {
-      Set<Integer> values = new HashSet<Integer>();
-      for (int j = 0; j < data[i].length; j++) {
-        values.add(data[i].ints[j]);
-      }
-      cli.getOrdinals(i, ordinals);
-      if (i == 0) {
-        assertTrue("document 0 must have a payload", ordinals.length > 0);
-        for (int j = 0; j < ordinals.length; j++) {
-          assertTrue("expected category not found: " + ordinals.ints[j], values.contains(ordinals.ints[j]));
+    IntsRef ordinals = new IntsRef();
+    CategoryListIterator cli = new PayloadCategoryListIteraor(new Term("f","1"), encoder.createMatchingDecoder());
+    for (AtomicReaderContext context : reader.leaves()) {
+      cli.setNextReader(context);
+      int maxDoc = context.reader().maxDoc();
+      int dataIdx = context.docBase;
+      for (int doc = 0; doc < maxDoc; doc++, dataIdx++) {
+        Set<Integer> values = new HashSet<Integer>();
+        for (int j = 0; j < data[dataIdx].length; j++) {
+          values.add(data[dataIdx].ints[j]);
         }
-        totalCategories += ordinals.length;
-      } else {
-        assertTrue("only document 0 should have a payload", ordinals.length == 0);
+        cli.getOrdinals(doc, ordinals);
+        if (dataIdx == 0) {
+          assertTrue("document 0 must have a payload", ordinals.length > 0);
+          for (int j = 0; j < ordinals.length; j++) {
+            assertTrue("expected category not found: " + ordinals.ints[j], values.contains(ordinals.ints[j]));
+          }
+          totalCategories += ordinals.length;
+        } else {
+          assertTrue("only document 0 should have a payload", ordinals.length == 0);
+        }
       }
     }
     assertEquals("Wrong number of total categories!", 2, totalCategories);

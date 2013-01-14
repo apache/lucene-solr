@@ -62,7 +62,7 @@ public abstract class ScoredDocIdCollector extends Collector {
     }
 
     @Override
-    public ScoredDocIDsIterator scoredDocIdsIterator() {
+    protected ScoredDocIDsIterator scoredDocIdsIterator() {
       return new ScoredDocIDsIterator() {
 
         private DocIdSetIterator docIdsIter = docIds.iterator();
@@ -129,7 +129,7 @@ public abstract class ScoredDocIdCollector extends Collector {
     }
 
     @Override
-    public ScoredDocIDsIterator scoredDocIdsIterator() {
+    protected ScoredDocIDsIterator scoredDocIdsIterator() {
       return new ScoredDocIDsIterator() {
 
         private DocIdSetIterator docIdsIter = docIds.iterator();
@@ -189,8 +189,7 @@ public abstract class ScoredDocIdCollector extends Collector {
    *        do not require scoring, it is better to set it to <i>false</i>.
    */
   public static ScoredDocIdCollector create(int maxDoc, boolean enableScoring) {
-    return enableScoring   ? new ScoringDocIdCollector(maxDoc)
-                          : new NonScoringDocIdCollector(maxDoc);
+    return enableScoring ? new ScoringDocIdCollector(maxDoc) : new NonScoringDocIdCollector(maxDoc);
   }
 
   private ScoredDocIdCollector(int maxDoc) {
@@ -198,13 +197,14 @@ public abstract class ScoredDocIdCollector extends Collector {
     docIds = new FixedBitSet(maxDoc);
   }
 
+  protected abstract ScoredDocIDsIterator scoredDocIdsIterator() throws IOException;
+
   /** Returns the default score used when scoring is disabled. */
   public abstract float getDefaultScore();
 
   /** Set the default score. Only applicable if scoring is disabled. */
   public abstract void setDefaultScore(float defaultScore);
 
-  public abstract ScoredDocIDsIterator scoredDocIdsIterator() throws IOException;
 
   public ScoredDocIDs getScoredDocIDs() {
     return new ScoredDocIDs() {

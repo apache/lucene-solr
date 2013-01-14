@@ -69,6 +69,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.SnapPuller;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.handler.component.DebugComponent;
@@ -237,7 +238,7 @@ public final class SolrCore implements SolrInfoMBean {
     Properties p = new Properties();
     Directory dir = null;
     try {
-      dir = getDirectoryFactory().get(getDataDir(), getSolrConfig().indexConfig.lockType);
+      dir = getDirectoryFactory().get(getDataDir(), DirContext.META_DATA, getSolrConfig().indexConfig.lockType);
       if (dir.fileExists(SnapPuller.INDEX_PROPERTIES)){
         final IndexInput input = dir.openInput(SnapPuller.INDEX_PROPERTIES, IOContext.DEFAULT);
   
@@ -454,7 +455,7 @@ public final class SolrCore implements SolrInfoMBean {
 
       if (indexExists && firstTime && !reload) {
         
-        Directory dir = directoryFactory.get(indexDir,
+        Directory dir = directoryFactory.get(indexDir, DirContext.DEFAULT,
             getSolrConfig().indexConfig.lockType);
         try {
           if (IndexWriter.isLocked(dir)) {

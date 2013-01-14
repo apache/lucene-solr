@@ -6,7 +6,7 @@ import org.apache.lucene.facet.associations.CategoryFloatAssociation;
 import org.apache.lucene.facet.associations.FloatAssociationsPayloadIterator;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.collections.IntToFloatMap;
 
@@ -39,13 +39,13 @@ public class AssociationFloatSumAggregator implements Aggregator {
   protected final float[] sumArray;
   protected final FloatAssociationsPayloadIterator associations;
 
-  public AssociationFloatSumAggregator(IndexReader reader, float[] sumArray) throws IOException {
-    this(CategoryListParams.DEFAULT_TERM.field(), reader, sumArray);
+  public AssociationFloatSumAggregator(float[] sumArray) throws IOException {
+    this(CategoryListParams.DEFAULT_TERM.field(), sumArray);
   }
   
-  public AssociationFloatSumAggregator(String field, IndexReader reader, float[] sumArray) throws IOException {
+  public AssociationFloatSumAggregator(String field, float[] sumArray) throws IOException {
     this.field = field;
-    associations = new FloatAssociationsPayloadIterator(reader, field, new CategoryFloatAssociation());
+    associations = new FloatAssociationsPayloadIterator(field, new CategoryFloatAssociation());
     this.sumArray = sumArray;
   }
 
@@ -76,4 +76,9 @@ public class AssociationFloatSumAggregator implements Aggregator {
     return field.hashCode();
   }
 
+  @Override
+  public boolean setNextReader(AtomicReaderContext context) throws IOException {
+    return associations.setNextReader(context);
+  }
+  
 }

@@ -35,7 +35,7 @@ import org.apache.lucene.store.IOContext;
 public class StandardDirectoryFactory extends CachingDirectoryFactory {
 
   @Override
-  protected Directory create(String path) throws IOException {
+  protected Directory create(String path, DirContext dirContext) throws IOException {
     return FSDirectory.open(new File(path));
   }
   

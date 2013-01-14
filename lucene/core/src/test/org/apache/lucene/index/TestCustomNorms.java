@@ -22,7 +22,6 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.Type;
@@ -31,12 +30,14 @@ import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.Similarity.ExactSimScorer;
+import org.apache.lucene.search.similarities.Similarity.SimWeight;
+import org.apache.lucene.search.similarities.Similarity.SloppySimScorer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 /**
  * 
@@ -85,39 +86,6 @@ public class TestCustomNorms extends LuceneTestCase {
     open.close();
     dir.close();
     docs.close();
-  }
-  
-  public void testPackedNorms() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    config.setSimilarity(new PackedNormSimilarity());
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
-    int num = _TestUtil.nextInt(random(), 1, 1000);
-    for (int i = 0; i < num; i++) {
-      Document doc = new Document();
-      doc.add(new StringField("len", Integer.toString(i), Field.Store.YES));
-      StringBuilder sb = new StringBuilder();
-      for (int j = 0; j < i; j++) {
-        sb.append(" token");
-      }
-      doc.add(new TextField("content", sb.toString(), Field.Store.NO));
-      writer.addDocument(doc);
-    }
-    
-    DirectoryReader ir = writer.getReader();
-    writer.close();
-    for (AtomicReaderContext context : ir.leaves()) {
-      AtomicReader reader = context.reader();
-      DocValues norms = reader.normValues("content");
-      assertNotNull(norms);
-      Source source = norms.getSource();
-      assertEquals(Type.VAR_INTS, source.getType());
-      for (int i = 0; i < reader.maxDoc(); i++) {
-        assertEquals(source.getInt(i), Long.parseLong(reader.document(i).get("len")));
-      }
-    }
-    ir.close();
-    dir.close();
   }
 
   public void testExceptionOnRandomType() throws IOException {
@@ -317,29 +285,6 @@ public class TestCustomNorms extends LuceneTestCase {
       } else {
         norm.setFloat((float)state.getLength());
       }
-    }
-
-    @Override
-    public SimWeight computeWeight(float queryBoost, CollectionStatistics collectionStats, TermStatistics... termStats) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ExactSimScorer exactSimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public SloppySimScorer sloppySimScorer(SimWeight weight, AtomicReaderContext context) throws IOException {
-      throw new UnsupportedOperationException();
-    }
-  }
-  
-  class PackedNormSimilarity extends Similarity {
-
-    @Override
-    public void computeNorm(FieldInvertState state, Norm norm) {
-      norm.setPackedLong(state.getLength());
     }
 
     @Override

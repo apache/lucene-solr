@@ -35,6 +35,7 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,7 +103,7 @@ public class SnapShooter {
       Collection<String> files = indexCommit.getFileNames();
       FileCopier fileCopier = new FileCopier();
       
-      Directory dir = solrCore.getDirectoryFactory().get(solrCore.getNewIndexDir(), solrCore.getSolrConfig().indexConfig.lockType);
+      Directory dir = solrCore.getDirectoryFactory().get(solrCore.getNewIndexDir(), DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
       try {
         fileCopier.copyFiles(dir, files, snapShotDir);
       } finally {
