@@ -44,7 +44,7 @@ class DiskDocValuesProducer extends SimpleDVProducer {
   private final IndexInput data;
   
   DiskDocValuesProducer(SegmentReadState state) throws IOException {
-    String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "dvm");
+    String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "ddvm");
     // read in the entries from the metadata file.
     IndexInput in = state.directory.openInput(metaName, state.context);
     boolean success = false;
@@ -65,7 +65,7 @@ class DiskDocValuesProducer extends SimpleDVProducer {
       }
     }
     
-    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "dvd");
+    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "ddvd");
     data = state.directory.openInput(dataName, state.context);
     CodecUtil.checkHeader(data, DiskDocValuesFormat.DATA_CODEC, 
                                 DiskDocValuesFormat.VERSION_START,

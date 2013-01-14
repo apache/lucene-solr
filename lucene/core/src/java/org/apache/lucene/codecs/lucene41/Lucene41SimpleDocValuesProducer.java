@@ -34,7 +34,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
-class Lucene41SimpleNormsProducer extends SimpleDVProducer {
+class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
   private final Map<Integer,NumericEntry> numerics;
   private final IndexInput data;
   
@@ -42,15 +42,15 @@ class Lucene41SimpleNormsProducer extends SimpleDVProducer {
   private final Map<Integer,NumericDocValues> ramInstances = 
       new HashMap<Integer,NumericDocValues>();
   
-  Lucene41SimpleNormsProducer(SegmentReadState state) throws IOException {
-    String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "nvm");
+  Lucene41SimpleDocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+    String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     IndexInput in = state.directory.openInput(metaName, state.context);
     boolean success = false;
     try {
-      CodecUtil.checkHeader(in, Lucene41SimpleNormsFormat.METADATA_CODEC, 
-                                Lucene41SimpleNormsFormat.VERSION_START,
-                                Lucene41SimpleNormsFormat.VERSION_START);
+      CodecUtil.checkHeader(in, metaCodec, 
+                                Lucene41SimpleDocValuesConsumer.VERSION_START,
+                                Lucene41SimpleDocValuesConsumer.VERSION_START);
       numerics = new HashMap<Integer,NumericEntry>();
       readFields(in, state.fieldInfos);
       success = true;
@@ -62,11 +62,11 @@ class Lucene41SimpleNormsProducer extends SimpleDVProducer {
       }
     }
     
-    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "nvd");
+    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
     data = state.directory.openInput(dataName, state.context);
-    CodecUtil.checkHeader(data, Lucene41SimpleNormsFormat.DATA_CODEC, 
-                                Lucene41SimpleNormsFormat.VERSION_START,
-                                Lucene41SimpleNormsFormat.VERSION_START);
+    CodecUtil.checkHeader(data, dataCodec, 
+                                Lucene41SimpleDocValuesConsumer.VERSION_START,
+                                Lucene41SimpleDocValuesConsumer.VERSION_START);
   }
   
   private void readFields(IndexInput meta, FieldInfos infos) throws IOException {

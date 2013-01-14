@@ -37,11 +37,11 @@ class DiskDocValuesConsumer extends SimpleDVConsumer {
   final int maxDoc;
   
   DiskDocValuesConsumer(SegmentWriteState state) throws IOException {
-    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "dvd");
+    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "ddvd");
     data = state.directory.createOutput(dataName, state.context);
     CodecUtil.writeHeader(data, DiskDocValuesFormat.DATA_CODEC, 
                                 DiskDocValuesFormat.VERSION_CURRENT);
-    String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "dvm");
+    String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "ddvm");
     meta = state.directory.createOutput(metaName, state.context);
     CodecUtil.writeHeader(meta, DiskDocValuesFormat.METADATA_CODEC, 
                                 DiskDocValuesFormat.VERSION_CURRENT);

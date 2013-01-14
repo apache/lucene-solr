@@ -25,7 +25,7 @@ import org.apache.lucene.codecs.SimpleNormsFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
-public class Lucene41SimpleNormsFormat extends SimpleNormsFormat {
+public class Lucene41SimpleDocValuesFormat extends SimpleNormsFormat {
 
   @Override
   public SimpleDVConsumer normsConsumer(SegmentWriteState state) throws IOException {
@@ -37,8 +37,8 @@ public class Lucene41SimpleNormsFormat extends SimpleNormsFormat {
     return new Lucene41SimpleDocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
   
-  private static final String DATA_CODEC = "Lucene41NormsData";
-  private static final String DATA_EXTENSION = "nvd";
-  private static final String METADATA_CODEC = "Lucene41NormsMetadata";
-  private static final String METADATA_EXTENSION = "nvm";
+  private static final String DATA_CODEC = "Lucene41DocValuesData";
+  private static final String DATA_EXTENSION = "dvd";
+  private static final String METADATA_CODEC = "Lucene41DocValuesMetadata";
+  private static final String METADATA_EXTENSION = "dvm";
 }
