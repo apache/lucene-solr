@@ -188,6 +188,26 @@ New Features
 * SOLR-4302: New parameter 'indexInfo' (defaults to true) in CoreAdmin STATUS
   command can be used to omit index specific information (Shahar Davidson via shalin)
 
+* SOLR-2592: Collection specific document routing.  The "compositeId"
+  router is the default for collections with hash based routing (i.e. when
+  numShards=N is specified on collection creation).  Documents with ids sharing
+  the same domain (prefix) will be routed to the same shard, allowing for
+  efficient querying.
+  Example: 
+    The following two documents will be indexed to the same shard
+    since they share the same domain "customerB!". 
+       {"id" : "customerB!doc1" [...] }
+       {"id" : "customerB!doc2" [...] }
+    At query time, one can specify a "shard.keys" parameter that lists what
+    shards the query should cover.
+       http://.../query?q=my_query&shard.keys=customerB! 
+  Collections that do not specify numShards at collection creation time
+  use custom sharding and default to the "implicit" router.  Document updates
+  received by a shard will be indexed to that shard, unless a "_shard_" parameter
+  or document field names a different shard.
+  (Michael Garski, Dan Rosher, yonik)
+
+
 Optimizations
 ----------------------
 
