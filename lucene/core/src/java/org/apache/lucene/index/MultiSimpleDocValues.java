@@ -180,6 +180,14 @@ public class MultiSimpleDocValues {
           public Bits getLiveDocs() {
             return null; // lie
           }
+          @Override
+          public int numDocs() {
+            return maxDoc(); // lie
+          }
+          @Override
+          public boolean hasDeletions() {
+            return false; // lie
+          }
         });
       }
       writer.addIndexes(newLeaves.toArray(new AtomicReader[0]));

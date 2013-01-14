@@ -250,6 +250,7 @@ public abstract class SimpleDVConsumer implements Closeable {
         if (reader.hasDeletions()) {
           state.liveTerms = new FixedBitSet(state.values.getValueCount());
           Bits liveDocs = reader.getLiveDocs();
+          assert liveDocs != null;
           for(int docID=0;docID<maxDoc;docID++) {
             if (liveDocs.get(docID)) {
               state.liveTerms.set(state.values.getOrd(docID));
