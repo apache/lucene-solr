@@ -4,6 +4,10 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 4.2.0 =======================
+
+(No changes yet)
+
 ======================= Lucene 4.1.0 =======================
 
 Changes in backwards compatibility policy
