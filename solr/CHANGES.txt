@@ -491,6 +491,9 @@ Bug Fixes
 * SOLR-4217: post.jar no longer ignores -Dparams when -Durl is used.
   (Alexandre Rafalovitch, ehatcher)
 
+* SOLR-4303: On replication, if the generation of the master is lower than the
+  slave we need to force a full copy of the index. (Mark Miller, Gregg Donovan)
+
 Other Changes
 ----------------------
 

@@ -370,8 +370,10 @@ public class SnapPuller {
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generateion of master is older than that of the slave , it means they are not compatible to be copied
       // then a new index direcory to be created and all the files need to be copied
-      boolean isFullCopyNeeded = IndexDeletionPolicyWrapper.getCommitTimestamp(commit) >= latestVersion || forceReplication;
-      
+      boolean isFullCopyNeeded = IndexDeletionPolicyWrapper
+          .getCommitTimestamp(commit) >= latestVersion
+          || commit.getGeneration() >= latestGeneration || forceReplication;
+
       String tmpIdxDirName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
       tmpIndex = createTempindexDir(core, tmpIdxDirName);
 
