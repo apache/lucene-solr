@@ -263,7 +263,7 @@ public final class SynonymFilter extends TokenFilter {
     this.synonyms = synonyms;
     this.ignoreCase = ignoreCase;
     this.fst = synonyms.fst;
-    this.fstReader = fst.getBytesReader(0);
+    this.fstReader = fst.getBytesReader();
     if (fst == null) {
       throw new IllegalArgumentException("fst must be non-null");
     }

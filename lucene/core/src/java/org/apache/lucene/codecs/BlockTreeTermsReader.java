@@ -833,7 +833,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         if (index == null) {
           fstReader = null;
         } else {
-          fstReader = index.getBytesReader(0);
+          fstReader = index.getBytesReader();
         }
 
         // TODO: if the automaton is "smallish" we really
@@ -1277,7 +1277,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         if (index == null) {
           fstReader = null;
         } else {
-          fstReader = index.getBytesReader(0);
+          fstReader = index.getBytesReader();
         }
 
         // Init w/ root block; don't use index since it may

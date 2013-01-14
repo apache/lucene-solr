@@ -46,7 +46,7 @@ abstract class FSTEnum<T> {
    *  term before target.  */
   protected FSTEnum(FST<T> fst) {
     this.fst = fst;
-    fstReader = fst.getBytesReader(0);
+    fstReader = fst.getBytesReader();
     NO_OUTPUT = fst.outputs.getNoOutput();
     fst.getFirstArc(getArc(0));
     output[0] = NO_OUTPUT;
@@ -145,7 +145,7 @@ abstract class FSTEnum<T> {
         // Arcs are fixed array -- use binary search to find
         // the target.
 
-        final FST.BytesReader in = fst.getBytesReader(0);
+        final FST.BytesReader in = fst.getBytesReader();
         int low = arc.arcIdx;
         int high = arc.numArcs-1;
         int mid = 0;
@@ -284,7 +284,7 @@ abstract class FSTEnum<T> {
         // Arcs are fixed array -- use binary search to find
         // the target.
 
-        final FST.BytesReader in = fst.getBytesReader(0);
+        final FST.BytesReader in = fst.getBytesReader();
         int low = arc.arcIdx;
         int high = arc.numArcs-1;
         int mid = 0;
@@ -434,7 +434,7 @@ abstract class FSTEnum<T> {
     FST.Arc<T> arc = getArc(upto-1);
     int targetLabel = getTargetLabel();
 
-    final FST.BytesReader fstReader = fst.getBytesReader(0);
+    final FST.BytesReader fstReader = fst.getBytesReader();
 
     while(true) {
       //System.out.println("  cycle target=" + (targetLabel == -1 ? "-1" : (char) targetLabel));

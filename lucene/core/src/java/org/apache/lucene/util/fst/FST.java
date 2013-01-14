@@ -417,7 +417,7 @@ public final class FST<T> {
     cachedRootArcs = (Arc<T>[]) new Arc[0x80];
     final Arc<T> arc = new Arc<T>();
     getFirstArc(arc);
-    final BytesReader in = getBytesReader(0);
+    final BytesReader in = getBytesReader();
     if (targetHasArcs(arc)) {
       readFirstRealTargetArc(arc.target, arc, in);
       while(true) {
@@ -1246,21 +1246,11 @@ public final class FST<T> {
   /** Returns a {@link BytesReader} for this FST, positioned at
    *  position 0. */
   public BytesReader getBytesReader() {
-    return getBytesReader(0);
-  }
-
-  /** Returns a {@link BytesReader} for this FST, positioned at
-   *  the provided position. */
-  public BytesReader getBytesReader(long pos) {
-    // TODO: maybe re-use via ThreadLocal?
     BytesReader in;
     if (packed) {
       in = bytes.getForwardReader();
     } else {
       in = bytes.getReverseReader();
-    }
-    if (pos != 0) {
-      in.setPosition(pos);
     }
     return in;
   }
@@ -1448,7 +1438,7 @@ public final class FST<T> {
 
     Arc<T> arc = new Arc<T>();
 
-    final BytesReader r = getBytesReader(0);
+    final BytesReader r = getBytesReader();
 
     final int topN = Math.min(maxDerefNodes, inCounts.size());
 

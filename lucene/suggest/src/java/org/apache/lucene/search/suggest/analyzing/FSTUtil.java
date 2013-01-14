@@ -77,7 +77,7 @@ public class FSTUtil {
         new IntsRef()));
     
     final FST.Arc<T> scratchArc = new FST.Arc<T>();
-    final FST.BytesReader fstReader = fst.getBytesReader(0);
+    final FST.BytesReader fstReader = fst.getBytesReader();
     
     while (queue.size() != 0) {
       final Path<T> path = queue.remove(queue.size() - 1);

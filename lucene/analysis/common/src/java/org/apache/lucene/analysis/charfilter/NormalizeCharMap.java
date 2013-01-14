@@ -49,7 +49,7 @@ public class NormalizeCharMap {
       try {
         // Pre-cache root arcs:
         final FST.Arc<CharsRef> scratchArc = new FST.Arc<CharsRef>();
-        final FST.BytesReader fstReader = map.getBytesReader(0);
+        final FST.BytesReader fstReader = map.getBytesReader();
         map.getFirstArc(scratchArc);
         if (FST.targetHasArcs(scratchArc)) {
           map.readFirstRealTargetArc(scratchArc.target, scratchArc, fstReader);
