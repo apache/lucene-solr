@@ -4,22 +4,23 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.IntsRef;
-
 import org.apache.lucene.facet.search.aggregator.Aggregator;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.params.FacetRequest;
+import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.IntermediateFacetResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.facet.util.ScoredDocIdsUtils;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -179,11 +180,11 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
       List<FacetResult> res = new ArrayList<FacetResult>();
       for (FacetRequest fr : searchParams.getFacetRequests()) {
         FacetResultsHandler frHndlr = fr.createFacetResultsHandler(taxonomyReader);
-        IntermediateFacetResult tmpResult = fr2tmpRes.get(fr); 
+        IntermediateFacetResult tmpResult = fr2tmpRes.get(fr);
         if (tmpResult == null) {
           continue; // do not add a null to the list.
         }
-        FacetResult facetRes = frHndlr.renderFacetResult(tmpResult); 
+        FacetResult facetRes = frHndlr.renderFacetResult(tmpResult);
         // final labeling if allowed (because labeling is a costly operation)
         if (isAllowLabeling()) {
           frHndlr.labelResult(facetRes);
@@ -213,18 +214,15 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
 
   /** Check if it is worth to use complements */
   protected boolean shouldComplement(ScoredDocIDs docids) {
-    return 
-      mayComplement() && 
-      (docids.size() > indexReader.numDocs() * getComplementThreshold()) ;
+    return mayComplement() && (docids.size() > indexReader.numDocs() * getComplementThreshold()) ;
   }
 
   /**
    * Iterate over the documents for this partition and fill the facet arrays with the correct
    * count/complement count/value.
-   * @throws IOException If there is a low-level I/O error.
    */
-  private final void fillArraysForPartition(ScoredDocIDs docids,
-      FacetArrays facetArrays, int partition) throws IOException {
+  private final void fillArraysForPartition(ScoredDocIDs docids, FacetArrays facetArrays, int partition) 
+      throws IOException {
     
     if (isUsingComplements) {
       initArraysByTotalCounts(facetArrays, partition, docids.size());
@@ -236,27 +234,41 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
 
     IntsRef ordinals = new IntsRef(32); // a reasonable start capacity for most common apps
     for (Entry<CategoryListIterator, Aggregator> entry : categoryLists.entrySet()) {
-      CategoryListIterator categoryList = entry.getKey();
-      if (!categoryList.init()) {
-        continue;
-      }
-
-      Aggregator categorator = entry.getValue();
-      ScoredDocIDsIterator iterator = docids.iterator();
+      final ScoredDocIDsIterator iterator = docids.iterator();
+      final CategoryListIterator categoryListIter = entry.getKey();
+      final Aggregator aggregator = entry.getValue();
+      Iterator<AtomicReaderContext> contexts = indexReader.leaves().iterator();
+      AtomicReaderContext current = null;
+      int maxDoc = -1;
       while (iterator.next()) {
         int docID = iterator.getDocID();
-        categoryList.getOrdinals(docID, ordinals);
-        if (ordinals.length == 0) {
-          continue;
+        while (docID >= maxDoc) { // find the segment which contains this document
+          if (!contexts.hasNext()) {
+            throw new RuntimeException("ScoredDocIDs contains documents outside this reader's segments !?");
+          }
+          current = contexts.next();
+          maxDoc = current.docBase + current.reader().maxDoc();
+          if (docID < maxDoc) { // segment has docs, check if it has categories
+            boolean validSegment = categoryListIter.setNextReader(current);
+            validSegment &= aggregator.setNextReader(current);
+            if (!validSegment) { // if categoryList or aggregtor say it's an invalid segment, skip all docs
+              while (docID < maxDoc && iterator.next()) {
+                docID = iterator.getDocID();
+              }
+            }
+          }
         }
-        categorator.aggregate(docID, iterator.getScore(), ordinals);
+        docID -= current.docBase;
+        categoryListIter.getOrdinals(docID, ordinals);
+        if (ordinals.length == 0) {
+          continue; // document does not have category ordinals
+        }
+        aggregator.aggregate(docID, iterator.getScore(), ordinals);
       }
     }
   }
 
-  /**
-   * Init arrays for partition by total counts, optionally applying a factor
-   */
+  /** Init arrays for partition by total counts, optionally applying a factor */
   private final void initArraysByTotalCounts(FacetArrays facetArrays, int partition, int nAccumulatedDocs) {
     int[] intArray = facetArrays.getIntArray();
     totalFacetCounts.fillTotalCountsForPartition(intArray, partition);
@@ -302,10 +314,9 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
 
     for (FacetRequest facetRequest : searchParams.getFacetRequests()) {
       Aggregator categoryAggregator = facetRequest.createAggregator(
-          isUsingComplements, facetArrays, indexReader,  taxonomyReader);
+          isUsingComplements, facetArrays, taxonomyReader);
 
-      CategoryListIterator cli = 
-        facetRequest.createCategoryListIterator(indexReader, taxonomyReader, searchParams, partition);
+      CategoryListIterator cli = facetRequest.createCategoryListIterator(taxonomyReader, searchParams, partition);
       
       // get the aggregator
       Aggregator old = categoryLists.put(cli, categoryAggregator);

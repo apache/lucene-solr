@@ -1,12 +1,10 @@
 package org.apache.lucene.facet.search;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -42,99 +40,75 @@ import org.apache.lucene.util.BytesRef;
  */
 public class PayloadIterator {
 
-  protected BytesRef data;
-
   private TermsEnum reuseTE;
-  private DocsAndPositionsEnum currentDPE;
+  private DocsAndPositionsEnum dpe;
   private boolean hasMore;
-  private int curDocID, curDocBase;
+  private int curDocID;
   
-  private final Iterator<AtomicReaderContext> leaves;
   private final Term term;
 
-  public PayloadIterator(IndexReader indexReader, Term term) throws IOException {
-    leaves = indexReader.leaves().iterator();
+  public PayloadIterator(Term term) throws IOException {
     this.term = term;
   }
 
-  private void nextSegment() throws IOException {
+  /**
+   * Sets the {@link AtomicReaderContext} for which {@link #getPayload(int)}
+   * calls will be made. Returns true iff this reader has payload for any of the
+   * documents belonging to the {@link Term} given to the constructor.
+   */
+  public boolean setNextReader(AtomicReaderContext context) throws IOException {
     hasMore = false;
-    while (leaves.hasNext()) {
-      AtomicReaderContext ctx = leaves.next();
-      curDocBase = ctx.docBase;
-      Fields fields = ctx.reader().fields();
-      if (fields != null) {
-        Terms terms = fields.terms(term.field());
-        if (terms != null) {
-          reuseTE = terms.iterator(reuseTE);
-          if (reuseTE.seekExact(term.bytes(), true)) {
-            // this class is usually used to iterate on whatever a Query matched
-            // if it didn't match deleted documents, we won't receive them. if it
-            // did, we should iterate on them too, therefore we pass liveDocs=null
-            currentDPE = reuseTE.docsAndPositions(null, currentDPE, DocsAndPositionsEnum.FLAG_PAYLOADS);
-            if (currentDPE != null && (curDocID = currentDPE.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-              hasMore = true;
-              break;
-            }
+    Fields fields = context.reader().fields();
+    if (fields != null) {
+      Terms terms = fields.terms(term.field());
+      if (terms != null) {
+        reuseTE = terms.iterator(reuseTE);
+        if (reuseTE.seekExact(term.bytes(), true)) {
+          // this class is usually used to iterate on whatever a Query matched
+          // if it didn't match deleted documents, we won't receive them. if it
+          // did, we should iterate on them too, therefore we pass liveDocs=null
+          dpe = reuseTE.docsAndPositions(null, dpe, DocsAndPositionsEnum.FLAG_PAYLOADS);
+          if (dpe != null && (curDocID = dpe.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+            hasMore = true;
           }
         }
       }
     }
+    return hasMore;
   }
   
   /**
-   * Initialize the iterator. Should be done before the first call to
-   * {@link #getPayload(int)}. Returns {@code false} if no category list is
-   * found, or the category list has no documents.
-   */
-  public boolean init() throws IOException {
-    nextSegment();
-    return hasMore;
-  }
-
-  /**
    * Returns the {@link BytesRef payload} of the given document, or {@code null}
    * if the document does not exist, there are no more documents in the posting
-   * list, or the document exists but has not payload. You should call
-   * {@link #init()} before the first call to this method.
+   * list, or the document exists but has not payload. The given document IDs
+   * are treated as local to the reader given to
+   * {@link #setNextReader(AtomicReaderContext)}.
    */
   public BytesRef getPayload(int docID) throws IOException {
     if (!hasMore) {
       return null;
     }
 
-    // re-basing docId->localDocID is done fewer times than currentDoc->globalDoc
-    int localDocID = docID - curDocBase;
-    
-    if (curDocID > localDocID) {
+    if (curDocID > docID) {
       // document does not exist
       return null;
     }
     
-    if (curDocID < localDocID) {
-      // look for the document either in that segment, or others
-      while (hasMore && (curDocID = currentDPE.advance(localDocID)) == DocIdSetIterator.NO_MORE_DOCS) {
-        nextSegment(); // also updates curDocID
-        localDocID = docID - curDocBase;
-        // nextSegment advances to nextDoc, so check if we still need to advance
-        if (curDocID >= localDocID) {
-          break;
+    if (curDocID < docID) {
+      curDocID = dpe.advance(docID);
+      if (curDocID != docID) { // requested document does not have a payload
+        if (curDocID == DocIdSetIterator.NO_MORE_DOCS) { // no more docs in this reader
+          hasMore = false;
         }
-      }
-      
-      // we break from the above loop when:
-      // 1. we iterated over all segments (hasMore=false)
-      // 2. current segment advanced to a doc, either requested or higher
-      if (!hasMore || curDocID != localDocID) {
         return null;
       }
     }
 
     // we're on the document
-    assert currentDPE.freq() == 1 : "expecting freq=1 (got " + currentDPE.freq() + ") term=" + term + " doc=" + (curDocID + curDocBase);
-    int pos = currentDPE.nextPosition();
-    assert pos != -1 : "no positions for term=" + term + " doc=" + (curDocID + curDocBase);
-    return currentDPE.getPayload();
+    assert dpe.freq() == 1 : "expecting freq=1 (got " + dpe.freq() + ") term=" + term + " doc=" + curDocID;
+    int pos = dpe.nextPosition();
+    assert pos != -1 : "no positions for term=" + term + " doc=" + curDocID;
+    return dpe.getPayload();
   }
   
 }

@@ -50,7 +50,7 @@ public final class AdaptiveFacetsAccumulator extends StandardFacetsAccumulator {
    * Create an {@link AdaptiveFacetsAccumulator} 
    * @see StandardFacetsAccumulator#StandardFacetsAccumulator(FacetSearchParams, IndexReader, TaxonomyReader)
    */
-  public AdaptiveFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader,
+  public AdaptiveFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader, 
       TaxonomyReader taxonomyReader) {
     super(searchParams, indexReader, taxonomyReader);
   }

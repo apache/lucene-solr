@@ -122,6 +122,10 @@ Changes in backwards compatibility policy
   result, few other classes such as Aggregator and CategoryListIterator were
   changed to handle bulk category ordinals. (Shai Erera)
 
+* LUCENE-4683: CategoryListIterator and Aggregator are now per-segment. As such
+  their implementations no longer take a top-level IndexReader in the constructor
+  but rather implement a setNextReader. (Shai Erera)
+  
 New Features
 
 * LUCENE-4226: New experimental StoredFieldsFormat that compresses chunks of

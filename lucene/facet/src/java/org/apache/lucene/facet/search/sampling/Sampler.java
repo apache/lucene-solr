@@ -60,6 +60,7 @@ public abstract class Sampler {
   
   /**
    * Construct with certain {@link SamplingParams}
+   * 
    * @param params sampling params in effect
    * @throws IllegalArgumentException if the provided SamplingParams are not valid 
    */
@@ -110,16 +111,15 @@ public abstract class Sampler {
    * @param sampleSetSize required size of sample set
    * @return sample of the input set in the required size
    */
-  protected abstract SampleResult createSample(ScoredDocIDs docids, int actualSize,
-      int sampleSetSize) throws IOException;
+  protected abstract SampleResult createSample(ScoredDocIDs docids, int actualSize, int sampleSetSize) 
+      throws IOException;
 
   /**
    * Get a fixer of sample facet accumulation results. Default implementation
    * returns a <code>TakmiSampleFixer</code> which is adequate only for
    * counting. For any other accumulator, provide a different fixer.
    */
-  public SampleFixer getSampleFixer(
-      IndexReader indexReader, TaxonomyReader taxonomyReader,
+  public SampleFixer getSampleFixer(IndexReader indexReader, TaxonomyReader taxonomyReader,
       FacetSearchParams searchParams) {
     return new TakmiSampleFixer(indexReader, taxonomyReader, searchParams);
   }
@@ -161,10 +161,10 @@ public abstract class Sampler {
     OverSampledFacetRequest sampledFreq = null;
     
     try {
-      sampledFreq = (OverSampledFacetRequest)facetResult.getFacetRequest();
+      sampledFreq = (OverSampledFacetRequest) facetResult.getFacetRequest();
     } catch (ClassCastException e) {
       throw new IllegalArgumentException(
-          "It is only valid to call this method with result obtained for a" +
+          "It is only valid to call this method with result obtained for a " +
           "facet request created through sampler.overSamlpingSearchParams()",
           e);
     }
@@ -215,19 +215,15 @@ public abstract class Sampler {
     }
     
     @Override
-    public CategoryListIterator createCategoryListIterator(IndexReader reader,
-        TaxonomyReader taxo, FacetSearchParams sParams, int partition)
-        throws IOException {
-      return orig.createCategoryListIterator(reader, taxo, sParams, partition);
+    public CategoryListIterator createCategoryListIterator(TaxonomyReader taxo, FacetSearchParams sParams, 
+        int partition) throws IOException {
+      return orig.createCategoryListIterator(taxo, sParams, partition);
     }
-
     
     @Override
-    public Aggregator createAggregator(boolean useComplements,
-        FacetArrays arrays, IndexReader indexReader,
-        TaxonomyReader taxonomy) throws IOException {
-      return orig.createAggregator(useComplements, arrays, indexReader,
-          taxonomy);
+    public Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) 
+        throws IOException {
+      return orig.createAggregator(useComplements, arrays, taxonomy);
     }
 
     @Override
@@ -245,4 +241,5 @@ public abstract class Sampler {
       return orig.supportsComplements();
     }
   }
+
 }

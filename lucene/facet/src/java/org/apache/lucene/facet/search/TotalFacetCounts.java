@@ -170,7 +170,7 @@ public class TotalFacetCounts {
         Aggregator aggregator = new CountingAggregator(counts[partition]);
         HashMap<CategoryListIterator, Aggregator> map = new HashMap<CategoryListIterator, Aggregator>();
         for (CategoryListParams clp: facetIndexingParams.getAllCategoryListParams()) {
-          final CategoryListIterator cli = clIteraor(clCache, clp, indexReader, partition);
+          final CategoryListIterator cli = clIteraor(clCache, clp, partition);
           map.put(cli, aggregator);
         }
         return map;
@@ -181,14 +181,14 @@ public class TotalFacetCounts {
     return new TotalFacetCounts(taxonomy, facetIndexingParams, counts, CreationType.Computed);
   }
   
-  static CategoryListIterator clIteraor(CategoryListCache clCache, CategoryListParams clp, 
-      IndexReader indexReader, int partition) throws IOException {
+  static CategoryListIterator clIteraor(CategoryListCache clCache, CategoryListParams clp, int partition) 
+      throws IOException {
     if (clCache != null) {
       CategoryListData cld = clCache.get(clp);
       if (cld != null) {
         return cld.iterator(partition);
       }
     }
-    return clp.createCategoryListIterator(indexReader, partition);
+    return clp.createCategoryListIterator(partition);
   }
 }

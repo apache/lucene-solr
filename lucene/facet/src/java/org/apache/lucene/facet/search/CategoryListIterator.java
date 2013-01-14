@@ -2,6 +2,7 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.util.IntsRef;
 
 /*
@@ -23,6 +24,8 @@ import org.apache.lucene.util.IntsRef;
 
 /**
  * An interface for obtaining the category ordinals of documents.
+ * {@link #getOrdinals(int, IntsRef)} calls are done with document IDs that are
+ * local to the reader given to {@link #setNextReader(AtomicReaderContext)}.
  * <p>
  * <b>NOTE:</b> this class operates as a key to a map, and therefore you should
  * implement {@code equals()} and {@code hashCode()} for proper behavior.
@@ -32,19 +35,20 @@ import org.apache.lucene.util.IntsRef;
 public interface CategoryListIterator {
 
   /**
-   * Initializes the iterator. This method must be called before any calls to
-   * {@link #getOrdinals(int, IntsRef)}, and its return value indicates whether there are
-   * any relevant documents for this iterator.
+   * Sets the {@link AtomicReaderContext} for which
+   * {@link #getOrdinals(int, IntsRef)} calls will be made. Returns true iff any
+   * of the documents in this reader have category ordinals. This method must be
+   * called before any calls to {@link #getOrdinals(int, IntsRef)}.
    */
-  public boolean init() throws IOException;
-
+  public boolean setNextReader(AtomicReaderContext context) throws IOException;
+  
   /**
    * Stores the category ordinals of the given document ID in the given
    * {@link IntsRef}, starting at position 0 upto {@link IntsRef#length}. Grows
    * the {@link IntsRef} if it is not large enough.
    * 
    * <p>
-   * <b>NOTE:</b> if the requested document does not category ordinals
+   * <b>NOTE:</b> if the requested document does not have category ordinals
    * associated with it, {@link IntsRef#length} is set to zero.
    */
   public void getOrdinals(int docID, IntsRef ints) throws IOException;

@@ -6,7 +6,7 @@ import org.apache.lucene.facet.associations.CategoryIntAssociation;
 import org.apache.lucene.facet.associations.IntAssociationsPayloadIterator;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.collections.IntToIntMap;
 
@@ -39,13 +39,13 @@ public class AssociationIntSumAggregator implements Aggregator {
   protected final int[] sumArray;
   protected final IntAssociationsPayloadIterator associations;
 
-  public AssociationIntSumAggregator(IndexReader reader, int[] sumArray) throws IOException {
-    this(CategoryListParams.DEFAULT_TERM.field(), reader, sumArray);
+  public AssociationIntSumAggregator(int[] sumArray) throws IOException {
+    this(CategoryListParams.DEFAULT_TERM.field(), sumArray);
   }
   
-  public AssociationIntSumAggregator(String field, IndexReader reader, int[] sumArray) throws IOException {
+  public AssociationIntSumAggregator(String field, int[] sumArray) throws IOException {
     this.field = field;
-    associations = new IntAssociationsPayloadIterator(reader, field, new CategoryIntAssociation());
+    associations = new IntAssociationsPayloadIterator(field, new CategoryIntAssociation());
     this.sumArray = sumArray;
   }
 
@@ -74,6 +74,11 @@ public class AssociationIntSumAggregator implements Aggregator {
   @Override
   public int hashCode() {
     return field.hashCode();
+  }
+
+  @Override
+  public boolean setNextReader(AtomicReaderContext context) throws IOException {
+    return associations.setNextReader(context);
   }
 
 }

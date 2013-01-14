@@ -6,6 +6,7 @@ import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.IntsRef;
 
@@ -56,25 +57,30 @@ public class CategoryListData {
   }
   
   /** Compute category list data for caching for faster iteration. */
-  CategoryListData(IndexReader reader, TaxonomyReader taxo, 
-      FacetIndexingParams iparams, CategoryListParams clp) throws IOException {
+  CategoryListData(IndexReader reader, TaxonomyReader taxo, FacetIndexingParams iparams, CategoryListParams clp) 
+      throws IOException {
   
-    final int maxDoc = reader.maxDoc();
-    int[][][]dpf  = new int[maxDoc][][];
+    int[][][]dpf  = new int[reader.maxDoc()][][];
     int numPartitions = (int)Math.ceil(taxo.getSize()/(double)iparams.getPartitionSize());
     IntsRef ordinals = new IntsRef(32);
     for (int part = 0; part < numPartitions; part++) {
-      CategoryListIterator cli = clp.createCategoryListIterator(reader, part);
-      if (cli.init()) {
-        for (int doc = 0; doc < maxDoc; doc++) {
-          cli.getOrdinals(doc, ordinals);
-          if (ordinals.length > 0) {
-            if (dpf[doc] == null) {
-              dpf[doc] = new int[numPartitions][];
-            }
-            dpf[doc][part] = new int[ordinals.length];
-            for (int i = 0; i < ordinals.length; i++) {
-              dpf[doc][part][i] = ordinals.ints[i];
+      for (AtomicReaderContext context : reader.leaves()) {
+        CategoryListIterator cli = clp.createCategoryListIterator(part);
+        if (cli.setNextReader(context)) {
+          final int maxDoc = context.reader().maxDoc();
+          for (int i = 0; i < maxDoc; i++) {
+            cli.getOrdinals(i, ordinals);
+            if (ordinals.length > 0) {
+              int doc = i + context.docBase;
+              if (dpf[doc] == null) {
+                dpf[doc] = new int[numPartitions][];
+              }
+              if (dpf[doc][part] == null) {
+                dpf[doc][part] = new int[ordinals.length];
+              }
+              for (int j = 0; j < ordinals.length; j++) {
+                dpf[doc][part][j] = ordinals.ints[j];
+              }
             }
           }
         }
@@ -93,6 +99,7 @@ public class CategoryListData {
   /** Internal: category list iterator over uncompressed category info in RAM */
   private static class RAMCategoryListIterator implements CategoryListIterator {
     
+    private int docBase;
     private final int part;
     private final int[][][] dpc;
     
@@ -102,13 +109,15 @@ public class CategoryListData {
     }
 
     @Override
-    public boolean init() throws IOException {
+    public boolean setNextReader(AtomicReaderContext context) throws IOException {
+      docBase = context.docBase;
       return dpc != null && dpc.length > part;
     }
-
+    
     @Override
     public void getOrdinals(int docID, IntsRef ints) throws IOException {
       ints.length = 0;
+      docID += docBase;
       if (dpc.length > docID && dpc[docID] != null && dpc[docID][part] != null) {
         if (ints.ints.length < dpc[docID][part].length) {
           ints.grow(dpc[docID][part].length);

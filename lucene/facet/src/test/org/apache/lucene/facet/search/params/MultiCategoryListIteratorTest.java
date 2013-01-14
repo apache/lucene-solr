@@ -17,6 +17,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.util.MultiCategoryListIterator;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -100,21 +101,24 @@ public class MultiCategoryListIteratorTest extends LuceneTestCase {
         clCache.loadAndRegister(clp, indexReader, taxoReader, indexingParams);
         iterators[i] = clCache.get(clp).iterator(0); // no partitions
       } else {
-        iterators[i] = new PayloadCategoryListIteraor(indexReader, clp.getTerm(), decoder);
+        iterators[i] = new PayloadCategoryListIteraor(clp.getTerm(), decoder);
       }
     }
     MultiCategoryListIterator cli = new MultiCategoryListIterator(iterators);
-    assertTrue("failed to init multi-iterator", cli.init());
-    IntsRef ordinals = new IntsRef();
-    int maxDoc = indexReader.maxDoc();
-    for (int i = 0; i < maxDoc; i++) {
-      cli.getOrdinals(i, ordinals);
-      assertTrue("document " + i + " does not have categories", ordinals.length > 0);
-      for (int j = 0; j < ordinals.length; j++) {
-        CategoryPath cp = taxoReader.getPath(ordinals.ints[j]);
-        assertNotNull("ordinal " + ordinals.ints[j] + " not found in taxonomy", cp);
-        if (cp.length == 2) {
-          assertEquals("invalid category for document " + i, i, Integer.parseInt(cp.components[1]));
+    for (AtomicReaderContext context : indexReader.leaves()) {
+      assertTrue("failed to init multi-iterator", cli.setNextReader(context));
+      IntsRef ordinals = new IntsRef();
+      final int maxDoc = context.reader().maxDoc();
+      for (int i = 0; i < maxDoc; i++) {
+        cli.getOrdinals(i, ordinals);
+        assertTrue("document " + i + " does not have categories", ordinals.length > 0);
+        for (int j = 0; j < ordinals.length; j++) {
+          CategoryPath cp = taxoReader.getPath(ordinals.ints[j]);
+          assertNotNull("ordinal " + ordinals.ints[j] + " not found in taxonomy", cp);
+          if (cp.length == 2) {
+            int globalDoc = i + context.docBase;
+            assertEquals("invalid category for document " + globalDoc, globalDoc, Integer.parseInt(cp.components[1]));
+          }
         }
       }
     }

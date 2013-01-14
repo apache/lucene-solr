@@ -3,7 +3,7 @@ package org.apache.lucene.facet.associations;
 import java.io.IOException;
 
 import org.apache.lucene.facet.search.PayloadIterator;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.BytesRef;
@@ -46,12 +46,21 @@ public abstract class AssociationsPayloadIterator<T extends CategoryAssociation>
    * It is assumed that all association values can be deserialized with the
    * given {@link CategoryAssociation}.
    */
-  public AssociationsPayloadIterator(IndexReader reader, String field, T association) throws IOException {
-    pi = new PayloadIterator(reader, new Term(field, association.getCategoryListID()));
-    hasAssociations = pi.init();
+  public AssociationsPayloadIterator(String field, T association) throws IOException {
+    pi = new PayloadIterator(new Term(field, association.getCategoryListID()));
     this.association = association;
   }
 
+  /**
+   * Sets the {@link AtomicReaderContext} for which {@link #setNextDoc(int)}
+   * calls will be made. Returns true iff this reader has associations for any
+   * of the documents belonging to the association given to the constructor.
+   */
+  public final boolean setNextReader(AtomicReaderContext context) throws IOException {
+    hasAssociations = pi.setNextReader(context);
+    return hasAssociations;
+  }
+  
   /**
    * Skip to the requested document. Returns true iff the document has category
    * association values and they were read successfully. Associations are

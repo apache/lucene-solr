@@ -2,6 +2,7 @@ package org.apache.lucene.facet.search.aggregator;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.util.IntsRef;
 
 /*
@@ -55,6 +56,11 @@ public class CountingAggregator implements Aggregator {
   @Override
   public int hashCode() {
     return counterArray == null ? 0 : counterArray.hashCode();
+  }
+  
+  @Override
+  public boolean setNextReader(AtomicReaderContext context) throws IOException {
+    return true;
   }
   
 }
