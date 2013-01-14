@@ -40,6 +40,7 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.packed.PackedInts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -288,7 +289,9 @@ public class FSTTester<T> {
                                               outputs,
                                               null,
                                               willRewrite,
-                                              true);
+                                              PackedInts.DEFAULT,
+                                              true,
+                                              15);
     if (LuceneTestCase.VERBOSE) {
       if (willRewrite) {
         System.out.println("TEST: packed FST");

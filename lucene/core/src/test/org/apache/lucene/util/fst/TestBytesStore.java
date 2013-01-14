@@ -321,10 +321,10 @@ public class TestBytesStore extends LuceneTestCase {
 
         if (reversed) {
           expectedPos = pos-numBytes;
-          left = r.getPosition();
+          left = (int) r.getPosition();
         } else {
           expectedPos = pos+numBytes;
-          left = totalLength - r.getPosition();
+          left = (int) (totalLength - r.getPosition());
         }
         assertEquals(expectedPos, r.getPosition());
 

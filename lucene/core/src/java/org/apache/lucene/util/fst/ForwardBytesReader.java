@@ -46,13 +46,13 @@ final class ForwardBytesReader extends FST.BytesReader {
   }
 
   @Override
-  public int getPosition() {
+  public long getPosition() {
     return pos;
   }
 
   @Override
-  public void setPosition(int pos) {
-    this.pos = pos;
+  public void setPosition(long pos) {
+    this.pos = (int) pos;
   }
 
   @Override

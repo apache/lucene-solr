@@ -544,7 +544,9 @@ public final class Util {
    * </pre>
    * 
    * <p>
-   * Note: larger FSTs (a few thousand nodes) won't even render, don't bother.
+   * Note: larger FSTs (a few thousand nodes) won't even
+   * render, don't bother.  If the FST is > 2.1 GB in size
+   * then this method will throw strange exceptions.
    * 
    * @param sameRank
    *          If <code>true</code>, the resulting <code>dot</code> file will try
@@ -578,7 +580,7 @@ public final class Util {
 
     // A bitset of already seen states (target offset).
     final BitSet seen = new BitSet();
-    seen.set(startArc.target);
+    seen.set((int) startArc.target);
 
     // Shape for states.
     final String stateShape = "circle";
@@ -617,7 +619,7 @@ public final class Util {
         finalOutput = null;
       }
       
-      emitDotState(out, Integer.toString(startArc.target), isFinal ? finalStateShape : stateShape, stateColor, finalOutput == null ? "" : fst.outputs.outputToString(finalOutput));
+      emitDotState(out, Long.toString(startArc.target), isFinal ? finalStateShape : stateShape, stateColor, finalOutput == null ? "" : fst.outputs.outputToString(finalOutput));
     }
 
     out.write("  initial -> " + startArc.target + "\n");
@@ -638,7 +640,8 @@ public final class Util {
         if (FST.targetHasArcs(arc)) {
           // scan all target arcs
           //System.out.println("  readFirstTarget...");
-          final int node = arc.target;
+
+          final long node = arc.target;
 
           fst.readFirstRealTargetArc(arc.target, arc, r);
 
@@ -648,7 +651,7 @@ public final class Util {
 
             //System.out.println("  cycle arc=" + arc);
             // Emit the unseen state and add it to the queue for the next level.
-            if (arc.target >= 0 && !seen.get(arc.target)) {
+            if (arc.target >= 0 && !seen.get((int) arc.target)) {
 
               /*
               boolean isFinal = false;
@@ -675,12 +678,12 @@ public final class Util {
                 finalOutput = "";
               }
 
-              emitDotState(out, Integer.toString(arc.target), stateShape, stateColor, finalOutput);
+              emitDotState(out, Long.toString(arc.target), stateShape, stateColor, finalOutput);
               // To see the node address, use this instead:
               //emitDotState(out, Integer.toString(arc.target), stateShape, stateColor, String.valueOf(arc.target));
-              seen.set(arc.target);
+              seen.set((int) arc.target);
               nextLevelQueue.add(new FST.Arc<T>().copyFrom(arc));
-              sameLevelStates.add(arc.target);
+              sameLevelStates.add((int) arc.target);
             }
 
             String outs;

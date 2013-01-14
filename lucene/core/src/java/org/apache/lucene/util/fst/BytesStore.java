@@ -108,10 +108,14 @@ class BytesStore extends DataOutput {
     }
   }
 
+  int getBlockBits() {
+    return blockBits;
+  }
+
   /** Absolute writeBytes without changing the current
    *  position.  Note: this cannot "grow" the bytes, so you
    *  must only call it on already written parts. */
-  void writeBytes(int dest, byte[] b, int offset, int len) {
+  void writeBytes(long dest, byte[] b, int offset, int len) {
     //System.out.println("  BS.writeBytes dest=" + dest + " offset=" + offset + " len=" + len);
     assert dest + len <= getPosition(): "dest=" + dest + " pos=" + getPosition() + " len=" + len;
 
@@ -141,9 +145,9 @@ class BytesStore extends DataOutput {
     }
     */
 
-    final int end = dest + len;
-    int blockIndex = end >> blockBits;
-    int downTo = end & blockMask;
+    final long end = dest + len;
+    int blockIndex = (int) (end >> blockBits);
+    int downTo = (int) (end & blockMask);
     if (downTo == 0) {
       blockIndex--;
       downTo = blockSize;
@@ -170,7 +174,7 @@ class BytesStore extends DataOutput {
   /** Absolute copy bytes self to self, without changing the
    *  position. Note: this cannot "grow" the bytes, so must
    *  only call it on already written parts. */
-  public void copyBytes(int src, int dest, int len) {
+  public void copyBytes(long src, long dest, int len) {
     //System.out.println("BS.copyBytes src=" + src + " dest=" + dest + " len=" + len);
     assert src < dest;
 
@@ -200,10 +204,10 @@ class BytesStore extends DataOutput {
     }
     */
 
-    int end = src + len;
+    long end = src + len;
 
-    int blockIndex = end >> blockBits;
-    int downTo = end & blockMask;
+    int blockIndex = (int) (end >> blockBits);
+    int downTo = (int) (end & blockMask);
     if (downTo == 0) {
       blockIndex--;
       downTo = blockSize;
@@ -229,9 +233,9 @@ class BytesStore extends DataOutput {
 
   /** Writes an int at the absolute position without
    *  changing the current pointer. */
-  public void writeInt(int pos, int value) {
-    int blockIndex = pos >> blockBits;
-    int upto = pos & blockMask;
+  public void writeInt(long pos, int value) {
+    int blockIndex = (int) (pos >> blockBits);
+    int upto = (int) (pos & blockMask);
     byte[] block = blocks.get(blockIndex);
     int shift = 24;
     for(int i=0;i<4;i++) {
@@ -246,21 +250,21 @@ class BytesStore extends DataOutput {
   }
 
   /** Reverse from srcPos, inclusive, to destPos, inclusive. */
-  public void reverse(int srcPos, int destPos) {
+  public void reverse(long srcPos, long destPos) {
     assert srcPos < destPos;
     assert destPos < getPosition();
     //System.out.println("reverse src=" + srcPos + " dest=" + destPos);
 
-    int srcBlockIndex = srcPos >> blockBits;
-    int src = srcPos & blockMask;
+    int srcBlockIndex = (int) (srcPos >> blockBits);
+    int src = (int) (srcPos & blockMask);
     byte[] srcBlock = blocks.get(srcBlockIndex);
 
-    int destBlockIndex = destPos >> blockBits;
-    int dest = destPos & blockMask;
+    int destBlockIndex = (int) (destPos >> blockBits);
+    int dest = (int) (destPos & blockMask);
     byte[] destBlock = blocks.get(destBlockIndex);
     //System.out.println("  srcBlock=" + srcBlockIndex + " destBlock=" + destBlockIndex);
 
-    int limit = (destPos - srcPos + 1)/2;
+    int limit = (int) (destPos - srcPos + 1)/2;
     for(int i=0;i<limit;i++) {
       //System.out.println("  cycle src=" + src + " dest=" + dest);
       byte b = srcBlock[src];
@@ -299,17 +303,17 @@ class BytesStore extends DataOutput {
     }
   }
 
-  public int getPosition() {
-    return (blocks.size()-1) * blockSize + nextWrite;
+  public long getPosition() {
+    return ((long) blocks.size()-1) * blockSize + nextWrite;
   }
 
   /** Pos must be less than the max position written so far!
    *  Ie, you cannot "grow" the file with this! */
-  public void truncate(int newLen) {
+  public void truncate(long newLen) {
     assert newLen <= getPosition();
     assert newLen >= 0;
-    int blockIndex = newLen >> blockBits;
-    nextWrite = newLen & blockMask;
+    int blockIndex = (int) (newLen >> blockBits);
+    nextWrite = (int) (newLen & blockMask);
     if (nextWrite == 0) {
       blockIndex--;
       nextWrite = blockSize;
@@ -332,6 +336,7 @@ class BytesStore extends DataOutput {
     }
   }
 
+  /** Writes all of our bytes to the target {@link DataOutput}. */
   public void writeTo(DataOutput out) throws IOException {
     for(byte[] block : blocks) {
       out.writeBytes(block, 0, block.length);
@@ -382,16 +387,16 @@ class BytesStore extends DataOutput {
       }
 
       @Override
-      public int getPosition() {
-        return (nextBuffer-1)*blockSize + nextRead;
+      public long getPosition() {
+        return ((long) nextBuffer-1)*blockSize + nextRead;
       }
 
       @Override
-      public void setPosition(int pos) {
-        int bufferIndex = pos >> blockBits;
+      public void setPosition(long pos) {
+        int bufferIndex = (int) (pos >> blockBits);
         nextBuffer = bufferIndex+1;
         current = blocks.get(bufferIndex);
-        nextRead = pos & blockMask;
+        nextRead = (int) (pos & blockMask);
         assert getPosition() == pos;
       }
 
@@ -437,20 +442,20 @@ class BytesStore extends DataOutput {
       }
 
       @Override
-      public int getPosition() {
-        return (nextBuffer+1)*blockSize + nextRead;
+      public long getPosition() {
+        return ((long) nextBuffer+1)*blockSize + nextRead;
       }
 
       @Override
-      public void setPosition(int pos) {
+      public void setPosition(long pos) {
         // NOTE: a little weird because if you
         // setPosition(0), the next byte you read is
         // bytes[0] ... but I would expect bytes[-1] (ie,
         // EOF)...?
-        int bufferIndex = pos >> blockBits;
+        int bufferIndex = (int) (pos >> blockBits);
         nextBuffer = bufferIndex-1;
         current = blocks.get(bufferIndex);
-        nextRead = pos & blockMask;
+        nextRead = (int) (pos & blockMask);
         assert getPosition() == pos: "pos=" + pos + " getPos()=" + getPosition();
       }
 
