@@ -102,8 +102,7 @@ class Lucene41SimpleNormsProducer extends SimpleDVProducer {
       }
       final long minValue = data.readLong();
       assert minValue == 0;
-      PackedInts.Header header = PackedInts.readHeader(data);
-      final PackedInts.Reader reader = PackedInts.getReaderNoHeader(data, header);
+      final PackedInts.Reader reader = PackedInts.getReader(data);
       return new NumericDocValues() {
         @Override
         public long get(int docID) {
@@ -112,8 +111,7 @@ class Lucene41SimpleNormsProducer extends SimpleDVProducer {
       };
     } else {
       final long minValue = data.readLong();
-      PackedInts.Header header = PackedInts.readHeader(data);
-      final PackedInts.Reader reader = PackedInts.getReaderNoHeader(data, header);
+      final PackedInts.Reader reader = PackedInts.getReader(data);
       return new NumericDocValues() {
         @Override
         public long get(int docID) {

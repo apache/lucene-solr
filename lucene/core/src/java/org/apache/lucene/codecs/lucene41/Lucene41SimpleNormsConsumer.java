@@ -133,16 +133,8 @@ class Lucene41SimpleNormsConsumer extends SimpleDVConsumer {
 
     data.writeLong(minValue);
 
-    FormatAndBits formatAndBits = PackedInts.fastestFormatAndBits(count, bitsPerValue, PackedInts.COMPACT);
-    
-    // nocommit: refactor this crap in PackedInts.java
-    // e.g. Header.load()/save() or something rather than how it works now.
-    CodecUtil.writeHeader(data, PackedInts.CODEC_NAME, PackedInts.VERSION_CURRENT);
-    data.writeVInt(bitsPerValue);
-    data.writeVInt(count);
-    data.writeVInt(formatAndBits.format.getId());
-    
-    final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, formatAndBits.format, count, formatAndBits.bitsPerValue, 0);
+    FormatAndBits formatAndBits = PackedInts.fastestFormatAndBits(count, bitsPerValue, PackedInts.COMPACT);   
+    final PackedInts.Writer writer = PackedInts.getWriter(data, count, formatAndBits.bitsPerValue, 0);
     for(Number nv : values) {
       writer.add(nv.longValue() - minValue);
     }
