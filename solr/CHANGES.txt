@@ -485,6 +485,9 @@ Bug Fixes
 * SOLR-3820: Solr Admin Query form is missing some edismax request parameters
   (steffkes)
 
+* SOLR-4217: post.jar no longer ignores -Dparams when -Durl is used.
+  (Alexandre Rafalovitch, ehatcher)
+
 Other Changes
 ----------------------
 
