@@ -197,6 +197,9 @@ def checkAll(dirName):
         elif link.find('lucene.apache.org/java/docs/discussion.html') != -1:
           # OK
           pass
+        elif link.find('lucene.apache.org/core/discussion.html') != -1:
+          # OK
+          pass
         elif link.find('lucene.apache.org/solr/mirrors-solr-latest-redir.html') != -1:
           # OK
           pass
