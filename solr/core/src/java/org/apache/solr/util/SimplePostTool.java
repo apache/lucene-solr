@@ -801,7 +801,7 @@ public class SimplePostTool {
             " " + urlc.getResponseMessage() + " for url "+url);
       }
     } catch (IOException e) {
-      warn("An error occured posting data to "+url+". Please check that Solr is running.");
+      warn("An error occurred posting data to "+url+". Please check that Solr is running.");
     }
   }
 
