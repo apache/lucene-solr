@@ -5,22 +5,22 @@
                 pk="link"
                 url="http://rss.slashdot.org/Slashdot/slashdot"
                 processor="XPathEntityProcessor"
-                forEach="/RDF/channel | /RDF/item"
+                forEach="/rss/channel | /rss/item"
                 transformer="DateFormatTransformer">
 				
-            <field column="source" xpath="/RDF/channel/title" commonField="true" />
-            <field column="source-link" xpath="/RDF/channel/link" commonField="true" />
-            <field column="subject" xpath="/RDF/channel/subject" commonField="true" />
+            <field column="source" xpath="/rss/channel/title" commonField="true" />
+            <field column="source-link" xpath="/rss/channel/link" commonField="true" />
+            <field column="subject" xpath="/rss/channel/subject" commonField="true" />
 			
-            <field column="title" xpath="/RDF/item/title" />
-            <field column="link" xpath="/RDF/item/link" />
-            <field column="description" xpath="/RDF/item/description" />
-            <field column="creator" xpath="/RDF/item/creator" />
-            <field column="item-subject" xpath="/RDF/item/subject" />
-            <field column="date" xpath="/RDF/item/date" dateTimeFormat="yyyy-MM-dd'T'HH:mm:ss" />
-            <field column="slash-department" xpath="/RDF/item/department" />
-            <field column="slash-section" xpath="/RDF/item/section" />
-            <field column="slash-comments" xpath="/RDF/item/comments" />
+            <field column="title" xpath="/rss/item/title" />
+            <field column="link" xpath="/rss/item/link" />
+            <field column="description" xpath="/rss/item/description" />
+            <field column="creator" xpath="/rss/item/creator" />
+            <field column="item-subject" xpath="/rss/item/subject" />
+            <field column="date" xpath="/rss/item/date" dateTimeFormat="yyyy-MM-dd'T'HH:mm:ss" />
+            <field column="slash-department" xpath="/rss/item/department" />
+            <field column="slash-section" xpath="/rss/item/section" />
+            <field column="slash-comments" xpath="/rss/item/comments" />
         </entity>
     </document>
 </dataConfig>
