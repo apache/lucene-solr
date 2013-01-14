@@ -26,8 +26,10 @@ import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
+import org.apache.lucene.codecs.SimpleNormsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.codecs.lucene41.Lucene41SimpleNormsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /**
@@ -99,9 +101,21 @@ public final class Lucene40Codec extends Codec {
     return normsFormat;
   }
   
+  // nocommit need a read-only Lucene40SimpleDVFormat
+  private final SimpleDocValuesFormat defaultDVFormat = SimpleDocValuesFormat.forName("Disk");
+
   @Override
   public SimpleDocValuesFormat simpleDocValuesFormat() {
-    return null; // nocommit
+    // nocommit
+    return defaultDVFormat;
+  }
+
+  // nocommit need a read-only Lucene40SimpleNormsFormat:
+  private final SimpleNormsFormat simpleNormsFormat = new Lucene41SimpleNormsFormat();
+
+  @Override
+  public SimpleNormsFormat simpleNormsFormat() {
+    return simpleNormsFormat;
   }
 
   @Override

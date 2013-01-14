@@ -50,7 +50,7 @@ public class MultiSimpleDocValues {
         anyReal = true;
       }
     }
-    
+
     // assert anyReal; // nocommit: unsafe until 4.0 is done
 
     return new NumericDocValues() {

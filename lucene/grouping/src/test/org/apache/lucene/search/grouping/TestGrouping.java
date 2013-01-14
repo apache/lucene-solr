@@ -663,7 +663,8 @@ public class TestGrouping extends LuceneTestCase {
         String randomValue;
         do {
           // B/c of DV based impl we can't see the difference between an empty string and a null value.
-          // For that reason we don't generate empty string groups.
+          // For that reason we don't generate empty string
+          // groups.
           randomValue = _TestUtil.randomRealisticUnicodeString(random());
         } while ("".equals(randomValue));
 
@@ -765,6 +766,9 @@ public class TestGrouping extends LuceneTestCase {
 
       try {
         final IndexSearcher s = newSearcher(r);
+        if (VERBOSE) {
+          System.out.println("\nTEST: searcher=" + s);
+        }
 
         if (SlowCompositeReaderWrapper.class.isAssignableFrom(s.getIndexReader().getClass())) {
           canUseIDV = false;
@@ -780,7 +784,6 @@ public class TestGrouping extends LuceneTestCase {
             assertTrue(gd.score == 0.0);
             gd.score = hit.score;
             assertEquals(gd.id, docIDToID.get(hit.doc));
-            //System.out.println("  score=" + hit.score + " id=" + docIDToID.get(hit.doc));
           }
         }
 
@@ -1194,7 +1197,7 @@ public class TestGrouping extends LuceneTestCase {
       final Collection<SearchGroup<BytesRef>> topGroups = getSearchGroups(firstPassCollector, 0, true);
       if (topGroups != null) {
         if (VERBOSE) {
-          System.out.println("  shard " + shardIDX + " s=" + subSearchers[shardIDX] + " " + topGroups.size() + " groups:");
+          System.out.println("  shard " + shardIDX + " s=" + subSearchers[shardIDX] + " totalGroupedHitCount=?" + " " + topGroups.size() + " groups:");
           for(SearchGroup<BytesRef> group : topGroups) {
             System.out.println("    " + groupToString(group.groupValue) + " groupSort=" + Arrays.toString(group.sortValues));
           }
