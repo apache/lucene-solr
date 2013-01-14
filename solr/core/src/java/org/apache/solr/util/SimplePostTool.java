@@ -196,7 +196,8 @@ public class SimplePostTool {
         fatal("System Property 'data' is not valid for this tool: " + mode);
       }
       String params = System.getProperty("params", "");
-      urlStr = System.getProperty("url", SimplePostTool.appendParam(DEFAULT_POST_URL, params));
+      urlStr = System.getProperty("url", DEFAULT_POST_URL);
+      urlStr = SimplePostTool.appendParam(urlStr, params);
       URL url = new URL(urlStr);
       boolean auto = isOn(System.getProperty("auto", DEFAULT_AUTO));
       String type = System.getProperty("type");
