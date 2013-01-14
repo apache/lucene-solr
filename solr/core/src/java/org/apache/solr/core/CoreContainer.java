@@ -1635,6 +1635,6 @@ public class CoreContainer
       + ">\n"
       + "    <core name=\""
       + DEFAULT_DEFAULT_CORE_NAME
-      + "\" shard=\"${shard:}\" instanceDir=\"collection1\" />\n"
+      + "\" shard=\"${shard:}\" collection=\"${collection:}\" instanceDir=\"collection1\" />\n"
       + "  </cores>\n" + "</solr>";
 }
