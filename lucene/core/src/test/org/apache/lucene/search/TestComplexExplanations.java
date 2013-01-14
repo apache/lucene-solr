@@ -27,8 +27,6 @@ import org.apache.lucene.search.spans.*;
  * on the assumption that if the explanations work out right for them,
  * they should work for anything.
  */
-// nocommit: fix this slow-wrapper sortedDV fail:
-// ant test  -Dtestcase=TestComplexExplanations -Dtests.method=testMPQ7 -Dtests.seed=8FB070EE0C4130E9 -Dtests.slow=true -Dtests.locale=it_CH -Dtests.timezone=America/Grand_Turk -Dtests.file.encoding=UTF-8
 public class TestComplexExplanations extends TestExplanations {
 
   /**
