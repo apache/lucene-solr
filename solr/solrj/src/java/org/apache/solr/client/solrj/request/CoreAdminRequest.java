@@ -42,6 +42,7 @@ public class CoreAdminRequest extends SolrRequest
 {
   protected String core = null;
   protected String other = null;
+  protected boolean isIndexInfoNeeded = true;
   protected CoreAdminParams.CoreAdminAction action = null;
   
   //a create core request
@@ -383,6 +384,10 @@ public class CoreAdminRequest extends SolrRequest
   {
     this.other = otherCoreName;
   }
+
+  public final void setIndexInfoNeeded(boolean isIndexInfoNeeded) {
+    this.isIndexInfoNeeded = isIndexInfoNeeded;
+  }
   
   //---------------------------------------------------------------------------------------
   //
@@ -406,6 +411,7 @@ public class CoreAdminRequest extends SolrRequest
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set( CoreAdminParams.ACTION, action.toString() );
     params.set( CoreAdminParams.CORE, core );
+    params.set(CoreAdminParams.INDEX_INFO, (isIndexInfoNeeded ? "true" : "false"));
     if (other != null) {
       params.set(CoreAdminParams.OTHER, other);
     }
