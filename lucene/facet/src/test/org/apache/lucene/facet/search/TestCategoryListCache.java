@@ -22,6 +22,7 @@ import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.index.AtomicReaderContext;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -132,8 +133,8 @@ public class TestCategoryListCache extends FacetTestBase {
             }
           }
           @Override
-          public boolean init() throws IOException {
-            return it.init();
+          public boolean setNextReader(AtomicReaderContext context) throws IOException {
+            return it.setNextReader(context);
           }
         };
       }

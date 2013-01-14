@@ -2,7 +2,7 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
@@ -34,17 +34,15 @@ import org.apache.lucene.util.encoding.IntDecoder;
 public class PayloadCategoryListIteraor implements CategoryListIterator {
 
   private final IntDecoder decoder;
-  private final IndexReader indexReader;
   private final Term term;
   private final PayloadIterator pi;
   private final int hashCode;
   
-  public PayloadCategoryListIteraor(IndexReader indexReader, Term term, IntDecoder decoder) throws IOException {
-    pi = new PayloadIterator(indexReader, term);
+  public PayloadCategoryListIteraor(Term term, IntDecoder decoder) throws IOException {
+    pi = new PayloadIterator(term);
     this.decoder = decoder;
-    hashCode = indexReader.hashCode() ^ term.hashCode();
+    hashCode = term.hashCode();
     this.term = term;
-    this.indexReader = indexReader;
   }
 
   @Override
@@ -58,7 +56,7 @@ public class PayloadCategoryListIteraor implements CategoryListIterator {
     }
     
     // Hash codes are the same, check equals() to avoid cases of hash-collisions.
-    return indexReader.equals(that.indexReader) && term.equals(that.term);
+    return term.equals(that.term);
   }
 
   @Override
@@ -67,8 +65,8 @@ public class PayloadCategoryListIteraor implements CategoryListIterator {
   }
 
   @Override
-  public boolean init() throws IOException {
-    return pi.init();
+  public boolean setNextReader(AtomicReaderContext context) throws IOException {
+    return pi.setNextReader(context);
   }
   
   @Override

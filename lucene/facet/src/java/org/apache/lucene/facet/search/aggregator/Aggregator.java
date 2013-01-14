@@ -2,6 +2,7 @@ package org.apache.lucene.facet.search.aggregator;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.util.IntsRef;
 
 /*
@@ -22,21 +23,22 @@ import org.apache.lucene.util.IntsRef;
  */
 
 /**
- * An Aggregator is the analogue of Lucene's Collector (see
- * {@link org.apache.lucene.search.Collector}), for processing the categories
- * belonging to a certain document. The Aggregator is responsible for doing
- * whatever it wishes with the categories it is fed, e.g., counting the number
- * of times that each category appears, or performing some computation on their
- * association values.
- * <P>
- * Much of the function of an Aggregator implementation is not described by this
- * interface. This includes the constructor and getter methods to retrieve the
- * results of the aggregation.
+ * Aggregates the categories of documents given to
+ * {@link #aggregate(int, float, IntsRef)}. Note that the document IDs are local
+ * to the reader given to {@link #setNextReader(AtomicReaderContext)}.
  * 
  * @lucene.experimental
  */
 public interface Aggregator {
 
+  /**
+   * Sets the {@link AtomicReaderContext} for which
+   * {@link #aggregate(int, float, IntsRef)} calls will be made. If this method
+   * returns false, {@link #aggregate(int, float, IntsRef)} should not be called
+   * for this reader.
+   */
+  public boolean setNextReader(AtomicReaderContext context) throws IOException;
+  
   /**
    * Aggregate the ordinals of the given document ID (and its score). The given
    * ordinals offset is always zero.

@@ -3,13 +3,10 @@ package org.apache.lucene.facet.index.params;
 import java.io.IOException;
 import java.io.Serializable;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-
 import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.search.PayloadCategoryListIteraor;
-import org.apache.lucene.facet.search.TotalFacetCounts;
 import org.apache.lucene.facet.util.PartitionsUtils;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.encoding.DGapIntEncoder;
 import org.apache.lucene.util.encoding.IntDecoder;
 import org.apache.lucene.util.encoding.IntEncoder;
@@ -98,11 +95,6 @@ public class CategoryListParams implements Serializable {
     return new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder())));
   }
 
-  /**
-   * Equality is defined by the 'term' that defines this category list.  
-   * Sub-classes should override this method if a more complex calculation
-   * is needed to ensure equality. 
-   */
   @Override
   public boolean equals(Object o) {
     if (o == this) {
@@ -121,29 +113,16 @@ public class CategoryListParams implements Serializable {
     return this.term.equals(other.term);
   }
 
-  /**
-   * Hashcode is similar to {@link #equals(Object)}, in that it uses
-   * the term that defines this category list to derive the hashcode.
-   * Subclasses need to ensure that equality/hashcode is correctly defined,
-   * or there could be side-effects in the {@link TotalFacetCounts} caching 
-   * mechanism (as the filename for a Total Facet Counts array cache 
-   * is dependent on the hashCode, so it should consistently return the same
-   * hash for identity).
-   */
   @Override
   public int hashCode() {
     return this.hashCode;
   }
 
-  /**
-   * Create the category list iterator for the specified partition.
-   */
-  public CategoryListIterator createCategoryListIterator(IndexReader reader,
-      int partition) throws IOException {
+  /** Create the {@link CategoryListIterator} for the specified partition. */
+  public CategoryListIterator createCategoryListIterator(int partition) throws IOException {
     String categoryListTermStr = PartitionsUtils.partitionName(this, partition);
     Term payloadTerm = new Term(term.field(), categoryListTermStr);
-    return new PayloadCategoryListIteraor(reader, payloadTerm,
-        createEncoder().createMatchingDecoder());
+    return new PayloadCategoryListIteraor(payloadTerm, createEncoder().createMatchingDecoder());
   }
   
 }

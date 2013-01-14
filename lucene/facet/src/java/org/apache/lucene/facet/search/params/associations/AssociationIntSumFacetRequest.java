@@ -2,8 +2,6 @@ package org.apache.lucene.facet.search.params.associations;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
-
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
 import org.apache.lucene.facet.search.aggregator.associations.AssociationIntSumAggregator;
@@ -45,10 +43,10 @@ public class AssociationIntSumFacetRequest extends FacetRequest {
   }
 
   @Override
-  public Aggregator createAggregator(boolean useComplements, FacetArrays arrays, IndexReader reader, 
-      TaxonomyReader taxonomy) throws IOException {
+  public Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) 
+      throws IOException {
     assert !useComplements : "complements are not supported by this FacetRequest";
-    return new AssociationIntSumAggregator(reader, arrays.getIntArray());
+    return new AssociationIntSumAggregator(arrays.getIntArray());
   }
 
   @Override

@@ -2,8 +2,6 @@ package org.apache.lucene.facet.search.params;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
-
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.search.FacetArrays;
@@ -11,8 +9,8 @@ import org.apache.lucene.facet.search.FacetResultsHandler;
 import org.apache.lucene.facet.search.TopKFacetResultsHandler;
 import org.apache.lucene.facet.search.TopKInEachNodeHandler;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
-import org.apache.lucene.facet.search.cache.CategoryListData;
 import org.apache.lucene.facet.search.cache.CategoryListCache;
+import org.apache.lucene.facet.search.cache.CategoryListData;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
@@ -314,33 +312,29 @@ public abstract class FacetRequest implements Cloneable {
    *          computation.
    * @param arrays
    *          provider for facet arrays in use for current computation.
-   * @param indexReader
-   *          index reader in effect.
    * @param taxonomy
    *          reader of taxonomy in effect.
    * @throws IOException If there is a low-level I/O error.
    */
-  public abstract Aggregator createAggregator(boolean useComplements,
-      FacetArrays arrays, IndexReader indexReader,
-      TaxonomyReader taxonomy) throws IOException;
+  public abstract Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) 
+      throws IOException;
 
   /**
-   * Create the category list iterator for the specified partition.
-   * If a non null cache is provided which contains the required data, 
-   * use it for the iteration.
+   * Create the category list iterator for the specified partition. If a non
+   * null cache is provided which contains the required data, use it for the
+   * iteration.
    */
-  public CategoryListIterator createCategoryListIterator(IndexReader reader,
-      TaxonomyReader taxo, FacetSearchParams sParams, int partition)
+  public CategoryListIterator createCategoryListIterator(TaxonomyReader taxo, FacetSearchParams sParams, int partition)
       throws IOException {
     CategoryListCache clCache = sParams.getCategoryListCache();
     CategoryListParams clParams = sParams.getFacetIndexingParams().getCategoryListParams(categoryPath);
-    if (clCache!=null) {
+    if (clCache != null) {
       CategoryListData clData = clCache.get(clParams);
-      if (clData!=null) {
+      if (clData != null) {
         return clData.iterator(partition);
       }
     }
-    return clParams.createCategoryListIterator(reader, partition);
+    return clParams.createCategoryListIterator(partition);
   }
 
   /**

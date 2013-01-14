@@ -38,7 +38,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 
 public final class FixedBitSet extends DocIdSet implements Bits {
   private final long[] bits;
-  private int numBits;
+  private final int numBits;
 
   /** returns the number of 64 bit words it would take to hold numBits */
   public static int bits2words(int numBits) {

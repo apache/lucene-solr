@@ -2,7 +2,6 @@ package org.apache.lucene.facet.associations;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.collections.IntToFloatMap;
 
 /*
@@ -31,9 +30,8 @@ public class FloatAssociationsPayloadIterator extends AssociationsPayloadIterato
 
   private final IntToFloatMap ordinalAssociations = new IntToFloatMap();
 
-  public FloatAssociationsPayloadIterator(IndexReader reader, String field, CategoryFloatAssociation association) 
-      throws IOException {
-    super(reader, field, association);
+  public FloatAssociationsPayloadIterator(String field, CategoryFloatAssociation association) throws IOException {
+    super(field, association);
   }
 
   @Override
