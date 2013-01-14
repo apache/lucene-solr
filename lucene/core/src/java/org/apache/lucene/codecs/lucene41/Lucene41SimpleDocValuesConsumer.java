@@ -34,7 +34,7 @@ import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
 
 /**
- * Writes norms one of two ways:
+ * Writes numbers one of two ways:
  * 1. packed ints as deltas from minValue
  * 2. packed ints as ordinals to a table (if the number of values is small, e.g. <= 256)
  * 
