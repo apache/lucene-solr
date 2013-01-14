@@ -45,6 +45,10 @@ class Lucene41SimpleDocValuesConsumer extends SimpleDVConsumer {
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
   
+  static final byte NUMBER = 0;
+  static final byte BYTES = 1;
+  static final byte FST = 2;
+  
   final IndexOutput data, meta;
   final int maxDoc;
   
@@ -69,6 +73,7 @@ class Lucene41SimpleDocValuesConsumer extends SimpleDVConsumer {
   @Override
   public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
     meta.writeVInt(field.number);
+    meta.writeByte(NUMBER);
     meta.writeLong(data.getFilePointer());
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
@@ -161,10 +166,53 @@ class Lucene41SimpleDocValuesConsumer extends SimpleDVConsumer {
     }
   }
 
-  // nocommit: have SimpleDVConsumer extend SimpleNormsConsumer?
   @Override
-  public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
-    throw new AssertionError();
+  public void addBinaryField(FieldInfo field, final Iterable<BytesRef> values) throws IOException {
+    // write the byte[] data
+    meta.writeVInt(field.number);
+    meta.writeByte(BYTES);
+    int minLength = Integer.MAX_VALUE;
+    int maxLength = Integer.MIN_VALUE;
+    final long startFP = data.getFilePointer();
+    for(BytesRef v : values) {
+      minLength = Math.min(minLength, v.length);
+      maxLength = Math.max(maxLength, v.length);
+      data.writeBytes(v.bytes, v.offset, v.length);
+    }
+    meta.writeLong(startFP);
+    meta.writeLong(data.getFilePointer() - startFP);
+    meta.writeVInt(minLength);
+    meta.writeVInt(maxLength);
+    
+    // if minLength == maxLength, its a fixed-length byte[], we are done (the addresses are implicit)
+    // otherwise, we need to record the length fields...
+    // TODO: make this more efficient. this is just as inefficient as 4.0 codec.... we can do much better.
+    if (minLength != maxLength) {
+      addNumericField(field, new Iterable<Number>() {
+        @Override
+        public Iterator<Number> iterator() {
+          final Iterator<BytesRef> inner = values.iterator();
+          return new Iterator<Number>() {
+            long addr = 0;
+
+            @Override
+            public boolean hasNext() {
+              return inner.hasNext();
+            }
+
+            @Override
+            public Number next() {
+              BytesRef b = inner.next();
+              addr += b.length;
+              return Long.valueOf(addr);
+            }
+
+            @Override
+            public void remove() { throw new UnsupportedOperationException(); } 
+          };
+        }
+      });
+    }
   }
 
   @Override

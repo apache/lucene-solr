@@ -31,17 +31,26 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
 class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
+  // metadata maps (just file pointers and minimal stuff)
   private final Map<Integer,NumericEntry> numerics;
+  private final Map<Integer,BinaryEntry> binaries;
+  private final Map<Integer,FSTEntry> fsts;
   private final IndexInput data;
   
   // ram instances we have already loaded
-  private final Map<Integer,NumericDocValues> ramInstances = 
+  private final Map<Integer,NumericDocValues> numericInstances = 
       new HashMap<Integer,NumericDocValues>();
   
+  // if this thing needs some TL state then we might put something
+  // else in this map.
+  private final Map<Integer,BinaryDocValues> binaryInstances =
+      new HashMap<Integer,BinaryDocValues>();
+    
   Lucene41SimpleDocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
@@ -52,6 +61,8 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
                                 Lucene41SimpleDocValuesConsumer.VERSION_START,
                                 Lucene41SimpleDocValuesConsumer.VERSION_START);
       numerics = new HashMap<Integer,NumericEntry>();
+      binaries = new HashMap<Integer,BinaryEntry>();
+      fsts = new HashMap<Integer,FSTEntry>();
       readFields(in, state.fieldInfos);
       success = true;
     } finally {
@@ -72,20 +83,30 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
   private void readFields(IndexInput meta, FieldInfos infos) throws IOException {
     int fieldNumber = meta.readVInt();
     while (fieldNumber != -1) {
-      NumericEntry entry = new NumericEntry();
-      entry.offset = meta.readLong();
-      entry.tableized = meta.readByte() != 0;
-      numerics.put(fieldNumber, entry);
+      int fieldType = meta.readByte();
+      if (fieldType == Lucene41SimpleDocValuesConsumer.NUMBER) {
+        NumericEntry entry = new NumericEntry();
+        entry.offset = meta.readLong();
+        entry.tableized = meta.readByte() != 0;
+        numerics.put(fieldNumber, entry);
+      } else if (fieldType == Lucene41SimpleDocValuesConsumer.BYTES) {
+        BinaryEntry entry = new BinaryEntry();
+        entry.offset = meta.readLong();
+        entry.numBytes = meta.readLong();
+        entry.minLength = meta.readVInt();
+        entry.maxLength = meta.readVInt();
+        binaries.put(fieldNumber, entry);
+      }
       fieldNumber = meta.readVInt();
     }
   }
 
   @Override
   public synchronized NumericDocValues getNumeric(FieldInfo field) throws IOException {
-    NumericDocValues instance = ramInstances.get(field.number);
+    NumericDocValues instance = numericInstances.get(field.number);
     if (instance == null) {
       instance = loadNumeric(field);
-      ramInstances.put(field.number, instance);
+      numericInstances.put(field.number, instance);
     }
     return instance;
   }
@@ -122,9 +143,48 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
   }
 
   @Override
-  public BinaryDocValues getBinary(FieldInfo field) throws IOException {
-    throw new AssertionError();
+  public synchronized BinaryDocValues getBinary(FieldInfo field) throws IOException {
+    BinaryDocValues instance = binaryInstances.get(field.number);
+    if (instance == null) {
+      instance = loadBinary(field);
+      binaryInstances.put(field.number, instance);
+    }
+    return instance;
   }
+  
+  private BinaryDocValues loadBinary(FieldInfo field) throws IOException {
+    BinaryEntry entry = binaries.get(field.number);
+    final IndexInput data = this.data.clone();
+    data.seek(entry.offset);
+    assert entry.numBytes < Integer.MAX_VALUE; // nocommit
+    final byte[] bytes = new byte[(int)entry.numBytes];
+    data.readBytes(bytes, 0, bytes.length);
+    if (entry.minLength == entry.maxLength) {
+      final int fixedLength = entry.minLength;
+      return new BinaryDocValues() {
+        @Override
+        public void get(int docID, BytesRef result) {
+          result.bytes = bytes;
+          result.offset = docID * fixedLength;
+          result.length = fixedLength;
+        }
+      };
+    } else {
+      final NumericDocValues addresses = getNumeric(field);
+      return new BinaryDocValues() {
+        @Override
+        public void get(int docID, BytesRef result) {
+          int startAddress = docID == 0 ? 0 : (int) addresses.get(docID-1);
+          int endAddress = (int)addresses.get(docID); 
+          result.bytes = bytes;
+          result.offset = startAddress;
+          result.length = endAddress - startAddress;
+        }
+      };
+    }
+  }
+  
+  
 
   @Override
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
@@ -139,6 +199,18 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
   static class NumericEntry {
     long offset;
     boolean tableized;
+  }
+  
+  static class BinaryEntry {
+    long offset;
+    long numBytes;
+    int minLength;
+    int maxLength;
+  }
+  
+  static class FSTEntry {
+    long offset;
+    int numOrds;
   }
 
 }
