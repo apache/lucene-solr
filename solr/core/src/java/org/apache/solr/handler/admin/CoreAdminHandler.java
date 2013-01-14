@@ -689,6 +689,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
     SolrParams params = req.getParams();
 
     String cname = params.get(CoreAdminParams.CORE);
+    String indexInfo = params.get(CoreAdminParams.INDEX_INFO);
+    boolean isIndexInfoNeeded = Boolean.parseBoolean(null == indexInfo ? "true" : indexInfo);
     boolean doPersist = false;
     NamedList<Object> status = new SimpleOrderedMap<Object>();
     Map<String,Exception> allFailures = coreContainer.getCoreInitFailures();
@@ -696,7 +698,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       if (cname == null) {
         rsp.add("defaultCoreName", coreContainer.getDefaultCoreName());
         for (String name : coreContainer.getCoreNames()) {
-          status.add(name, getCoreStatus(coreContainer, name));
+          status.add(name, getCoreStatus(coreContainer, name, isIndexInfoNeeded));
         }
         rsp.add("initFailures", allFailures);
       } else {
@@ -704,7 +706,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
           ? Collections.singletonMap(cname, allFailures.get(cname))
           : Collections.emptyMap();
         rsp.add("initFailures", failures);
-        status.add(cname, getCoreStatus(coreContainer, cname));
+        status.add(cname, getCoreStatus(coreContainer, cname, isIndexInfoNeeded));
       }
       rsp.add("status", status);
       doPersist = false; // no state change
@@ -988,7 +990,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     
   }
 
-  protected NamedList<Object> getCoreStatus(CoreContainer cores, String cname) throws IOException {
+  protected NamedList<Object> getCoreStatus(CoreContainer cores, String cname, boolean isIndexInfoNeeded) throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<Object>();
     SolrCore core = cores.getCore(cname);
     if (core != null) {
@@ -1001,15 +1003,17 @@ public class CoreAdminHandler extends RequestHandlerBase {
         info.add("schema", core.getSchemaResource());
         info.add("startTime", new Date(core.getStartTime()));
         info.add("uptime", System.currentTimeMillis() - core.getStartTime());
-        RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-        try {
-          SimpleOrderedMap<Object> indexInfo = LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader());
-          long size = getIndexSize(core);
-          indexInfo.add("sizeInBytes", size);
-          indexInfo.add("size", NumberUtils.readableSize(size));
-          info.add("index", indexInfo);
-        } finally {
-          searcher.decref();
+        if (isIndexInfoNeeded) {
+          RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
+          try {
+            SimpleOrderedMap<Object> indexInfo = LukeRequestHandler.getIndexInfo(searcher.get().getIndexReader());
+            long size = getIndexSize(core);
+            indexInfo.add("sizeInBytes", size);
+            indexInfo.add("size", NumberUtils.readableSize(size));
+            info.add("index", indexInfo);
+          } finally {
+            searcher.decref();
+          }
         }
       } finally {
         core.close();
