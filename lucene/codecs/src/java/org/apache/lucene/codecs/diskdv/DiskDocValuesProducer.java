@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene41;
+package org.apache.lucene.codecs.diskdv;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,21 +37,21 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
-class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
+class DiskDocValuesProducer extends SimpleDVProducer {
   private final Map<Integer,NumericEntry> numerics;
   private final Map<Integer,NumericEntry> ords;
   private final Map<Integer,BinaryEntry> binaries;
   private final IndexInput data;
   
-  Lucene41SimpleDocValuesProducer(SegmentReadState state) throws IOException {
+  DiskDocValuesProducer(SegmentReadState state) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "dvm");
     // read in the entries from the metadata file.
     IndexInput in = state.directory.openInput(metaName, state.context);
     boolean success = false;
     try {
-      CodecUtil.checkHeader(in, Lucene41SimpleDocValuesFormat.METADATA_CODEC, 
-                                Lucene41SimpleDocValuesFormat.VERSION_START,
-                                Lucene41SimpleDocValuesFormat.VERSION_START);
+      CodecUtil.checkHeader(in, DiskDocValuesFormat.METADATA_CODEC, 
+                                DiskDocValuesFormat.VERSION_START,
+                                DiskDocValuesFormat.VERSION_START);
       numerics = new HashMap<Integer,NumericEntry>();
       ords = new HashMap<Integer,NumericEntry>();
       binaries = new HashMap<Integer,BinaryEntry>();
@@ -67,9 +67,9 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
     
     String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "dvd");
     data = state.directory.openInput(dataName, state.context);
-    CodecUtil.checkHeader(data, Lucene41SimpleDocValuesFormat.DATA_CODEC, 
-                                Lucene41SimpleDocValuesFormat.VERSION_START,
-                                Lucene41SimpleDocValuesFormat.VERSION_START);
+    CodecUtil.checkHeader(data, DiskDocValuesFormat.DATA_CODEC, 
+                                DiskDocValuesFormat.VERSION_START,
+                                DiskDocValuesFormat.VERSION_START);
   }
   
   private void readFields(IndexInput meta, FieldInfos infos) throws IOException {

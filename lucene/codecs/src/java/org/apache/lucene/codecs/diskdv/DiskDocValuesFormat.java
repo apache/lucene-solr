@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene41;
+package org.apache.lucene.codecs.diskdv;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,24 +37,24 @@ import org.apache.lucene.index.SegmentWriteState;
  * fixedLength SortedField = BINARY + NUMERIC (ords)
  * variableLength SortedField = BINARY + NUMERIC (addresses) + NUMERIC (ords) 
  */
-public class Lucene41SimpleDocValuesFormat extends SimpleDocValuesFormat {
+public class DiskDocValuesFormat extends SimpleDocValuesFormat {
 
-  public Lucene41SimpleDocValuesFormat() {
-    super("Lucene41");
+  public DiskDocValuesFormat() {
+    super("Disk");
   }
 
   @Override
   public SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene41SimpleDocValuesConsumer(state);
+    return new DiskDocValuesConsumer(state);
   }
 
   @Override
   public SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new Lucene41SimpleDocValuesProducer(state);
+    return new DiskDocValuesProducer(state);
   }
   
-  static final String DATA_CODEC = "Lucene41DocValuesData";
-  static final String METADATA_CODEC = "Lucene41DocValuesMetadata";
+  static final String DATA_CODEC = "DiskDocValuesData";
+  static final String METADATA_CODEC = "DiskDocValuesMetadata";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 }

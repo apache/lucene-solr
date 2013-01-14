@@ -32,9 +32,9 @@ import org.apache.lucene.codecs.SimpleDocValuesFormat;
 import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41SimpleDocValuesFormat;
 import org.apache.lucene.codecs.lucene41ords.Lucene41WithOrds;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucene41Postings;
+import org.apache.lucene.codecs.diskdv.DiskDocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.codecs.memory.MemoryDocValuesFormat;
 import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
@@ -142,7 +142,7 @@ public class RandomCodec extends Lucene41Codec {
         new MemoryPostingsFormat(false, random.nextFloat()));
     
     addDocValues(avoidCodecs,
-        new Lucene41SimpleDocValuesFormat(),
+        new DiskDocValuesFormat(),
         new SimpleTextSimpleDocValuesFormat(),
         new MemoryDocValuesFormat());
 

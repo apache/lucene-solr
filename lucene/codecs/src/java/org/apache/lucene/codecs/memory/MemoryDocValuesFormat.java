@@ -36,7 +36,7 @@ import org.apache.lucene.util.packed.PackedInts;
 /** Indexes doc values to disk and loads them in RAM at
  *  search time. */
 
-// nocommit: nuke this wrapper and just make a nice impl (e.g. FST for sortedbytes)
+// nocommit: nuke this wrapper and just make a nice impl for 4.1 (e.g. FST for sortedbytes)
 public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
 
   public MemoryDocValuesFormat() {
