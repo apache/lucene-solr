@@ -597,6 +597,10 @@ Other Changes
 * SOLR-4287: Removed "apache-" prefix from Solr distribution and artifact
   filenames. (Ryan Ernst, Robert Muir, Steve Rowe)
 
+* SOLR-4016: Deduplication does not work with atomic/partial updates so
+  disallow atomic update requests which change signature generating fields.
+  (Joel Nothman, yonik, shalin)
+
 ==================  4.0.0 ==================
 
 Versions of Major Components
