@@ -47,11 +47,6 @@ import org.apache.lucene.document.SortedBytesDocValuesField;
 import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DocValues.SortedSource;
-import org.apache.lucene.index.DocValues.Source;
-import org.apache.lucene.index.DocValues.SourceCache.DirectSourceCache;
-import org.apache.lucene.index.DocValues.SourceCache;
-import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -177,6 +172,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
   public void testAddIndexesRandom() throws IOException {
     //nocommit convert
+    /*
     int valuesPerIndex = 10;
     List<Type> values = Arrays.asList(Type.values());
     Collections.shuffle(values, random());
@@ -286,6 +282,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     d_1.close();
     d_2.close();
     target.close();
+    */
   }
 
   private IndexWriterConfig writerConfig(boolean useCompoundFile) {
@@ -302,6 +299,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   public void runTestNumerics(IndexWriterConfig cfg, boolean withDeletions)
       throws IOException {
     //nocommit convert
+    /*
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, cfg);
     final int numValues = 50 + atLeast(10);
@@ -376,10 +374,12 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     }
     w.close();
     d.close();
+    */
   }
   
   public void runTestIndexBytes(IndexWriterConfig cfg, boolean withDeletions)
       throws IOException {
+    /* nocommit convert
     final Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, cfg);
     final List<Type> byteVariantList = new ArrayList<Type>(BYTES);
@@ -463,9 +463,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
     w.close();
     d.close();
+    */
   }
   
   public void testGetArrayNumerics() throws IOException {
+    /* nocommit conver
     Directory d = newDirectory();
     IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(d, cfg);
@@ -545,9 +547,11 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     }
     w.close();
     d.close();
+    */
   }
   
   public void testGetArrayBytes() throws IOException {
+    /* nocommit convert
     Directory d = newDirectory();
     IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT,
         new MockAnalyzer(random()));
@@ -581,40 +585,10 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     r.close();
     w.close();
     d.close();
+    */
   }
-
-  private DocValues getDocValues(IndexReader reader, String field) throws IOException {
-    final DocValues docValues = MultiDocValues.getDocValues(reader, field);
-    if (docValues == null) {
-      return docValues;
-    }
-    if (rarely()) {
-      docValues.setCache(new NotCachingSourceCache());
-    } else {
-      if (!(docValues.getCache() instanceof DirectSourceCache))  {
-        docValues.setCache(new DirectSourceCache());
-      }
-    }
-    return docValues;
-  }
-
-  @SuppressWarnings("fallthrough")
-  private Source getSource(DocValues values) throws IOException {
-    // getSource uses cache internally
-    switch(random().nextInt(5)) {
-    case 3:
-      return values.loadSource();
-    case 2:
-      return values.getDirectSource();
-    case 1:
-      if(values.getType() == Type.BYTES_VAR_SORTED || values.getType() == Type.BYTES_FIXED_SORTED) {
-        return values.getSource().asSortedSource();
-      }
-    default:
-      return values.getSource();
-    }
-  }
-
+  
+  /* Nocommit convert all this
 
   private static EnumSet<Type> BYTES = EnumSet.of(Type.BYTES_FIXED_DEREF,
       Type.BYTES_FIXED_STRAIGHT, Type.BYTES_VAR_DEREF,
@@ -759,7 +733,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       w.forceMerge(1, true);
     }
     return deleted;
-  }
+  }*/
 
   public void testMultiValuedDocValuesField() throws Exception {
     Directory d = newDirectory();
