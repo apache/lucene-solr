@@ -1274,9 +1274,10 @@ class FieldCacheImpl implements FieldCache {
         throws IOException {
 
       BinaryDocValues valuesIn = reader.getBinaryDocValues(key.field);
-
-      // TODO: would be nice to fallback to SortedDV if it's
-      // available but BinaryDV isn't?
+      if (valuesIn == null) {
+        // nocommit is this auto-fallback ... OK?
+        valuesIn = reader.getSortedDocValues(key.field);
+      }
 
       if (valuesIn != null) {
         return valuesIn;
