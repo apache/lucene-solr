@@ -43,6 +43,8 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
   void finish() throws IOException {
     if (fieldInfo.isIndexed() && !fieldInfo.omitsNorms()) {
       if (consumer == null) {
+        // nocommit wrongish?  what about the
+        // only-doc-with-norms-enabled-hits-exc case?
         fieldInfo.setNormValueType(FieldInfo.DocValuesType.NUMERIC);
         consumer = new NumberDVWriter(fieldInfo, docState.docWriter.bytesUsed);
       }
@@ -53,7 +55,9 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
   void flush(SegmentWriteState state, SimpleDVConsumer normsWriter) throws IOException {
     int docCount = state.segmentInfo.getDocCount();
     if (consumer == null) {
-      return; // null type - not omitted but not written
+      return; // null type - not omitted but not written -
+              // nocommit meaning the only docs that had
+              // norms hit exceptions?
     }
     consumer.finish(docCount);
     consumer.flush(state, normsWriter);

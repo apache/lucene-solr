@@ -106,7 +106,7 @@ public class TestNorms extends LuceneTestCase {
     for (int i = 0; i < open.maxDoc(); i++) {
       StoredDocument document = open.document(i);
       int expected = Integer.parseInt(document.get(byteTestField));
-      assertEquals((byte)expected, normValues.get(i));
+      assertEquals((byte)expected, (byte)normValues.get(i));
     }
     open.close();
     dir.close();

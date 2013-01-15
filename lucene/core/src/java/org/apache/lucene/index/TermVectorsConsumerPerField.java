@@ -188,7 +188,6 @@ final class TermVectorsConsumerPerField extends TermsHashConsumerPerField {
 
     termsHashPerField.reset();
 
-    // commit the termVectors once successful - FI will otherwise reset them
     fieldInfo.setStoreTermVectors();
   }
 
