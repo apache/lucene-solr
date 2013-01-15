@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -87,8 +87,8 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
         output.writeByte(bits);
 
         // pack the DV types in one byte
-        final byte dv = docValuesByte(fi.getDocValuesType());
-        final byte nrm = docValuesByte(fi.getNormType());
+        final byte dv = docValuesByteFake(fi.getDocValuesType());
+        final byte nrm = docValuesByteFake(fi.getNormType());
         assert (dv & (~0xF)) == 0 && (nrm & (~0x0F)) == 0;
         byte val = (byte) (0xff & ((nrm << 4) | dv));
         output.writeByte(val);
@@ -103,9 +103,25 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
       }
     }
   }
+  
+  /** this is not actually how 4.0 wrote this! */
+  // nocommit: make a 4.1 fieldinfos writer
+  public byte docValuesByteFake(DocValuesType type) {
+    if (type == null) {
+      return 0;
+    } else if (type == DocValuesType.NUMERIC) {
+      return 1;
+    } else if (type == DocValuesType.BINARY) {
+      return 2;
+    } else if (type == DocValuesType.SORTED) {
+      return 3;
+    } else {
+      throw new AssertionError();
+    }
+  }
 
   /** Returns the byte used to encode the {@link
-   *  Type} for each field. */
+   *  Type} for each field.
   public byte docValuesByte(Type type) {
     if (type == null) {
       return 0;
@@ -141,6 +157,6 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
         throw new IllegalStateException("unhandled indexValues type " + type);
       }
     }
-  }
+  }*/
   
 }

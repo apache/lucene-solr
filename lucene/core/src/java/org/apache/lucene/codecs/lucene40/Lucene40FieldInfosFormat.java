@@ -23,8 +23,6 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosReader;
 import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.index.DocValues; // javadoc
-import org.apache.lucene.index.DocValues.Type; // javadoc
 import org.apache.lucene.store.DataOutput; // javadoc
 
 /**
@@ -72,22 +70,22 @@ import org.apache.lucene.store.DataOutput; // javadoc
  *    <li>DocValuesBits: a byte containing per-document value types. The type
  *        recorded as two four-bit integers, with the high-order bits representing
  *        <code>norms</code> options, and the low-order bits representing 
- *        {@link DocValues} options. Each four-bit integer can be decoded as such:
+ *        {@code DocValues} options. Each four-bit integer can be decoded as such:
  *        <ul>
  *          <li>0: no DocValues for this field.</li>
- *          <li>1: variable-width signed integers. ({@link Type#VAR_INTS VAR_INTS})</li>
- *          <li>2: 32-bit floating point values. ({@link Type#FLOAT_32 FLOAT_32})</li>
- *          <li>3: 64-bit floating point values. ({@link Type#FLOAT_64 FLOAT_64})</li>
- *          <li>4: fixed-length byte array values. ({@link Type#BYTES_FIXED_STRAIGHT BYTES_FIXED_STRAIGHT})</li>
- *          <li>5: fixed-length dereferenced byte array values. ({@link Type#BYTES_FIXED_DEREF BYTES_FIXED_DEREF})</li>
- *          <li>6: variable-length byte array values. ({@link Type#BYTES_VAR_STRAIGHT BYTES_VAR_STRAIGHT})</li>
- *          <li>7: variable-length dereferenced byte array values. ({@link Type#BYTES_VAR_DEREF BYTES_VAR_DEREF})</li>
- *          <li>8: 16-bit signed integers. ({@link Type#FIXED_INTS_16 FIXED_INTS_16})</li>
- *          <li>9: 32-bit signed integers. ({@link Type#FIXED_INTS_32 FIXED_INTS_32})</li>
- *          <li>10: 64-bit signed integers. ({@link Type#FIXED_INTS_64 FIXED_INTS_64})</li>
- *          <li>11: 8-bit signed integers. ({@link Type#FIXED_INTS_8 FIXED_INTS_8})</li>
- *          <li>12: fixed-length sorted byte array values. ({@link Type#BYTES_FIXED_SORTED BYTES_FIXED_SORTED})</li>
- *          <li>13: variable-length sorted byte array values. ({@link Type#BYTES_VAR_SORTED BYTES_VAR_SORTED})</li>
+ *          <li>1: variable-width signed integers. ({@code Type#VAR_INTS VAR_INTS})</li>
+ *          <li>2: 32-bit floating point values. ({@code Type#FLOAT_32 FLOAT_32})</li>
+ *          <li>3: 64-bit floating point values. ({@code Type#FLOAT_64 FLOAT_64})</li>
+ *          <li>4: fixed-length byte array values. ({@code Type#BYTES_FIXED_STRAIGHT BYTES_FIXED_STRAIGHT})</li>
+ *          <li>5: fixed-length dereferenced byte array values. ({@code Type#BYTES_FIXED_DEREF BYTES_FIXED_DEREF})</li>
+ *          <li>6: variable-length byte array values. ({@code Type#BYTES_VAR_STRAIGHT BYTES_VAR_STRAIGHT})</li>
+ *          <li>7: variable-length dereferenced byte array values. ({@code Type#BYTES_VAR_DEREF BYTES_VAR_DEREF})</li>
+ *          <li>8: 16-bit signed integers. ({@code Type#FIXED_INTS_16 FIXED_INTS_16})</li>
+ *          <li>9: 32-bit signed integers. ({@code Type#FIXED_INTS_32 FIXED_INTS_32})</li>
+ *          <li>10: 64-bit signed integers. ({@code Type#FIXED_INTS_64 FIXED_INTS_64})</li>
+ *          <li>11: 8-bit signed integers. ({@code Type#FIXED_INTS_8 FIXED_INTS_8})</li>
+ *          <li>12: fixed-length sorted byte array values. ({@code Type#BYTES_FIXED_SORTED BYTES_FIXED_SORTED})</li>
+ *          <li>13: variable-length sorted byte array values. ({@code Type#BYTES_VAR_SORTED BYTES_VAR_SORTED})</li>
  *        </ul>
  *    </li>
  *    <li>Attributes: a key-value map of codec-private attributes.</li>

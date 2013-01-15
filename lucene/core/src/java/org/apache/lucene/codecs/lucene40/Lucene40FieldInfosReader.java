@@ -27,8 +27,8 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -89,8 +89,8 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         }
         // DV Types are packed in one byte
         byte val = input.readByte();
-        final DocValues.Type docValuesType = getDocValuesType((byte) (val & 0x0F));
-        final DocValues.Type normsType = getDocValuesType((byte) ((val >>> 4) & 0x0F));
+        final DocValuesType docValuesType = getDocValuesTypeFake((byte) (val & 0x0F));
+        final DocValuesType normsType = getDocValuesTypeFake((byte) ((val >>> 4) & 0x0F));
         final Map<String,String> attributes = input.readStringStringMap();
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
           omitNorms, storePayloads, indexOptions, docValuesType, normsType, Collections.unmodifiableMap(attributes));
@@ -110,7 +110,21 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
       }
     }
   }
-
+  
+  private static DocValuesType getDocValuesTypeFake(byte b) {
+    if (b == 0) {
+      return null;
+    } else if (b == 1) {
+      return DocValuesType.NUMERIC;
+    } else if (b == 2) {
+      return DocValuesType.BINARY;
+    } else if (b == 3) {
+      return DocValuesType.SORTED;
+    } else {
+      throw new AssertionError();
+    }
+  }
+/*
   private static DocValues.Type getDocValuesType(final byte b) {
     switch(b) {
       case 0:
@@ -144,5 +158,5 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
       default:
         throw new IllegalStateException("unhandled indexValues type " + b);
     }
-  }
+  }*/
 }
