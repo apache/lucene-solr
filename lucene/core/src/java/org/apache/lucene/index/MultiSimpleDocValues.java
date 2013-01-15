@@ -30,6 +30,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
+// nocommit move this back to test-framework!!!
 public class MultiSimpleDocValues {
   
   // moved to src/java so SlowWrapper can use it... uggggggh
