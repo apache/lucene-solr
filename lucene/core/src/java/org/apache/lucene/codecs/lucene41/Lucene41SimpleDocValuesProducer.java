@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -33,6 +34,12 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FST.Arc;
+import org.apache.lucene.util.fst.FST.BytesReader;
+import org.apache.lucene.util.fst.PositiveIntOutputs;
+import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.PackedInts;
 
 class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
@@ -50,6 +57,9 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
   // else in this map.
   private final Map<Integer,BinaryDocValues> binaryInstances =
       new HashMap<Integer,BinaryDocValues>();
+  
+  private final Map<Integer,FST<Long>> fstInstances =
+      new HashMap<Integer,FST<Long>>();
     
   Lucene41SimpleDocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
@@ -96,6 +106,13 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
         entry.minLength = meta.readVInt();
         entry.maxLength = meta.readVInt();
         binaries.put(fieldNumber, entry);
+      } else if (fieldType == Lucene41SimpleDocValuesConsumer.FST) {
+        FSTEntry entry = new FSTEntry();
+        entry.offset = meta.readLong();
+        entry.numOrds = meta.readVInt();
+        fsts.put(fieldNumber, entry);
+      } else {
+        throw new CorruptIndexException("invalid entry type: " + fieldType + ", input=" + meta);
       }
       fieldNumber = meta.readVInt();
     }
@@ -113,7 +130,6 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
   
   private NumericDocValues loadNumeric(FieldInfo field) throws IOException {
     NumericEntry entry = numerics.get(field.number);
-    final IndexInput data = this.data.clone();
     data.seek(entry.offset);
     if (entry.tableized) {
       int size = data.readVInt();
@@ -154,7 +170,6 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
   
   private BinaryDocValues loadBinary(FieldInfo field) throws IOException {
     BinaryEntry entry = binaries.get(field.number);
-    final IndexInput data = this.data.clone();
     data.seek(entry.offset);
     assert entry.numBytes < Integer.MAX_VALUE; // nocommit
     final byte[] bytes = new byte[(int)entry.numBytes];
@@ -184,13 +199,51 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
     }
   }
   
-  
-
   @Override
   public SortedDocValues getSorted(FieldInfo field) throws IOException {
-    throw new AssertionError();
-  }
+    final FSTEntry entry = fsts.get(field.number);
+    FST<Long> instance;
+    synchronized(this) {
+      instance = fstInstances.get(field.number);
+      if (instance == null) {
+        data.seek(entry.offset);
+        instance = new FST<Long>(data, PositiveIntOutputs.getSingleton(true));
+        fstInstances.put(field.number, instance);
+      }
+    }
+    final NumericDocValues docToOrd = getNumeric(field);
+    final FST<Long> fst = instance;
+    
+    // per-thread resources
+    final BytesReader in = fst.getBytesReader(0);
+    final Arc<Long> firstArc = new Arc<Long>();
+    final Arc<Long> scratchArc = new Arc<Long>();
+    final IntsRef scratchInts = new IntsRef();
+    
+    return new SortedDocValues() {
+      @Override
+      public int getOrd(int docID) {
+        return (int) docToOrd.get(docID);
+      }
 
+      @Override
+      public void lookupOrd(int ord, BytesRef result) {
+        try {
+          in.setPosition(0);
+          fst.getFirstArc(firstArc);
+          Util.toBytesRef(Util.getByOutput(fst, ord, in, firstArc, scratchArc, scratchInts), result);
+        } catch (IOException bogus) {
+          throw new RuntimeException(bogus);
+        }
+      }
+
+      @Override
+      public int getValueCount() {
+        return entry.numOrds;
+      }
+    };
+  }
+  
   @Override
   public void close() throws IOException {
     data.close();
@@ -212,5 +265,4 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
     long offset;
     int numOrds;
   }
-
 }

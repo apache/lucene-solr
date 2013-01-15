@@ -30,6 +30,12 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FST.INPUT_TYPE;
+import org.apache.lucene.util.fst.PositiveIntOutputs;
+import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
 
@@ -50,7 +56,6 @@ class Lucene41SimpleDocValuesConsumer extends SimpleDVConsumer {
   static final byte FST = 2;
   
   final IndexOutput data, meta;
-  final int maxDoc;
   
   Lucene41SimpleDocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     boolean success = false;
@@ -61,7 +66,6 @@ class Lucene41SimpleDocValuesConsumer extends SimpleDVConsumer {
       String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
       meta = state.directory.createOutput(metaName, state.context);
       CodecUtil.writeHeader(meta, metaCodec, VERSION_CURRENT);
-      maxDoc = state.segmentInfo.getDocCount();
       success = true;
     } finally {
       if (!success) {
@@ -217,7 +221,24 @@ class Lucene41SimpleDocValuesConsumer extends SimpleDVConsumer {
 
   @Override
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
-    throw new AssertionError();
+    // write the ordinals as numerics
+    addNumericField(field, docToOrd);
+    
+    // write the values as FST
+    meta.writeVInt(field.number);
+    meta.writeByte(FST);
+    meta.writeLong(data.getFilePointer());
+    PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton(true);
+    Builder<Long> builder = new Builder<Long>(INPUT_TYPE.BYTE1, outputs);
+    IntsRef scratch = new IntsRef();
+    long ord = 0;
+    for (BytesRef v : values) {
+      builder.add(Util.toIntsRef(v, scratch), ord);
+      ord++;
+    }
+    FST<Long> fst = builder.finish();
+    fst.save(data);
+    meta.writeVInt((int)ord);
   }
   
   // nocommit: can/should we make override merge + make it smarter to pull the values 

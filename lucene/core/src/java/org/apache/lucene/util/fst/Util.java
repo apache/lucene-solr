@@ -109,7 +109,13 @@ public final class Util {
     FST.Arc<Long> scratchArc = new FST.Arc<Long>();
 
     final IntsRef result = new IntsRef();
-
+    
+    return getByOutput(fst, targetOutput, in, arc, scratchArc, result);
+  }
+    
+  /** Expert: like {@link Util#getByOutput(FST, long)} except reusing */
+  // nocommit
+  public static IntsRef getByOutput(FST<Long> fst, long targetOutput, BytesReader in, Arc<Long> arc, Arc<Long> scratchArc, IntsRef result) throws IOException {
     long output = arc.output;
     int upto = 0;
 
