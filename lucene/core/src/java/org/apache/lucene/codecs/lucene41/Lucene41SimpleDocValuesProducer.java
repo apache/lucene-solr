@@ -240,7 +240,7 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
           throw new RuntimeException(bogus);
         }
       }
-
+/* nocommit: WTF ant test  -Dtestcase=TestSearchAfter -Dtests.method=testQueries -Dtests.seed=701751F140F42B9D -Dtests.slow=true -Dtests.locale=es_DO -Dtests.timezone=Asia/Sakhalin -Dtests.file.encoding=UTF-8
       @Override
       public int lookupTerm(BytesRef key, BytesRef spare) {
         try {
@@ -256,6 +256,7 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
           throw new RuntimeException(bogus);
         }
       }
+      */
 
       @Override
       public int getValueCount() {
