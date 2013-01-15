@@ -52,28 +52,21 @@ public abstract class SortedDocValues extends BinaryDocValues {
 
       @Override
       public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
-        int low = 0;
-        int high = getValueCount()-1;
-        
-        while (low <= high) {
-          int mid = (low + high) >>> 1;
-          seekExact(mid);
-          int cmp = term.compareTo(text);
-
-          if (cmp < 0)
-            low = mid + 1;
-          else if (cmp > 0)
-            high = mid - 1;
-          else {
-            return SeekStatus.FOUND; // key found
-          }
-        }
-        
-        if (low == getValueCount()) {
-          return SeekStatus.END;
+        int ord = lookupTerm(text, term);
+        if (ord > 0) {
+          currentOrd = ord;
+          term.offset = 0;
+          term.copyBytes(text);
+          return SeekStatus.FOUND;
         } else {
-          seekExact(low);
-          return SeekStatus.NOT_FOUND;
+          currentOrd = -ord-1;
+          if (currentOrd == getValueCount()) {
+            return SeekStatus.END;
+          } else {
+            // nocommit hmm can we avoid this "extra" lookup?:
+            lookupOrd(currentOrd, term);
+            return SeekStatus.NOT_FOUND;
+          }
         }
       }
 
