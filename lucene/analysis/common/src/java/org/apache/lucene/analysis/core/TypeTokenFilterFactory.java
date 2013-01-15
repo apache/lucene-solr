@@ -35,7 +35,7 @@ import java.util.Set;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.StandardTokenizerFactory"/&gt;
  *     &lt;filter class="solr.TypeTokenFilterFactory" types="stoptypes.txt"
- *                   enablePositionIncrements="true" useWhiteList="false"/&gt;
+ *                   enablePositionIncrements="true" useWhitelist="false"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  */
