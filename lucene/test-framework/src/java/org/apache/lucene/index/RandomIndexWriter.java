@@ -25,6 +25,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.ByteDocValuesField; 
 import org.apache.lucene.document.DerefBytesDocValuesField; 
 import org.apache.lucene.document.Document;
@@ -37,6 +38,7 @@ import org.apache.lucene.document.PackedLongDocValuesField;
 import org.apache.lucene.document.ShortDocValuesField; 
 import org.apache.lucene.document.SortedBytesDocValuesField; 
 import org.apache.lucene.document.StraightBytesDocValuesField; 
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
@@ -220,54 +222,22 @@ public class RandomIndexWriter implements Closeable {
   
   private void randomPerDocFieldValues(Document doc) {
     
-    DocValues.Type[] values = DocValues.Type.values();
-    DocValues.Type type = values[r.nextInt(values.length)];
+    DocValuesType[] values = DocValuesType.values();
+    DocValuesType type = values[r.nextInt(values.length)];
     String name = "random_" + type.name() + "" + docValuesFieldPrefix;
     if (doc.getField(name) != null) {
       return;
     }
     final Field f;
     switch (type) {
-    case BYTES_FIXED_DEREF:
-      f = new DerefBytesDocValuesField(name, getFixedRandomBytes(), true);
+    case BINARY:
+      f = new BinaryDocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(r, 20)));
       break;
-    case BYTES_VAR_DEREF:
-      f = new DerefBytesDocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(r, 20)), false);
+    case SORTED:
+      f = new SortedBytesDocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(r, 20)));
       break;
-    case BYTES_FIXED_STRAIGHT:
-      f = new StraightBytesDocValuesField(name, getFixedRandomBytes(), true);
-      break;
-    case BYTES_VAR_STRAIGHT:
-      f = new StraightBytesDocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(r, 20)), false);
-      break;
-    case BYTES_FIXED_SORTED:
-      f = new SortedBytesDocValuesField(name, getFixedRandomBytes(), true);
-      break;
-    case BYTES_VAR_SORTED:
-      f = new SortedBytesDocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(r, 20)), false);
-      break;
-    case FLOAT_32:
-      f = new FloatDocValuesField(name, r.nextFloat());
-      break;
-    case FLOAT_64:
-      f = new DoubleDocValuesField(name, r.nextDouble());
-      break;
-    case VAR_INTS:
-      f = new PackedLongDocValuesField(name, r.nextLong());
-      break;
-    case FIXED_INTS_16:
-      // TODO: we should test negatives too?
-      f = new ShortDocValuesField(name, (short) r.nextInt(Short.MAX_VALUE));
-      break;
-    case FIXED_INTS_32:
-      f = new IntDocValuesField(name, r.nextInt());
-      break;
-    case FIXED_INTS_64:
+    case NUMERIC:
       f = new LongDocValuesField(name, r.nextLong());
-      break;
-    case FIXED_INTS_8:  
-      // TODO: we should test negatives too?
-      f = new ByteDocValuesField(name, (byte) r.nextInt(128));
       break;
     default:
       throw new IllegalArgumentException("no such type: " + type);
