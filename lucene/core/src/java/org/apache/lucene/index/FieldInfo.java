@@ -210,6 +210,7 @@ public final class FieldInfo {
     assert checkConsistency();
   }
 
+  // nocommit type is always number?  should we remove this?
   void setNormValueType(DocValuesType type) {
     normType = type;
     assert checkConsistency();

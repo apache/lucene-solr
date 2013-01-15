@@ -43,6 +43,7 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
   void finish() throws IOException {
     if (fieldInfo.isIndexed() && !fieldInfo.omitsNorms()) {
       if (consumer == null) {
+        fieldInfo.setNormValueType(FieldInfo.DocValuesType.NUMERIC);
         consumer = new NumberDVWriter(fieldInfo, docState.docWriter.bytesUsed);
       }
       consumer.addValue(docState.docID, similarity.computeNorm(fieldState));
