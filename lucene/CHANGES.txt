@@ -352,6 +352,9 @@ Bug Fixes
   DEFAULT_ARTICLES list passed to ElisionFilter.  (David Leunen via Steve Rowe)
 
 * LUCENE-4671: Fix CharsRef.subSequence method.  (Tim Smith via Robert Muir)
+
+* LUCENE-4465: Let ConstantScoreQuery's Scorer return its child scorer.
+  (selckin via Uwe Schindler)
     
 Changes in Runtime Behavior
   
