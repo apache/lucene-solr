@@ -406,12 +406,6 @@ public class FilterAtomicReader extends AtomicReader {
   }
 
   @Override
-  public DocValues docValues(String field) throws IOException {
-    ensureOpen();
-    return in.docValues(field);
-  }
-
-  @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
     ensureOpen();
     return in.getNumericDocValues(field);
@@ -427,12 +421,6 @@ public class FilterAtomicReader extends AtomicReader {
   public SortedDocValues getSortedDocValues(String field) throws IOException {
     ensureOpen();
     return in.getSortedDocValues(field);
-  }
-  
-  @Override
-  public DocValues normValues(String field) throws IOException {
-    ensureOpen();
-    return in.normValues(field);
   }
 
   @Override

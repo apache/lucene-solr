@@ -31,7 +31,6 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.junit.Assume;
 
 /**
  * Tests the uniqueTermCount statistic in FieldInvertState
@@ -46,8 +45,9 @@ public class TestUniqueTermCount extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, 
-                                                    new MockAnalyzer(random(), MockTokenizer.SIMPLE, true)).setMergePolicy(newLogMergePolicy());
+    MockAnalyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true);
+    IndexWriterConfig config = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    config.setMergePolicy(newLogMergePolicy());
     config.setSimilarity(new TestSimilarity());
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
     Document doc = new Document();
@@ -69,10 +69,9 @@ public class TestUniqueTermCount extends LuceneTestCase {
   }
   
   public void test() throws Exception {
-    Assume.assumeTrue(_TestUtil.canUseSimpleNorms());
     NumericDocValues fooNorms = MultiSimpleDocValues.simpleNormValues(reader, "foo");
     for (int i = 0; i < reader.maxDoc(); i++) {
-      assertEquals(expected.get(i).intValue(), fooNorms.get(i) & 0xff);
+      assertEquals(expected.get(i).longValue(), fooNorms.get(i));
     }
   }
 
@@ -95,13 +94,13 @@ public class TestUniqueTermCount extends LuceneTestCase {
   }
   
   /**
-   * Simple similarity that encodes maxTermFrequency directly as a byte
+   * Simple similarity that encodes maxTermFrequency directly
    */
   class TestSimilarity extends Similarity {
 
     @Override
-    public void computeNorm(FieldInvertState state, Norm norm) {
-      norm.setByte((byte) state.getUniqueTermCount());
+    public long computeNorm(FieldInvertState state) {
+      return state.getUniqueTermCount();
     }
 
     @Override

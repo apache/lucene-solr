@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.DocValues.Type;
-
 /**
  *  Access to the Field Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Field Info file. Objects
@@ -37,12 +35,12 @@ public final class FieldInfo {
   public final int number;
 
   private boolean indexed;
-  private DocValues.Type docValueType;
+  private DocValuesType docValueType;
 
   // True if any document indexed term vectors
   private boolean storeTermVector;
 
-  private DocValues.Type normType;
+  private DocValuesType normType;
   private boolean omitNorms; // omit norms associated with indexed fields  
   private IndexOptions indexOptions;
   private boolean storePayloads; // whether this field stores payloads together with term positions
@@ -82,6 +80,12 @@ public final class FieldInfo {
      */
     DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
   };
+  
+  public static enum DocValuesType {
+    NUMERIC,
+    BINARY,
+    SORTED
+  };
 
   /**
    * Sole Constructor.
@@ -89,7 +93,7 @@ public final class FieldInfo {
    * @lucene.experimental
    */
   public FieldInfo(String name, boolean indexed, int number, boolean storeTermVector, 
-            boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normsType, Map<String,String> attributes) {
+            boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues, DocValuesType normsType, Map<String,String> attributes) {
     this.name = name;
     this.indexed = indexed;
     this.number = number;
@@ -163,7 +167,7 @@ public final class FieldInfo {
     assert checkConsistency();
   }
 
-  void setDocValuesType(DocValues.Type type) {
+  void setDocValuesType(DocValuesType type) {
     docValueType = type;
     assert checkConsistency();
   }
@@ -181,16 +185,16 @@ public final class FieldInfo {
   }
 
   /**
-   * Returns {@link DocValues.Type} of the docValues. this may be null if the field has no docvalues.
+   * Returns {@link DocValuesType} of the docValues. this may be null if the field has no docvalues.
    */
-  public DocValues.Type getDocValuesType() {
+  public DocValuesType getDocValuesType() {
     return docValueType;
   }
   
   /**
-   * Returns {@link DocValues.Type} of the norm. this may be null if the field has no norms.
+   * Returns {@link DocValuesType} of the norm. this may be null if the field has no norms.
    */
-  public DocValues.Type getNormType() {
+  public DocValuesType getNormType() {
     return normType;
   }
 
@@ -206,7 +210,7 @@ public final class FieldInfo {
     assert checkConsistency();
   }
 
-  void setNormValueType(Type type) {
+  void setNormValueType(DocValuesType type) {
     normType = type;
     assert checkConsistency();
   }

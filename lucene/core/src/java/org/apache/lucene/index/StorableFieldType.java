@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import org.apache.lucene.index.FieldInfo.DocValuesType;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,5 +29,5 @@ public interface StorableFieldType {
 
   /** DocValues type; if non-null then the field's value
    *  will be indexed into docValues */
-  public DocValues.Type docValueType();
+  public DocValuesType docValueType();
 }

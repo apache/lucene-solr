@@ -17,7 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -34,44 +34,28 @@ import org.apache.lucene.util.BytesRef;
  * If you also need to store the value, you should add a
  * separate {@link StoredField} instance.
  * 
- * @see DocValues
  * */
 
 public class SortedBytesDocValuesField extends StoredField {
 
-  // TODO: ideally indexer figures out var vs fixed on its own!?
   /**
    * Type for sorted bytes DocValues: all with the same length
    */
-  public static final FieldType TYPE_FIXED_LEN = new FieldType();
+  public static final FieldType TYPE = new FieldType();
   static {
-    TYPE_FIXED_LEN.setDocValueType(DocValues.Type.BYTES_FIXED_SORTED);
-    TYPE_FIXED_LEN.freeze();
+    TYPE.setDocValueType(FieldInfo.DocValuesType.SORTED);
+    TYPE.freeze();
   }
 
   /**
-   * Type for sorted bytes DocValues: can have variable lengths
-   */
-  public static final FieldType TYPE_VAR_LEN = new FieldType();
-  static {
-    TYPE_VAR_LEN.setDocValueType(DocValues.Type.BYTES_VAR_SORTED);
-    TYPE_VAR_LEN.freeze();
-  }
-
-  /**
-   * Create a new variable-length sorted DocValues field.
-   * <p>
-   * This calls 
-   * {@link SortedBytesDocValuesField#SortedBytesDocValuesField(String, BytesRef, boolean)
-   *  SortedBytesDocValuesField(name, bytes, false}, meaning by default
-   * it allows for values of different lengths. If your values are all 
-   * the same length, use that constructor instead.
+   * Create a new sorted DocValues field.
    * @param name field name
    * @param bytes binary content
    * @throws IllegalArgumentException if the field name is null
    */
   public SortedBytesDocValuesField(String name, BytesRef bytes) {
-    this(name, bytes, false);
+    super(name, TYPE);
+    fieldsData = bytes;
   }
 
   /**
@@ -81,8 +65,9 @@ public class SortedBytesDocValuesField extends StoredField {
    * @param isFixedLength true if all values have the same length.
    * @throws IllegalArgumentException if the field name is null
    */
+  @Deprecated
   public SortedBytesDocValuesField(String name, BytesRef bytes, boolean isFixedLength) {
-    super(name, isFixedLength ? TYPE_FIXED_LEN : TYPE_VAR_LEN);
+    super(name, TYPE);
     fieldsData = bytes;
   }
 }

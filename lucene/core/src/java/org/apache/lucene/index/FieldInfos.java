@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 
 /** 
@@ -162,13 +163,13 @@ public class FieldInfos implements Iterable<FieldInfo> {
     
     private final Map<Integer,String> numberToName;
     private final Map<String,Integer> nameToNumber;
-    private final Map<String,DocValues.Type> docValuesType;
+    private final Map<String,DocValuesType> docValuesType;
     private int lowestUnassignedFieldNumber = -1;
     
     FieldNumbers() {
       this.nameToNumber = new HashMap<String, Integer>();
       this.numberToName = new HashMap<Integer, String>();
-      this.docValuesType = new HashMap<String,DocValues.Type>();
+      this.docValuesType = new HashMap<String,DocValuesType>();
     }
     
     /**
@@ -177,9 +178,9 @@ public class FieldInfos implements Iterable<FieldInfo> {
      * number assigned if possible otherwise the first unassigned field number
      * is used as the field number.
      */
-    synchronized int addOrGet(String fieldName, int preferredFieldNumber, DocValues.Type dvType) {
+    synchronized int addOrGet(String fieldName, int preferredFieldNumber, DocValuesType dvType) {
       if (dvType != null) {
-        DocValues.Type currentDVType = docValuesType.get(fieldName);
+        DocValuesType currentDVType = docValuesType.get(fieldName);
         if (currentDVType == null) {
           docValuesType.put(fieldName, dvType);
         } else if (currentDVType != null && currentDVType != dvType) {
@@ -211,7 +212,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
     /**
      * Sets the given field number and name if not yet set. 
      */
-    synchronized void setIfNotSet(int fieldNumber, String fieldName, DocValues.Type dvType) {
+    // nocommit: why is docvalues involved with global field numbers?
+    synchronized void setIfNotSet(int fieldNumber, String fieldName, DocValuesType dvType) {
       final Integer boxedFieldNumber = Integer.valueOf(fieldNumber);
       if (!numberToName.containsKey(boxedFieldNumber)
           && !nameToNumber.containsKey(fieldName)
@@ -225,7 +227,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     }
     
     // used by assert
-    synchronized boolean containsConsistent(Integer number, String name, DocValues.Type dvType) {
+    synchronized boolean containsConsistent(Integer number, String name, DocValuesType dvType) {
       return name.equals(numberToName.get(number))
           && number.equals(nameToNumber.get(name)) &&
         (dvType == null || docValuesType.get(name) == null || dvType == docValuesType.get(name));
@@ -285,7 +287,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
      */
     // TODO: fix testCodecs to do this another way, its the only user of this
     FieldInfo addOrUpdate(String name, boolean isIndexed, boolean storeTermVector,
-                         boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normType) {
+                         boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues, DocValuesType normType) {
       return addOrUpdateInternal(name, -1, isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions, docValues, normType);
     }
 
@@ -307,7 +309,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
 
     private FieldInfo addOrUpdateInternal(String name, int preferredFieldNumber, boolean isIndexed,
         boolean storeTermVector,
-        boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValues.Type docValues, DocValues.Type normType) {
+        boolean omitNorms, boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues, DocValuesType normType) {
       FieldInfo fi = fieldInfo(name);
       if (fi == null) {
         // get a global number for this field
@@ -317,7 +319,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         fi.update(isIndexed, storeTermVector, omitNorms, storePayloads, indexOptions);
 
         if (docValues != null) {
-          DocValues.Type currentDVType = fi.getDocValuesType();
+          DocValuesType currentDVType = fi.getDocValuesType();
           if (currentDVType == null) {
             fi.setDocValuesType(docValues);
           } else if (currentDVType != docValues) {
@@ -327,7 +329,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         }
 
         if (!fi.omitsNorms() && normType != null) {
-          DocValues.Type currentDVType = fi.getNormType();
+          DocValuesType currentDVType = fi.getNormType();
           if (currentDVType == null) {
             fi.setNormValueType(docValues);
           } else if (currentDVType != normType) {
@@ -348,7 +350,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     
     private FieldInfo addInternal(String name, int fieldNumber, boolean isIndexed,
                                   boolean storeTermVector, boolean omitNorms, boolean storePayloads,
-                                  IndexOptions indexOptions, DocValues.Type docValuesType, DocValues.Type normType) {
+                                  IndexOptions indexOptions, DocValuesType docValuesType, DocValuesType normType) {
       globalFieldNumbers.setIfNotSet(fieldNumber, name, docValuesType);
       final FieldInfo fi = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, omitNorms, storePayloads, indexOptions, docValuesType, normType, null);
       putInternal(fi);

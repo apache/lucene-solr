@@ -1,4 +1,7 @@
-package org.apache.lucene.codecs;
+package org.apache.lucene.document;
+
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.util.BytesRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,25 +20,16 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
-import org.apache.lucene.index.DocValues; // javadocs
-import org.apache.lucene.index.PerDocWriteState;
-import org.apache.lucene.index.SegmentReadState;
-
-/**
- * Encodes/decodes {@link DocValues}
- * @lucene.experimental
- */
-public abstract class DocValuesFormat {
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
-  protected DocValuesFormat() {
+public class BinaryDocValuesField extends StoredField {
+  
+  public static final FieldType TYPE = new FieldType();
+  static {
+    TYPE.setDocValueType(FieldInfo.DocValuesType.BINARY);
+    TYPE.freeze();
   }
-
-  /** Consumes (writes) doc values during indexing. */
-  public abstract PerDocConsumer docsConsumer(PerDocWriteState state) throws IOException;
-
-  /** Produces (reads) doc values during reading/searching. */
-  public abstract PerDocProducer docsProducer(SegmentReadState state) throws IOException;
+  
+  public BinaryDocValuesField(String name, BytesRef value) {
+    super(name, TYPE);
+    fieldsData = value;
+  }
 }

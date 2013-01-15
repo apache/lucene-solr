@@ -546,7 +546,6 @@ public void testFilesOpenClose() throws IOException {
 
   // TODO: maybe this can reuse the logic of test dueling codecs?
   public static void assertIndexEquals(DirectoryReader index1, DirectoryReader index2) throws IOException {
-    Assume.assumeTrue(_TestUtil.canUseSimpleNorms());
     assertEquals("IndexReaders have different values for numDocs.", index1.numDocs(), index2.numDocs());
     assertEquals("IndexReaders have different values for maxDoc.", index1.maxDoc(), index2.maxDoc());
     assertEquals("Only one IndexReader has deletions.", index1.hasDeletions(), index2.hasDeletions());

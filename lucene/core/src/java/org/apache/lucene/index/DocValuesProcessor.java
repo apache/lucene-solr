@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
 
@@ -47,27 +48,25 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
 
   @Override
   public void addField(int docID, StorableField field, FieldInfo fieldInfo) {
-    final DocValues.Type dvType = field.fieldType().docValueType();
+    // nocommit: these checks are duplicated everywhere
+    final DocValuesType dvType = field.fieldType().docValueType();
     if (dvType != null) {
-      DocValues.Type currentDVType = fieldInfo.getDocValuesType();
+      DocValuesType currentDVType = fieldInfo.getDocValuesType();
       if (currentDVType == null) {
         fieldInfo.setDocValuesType(dvType);
       } else if (currentDVType != dvType) {
         throw new IllegalArgumentException("cannot change DocValues type from " + currentDVType + " to " + dvType + " for field \"" + fieldInfo.name + "\"");
       }
-      if (DocValues.isBytes(dvType)) {
+      if (dvType == DocValuesType.BINARY) {
         addBinaryField(fieldInfo, docID, field.binaryValue());
-      } else if (DocValues.isSortedBytes(dvType)) {
+      } else if (dvType == DocValuesType.SORTED) {
         addSortedField(fieldInfo, docID, field.binaryValue());
-      } else if (DocValues.isFloat(dvType)) {
-        if (dvType == DocValues.Type.FLOAT_32) {
-          addNumericField(fieldInfo, docID, field.numericValue().floatValue());
-        } else if (dvType == DocValues.Type.FLOAT_64) {
-          addNumericField(fieldInfo, docID, field.numericValue().doubleValue());
-        } else {
-          assert false;
-        }
-      } else if (DocValues.isNumber(dvType)) {
+        // nocommit: hack
+      } else if (dvType == DocValuesType.NUMERIC && field.numericValue() instanceof Float) {
+        addNumericField(fieldInfo, docID, field.numericValue().floatValue());
+      } else if (dvType == DocValuesType.NUMERIC && field.numericValue() instanceof Double) {
+        addNumericField(fieldInfo, docID, field.numericValue().doubleValue());
+      } else if (dvType == DocValuesType.NUMERIC) {
         addNumericField(fieldInfo, docID, field.numericValue().longValue());
       } else {
         assert false: "unrecognized DocValues.Type: " + dvType;

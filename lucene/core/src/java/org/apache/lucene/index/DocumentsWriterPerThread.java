@@ -87,7 +87,7 @@ class DocumentsWriterPerThread {
 
       final InvertedDocConsumer termsHash = new TermsHash(documentsWriterPerThread, freqProxWriter, true,
                                                           new TermsHash(documentsWriterPerThread, termVectorsWriter, false, null));
-      final NormsConsumer normsWriter = new NormsConsumer(documentsWriterPerThread);
+      final NormsConsumer normsWriter = new NormsConsumer();
       final DocInverter docInverter = new DocInverter(documentsWriterPerThread.docState, termsHash, normsWriter);
       final StoredFieldsConsumer storedFields = new TwoStoredFieldsConsumers(
                                                       new StoredFieldsProcessor(documentsWriterPerThread),
@@ -656,10 +656,6 @@ class DocumentsWriterPerThread {
       bytesUsed.addAndGet(-(length * (IntBlockPool.INT_BLOCK_SIZE * RamUsageEstimator.NUM_BYTES_INT)));
     }
     
-  }
-  PerDocWriteState newPerDocWriteState(String segmentSuffix) {
-    assert segmentInfo != null;
-    return new PerDocWriteState(infoStream, directory, segmentInfo, bytesUsed, segmentSuffix, IOContext.DEFAULT);
   }
   
   @Override

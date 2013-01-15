@@ -23,7 +23,7 @@ import java.util.*;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
@@ -31,7 +31,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.grouping.dv.DVAllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.term.TermAllGroupHeadsCollector;
 import org.apache.lucene.store.Directory;
@@ -42,8 +41,8 @@ import org.apache.lucene.util._TestUtil;
 
 public class AllGroupHeadsCollectorTest extends LuceneTestCase {
 
-  private static final Type[] vts = new Type[]{
-      Type.BYTES_VAR_DEREF, Type.BYTES_VAR_STRAIGHT, Type.BYTES_VAR_SORTED
+  private static final DocValuesType[] vts = new DocValuesType[]{
+      DocValuesType.BINARY, DocValuesType.SORTED
   };
 
   public void testBasic() throws Exception {
@@ -55,7 +54,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT,
             new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     boolean canUseIDV = true;
-    Type valueType = vts[random().nextInt(vts.length)];
+    DocValuesType valueType = vts[random().nextInt(vts.length)];
 
     // 0
     Document doc = new Document();
@@ -203,7 +202,7 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
           newIndexWriterConfig(TEST_VERSION_CURRENT,
               new MockAnalyzer(random())));
       boolean canUseIDV = true;
-      Type valueType = vts[random().nextInt(vts.length)];
+      DocValuesType valueType = vts[random().nextInt(vts.length)];
 
       Document doc = new Document();
       Document docNoGroup = new Document();
@@ -212,13 +211,10 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       Field valuesField = null;
       if (canUseIDV) {
         switch(valueType) {
-        case BYTES_VAR_DEREF:
-          valuesField = new DerefBytesDocValuesField("group_dv", new BytesRef());
-          break;
-        case BYTES_VAR_STRAIGHT:
+        case BINARY:
           valuesField = new StraightBytesDocValuesField("group_dv", new BytesRef());
           break;
-        case BYTES_VAR_SORTED:
+        case SORTED:
           valuesField = new SortedBytesDocValuesField("group_dv", new BytesRef());
           break;
         default:
@@ -518,14 +514,11 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
   }
 
   @SuppressWarnings({"unchecked","rawtypes"})
-  private AbstractAllGroupHeadsCollector<?> createRandomCollector(String groupField, Sort sortWithinGroup, boolean canUseIDV, Type valueType) {
+  private AbstractAllGroupHeadsCollector<?> createRandomCollector(String groupField, Sort sortWithinGroup, boolean canUseIDV, DocValuesType valueType) {
     AbstractAllGroupHeadsCollector<? extends AbstractAllGroupHeadsCollector.GroupHead> collector;
     if (random().nextBoolean()) {
       ValueSource vs = new BytesRefFieldSource(groupField);
       collector =  new FunctionAllGroupHeadsCollector(vs, new HashMap<Object, Object>(), sortWithinGroup);
-    } else if (canUseIDV && random().nextBoolean()) {
-      boolean diskResident = random().nextBoolean();
-      collector =  DVAllGroupHeadsCollector.create(groupField + "_dv", sortWithinGroup, valueType, diskResident);
     } else {
       collector =  TermAllGroupHeadsCollector.create(groupField, sortWithinGroup);
     }
@@ -537,18 +530,16 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
     return collector;
   }
 
-  private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV, Type valueType) {
+  // nocommit: isnt this method elsehwere in this test? either deja-vu or i fixed one just like it a few hundred lines back
+  private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV, DocValuesType valueType) {
     doc.add(new TextField(groupField, value, Field.Store.YES));
     if (canUseIDV) {
       Field valuesField = null;
       switch(valueType) {
-      case BYTES_VAR_DEREF:
-        valuesField = new DerefBytesDocValuesField(groupField + "_dv", new BytesRef(value));
-        break;
-      case BYTES_VAR_STRAIGHT:
+      case BINARY:
         valuesField = new StraightBytesDocValuesField(groupField + "_dv", new BytesRef(value));
         break;
-      case BYTES_VAR_SORTED:
+      case SORTED:
         valuesField = new SortedBytesDocValuesField(groupField + "_dv", new BytesRef(value));
         break;
       default:

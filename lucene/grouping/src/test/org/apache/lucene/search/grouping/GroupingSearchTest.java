@@ -24,7 +24,6 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.SortedBytesDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
@@ -210,12 +209,7 @@ public class GroupingSearchTest extends LuceneTestCase {
       ValueSource vs = new BytesRefFieldSource(groupField);
       groupingSearch = new GroupingSearch(vs, new HashMap<Object, Object>());
     } else {
-      if (canUseIDV && random().nextBoolean()) {
-        boolean diskResident = random().nextBoolean();
-        groupingSearch = new GroupingSearch(groupField, DocValues.Type.BYTES_VAR_SORTED, diskResident);
-      } else {
-        groupingSearch = new GroupingSearch(groupField);  
-      }
+      groupingSearch = new GroupingSearch(groupField);
     }
 
     groupingSearch.setGroupSort(groupSort);

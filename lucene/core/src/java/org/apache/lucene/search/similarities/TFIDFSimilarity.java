@@ -17,13 +17,10 @@ package org.apache.lucene.search.similarities;
  * limitations under the License.
  */
 
-
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
@@ -683,9 +680,9 @@ public abstract class TFIDFSimilarity extends Similarity {
   public abstract float lengthNorm(FieldInvertState state);
   
   @Override
-  public final void computeNorm(FieldInvertState state, Norm norm) {
+  public final long computeNorm(FieldInvertState state) {
     float normValue = lengthNorm(state);
-    norm.setByte(encodeNormValue(normValue));
+    return encodeNormValue(normValue);
   }
   
   /** Cache of decoded bytes. */
@@ -760,65 +757,28 @@ public abstract class TFIDFSimilarity extends Similarity {
   @Override
   public final ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
     IDFStats idfstats = (IDFStats) stats;
-    NumericDocValues normValues = context.reader().simpleNormValues(idfstats.field);
-    if (normValues != null) {
-      return new SimpleExactTFIDFDocScorer(idfstats, normValues);
-    } else {
-      return new ExactTFIDFDocScorer(idfstats, context.reader().normValues(idfstats.field));
-    }
+    return new ExactTFIDFDocScorer(idfstats, context.reader().simpleNormValues(idfstats.field));
   }
 
   @Override
   public final SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
     IDFStats idfstats = (IDFStats) stats;
-    return new SloppyTFIDFDocScorer(idfstats, context.reader().normValues(idfstats.field));
+    return new SloppyTFIDFDocScorer(idfstats, context.reader().simpleNormValues(idfstats.field));
   }
   
   // TODO: we can specialize these for omitNorms up front, but we should test that it doesn't confuse stupid hotspot.
 
-  private final class SimpleExactTFIDFDocScorer extends ExactSimScorer {
+  private final class ExactTFIDFDocScorer extends ExactSimScorer {
     private final IDFStats stats;
     private final float weightValue;
     private final NumericDocValues norms;
     private static final int SCORE_CACHE_SIZE = 32;
     private float[] scoreCache = new float[SCORE_CACHE_SIZE];
     
-    SimpleExactTFIDFDocScorer(IDFStats stats, NumericDocValues norms) throws IOException {
+    ExactTFIDFDocScorer(IDFStats stats, NumericDocValues norms) throws IOException {
       this.stats = stats;
       this.weightValue = stats.value;
-      this.norms = norms;
-      for (int i = 0; i < SCORE_CACHE_SIZE; i++) {
-        scoreCache[i] = tf(i) * weightValue;
-      }
-    }
-    
-    @Override
-    public float score(int doc, int freq) {
-      final float raw =                                // compute tf(f)*weight
-        freq < SCORE_CACHE_SIZE                        // check cache
-        ? scoreCache[freq]                             // cache hit
-        : tf(freq)*weightValue;        // cache miss
-
-      return norms == null ? raw : raw * decodeNormValue((byte) norms.get(doc)); // normalize for field
-    }
-
-    @Override
-    public Explanation explain(int doc, Explanation freq) {
-      return explainScore(doc, freq, stats, norms);
-    }
-  }
-
-  private final class ExactTFIDFDocScorer extends ExactSimScorer {
-    private final IDFStats stats;
-    private final float weightValue;
-    private final byte[] norms;
-    private static final int SCORE_CACHE_SIZE = 32;
-    private float[] scoreCache = new float[SCORE_CACHE_SIZE];
-    
-    ExactTFIDFDocScorer(IDFStats stats, DocValues norms) throws IOException {
-      this.stats = stats;
-      this.weightValue = stats.value;
-      this.norms = norms == null ? null : (byte[])norms.getSource().getArray(); 
+      this.norms = norms; 
       for (int i = 0; i < SCORE_CACHE_SIZE; i++)
         scoreCache[i] = tf(i) * weightValue;
     }
@@ -830,7 +790,7 @@ public abstract class TFIDFSimilarity extends Similarity {
         ? scoreCache[freq]                             // cache hit
         : tf(freq)*weightValue;        // cache miss
 
-      return norms == null ? raw : raw * decodeNormValue(norms[doc]); // normalize for field
+      return norms == null ? raw : raw * decodeNormValue((byte)norms.get(doc)); // normalize for field
     }
 
     @Override
@@ -842,19 +802,19 @@ public abstract class TFIDFSimilarity extends Similarity {
   private final class SloppyTFIDFDocScorer extends SloppySimScorer {
     private final IDFStats stats;
     private final float weightValue;
-    private final byte[] norms;
+    private final NumericDocValues norms;
     
-    SloppyTFIDFDocScorer(IDFStats stats, DocValues norms) throws IOException {
+    SloppyTFIDFDocScorer(IDFStats stats, NumericDocValues norms) throws IOException {
       this.stats = stats;
       this.weightValue = stats.value;
-      this.norms = norms == null ? null : (byte[])norms.getSource().getArray();
+      this.norms = norms;
     }
     
     @Override
     public float score(int doc, float freq) {
       final float raw = tf(freq) * weightValue; // compute tf(f)*weight
       
-      return norms == null ? raw : raw * decodeNormValue(norms[doc]);  // normalize for field
+      return norms == null ? raw : raw * decodeNormValue((byte)norms.get(doc));  // normalize for field
     }
     
     @Override
@@ -904,63 +864,7 @@ public abstract class TFIDFSimilarity extends Similarity {
       queryWeight *= this.queryNorm;              // normalize query weight
       value = queryWeight * idf.getValue();         // idf for document
     }
-  }
-  
-  private Explanation explainScore(int doc, Explanation freq, IDFStats stats, byte[] norms) {
-    Explanation result = new Explanation();
-    result.setDescription("score(doc="+doc+",freq="+freq+"), product of:");
-
-    // explain query weight
-    Explanation queryExpl = new Explanation();
-    queryExpl.setDescription("queryWeight, product of:");
-
-    Explanation boostExpl = new Explanation(stats.queryBoost, "boost");
-    if (stats.queryBoost != 1.0f)
-      queryExpl.addDetail(boostExpl);
-    queryExpl.addDetail(stats.idf);
-
-    Explanation queryNormExpl = new Explanation(stats.queryNorm,"queryNorm");
-    queryExpl.addDetail(queryNormExpl);
-
-    queryExpl.setValue(boostExpl.getValue() *
-                       stats.idf.getValue() *
-                       queryNormExpl.getValue());
-
-    result.addDetail(queryExpl);
-
-    // explain field weight
-    Explanation fieldExpl = new Explanation();
-    fieldExpl.setDescription("fieldWeight in "+doc+
-                             ", product of:");
-
-    Explanation tfExplanation = new Explanation();
-    tfExplanation.setValue(tf(freq.getValue()));
-    tfExplanation.setDescription("tf(freq="+freq.getValue()+"), with freq of:");
-    tfExplanation.addDetail(freq);
-    fieldExpl.addDetail(tfExplanation);
-    fieldExpl.addDetail(stats.idf);
-
-    Explanation fieldNormExpl = new Explanation();
-    float fieldNorm =
-      norms!=null ? decodeNormValue(norms[doc]) : 1.0f;
-    fieldNormExpl.setValue(fieldNorm);
-    fieldNormExpl.setDescription("fieldNorm(doc="+doc+")");
-    fieldExpl.addDetail(fieldNormExpl);
-    
-    fieldExpl.setValue(tfExplanation.getValue() *
-                       stats.idf.getValue() *
-                       fieldNormExpl.getValue());
-
-    result.addDetail(fieldExpl);
-    
-    // combine them
-    result.setValue(queryExpl.getValue() * fieldExpl.getValue());
-
-    if (queryExpl.getValue() == 1.0f)
-      return fieldExpl;
-
-    return result;
-  }
+  }  
 
   private Explanation explainScore(int doc, Explanation freq, IDFStats stats, NumericDocValues norms) {
     Explanation result = new Explanation();

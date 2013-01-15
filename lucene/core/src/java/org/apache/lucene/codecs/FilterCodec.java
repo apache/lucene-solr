@@ -60,11 +60,6 @@ public abstract class FilterCodec extends Codec {
   }
 
   @Override
-  public DocValuesFormat docValuesFormat() {
-    return delegate.docValuesFormat();
-  }
-
-  @Override
   public SimpleDocValuesFormat simpleDocValuesFormat() {
     return delegate.simpleDocValuesFormat();
   }
@@ -77,11 +72,6 @@ public abstract class FilterCodec extends Codec {
   @Override
   public LiveDocsFormat liveDocsFormat() {
     return delegate.liveDocsFormat();
-  }
-
-  @Override
-  public NormsFormat normsFormat() {
-    return delegate.normsFormat();
   }
 
   @Override

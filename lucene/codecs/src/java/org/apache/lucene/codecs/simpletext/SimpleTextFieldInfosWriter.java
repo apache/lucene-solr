@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -137,7 +137,7 @@ public class SimpleTextFieldInfosWriter extends FieldInfosWriter {
     }
   }
   
-  private static String getDocValuesType(DocValues.Type type) {
+  private static String getDocValuesType(DocValuesType type) {
     return type == null ? "false" : type.toString();
   }
 }

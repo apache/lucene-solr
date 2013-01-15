@@ -26,10 +26,10 @@ import java.util.Map;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.PerDocConsumer;
 import org.apache.lucene.codecs.SimpleDVConsumer;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsWriter;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
@@ -97,7 +97,7 @@ final class SegmentMerger {
     // threads.
     
     mergeState.segmentInfo.setDocCount(setDocMaps());
-    mergeDocValuesAndNormsFieldInfos();
+    mergeFieldInfos();
     setMatchingSegmentReaders();
     long t0 = 0;
     if (mergeState.infoStream.isEnabled("SM")) {
@@ -124,7 +124,9 @@ final class SegmentMerger {
     if (mergeState.infoStream.isEnabled("SM")) {
       t0 = System.nanoTime();
     }
-    mergePerDoc(segmentWriteState);
+    if (mergeState.fieldInfos.hasDocValues()) {
+      mergeSimpleDocValues(segmentWriteState);
+    }
     if (mergeState.infoStream.isEnabled("SM")) {
       long t1 = System.nanoTime();
       mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge doc values [" + numMerged + " docs]");
@@ -134,18 +136,11 @@ final class SegmentMerger {
       if (mergeState.infoStream.isEnabled("SM")) {
         t0 = System.nanoTime();
       }
-      mergeNorms(segmentWriteState);
       mergeSimpleNorms(segmentWriteState);
       if (mergeState.infoStream.isEnabled("SM")) {
         long t1 = System.nanoTime();
         mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge norms [" + numMerged + " docs]");
       }
-    }
-
-    // Merge simple doc values:
-    if (mergeState.fieldInfos.hasDocValues()) {
-      // nocommit shouldn't need null check:
-      mergeSimpleDocValues(segmentWriteState);
     }
 
     if (mergeState.fieldInfos.hasVectors()) {
@@ -174,9 +169,9 @@ final class SegmentMerger {
       boolean success = false;
       try {
         for (FieldInfo field : mergeState.fieldInfos) {
-          DocValues.Type type = field.getDocValuesType();
+          DocValuesType type = field.getDocValuesType();
           if (type != null) {
-            if (DocValues.isNumber(type) || DocValues.isFloat(type)) {
+            if (type == DocValuesType.NUMERIC) {
               List<NumericDocValues> toMerge = new ArrayList<NumericDocValues>();
               for (AtomicReader reader : mergeState.readers) {
                 NumericDocValues values = reader.getNumericDocValues(field.name);
@@ -186,7 +181,7 @@ final class SegmentMerger {
                 toMerge.add(values);
               }
               consumer.mergeNumericField(field, mergeState, toMerge);
-            } else if (DocValues.isBytes(type)) {
+            } else if (type == DocValuesType.BINARY) {
               List<BinaryDocValues> toMerge = new ArrayList<BinaryDocValues>();
               for (AtomicReader reader : mergeState.readers) {
                 BinaryDocValues values = reader.getBinaryDocValues(field.name);
@@ -196,7 +191,7 @@ final class SegmentMerger {
                 toMerge.add(values);
               }
               consumer.mergeBinaryField(field, mergeState, toMerge);
-            } else if (DocValues.isSortedBytes(type)) {
+            } else if (type == DocValuesType.SORTED) {
               List<SortedDocValues> toMerge = new ArrayList<SortedDocValues>();
               for (AtomicReader reader : mergeState.readers) {
                 SortedDocValues values = reader.getSortedDocValues(field.name);
@@ -295,72 +290,15 @@ final class SegmentMerger {
     }
   }
   
-  // returns an updated typepromoter (tracking type and size) given a previous one,
-  // and a newly encountered docvalues
-  private TypePromoter mergeDocValuesType(TypePromoter previous, DocValues docValues) {
-    TypePromoter incoming = TypePromoter.create(docValues.getType(),  docValues.getValueSize());
-    if (previous == null) {
-      previous = TypePromoter.getIdentityPromoter();
-    }
-    return previous.promote(incoming);
-  }
-
-  // NOTE: this is actually merging all the fieldinfos
-  public void mergeDocValuesAndNormsFieldInfos() throws IOException {
-    // mapping from all docvalues fields found to their promoted types
-    // this is because FieldInfos does not store the
-    // valueSize
-    Map<FieldInfo,TypePromoter> docValuesTypes = new HashMap<FieldInfo,TypePromoter>();
-    Map<FieldInfo,TypePromoter> normValuesTypes = new HashMap<FieldInfo,TypePromoter>();
-
+  public void mergeFieldInfos() throws IOException {
     for (AtomicReader reader : mergeState.readers) {
       FieldInfos readerFieldInfos = reader.getFieldInfos();
       for (FieldInfo fi : readerFieldInfos) {
-        FieldInfo merged = fieldInfosBuilder.add(fi);
-        // update the type promotion mapping for this reader
-        if (fi.hasDocValues()) {
-          TypePromoter previous = docValuesTypes.get(merged);
-          docValuesTypes.put(merged, mergeDocValuesType(previous, reader.docValues(fi.name))); 
-        }
-        if (fi.hasNorms()) {
-          TypePromoter previous = normValuesTypes.get(merged);
-          normValuesTypes.put(merged, mergeDocValuesType(previous, reader.normValues(fi.name))); 
-        }
+        fieldInfosBuilder.add(fi);
       }
     }
-    updatePromoted(normValuesTypes, true);
-    updatePromoted(docValuesTypes, false);
     mergeState.fieldInfos = fieldInfosBuilder.finish();
   }
-  
-  protected void updatePromoted(Map<FieldInfo,TypePromoter> infoAndPromoter, boolean norms) {
-    // update any promoted doc values types:
-    for (Map.Entry<FieldInfo,TypePromoter> e : infoAndPromoter.entrySet()) {
-      FieldInfo fi = e.getKey();
-      TypePromoter promoter = e.getValue();
-      if (promoter == null) {
-        if (norms) {
-          fi.setNormValueType(null);
-        } else {
-          fi.setDocValuesType(null);
-        }
-      } else {
-        assert promoter != TypePromoter.getIdentityPromoter();
-        if (norms) {
-          if (fi.getNormType() != promoter.type() && !fi.omitsNorms()) {
-            // reset the type if we got promoted
-            fi.setNormValueType(promoter.type());
-          }  
-        } else {
-          if (fi.getDocValuesType() != promoter.type()) {
-            // reset the type if we got promoted
-            fi.setDocValuesType(promoter.type());
-          }
-        }
-      }
-    }
-  }
-
 
   /**
    *
@@ -448,40 +386,6 @@ final class SegmentMerger {
         IOUtils.close(consumer);
       } else {
         IOUtils.closeWhileHandlingException(consumer);
-      }
-    }
-  }
-
-  private void mergePerDoc(SegmentWriteState segmentWriteState) throws IOException {
-      final PerDocConsumer docsConsumer = codec.docValuesFormat()
-          .docsConsumer(new PerDocWriteState(segmentWriteState));
-      assert docsConsumer != null;
-      boolean success = false;
-      try {
-        docsConsumer.merge(mergeState);
-        success = true;
-      } finally {
-        if (success) {
-          IOUtils.close(docsConsumer);
-        } else {
-          IOUtils.closeWhileHandlingException(docsConsumer);
-        }
-      }
-  }
-  
-  private void mergeNorms(SegmentWriteState segmentWriteState) throws IOException {
-    final PerDocConsumer docsConsumer = codec.normsFormat()
-        .docsConsumer(new PerDocWriteState(segmentWriteState));
-    assert docsConsumer != null;
-    boolean success = false;
-    try {
-      docsConsumer.merge(mergeState);
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(docsConsumer);
-      } else {
-        IOUtils.closeWhileHandlingException(docsConsumer);
       }
     }
   }

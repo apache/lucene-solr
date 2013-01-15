@@ -32,8 +32,6 @@ import org.apache.lucene.codecs.BlockTreeTermsReader;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
 import org.apache.lucene.document.FieldType; // for javadocs
-import org.apache.lucene.index.DocValues.SortedSource;
-import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
@@ -678,12 +676,10 @@ public class CheckIndex {
       }
       for (FieldInfo info : reader.getFieldInfos()) {
         if (info.hasNorms()) {
-          DocValues dv = reader.normValues(info.name);
-          checkDocValues(dv, info.name, info.getNormType(), reader.maxDoc());
           checkSimpleNorms(info, reader, infoStream);
           ++status.totFields;
         } else {
-          if (reader.normValues(info.name) != null) {
+          if (reader.simpleNormValues(info.name) != null) {
             throw new RuntimeException("field: " + info.name + " should omit norms but has them!");
           }
         }
@@ -1256,92 +1252,6 @@ public class CheckIndex {
     return status;
   }
   
-  /** Helper method to verify values (either docvalues or norms), also checking
-   *  type and size against fieldinfos/segmentinfo
-   */
-  private static void checkDocValues(DocValues docValues, String fieldName, DocValues.Type expectedType, int expectedDocs) throws IOException {
-    if (docValues == null) {
-      throw new RuntimeException("field: " + fieldName + " omits docvalues but should have them!");
-    }
-    DocValues.Type type = docValues.getType();
-    if (type != expectedType) {
-      throw new RuntimeException("field: " + fieldName + " has type: " + type + " but fieldInfos says:" + expectedType);
-    }
-    final Source values = docValues.getDirectSource();
-    int size = docValues.getValueSize();
-    for (int i = 0; i < expectedDocs; i++) {
-      switch (type) {
-      case BYTES_FIXED_SORTED:
-      case BYTES_VAR_SORTED:
-      case BYTES_FIXED_DEREF:
-      case BYTES_FIXED_STRAIGHT:
-      case BYTES_VAR_DEREF:
-      case BYTES_VAR_STRAIGHT:
-        BytesRef bytes = new BytesRef();
-        values.getBytes(i, bytes);
-        if (size != -1 && size != bytes.length) {
-          throw new RuntimeException("field: " + fieldName + " returned wrongly sized bytes, was: " + bytes.length + " should be: " + size);
-        }
-        break;
-      case FLOAT_32:
-        assert size == 4;
-        values.getFloat(i);
-        break;
-      case FLOAT_64:
-        assert size == 8;
-        values.getFloat(i);
-        break;
-      case VAR_INTS:
-        assert size == -1;
-        values.getInt(i);
-        break;
-      case FIXED_INTS_16:
-        assert size == 2;
-        values.getInt(i);
-        break;
-      case FIXED_INTS_32:
-        assert size == 4;
-        values.getInt(i);
-        break;
-      case FIXED_INTS_64:
-        assert size == 8;
-        values.getInt(i);
-        break;
-      case FIXED_INTS_8:
-        assert size == 1;
-        values.getInt(i);
-        break;
-      default:
-        throw new IllegalArgumentException("Field: " + fieldName
-                    + " - no such DocValues type: " + type);
-      }
-    }
-    if (type == DocValues.Type.BYTES_FIXED_SORTED || type == DocValues.Type.BYTES_VAR_SORTED) {
-      // check sorted bytes
-      SortedSource sortedValues = values.asSortedSource();
-      Comparator<BytesRef> comparator = sortedValues.getComparator();
-      int lastOrd = -1;
-      BytesRef lastBytes = new BytesRef();
-      for (int i = 0; i < expectedDocs; i++) {
-        int ord = sortedValues.ord(i);
-        if (ord < 0 || ord > expectedDocs) {
-          throw new RuntimeException("field: " + fieldName + " ord is out of bounds: " + ord);
-        }
-        BytesRef bytes = new BytesRef();
-        sortedValues.getByOrd(ord, bytes);
-        if (lastOrd != -1) {
-          int ordComp = Integer.signum(new Integer(ord).compareTo(new Integer(lastOrd)));
-          int bytesComp = Integer.signum(comparator.compare(bytes, lastBytes));
-          if (ordComp != bytesComp) {
-            throw new RuntimeException("field: " + fieldName + " ord comparison is wrong: " + ordComp + " comparator claims: " + bytesComp);
-          }
-        }
-        lastOrd = ord;
-        lastBytes = bytes;
-      }
-    }
-  }
-  
   public static Status.DocValuesStatus testDocValues(AtomicReader reader,
                                                      PrintStream infoStream) {
     final Status.DocValuesStatus status = new Status.DocValuesStatus();
@@ -1352,11 +1262,11 @@ public class CheckIndex {
       for (FieldInfo fieldInfo : reader.getFieldInfos()) {
         if (fieldInfo.hasDocValues()) {
           status.totalValueFields++;
-          final DocValues docValues = reader.docValues(fieldInfo.name);
-          checkDocValues(docValues, fieldInfo.name, fieldInfo.getDocValuesType(), reader.maxDoc());
           checkSimpleDocValues(fieldInfo, reader, infoStream);
         } else {
-          if (reader.docValues(fieldInfo.name) != null) {
+          if (reader.getBinaryDocValues(fieldInfo.name) != null ||
+              reader.getNumericDocValues(fieldInfo.name) != null ||
+              reader.getSortedDocValues(fieldInfo.name) != null) {
             throw new RuntimeException("field: " + fieldInfo.name + " has docvalues but should omit them!");
           }
         }
@@ -1440,23 +1350,13 @@ public class CheckIndex {
       msg(infoStream, "  field: " + fi.name + ": " + atts);
     }
     switch(fi.getDocValuesType()) {
-      case BYTES_FIXED_SORTED:
-      case BYTES_VAR_SORTED:
-      case BYTES_FIXED_DEREF:
-      case BYTES_VAR_DEREF:
+      case SORTED:
         checkSortedDocValues(fi.name, reader, reader.getSortedDocValues(fi.name));
         break;
-      case BYTES_FIXED_STRAIGHT:
-      case BYTES_VAR_STRAIGHT:
+      case BINARY:
         checkBinaryDocValues(fi.name, reader, reader.getBinaryDocValues(fi.name));
         break;
-      case FLOAT_32:
-      case FLOAT_64:
-      case VAR_INTS:
-      case FIXED_INTS_16:
-      case FIXED_INTS_32:
-      case FIXED_INTS_64:
-      case FIXED_INTS_8:
+      case NUMERIC:
         checkNumericDocValues(fi.name, reader, reader.getNumericDocValues(fi.name));
         break;
       default:
@@ -1467,13 +1367,7 @@ public class CheckIndex {
   // nocommit
   public static void checkSimpleNorms(FieldInfo fi, AtomicReader reader, PrintStream infoStream) throws IOException {
     switch(fi.getNormType()) {
-      case FLOAT_32:
-      case FLOAT_64:
-      case VAR_INTS:
-      case FIXED_INTS_16:
-      case FIXED_INTS_32:
-      case FIXED_INTS_64:
-      case FIXED_INTS_8:
+      case NUMERIC:
         checkNumericDocValues(fi.name, reader, reader.simpleNormValues(fi.name));
         break;
       default:

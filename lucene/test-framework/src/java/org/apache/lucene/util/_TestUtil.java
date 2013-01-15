@@ -730,16 +730,6 @@ public class _TestUtil {
     }
   }
 
-  // nocommit remove this once all codecs support simple dv!!
-  public static boolean canUseSimpleDV() {
-    return Codec.getDefault().simpleDocValuesFormat() != null;
-  }
-
-  // nocommit remove this once all codecs support simple norms!!
-  public static boolean canUseSimpleNorms() {
-    return Codec.getDefault().simpleNormsFormat() != null;
-  }
-
   public static boolean anyFilesExceptWriteLock(Directory dir) throws IOException {
     String[] files = dir.listAll();
     if (files.length > 1 || (files.length == 1 && !files[0].equals("write.lock"))) {

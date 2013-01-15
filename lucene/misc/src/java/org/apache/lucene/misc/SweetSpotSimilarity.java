@@ -19,7 +19,6 @@ package org.apache.lucene.misc;
 
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Norm;
 
 /**
  * A similarity with a lengthNorm that provides for a "plateau" of

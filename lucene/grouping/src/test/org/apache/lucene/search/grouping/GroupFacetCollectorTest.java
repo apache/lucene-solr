@@ -20,14 +20,12 @@ package org.apache.lucene.search.grouping;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.grouping.dv.DVGroupFacetCollector;
 import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -664,12 +662,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
 
   private AbstractGroupFacetCollector createRandomCollector(String groupField, String facetField, String facetPrefix, boolean multipleFacetsPerDocument, boolean useDv) {
     BytesRef facetPrefixBR = facetPrefix == null ? null : new BytesRef(facetPrefix);
-    if (useDv) {
-      return DVGroupFacetCollector.createDvGroupFacetCollector(groupField, DocValues.Type.BYTES_VAR_SORTED,
-          random().nextBoolean(), facetField, DocValues.Type.BYTES_VAR_SORTED, random().nextBoolean(), facetPrefixBR, random().nextInt(1024));
-    } else {
-      return TermGroupFacetCollector.createTermGroupFacetCollector(groupField, facetField, multipleFacetsPerDocument, facetPrefixBR, random().nextInt(1024));
-    }
+    return TermGroupFacetCollector.createTermGroupFacetCollector(groupField, facetField, multipleFacetsPerDocument, facetPrefixBR, random().nextInt(1024));
   }
 
   private String getFromSet(Set<String> set, int index) {

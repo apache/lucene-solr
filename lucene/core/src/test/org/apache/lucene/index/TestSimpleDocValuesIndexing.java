@@ -80,7 +80,6 @@ public class TestSimpleDocValuesIndexing extends LuceneTestCase {
    * Simple test case to show how to use the API
    */
   public void testDocValuesSimple() throws IOException {
-    Assume.assumeTrue(_TestUtil.canUseSimpleDV());
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, writerConfig(false));
     for (int i = 0; i < 5; i++) {

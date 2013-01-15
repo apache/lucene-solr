@@ -262,13 +262,6 @@ public final class ParallelAtomicReader extends AtomicReader {
     // throw the first exception
     if (ioe != null) throw ioe;
   }
-  
-  @Override
-  public DocValues docValues(String field) throws IOException {
-    ensureOpen();
-    AtomicReader reader = fieldToReader.get(field);
-    return reader == null ? null : reader.docValues(field);
-  }
 
   @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
@@ -289,13 +282,6 @@ public final class ParallelAtomicReader extends AtomicReader {
     ensureOpen();
     AtomicReader reader = fieldToReader.get(field);
     return reader == null ? null : reader.getSortedDocValues(field);
-  }
-  
-  @Override
-  public DocValues normValues(String field) throws IOException {
-    ensureOpen();
-    AtomicReader reader = fieldToReader.get(field);
-    return reader == null ? null : reader.normValues(field);
   }
 
   @Override

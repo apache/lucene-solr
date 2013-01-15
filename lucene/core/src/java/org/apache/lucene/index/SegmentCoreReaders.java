@@ -27,11 +27,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.PerDocProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.SegmentReader.CoreClosedListener;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
@@ -56,8 +56,6 @@ final class SegmentCoreReaders {
   final FieldsProducer fields;
   final SimpleDVProducer simpleDVProducer;
   final SimpleDVProducer simpleNormsProducer;
-  final PerDocProducer perDocProducer;
-  final PerDocProducer norms;
 
   final int termsIndexDivisor;
   
@@ -133,8 +131,6 @@ final class SegmentCoreReaders {
       // ask codec for its Norms: 
       // TODO: since we don't write any norms file if there are no norms,
       // kinda jaky to assume the codec handles the case of no norms file at all gracefully?!
-      norms = codec.normsFormat().docsProducer(segmentReadState);
-      perDocProducer = codec.docValuesFormat().docsProducer(segmentReadState);
       // nocommit shouldn't need null check:
       if (codec.simpleDocValuesFormat() != null) {
         if (fieldInfos.hasDocValues()) {
@@ -192,7 +188,7 @@ final class SegmentCoreReaders {
       // Field was not indexed with doc values
       return null;
     }
-    if (!DocValues.isNumber(fi.getDocValuesType()) && !DocValues.isFloat(fi.getDocValuesType())) {
+    if (fi.getDocValuesType() != DocValuesType.NUMERIC) {
       // DocValues were not numeric
       return null;
     }
@@ -223,7 +219,7 @@ final class SegmentCoreReaders {
       // Field was not indexed with doc values
       return null;
     }
-    if (!DocValues.isBytes(fi.getDocValuesType())) {
+    if (fi.getDocValuesType() != DocValuesType.BINARY) {
       // DocValues were not binary
       return null;
     }
@@ -254,7 +250,7 @@ final class SegmentCoreReaders {
       // Field was not indexed with doc values
       return null;
     }
-    if (!DocValues.isSortedBytes(fi.getDocValuesType())) {
+    if (fi.getDocValuesType() != DocValuesType.SORTED) {
       // DocValues were not sorted
       return null;
     }
@@ -303,8 +299,7 @@ final class SegmentCoreReaders {
   void decRef() throws IOException {
     if (ref.decrementAndGet() == 0) {
       IOUtils.close(termVectorsLocal, fieldsReaderLocal, simpleDocValuesLocal, simpleNormsLocal, fields, simpleDVProducer,
-                    perDocProducer, termVectorsReaderOrig, fieldsReaderOrig, cfsReader, norms,
-                    simpleNormsProducer);
+                    termVectorsReaderOrig, fieldsReaderOrig, cfsReader, simpleNormsProducer);
       notifyCoreClosedListeners();
     }
   }

@@ -28,7 +28,6 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.junit.Assume;
 
 public class TestOmitNorms extends LuceneTestCase {
   // Tests whether the DocumentWriter correctly enable the
@@ -267,8 +266,6 @@ public class TestOmitNorms extends LuceneTestCase {
    * returns the norms for "field".
    */
   NumericDocValues getNorms(String field, Field f1, Field f2) throws IOException {
-    // nocommit remove
-    Assume.assumeTrue(_TestUtil.canUseSimpleNorms());
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy());
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);

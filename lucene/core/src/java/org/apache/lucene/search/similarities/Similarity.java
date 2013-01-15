@@ -23,9 +23,7 @@ import org.apache.lucene.document.ByteDocValuesField; // javadoc
 import org.apache.lucene.document.FloatDocValuesField; // javadoc
 import org.apache.lucene.index.AtomicReader; // javadoc
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Norm;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
@@ -53,9 +51,9 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * <a href="#querytime">query-time</a>.
  * <p>
  * <a name="indextime"/>
- * At indexing time, the indexer calls {@link #computeNorm(FieldInvertState, Norm)}, allowing
+ * At indexing time, the indexer calls {@link #computeNorm(FieldInvertState)}, allowing
  * the Similarity implementation to set a per-document value for the field that will 
- * be later accessible via {@link AtomicReader#normValues(String)}.  Lucene makes no assumption
+ * be later accessible via {@link AtomicReader#simpleNormValues(String)}.  Lucene makes no assumption
  * about what is in this norm, but it is most useful for encoding length normalization 
  * information.
  * <p>
@@ -72,7 +70,7 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * Additional scoring factors can be stored in named
  * <code>*DocValuesField</code>s (such as {@link
  * ByteDocValuesField} or {@link FloatDocValuesField}), and accessed
- * at query-time with {@link AtomicReader#docValues(String)}.
+ * at query-time with {@link AtomicReader#getNumericDocValues(String)}.
  * <p>
  * Finally, using index-time boosts (either via folding into the normalization byte or
  * via DocValues), is an inefficient way to boost the scores of different fields if the
@@ -150,9 +148,6 @@ public abstract class Similarity {
   /**
    * Computes the normalization value for a field, given the accumulated
    * state of term processing for this field (see {@link FieldInvertState}).
-   * 
-   * <p>Implementations should calculate a norm value based on the field
-   * state and set that value to the given {@link Norm}.
    *
    * <p>Matches in longer fields are less precise, so implementations of this
    * method usually set smaller values when <code>state.getLength()</code> is large,
@@ -161,21 +156,9 @@ public abstract class Similarity {
    * @lucene.experimental
    * 
    * @param state current processing state for this field
-   * @param norm holds the computed norm value when this method returns
+   * @return computed norm value
    */
-  public abstract void computeNorm(FieldInvertState state, Norm norm);
-
-  // nocommit replace computeNorm w/ this, make it abstract:
-  public long computeSimpleNorm(FieldInvertState state) {
-    Norm normScratch = new Norm();
-    computeNorm(state, normScratch);
-    if (normScratch.type() != null && DocValues.isNumber(normScratch.type())) {
-      return normScratch.field().numericValue().longValue();
-    } else {
-      // nocommit hmm how to return "not set"...?
-      return -1;
-    }
-  }
+  public abstract long computeNorm(FieldInvertState state);
 
   /**
    * Compute any collection-level weight (e.g. IDF, average document length, etc) needed for scoring a query.

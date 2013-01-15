@@ -18,7 +18,6 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
@@ -347,9 +346,8 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     FieldInvertState state = new FieldInvertState("a_t");
     state.setBoost(1.0f);
     state.setLength(4);
-    Norm norm = new Norm();
-    similarity.computeNorm(state, norm);
-    float nrm = similarity.decodeNormValue(norm.field().numericValue().byteValue());
+    long norm = similarity.computeNorm(state);
+    float nrm = similarity.decodeNormValue((byte) norm);
     assertQ(req("fl","*,score","q", "{!func}norm(a_t)", "fq","id:2"),
         "//float[@name='score']='" + nrm  + "'");  // sqrt(4)==2 and is exactly representable when quantized to a byte
 

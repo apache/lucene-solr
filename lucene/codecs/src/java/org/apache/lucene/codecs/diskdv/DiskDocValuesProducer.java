@@ -25,8 +25,8 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
@@ -75,10 +75,10 @@ class DiskDocValuesProducer extends SimpleDVProducer {
   private void readFields(IndexInput meta, FieldInfos infos) throws IOException {
     int fieldNumber = meta.readVInt();
     while (fieldNumber != -1) {
-      DocValues.Type type = infos.fieldInfo(fieldNumber).getDocValuesType();
-      if (DocValues.isNumber(type) || DocValues.isFloat(type)) {
+      DocValuesType type = infos.fieldInfo(fieldNumber).getDocValuesType();
+      if (type == DocValuesType.NUMERIC) {
         numerics.put(fieldNumber, readNumericEntry(meta));
-      } else if (DocValues.isBytes(type)) {
+      } else if (type == DocValuesType.BINARY) {
         BinaryEntry b = readBinaryEntry(meta);
         binaries.put(fieldNumber, b);
         if (b.minLength != b.maxLength) {
@@ -88,7 +88,7 @@ class DiskDocValuesProducer extends SimpleDVProducer {
           // variable length byte[]: read addresses as a numeric dv field
           numerics.put(fieldNumber, readNumericEntry(meta));
         }
-      } else if (DocValues.isSortedBytes(type)) {
+      } else if (type == DocValuesType.SORTED) {
         BinaryEntry b = readBinaryEntry(meta);
         binaries.put(fieldNumber, b);
         if (b.minLength != b.maxLength) {

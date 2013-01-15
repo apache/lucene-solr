@@ -25,16 +25,10 @@ import java.util.HashSet;
 import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.codecs.PerDocConsumer;
-import org.apache.lucene.index.DocumentsWriterPerThread.DocState;
-import org.apache.lucene.index.TypePromoter.TypeCompatibility;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.IOUtils;
-
 
 /**
  * This is a DocConsumer that gathers all fields under the
@@ -86,14 +80,6 @@ final class DocFieldProcessor extends DocConsumer {
     storedConsumer.flush(state);
     consumer.flush(childFields, state);
 
-    for (DocValuesConsumerHolder consumer : docValues.values()) {
-      consumer.docValuesConsumer.finish(state.segmentInfo.getDocCount());
-    }
-    
-    // close perDocConsumer during flush to ensure all files are flushed due to PerCodec CFS
-    // nocommit
-    IOUtils.close(perDocConsumer);
-
     // Important to save after asking consumer to flush so
     // consumer can alter the FieldInfo* if necessary.  EG,
     // FreqProxTermsWriter does this with
@@ -119,8 +105,6 @@ final class DocFieldProcessor extends DocConsumer {
         field = next;
       }
     }
-    IOUtils.closeWhileHandlingException(perDocConsumer);
-    // TODO add abort to PerDocConsumer!
     
     try {
       storedConsumer.abort();
@@ -132,16 +116,6 @@ final class DocFieldProcessor extends DocConsumer {
     
     try {
       consumer.abort();
-    } catch (Throwable t) {
-      if (th == null) {
-        th = t;
-      }
-    }
-    
-    try {
-      if (perDocConsumer != null) {
-        perDocConsumer.abort();  
-      }
     } catch (Throwable t) {
       if (th == null) {
         th = t;
@@ -177,8 +151,6 @@ final class DocFieldProcessor extends DocConsumer {
     fieldHash = new DocFieldProcessorPerField[2];
     hashMask = 1;
     totalFieldCount = 0;
-    perDocConsumer = null;
-    docValues.clear();
   }
 
   private void rehash() {
@@ -233,30 +205,6 @@ final class DocFieldProcessor extends DocConsumer {
       IndexableFieldType ft = field.fieldType();
       FieldInfo fieldInfo = fieldInfos.addOrUpdate(fieldName, ft);
       storedConsumer.addField(docState.docID, field, fieldInfo);
-      
-      final DocValues.Type dvType = ft.docValueType();
-      if (dvType != null) {
-        DocValuesConsumerHolder docValuesConsumer = docValuesConsumer(dvType,
-            docState, fieldInfo);
-        DocValuesConsumer consumer = docValuesConsumer.docValuesConsumer;
-        if (docValuesConsumer.compatibility == null) {
-          consumer.add(docState.docID, field);
-          docValuesConsumer.compatibility = new TypeCompatibility(dvType,
-              consumer.getValueSize());
-        } else if (docValuesConsumer.compatibility.isCompatible(dvType,
-            TypePromoter.getValueSize(dvType, field.binaryValue()))) {
-          consumer.add(docState.docID, field);
-        } else {
-          docValuesConsumer.compatibility.isCompatible(dvType,
-              TypePromoter.getValueSize(dvType, field.binaryValue()));
-          TypeCompatibility compatibility = docValuesConsumer.compatibility;
-          throw new IllegalArgumentException("Incompatible DocValues type: "
-              + dvType.name() + " size: "
-              + TypePromoter.getValueSize(dvType, field.binaryValue())
-              + " expected: " + " type: " + compatibility.getBaseType()
-              + " size: " + compatibility.getBaseSize());
-        }
-      }
     }
 
     // If we are writing vectors then we must visit
@@ -343,46 +291,5 @@ final class DocFieldProcessor extends DocConsumer {
     } finally {
       consumer.finishDocument();
     }
-  }
-
-  private static class DocValuesConsumerHolder {
-    // Only used to enforce that same DV field name is never
-    // added more than once per doc:
-    int docID;
-    final DocValuesConsumer docValuesConsumer;
-    TypeCompatibility compatibility;
-
-    public DocValuesConsumerHolder(DocValuesConsumer docValuesConsumer) {
-      this.docValuesConsumer = docValuesConsumer;
-    }
-  }
-
-  final private Map<String, DocValuesConsumerHolder> docValues = new HashMap<String, DocValuesConsumerHolder>();
-  private PerDocConsumer perDocConsumer;
-
-  DocValuesConsumerHolder docValuesConsumer(DocValues.Type valueType, DocState docState, FieldInfo fieldInfo) 
-      throws IOException {
-    DocValuesConsumerHolder docValuesConsumerAndDocID = docValues.get(fieldInfo.name);
-    if (docValuesConsumerAndDocID != null) {
-      if (docState.docID == docValuesConsumerAndDocID.docID) {
-        throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed, per field)");
-      }
-      assert docValuesConsumerAndDocID.docID < docState.docID;
-      docValuesConsumerAndDocID.docID = docState.docID;
-      return docValuesConsumerAndDocID;
-    }
-
-    if (perDocConsumer == null) {
-      PerDocWriteState perDocWriteState = docState.docWriter.newPerDocWriteState("");
-      perDocConsumer = docState.docWriter.codec.docValuesFormat().docsConsumer(perDocWriteState);
-      if (perDocConsumer == null) {
-        throw new IllegalStateException("codec=" +  docState.docWriter.codec + " does not support docValues: from docValuesFormat().docsConsumer(...) returned null; field=" + fieldInfo.name);
-      }
-    }
-    DocValuesConsumer docValuesConsumer = perDocConsumer.addValuesField(valueType, fieldInfo);
-    docValuesConsumerAndDocID = new DocValuesConsumerHolder(docValuesConsumer);
-    docValuesConsumerAndDocID.docID = docState.docID;
-    docValues.put(fieldInfo.name, docValuesConsumerAndDocID);
-    return docValuesConsumerAndDocID;
   }
 }

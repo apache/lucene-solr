@@ -179,9 +179,9 @@ public class TestSegmentReader extends LuceneTestCase {
     for (int i=0; i<DocHelper.fields.length; i++) {
       IndexableField f = DocHelper.fields[i];
       if (f.fieldType().indexed()) {
-        assertEquals(reader.normValues(f.name()) != null, !f.fieldType().omitNorms());
-        assertEquals(reader.normValues(f.name()) != null, !DocHelper.noNorms.containsKey(f.name()));
-        if (reader.normValues(f.name()) == null) {
+        assertEquals(reader.simpleNormValues(f.name()) != null, !f.fieldType().omitNorms());
+        assertEquals(reader.simpleNormValues(f.name()) != null, !DocHelper.noNorms.containsKey(f.name()));
+        if (reader.simpleNormValues(f.name()) == null) {
           // test for norms of null
           NumericDocValues norms = MultiSimpleDocValues.simpleNormValues(reader, f.name());
           assertNull(norms);

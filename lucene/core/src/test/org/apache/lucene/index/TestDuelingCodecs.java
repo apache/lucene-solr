@@ -38,11 +38,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
-import org.junit.Assume;
 
 /**
  * Compares one codec against another
@@ -68,7 +66,6 @@ public class TestDuelingCodecs extends LuceneTestCase {
     
     leftCodec = Codec.forName("SimpleText");
     rightCodec = new RandomCodec(random());
-    Assume.assumeTrue(rightCodec.simpleNormsFormat() != null);
 
     leftDir = newDirectory();
     rightDir = newDirectory();
@@ -519,7 +516,6 @@ public class TestDuelingCodecs extends LuceneTestCase {
    * checks that norms are the same across all fields 
    */
   public void assertNorms(IndexReader leftReader, IndexReader rightReader) throws Exception {
-    Assume.assumeTrue(_TestUtil.canUseSimpleNorms());
     Fields leftFields = MultiFields.getFields(leftReader);
     Fields rightFields = MultiFields.getFields(rightReader);
     // Fields could be null if there are no postings,

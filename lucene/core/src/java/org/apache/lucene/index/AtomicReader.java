@@ -156,13 +156,6 @@ public abstract class AtomicReader extends IndexReader {
     }
     return null;
   }
-  
-  /**
-   * Returns {@link DocValues} for this field.
-   * This method may return null if the reader has no per-document
-   * values stored.
-   */
-  public abstract DocValues docValues(String field) throws IOException;
 
   /** Returns {@link NumericDocValues} for this field, or
    *  null if no {@link NumericDocValues} were indexed for
@@ -181,12 +174,6 @@ public abstract class AtomicReader extends IndexReader {
    *  this field.  The returned instance should only be
    *  used by a single thread. */
   public abstract SortedDocValues getSortedDocValues(String field) throws IOException;
-
-  /**
-   * Returns {@link DocValues} for this field's normalization values.
-   * This method may return null if the field has no norms.
-   */
-  public abstract DocValues normValues(String field) throws IOException;
 
   // nocommit document that these are thread-private:
   /** Returns {@link NumericDocValues} representing norms

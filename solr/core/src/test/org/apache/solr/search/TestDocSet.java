@@ -25,7 +25,6 @@ import java.util.Random;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
@@ -385,16 +384,6 @@ public class TestDocSet extends LuceneTestCase {
 
       @Override
       public Fields getTermVectors(int doc) {
-        return null;
-      }
-
-      @Override
-      public DocValues normValues(String field) {
-        return null;
-      }
-
-      @Override
-      public DocValues docValues(String field) {
         return null;
       }
 

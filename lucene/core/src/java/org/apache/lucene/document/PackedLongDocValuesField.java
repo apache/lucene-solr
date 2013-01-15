@@ -17,7 +17,6 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.AtomicReader;      // javadocs
 
 /**
@@ -25,7 +24,7 @@ import org.apache.lucene.index.AtomicReader;      // javadocs
  * Field that stores a per-document <code>long</code> value 
  * for scoring, sorting or value retrieval.  The values are 
  * encoded in the index an in RAM (when loaded via 
- * {@link AtomicReader#docValues})
+ * {@link AtomicReader#getNumericDocValues(String)})
  * using packed ints. Here's an example usage:
  * 
  * <pre class="prettyprint">
@@ -36,19 +35,10 @@ import org.apache.lucene.index.AtomicReader;      // javadocs
  * If you also need to store the value, you should add a
  * separate {@link StoredField} instance.
  * 
- * @see DocValues
  * */
 
-public class PackedLongDocValuesField extends StoredField {
-
-  /**
-   * Type for packed long DocValues.
-   */
-  public static final FieldType TYPE = new FieldType();
-  static {
-    TYPE.setDocValueType(DocValues.Type.VAR_INTS);
-    TYPE.freeze();
-  }
+@Deprecated
+public class PackedLongDocValuesField extends LongDocValuesField {
 
   /** 
    * Creates a new DocValues field with the specified long value 
@@ -57,7 +47,6 @@ public class PackedLongDocValuesField extends StoredField {
    * @throws IllegalArgumentException if the field name is null
    */
   public PackedLongDocValuesField(String name, long value) {
-    super(name, TYPE);
-    fieldsData = Long.valueOf(value);
+    super(name, value);
   }
 }

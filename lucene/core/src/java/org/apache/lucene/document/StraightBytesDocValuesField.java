@@ -17,7 +17,6 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -37,29 +36,11 @@ import org.apache.lucene.util.BytesRef;
  * If you also need to store the value, you should add a
  * separate {@link StoredField} instance.
  * 
- * @see DocValues
  * */
 
-public class StraightBytesDocValuesField extends StoredField {
+@Deprecated
+public class StraightBytesDocValuesField extends BinaryDocValuesField {
 
-  // TODO: ideally indexer figures out var vs fixed on its own!?
-  /**
-   * Type for direct bytes DocValues: all with the same length
-   */
-  public static final FieldType TYPE_FIXED_LEN = new FieldType();
-  static {
-    TYPE_FIXED_LEN.setDocValueType(DocValues.Type.BYTES_FIXED_STRAIGHT);
-    TYPE_FIXED_LEN.freeze();
-  }
-
-  /**
-   * Type for direct bytes DocValues: can have variable lengths
-   */
-  public static final FieldType TYPE_VAR_LEN = new FieldType();
-  static {
-    TYPE_VAR_LEN.setDocValueType(DocValues.Type.BYTES_VAR_STRAIGHT);
-    TYPE_VAR_LEN.freeze();
-  }
 
   /**
    * Create a new variable-length direct DocValues field.
@@ -74,8 +55,7 @@ public class StraightBytesDocValuesField extends StoredField {
    * @throws IllegalArgumentException if the field name is null
    */
   public StraightBytesDocValuesField(String name, BytesRef bytes) {
-    super(name, TYPE_VAR_LEN);
-    fieldsData = bytes;
+    super(name, bytes);
   }
 
   /**
@@ -87,7 +67,6 @@ public class StraightBytesDocValuesField extends StoredField {
    * @throws IllegalArgumentException if the field name is null
    */
   public StraightBytesDocValuesField(String name, BytesRef bytes, boolean isFixedLength) {
-    super(name, isFixedLength ? TYPE_FIXED_LEN : TYPE_VAR_LEN);
-    fieldsData = bytes;
+    super(name, bytes);
   }
 }

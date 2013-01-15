@@ -18,8 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.lucene.util.Bits;
 
@@ -31,7 +29,7 @@ import org.apache.lucene.index.MultiReader; // javadoc
  * MultiReader} or {@link DirectoryReader}) to emulate an
  * atomic reader.  This requires implementing the postings
  * APIs on-the-fly, using the static methods in {@link
- * MultiFields}, {@link MultiDocValues}, by stepping through
+ * MultiFields}, {@link MultiSimpleDocValues}, by stepping through
  * the sub-readers to merge fields/terms, appending docs, etc.
  *
  * <p><b>NOTE</b>: this class almost always results in a
@@ -44,7 +42,6 @@ import org.apache.lucene.index.MultiReader; // javadoc
 public final class SlowCompositeReaderWrapper extends AtomicReader {
 
   private final CompositeReader in;
-  private final Map<String, DocValues> normsCache = new HashMap<String, DocValues>();
   private final Fields fields;
   private final Bits liveDocs;
   
@@ -83,12 +80,6 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   }
 
   @Override
-  public DocValues docValues(String field) throws IOException {
-    ensureOpen();
-    return MultiDocValues.getDocValues(in, field);
-  }
-
-  @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
     ensureOpen();
     return MultiSimpleDocValues.simpleNumericValues(in, field);
@@ -104,17 +95,6 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   public SortedDocValues getSortedDocValues(String field) throws IOException {
     ensureOpen();
     return MultiSimpleDocValues.simpleSortedValues(in, field);
-  }
-  
-  @Override
-  public synchronized DocValues normValues(String field) throws IOException {
-    ensureOpen();
-    DocValues values = normsCache.get(field);
-    if (values == null) {
-      values = MultiDocValues.getNormDocValues(in, field);
-      normsCache.put(field, values);
-    }
-    return values;
   }
 
   @Override

@@ -34,8 +34,8 @@ import org.apache.lucene.codecs.SimpleDVProducer;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
@@ -161,8 +161,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     @Override
     public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
       assert fieldSeen(field.name);
-      assert (field.getDocValuesType() != null && (DocValues.isNumber(field.getDocValuesType()) || DocValues.isFloat(field.getDocValuesType()))) ||
-        (field.getNormType() != null && (DocValues.isNumber(field.getNormType()) || DocValues.isFloat(field.getNormType()))): "field=" + field.name;
+      // nocommit: this must be multiple asserts
+      //assert (field.getDocValuesType() != null && (DocValues.isNumber(field.getDocValuesType()) || DocValues.isFloat(field.getDocValuesType()))) ||
+      //  (field.getNormType() != null && (DocValues.isNumber(field.getNormType()) || DocValues.isFloat(field.getNormType()))): "field=" + field.name;
       writeFieldEntry(field);
 
       // first pass to find min/max
@@ -220,7 +221,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     @Override
     public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
       assert fieldSeen(field.name);
-      assert DocValues.isBytes(field.getDocValuesType());
+      assert field.getDocValuesType() == DocValuesType.BINARY;
       assert !isNorms;
       int maxLength = 0;
       for(BytesRef value : values) {
@@ -269,7 +270,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
     @Override
     public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
       assert fieldSeen(field.name);
-      assert DocValues.isSortedBytes(field.getDocValuesType());
+      assert field.getDocValuesType() == DocValuesType.SORTED;
       assert !isNorms;
       writeFieldEntry(field);
 
@@ -421,9 +422,9 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
         //System.out.println("  field=" + fieldName);
 
         // nocommit hack hack hack!!:
-        DocValues.Type dvType = ext.equals("slen") ? DocValues.Type.FIXED_INTS_8 : fieldInfo.getDocValuesType();
+        DocValuesType dvType = ext.equals("slen") ? DocValuesType.NUMERIC : fieldInfo.getDocValuesType();
         assert dvType != null;
-        if (DocValues.isNumber(dvType) || DocValues.isFloat(dvType)) {
+        if (dvType == DocValuesType.NUMERIC) {
           readLine();
           assert startsWith(MINVALUE): "got " + scratch.utf8ToString() + " field=" + fieldName + " ext=" + ext;
           field.minValue = Long.parseLong(stripPrefix(MINVALUE));
@@ -432,7 +433,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           field.pattern = stripPrefix(PATTERN);
           field.dataStartFilePointer = data.getFilePointer();
           data.seek(data.getFilePointer() + (1+field.pattern.length()) * maxDoc);
-        } else if (DocValues.isBytes(dvType)) {
+        } else if (dvType == DocValuesType.BINARY) {
           readLine();
           assert startsWith(MAXLENGTH);
           field.maxLength = Integer.parseInt(stripPrefix(MAXLENGTH));
@@ -441,7 +442,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
           field.pattern = stripPrefix(PATTERN);
           field.dataStartFilePointer = data.getFilePointer();
           data.seek(data.getFilePointer() + (9+field.pattern.length()+field.maxLength) * maxDoc);
-        } else if (DocValues.isSortedBytes(dvType)) {
+        } else if (dvType == DocValuesType.SORTED) {
           readLine();
           assert startsWith(NUMVALUES);
           field.numValues = Integer.parseInt(stripPrefix(NUMVALUES));

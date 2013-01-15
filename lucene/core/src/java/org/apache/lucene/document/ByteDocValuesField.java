@@ -17,7 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.FieldInfo;
 
 /**
  * <p>
@@ -32,7 +32,6 @@ import org.apache.lucene.index.DocValues;
  * If you also need to store the value, you should add a
  * separate {@link StoredField} instance.
  * 
- * @see DocValues
  * */
 
 public class ByteDocValuesField extends StoredField {
@@ -42,7 +41,7 @@ public class ByteDocValuesField extends StoredField {
    */
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDocValueType(DocValues.Type.FIXED_INTS_8);
+    TYPE.setDocValueType(FieldInfo.DocValuesType.NUMERIC);
     TYPE.freeze();
   }
 

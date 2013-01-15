@@ -17,9 +17,7 @@ package org.apache.lucene.index;
  */
 import java.io.IOException;
 
-import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.SimpleDVConsumer;
-import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.search.similarities.Similarity;
 
 final class NormsConsumerPerField extends InvertedDocEndConsumerPerField implements Comparable<NormsConsumerPerField> {
@@ -27,20 +25,13 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
   private final DocumentsWriterPerThread.DocState docState;
   private final Similarity similarity;
   private final FieldInvertState fieldState;
-  private DocValuesConsumer consumer;
-  private final Norm norm;
-  private final NormsConsumer parent;
-  private Type initType;
-  private final NumberDVWriter simpleNormsWriter;
+  private NumberDVWriter consumer;
   
   public NormsConsumerPerField(final DocInverterPerField docInverterPerField, final FieldInfo fieldInfo, NormsConsumer parent) {
     this.fieldInfo = fieldInfo;
-    this.parent = parent;
     docState = docInverterPerField.docState;
     fieldState = docInverterPerField.fieldState;
     similarity = docState.similarity;
-    norm = new Norm();
-    simpleNormsWriter = new NumberDVWriter(fieldInfo, docState.docWriter.bytesUsed);
   }
 
   @Override
@@ -51,65 +42,28 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
   @Override
   void finish() throws IOException {
     if (fieldInfo.isIndexed() && !fieldInfo.omitsNorms()) {
-      similarity.computeNorm(fieldState, norm);
-      
-      if (norm.type() != null) {
-        StorableField field = norm.field();
-        // some similarity might not compute any norms
-        DocValuesConsumer consumer = getConsumer(norm.type());
-        consumer.add(docState.docID, field);
+      if (consumer == null) {
+        consumer = new NumberDVWriter(fieldInfo, docState.docWriter.bytesUsed);
       }
-
-      long norm = similarity.computeSimpleNorm(fieldState);
-      simpleNormsWriter.addValue(docState.docID, norm);
+      consumer.addValue(docState.docID, similarity.computeNorm(fieldState));
     }
   }
   
-  Type flush(SegmentWriteState state, SimpleDVConsumer normsConsumer) throws IOException {
+  void flush(SegmentWriteState state, SimpleDVConsumer normsWriter) throws IOException {
     int docCount = state.segmentInfo.getDocCount();
-    if (!initialized()) {
-      return null; // null type - not omitted but not written
+    if (consumer == null) {
+      return; // null type - not omitted but not written
     }
     consumer.finish(docCount);
-    // nocommit change to assert normsConsumer != null
-    if (normsConsumer != null) {
-      // nocommit we need to change the suffix?  ie so norms
-      // don't step on dvs? hmmm.... where does this happen
-      // today ...
-      simpleNormsWriter.finish(docCount);
-      simpleNormsWriter.flush(state, normsConsumer);
-    } else {
-      // nocommit remove:
-      simpleNormsWriter.reset();
-    }
-    return initType;
+    consumer.flush(state, normsWriter);
   }
   
-  private DocValuesConsumer getConsumer(Type type) throws IOException {
-    if (consumer == null) {
-      if (fieldInfo.getNormType() != null && fieldInfo.getNormType() != type) {
-        throw new IllegalArgumentException("cannot change Norm type from " + fieldInfo.getNormType() + " to " + type + " for field \"" + fieldInfo.name + "\"");
-      }
-      if (!DocValues.isNumber(type) && !DocValues.isFloat(type)) {
-        throw new IllegalArgumentException("Norm type must be numeric (got type " + type + " for field \"" + fieldInfo.name + "\"");
-      }
-      fieldInfo.setNormValueType(type);
-      consumer = parent.newConsumer(docState.docWriter.newPerDocWriteState(""), fieldInfo, type);
-      this.initType = type;
-    }
-    if (initType != type) {
-      throw new IllegalArgumentException("NormTypes for field: " + fieldInfo.name + " doesn't match " + initType + " != " + type);
-    }
-    return consumer;
-  }
-  
-  boolean initialized() {
-    return consumer != null;
+  boolean isEmpty() {
+    return consumer == null;
   }
 
   @Override
   void abort() {
     //
   }
-
 }

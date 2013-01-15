@@ -30,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.DerefBytesDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
@@ -43,7 +44,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -132,18 +133,17 @@ public class TestSort extends LuceneTestCase {
     dirs.add(indexStore);
     RandomIndexWriter writer = new RandomIndexWriter(random(), indexStore, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
-    final DocValues.Type stringDVType;
+    final DocValuesType stringDVType;
     if (dvStringSorted) {
       // Index sorted
-      stringDVType = random().nextBoolean() ? DocValues.Type.BYTES_VAR_SORTED : DocValues.Type.BYTES_FIXED_SORTED;
+      stringDVType = DocValuesType.SORTED;
     } else {
-      // Index non-sorted
       if (random().nextBoolean()) {
-        // Fixed
-        stringDVType = random().nextBoolean() ? DocValues.Type.BYTES_FIXED_STRAIGHT : DocValues.Type.BYTES_FIXED_DEREF;
+        // Index non-sorted
+        stringDVType = DocValuesType.BINARY;
       } else {
-        // Var
-        stringDVType = random().nextBoolean() ? DocValues.Type.BYTES_VAR_STRAIGHT : DocValues.Type.BYTES_VAR_DEREF;
+        // sorted anyway
+        stringDVType = DocValuesType.SORTED;
       }
     }
 
@@ -167,23 +167,11 @@ public class TestSort extends LuceneTestCase {
         if (data[i][4] != null) {
           doc.add(new StringField("string", data[i][4], Field.Store.NO));
           switch(stringDVType) {
-            case BYTES_FIXED_SORTED:
-              doc.add(new SortedBytesDocValuesField("string_dv", new BytesRef(data[i][4]), true));
+            case SORTED:
+              doc.add(new SortedBytesDocValuesField("string_dv", new BytesRef(data[i][4])));
               break;
-            case BYTES_VAR_SORTED:
-              doc.add(new SortedBytesDocValuesField("string_dv", new BytesRef(data[i][4]), false));
-              break;
-            case BYTES_FIXED_STRAIGHT:
-              doc.add(new StraightBytesDocValuesField("string_dv", new BytesRef(data[i][4]), true));
-              break;
-            case BYTES_VAR_STRAIGHT:
-              doc.add(new StraightBytesDocValuesField("string_dv", new BytesRef(data[i][4]), false));
-              break;
-            case BYTES_FIXED_DEREF:
-              doc.add(new DerefBytesDocValuesField("string_dv", new BytesRef(data[i][4]), true));
-              break;
-            case BYTES_VAR_DEREF:
-              doc.add(new DerefBytesDocValuesField("string_dv", new BytesRef(data[i][4]), false));
+            case BINARY:
+              doc.add(new BinaryDocValuesField("string_dv", new BytesRef(data[i][4])));
               break;
             default:
               throw new IllegalStateException("unknown type " + stringDVType);

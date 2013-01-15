@@ -25,7 +25,6 @@ import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Norm;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
@@ -150,8 +149,8 @@ public class TestDocValuesScoring extends LuceneTestCase {
     }
     
     @Override
-    public void computeNorm(FieldInvertState state, Norm norm) {
-      sim.computeNorm(state, norm);
+    public long computeNorm(FieldInvertState state) {
+      return sim.computeNorm(state);
     }
 
     @Override

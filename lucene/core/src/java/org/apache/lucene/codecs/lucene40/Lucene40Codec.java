@@ -18,11 +18,9 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.LiveDocsFormat;
-import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.SimpleDocValuesFormat;
@@ -49,9 +47,7 @@ public final class Lucene40Codec extends Codec {
   private final StoredFieldsFormat fieldsFormat = new Lucene40StoredFieldsFormat();
   private final TermVectorsFormat vectorsFormat = new Lucene40TermVectorsFormat();
   private final FieldInfosFormat fieldInfosFormat = new Lucene40FieldInfosFormat();
-  private final DocValuesFormat docValuesFormat = new Lucene40DocValuesFormat();
   private final SegmentInfoFormat infosFormat = new Lucene40SegmentInfoFormat();
-  private final NormsFormat normsFormat = new Lucene40NormsFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat();
   
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
@@ -77,11 +73,6 @@ public final class Lucene40Codec extends Codec {
   }
 
   @Override
-  public final DocValuesFormat docValuesFormat() {
-    return docValuesFormat;
-  }
-
-  @Override
   public final PostingsFormat postingsFormat() {
     return postingsFormat;
   }
@@ -94,11 +85,6 @@ public final class Lucene40Codec extends Codec {
   @Override
   public final SegmentInfoFormat segmentInfoFormat() {
     return infosFormat;
-  }
-
-  @Override
-  public final NormsFormat normsFormat() {
-    return normsFormat;
   }
   
   // nocommit need a read-only Lucene40SimpleDVFormat

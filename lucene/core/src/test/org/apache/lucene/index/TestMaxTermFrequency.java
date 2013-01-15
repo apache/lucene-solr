@@ -30,7 +30,6 @@ import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.junit.Assume;
 
 /**
  * Tests the maxTermFrequency statistic in FieldInvertState
@@ -68,8 +67,6 @@ public class TestMaxTermFrequency extends LuceneTestCase {
   }
   
   public void test() throws Exception {
-    // nocommit remove
-    Assume.assumeTrue(_TestUtil.canUseSimpleNorms());
     NumericDocValues fooNorms = MultiSimpleDocValues.simpleNormValues(reader, "foo");
     for (int i = 0; i < reader.maxDoc(); i++) {
       assertEquals(expected.get(i).intValue(), fooNorms.get(i) & 0xff);

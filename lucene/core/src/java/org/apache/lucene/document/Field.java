@@ -29,7 +29,6 @@ import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.Norm; // javadocs
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.FieldInvertState; // javadocs
