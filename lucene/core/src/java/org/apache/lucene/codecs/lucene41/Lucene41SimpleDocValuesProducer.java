@@ -240,23 +240,22 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
           throw new RuntimeException(bogus);
         }
       }
-/* nocommit: WTF ant test  -Dtestcase=TestSearchAfter -Dtests.method=testQueries -Dtests.seed=701751F140F42B9D -Dtests.slow=true -Dtests.locale=es_DO -Dtests.timezone=Asia/Sakhalin -Dtests.file.encoding=UTF-8
+
       @Override
       public int lookupTerm(BytesRef key, BytesRef spare) {
         try {
           InputOutput<Long> o = fstEnum.seekCeil(key);
           if (o == null) {
             return -getValueCount()-1;
-          } else if (o.input.equals(Util.toIntsRef(spare, scratchInts))) {
-            return 0;
+          } else if (o.input.equals(key)) {
+            return o.output.intValue();
           } else {
-            return (int)-o.output-1;
+            return (int) -o.output-1;
           }
         } catch (IOException bogus) {
           throw new RuntimeException(bogus);
         }
       }
-      */
 
       @Override
       public int getValueCount() {
