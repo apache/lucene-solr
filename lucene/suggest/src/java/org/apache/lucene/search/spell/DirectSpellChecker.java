@@ -17,20 +17,12 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.PriorityQueue;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.BoostAttribute;
+import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
@@ -38,6 +30,14 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.PriorityQueue;
 
 /**
  * Simple automaton-based spellchecker.
@@ -65,28 +65,28 @@ public class DirectSpellChecker {
   public static final StringDistance INTERNAL_LEVENSHTEIN = new LuceneLevenshteinDistance();
 
   /** maximum edit distance for candidate terms */
-  private int maxEdits = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
+  protected int maxEdits = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
   /** minimum prefix for candidate terms */
-  private int minPrefix = 1;
+  protected int minPrefix = 1;
   /** maximum number of top-N inspections per suggestion */
-  private int maxInspections = 5;
+  protected int maxInspections = 5;
   /** minimum accuracy for a term to match */
-  private float accuracy = SpellChecker.DEFAULT_ACCURACY;
+  protected float accuracy = SpellChecker.DEFAULT_ACCURACY;
   /** value in [0..1] (or absolute number >=1) representing the minimum
     * number of documents (of the total) where a term should appear. */
-  private float thresholdFrequency = 0f;
+  protected float thresholdFrequency = 0f;
   /** minimum length of a query word to return suggestions */
-  private int minQueryLength = 4;
+  protected int minQueryLength = 4;
   /** value in [0..1] (or absolute number >=1) representing the maximum
    *  number of documents (of the total) a query term can appear in to
    *  be corrected. */
-  private float maxQueryFrequency = 0.01f;
+  protected float maxQueryFrequency = 0.01f;
   /** true if the spellchecker should lowercase terms */
-  private boolean lowerCaseTerms = true;
+  protected boolean lowerCaseTerms = true;
   /** the comparator to use */
-  private Comparator<SuggestWord> comparator = SuggestWordQueue.DEFAULT_COMPARATOR;
+  protected Comparator<SuggestWord> comparator = SuggestWordQueue.DEFAULT_COMPARATOR;
   /** the string distance to use */
-  private StringDistance distance = INTERNAL_LEVENSHTEIN;
+  protected StringDistance distance = INTERNAL_LEVENSHTEIN;
 
   /** Creates a DirectSpellChecker with default configuration values */
   public DirectSpellChecker() {}
@@ -384,8 +384,8 @@ public class DirectSpellChecker {
     }
     return suggestions;
   }
-  
-  private Collection<ScoreTerm> suggestSimilar(Term term, int numSug, 
+
+  protected Collection<ScoreTerm> suggestSimilar(Term term, int numSug,
       IndexReader ir, int docfreq, int editDistance, float accuracy, final CharsRef spare) throws IOException {
     
     AttributeSource atts = new AttributeSource();
@@ -449,8 +449,8 @@ public class DirectSpellChecker {
       
     return stQueue;
   }
-  
-  private static class ScoreTerm implements Comparable<ScoreTerm> {
+
+  protected static class ScoreTerm implements Comparable<ScoreTerm> {
     public BytesRef term;
     public float boost;
     public int docfreq;
