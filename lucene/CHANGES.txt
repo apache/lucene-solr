@@ -32,10 +32,8 @@ Changes in backwards compatibility policy
 
 ======================= Lucene 4.2.0 =======================
 
-API Changes
+(No changes yet)
 
-* LUCENE-4684: Made DirectSpellChecker extendable.
-  (Martijn van Groningen)
 
 ======================= Lucene 4.1.0 =======================
 
@@ -235,6 +233,9 @@ API Changes
 * LUCENE-4663: Deprecate IndexSearcher.document(int, Set). This was not intended
   to be final, nor named document(). Use IndexSearcher.doc(int, Set) instead.
   (Robert Muir)
+
+* LUCENE-4684: Made DirectSpellChecker extendable.
+  (Martijn van Groningen)
   
 Bug Fixes
 
