@@ -29,6 +29,12 @@ Changes in backwards compatibility policy
 * LUCENE-3298: FST can now be larger than 2.1 GB / 2.1 B nodes.
   (James Dyer, Mike McCandless)
 
+
+======================= Lucene 4.2.0 =======================
+
+(No changes yet)
+
+
 ======================= Lucene 4.1.0 =======================
 
 Changes in backwards compatibility policy

@@ -42,6 +42,27 @@ Other Changes
 ----------------------
 
 
+==================  4.2.0 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.2
+Carrot2 3.6.2
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
+Upgrading from Solr 4.1.0
+----------------------
+
+(No upgrade instructions yet)
+
+Detailed Change List
+----------------------
+
+(No changes yet)
+
+
 ==================  4.1.0 ==================
 
 Versions of Major Components
