@@ -52,6 +52,7 @@ import org.apache.lucene.index.DocValues.Source;
 import org.apache.lucene.index.DocValues.SourceCache.DirectSourceCache;
 import org.apache.lucene.index.DocValues.SourceCache;
 import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -83,7 +84,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
    * Simple test case to show how to use the API
    */
   public void testDocValuesSimple() throws IOException {
-    assumeTrue("requires simple dv", _TestUtil.canUseSimpleDV());
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, writerConfig(false));
     for (int i = 0; i < 5; i++) {
@@ -138,7 +138,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   public void testAddIndexes() throws IOException {
-    assumeTrue("requires simple dv", _TestUtil.canUseSimpleDV());
     Directory d1 = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d1);
     Document doc = new Document();
@@ -763,7 +762,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   public void testMultiValuedDocValuesField() throws Exception {
-    Assume.assumeTrue(_TestUtil.canUseSimpleDV());
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document doc = new Document();
@@ -791,7 +789,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   public void testDifferentTypedDocValuesField() throws Exception {
-    assumeTrue("requires simple dv", _TestUtil.canUseSimpleDV());
     Directory d = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), d);
     Document doc = new Document();
@@ -837,19 +834,15 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     doc.add(f);
     w.addDocument(doc);
     w.forceMerge(1);
-    if (_TestUtil.canUseSimpleDV()) {
-      DirectoryReader r = w.getReader();
-      assertEquals(17, getOnlySegmentReader(r).getNumericDocValues("field").get(0));
-      r.close();
-    }
+    DirectoryReader r = w.getReader();
+    assertEquals(17, getOnlySegmentReader(r).getNumericDocValues("field").get(0));
+    r.close();
     w.close();
     d.close();
   }
   
   public void testSortedBytes() throws IOException {
-    Type[] types = new Type[] { Type.BYTES_FIXED_SORTED, Type.BYTES_VAR_SORTED };
-    for (Type type : types) {
-      boolean fixed = type == Type.BYTES_FIXED_SORTED;
+      DocValuesType type = DocValuesType.SORTED;
       final Directory d = newDirectory();
       IndexWriterConfig cfg = newIndexWriterConfig(TEST_VERSION_CURRENT,
           new MockAnalyzer(random()));
@@ -861,10 +854,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       for (int i = 0; i < numDocs; i++) {
         Document doc = new Document();
         doc.add(newTextField("id", "" + i, Field.Store.YES));
-        String string = fixed ? _TestUtil.randomFixedByteLengthUnicodeString(random(),
-            len) : _TestUtil.randomRealisticUnicodeString(random(), 1, len);
+        String string = _TestUtil.randomRealisticUnicodeString(random(), 1, len);
         BytesRef br = new BytesRef(string);
-        doc.add(new SortedBytesDocValuesField("field", br, type == Type.BYTES_FIXED_SORTED));
+        doc.add(new SortedBytesDocValuesField("field", br));
         hash.add(br);
         docToString.put("" + i, string);
         w.addDocument(doc);
@@ -878,9 +870,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         doc.add(newTextField("id", "noValue", Field.Store.YES));
         w.addDocument(doc);
       }
-      BytesRef bytesRef = new BytesRef(fixed ? len : 0);
-      bytesRef.offset = 0;
-      bytesRef.length = fixed ? len : 0;
+      BytesRef bytesRef = new BytesRef();
       hash.add(bytesRef); // add empty value for the gaps
       if (rarely()) {
         w.commit();
@@ -889,28 +879,25 @@ public class TestDocValuesIndexing extends LuceneTestCase {
         Document doc = new Document();
         String id = "" + i + numDocs;
         doc.add(newTextField("id", id, Field.Store.YES));
-        String string = fixed ? _TestUtil.randomFixedByteLengthUnicodeString(random(),
-            len) : _TestUtil.randomRealisticUnicodeString(random(), 1, len);
+        String string = _TestUtil.randomRealisticUnicodeString(random(), 1, len);
         BytesRef br = new BytesRef(string);
         hash.add(br);
         docToString.put(id, string);
-        doc.add(new SortedBytesDocValuesField("field", br, type == Type.BYTES_FIXED_SORTED));
+        doc.add(new SortedBytesDocValuesField("field", br));
         w.addDocument(doc);
       }
       w.commit();
       IndexReader reader = w.getReader();
-      DocValues docValues = MultiDocValues.getDocValues(reader, "field");
-      Source source = getSource(docValues);
-      SortedSource asSortedSource = source.asSortedSource();
+      SortedDocValues docValues = MultiSimpleDocValues.simpleSortedValues(reader, "field");
       int[] sort = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
       BytesRef expected = new BytesRef();
       BytesRef actual = new BytesRef();
-      assertEquals(hash.size(), asSortedSource.getValueCount());
+      assertEquals(hash.size(), docValues.getValueCount());
       for (int i = 0; i < hash.size(); i++) {
         hash.get(sort[i], expected);
-        asSortedSource.getByOrd(i, actual);
+        docValues.lookupOrd(i, actual);
         assertEquals(expected.utf8ToString(), actual.utf8ToString());
-        int ord = asSortedSource.getOrdByValue(expected, actual);
+        int ord = docValues.lookupTerm(expected, actual);
         assertEquals(i, ord);
       }
       AtomicReader slowR = SlowCompositeReaderWrapper.wrap(reader);
@@ -919,13 +906,13 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       for (Entry<String, String> entry : entrySet) {
         int docId = docId(slowR, new Term("id", entry.getKey()));
         expected = new BytesRef(entry.getValue());
-        assertEquals(expected, asSortedSource.getBytes(docId, actual));
+        docValues.get(docId, actual);
+        assertEquals(expected, actual);
       }
 
       reader.close();
       w.close();
       d.close();
-    }
   }
   
   public int docId(AtomicReader reader, Term term) throws IOException {
@@ -938,7 +925,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
   }
 
   public void testWithThreads() throws Exception {
-    assumeTrue("requires simple dv", _TestUtil.canUseSimpleDV());
     Random random = random();
     final int NUM_DOCS = atLeast(100);
     final Directory dir = newDirectory();
@@ -1035,7 +1021,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
 
   // LUCENE-3870
   public void testLengthPrefixAcrossTwoPages() throws Exception {
-    assumeTrue("requires simple dv", _TestUtil.canUseSimpleDV());
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())));
     Document doc = new Document();
@@ -1100,10 +1085,9 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     FieldInfos fi = slow.getFieldInfos();
     FieldInfo dvInfo = fi.fieldInfo("dv");
     assertTrue(dvInfo.hasDocValues());
-    DocValues dv = slow.docValues("dv");
-    Source source = dv.getDirectSource();
+    NumericDocValues dv = slow.getNumericDocValues("dv");
     for (int i = 0; i < 50; i++) {
-      assertEquals(i, source.getInt(i));
+      assertEquals(i, dv.get(i));
       StoredDocument d = slow.document(i);
       // cannot use d.get("dv") due to another bug!
       assertNull(d.getField("dv"));
@@ -1285,22 +1269,6 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     dir2.close();
     w.close();
     dir.close();
-  }
-  
-  public static class NotCachingSourceCache extends SourceCache {
-   
-    @Override
-    public Source load(DocValues values) throws IOException {
-      return values.loadSource();
-    }
-   
-    @Override
-    public Source loadDirect(DocValues values) throws IOException {
-      return values.loadDirectSource();
-    }
-   
-    @Override
-    public void invalidate(DocValues values) {}
   }
  
   public NumericDocValues numeric(AtomicReader reader, String field) throws IOException {
