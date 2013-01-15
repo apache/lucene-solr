@@ -9,7 +9,6 @@ The Apache Software Foundation (http://www.apache.org/).
 Includes software from other Apache Software Foundation projects,
 including, but not limited to:
   - Apache Lucene Java
-  - Apache Tomcat (servlet-api-2.4)
   - Apache Commons
   - Apache Geronimo (stax API)
 
@@ -129,6 +128,9 @@ See http://junit.sourceforge.net/cpl-v10.html
 
 This product includes code (JaspellTernarySearchTrie) from Java Spelling Checking Package (jaspell): http://jaspell.sourceforge.net/
 License: The BSD License (http://www.opensource.org/licenses/bsd-license.php)
+
+Servlet-api.jar is under the CDDL license, the original source
+code for this can be found at http://www.eclipse.org/jetty/downloads.php
 
 ===========================================================================
 Kuromoji Japanese Morphological Analyzer - Apache Lucene Integration
