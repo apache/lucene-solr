@@ -31,10 +31,13 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.fst.BytesRefFSTEnum;
+import org.apache.lucene.util.fst.BytesRefFSTEnum.InputOutput;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
@@ -219,6 +222,7 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
     final Arc<Long> firstArc = new Arc<Long>();
     final Arc<Long> scratchArc = new Arc<Long>();
     final IntsRef scratchInts = new IntsRef();
+    final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<Long>(fst); 
     
     return new SortedDocValues() {
       @Override
@@ -232,6 +236,22 @@ class Lucene41SimpleDocValuesProducer extends SimpleDVProducer {
           in.setPosition(0);
           fst.getFirstArc(firstArc);
           Util.toBytesRef(Util.getByOutput(fst, ord, in, firstArc, scratchArc, scratchInts), result);
+        } catch (IOException bogus) {
+          throw new RuntimeException(bogus);
+        }
+      }
+
+      @Override
+      public int lookupTerm(BytesRef key, BytesRef spare) {
+        try {
+          InputOutput<Long> o = fstEnum.seekCeil(key);
+          if (o == null) {
+            return -getValueCount()-1;
+          } else if (o.input.equals(Util.toIntsRef(spare, scratchInts))) {
+            return 0;
+          } else {
+            return (int)-o.output-1;
+          }
         } catch (IOException bogus) {
           throw new RuntimeException(bogus);
         }
