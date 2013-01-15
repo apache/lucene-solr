@@ -24,15 +24,7 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.codecs.lucene40.values.Bytes;
-import org.apache.lucene.codecs.lucene40.values.Floats;
-import org.apache.lucene.codecs.lucene40.values.Ints;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.DocValues.SortedSource;
-import org.apache.lucene.index.DocValues.Source;
-import org.apache.lucene.index.DocValues.Type;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.StorableField;
@@ -46,6 +38,7 @@ import org.apache.lucene.util.packed.PackedInts;
 
 // TODO: some of this should be under lucene40 codec tests? is talking to codec directly?f
 public class TestDocValues extends LuceneTestCase {
+  /* nocommit
   private static final Comparator<BytesRef> COMP = BytesRef.getUTF8SortedAsUnicodeComparator();
   // TODO -- for sorted test, do our own Sort of the
   // values and verify it's identical
@@ -472,5 +465,5 @@ public class TestDocValues extends LuceneTestCase {
     public FieldType fieldType() {
       return null;
     }
-  }
+  }*/
 }
