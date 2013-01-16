@@ -346,6 +346,7 @@ public class HttpSolrServer extends SolrServer {
     method.addHeader("User-Agent", AGENT);
     
     InputStream respBody = null;
+    boolean shouldClose = true;
     
     try {
       // Execute the method.
@@ -378,6 +379,8 @@ public class HttpSolrServer extends SolrServer {
         // no processor specified, return raw stream
         NamedList<Object> rsp = new NamedList<Object>();
         rsp.add("stream", respBody);
+        // Only case where stream should not be closed
+        shouldClose = false;
         return rsp;
       }
       String charset = EntityUtils.getContentCharSet(response.getEntity());
@@ -413,7 +416,7 @@ public class HttpSolrServer extends SolrServer {
       throw new SolrServerException(
           "IOException occured when talking to server at: " + getBaseURL(), e);
     } finally {
-      if (respBody != null && processor!=null) {
+      if (respBody != null && shouldClose) {
         try {
           respBody.close();
         } catch (Throwable t) {} // ignore
