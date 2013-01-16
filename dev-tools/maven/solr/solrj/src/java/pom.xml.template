@@ -76,12 +76,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-    <!-- Need log4j api so long as Zookeeper does; see https://issues.apache.org/jira/browse/ZOOKEEPER-850 -->
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>log4j-over-slf4j</artifactId>
-      <optional>true</optional>  <!-- let the end user decide... they may be using log4j directly! -->
-    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>jcl-over-slf4j</artifactId>
