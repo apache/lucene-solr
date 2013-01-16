@@ -43,6 +43,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.AfterClass;
@@ -65,8 +66,7 @@ import org.junit.BeforeClass;
  * limitations under the License.
  */
 
-/** Base faceted search test. */
-@SuppressCodecs("Lucene3x")
+@SuppressCodecs({"SimpleText", "Lucene3x"})
 public abstract class FacetTestBase extends LuceneTestCase {
   
   /** Holds a search and taxonomy Directories pair. */
