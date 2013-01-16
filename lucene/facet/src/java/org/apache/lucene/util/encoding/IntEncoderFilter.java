@@ -31,9 +31,4 @@ public abstract class IntEncoderFilter extends IntEncoder {
     this.encoder = encoder;
   }
 
-  @Override
-  public void reset() {
-    encoder.reset();
-  }
-
 }

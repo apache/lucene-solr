@@ -26,7 +26,7 @@ import org.apache.lucene.util.IntsRef;
  * 
  * @lucene.experimental
  */
-public class DGapIntDecoder extends IntDecoder {
+public final class DGapIntDecoder extends IntDecoder {
 
   private final IntDecoder decoder;
 
@@ -35,13 +35,8 @@ public class DGapIntDecoder extends IntDecoder {
   }
 
   @Override
-  protected void reset() {
-    decoder.reset();
-  }
-  
-  @Override
-  protected void doDecode(BytesRef buf, IntsRef values, int upto) {
-    decoder.doDecode(buf, values, upto);
+  public void decode(BytesRef buf, IntsRef values) {
+    decoder.decode(buf, values);
     int prev = 0;
     for (int i = 0; i < values.length; i++) {
       values.ints[i] += prev;
@@ -51,7 +46,7 @@ public class DGapIntDecoder extends IntDecoder {
 
   @Override
   public String toString() {
-    return "DGap (" + decoder.toString() + ")";
+    return "DGap(" + decoder.toString() + ")";
   }
 
 }

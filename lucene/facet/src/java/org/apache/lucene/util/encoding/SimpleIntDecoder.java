@@ -1,7 +1,9 @@
 package org.apache.lucene.util.encoding;
 
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,19 +27,24 @@ import org.apache.lucene.util.IntsRef;
  * 
  * @lucene.experimental
  */
-public class SimpleIntDecoder extends IntDecoder {
+public final class SimpleIntDecoder extends IntDecoder {
 
   @Override
-  protected void doDecode(BytesRef buf, IntsRef values, int upto) {
-    while (buf.offset < upto) {
-      if (values.length == values.ints.length) {
-        values.grow(values.length + 10); // grow by few items, however not too many
-      }
+  public void decode(BytesRef buf, IntsRef values) {
+    values.offset = values.length = 0;
+    int numValues = buf.length / 4; // every value is 4 bytes
+    if (values.ints.length < numValues) { // offset and length are 0
+      values.ints = new int[ArrayUtil.oversize(numValues, RamUsageEstimator.NUM_BYTES_INT)];
+    }
+    
+    int offset = buf.offset;
+    int upto = buf.offset + buf.length;
+    while (offset < upto) {
       values.ints[values.length++] = 
-          ((buf.bytes[buf.offset++] & 0xFF) << 24) | 
-          ((buf.bytes[buf.offset++] & 0xFF) << 16) | 
-          ((buf.bytes[buf.offset++] & 0xFF) <<  8) | 
-          (buf.bytes[buf.offset++] & 0xFF);
+          ((buf.bytes[offset++] & 0xFF) << 24) | 
+          ((buf.bytes[offset++] & 0xFF) << 16) | 
+          ((buf.bytes[offset++] & 0xFF) <<  8) | 
+          (buf.bytes[offset++] & 0xFF);
     }
   }
 

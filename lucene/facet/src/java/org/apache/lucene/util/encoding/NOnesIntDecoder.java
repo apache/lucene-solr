@@ -42,14 +42,10 @@ public class NOnesIntDecoder extends FourFlagsIntDecoder {
   }
 
   @Override
-  protected void reset() {
+  public void decode(BytesRef buf, IntsRef values) {
+    values.offset = values.length = 0;
     internalBuffer.length = 0;
-    super.reset();
-  }
-  
-  @Override
-  protected void doDecode(BytesRef buf, IntsRef values, int upto) {
-    super.doDecode(buf, internalBuffer, upto);
+    super.decode(buf, internalBuffer);
     if (values.ints.length < internalBuffer.length) {
       // need space for internalBuffer.length to internalBuffer.length*N,
       // grow mildly at first
@@ -84,7 +80,7 @@ public class NOnesIntDecoder extends FourFlagsIntDecoder {
 
   @Override
   public String toString() {
-    return "NOnes (" + n + ") (" + super.toString() + ")";
+    return "NOnes(" + n + ") (" + super.toString() + ")";
   }
 
 }

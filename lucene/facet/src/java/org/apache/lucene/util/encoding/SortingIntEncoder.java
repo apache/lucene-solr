@@ -28,7 +28,7 @@ import org.apache.lucene.util.IntsRef;
  * 
  * @lucene.experimental
  */
-public class SortingIntEncoder extends IntEncoderFilter {
+public final class SortingIntEncoder extends IntEncoderFilter {
 
   /** Initializes with the given encoder. */
   public SortingIntEncoder(IntEncoder encoder) {
@@ -36,9 +36,9 @@ public class SortingIntEncoder extends IntEncoderFilter {
   }
 
   @Override
-  protected void doEncode(IntsRef values, BytesRef buf, int upto) {
-    Arrays.sort(values.ints, values.offset, upto);
-    encoder.doEncode(values, buf, upto);
+  public void encode(IntsRef values, BytesRef buf) {
+    Arrays.sort(values.ints, values.offset, values.offset + values.length);
+    encoder.encode(values, buf);
   }
 
   @Override
@@ -48,7 +48,7 @@ public class SortingIntEncoder extends IntEncoderFilter {
   
   @Override
   public String toString() {
-    return "Sorting (" + encoder.toString() + ")";
+    return "Sorting(" + encoder.toString() + ")";
   }
   
 }
