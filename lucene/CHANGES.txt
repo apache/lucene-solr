@@ -40,6 +40,11 @@ Changes in backwards compatibility policy
   support in-memory caching, CategoryListCache was removed too.
   (Shai Erera, Michael McCandless)
 
+New Features
+
+* LUCENE-4686: New specialized DGapVInt8IntEncoder for facets (now the 
+  default). (Shai Erera)
+
 ======================= Lucene 4.1.0 =======================
 
 Changes in backwards compatibility policy

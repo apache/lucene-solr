@@ -1,12 +1,11 @@
 package org.apache.lucene.facet.index.params;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.encoding.DGapIntEncoder;
+import org.apache.lucene.util.encoding.DGapVInt8IntEncoder;
 import org.apache.lucene.util.encoding.IntDecoder;
 import org.apache.lucene.util.encoding.IntEncoder;
 import org.apache.lucene.util.encoding.SortingIntEncoder;
 import org.apache.lucene.util.encoding.UniqueValuesIntEncoder;
-import org.apache.lucene.util.encoding.VInt8IntEncoder;
 import org.junit.Test;
 
 /*
@@ -32,7 +31,7 @@ public class CategoryListParamsTest extends LuceneTestCase {
   public void testDefaultSettings() {
     CategoryListParams clp = new CategoryListParams();
     assertEquals("wrong default field", "$facets", clp.field);
-    IntEncoder encoder = new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder())));
+    IntEncoder encoder = new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapVInt8IntEncoder()));
     IntDecoder decoder = encoder.createMatchingDecoder();
     assertEquals("unexpected default encoder", encoder.toString(), clp.createEncoder().toString());
     assertEquals("unexpected default decoder", decoder.toString(), clp.createEncoder().createMatchingDecoder().toString());

@@ -6,12 +6,11 @@ import java.io.Serializable;
 import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.search.DocValuesCategoryListIterator;
 import org.apache.lucene.facet.util.PartitionsUtils;
-import org.apache.lucene.util.encoding.DGapIntEncoder;
+import org.apache.lucene.util.encoding.DGapVInt8IntEncoder;
 import org.apache.lucene.util.encoding.IntDecoder;
 import org.apache.lucene.util.encoding.IntEncoder;
 import org.apache.lucene.util.encoding.SortingIntEncoder;
 import org.apache.lucene.util.encoding.UniqueValuesIntEncoder;
-import org.apache.lucene.util.encoding.VInt8IntEncoder;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -78,7 +77,7 @@ public class CategoryListParams implements Serializable {
    * counting facets.
    */
   public IntEncoder createEncoder() {
-    return new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder())));
+    return new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapVInt8IntEncoder()));
   }
 
   @Override
