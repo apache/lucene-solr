@@ -1,7 +1,8 @@
-package org.apache.lucene.facet;
+package org.apache.lucene.facet.search;
 
 import java.util.List;
 
+import org.apache.lucene.facet.FacetTestBase;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
