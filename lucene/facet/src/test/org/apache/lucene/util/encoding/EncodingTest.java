@@ -150,5 +150,10 @@ public class EncodingTest extends LuceneTestCase {
   public void testSortingUniqueDGapNOnes3() throws Exception {
     encoderTest(new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new NOnesIntEncoder(3)))), data, uniqueSortedData);
   }
+  
+  @Test
+  public void testSortingUniqueDGapVInt() throws Exception {
+    encoderTest(new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapVInt8IntEncoder())), data, uniqueSortedData);
+  }
 
 }

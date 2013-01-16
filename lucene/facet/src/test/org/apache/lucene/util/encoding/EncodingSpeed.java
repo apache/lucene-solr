@@ -77,6 +77,7 @@ public class EncodingSpeed {
     encoderTest(new VInt8IntEncoder(), facetIDs, loopFactor);
     encoderTest(new SortingIntEncoder(new UniqueValuesIntEncoder(new VInt8IntEncoder())), facetIDs, loopFactor);
     encoderTest(new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder()))), facetIDs, loopFactor);
+    encoderTest(new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapVInt8IntEncoder())), facetIDs, loopFactor);
     encoderTest(new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new EightFlagsIntEncoder()))), facetIDs, loopFactor);
     encoderTest(new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new FourFlagsIntEncoder()))), facetIDs, loopFactor);
     encoderTest(new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new NOnesIntEncoder(3)))), facetIDs, loopFactor);
