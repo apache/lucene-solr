@@ -115,7 +115,7 @@ def prepare(root, version, gpgKeyID, doTest):
 def push(version, root, rev, rcNum, username):
   print('Push...')
   dir = 'lucene-solr-%s-RC%d-rev%s' % (version, rcNum, rev)
-  s = os.popen('ssh %s@people.apache.org "ls -ld public_html/staging_area/%s" 2>&1' % (username, dir)).read().decode('UTF-8')
+  s = os.popen('ssh %s@people.apache.org "ls -ld public_html/staging_area/%s" 2>&1' % (username, dir)).read()
   if 'no such file or directory' not in s.lower():
     print('  Remove old dir...')
     run('ssh %s@people.apache.org "chmod -R u+rwX public_html/staging_area/%s; rm -rf public_html/staging_area/%s"' % 
