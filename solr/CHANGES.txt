@@ -562,6 +562,9 @@ Bug Fixes
 
 * SOLR-4303: On replication, if the generation of the master is lower than the
   slave we need to force a full copy of the index. (Mark Miller, Gregg Donovan)
+  
+* SOLR-4266: HttpSolrServer does not release connection properly on exception
+  when no response parser is used. (Steve Molloy via Mark Miller)
 
 Other Changes
 ----------------------
