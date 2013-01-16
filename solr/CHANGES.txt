@@ -299,6 +299,9 @@ Optimizations
 Bug Fixes
 ----------------------
 
+* SOLR-4288: Improve logging for FileDataSource (basePath, relative 
+  resources). (Dawid Weiss)
+
 * SOLR-4007: Morfologik dictionaries not available in Solr field type
   due to class loader lookup problems. (Lance Norskog, Dawid Weiss)
 
