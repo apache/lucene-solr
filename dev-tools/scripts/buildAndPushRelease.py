@@ -89,7 +89,7 @@ def prepare(root, version, gpgKeyID, doTest):
 
   print('  clean checkout')
   scrubCheckout()
-  open('rev.txt', mode='wb', encoding='UTF-8').write(rev)
+  open('rev.txt', mode='wb').write(rev.encode('UTF-8'))
   
   print('  lucene prepare-release')
   os.chdir('lucene')
