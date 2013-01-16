@@ -65,28 +65,28 @@ public class DirectSpellChecker {
   public static final StringDistance INTERNAL_LEVENSHTEIN = new LuceneLevenshteinDistance();
 
   /** maximum edit distance for candidate terms */
-  protected int maxEdits = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
+  public int maxEdits = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
   /** minimum prefix for candidate terms */
-  protected int minPrefix = 1;
+  public int minPrefix = 1;
   /** maximum number of top-N inspections per suggestion */
-  protected int maxInspections = 5;
+  public int maxInspections = 5;
   /** minimum accuracy for a term to match */
-  protected float accuracy = SpellChecker.DEFAULT_ACCURACY;
+  public float accuracy = SpellChecker.DEFAULT_ACCURACY;
   /** value in [0..1] (or absolute number >=1) representing the minimum
     * number of documents (of the total) where a term should appear. */
-  protected float thresholdFrequency = 0f;
+  public float thresholdFrequency = 0f;
   /** minimum length of a query word to return suggestions */
-  protected int minQueryLength = 4;
+  public int minQueryLength = 4;
   /** value in [0..1] (or absolute number >=1) representing the maximum
    *  number of documents (of the total) a query term can appear in to
    *  be corrected. */
-  protected float maxQueryFrequency = 0.01f;
+  public float maxQueryFrequency = 0.01f;
   /** true if the spellchecker should lowercase terms */
-  protected boolean lowerCaseTerms = true;
+  public boolean lowerCaseTerms = true;
   /** the comparator to use */
-  protected Comparator<SuggestWord> comparator = SuggestWordQueue.DEFAULT_COMPARATOR;
+  public Comparator<SuggestWord> comparator = SuggestWordQueue.DEFAULT_COMPARATOR;
   /** the string distance to use */
-  protected StringDistance distance = INTERNAL_LEVENSHTEIN;
+  public StringDistance distance = INTERNAL_LEVENSHTEIN;
 
   /** Creates a DirectSpellChecker with default configuration values */
   public DirectSpellChecker() {}
@@ -385,8 +385,21 @@ public class DirectSpellChecker {
     return suggestions;
   }
 
-  protected Collection<ScoreTerm> suggestSimilar(Term term, int numSug,
-      IndexReader ir, int docfreq, int editDistance, float accuracy, final CharsRef spare) throws IOException {
+  /**
+   * Provide spelling corrections based on several parameters.
+   *
+   * @param term The term to suggest spelling corrections for
+   * @param numSug The maximum number of spelling corrections
+   * @param ir The index reader to fetch the candidate spelling corrections from
+   * @param docfreq The minimum document frequency a potential suggestion need to have in order to be included
+   * @param editDistance The maximum edit distance candidates are allowed to have
+   * @param accuracy The minimum accuracy a suggested spelling correction needs to have in order to be included
+   * @param spare a chars scratch
+   * @return a collection of spelling corrections sorted by <code>ScoreTerm</code>'s natural order.
+   * @throws IOException If I/O related errors occur
+   */
+  protected Collection<ScoreTerm> suggestSimilar(Term term, int numSug, IndexReader ir, int docfreq, int editDistance,
+                                                 float accuracy, final CharsRef spare) throws IOException {
     
     AttributeSource atts = new AttributeSource();
     MaxNonCompetitiveBoostAttribute maxBoostAtt =
@@ -450,6 +463,9 @@ public class DirectSpellChecker {
     return stQueue;
   }
 
+  /**
+   * Holds a spelling correction for internal usage inside {@link DirectSpellChecker}.
+   */
   protected static class ScoreTerm implements Comparable<ScoreTerm> {
     public BytesRef term;
     public float boost;
