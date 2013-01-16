@@ -236,14 +236,18 @@ New Features
   numShards=N is specified on collection creation).  Documents with ids sharing
   the same domain (prefix) will be routed to the same shard, allowing for
   efficient querying.
-  Example: 
+
+  Example:
     The following two documents will be indexed to the same shard
     since they share the same domain "customerB!". 
+    <code>
        {"id" : "customerB!doc1" [...] }
        {"id" : "customerB!doc2" [...] }
+    </code>
     At query time, one can specify a "shard.keys" parameter that lists what
     shards the query should cover.
-       http://.../query?q=my_query&shard.keys=customerB! 
+       http://.../query?q=my_query&shard.keys=customerB!
+
   Collections that do not specify numShards at collection creation time
   use custom sharding and default to the "implicit" router.  Document updates
   received by a shard will be indexed to that shard, unless a "_shard_" parameter
@@ -392,7 +396,7 @@ Bug Fixes
 
 * SOLR-4064: When there is an unexpected exception while trying to run the new
   leader process, the SolrCore will not correctly rejoin the election.
-  (Po Rui Via Mark Miller)
+  (Po Rui via Mark Miller)
 
 * SOLR-3989: SolrZkClient constructor dropped exception cause when throwing
   a new RuntimeException. (Colin Bartolome, yonik)
