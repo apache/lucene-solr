@@ -65,28 +65,28 @@ public class DirectSpellChecker {
   public static final StringDistance INTERNAL_LEVENSHTEIN = new LuceneLevenshteinDistance();
 
   /** maximum edit distance for candidate terms */
-  public int maxEdits = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
+  private int maxEdits = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
   /** minimum prefix for candidate terms */
-  public int minPrefix = 1;
+  private int minPrefix = 1;
   /** maximum number of top-N inspections per suggestion */
-  public int maxInspections = 5;
+  private int maxInspections = 5;
   /** minimum accuracy for a term to match */
-  public float accuracy = SpellChecker.DEFAULT_ACCURACY;
+  private float accuracy = SpellChecker.DEFAULT_ACCURACY;
   /** value in [0..1] (or absolute number >=1) representing the minimum
     * number of documents (of the total) where a term should appear. */
-  public float thresholdFrequency = 0f;
+  private float thresholdFrequency = 0f;
   /** minimum length of a query word to return suggestions */
-  public int minQueryLength = 4;
+  private int minQueryLength = 4;
   /** value in [0..1] (or absolute number >=1) representing the maximum
    *  number of documents (of the total) a query term can appear in to
    *  be corrected. */
-  public float maxQueryFrequency = 0.01f;
+  private float maxQueryFrequency = 0.01f;
   /** true if the spellchecker should lowercase terms */
-  public boolean lowerCaseTerms = true;
+  private boolean lowerCaseTerms = true;
   /** the comparator to use */
-  public Comparator<SuggestWord> comparator = SuggestWordQueue.DEFAULT_COMPARATOR;
+  private Comparator<SuggestWord> comparator = SuggestWordQueue.DEFAULT_COMPARATOR;
   /** the string distance to use */
-  public StringDistance distance = INTERNAL_LEVENSHTEIN;
+  private StringDistance distance = INTERNAL_LEVENSHTEIN;
 
   /** Creates a DirectSpellChecker with default configuration values */
   public DirectSpellChecker() {}
