@@ -467,13 +467,38 @@ public class DirectSpellChecker {
    * Holds a spelling correction for internal usage inside {@link DirectSpellChecker}.
    */
   protected static class ScoreTerm implements Comparable<ScoreTerm> {
+
+    /**
+     * The actual spellcheck correction.
+     */
     public BytesRef term;
+
+    /**
+     * The boost representing the similarity from the FuzzyTermsEnum (internal similarity score)
+     */
     public float boost;
+
+    /**
+     * The df of the spellcheck correction.
+     */
     public int docfreq;
-    
+
+    /**
+     * The spellcheck correction represented as string, can be <code>null</code>.
+     */
     public String termAsString;
+
+    /**
+     * The similarity score.
+     */
     public float score;
-    
+
+    /**
+     * Constructor.
+     */
+    public ScoreTerm() {
+    }
+
     @Override
     public int compareTo(ScoreTerm other) {
       if (term.bytesEquals(other.term))
