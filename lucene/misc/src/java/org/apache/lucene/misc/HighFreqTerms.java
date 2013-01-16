@@ -40,11 +40,13 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 /**
- * 
  * <code>HighFreqTerms</code> class extracts the top n most frequent terms
- * (by document frequency ) from an existing Lucene index and reports their document frequencey.
- * If the -t flag is  and reports both their document frequency and their total tf (total number of occurences) 
- * in order of highest total tf
+ * (by document frequency) from an existing Lucene index and reports their
+ * document frequency.
+ * <p>
+ * If the -t flag is given, both document frequency and total tf (total
+ * number of occurrences) are reported, ordered by descending total tf.
+ *
  */
 public class HighFreqTerms {
   
