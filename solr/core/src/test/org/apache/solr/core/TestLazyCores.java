@@ -248,10 +248,10 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
 
-  static List<SolrCore> _theCores = new ArrayList<SolrCore>();
   // Test case for SOLR-4300
   @Test
   public void testRace() throws Exception {
+    final List<SolrCore> _theCores = new ArrayList<SolrCore>();
     final CoreContainer cc = init();
     try {
 
