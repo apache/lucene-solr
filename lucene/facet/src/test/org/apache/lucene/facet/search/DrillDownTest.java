@@ -60,8 +60,8 @@ public class DrillDownTest extends LuceneTestCase {
   
   public DrillDownTest() {
     Map<CategoryPath,CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
-    paramsMap.put(new CategoryPath("a"), new CategoryListParams(new Term("testing_facets_a", "a")));
-    paramsMap.put(new CategoryPath("b"), new CategoryListParams(new Term("testing_facets_b", "b")));
+    paramsMap.put(new CategoryPath("a"), new CategoryListParams("testing_facets_a"));
+    paramsMap.put(new CategoryPath("b"), new CategoryListParams("testing_facets_b"));
     nonDefaultParams = new PerDimensionIndexingParams(paramsMap);
   }
 
@@ -113,8 +113,8 @@ public class DrillDownTest extends LuceneTestCase {
   }
   
   @Test
-  public void testTermDefault() {
-    String defaultField = CategoryListParams.DEFAULT_TERM.field();
+  public void testDefaultField() {
+    String defaultField = CategoryListParams.DEFAULT_FIELD;
     
     Term termA = DrillDown.term(defaultParams, new CategoryPath("a"));
     assertEquals(new Term(defaultField, "a"), termA);

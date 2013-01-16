@@ -266,13 +266,12 @@ public abstract class FacetTestBase extends LuceneTestCase {
     FacetIndexingParams iParams = getFacetIndexingParams(Integer.MAX_VALUE);
     String delim = String.valueOf(iParams.getFacetDelimChar());
     Map<CategoryPath, Integer> res = new HashMap<CategoryPath, Integer>();
-    HashSet<Term> handledTerms = new HashSet<Term>();
+    HashSet<String> handledTerms = new HashSet<String>();
     for (CategoryListParams clp : iParams.getAllCategoryListParams()) {
-      Term baseTerm = new Term(clp.getTerm().field());
-      if (!handledTerms.add(baseTerm)) {
+      if (!handledTerms.add(clp.field)) {
         continue; // already handled this term (for another list) 
       }
-      Terms terms = MultiFields.getTerms(indexReader, baseTerm.field());
+      Terms terms = MultiFields.getTerms(indexReader, clp.field);
       if (terms == null) {
         continue;
       }
@@ -297,7 +296,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
       FacetResultNode topResNode = fr.getFacetResultNode();
       FacetRequest freq = fr.getFacetRequest();
       if (VERBOSE) {
-        System.out.println(freq.getCategoryPath().toString()+ "\t\t" + topResNode);
+        System.out.println(freq.categoryPath.toString()+ "\t\t" + topResNode);
       }
       assertCountsAndCardinality(facetCountsTruth, topResNode, freq.getNumResults());
     }

@@ -9,8 +9,7 @@ import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.search.CategoryListIterator;
-import org.apache.lucene.facet.search.PayloadCategoryListIteraor;
-import org.apache.lucene.facet.search.cache.CategoryListCache;
+import org.apache.lucene.facet.search.DocValuesCategoryListIterator;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -20,7 +19,6 @@ import org.apache.lucene.facet.util.MultiCategoryListIterator;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
@@ -60,7 +58,7 @@ public class MultiCategoryListIteratorTest extends LuceneTestCase {
     HashMap<CategoryPath,CategoryListParams> clps = new HashMap<CategoryPath,CategoryListParams>();
     for (String dim : dimensions) {
       CategoryPath cp = new CategoryPath(dim);
-      CategoryListParams clp = new CategoryListParams(new Term("$" + dim, CategoryListParams.DEFAULT_TERM.bytes()));
+      CategoryListParams clp = new CategoryListParams("$" + dim);
       clps.put(cp, clp);
     }
     PerDimensionIndexingParams indexingParams = new PerDimensionIndexingParams(clps);
@@ -86,23 +84,13 @@ public class MultiCategoryListIteratorTest extends LuceneTestCase {
     IOUtils.close(indexWriter, taxoWriter);
     
     // test the multi iterator
-    CategoryListCache clCache = null;
-    if (random.nextBoolean()) {
-      clCache = new CategoryListCache();
-    }
-    
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
     CategoryListIterator[] iterators = new CategoryListIterator[numDimensions];
     for (int i = 0; i < iterators.length; i++) {
       CategoryListParams clp = indexingParams.getCategoryListParams(new CategoryPath(dimensions[i]));
       IntDecoder decoder = clp.createEncoder().createMatchingDecoder();
-      if (clCache != null && random.nextBoolean()) {
-        clCache.loadAndRegister(clp, indexReader, taxoReader, indexingParams);
-        iterators[i] = clCache.get(clp).iterator(0); // no partitions
-      } else {
-        iterators[i] = new PayloadCategoryListIteraor(clp.getTerm(), decoder);
-      }
+      iterators[i] = new DocValuesCategoryListIterator(clp.field, decoder);
     }
     MultiCategoryListIterator cli = new MultiCategoryListIterator(iterators);
     for (AtomicReaderContext context : indexReader.leaves()) {

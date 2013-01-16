@@ -2,14 +2,9 @@ package org.apache.lucene.facet;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
-import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
@@ -23,7 +18,6 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -116,15 +110,6 @@ public class FacetTestUtils {
     return collectors;
   }
   
-  public static void add(FacetIndexingParams iParams, RandomIndexWriter iw,
-      TaxonomyWriter tw, String... strings) throws IOException {
-    Document d = new Document();
-    FacetFields facetFields = new FacetFields(tw, iParams);
-    facetFields.addFields(d, Collections.singletonList(new CategoryPath(strings)));
-    d.add(new TextField("content", "alpha", Field.Store.YES));
-    iw.addDocument(d);
-  }
-
   public static class IndexTaxonomyReaderPair {
     public DirectoryReader indexReader;
     public DirectoryTaxonomyReader taxReader;

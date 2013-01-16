@@ -78,7 +78,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     @Override
     public void run() {
       try {
-        tfc = TFC.getTotalCounts(r, tr, iParams, null);
+        tfc = TFC.getTotalCounts(r, tr, iParams);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -264,29 +264,29 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     // As this is the first time we have invoked the TotalFacetCountsManager, 
     // we should expect to compute and not read from disk.
     TotalFacetCounts totalCounts = 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     int prevGen = assertRecomputed(totalCounts, 0, "after first attempt to get it!");
 
     // Repeating same operation should pull from the cache - not recomputed. 
     assertTrue("Should be obtained from cache at 2nd attempt",totalCounts == 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null));
+      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams));
 
     // Repeat the same operation as above. but clear first - now should recompute again
     initCache();
-    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     prevGen = assertRecomputed(totalCounts, prevGen, "after cache clear, 3rd attempt to get it!");
     
     //store to file
     File outputFile = _TestUtil.createTempFile("test", "tmp", TEMP_DIR);
     initCache();
-    TFC.store(outputFile, readers[0].indexReader, readers[0].taxReader, iParams, null);
-    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+    TFC.store(outputFile, readers[0].indexReader, readers[0].taxReader, iParams);
+    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     prevGen = assertRecomputed(totalCounts, prevGen, "after cache clear, 4th attempt to get it!");
 
     //clear and load
     initCache();
     TFC.load(outputFile, readers[0].indexReader, readers[0].taxReader, iParams);
-    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     prevGen = assertReadFromDisc(totalCounts, prevGen, "after 5th attempt to get it!");
 
     // Add a new facet to the index, commit and refresh readers
@@ -306,12 +306,12 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     readers[0].indexReader = r2;
 
     // now use the new reader - should recompute
-    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     prevGen = assertRecomputed(totalCounts, prevGen, "after updating the index - 7th attempt!");
 
     // try again - should not recompute
     assertTrue("Should be obtained from cache at 8th attempt",totalCounts == 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null));
+      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams));
     
     readers[0].close();
     outputFile.delete();
@@ -361,7 +361,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
 
     // Create TFC and write cache to disk
     File outputFile = _TestUtil.createTempFile("test", "tmp", TEMP_DIR);
-    TFC.store(outputFile, readers[0].indexReader, readers[0].taxReader, iParams, null);
+    TFC.store(outputFile, readers[0].indexReader, readers[0].taxReader, iParams);
     
     // Make the taxonomy grow without touching the index
     for (int i = 0; i < 10; i++) {
@@ -377,8 +377,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
 
     // With the bug, this next call should result in an exception
     TFC.load(outputFile, readers[0].indexReader, readers[0].taxReader, iParams);
-    TotalFacetCounts totalCounts = TFC.getTotalCounts(
-        readers[0].indexReader, readers[0].taxReader, iParams, null);
+    TotalFacetCounts totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     assertReadFromDisc(totalCounts, 0, "after reading from disk.");
     outputFile.delete();
     writers[0].close();
@@ -467,28 +466,25 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     // As this is the first time we have invoked the TotalFacetCountsManager, we
     // should expect to compute.
     TotalFacetCounts totalCounts0 = 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     int prevGen = -1;
     prevGen = assertRecomputed(totalCounts0, prevGen, "after attempt 1");
     assertTrue("attempt 1b for same input [0] shout find it in cache",
-        totalCounts0 == TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null));
+        totalCounts0 == TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams));
     
     // 2nd Reader - As this is the first time we have invoked the
     // TotalFacetCountsManager, we should expect a state of NEW to be returned.
-    TotalFacetCounts totalCounts1 = 
-      TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams, null);
+    TotalFacetCounts totalCounts1 = TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams);
     prevGen = assertRecomputed(totalCounts1, prevGen, "after attempt 2");
     assertTrue("attempt 2b for same input [1] shout find it in cache",
-        totalCounts1 == TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams, null));
+        totalCounts1 == TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams));
 
     // Right now cache size is one, so first TFC is gone and should be recomputed  
-    totalCounts0 = 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+    totalCounts0 = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     prevGen = assertRecomputed(totalCounts0, prevGen, "after attempt 3");
     
     // Similarly will recompute the second result  
-    totalCounts1 = 
-      TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams, null);
+    totalCounts1 = TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams);
     prevGen = assertRecomputed(totalCounts1, prevGen, "after attempt 4");
 
     // Now we set the cache size to two, meaning both should exist in the
@@ -496,17 +492,15 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     TFC.setCacheSize(2);
 
     // Re-compute totalCounts0 (was evicted from the cache when the cache was smaller)
-    totalCounts0 = 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+    totalCounts0 = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     prevGen = assertRecomputed(totalCounts0, prevGen, "after attempt 5");
 
     // now both are in the larger cache and should not be recomputed 
-    totalCounts1 = TFC.getTotalCounts(readers[1].indexReader,
-        readers[1].taxReader, iParams, null);
+    totalCounts1 = TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams);
     assertTrue("with cache of size 2 res no. 0 should come from cache",
-        totalCounts0 == TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null));
+        totalCounts0 == TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams));
     assertTrue("with cache of size 2 res no. 1 should come from cache",
-        totalCounts1 == TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams, null));
+        totalCounts1 == TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams));
     
     writers[0].close();
     writers[1].close();

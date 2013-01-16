@@ -32,8 +32,13 @@ Changes in backwards compatibility policy
 
 ======================= Lucene 4.2.0 =======================
 
-(No changes yet)
+Changes in backwards compatibility policy
 
+* LUCENE-4602: FacetFields now stores facet ordinals in a DocValues field, 
+  rather than a payload. This forces rebuilding existing indexes, or do a
+  one time migration using FacetsPayloadMigratingReader. Since DocValues 
+  support in-memory caching, CategoryListCache was removed too.
+  (Shai Erera, Michael McCandless)
 
 ======================= Lucene 4.1.0 =======================
 

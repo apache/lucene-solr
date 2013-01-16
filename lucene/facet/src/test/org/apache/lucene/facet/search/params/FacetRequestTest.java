@@ -32,12 +32,12 @@ public class FacetRequestTest extends LuceneTestCase {
 
   @Test(expected=IllegalArgumentException.class)
   public void testIllegalNumResults() throws Exception {
-    new CountFacetRequest(new CategoryPath("a", "b"), 0);
+    assertNotNull(new CountFacetRequest(new CategoryPath("a", "b"), 0));
   }
   
   @Test(expected=IllegalArgumentException.class)
   public void testIllegalCategoryPath() throws Exception {
-    new CountFacetRequest(null, 1);
+    assertNotNull(new CountFacetRequest(null, 1));
   }
 
   @Test

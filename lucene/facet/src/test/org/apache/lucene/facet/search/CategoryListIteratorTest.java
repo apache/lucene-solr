@@ -1,23 +1,15 @@
 package org.apache.lucene.facet.search;
 
-import java.io.IOException;
-import java.io.Reader;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
@@ -48,42 +40,6 @@ import org.junit.Test;
 
 public class CategoryListIteratorTest extends LuceneTestCase {
 
-  private static final class DataTokenStream extends TokenStream {
-
-    private final PayloadAttribute payload = addAttribute(PayloadAttribute.class);
-    private final BytesRef buf;
-    private final IntEncoder encoder;
-    private final CharTermAttribute term = addAttribute(CharTermAttribute.class);
-    
-    private int idx;
-    private boolean exhausted = false;
-
-    public DataTokenStream(String text, IntEncoder encoder) {
-      this.encoder = encoder;
-      term.setEmpty().append(text);
-      buf = new BytesRef();
-      payload.setPayload(buf);
-    }
-
-    public void setIdx(int idx) {
-      this.idx = idx;
-      exhausted = false;
-    }
-
-    @Override
-    public boolean incrementToken() throws IOException {
-      if (exhausted) {
-        return false;
-      }
-
-      // must copy because encoders may change the buffer
-      encoder.encode(IntsRef.deepCopyOf(data[idx]), buf);
-      exhausted = true;
-      return true;
-    }
-
-  }
-
   static final IntsRef[] data = new IntsRef[] {
     new IntsRef(new int[] { 1, 2 }, 0, 2), 
     new IntsRef(new int[] { 3, 4 }, 0, 2),
@@ -95,13 +51,13 @@ public class CategoryListIteratorTest extends LuceneTestCase {
   public void testPayloadCategoryListIteraor() throws Exception {
     Directory dir = newDirectory();
     final IntEncoder encoder = new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder())));
-    DataTokenStream dts = new DataTokenStream("1",encoder);
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(TEST_VERSION_CURRENT, 
         new MockAnalyzer(random(), MockTokenizer.KEYWORD, false)).setMergePolicy(newLogMergePolicy()));
+    BytesRef buf = new BytesRef();
     for (int i = 0; i < data.length; i++) {
-      dts.setIdx(i);
       Document doc = new Document();
-      doc.add(new TextField("f", dts));
+      encoder.encode(IntsRef.deepCopyOf(data[i]), buf);
+      doc.add(new StraightBytesDocValuesField("f", buf));
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
@@ -109,9 +65,9 @@ public class CategoryListIteratorTest extends LuceneTestCase {
 
     int totalCategories = 0;
     IntsRef ordinals = new IntsRef();
-    CategoryListIterator cli = new PayloadCategoryListIteraor(new Term("f","1"), encoder.createMatchingDecoder());
+    CategoryListIterator cli = new DocValuesCategoryListIterator("f", encoder.createMatchingDecoder());
     for (AtomicReaderContext context : reader.leaves()) {
-      cli.setNextReader(context);
+      assertTrue("failed to initalize iterator", cli.setNextReader(context));
       int maxDoc = context.reader().maxDoc();
       int dataIdx = context.docBase;
       for (int doc = 0; doc < maxDoc; doc++, dataIdx++) {
@@ -136,24 +92,17 @@ public class CategoryListIteratorTest extends LuceneTestCase {
   public void testPayloadIteratorWithInvalidDoc() throws Exception {
     Directory dir = newDirectory();
     final IntEncoder encoder = new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder())));
-    DataTokenStream dts = new DataTokenStream("1", encoder);
-    // this test requires that no payloads ever be randomly present!
-    final Analyzer noPayloadsAnalyzer = new Analyzer() {
-      @Override
-      public TokenStreamComponents createComponents(String fieldName, Reader reader) {
-        return new TokenStreamComponents(new MockTokenizer(reader, MockTokenizer.KEYWORD, false));
-      }
-    };
     // NOTE: test is wired to LogMP... because test relies on certain docids having payloads
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, 
-        newIndexWriterConfig(TEST_VERSION_CURRENT, noPayloadsAnalyzer).setMergePolicy(newLogMergePolicy()));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     for (int i = 0; i < data.length; i++) {
       Document doc = new Document();
       if (i == 0) {
-        dts.setIdx(i);
-        doc.add(new TextField("f", dts)); // only doc 0 has payloads!
+        BytesRef buf = new BytesRef();
+        encoder.encode(IntsRef.deepCopyOf(data[i]), buf );
+        doc.add(new StraightBytesDocValuesField("f", buf));
       } else {
-        doc.add(new TextField("f", "1", Field.Store.NO));
+        doc.add(new StraightBytesDocValuesField("f", new BytesRef()));
       }
       writer.addDocument(doc);
       writer.commit();
@@ -164,9 +113,9 @@ public class CategoryListIteratorTest extends LuceneTestCase {
 
     int totalCategories = 0;
     IntsRef ordinals = new IntsRef();
-    CategoryListIterator cli = new PayloadCategoryListIteraor(new Term("f","1"), encoder.createMatchingDecoder());
+    CategoryListIterator cli = new DocValuesCategoryListIterator("f", encoder.createMatchingDecoder());
     for (AtomicReaderContext context : reader.leaves()) {
-      cli.setNextReader(context);
+      assertTrue("failed to initalize iterator", cli.setNextReader(context));
       int maxDoc = context.reader().maxDoc();
       int dataIdx = context.docBase;
       for (int doc = 0; doc < maxDoc; doc++, dataIdx++) {
@@ -176,13 +125,13 @@ public class CategoryListIteratorTest extends LuceneTestCase {
         }
         cli.getOrdinals(doc, ordinals);
         if (dataIdx == 0) {
-          assertTrue("document 0 must have a payload", ordinals.length > 0);
+          assertTrue("document 0 must have ordinals", ordinals.length > 0);
           for (int j = 0; j < ordinals.length; j++) {
             assertTrue("expected category not found: " + ordinals.ints[j], values.contains(ordinals.ints[j]));
           }
           totalCategories += ordinals.length;
         } else {
-          assertTrue("only document 0 should have a payload", ordinals.length == 0);
+          assertTrue("only document 0 should have ordinals", ordinals.length == 0);
         }
       }
     }

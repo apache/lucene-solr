@@ -93,6 +93,7 @@ public class TestStandardFacetsAccumulator extends LuceneTestCase {
     indexTwoDocs(indexWriter, null, false);        // 4th segment, no content, or categories
     indexTwoDocs(indexWriter, null, true);         // 5th segment, with content, no categories
     indexTwoDocs(indexWriter, facetFields, true);  // 6th segment, with content, with categories
+    indexTwoDocs(indexWriter, null, true);         // 7th segment, with content, no categories
     IOUtils.close(indexWriter, taxoWriter);
 
     DirectoryReader indexReader = DirectoryReader.open(indexDir);

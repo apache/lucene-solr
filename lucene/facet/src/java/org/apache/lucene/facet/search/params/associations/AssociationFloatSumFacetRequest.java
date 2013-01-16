@@ -28,7 +28,10 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /**
  * A {@link FacetRequest} for weighting facets according to their float
- * association by summing the association values.
+ * association by summing the association values. Note that this class caches
+ * the associations data in-memory by default. You can override
+ * {@link #createAggregator(boolean, FacetArrays, TaxonomyReader)} to return an
+ * {@link AssociationFloatSumAggregator} which does otherwise.
  * 
  * @lucene.experimental
  */
