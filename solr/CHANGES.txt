@@ -650,6 +650,9 @@ Other Changes
   disallow atomic update requests which change signature generating fields.
   (Joel Nothman, yonik, shalin)
 
+* SOLR-4308: Remove the problematic and now unnecessary log4j-over-slf4j.
+  (Mark Miller)
+
 ==================  4.0.0 ==================
 
 Versions of Major Components
