@@ -1,6 +1,12 @@
 package org.apache.lucene.facet.index.params;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.encoding.DGapIntEncoder;
+import org.apache.lucene.util.encoding.IntDecoder;
+import org.apache.lucene.util.encoding.IntEncoder;
+import org.apache.lucene.util.encoding.SortingIntEncoder;
+import org.apache.lucene.util.encoding.UniqueValuesIntEncoder;
+import org.apache.lucene.util.encoding.VInt8IntEncoder;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -29,8 +35,10 @@ public class CategoryListParamsTest extends LuceneTestCase {
   public void testDefaultSettings() {
     CategoryListParams clp = new CategoryListParams();
     assertEquals("wrong default term", new Term("$facets", "$fulltree$"), clp.getTerm());
-    assertEquals("unexpected default encoder", "Sorting (Unique (DGap (VInt8)))", clp.createEncoder().toString());
-    assertEquals("unexpected default decoder", "DGap (VInt8)", clp.createEncoder().createMatchingDecoder().toString());
+    IntEncoder encoder = new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder())));
+    IntDecoder decoder = encoder.createMatchingDecoder();
+    assertEquals("unexpected default encoder", encoder.toString(), clp.createEncoder().toString());
+    assertEquals("unexpected default decoder", decoder.toString(), clp.createEncoder().createMatchingDecoder().toString());
   }
   
   /**

@@ -65,19 +65,15 @@ public class NOnesIntEncoder extends FourFlagsIntEncoder {
   }
 
   @Override
-  protected void reset() {
+  public void encode(IntsRef values, BytesRef buf) {
     internalBuffer.length = 0;
-    super.reset();
-  }
-  
-  @Override
-  protected void doEncode(IntsRef values, BytesRef buf, int upto) {
     // make sure the internal buffer is large enough
     if (values.length > internalBuffer.ints.length) {
       internalBuffer.grow(values.length);
     }
     
     int onesCounter = 0;
+    int upto = values.offset + values.length;
     for (int i = values.offset; i < upto; i++) {
       int value = values.ints[i];
       if (value == 1) {
@@ -102,7 +98,7 @@ public class NOnesIntEncoder extends FourFlagsIntEncoder {
       --onesCounter;
       internalBuffer.ints[internalBuffer.length++] = 1;
     }
-    super.doEncode(internalBuffer, buf, internalBuffer.length);
+    super.encode(internalBuffer, buf);
   }
 
   @Override
@@ -112,7 +108,7 @@ public class NOnesIntEncoder extends FourFlagsIntEncoder {
 
   @Override
   public String toString() {
-    return "NOnes (" + n + ") (" + super.toString() + ")";
+    return "NOnes(" + n + ") (" + super.toString() + ")";
   }
 
 }

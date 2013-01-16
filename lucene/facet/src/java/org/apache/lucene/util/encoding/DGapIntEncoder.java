@@ -35,7 +35,7 @@ import org.apache.lucene.util.IntsRef;
  * 
  * @lucene.experimental
  */
-public class DGapIntEncoder extends IntEncoderFilter {
+public final class DGapIntEncoder extends IntEncoderFilter {
 
   /** Initializes with the given encoder. */
   public DGapIntEncoder(IntEncoder encoder) {
@@ -43,14 +43,15 @@ public class DGapIntEncoder extends IntEncoderFilter {
   }
 
   @Override
-  protected void doEncode(IntsRef values, BytesRef buf, int upto) {
+  public void encode(IntsRef values, BytesRef buf) {
     int prev = 0;
+    int upto = values.offset + values.length;
     for (int i = values.offset; i < upto; i++) {
       int tmp = values.ints[i];
       values.ints[i] -= prev;
       prev = tmp;
     }
-    encoder.doEncode(values, buf, upto);
+    encoder.encode(values, buf);
   }
 
   @Override
@@ -60,7 +61,7 @@ public class DGapIntEncoder extends IntEncoderFilter {
   
   @Override
   public String toString() {
-    return "DGap (" + encoder.toString() + ")";
+    return "DGap(" + encoder.toString() + ")";
   }
   
 }

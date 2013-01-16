@@ -36,9 +36,10 @@ public final class UniqueValuesIntEncoder extends IntEncoderFilter {
   }
 
   @Override
-  protected void doEncode(IntsRef values, BytesRef buf, int upto) {
+  public void encode(IntsRef values, BytesRef buf) {
     int prev = values.ints[values.offset];
     int idx = values.offset + 1;
+    int upto = values.offset + values.length;
     for (int i = idx; i < upto; i++) {
       if (values.ints[i] != prev) {
         values.ints[idx++] = values.ints[i];
@@ -46,7 +47,7 @@ public final class UniqueValuesIntEncoder extends IntEncoderFilter {
       }
     }
     values.length = idx - values.offset;
-    encoder.doEncode(values, buf, idx);
+    encoder.encode(values, buf);
   }
 
   @Override
@@ -56,7 +57,7 @@ public final class UniqueValuesIntEncoder extends IntEncoderFilter {
   
   @Override
   public String toString() {
-    return "Unique (" + encoder.toString() + ")";
+    return "Unique(" + encoder.toString() + ")";
   }
   
 }
