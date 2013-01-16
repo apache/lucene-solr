@@ -133,9 +133,6 @@ def push(version, root, rev, rcNum, username):
   print('    unzip...')
   run('ssh %s@people.apache.org "cd public_html/staging_area/%s/lucene; tar xjf lucene.tar.bz2; rm -f lucene.tar.bz2"' % (username, dir))
   os.remove('lucene.tar.bz2')
-  print('    copy changes...')
-  os.chdir('..')
-  run('scp -r build/docs/changes %s@people.apache.org:public_html/staging_area/%s/lucene/changes-%s' % (username, dir, version))
 
   print('  Solr')
   os.chdir('%s/solr/package' % root)
@@ -148,14 +145,6 @@ def push(version, root, rev, rcNum, username):
   print('    unzip...')
   run('ssh %s@people.apache.org "cd public_html/staging_area/%s/solr; tar xjf solr.tar.bz2; rm -f solr.tar.bz2"' % (username, dir))
   os.remove('solr.tar.bz2')
-
-  print('  KEYS')
-  run('wget http://people.apache.org/keys/group/lucene.asc')
-  os.rename('lucene.asc', 'KEYS')
-  run('chmod a+r-w KEYS')
-  run('scp KEYS %s@people.apache.org:public_html/staging_area/%s/lucene' % (username, dir))
-  run('scp KEYS %s@people.apache.org:public_html/staging_area/%s/solr' % (username, dir))
-  os.remove('KEYS')
 
   print('  chmod...')
   run('ssh %s@people.apache.org "chmod -R a+rX-w public_html/staging_area/%s"' % (username, dir))
