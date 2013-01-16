@@ -25,13 +25,10 @@ import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
 import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValues.Source;
+import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.FilterAtomicReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.encoding.IntDecoder;
@@ -41,8 +38,8 @@ import org.apache.lucene.util.encoding.IntEncoder;
  * A {@link FilterAtomicReader} for updating facets ordinal references,
  * based on an ordinal map. You should use this code in conjunction with merging
  * taxonomies - after you merge taxonomies, you receive an {@link OrdinalMap}
- * which maps the 'old' payloads to the 'new' ones. You can use that map to
- * re-map the payloads which contain the facets information (ordinals) either
+ * which maps the 'old' ordinals to the 'new' ones. You can use that map to
+ * re-map the doc values which contain the facets information (ordinals) either
  * before or while merging the indexes.
  * <p>
  * For re-mapping the ordinals during index merge, do the following:
@@ -70,9 +67,8 @@ import org.apache.lucene.util.encoding.IntEncoder;
 public class OrdinalMappingAtomicReader extends FilterAtomicReader {
   
   private final int[] ordinalMap;
-  // a little obtuse: but we dont need to create Term objects this way
-  private final Map<String,Map<BytesRef,CategoryListParams>> termMap = 
-      new HashMap<String,Map<BytesRef,CategoryListParams>>(1);
+  
+  private final Map<String,CategoryListParams> dvFieldMap = new HashMap<String,CategoryListParams>();
   
   /**
    * Wraps an AtomicReader, mapping ordinals according to the ordinalMap.
@@ -91,125 +87,85 @@ public class OrdinalMappingAtomicReader extends FilterAtomicReader {
     super(in);
     this.ordinalMap = ordinalMap;
     for (CategoryListParams params: indexingParams.getAllCategoryListParams()) {
-      Term term = params.getTerm();
-      Map<BytesRef,CategoryListParams> fieldMap = termMap.get(term.field());
-      if (fieldMap == null) {
-        fieldMap = new HashMap<BytesRef,CategoryListParams>(1);
-        termMap.put(term.field(), fieldMap);
-      }
-      fieldMap.put(term.bytes(), params);
+      dvFieldMap.put(params.field, params);
     }
   }
 
   @Override
-  public Fields getTermVectors(int docID) throws IOException {
-    Fields fields = super.getTermVectors(docID);
-    if (fields == null) {
-      return null;
-    } else {
-      return new OrdinalMappingFields(fields);
+  public DocValues docValues(String field) throws IOException {
+    DocValues inner = super.docValues(field);
+    if (inner == null) {
+      return inner;
     }
-  }
-
-  @Override
-  public Fields fields() throws IOException {
-    Fields fields = super.fields();
-    if (fields == null) {
-      return null;
-    } else {
-      return new OrdinalMappingFields(fields);
-    }
-  }
-  
-  private class OrdinalMappingFields extends FilterFields {
-
-    public OrdinalMappingFields(Fields in) {
-      super(in);
-    }
-
-    @Override
-    public Terms terms(String field) throws IOException {
-      Terms terms = super.terms(field);
-      if (terms == null) {
-        return terms;
-      }
-      Map<BytesRef,CategoryListParams> termsMap = termMap.get(field);
-      if (termsMap == null) {
-        return terms;
-      } else {
-        return new OrdinalMappingTerms(terms, termsMap);
-      }
-    }
-  }
-  
-  private class OrdinalMappingTerms extends FilterTerms {
-    private final Map<BytesRef,CategoryListParams> termsMap;
     
-    public OrdinalMappingTerms(Terms in, Map<BytesRef,CategoryListParams> termsMap) {
-      super(in);
-      this.termsMap = termsMap;
-    }
-
-    @Override
-    public TermsEnum iterator(TermsEnum reuse) throws IOException {
-      // TODO: should we reuse the inner termsenum?
-      return new OrdinalMappingTermsEnum(super.iterator(reuse), termsMap);
+    CategoryListParams clp = dvFieldMap.get(field);
+    if (clp == null) {
+      return inner;
+    } else {
+      return new OrdinalMappingDocValues(inner, clp);
     }
   }
   
-  private class OrdinalMappingTermsEnum extends FilterTermsEnum {
-    private final Map<BytesRef,CategoryListParams> termsMap;
+  private class OrdinalMappingDocValues extends DocValues {
+
+    private final CategoryListParams clp;
+    private final DocValues delegate;
     
-    public OrdinalMappingTermsEnum(TermsEnum in, Map<BytesRef,CategoryListParams> termsMap) {
-      super(in);
-      this.termsMap = termsMap;
+    public OrdinalMappingDocValues(DocValues delegate, CategoryListParams clp) {
+      this.delegate = delegate;
+      this.clp = clp;
     }
 
     @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-      // TODO: we could reuse our D&P enum if we need
-      DocsAndPositionsEnum inner = super.docsAndPositions(liveDocs, reuse, flags);
-      if (inner == null) {
-        return inner;
-      }
-      
-      CategoryListParams params = termsMap.get(term());
-      if (params == null) {
-        return inner;
-      }
-      
-      return new OrdinalMappingDocsAndPositionsEnum(inner, params);
+    protected Source loadSource() throws IOException {
+      return new OrdinalMappingSource(getType(), clp, delegate.getSource());
     }
+
+    @Override
+    protected Source loadDirectSource() throws IOException {
+      return new OrdinalMappingSource(getType(), clp, delegate.getDirectSource());
+    }
+
+    @Override
+    public Type getType() {
+      return Type.BYTES_VAR_STRAIGHT;
+    }
+    
   }
   
-  private class OrdinalMappingDocsAndPositionsEnum extends FilterDocsAndPositionsEnum {
+  private class OrdinalMappingSource extends Source {
+
     private final IntEncoder encoder;
     private final IntDecoder decoder;
     private final IntsRef ordinals = new IntsRef(32);
-    private final BytesRef payloadOut = new BytesRef();
-
-    public OrdinalMappingDocsAndPositionsEnum(DocsAndPositionsEnum in, CategoryListParams params) {
-      super(in);
-      encoder = params.createEncoder();
+    private final Source delegate;
+    
+    protected OrdinalMappingSource(Type type, CategoryListParams clp, Source delegate) {
+      super(type);
+      this.delegate = delegate;
+      encoder = clp.createEncoder();
       decoder = encoder.createMatchingDecoder();
     }
-
+    
+    @SuppressWarnings("synthetic-access")
     @Override
-    public BytesRef getPayload() throws IOException {
-      BytesRef payload = super.getPayload();
-      if (payload == null) {
-        return payload;
+    public BytesRef getBytes(int docID, BytesRef ref) {
+      ref = delegate.getBytes(docID, ref);
+      if (ref == null || ref.length == 0) {
+        return ref;
       } else {
-        decoder.decode(payload, ordinals);
+        decoder.decode(ref, ordinals);
         
         // map the ordinals
         for (int i = 0; i < ordinals.length; i++) {
           ordinals.ints[i] = ordinalMap[ordinals.ints[i]];
         }
         
-        encoder.encode(ordinals, payloadOut);
-        return payloadOut;
+        encoder.encode(ordinals, ref);
+        return ref;
       }
     }
+    
   }
+  
 }

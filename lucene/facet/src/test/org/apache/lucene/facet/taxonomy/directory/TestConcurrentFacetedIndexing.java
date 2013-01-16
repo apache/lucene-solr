@@ -18,6 +18,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -36,7 +37,7 @@ import org.apache.lucene.util.LuceneTestCase;
  * limitations under the License.
  */
 
-/** Tests concurrent indexing with facets. */
+@SuppressCodecs("Lucene3x")
 public class TestConcurrentFacetedIndexing extends LuceneTestCase {
 
   // A No-Op TaxonomyWriterCache which always discards all given categories, and

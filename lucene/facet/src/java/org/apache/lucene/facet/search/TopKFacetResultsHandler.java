@@ -55,7 +55,7 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
   public IntermediateFacetResult fetchPartitionResult(FacetArrays facetArrays, int offset)
   throws IOException {
     TopKFacetResult res = null;
-    int ordinal = taxonomyReader.getOrdinal(facetRequest.getCategoryPath());
+    int ordinal = taxonomyReader.getOrdinal(facetRequest.categoryPath);
     if (ordinal != TaxonomyReader.INVALID_ORDINAL) {
       double value = 0;  
       if (isSelfPartition(ordinal, facetArrays, offset)) {
@@ -79,7 +79,7 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
   @Override
   public IntermediateFacetResult mergeResults(IntermediateFacetResult... tmpResults) throws IOException {
     
-    int ordinal = taxonomyReader.getOrdinal(facetRequest.getCategoryPath());
+    int ordinal = taxonomyReader.getOrdinal(facetRequest.categoryPath);
     MutableFacetResultNode resNode = new MutableFacetResultNode(ordinal, 0);
     
     int totalFacets = 0;

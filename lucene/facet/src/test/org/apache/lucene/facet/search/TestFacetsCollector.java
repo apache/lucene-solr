@@ -25,6 +25,7 @@ import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.Test;
 
 /*
@@ -44,6 +45,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
+@SuppressCodecs("Lucene3x")
 public class TestFacetsCollector extends LuceneTestCase {
 
   @Test

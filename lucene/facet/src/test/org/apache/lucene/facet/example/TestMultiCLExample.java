@@ -6,6 +6,7 @@ import java.util.List;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.facet.example.multiCL.MultiCLMain;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
@@ -27,10 +28,7 @@ import org.apache.lucene.facet.search.results.FacetResultNode;
  * limitations under the License.
  */
 
-/**
- * Test that the multi-category list example works as expected. This test helps
- * to verify that examples code is alive!
- */
+@SuppressCodecs("Lucene3x")
 public class TestMultiCLExample extends LuceneTestCase {
 
   @Test

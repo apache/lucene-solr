@@ -34,35 +34,37 @@ import org.apache.lucene.util.collections.IntToObjectMap;
  */
 
 /**
- * Generates {@link FacetResult} from the count arrays aggregated for a particular 
- * {@link FacetRequest}.
- * The generated {@link FacetResult} is a subtree of the taxonomy tree.
- * Its root node, {@link FacetResult#getFacetResultNode()}, 
- * is the facet specified by {@link FacetRequest#getCategoryPath()},
- * and the enumerated children, {@link FacetResultNode#getSubResults()}, of each node in that 
- * {@link FacetResult} are the top K ( = {@link FacetRequest#getNumResults()}) among its children
- * in the taxonomy.
- * Top in the sense {@link FacetRequest#getSortBy()},
- * which can be by the values aggregated in the count arrays, or by ordinal numbers;
- * also specified is the sort order, {@link FacetRequest#getSortOrder()}, 
- * ascending or descending, of these values or ordinals before their top K are selected. 
- * The depth (number of levels excluding the root) of the 
- * {@link FacetResult} tree is specified by {@link FacetRequest#getDepth()}.  
+ * Generates {@link FacetResult} from the count arrays aggregated for a
+ * particular {@link FacetRequest}. The generated {@link FacetResult} is a
+ * subtree of the taxonomy tree. Its root node,
+ * {@link FacetResult#getFacetResultNode()}, is the facet specified by
+ * {@link FacetRequest#categoryPath}, and the enumerated children,
+ * {@link FacetResultNode#getSubResults()}, of each node in that
+ * {@link FacetResult} are the top K ( = {@link FacetRequest#getNumResults()})
+ * among its children in the taxonomy. Top in the sense
+ * {@link FacetRequest#getSortBy()}, which can be by the values aggregated in
+ * the count arrays, or by ordinal numbers; also specified is the sort order,
+ * {@link FacetRequest#getSortOrder()}, ascending or descending, of these values
+ * or ordinals before their top K are selected. The depth (number of levels
+ * excluding the root) of the {@link FacetResult} tree is specified by
+ * {@link FacetRequest#getDepth()}.
  * <p>
- * Because the number of selected children of each node is restricted,
- * and not the overall number of nodes in the {@link FacetResult}, facets not selected 
+ * Because the number of selected children of each node is restricted, and not
+ * the overall number of nodes in the {@link FacetResult}, facets not selected
  * into {@link FacetResult} might have better values, or ordinals, (typically,
  * higher counts), than facets that are selected into the {@link FacetResult}.
  * <p>
- * The generated {@link FacetResult} also provides with 
- * {@link FacetResult#getNumValidDescendants()}, which returns the total number of facets 
- * that are descendants of the root node, no deeper than {@link FacetRequest#getDepth()}, and
- * which have valid value. The rootnode itself is not counted here. 
- * Valid value is determined by the {@link FacetResultsHandler}. 
- * {@link TopKInEachNodeHandler} defines valid as != 0. 
+ * The generated {@link FacetResult} also provides with
+ * {@link FacetResult#getNumValidDescendants()}, which returns the total number
+ * of facets that are descendants of the root node, no deeper than
+ * {@link FacetRequest#getDepth()}, and which have valid value. The rootnode
+ * itself is not counted here. Valid value is determined by the
+ * {@link FacetResultsHandler}. {@link TopKInEachNodeHandler} defines valid as
+ * != 0.
  * <p>
- * <b>NOTE:</b> this code relies on the assumption that {@link TaxonomyReader#INVALID_ORDINAL} == -1, a smaller
- * value than any valid ordinal.
+ * <b>NOTE:</b> this code relies on the assumption that
+ * {@link TaxonomyReader#INVALID_ORDINAL} == -1, a smaller value than any valid
+ * ordinal.
  * 
  * @lucene.experimental
  */
@@ -109,7 +111,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
 
     // get the root of the result tree to be returned, and the depth of that result tree
     // (depth means number of node levels excluding the root). 
-    int rootNode = this.taxonomyReader.getOrdinal(this.facetRequest.getCategoryPath());
+    int rootNode = this.taxonomyReader.getOrdinal(facetRequest.categoryPath);
     if (rootNode == TaxonomyReader.INVALID_ORDINAL) {
       return null;
     }
@@ -767,7 +769,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
   @Override
   public FacetResult renderFacetResult(IntermediateFacetResult tmpResult) throws IOException {
     IntermediateFacetResultWithHash tmp = (IntermediateFacetResultWithHash) tmpResult;
-    int ordinal = this.taxonomyReader.getOrdinal(this.facetRequest.getCategoryPath());
+    int ordinal = this.taxonomyReader.getOrdinal(this.facetRequest.categoryPath);
     if ((tmp == null) || (ordinal == TaxonomyReader.INVALID_ORDINAL)) {
       return null;
     }

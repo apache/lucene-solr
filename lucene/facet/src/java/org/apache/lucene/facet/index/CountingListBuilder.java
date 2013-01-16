@@ -56,10 +56,9 @@ public class CountingListBuilder implements CategoryListBuilder {
   private static final class NoPartitionsOrdinalsEncoder extends OrdinalsEncoder {
     
     private final IntEncoder encoder;
-    private final String name;
+    private final String name = "";
     
     NoPartitionsOrdinalsEncoder(CategoryListParams categoryListParams) {
-      name = categoryListParams.getTerm().text();
       encoder = categoryListParams.createEncoder();
     }
     
@@ -91,7 +90,7 @@ public class CountingListBuilder implements CategoryListBuilder {
       final HashMap<String,IntsRef> partitionOrdinals = new HashMap<String,IntsRef>();
       for (int i = 0; i < ordinals.length; i++) {
         int ordinal = ordinals.ints[i];
-        final String name = PartitionsUtils.partitionNameByOrdinal(indexingParams, categoryListParams, ordinal);
+        final String name = PartitionsUtils.partitionNameByOrdinal(indexingParams, ordinal);
         IntsRef partitionOrds = partitionOrdinals.get(name);
         if (partitionOrds == null) {
           partitionOrds = new IntsRef(32);

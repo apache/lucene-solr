@@ -4,9 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
-
-import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.ScoredDocIDs;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
@@ -16,6 +13,7 @@ import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.search.results.MutableFacetResultNode;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.IndexReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -205,19 +203,13 @@ public abstract class Sampler {
   private static class OverSampledFacetRequest extends FacetRequest {
     final FacetRequest orig;
     public OverSampledFacetRequest(FacetRequest orig, int num) {
-      super(orig.getCategoryPath(), num);
+      super(orig.categoryPath, num);
       this.orig = orig;
       setDepth(orig.getDepth());
       setNumLabel(orig.getNumLabel());
       setResultMode(orig.getResultMode());
       setSortBy(orig.getSortBy());
       setSortOrder(orig.getSortOrder());
-    }
-    
-    @Override
-    public CategoryListIterator createCategoryListIterator(TaxonomyReader taxo, FacetSearchParams sParams, 
-        int partition) throws IOException {
-      return orig.createCategoryListIterator(taxo, sParams, partition);
     }
     
     @Override

@@ -2,15 +2,11 @@ package org.apache.lucene.facet.search.params;
 
 import java.io.IOException;
 
-import org.apache.lucene.facet.index.params.CategoryListParams;
-import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.FacetResultsHandler;
 import org.apache.lucene.facet.search.TopKFacetResultsHandler;
 import org.apache.lucene.facet.search.TopKInEachNodeHandler;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
-import org.apache.lucene.facet.search.cache.CategoryListCache;
-import org.apache.lucene.facet.search.cache.CategoryListData;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
@@ -64,7 +60,7 @@ public abstract class FacetRequest implements Cloneable {
    */
   public static final ResultMode DEFAULT_RESULT_MODE = ResultMode.PER_NODE_IN_TREE;
 
-  private final CategoryPath categoryPath;
+  public final CategoryPath categoryPath;
   private final int numResults;
   private int numLabel;
   private int depth;
@@ -134,17 +130,6 @@ public abstract class FacetRequest implements Cloneable {
   }
 
   /**
-   * The root category of this facet request. The categories that are returned
-   * as a result of this request will all be descendants of this root.
-   * <p>
-   * <b>NOTE:</b> you should not modify the returned {@link CategoryPath}, or
-   * otherwise some methonds may not work properly, e.g. {@link #hashCode()}.
-   */
-  public final CategoryPath getCategoryPath() {
-    return categoryPath;
-  }
-
-  /**
    * How deeply to look under the given category. If the depth is 0,
    * only the category itself is counted. If the depth is 1, its immediate
    * children are also counted, and so on. If the depth is Integer.MAX_VALUE,
@@ -160,24 +145,22 @@ public abstract class FacetRequest implements Cloneable {
    * will have their category paths calculated, and the rest will only be
    * available as ordinals (category numbers) and will have null paths.
    * <P>
-   * If Integer.MAX_VALUE is specified, all 
-   * results are labled.
+   * If Integer.MAX_VALUE is specified, all results are labled.
    * <P>
-   * The purpose of this parameter is to avoid having to run the whole
-   * faceted search again when the user asks for more values for the facet;
-   * The application can ask (getNumResults()) for more values than it needs
-   * to show, but keep getNumLabel() only the number it wants to immediately
-   * show. The slow-down caused by finding more values is negligible, because
-   * the slowest part - finding the categories' paths, is avoided.
+   * The purpose of this parameter is to avoid having to run the whole faceted
+   * search again when the user asks for more values for the facet; The
+   * application can ask (getNumResults()) for more values than it needs to
+   * show, but keep getNumLabel() only the number it wants to immediately show.
+   * The slow-down caused by finding more values is negligible, because the
+   * slowest part - finding the categories' paths, is avoided.
    * <p>
-   * Depending on the {@link #getResultMode() LimitsMode},
-   * this limit is applied globally or per results node.
-   * In the global mode, if this limit is 3, 
-   * only 3 top results would be labeled.
-   * In the per-node mode, if this limit is 3,
-   * 3 top children of {@link #getCategoryPath() the target category} would be labeled,
-   * as well as 3 top children of each of them, and so forth, until the depth defined 
-   * by {@link #getDepth()}.
+   * Depending on the {@link #getResultMode() LimitsMode}, this limit is applied
+   * globally or per results node. In the global mode, if this limit is 3, only
+   * 3 top results would be labeled. In the per-node mode, if this limit is 3, 3
+   * top children of {@link #categoryPath the target category} would be labeled,
+   * as well as 3 top children of each of them, and so forth, until the depth
+   * defined by {@link #getDepth()}.
+   * 
    * @see #getResultMode()
    */
   public final int getNumLabel() {
@@ -185,20 +168,18 @@ public abstract class FacetRequest implements Cloneable {
   }
 
   /**
-   * The number of sub-categories to return (at most).
-   * If the sub-categories are returned.
+   * The number of sub-categories to return (at most). If the sub-categories are
+   * returned.
    * <p>
-   * If Integer.MAX_VALUE is specified, all 
-   * sub-categories are returned.
+   * If Integer.MAX_VALUE is specified, all sub-categories are returned.
    * <p>
-   * Depending on the {@link #getResultMode() LimitsMode},
-   * this limit is applied globally or per results node.
-   * In the global mode, if this limit is 3, 
-   * only 3 top results would be computed.
-   * In the per-node mode, if this limit is 3,
-   * 3 top children of {@link #getCategoryPath() the target category} would be returned,
-   * as well as 3 top children of each of them, and so forth, until the depth defined 
-   * by {@link #getDepth()}.
+   * Depending on the {@link #getResultMode() LimitsMode}, this limit is applied
+   * globally or per results node. In the global mode, if this limit is 3, only
+   * 3 top results would be computed. In the per-node mode, if this limit is 3,
+   * 3 top children of {@link #categoryPath the target category} would be
+   * returned, as well as 3 top children of each of them, and so forth, until
+   * the depth defined by {@link #getDepth()}.
+   * 
    * @see #getResultMode()
    */
   public final int getNumResults() {
@@ -318,24 +299,6 @@ public abstract class FacetRequest implements Cloneable {
    */
   public abstract Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) 
       throws IOException;
-
-  /**
-   * Create the category list iterator for the specified partition. If a non
-   * null cache is provided which contains the required data, use it for the
-   * iteration.
-   */
-  public CategoryListIterator createCategoryListIterator(TaxonomyReader taxo, FacetSearchParams sParams, int partition)
-      throws IOException {
-    CategoryListCache clCache = sParams.getCategoryListCache();
-    CategoryListParams clParams = sParams.getFacetIndexingParams().getCategoryListParams(categoryPath);
-    if (clCache != null) {
-      CategoryListData clData = clCache.get(clParams);
-      if (clData != null) {
-        return clData.iterator(partition);
-      }
-    }
-    return clParams.createCategoryListIterator(partition);
-  }
 
   /**
    * Return the value of a category used for facets computations for this

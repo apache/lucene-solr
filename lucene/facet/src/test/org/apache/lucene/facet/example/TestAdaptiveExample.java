@@ -1,10 +1,9 @@
 package org.apache.lucene.facet.example;
 
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.example.ExampleResult;
 import org.apache.lucene.facet.example.adaptive.AdaptiveMain;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,6 +26,7 @@ import org.apache.lucene.facet.example.adaptive.AdaptiveMain;
  * Test that the adaptive example works as expected. This test helps to verify
  * that examples code is alive!
  */
+@SuppressCodecs("Lucene3x")
 public class TestAdaptiveExample extends LuceneTestCase {
   
   @Test
@@ -37,4 +37,5 @@ public class TestAdaptiveExample extends LuceneTestCase {
     assertEquals("Wrong number of results!",1, res.getFacetResults().size());
     assertEquals("Wrong number of facets!",3, res.getFacetResults().get(0).getNumValidDescendants());
   }
+  
 }

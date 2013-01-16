@@ -31,6 +31,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.Test;
 
 /*
@@ -50,6 +51,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
+@SuppressCodecs("Lucene3x")
 public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
 
   //TODO (Facet): Move to extend BaseTestTopK and separate to several smaller test cases (methods) - see TestTopKResultsHandler
@@ -178,7 +180,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       }
       
       FacetResult fr = facetResults.get(0); // a, depth=3, K=2
-      boolean hasDoctor = "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
+      boolean hasDoctor = "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(9, fr.getNumValidDescendants());
       FacetResultNode parentRes = fr.getFacetResultNode();
       assertEquals(16.0, parentRes.getValue(), Double.MIN_VALUE);
@@ -219,7 +221,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       }
 
       fr = facetResults.get(1); // a, depth=2, K=2. same result as before
-      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
+      hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(9, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
       assertEquals(16.0, parentRes.getValue(), Double.MIN_VALUE);
@@ -239,7 +241,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       }
 
       fr = facetResults.get(2); // a, depth=1, K=2
-      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
+      hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(4, fr.getNumValidDescendants(), 4);
       parentRes = fr.getFacetResultNode();
       assertEquals(16.0, parentRes.getValue(), Double.MIN_VALUE);
@@ -257,7 +259,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       }
       
       fr = facetResults.get(3); // a/b, depth=3, K=2
-      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
+      hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(4, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
       assertEquals(8.0, parentRes.getValue(), Double.MIN_VALUE);
@@ -272,7 +274,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       }
 
       fr = facetResults.get(4); // a/b, depth=2, K=2
-      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
+      hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(4, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
       assertEquals(8.0, parentRes.getValue(), Double.MIN_VALUE);
@@ -286,7 +288,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       }
 
       fr = facetResults.get(5); // a/b, depth=1, K=2
-      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
+      hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(4, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
       assertEquals(8.0, parentRes.getValue(), Double.MIN_VALUE);
@@ -300,13 +302,13 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       }
       
       fr = facetResults.get(6); // a/b, depth=0, K=2
-      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
+      hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
       assertEquals(0, fr.getNumValidDescendants()); // 0 descendants but rootnode
       parentRes = fr.getFacetResultNode();
       assertEquals(8.0, parentRes.getValue(), Double.MIN_VALUE);
       assertEquals(0.0, parentRes.getResidue(), Double.MIN_VALUE);
       assertEquals(0, parentRes.getNumSubResults());
-      hasDoctor |= "Doctor".equals(fr.getFacetRequest().getCategoryPath().components[0]);
+      hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
 
       // doctor, depth=1, K=2
       assertFalse("Shouldn't have found anything for a FacetRequest " +

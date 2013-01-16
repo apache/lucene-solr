@@ -55,7 +55,7 @@ public final class DrillDown {
     CategoryListParams clp = iParams.getCategoryListParams(path);
     char[] buffer = new char[path.fullPathLength()];
     iParams.drillDownTermText(path, buffer);
-    return new Term(clp.getTerm().field(), String.valueOf(buffer));
+    return new Term(clp.field, String.valueOf(buffer));
   }
   
   /**

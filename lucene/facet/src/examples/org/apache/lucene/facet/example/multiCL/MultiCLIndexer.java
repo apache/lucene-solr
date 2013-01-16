@@ -20,7 +20,6 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -80,12 +79,12 @@ public class MultiCLIndexer {
   // Initialize PerDimensionIndexingParams
   static {
     Map<CategoryPath, CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
-    paramsMap.put(new CategoryPath("0"), new CategoryListParams(new Term("$Digits", "Zero")));
-    paramsMap.put(new CategoryPath("1"), new CategoryListParams(new Term("$Digits", "One")));
-    paramsMap.put(new CategoryPath("2"), new CategoryListParams(new Term("$Digits", "Two")));
-    paramsMap.put(new CategoryPath("3"), new CategoryListParams(new Term("$Digits", "Three")));
-    paramsMap.put(new CategoryPath("4"), new CategoryListParams(new Term("$Digits", "Four")));
-    paramsMap.put(new CategoryPath("5"), new CategoryListParams(new Term("$Digits", "Five")));
+    paramsMap.put(new CategoryPath("0"), new CategoryListParams("$Digits$Zero"));
+    paramsMap.put(new CategoryPath("1"), new CategoryListParams("$Digits$One"));
+    paramsMap.put(new CategoryPath("2"), new CategoryListParams("$Digits$Two"));
+    paramsMap.put(new CategoryPath("3"), new CategoryListParams("$Digits$Three"));
+    paramsMap.put(new CategoryPath("4"), new CategoryListParams("$Digits$Four"));
+    paramsMap.put(new CategoryPath("5"), new CategoryListParams("$Digits$Five"));
     MULTI_IPARAMS = new PerDimensionIndexingParams(paramsMap);
   }
   

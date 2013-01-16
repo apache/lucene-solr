@@ -16,6 +16,7 @@ import org.apache.lucene.store.Directory;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.facet.example.merge.TaxonomyMergeUtils;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
@@ -43,6 +44,7 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
  * limitations under the License.
  */
 
+@SuppressCodecs("Lucene3x")
 public class OrdinalMappingReaderTest extends LuceneTestCase {
   
   private static final int NUM_DOCS = 100;

@@ -34,6 +34,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.Test;
 
 /*
@@ -53,6 +54,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
+@SuppressCodecs("Lucene3x")
 public class TestStandardFacetsAccumulator extends LuceneTestCase {
   
   private void indexTwoDocs(IndexWriter indexWriter, FacetFields facetFields, boolean withContent) throws Exception {
@@ -93,6 +95,7 @@ public class TestStandardFacetsAccumulator extends LuceneTestCase {
     indexTwoDocs(indexWriter, null, false);        // 4th segment, no content, or categories
     indexTwoDocs(indexWriter, null, true);         // 5th segment, with content, no categories
     indexTwoDocs(indexWriter, facetFields, true);  // 6th segment, with content, with categories
+    indexTwoDocs(indexWriter, null, true);         // 7th segment, with content, no categories
     IOUtils.close(indexWriter, taxoWriter);
 
     DirectoryReader indexReader = DirectoryReader.open(indexDir);

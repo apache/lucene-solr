@@ -4,7 +4,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.cache.CategoryListCache;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -69,14 +68,6 @@ public class FacetSearchParams {
     }
     this.indexingParams = indexingParams;
     this.facetRequests = facetRequests;
-  }
-
-  /**
-   * Returns the {@link CategoryListCache}. By default returns {@code null}, you
-   * should override if you want to use a cache.
-   */
-  public CategoryListCache getCategoryListCache() {
-    return null;
   }
 
   /**

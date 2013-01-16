@@ -25,6 +25,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -46,7 +47,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-/** Test for associations */
+@SuppressCodecs("Lucene3x")
 public class AssociationsFacetRequestTest extends LuceneTestCase {
 
   private static Directory dir;

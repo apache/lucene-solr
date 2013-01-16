@@ -3,6 +3,7 @@ package org.apache.lucene.facet.example;
 import org.junit.Test;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.facet.example.ExampleResult;
 import org.apache.lucene.facet.example.association.CategoryAssociationsMain;
 import org.apache.lucene.facet.search.results.FacetResultNode;
@@ -24,10 +25,7 @@ import org.apache.lucene.facet.search.results.FacetResultNode;
  * limitations under the License.
  */
 
-/**
- * Test that the association example works as expected. This test helps to
- * verify that examples code is alive!
- */
+@SuppressCodecs("Lucene3x")
 public class TestAssociationExample extends LuceneTestCase {
   
   private static final double[] EXPECTED_INT_SUM_RESULTS = { 4, 2};

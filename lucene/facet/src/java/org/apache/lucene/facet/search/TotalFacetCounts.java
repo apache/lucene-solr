@@ -17,8 +17,6 @@ import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
 import org.apache.lucene.facet.search.aggregator.CountingAggregator;
-import org.apache.lucene.facet.search.cache.CategoryListCache;
-import org.apache.lucene.facet.search.cache.CategoryListData;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
@@ -155,9 +153,8 @@ public class TotalFacetCounts {
   private static final List<FacetRequest> DUMMY_REQ = Arrays.asList(
       new FacetRequest[] { new CountFacetRequest(CategoryPath.EMPTY, 1) });
 
-  static TotalFacetCounts compute(final IndexReader indexReader,
-      final TaxonomyReader taxonomy, final FacetIndexingParams facetIndexingParams,
-      final CategoryListCache clCache) throws IOException {
+  static TotalFacetCounts compute(final IndexReader indexReader, final TaxonomyReader taxonomy, 
+      final FacetIndexingParams facetIndexingParams) throws IOException {
     int partitionSize = PartitionsUtils.partitionSize(facetIndexingParams, taxonomy);
     final int[][] counts = new int[(int) Math.ceil(taxonomy.getSize()  /(float) partitionSize)][partitionSize];
     FacetSearchParams newSearchParams = new FacetSearchParams(DUMMY_REQ, facetIndexingParams); 
@@ -170,8 +167,7 @@ public class TotalFacetCounts {
         Aggregator aggregator = new CountingAggregator(counts[partition]);
         HashMap<CategoryListIterator, Aggregator> map = new HashMap<CategoryListIterator, Aggregator>();
         for (CategoryListParams clp: facetIndexingParams.getAllCategoryListParams()) {
-          final CategoryListIterator cli = clIteraor(clCache, clp, partition);
-          map.put(cli, aggregator);
+          map.put(clp.createCategoryListIterator(partition), aggregator);
         }
         return map;
       }
@@ -181,14 +177,4 @@ public class TotalFacetCounts {
     return new TotalFacetCounts(taxonomy, facetIndexingParams, counts, CreationType.Computed);
   }
   
-  static CategoryListIterator clIteraor(CategoryListCache clCache, CategoryListParams clp, int partition) 
-      throws IOException {
-    if (clCache != null) {
-      CategoryListData cld = clCache.get(clp);
-      if (cld != null) {
-        return cld.iterator(partition);
-      }
-    }
-    return clp.createCategoryListIterator(partition);
-  }
 }

@@ -10,6 +10,7 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
@@ -110,9 +111,8 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
 
       if (isUsingComplements) {
         try {
-          totalFacetCounts = TotalFacetCountsCache.getSingleton()
-            .getTotalCounts(indexReader, taxonomyReader,
-                searchParams.getFacetIndexingParams(), searchParams.getCategoryListCache());
+          totalFacetCounts = TotalFacetCountsCache.getSingleton().getTotalCounts(indexReader, taxonomyReader, 
+              searchParams.getFacetIndexingParams());
           if (totalFacetCounts != null) {
             docids = ScoredDocIdsUtils.getComplementSet(docids, indexReader);
           } else {
@@ -242,20 +242,29 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
       int maxDoc = -1;
       while (iterator.next()) {
         int docID = iterator.getDocID();
-        while (docID >= maxDoc) { // find the segment which contains this document
-          if (!contexts.hasNext()) {
-            throw new RuntimeException("ScoredDocIDs contains documents outside this reader's segments !?");
-          }
-          current = contexts.next();
-          maxDoc = current.docBase + current.reader().maxDoc();
-          if (docID < maxDoc) { // segment has docs, check if it has categories
-            boolean validSegment = categoryListIter.setNextReader(current);
-            validSegment &= aggregator.setNextReader(current);
-            if (!validSegment) { // if categoryList or aggregtor say it's an invalid segment, skip all docs
-              while (docID < maxDoc && iterator.next()) {
-                docID = iterator.getDocID();
+        if (docID >= maxDoc) {
+          boolean iteratorDone = false;
+          do { // find the segment which contains this document
+            if (!contexts.hasNext()) {
+              throw new RuntimeException("ScoredDocIDs contains documents outside this reader's segments !?");
+            }
+            current = contexts.next();
+            maxDoc = current.docBase + current.reader().maxDoc();
+            if (docID < maxDoc) { // segment has docs, check if it has categories
+              boolean validSegment = categoryListIter.setNextReader(current);
+              validSegment &= aggregator.setNextReader(current);
+              if (!validSegment) { // if categoryList or aggregtor say it's an invalid segment, skip all docs
+                while (docID < maxDoc && iterator.next()) {
+                  docID = iterator.getDocID();
+                }
+                if (docID < maxDoc) {
+                  iteratorDone = true;
+                }
               }
             }
+          } while (docID >= maxDoc);
+          if (iteratorDone) { // iterator finished, terminate the loop
+            break;
           }
         }
         docID -= current.docBase;
@@ -312,19 +321,17 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
     
     HashMap<CategoryListIterator, Aggregator> categoryLists = new HashMap<CategoryListIterator, Aggregator>();
 
+    FacetIndexingParams indexingParams = searchParams.getFacetIndexingParams();
     for (FacetRequest facetRequest : searchParams.getFacetRequests()) {
-      Aggregator categoryAggregator = facetRequest.createAggregator(
-          isUsingComplements, facetArrays, taxonomyReader);
+      Aggregator categoryAggregator = facetRequest.createAggregator(isUsingComplements, facetArrays, taxonomyReader);
 
-      CategoryListIterator cli = facetRequest.createCategoryListIterator(taxonomyReader, searchParams, partition);
+      CategoryListIterator cli = indexingParams.getCategoryListParams(facetRequest.categoryPath).createCategoryListIterator(partition);
       
       // get the aggregator
       Aggregator old = categoryLists.put(cli, categoryAggregator);
 
       if (old != null && !old.equals(categoryAggregator)) {
-        // TODO (Facet): create a more meaningful RE class, and throw it.
-        throw new RuntimeException(
-        "Overriding existing category list with different aggregator. THAT'S A NO NO!");
+        throw new RuntimeException("Overriding existing category list with different aggregator");
       }
       // if the aggregator is the same we're covered
     }

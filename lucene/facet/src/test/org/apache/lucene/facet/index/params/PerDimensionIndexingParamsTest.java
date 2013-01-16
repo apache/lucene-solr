@@ -32,44 +32,31 @@ public class PerDimensionIndexingParamsTest extends LuceneTestCase {
   public void testTopLevelSettings() {
     FacetIndexingParams ifip = new PerDimensionIndexingParams(Collections.<CategoryPath, CategoryListParams>emptyMap());
     assertNotNull("Missing default category list", ifip.getAllCategoryListParams());
-    assertEquals(
-        "Expected default category list term is $facets:$fulltree$",
-        new Term("$facets", "$fulltree$"), ifip.getCategoryListParams(
-            null).getTerm());
-    String expectedDDText = "a"
-        + ifip.getFacetDelimChar() + "b";
+    assertEquals("Expected default category list field is $facets", "$facets", ifip.getCategoryListParams(null).field);
+    String expectedDDText = "a" + ifip.getFacetDelimChar() + "b";
     CategoryPath cp = new CategoryPath("a", "b");
-    assertEquals("wrong drill-down term", new Term("$facets",
-        expectedDDText), DrillDown.term(ifip,cp));
+    assertEquals("wrong drill-down term", new Term("$facets", expectedDDText), DrillDown.term(ifip,cp));
     char[] buf = new char[20];
     int numchars = ifip.drillDownTermText(cp, buf);
     assertEquals("3 characters should be written", 3, numchars);
-    assertEquals("wrong drill-down term text", expectedDDText, new String(
-        buf, 0, numchars));
+    assertEquals("wrong drill-down term text", expectedDDText, new String(buf, 0, numchars));
     
     CategoryListParams clParams = ifip.getCategoryListParams(null);
-    assertEquals("partition for all ordinals is the first", "$fulltree$", 
-        PartitionsUtils.partitionNameByOrdinal(ifip, clParams , 250));
-    assertEquals("for partition 0, the same name should be returned",
-        "$fulltree$", PartitionsUtils.partitionName(clParams, 0));
-    assertEquals(
-        "for any other, it's the concatenation of name + partition",
-        "$fulltree$1", PartitionsUtils.partitionName(clParams, 1));
-    assertEquals("default partition number is always 0", 0, 
-        PartitionsUtils.partitionNumber(ifip,100));
-    
-    assertEquals("default partition size is unbounded", Integer.MAX_VALUE,
-        ifip.getPartitionSize());
+    assertEquals("partition for all ordinals is the first", "", PartitionsUtils.partitionNameByOrdinal(ifip, 250));
+    assertEquals("for partition 0, the same name should be returned", "", PartitionsUtils.partitionName(0));
+    assertEquals("for any other, it's the concatenation of name + partition", PartitionsUtils.PART_NAME_PREFIX + "1", PartitionsUtils.partitionName(1));
+    assertEquals("default partition number is always 0", 0, PartitionsUtils.partitionNumber(ifip,100));
+    assertEquals("default partition size is unbounded", Integer.MAX_VALUE, ifip.getPartitionSize());
   }
 
   @Test
   public void testCategoryListParamsAddition() {
-    CategoryListParams clp = new CategoryListParams(new Term("clp", "value"));
+    CategoryListParams clp = new CategoryListParams("clp");
     PerDimensionIndexingParams tlfip = new PerDimensionIndexingParams(
         Collections.<CategoryPath,CategoryListParams> singletonMap(new CategoryPath("a"), clp));
-    assertEquals("Expected category list term is " + clp.getTerm(), 
-        clp.getTerm(), tlfip.getCategoryListParams(new CategoryPath("a")).getTerm());
-    assertNotSame("Unexpected default category list " + clp.getTerm(), clp, tlfip.getCategoryListParams(null));
+    assertEquals("Expected category list field is " + clp.field, 
+        clp.field, tlfip.getCategoryListParams(new CategoryPath("a")).field);
+    assertNotSame("Unexpected default category list " + clp.field, clp, tlfip.getCategoryListParams(null));
   }
 
 }
