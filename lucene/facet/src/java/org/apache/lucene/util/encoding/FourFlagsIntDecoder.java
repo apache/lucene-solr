@@ -45,10 +45,13 @@ public class FourFlagsIntDecoder extends IntDecoder {
   }
 
   @Override
-  protected void doDecode(BytesRef buf, IntsRef values, int upto) {
-    while (buf.offset < upto) {
+  public void decode(BytesRef buf, IntsRef values) {
+    values.offset = values.length = 0;
+    int upto = buf.offset + buf.length;
+    int offset = buf.offset;
+    while (offset < upto) {
       // read indicator
-      int indicator = buf.bytes[buf.offset++] & 0xFF;
+      int indicator = buf.bytes[offset++] & 0xFF;
       int ordinal = 0;
       
       int capacityNeeded = values.length + 4;
@@ -59,11 +62,21 @@ public class FourFlagsIntDecoder extends IntDecoder {
       while (ordinal != 4) {
         byte decodeVal = DECODE_TABLE[indicator][ordinal++];
         if (decodeVal == 0) {
-          if (buf.offset == upto) { // end of buffer
+          if (offset == upto) { // end of buffer
             return;
           }
-          // decode the value from the stream.
-          values.ints[values.length++] = VInt8.decode(buf) + 4;
+          // it is better if the decoding is inlined like so, and not e.g.
+          // in a utility method
+          int value = 0;
+          while (true) {
+            byte b = buf.bytes[offset++];
+            if (b >= 0) {
+              values.ints[values.length++] = ((value << 7) | b) + 4;
+              break;
+            } else {
+              value = (value << 7) | (b & 0x7F);
+            }
+          }
         } else {
           values.ints[values.length++] = decodeVal;
         }
@@ -73,7 +86,7 @@ public class FourFlagsIntDecoder extends IntDecoder {
 
   @Override
   public String toString() {
-    return "FourFlags (VInt8)";
+    return "FourFlags(VInt8)";
   }
 
 }

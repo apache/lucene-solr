@@ -25,16 +25,18 @@ import org.apache.lucene.util.IntsRef;
  * 
  * @lucene.experimental
  */
-public class SimpleIntEncoder extends IntEncoder {
+public final class SimpleIntEncoder extends IntEncoder {
 
   @Override
-  protected void doEncode(IntsRef values, BytesRef buf, int upto) {
+  public void encode(IntsRef values, BytesRef buf) {
+    buf.offset = buf.length = 0;
     // ensure there's enough room in the buffer
     int bytesNeeded = values.length * 4;
     if (buf.bytes.length < bytesNeeded) {
       buf.grow(bytesNeeded);
     }
     
+    int upto = values.offset + values.length;
     for (int i = values.offset; i < upto; i++) {
       int value = values.ints[i];
       buf.bytes[buf.length++] = (byte) (value >>> 24);

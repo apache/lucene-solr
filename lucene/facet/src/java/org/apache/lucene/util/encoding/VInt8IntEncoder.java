@@ -47,17 +47,47 @@ import org.apache.lucene.util.IntsRef;
  * 
  * @lucene.experimental
  */
-public class VInt8IntEncoder extends IntEncoder {
+public final class VInt8IntEncoder extends IntEncoder {
 
   @Override
-  protected void doEncode(IntsRef values, BytesRef buf, int upto) {
+  public void encode(IntsRef values, BytesRef buf) {
+    buf.offset = buf.length = 0;
     int maxBytesNeeded = 5 * values.length; // at most 5 bytes per VInt
     if (buf.bytes.length < maxBytesNeeded) {
       buf.grow(maxBytesNeeded);
     }
     
+    int upto = values.offset + values.length;
     for (int i = values.offset; i < upto; i++) {
-      VInt8.encode(values.ints[i], buf);
+      // it is better if the encoding is inlined like so, and not e.g.
+      // in a utility method
+      int value = values.ints[i];
+      if ((value & ~0x7F) == 0) {
+        buf.bytes[buf.length] = (byte) value;
+        buf.length++;
+      } else if ((value & ~0x3FFF) == 0) {
+        buf.bytes[buf.length] = (byte) (0x80 | ((value & 0x3F80) >> 7));
+        buf.bytes[buf.length + 1] = (byte) (value & 0x7F);
+        buf.length += 2;
+      } else if ((value & ~0x1FFFFF) == 0) {
+        buf.bytes[buf.length] = (byte) (0x80 | ((value & 0x1FC000) >> 14));
+        buf.bytes[buf.length + 1] = (byte) (0x80 | ((value & 0x3F80) >> 7));
+        buf.bytes[buf.length + 2] = (byte) (value & 0x7F);
+        buf.length += 3;
+      } else if ((value & ~0xFFFFFFF) == 0) {
+        buf.bytes[buf.length] = (byte) (0x80 | ((value & 0xFE00000) >> 21));
+        buf.bytes[buf.length + 1] = (byte) (0x80 | ((value & 0x1FC000) >> 14));
+        buf.bytes[buf.length + 2] = (byte) (0x80 | ((value & 0x3F80) >> 7));
+        buf.bytes[buf.length + 3] = (byte) (value & 0x7F);
+        buf.length += 4;
+      } else {
+        buf.bytes[buf.length] = (byte) (0x80 | ((value & 0xF0000000) >> 28));
+        buf.bytes[buf.length + 1] = (byte) (0x80 | ((value & 0xFE00000) >> 21));
+        buf.bytes[buf.length + 2] = (byte) (0x80 | ((value & 0x1FC000) >> 14));
+        buf.bytes[buf.length + 3] = (byte) (0x80 | ((value & 0x3F80) >> 7));
+        buf.bytes[buf.length + 4] = (byte) (value & 0x7F);
+        buf.length += 5;
+      }
     }
   }
 
