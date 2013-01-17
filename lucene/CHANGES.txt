@@ -166,7 +166,7 @@ New Features
   remove stop words then "ghost chr..." could suggest "The Ghost of
   Christmas Past"; if SynonymFilter is used to map wifi and wireless
   network to hotspot, then "wirele..." could suggest "wifi router";
-  token normalization likes stemmers, accent removel, etc. would allow
+  token normalization likes stemmers, accent removal, etc. would allow
   the suggester to ignore such variations. (Robert Muir, Sudarshan
   Gaikaiwari, Mike McCandless)
 
@@ -218,7 +218,7 @@ API Changes
   information about the trigger of the merge ie. merge triggered due
   to a segment merge or a full flush etc. (Simon Willnauer)
 
-* Lucene-4415: TermsFilter is now immutable. All terms need to be provided
+* LUCENE-4415: TermsFilter is now immutable. All terms need to be provided
   as constructor argument. (Simon Willnauer)
 
 * LUCENE-4520: ValueSource.getSortField no longer throws IOExceptions
