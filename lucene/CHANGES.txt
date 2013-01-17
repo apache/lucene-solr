@@ -40,6 +40,11 @@ Changes in backwards compatibility policy
   support in-memory caching, CategoryListCache was removed too.
   (Shai Erera, Michael McCandless)
 
+Optimizations
+
+* LUCENE-4687: BloomFilterPostingsFormat now lazily initializes delegate
+  TermsEnum only if needed to do a seek or get a DocsEnum. (Simon Willnauer) 
+
 New Features
 
 * LUCENE-4686: New specialized DGapVInt8IntEncoder for facets (now the 
