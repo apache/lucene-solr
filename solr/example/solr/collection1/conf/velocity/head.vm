@@ -20,7 +20,11 @@
              'v.template': 'suggest'
            }
          }
-      );
+      ).keydown(function(e){
+        if (e.keyCode === 13){
+          $("#query-form").trigger('submit');
+        }
+      });
 
       // http://localhost:8983/solr/terms?terms.fl=name&terms.prefix=i&terms.sort=count
     });

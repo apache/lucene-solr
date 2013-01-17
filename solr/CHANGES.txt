@@ -60,7 +60,20 @@ Upgrading from Solr 4.1.0
 Detailed Change List
 ----------------------
 
-(No changes yet)
+New Features
+----------------------
+
+Bug Fixes
+----------------------
+
+* SOLR-4309: /browse: Improve JQuery autosuggest behavior (janhoy)
+
+Optimizations
+----------------------
+
+Other Changes
+----------------------
+
 
 
 ==================  4.1.0 ==================
