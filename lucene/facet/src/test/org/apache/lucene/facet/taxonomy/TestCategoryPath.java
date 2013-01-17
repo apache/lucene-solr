@@ -163,16 +163,22 @@ public class TestCategoryPath extends LuceneTestCase {
     CategoryPath p = new CategoryPath("a/b/c/d", '/');
     CategoryPath pother = new CategoryPath("a/b/c/d", '/');
     assertEquals(0, pother.compareTo(p));
+    assertEquals(0, p.compareTo(pother));
     pother = new CategoryPath("", '/');
     assertTrue(pother.compareTo(p) < 0);
+    assertTrue(p.compareTo(pother) > 0);
     pother = new CategoryPath("a/b_/c/d", '/');
     assertTrue(pother.compareTo(p) > 0);
+    assertTrue(p.compareTo(pother) < 0);
     pother = new CategoryPath("a/b/c", '/');
     assertTrue(pother.compareTo(p) < 0);
+    assertTrue(p.compareTo(pother) > 0);
     pother = new CategoryPath("a/b/c/e", '/');
     assertTrue(pother.compareTo(p) > 0);
+    assertTrue(p.compareTo(pother) < 0);
     pother = new CategoryPath("a/b/c//e", '/');
     assertTrue(pother.compareTo(p) < 0);
+    assertTrue(p.compareTo(pother) > 0);
   }
 
 }
