@@ -92,8 +92,8 @@ public class CategoryPath implements Comparable<CategoryPath> {
    */
   @Override
   public int compareTo(CategoryPath other) {
-    int length = this.length < other.length ? this.length : other.length;
-    for (int i = 0, j = 0; i < length; i++, j++) {
+    final int len = length < other.length ? length : other.length;
+    for (int i = 0, j = 0; i < len; i++, j++) {
       int cmp = components[i].compareTo(other.components[j]);
       if (cmp < 0) return -1; // this is 'before'
       if (cmp > 0) return 1; // this is 'after'
