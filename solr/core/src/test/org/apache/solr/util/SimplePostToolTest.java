@@ -38,6 +38,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
   SimplePostTool t_file, t_file_auto, t_file_rec, t_web, t_test;
   PageFetcher pf;
   
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -55,6 +56,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
     t_web = SimplePostTool.parseArgsAndInit(args);
 
     System.setProperty("params", "param1=foo&param2=bar");
+    System.setProperty("url", "http://localhost:5150/solr/update");
     t_test = SimplePostTool.parseArgsAndInit(args);
 
     pf = new MockPageFetcher();
@@ -75,7 +77,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
     assertEquals(1, t_web.recursive);
     assertEquals(10, t_web.delay);
     
-    assertNotNull(t_test.solrUrl);
+    assertEquals("http://localhost:5150/solr/update?param1=foo&param2=bar",t_test.solrUrl.toExternalForm());
   }
   
   @Test

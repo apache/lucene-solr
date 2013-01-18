@@ -30,6 +30,7 @@ public interface SolrFragListBuilder extends SolrInfoMBean, NamedListInitialized
    * may be specified when declaring a request handler in
    * solrconfig.xml
    */
+  @Override
   public void init( NamedList args);
 
   /**

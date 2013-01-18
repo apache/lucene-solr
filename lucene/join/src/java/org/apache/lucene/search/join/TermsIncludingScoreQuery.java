@@ -70,6 +70,7 @@ class TermsIncludingScoreQuery extends Query {
     this.unwrittenOriginalQuery = unwrittenOriginalQuery;
   }
 
+  @Override
   public String toString(String string) {
     return String.format(Locale.ROOT, "TermsIncludingScoreQuery{field=%s;originalQuery=%s}", field, unwrittenOriginalQuery);
   }
@@ -99,6 +100,7 @@ class TermsIncludingScoreQuery extends Query {
 
       private TermsEnum segmentTermsEnum;
 
+      @Override
       public Explanation explain(AtomicReaderContext context, int doc) throws IOException {
         SVInnerScorer scorer = (SVInnerScorer) scorer(context, false, false, PostingFeatures.DOCS_AND_FREQS, context.reader().getLiveDocs());
         if (scorer != null) {
@@ -109,14 +111,17 @@ class TermsIncludingScoreQuery extends Query {
         return new ComplexExplanation(false, 0.0f, "Not a match");
       }
 
+      @Override
       public Query getQuery() {
         return TermsIncludingScoreQuery.this;
       }
 
+      @Override
       public float getValueForNormalization() throws IOException {
         return originalWeight.getValueForNormalization() * TermsIncludingScoreQuery.this.getBoost() * TermsIncludingScoreQuery.this.getBoost();
       }
 
+      @Override
       public void normalize(float norm, float topLevelBoost) {
         originalWeight.normalize(norm, topLevelBoost * TermsIncludingScoreQuery.this.getBoost());
       }
@@ -161,6 +166,7 @@ class TermsIncludingScoreQuery extends Query {
       this.termsEnum = termsEnum;
     }
 
+    @Override
     public float score() throws IOException {
       return scores[ords[scoreUpto]];
     }
@@ -169,10 +175,12 @@ class TermsIncludingScoreQuery extends Query {
       return new ComplexExplanation(true, score(), "Score based on join value " + termsEnum.term().utf8ToString());
     }
 
+    @Override
     public int docID() {
       return docsEnum != null ? docsEnum.docID() : DocIdSetIterator.NO_MORE_DOCS;
     }
 
+    @Override
     public int nextDoc() throws IOException {
       if (docsEnum != null) {
         int docId = docsEnum.nextDoc();
@@ -190,13 +198,14 @@ class TermsIncludingScoreQuery extends Query {
 
         scoreUpto = upto;
         if (termsEnum.seekExact(terms.get(ords[upto++], spare), true)) {
-          docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, 0);
+          docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, DocsEnum.FLAG_NONE);
         }
       } while (docsEnum == null);
 
       return docsEnum.nextDoc();
     }
 
+    @Override
     public int advance(int target) throws IOException {
       throw new UnsupportedOperationException("advance() isn't supported because doc ids are emitted out of order");
     }
@@ -241,6 +250,7 @@ class TermsIncludingScoreQuery extends Query {
       alreadyEmittedDocs = new FixedBitSet(maxDoc);
     }
 
+    @Override
     public int nextDoc() throws IOException {
       if (docsEnum != null) {
         int docId;
@@ -266,7 +276,7 @@ class TermsIncludingScoreQuery extends Query {
 
           scoreUpto = upto;
           if (termsEnum.seekExact(terms.get(ords[upto++], spare), true)) {
-            docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, 0);
+            docsEnum = reuse = termsEnum.docs(acceptDocs, reuse, DocsEnum.FLAG_NONE);
           }
         } while (docsEnum == null);
 
@@ -307,7 +317,7 @@ class TermsIncludingScoreQuery extends Query {
       DocsEnum docsEnum = null;
       for (int i = 0; i < terms.size(); i++) {
         if (termsEnum.seekExact(terms.get(ords[i], spare), true)) {
-          docsEnum = termsEnum.docs(acceptDocs, docsEnum, 0);
+          docsEnum = termsEnum.docs(acceptDocs, docsEnum, DocsEnum.FLAG_NONE);
           float score = TermsIncludingScoreQuery.this.scores[ords[i]];
           for (int doc = docsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docsEnum.nextDoc()) {
             matchingDocs.set(doc);
@@ -319,22 +329,27 @@ class TermsIncludingScoreQuery extends Query {
       }
     }
 
+    @Override
     public float score() throws IOException {
       return scores[currentDoc];
     }
 
+    @Override
     public int freq() throws IOException {
       return 1;
     }
 
+    @Override
     public int docID() {
       return currentDoc;
     }
 
+    @Override
     public int nextDoc() throws IOException {
       return currentDoc = matchingDocsIterator.nextDoc();
     }
 
+    @Override
     public int advance(int target) throws IOException {
       return currentDoc = matchingDocsIterator.advance(target);
     }
@@ -359,7 +374,7 @@ class TermsIncludingScoreQuery extends Query {
       DocsEnum docsEnum = null;
       for (int i = 0; i < terms.size(); i++) {
         if (termsEnum.seekExact(terms.get(ords[i], spare), true)) {
-          docsEnum = termsEnum.docs(acceptDocs, docsEnum, 0);
+          docsEnum = termsEnum.docs(acceptDocs, docsEnum, DocsEnum.FLAG_NONE);
           float score = TermsIncludingScoreQuery.this.scores[ords[i]];
           for (int doc = docsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docsEnum.nextDoc()) {
             // I prefer this:

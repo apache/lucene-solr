@@ -18,74 +18,66 @@ package org.apache.lucene.facet.search;
  */
 
 /**
- * Provider of arrays used for facet operations such as counting.
+ * Provider of arrays used for facets aggregation. Returns either an
+ * {@code int[]} or {@code float[]} of the specified array length. When the
+ * arrays are no longer needed, you should call {@link #free()}, so that e.g.
+ * they will be reclaimed.
+ * 
+ * <p>
+ * <b>NOTE:</b> if you need to reuse the allocated arrays between search
+ * requests, use {@link ReusingFacetArrays}.
+ * 
+ * <p>
+ * <b>NOTE:</b> this class is not thread safe. You typically allocate it per
+ * search.
  * 
  * @lucene.experimental
  */
 public class FacetArrays {
 
-  private int[] intArray;
-  private float[] floatArray;
-  private IntArrayAllocator intArrayAllocator;
-  private FloatArrayAllocator floatArrayAllocator;
-  private int arraysLength;
+  private int[] ints;
+  private float[] floats;
+  
+  public final int arrayLength;
 
+  /** Arrays will be allocated at the specified length. */
+  public FacetArrays(int arrayLength) {
+    this.arrayLength = arrayLength;
+  }
+  
+  protected float[] newFloatArray() {
+    return new float[arrayLength];
+  }
+  
+  protected int[] newIntArray() {
+    return new int[arrayLength];
+  }
+  
+  protected void doFree(float[] floats, int[] ints) {
+  }
+  
   /**
-   * Create a FacetArrays with certain array allocators.
-   * @param intArrayAllocator allocator for int arrays.
-   * @param floatArrayAllocator allocator for float arrays.
+   * Notifies that the arrays obtained from {@link #getIntArray()}
+   * or {@link #getFloatArray()} are no longer needed and can be freed.
    */
-  public FacetArrays(IntArrayAllocator intArrayAllocator,
-                      FloatArrayAllocator floatArrayAllocator) {
-    this.intArrayAllocator = intArrayAllocator;
-    this.floatArrayAllocator = floatArrayAllocator;
+  public final void free() {
+    doFree(floats, ints);
+    ints = null;
+    floats = null;
   }
 
-  /**
-   * Notify allocators that they can free arrays allocated 
-   * on behalf of this FacetArrays object. 
-   */
-  public void free() {
-    if (intArrayAllocator!=null) {
-      intArrayAllocator.free(intArray);
-      // Should give up handle to the array now
-      // that it is freed.
-      intArray = null;
+  public final int[] getIntArray() {
+    if (ints == null) {
+      ints = newIntArray();
     }
-    if (floatArrayAllocator!=null) {
-      floatArrayAllocator.free(floatArray);
-      // Should give up handle to the array now
-      // that it is freed.
-      floatArray = null;
-    }
-    arraysLength = 0;
+    return ints;
   }
 
-  /**
-   * Obtain an int array, e.g. for facet counting. 
-   */
-  public int[] getIntArray() {
-    if (intArray == null) {
-      intArray = intArrayAllocator.allocate();
-      arraysLength = intArray.length;
+  public final float[] getFloatArray() {
+    if (floats == null) {
+      floats = newFloatArray();
     }
-    return intArray;
-  }
-
-  /** Obtain a float array, e.g. for evaluating facet association values. */
-  public float[] getFloatArray() {
-    if (floatArray == null) {
-      floatArray = floatArrayAllocator.allocate();
-      arraysLength = floatArray.length;
-    }
-    return floatArray;
-  }
-
-  /**
-   * Return the arrays length
-   */
-  public int getArraysLength() {
-    return arraysLength;
+    return floats;
   }
 
 }

@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  */
 public class KStemFilterFactory extends TokenFilterFactory {
 
+  @Override
   public TokenFilter create(TokenStream input) {
     return new KStemFilter(input);
   }

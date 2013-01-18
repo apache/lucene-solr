@@ -37,10 +37,12 @@ public abstract class AbstractDistinctValuesCollector<GC extends AbstractDistinc
    */
   public abstract List<GC> getGroups();
 
+  @Override
   public boolean acceptsDocsOutOfOrder() {
     return true;
   }
 
+  @Override
   public void setScorer(Scorer scorer) throws IOException {
   }
 

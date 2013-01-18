@@ -26,9 +26,6 @@
     <import file="../module-build.xml"/>
     <property name="working.dir" location="work"/>
 
-    <!-- the tests have some parallel problems -->
-    <property name="tests.jvms" value="1"/>
-
     <target name="check-files">
         <available file="temp/news20.tar.gz" property="news20.exists"/>
 
@@ -150,13 +147,9 @@
       <pathelement path="${analyzers-common.jar}"/>
       <pathelement path="${queryparser.jar}"/>
       <pathelement path="${facet.jar}"/>
-      <fileset dir="${common.dir}/analysis/icu/lib" includes="icu4j-49.1.jar"/>
+      <fileset dir="${common.dir}/analysis/icu/lib"/>
       <path refid="base.classpath"/>
-    	<fileset dir="lib">
-    	  <include name="commons-compress-1.4.1.jar"/>
-    	  <include name="xercesImpl-2.9.1.jar"/>
-    	  <include name="nekohtml-1.9.15.jar"/>
-    	</fileset>
+      <fileset dir="lib"/>
     </path>
     <path id="run.classpath">
         <path refid="classpath"/>
@@ -207,8 +200,8 @@
 	
 	<path id="collation.runtime.classpath">
 	  <path refid="run.classpath"/>
-    <pathelement path="${analyzers-icu.jar}"/>
-    <fileset dir="${common.dir}/analysis/icu/lib" includes="icu4j-49.1.jar"/>
+      <pathelement path="${analyzers-icu.jar}"/>
+      <fileset dir="${common.dir}/analysis/icu/lib"/>
 	</path>
 	
 	<target name="collation" depends="compile,jar-analyzers-icu,top-100k-wiki-word-files">

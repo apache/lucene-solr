@@ -97,7 +97,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSeparators() {
-    ReturnFields rf = new ReturnFields( req("fl", "id name test subject score") );
+    ReturnFields rf = new SolrReturnFields( req("fl", "id name test subject score") );
     assertTrue( rf.wantsScore() );
     assertTrue( rf.wantsField( "id" ) );
     assertTrue( rf.wantsField( "name" ) );
@@ -108,7 +108,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertFalse( rf.wantsField( "xxx" ) );
     assertTrue( rf.getTransformer() instanceof ScoreAugmenter);
 
-    rf = new ReturnFields( req("fl", "id,name,test,subject,score") );
+    rf = new SolrReturnFields( req("fl", "id,name,test,subject,score") );
     assertTrue( rf.wantsScore() );
     assertTrue( rf.wantsField( "id" ) );
     assertTrue( rf.wantsField( "name" ) );
@@ -119,7 +119,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertFalse( rf.wantsField( "xxx" ) );
     assertTrue( rf.getTransformer() instanceof ScoreAugmenter);
 
-    rf = new ReturnFields( req("fl", "id,name test,subject score") );
+    rf = new SolrReturnFields( req("fl", "id,name test,subject score") );
     assertTrue( rf.wantsScore() );
     assertTrue( rf.wantsField( "id" ) );
     assertTrue( rf.wantsField( "name" ) );
@@ -130,7 +130,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertFalse( rf.wantsField( "xxx" ) );
     assertTrue( rf.getTransformer() instanceof ScoreAugmenter);
 
-    rf = new ReturnFields( req("fl", "id, name  test , subject,score") );
+    rf = new SolrReturnFields( req("fl", "id, name  test , subject,score") );
     assertTrue( rf.wantsScore() );
     assertTrue( rf.wantsField( "id" ) );
     assertTrue( rf.wantsField( "name" ) );
@@ -144,20 +144,20 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testWilcards() {
-    ReturnFields rf = new ReturnFields( req("fl", "*") );
+    ReturnFields rf = new SolrReturnFields( req("fl", "*") );
     assertFalse( rf.wantsScore() );
     assertTrue( rf.wantsField( "xxx" ) );
     assertTrue( rf.wantsAllFields() );
     assertNull( rf.getTransformer() );
 
-    rf = new ReturnFields( req("fl", " * ") );
+    rf = new SolrReturnFields( req("fl", " * ") );
     assertFalse( rf.wantsScore() );
     assertTrue( rf.wantsField( "xxx" ) );
     assertTrue( rf.wantsAllFields() );
     assertNull( rf.getTransformer() );
 
     // Check that we want wildcards
-    rf = new ReturnFields( req("fl", "id,aaa*,*bbb") );
+    rf = new SolrReturnFields( req("fl", "id,aaa*,*bbb") );
     assertTrue( rf.wantsField( "id" ) );
     assertTrue( rf.wantsField( "aaaxxx" ) );
     assertFalse(rf.wantsField("xxxaaa"));
@@ -169,7 +169,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testManyParameters() {
-    ReturnFields rf = new ReturnFields( req("fl", "id name", "fl", "test subject", "fl", "score") );
+    ReturnFields rf = new SolrReturnFields( req("fl", "id name", "fl", "test subject", "fl", "score") );
     assertTrue( rf.wantsScore() );
     assertTrue( rf.wantsField( "id" ) );
     assertTrue( rf.wantsField( "name" ) );
@@ -183,7 +183,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testFunctions() {
-    ReturnFields rf = new ReturnFields( req("fl", "id sum(1,1)") );
+    ReturnFields rf = new SolrReturnFields( req("fl", "id sum(1,1)") );
     assertFalse(rf.wantsScore());
     assertTrue( rf.wantsField( "id" ) );
     assertFalse( rf.wantsAllFields() );
@@ -194,41 +194,41 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testTransformers() {
-    ReturnFields rf = new ReturnFields( req("fl", "[explain]") );
+    ReturnFields rf = new SolrReturnFields( req("fl", "[explain]") );
     assertFalse( rf.wantsScore() );
     assertFalse(rf.wantsField("id"));
     assertFalse(rf.wantsAllFields());
     assertEquals( "[explain]", rf.getTransformer().getName() );
 
-    rf = new ReturnFields( req("fl", "[shard],id") );
+    rf = new SolrReturnFields( req("fl", "[shard],id") );
     assertFalse( rf.wantsScore() );
     assertTrue(rf.wantsField("id"));
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
     assertEquals( "[shard]", rf.getTransformer().getName() );
 
-    rf = new ReturnFields( req("fl", "[docid]") );
+    rf = new SolrReturnFields( req("fl", "[docid]") );
     assertFalse( rf.wantsScore() );
     assertFalse( rf.wantsField( "id" ) );
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
     assertEquals( "[docid]", rf.getTransformer().getName() );
 
-    rf = new ReturnFields( req("fl", "mydocid:[docid]") );
+    rf = new SolrReturnFields( req("fl", "mydocid:[docid]") );
     assertFalse( rf.wantsScore() );
     assertFalse( rf.wantsField( "id" ) );
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
     assertEquals( "mydocid", rf.getTransformer().getName() );
 
-    rf = new ReturnFields( req("fl", "[docid][shard]") );
+    rf = new SolrReturnFields( req("fl", "[docid][shard]") );
     assertFalse( rf.wantsScore() );
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
     assertTrue( rf.getTransformer() instanceof DocTransformers);
     assertEquals(2, ((DocTransformers)rf.getTransformer()).size());
 
-    rf = new ReturnFields( req("fl", "[xxxxx]") );
+    rf = new SolrReturnFields( req("fl", "[xxxxx]") );
     assertFalse( rf.wantsScore() );
     assertFalse( rf.wantsField( "id" ) );
     assertFalse(rf.wantsAllFields());
@@ -237,7 +237,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testAliases() {
-    ReturnFields rf = new ReturnFields( req("fl", "newId:id newName:name newTest:test newSubject:subject") );
+    ReturnFields rf = new SolrReturnFields( req("fl", "newId:id newName:name newTest:test newSubject:subject") );
     assertTrue(rf.wantsField("id"));
     assertTrue(rf.wantsField("name"));
     assertTrue(rf.wantsField("test"));
@@ -249,7 +249,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
 
-    rf = new ReturnFields( req("fl", "newId:id newName:name newTest:test newSubject:subject score") );
+    rf = new SolrReturnFields( req("fl", "newId:id newName:name newTest:test newSubject:subject score") );
     assertTrue(rf.wantsField("id"));
     assertTrue(rf.wantsField("name"));
     assertTrue(rf.wantsField("test"));
@@ -268,7 +268,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
   // the simplest case of fl=foo-bar to work
   @Test
   public void testHyphenInFieldName() {
-    ReturnFields rf = new ReturnFields(req("fl", "id-test"));
+    ReturnFields rf = new SolrReturnFields(req("fl", "id-test"));
     assertFalse(rf.wantsScore());
     assertTrue(rf.wantsField("id-test"));
     assertFalse(rf.wantsField("xxx"));
@@ -277,20 +277,20 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testTrailingDotInFieldName() {
-    ReturnFields rf = new ReturnFields(req("fl", "id.test"));
+    ReturnFields rf = new SolrReturnFields(req("fl", "id.test"));
     assertFalse(rf.wantsScore());
     assertTrue(rf.wantsField("id.test"));
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
 
-    rf = new ReturnFields(req("fl", "test:id.test"));
+    rf = new SolrReturnFields(req("fl", "test:id.test"));
     assertFalse(rf.wantsScore());
     assertTrue(rf.wantsField("id.test"));
     assertTrue(rf.wantsField("test"));
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());
 
-    rf = new ReturnFields(req("fl", "test.id:id.test"));
+    rf = new SolrReturnFields(req("fl", "test.id:id.test"));
     assertFalse(rf.wantsScore());
     assertTrue(rf.wantsField("id.test"));
     assertTrue(rf.wantsField("test.id"));
@@ -300,7 +300,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testTrailingDollarInFieldName() {
-    ReturnFields rf = new ReturnFields(req("fl", "id$test"));
+    ReturnFields rf = new SolrReturnFields(req("fl", "id$test"));
     assertFalse(rf.wantsScore());
     assertTrue(rf.wantsField("id$test"));
     assertFalse(rf.wantsField("xxx"));
@@ -325,7 +325,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
         _TestUtil.randomWhitespace(r, 0, 3);
 
       final String fl = id + (r.nextBoolean() ? "" : ",") + foo_i;
-      ReturnFields rf = new ReturnFields(req("fl", fl));
+      ReturnFields rf = new SolrReturnFields(req("fl", fl));
 
       assertFalse("score ("+fl+")", rf.wantsScore());
 

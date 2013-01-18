@@ -85,7 +85,7 @@ public class LBHttpSolrServer extends SolrServer {
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
-  private static final BinaryResponseParser binaryParser = new BinaryResponseParser();
+  private final ResponseParser parser;
 
   static {
     solrQuery.setRows(0);
@@ -189,6 +189,7 @@ public class LBHttpSolrServer extends SolrServer {
   public LBHttpSolrServer(HttpClient httpClient, ResponseParser parser, String... solrServerUrl)
           throws MalformedURLException {
     clientIsInternal = (httpClient == null);
+    this.parser = parser;
     if (httpClient == null) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(HttpClientUtil.PROP_USE_RETRY, false);
@@ -210,7 +211,7 @@ public class LBHttpSolrServer extends SolrServer {
   }
 
   protected HttpSolrServer makeServer(String server) throws MalformedURLException {
-    return new HttpSolrServer(server, httpClient, binaryParser);
+    return new HttpSolrServer(server, httpClient, parser);
   }
 
 
@@ -566,6 +567,7 @@ public class LBHttpSolrServer extends SolrServer {
 
   private static Runnable getAliveCheckRunner(final WeakReference<LBHttpSolrServer> lbRef) {
     return new Runnable() {
+      @Override
       public void run() {
         LBHttpSolrServer lb = lbRef.get();
         if (lb != null && lb.zombieServers != null) {

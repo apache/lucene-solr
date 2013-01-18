@@ -41,6 +41,7 @@ public class LetterTokenizerFactory extends TokenizerFactory {
     assureMatchVersion();
   }
 
+  @Override
   public LetterTokenizer create(Reader input) {
     return new LetterTokenizer(luceneMatchVersion, input);
   }

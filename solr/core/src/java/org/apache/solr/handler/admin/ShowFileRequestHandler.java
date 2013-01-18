@@ -154,8 +154,9 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     
     // Make sure the file exists, is readable and is not a hidden file
     if (!zkClient.exists(adminFile, true)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Can not find: "
-          + adminFile);
+      rsp.setException(new SolrException(ErrorCode.NOT_FOUND, "Can not find: "
+                                         + adminFile));
+      return;
     }
     
     // Show a directory listing
@@ -210,7 +211,8 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       try {
         configdir = new File( loader.getClassLoader().getResource(loader.getConfigDir()).toURI() );
       } catch (URISyntaxException e) {
-        throw new SolrException( ErrorCode.FORBIDDEN, "Can not access configuration directory!");
+        rsp.setException(new SolrException( ErrorCode.FORBIDDEN, "Can not access configuration directory!", e));
+        return;
       }
     }
     String fname = req.getParams().get("file", null);
@@ -232,12 +234,16 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     
     // Make sure the file exists, is readable and is not a hidden file
     if( !adminFile.exists() ) {
-      throw new SolrException( ErrorCode.BAD_REQUEST, "Can not find: "+adminFile.getName() 
-          + " ["+adminFile.getAbsolutePath()+"]" );
+      rsp.setException(new SolrException
+                       ( ErrorCode.NOT_FOUND, "Can not find: "+adminFile.getName() 
+                         + " ["+adminFile.getAbsolutePath()+"]" ));
+      return;
     }
     if( !adminFile.canRead() || adminFile.isHidden() ) {
-      throw new SolrException( ErrorCode.BAD_REQUEST, "Can not show: "+adminFile.getName() 
-          + " ["+adminFile.getAbsolutePath()+"]" );
+      rsp.setException(new SolrException
+                       ( ErrorCode.NOT_FOUND, "Can not show: "+adminFile.getName() 
+                         + " ["+adminFile.getAbsolutePath()+"]" ));
+      return;
     }
     
     // Show a directory listing

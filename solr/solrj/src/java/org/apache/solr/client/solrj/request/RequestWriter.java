@@ -98,26 +98,32 @@ public class RequestWriter {
       return contentStream;
     }
 
+    @Override
     public String getName() {
       return getDelegate().getName();
     }
 
+    @Override
     public String getSourceInfo() {
       return getDelegate().getSourceInfo();
     }
 
+    @Override
     public String getContentType() {
       return getUpdateContentType();
     }
 
+    @Override
     public Long getSize() {
       return getDelegate().getSize();
     }
 
+    @Override
     public InputStream getStream() throws IOException {
       return getDelegate().getStream();
     }
 
+    @Override
     public Reader getReader() throws IOException {
       return getDelegate().getReader();
     }

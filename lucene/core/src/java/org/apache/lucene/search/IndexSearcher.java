@@ -182,18 +182,27 @@ public class IndexSearcher {
     return reader;
   }
 
-  /** Sugar for <code>.getIndexReader().document(docID)</code> */
+  /** 
+   * Sugar for <code>.getIndexReader().document(docID)</code> 
+   * @see IndexReader#document(int) 
+   */
   public StoredDocument doc(int docID) throws IOException {
     return reader.document(docID);
   }
 
-  /** Sugar for <code>.getIndexReader().document(docID, fieldVisitor)</code> */
+  /** 
+   * Sugar for <code>.getIndexReader().document(docID, fieldVisitor)</code>
+   * @see IndexReader#document(int, StoredFieldVisitor) 
+   */
   public void doc(int docID, StoredFieldVisitor fieldVisitor) throws IOException {
     reader.document(docID, fieldVisitor);
   }
 
-  /** Sugar for <code>.getIndexReader().document(docID, fieldsToLoad)</code> */
-  public final StoredDocument document(int docID, Set<String> fieldsToLoad) throws IOException {
+  /** 
+   * Sugar for <code>.getIndexReader().document(docID, fieldsToLoad)</code>
+   * @see IndexReader#document(int, Set) 
+   */
+  public StoredDocument doc(int docID, Set<String> fieldsToLoad) throws IOException {
     return reader.document(docID, fieldsToLoad);
   }
 
@@ -689,6 +698,7 @@ public class IndexSearcher {
       this.slice = slice;
     }
 
+    @Override
     public TopDocs call() throws IOException {
       final TopDocs docs = searcher.search(Arrays.asList(slice.leaves), weight, after, nDocs);
       final ScoreDoc[] scoreDocs = docs.scoreDocs;
@@ -781,6 +791,7 @@ public class IndexSearcher {
 
     private final FakeScorer fakeScorer = new FakeScorer();
 
+    @Override
     public TopFieldDocs call() throws IOException {
       assert slice.leaves.length == 1;
       final TopFieldDocs docs = searcher.search(Arrays.asList(slice.leaves),
@@ -823,6 +834,7 @@ public class IndexSearcher {
       this.service = new ExecutorCompletionService<T>(executor);
     }
 
+    @Override
     public boolean hasNext() {
       return numTasks > 0;
     }
@@ -832,6 +844,7 @@ public class IndexSearcher {
       ++numTasks;
     }
 
+    @Override
     public T next() {
       if(!this.hasNext()) 
         throw new NoSuchElementException("next() is called but hasNext() returned false");
@@ -846,10 +859,12 @@ public class IndexSearcher {
       }
     }
 
+    @Override
     public void remove() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public Iterator<T> iterator() {
       // use the shortcut here - this is only used in a private context
       return this;

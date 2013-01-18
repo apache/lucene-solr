@@ -114,6 +114,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
   class Runner implements Runnable {
     final Lock runnerLock = new ReentrantLock();
 
+    @Override
     public void run() {
       runnerLock.lock();
 
@@ -136,6 +137,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
 
             EntityTemplate template = new EntityTemplate(new ContentProducer() {
 
+              @Override
               public void writeTo(OutputStream out) throws IOException {
                 try {
                   if (isXml) {
@@ -243,6 +245,7 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
     }
   }
 
+  @Override
   public NamedList<Object> request(final SolrRequest request)
       throws SolrServerException, IOException {
     if (!(request instanceof UpdateRequest)) {
@@ -368,6 +371,18 @@ public class ConcurrentUpdateSolrServer extends SolrServer {
       scheduler.shutdownNow();
       Thread.currentThread().interrupt();
     }
+  }
+  
+  public void setConnectionTimeout(int timeout) {
+    HttpClientUtil.setConnectionTimeout(server.getHttpClient(), timeout);
+  }
+
+  /**
+   * set soTimeout (read timeout) on the underlying HttpConnectionManager. This is desirable for queries, but probably
+   * not for indexing.
+   */
+  public void setSoTimeout(int timeout) {
+    HttpClientUtil.setSoTimeout(server.getHttpClient(), timeout);
   }
 
   public void shutdownNow() {

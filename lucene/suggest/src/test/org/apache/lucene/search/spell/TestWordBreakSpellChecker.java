@@ -17,6 +17,10 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
+
 import junit.framework.Assert;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -31,6 +35,7 @@ import org.apache.lucene.search.spell.WordBreakSpellChecker.BreakSuggestionSortM
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestWordBreakSpellChecker extends LuceneTestCase {
   private Directory dir = null;
@@ -151,8 +156,7 @@ public class TestWordBreakSpellChecker extends LuceneTestCase {
     } finally {
       try { ir.close(); } catch(Exception e1) { }
     }    
-  }
-  
+  }  
   public void testBreakingWords() throws Exception {
     IndexReader ir = null;
     try {
@@ -241,11 +245,129 @@ public class TestWordBreakSpellChecker extends LuceneTestCase {
         Assert.assertTrue(sw[1][1].string.equals("thou"));
         Assert.assertTrue(sw[1][2].string.equals("sand"));
       }
+      {
+        //make sure we can handle 2-char codepoints
+        Term term = new Term("numbers", "\uD864\uDC79");
+        wbsp.setMaxChanges(1);
+        wbsp.setMinBreakWordLength(1);
+        wbsp.setMinSuggestionFrequency(1);
+        SuggestWord[][] sw = wbsp.suggestWordBreaks(term, 5, ir, SuggestMode.SUGGEST_WHEN_NOT_IN_INDEX, BreakSuggestionSortMethod.NUM_CHANGES_THEN_MAX_FREQUENCY);
+        Assert.assertTrue(sw.length==0);        
+      }
       
     } catch(Exception e) {
       throw e;
     } finally {
       try { ir.close(); } catch(Exception e1) { }
     }    
+  }
+  public void testRandom() throws Exception {
+    int numDocs = _TestUtil.nextInt(random(), (10 * RANDOM_MULTIPLIER),
+        (100 * RANDOM_MULTIPLIER));
+    Directory dir = null;
+    RandomIndexWriter writer = null;
+    IndexReader ir = null;
+    try {
+      dir = newDirectory();
+      writer = new RandomIndexWriter(random(), dir, new MockAnalyzer(random(),
+          MockTokenizer.WHITESPACE, false));
+      int maxLength = _TestUtil.nextInt(random(), 5, 50);
+      List<String> originals = new ArrayList<String>(numDocs);
+      List<String[]> breaks = new ArrayList<String[]>(numDocs);
+      for (int i = 0; i < numDocs; i++) {
+        String orig = "";
+        if (random().nextBoolean()) {
+          while (!goodTestString(orig)) {
+            orig = _TestUtil.randomSimpleString(random(), maxLength);
+          }
+        } else {
+          while (!goodTestString(orig)) {
+            orig = _TestUtil.randomUnicodeString(random(), maxLength);
+          }
+        }
+        originals.add(orig);
+        int totalLength = orig.codePointCount(0, orig.length());
+        int breakAt = orig.offsetByCodePoints(0,
+            _TestUtil.nextInt(random(), 1, totalLength - 1));
+        String[] broken = new String[2];
+        broken[0] = orig.substring(0, breakAt);
+        broken[1] = orig.substring(breakAt);
+        breaks.add(broken);
+        Document doc = new Document();
+        doc.add(newTextField("random_break", broken[0] + " " + broken[1],
+            Field.Store.NO));
+        doc.add(newTextField("random_combine", orig, Field.Store.NO));
+        writer.addDocument(doc);
+      }
+      writer.commit();
+      writer.close();
+      
+      ir = DirectoryReader.open(dir);
+      WordBreakSpellChecker wbsp = new WordBreakSpellChecker();
+      wbsp.setMaxChanges(1);
+      wbsp.setMinBreakWordLength(1);
+      wbsp.setMinSuggestionFrequency(1);
+      wbsp.setMaxCombineWordLength(maxLength);
+      for (int i = 0; i < originals.size(); i++) {
+        String orig = originals.get(i);
+        String left = breaks.get(i)[0];
+        String right = breaks.get(i)[1];
+        {
+          Term term = new Term("random_break", orig);
+          
+          SuggestWord[][] sw = wbsp.suggestWordBreaks(term, originals.size(),
+              ir, SuggestMode.SUGGEST_ALWAYS,
+              BreakSuggestionSortMethod.NUM_CHANGES_THEN_MAX_FREQUENCY);
+          boolean failed = true;
+          for (SuggestWord[] sw1 : sw) {
+            Assert.assertTrue(sw1.length == 2);
+            if (sw1[0].string.equals(left) && sw1[1].string.equals(right)) {
+              failed = false;
+            }
+          }
+          Assert.assertFalse("Failed getting break suggestions\n >Original: "
+              + orig + "\n >Left: " + left + "\n >Right: " + right, failed);
+        }
+        {
+          Term[] terms = {new Term("random_combine", left),
+              new Term("random_combine", right)};
+          CombineSuggestion[] cs = wbsp.suggestWordCombinations(terms,
+              originals.size(), ir, SuggestMode.SUGGEST_ALWAYS);
+          boolean failed = true;
+          for (CombineSuggestion cs1 : cs) {
+            Assert.assertTrue(cs1.originalTermIndexes.length == 2);
+            if (cs1.suggestion.string.equals(left + right)) {
+              failed = false;
+            }
+          }
+          Assert.assertFalse("Failed getting combine suggestions\n >Original: "
+              + orig + "\n >Left: " + left + "\n >Right: " + right, failed);
+        }
+      }
+      
+    } catch (Exception e) {
+      throw e;
+    } finally {
+      try {
+        ir.close();
+      } catch (Exception e1) {}
+      try {
+        writer.close();
+      } catch (Exception e1) {}
+      try {
+        dir.close();
+      } catch (Exception e1) {}
+    }
+  }
+  
+  private static final Pattern mockTokenizerWhitespacePattern = Pattern
+      .compile("[ \\t\\r\\n]");
+  
+  private boolean goodTestString(String s) {
+    if (s.codePointCount(0, s.length()) < 2
+        || mockTokenizerWhitespacePattern.matcher(s).find()) {
+      return false;
+    }
+    return true;
   }
  }

@@ -17,12 +17,12 @@ package org.apache.solr.search.grouping.distributed.command;
  * limitations under the License.
  */
 
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.grouping.Command;
 import org.apache.solr.search.grouping.collector.FilterCollector;
 
@@ -61,9 +61,8 @@ public class QueryCommand implements Command<QueryCommandResult> {
      * @param groupQueryString The group query string to parse
      * @param request The current request
      * @return this
-     * @throws ParseException If parsing the groupQueryString failed
      */
-    public Builder setQuery(String groupQueryString, SolrQueryRequest request) throws ParseException {
+    public Builder setQuery(String groupQueryString, SolrQueryRequest request) throws SyntaxError {
       QParser parser = QParser.getParser(groupQueryString, null, request);
       this.queryString = groupQueryString;
       return setQuery(parser.getQuery());
@@ -124,6 +123,7 @@ public class QueryCommand implements Command<QueryCommandResult> {
     this.queryString = queryString;
   }
 
+  @Override
   public List<Collector> create() throws IOException {
     if (sort == null || sort == Sort.RELEVANCE) {
       collector = TopScoreDocCollector.create(docsToCollect, true);
@@ -134,18 +134,22 @@ public class QueryCommand implements Command<QueryCommandResult> {
     return Arrays.asList((Collector) filterCollector);
   }
 
+  @Override
   public QueryCommandResult result() {
     return new QueryCommandResult(collector.topDocs(), filterCollector.getMatches());
   }
 
+  @Override
   public String getKey() {
     return queryString != null ? queryString : query.toString();
   }
 
+  @Override
   public Sort getGroupSort() {
     return sort;
   }
 
+  @Override
   public Sort getSortWithinGroup() {
     return null;
   }

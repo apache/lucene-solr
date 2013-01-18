@@ -64,6 +64,7 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
     groupCounts = new GroupCount[ordSet.keys.length];
   }
 
+  @Override
   public void collect(int doc) throws IOException {
     int slot = ordSet.find(groupFieldTermIndex.getOrd(doc));
     if (slot < 0) {
@@ -96,10 +97,12 @@ public class TermDistinctValuesCollector extends AbstractDistinctValuesCollector
     return Arrays.binarySearch(ords, ord) < 0;
   }
 
+  @Override
   public List<GroupCount> getGroups() {
     return groups;
   }
 
+  @Override
   public void setNextReader(AtomicReaderContext context) throws IOException {
     groupFieldTermIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), groupField);
     countFieldTermIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), countField);

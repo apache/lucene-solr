@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *
  */
 public class ThaiWordFilterFactory extends TokenFilterFactory {
+  @Override
   public ThaiWordFilter create(TokenStream input) {
     assureMatchVersion();
     return new ThaiWordFilter(luceneMatchVersion, input);

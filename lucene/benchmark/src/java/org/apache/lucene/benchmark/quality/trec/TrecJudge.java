@@ -83,6 +83,7 @@ public class TrecJudge implements Judge {
   }
   
   // inherit javadocs
+  @Override
   public boolean isRelevant(String docName, QualityQuery query) {
     QRelJudgement qrj = judgements.get(query.getQueryID());
     return qrj!=null && qrj.isRelevant(docName);
@@ -112,6 +113,7 @@ public class TrecJudge implements Judge {
   }
 
   // inherit javadocs
+  @Override
   public boolean validateData(QualityQuery[] qq, PrintWriter logger) {
     HashMap<String,QRelJudgement> missingQueries = new HashMap<String, QRelJudgement>(judgements);
     ArrayList<String> missingJudgements = new ArrayList<String>();
@@ -146,6 +148,7 @@ public class TrecJudge implements Judge {
   }
 
   // inherit javadocs
+  @Override
   public int maxRecall(QualityQuery query) {
     QRelJudgement qrj = judgements.get(query.getQueryID());
     if (qrj!=null) {

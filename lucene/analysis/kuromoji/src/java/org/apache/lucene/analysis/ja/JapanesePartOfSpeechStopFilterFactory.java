@@ -42,6 +42,7 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
   private boolean enablePositionIncrements;
   private Set<String> stopTags;
 
+  @Override
   public void inform(ResourceLoader loader) throws IOException {
     String stopTagFiles = args.get("tags");
     enablePositionIncrements = getBoolean("enablePositionIncrements", false);
@@ -56,6 +57,7 @@ public class JapanesePartOfSpeechStopFilterFactory extends TokenFilterFactory im
     }
   }
 
+  @Override
   public TokenStream create(TokenStream stream) {
     // if stoptags is null, it means the file is empty
     return stopTags == null ? stream : new JapanesePartOfSpeechStopFilter(enablePositionIncrements, stream, stopTags);

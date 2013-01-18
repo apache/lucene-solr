@@ -32,7 +32,7 @@ import org.apache.lucene.index.IndexDocument;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
@@ -295,6 +295,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
    */
   public void testThreadStarvationNoDeleteNRTReader() throws IOException, InterruptedException {
     IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+    conf.setMergePolicy(random().nextBoolean() ? NoMergePolicy.COMPOUND_FILES : NoMergePolicy.NO_COMPOUND_FILES);
     Directory d = newDirectory();
     final CountDownLatch latch = new CountDownLatch(1);
     final CountDownLatch signal = new CountDownLatch(1);
@@ -308,6 +309,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     manager.maybeRefresh();
     assertFalse(gen < manager.getCurrentSearchingGen());
     Thread t = new Thread() {
+      @Override
       public void run() {
         try {
           signal.await();
@@ -341,6 +343,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     
     final AtomicBoolean finished = new AtomicBoolean(false);
     Thread waiter = new Thread() {
+      @Override
       public void run() {
         manager.waitForGeneration(lastGen);
         finished.set(true);
@@ -373,6 +376,7 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
 
     }
 
+    @Override
     public void updateDocument(Term term,
         IndexDocument doc, Analyzer analyzer)
         throws IOException {
@@ -409,6 +413,27 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     }
     w.close();
     other.close();
+    dir.close();
+  }
+
+  public void testListenerCalled() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+    final AtomicBoolean afterRefreshCalled = new AtomicBoolean(false);
+    NRTManager sm = new NRTManager(new NRTManager.TrackingIndexWriter(iw),new SearcherFactory());
+    sm.addListener(new ReferenceManager.RefreshListener() {
+      @Override
+      public void afterRefresh() {
+        afterRefreshCalled.set(true);
+      }
+    });
+    iw.addDocument(new Document());
+    iw.commit();
+    assertFalse(afterRefreshCalled.get());
+    sm.maybeRefreshBlocking();
+    assertTrue(afterRefreshCalled.get());
+    sm.close();
+    iw.close();
     dir.close();
   }
 }

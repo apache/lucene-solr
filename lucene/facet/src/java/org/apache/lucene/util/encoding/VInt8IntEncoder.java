@@ -1,6 +1,7 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -46,30 +47,47 @@ import java.io.IOException;
  * 
  * @lucene.experimental
  */
-public class VInt8IntEncoder extends IntEncoder {
+public final class VInt8IntEncoder extends IntEncoder {
 
   @Override
-  public void encode(int value) throws IOException {
-    if ((value & ~0x7F) == 0) {
-      out.write(value);
-    } else if ((value & ~0x3FFF) == 0) {
-      out.write(0x80 | (value >> 7));
-      out.write(0x7F & value);
-    } else if ((value & ~0x1FFFFF) == 0) {
-      out.write(0x80 | (value >> 14));
-      out.write(0x80 | (value >> 7));
-      out.write(0x7F & value);
-    } else if ((value & ~0xFFFFFFF) == 0) {
-      out.write(0x80 | (value >> 21));
-      out.write(0x80 | (value >> 14));
-      out.write(0x80 | (value >> 7));
-      out.write(0x7F & value);
-    } else {
-      out.write(0x80 | (value >> 28));
-      out.write(0x80 | (value >> 21));
-      out.write(0x80 | (value >> 14));
-      out.write(0x80 | (value >> 7));
-      out.write(0x7F & value);
+  public void encode(IntsRef values, BytesRef buf) {
+    buf.offset = buf.length = 0;
+    int maxBytesNeeded = 5 * values.length; // at most 5 bytes per VInt
+    if (buf.bytes.length < maxBytesNeeded) {
+      buf.grow(maxBytesNeeded);
+    }
+    
+    int upto = values.offset + values.length;
+    for (int i = values.offset; i < upto; i++) {
+      // it is better if the encoding is inlined like so, and not e.g.
+      // in a utility method
+      int value = values.ints[i];
+      if ((value & ~0x7F) == 0) {
+        buf.bytes[buf.length] = (byte) value;
+        buf.length++;
+      } else if ((value & ~0x3FFF) == 0) {
+        buf.bytes[buf.length] = (byte) (0x80 | ((value & 0x3F80) >> 7));
+        buf.bytes[buf.length + 1] = (byte) (value & 0x7F);
+        buf.length += 2;
+      } else if ((value & ~0x1FFFFF) == 0) {
+        buf.bytes[buf.length] = (byte) (0x80 | ((value & 0x1FC000) >> 14));
+        buf.bytes[buf.length + 1] = (byte) (0x80 | ((value & 0x3F80) >> 7));
+        buf.bytes[buf.length + 2] = (byte) (value & 0x7F);
+        buf.length += 3;
+      } else if ((value & ~0xFFFFFFF) == 0) {
+        buf.bytes[buf.length] = (byte) (0x80 | ((value & 0xFE00000) >> 21));
+        buf.bytes[buf.length + 1] = (byte) (0x80 | ((value & 0x1FC000) >> 14));
+        buf.bytes[buf.length + 2] = (byte) (0x80 | ((value & 0x3F80) >> 7));
+        buf.bytes[buf.length + 3] = (byte) (value & 0x7F);
+        buf.length += 4;
+      } else {
+        buf.bytes[buf.length] = (byte) (0x80 | ((value & 0xF0000000) >> 28));
+        buf.bytes[buf.length + 1] = (byte) (0x80 | ((value & 0xFE00000) >> 21));
+        buf.bytes[buf.length + 2] = (byte) (0x80 | ((value & 0x1FC000) >> 14));
+        buf.bytes[buf.length + 3] = (byte) (0x80 | ((value & 0x3F80) >> 7));
+        buf.bytes[buf.length + 4] = (byte) (value & 0x7F);
+        buf.length += 5;
+      }
     }
   }
 

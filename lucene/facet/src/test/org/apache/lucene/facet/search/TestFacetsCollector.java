@@ -1,13 +1,13 @@
 package org.apache.lucene.facet.search;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.params.ScoreFacetRequest;
 import org.apache.lucene.facet.search.results.FacetResult;
@@ -55,20 +55,18 @@ public class TestFacetsCollector extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(indexDir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new KeywordAnalyzer()));
 
-    CategoryDocumentBuilder cdb = new CategoryDocumentBuilder(taxonomyWriter);
-    Iterable<CategoryPath> cats = Arrays.asList(new CategoryPath("a"));
+    FacetFields facetFields = new FacetFields(taxonomyWriter);
     for(int i = atLeast(2000); i > 0; --i) {
       Document doc = new Document();
       doc.add(new StringField("f", "v", Store.NO));
-      cdb.setCategoryPaths(cats);
-      iw.addDocument(cdb.build(doc));
+      facetFields.addFields(doc, Collections.singletonList(new CategoryPath("a")));
+      iw.addDocument(doc);
     }
     
     taxonomyWriter.close();
     iw.close();
     
-    FacetSearchParams sParams = new FacetSearchParams();
-    sParams.addFacetRequest(new ScoreFacetRequest(new CategoryPath("a"), 10));
+    FacetSearchParams sParams = new FacetSearchParams(new ScoreFacetRequest(new CategoryPath("a"), 10));
     
     DirectoryReader r = DirectoryReader.open(indexDir);
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);

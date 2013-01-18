@@ -32,6 +32,7 @@ public class BreakIteratorBoundaryScanner implements BoundaryScanner {
     this.bi = bi;
   }
 
+  @Override
   public int findStartOffset(StringBuilder buffer, int start) {
     // avoid illegal start offset
     if( start > buffer.length() || start < 1 ) return start;
@@ -40,6 +41,7 @@ public class BreakIteratorBoundaryScanner implements BoundaryScanner {
     return bi.previous();
   }
 
+  @Override
   public int findEndOffset(StringBuilder buffer, int start) {
     // avoid illegal start offset
     if( start > buffer.length() || start < 0 ) return start;

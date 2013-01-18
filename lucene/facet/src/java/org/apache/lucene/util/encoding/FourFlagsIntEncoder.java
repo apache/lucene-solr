@@ -1,6 +1,7 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -48,11 +49,11 @@ import java.io.IOException;
  */
 public class FourFlagsIntEncoder extends ChunksIntEncoder {
 
-  /**
+  /*
    * Holds all combinations of <i>indicator</i> flags for fast encoding (saves
    * time on bit manipulation @ encode time)
    */
-  private static byte[][] encodeTable = new byte[][] {
+  private static final byte[][] ENCODE_TABLE = new byte[][] {
     new byte[] { 0x00, 0x00, 0x00, 0x00 },
     new byte[] { 0x01, 0x04, 0x10, 0x40 },
     new byte[] { 0x02, 0x08, 0x20, (byte) 0x80 },
@@ -63,26 +64,28 @@ public class FourFlagsIntEncoder extends ChunksIntEncoder {
     super(4);
   }
 
-  /**
-   * Small values (<=3) are stored in the <code>indicator</code> while larger
-   * values are saved for later encoding in the {@link #encodeQueue}. Since
-   * Vint8 will only encode values larger or equal to 4, the values saves for
-   * encoded are transformed to (value - 4).<br>
-   * When a chunk is ready (got 4 values), the {@link #encodeChunk()}
-   * takes control.
-   */
   @Override
-  public void encode(int data) throws IOException {
-    if (data <= 3) {
-      indicator |= encodeTable[data][ordinal];
-    } else {
-      encodeQueue[encodeQueueSize++] = data - 4;
+  public void encode(IntsRef values, BytesRef buf) {
+    buf.offset = buf.length = 0;
+    int upto = values.offset + values.length;
+    for (int i = values.offset; i < upto; i++) {
+      int value = values.ints[i];
+      if (value <= 3) {
+        indicator |= ENCODE_TABLE[value][ordinal];
+      } else {
+        encodeQueue.ints[encodeQueue.length++] = value - 4;
+      }
+      ++ordinal;
+      
+      // encode the chunk and the indicator
+      if (ordinal == 4) {
+        encodeChunk(buf);
+      }
     }
-    ++ordinal;
-
-    // If 4 values were encoded thus far, 'flush' them including the indicator.
-    if ((ordinal & 0x3) == 0) {
-      encodeChunk();
+    
+    // encode remaining values
+    if (ordinal != 0) {
+      encodeChunk(buf);
     }
   }
 
@@ -93,7 +96,7 @@ public class FourFlagsIntEncoder extends ChunksIntEncoder {
 
   @Override
   public String toString() {
-    return "FourFlags (" + encoder.toString() + ")";
+    return "FourFlags(VInt)";
   }
 
 }

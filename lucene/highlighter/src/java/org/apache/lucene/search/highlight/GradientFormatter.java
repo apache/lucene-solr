@@ -114,6 +114,7 @@ public class GradientFormatter implements Formatter
         //        totalNumDocs = corpusReader.numDocs();
     }
 
+    @Override
     public String highlightTerm(String originalText, TokenGroup tokenGroup)
     {
         if (tokenGroup.getTotalScore() == 0)

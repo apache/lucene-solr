@@ -19,7 +19,11 @@ package org.apache.lucene.spatial.prefix;
 
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.SpatialRelation;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
@@ -110,23 +114,28 @@ RE "scan" threshold:
     while(!cells.isEmpty()) {
       final Node cell = cells.removeFirst();
       final BytesRef cellTerm = new BytesRef(cell.getTokenBytes());
-      TermsEnum.SeekStatus seekStat = termsEnum.seekCeil(cellTerm);
-      if (seekStat == TermsEnum.SeekStatus.END)
-        break;
-      if (seekStat == TermsEnum.SeekStatus.NOT_FOUND)
+      if (!termsEnum.seekExact(cellTerm, true))
         continue;
       if (cell.getLevel() == detailLevel || cell.isLeaf()) {
-        docsEnum = termsEnum.docs(acceptDocs, docsEnum, 0);
+        docsEnum = termsEnum.docs(acceptDocs, docsEnum, DocsEnum.FLAG_NONE);
         addDocs(docsEnum,bits);
       } else {//any other intersection
-        //If the next indexed term is the leaf marker, then add all of them
+        assert cell.getLevel() < detailLevel; //assertions help clarify logic
+        assert !cell.isLeaf();
+        //If the next indexed term just adds a leaf marker ('+') to cell,
+        // then add all of those docs
         BytesRef nextCellTerm = termsEnum.next();
+        if (nextCellTerm == null)
+          break;
         assert StringHelper.startsWith(nextCellTerm, cellTerm);
         scanCell = grid.getNode(nextCellTerm.bytes, nextCellTerm.offset, nextCellTerm.length, scanCell);
-        if (scanCell.isLeaf()) {
-          docsEnum = termsEnum.docs(acceptDocs, docsEnum, 0);
+        if (scanCell.getLevel() == cell.getLevel() && scanCell.isLeaf()) {
+          docsEnum = termsEnum.docs(acceptDocs, docsEnum, DocsEnum.FLAG_NONE);
           addDocs(docsEnum,bits);
-          termsEnum.next();//move pointer to avoid potential redundant addDocs() below
+          //increment pointer to avoid potential redundant addDocs() below
+          nextCellTerm = termsEnum.next();
+          if (nextCellTerm == null)
+            break;
         }
 
         //Decide whether to continue to divide & conquer, or whether it's time to scan through terms beneath this cell.
@@ -144,12 +153,17 @@ RE "scan" threshold:
             if (termLevel > detailLevel)
               continue;
             if (termLevel == detailLevel || scanCell.isLeaf()) {
-              //TODO should put more thought into implications of box vs point
-              Shape cShape = termLevel == grid.getMaxLevels() ? scanCell.getCenter() : scanCell.getShape();
+              Shape cShape;
+              //if this cell represents a point, use the cell center vs the box
+              // (points never have isLeaf())
+              if (termLevel == grid.getMaxLevels() && !scanCell.isLeaf())
+                cShape = scanCell.getCenter();
+              else
+                cShape = scanCell.getShape();
               if(queryShape.relate(cShape) == SpatialRelation.DISJOINT)
                 continue;
 
-              docsEnum = termsEnum.docs(acceptDocs, docsEnum, 0);
+              docsEnum = termsEnum.docs(acceptDocs, docsEnum, DocsEnum.FLAG_NONE);
               addDocs(docsEnum,bits);
             }
           }//term loop

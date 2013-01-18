@@ -78,19 +78,6 @@ public class Cl2oTaxonomyWriterCache implements TaxonomyWriterCache {
   }
 
   @Override
-  public int get(CategoryPath categoryPath, int length) {
-    if (length < 0 || length > categoryPath.length()) {
-      length = categoryPath.length();
-    }
-    lock.readLock().lock();
-    try {
-      return cache.getOrdinal(categoryPath, length);
-    } finally {
-      lock.readLock().unlock();
-    }
-  }
-
-  @Override
   public boolean put(CategoryPath categoryPath, int ordinal) {
     lock.writeLock().lock();
     try {
@@ -103,23 +90,7 @@ public class Cl2oTaxonomyWriterCache implements TaxonomyWriterCache {
     }
   }
 
-  @Override
-  public boolean put(CategoryPath categoryPath, int prefixLen, int ordinal) {
-    lock.writeLock().lock();
-    try {
-      cache.addLabel(categoryPath, prefixLen, ordinal);
-      // Tell the caller we didn't clear part of the cache, so it doesn't
-      // have to flush its on-disk index now
-      return false;
-    } finally {
-      lock.writeLock().unlock();
-    }
-  }
-
-  /**
-   * Returns the number of bytes in memory used by this object.
-   * @return Number of bytes in memory used by this object.
-   */
+  /** Returns the number of bytes in memory used by this object. */
   public int getMemoryUsage() {
     return cache == null ? 0 : cache.getMemoryUsage();
   }

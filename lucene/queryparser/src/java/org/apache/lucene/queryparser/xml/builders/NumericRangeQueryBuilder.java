@@ -87,6 +87,7 @@ import org.w3c.dom.Element;
  */
 public class NumericRangeQueryBuilder implements QueryBuilder {
 
+  @Override
   public Query getQuery(Element e) throws ParserException {
     String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     String lowerTerm = DOMUtils.getAttributeOrFail(e, "lowerTerm");

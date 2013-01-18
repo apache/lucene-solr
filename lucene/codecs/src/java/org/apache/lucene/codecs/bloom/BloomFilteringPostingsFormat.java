@@ -133,6 +133,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     super(BLOOM_CODEC_NAME);
   }
   
+  @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state)
       throws IOException {
     if (delegatePostingsFormat == null) {
@@ -144,6 +145,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
         delegatePostingsFormat);
   }
   
+  @Override
   public FieldsProducer fieldsProducer(SegmentReadState state)
       throws IOException {
     return new BloomFilteredFieldsProducer(state);
@@ -188,14 +190,17 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
     }
     
+    @Override
     public Iterator<String> iterator() {
       return delegateFieldsProducer.iterator();
     }
     
+    @Override
     public void close() throws IOException {
       delegateFieldsProducer.close();
     }
     
+    @Override
     public Terms terms(String field) throws IOException {
       FuzzySet filter = bloomsByFieldName.get(field);
       if (filter == null) {
@@ -209,6 +214,7 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
     }
     
+    @Override
     public int size() {
       return delegateFieldsProducer.size();
     }
@@ -230,26 +236,22 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       
       @Override
       public TermsEnum iterator(TermsEnum reuse) throws IOException {
-        TermsEnum result;
         if ((reuse != null) && (reuse instanceof BloomFilteredTermsEnum)) {
           // recycle the existing BloomFilteredTermsEnum by asking the delegate
           // to recycle its contained TermsEnum
           BloomFilteredTermsEnum bfte = (BloomFilteredTermsEnum) reuse;
           if (bfte.filter == filter) {
-            bfte.delegateTermsEnum = delegateTerms
-                .iterator(bfte.delegateTermsEnum);
+            bfte.reset(delegateTerms, bfte.delegateTermsEnum);
             return bfte;
           }
         }
         // We have been handed something we cannot reuse (either null, wrong
         // class or wrong filter) so allocate a new object
-        result = new BloomFilteredTermsEnum(delegateTerms.iterator(reuse),
-            filter);
-        return result;
+        return new BloomFilteredTermsEnum(delegateTerms, reuse, filter);
       }
       
       @Override
-      public Comparator<BytesRef> getComparator() throws IOException {
+      public Comparator<BytesRef> getComparator() {
         return delegateTerms.getComparator();
       }
       
@@ -289,24 +291,43 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       }
     }
     
-    class BloomFilteredTermsEnum extends TermsEnum {
+    final class BloomFilteredTermsEnum extends TermsEnum {
+      private Terms delegateTerms;
+      private TermsEnum delegateTermsEnum;
+      private TermsEnum reuseDelegate;
+      private final FuzzySet filter;
       
-      TermsEnum delegateTermsEnum;
-      private FuzzySet filter;
-      
-      public BloomFilteredTermsEnum(TermsEnum iterator, FuzzySet filter) {
-        this.delegateTermsEnum = iterator;
+      public BloomFilteredTermsEnum(Terms delegateTerms, TermsEnum reuseDelegate, FuzzySet filter) throws IOException {
+        this.delegateTerms = delegateTerms;
+        this.reuseDelegate = reuseDelegate;
         this.filter = filter;
+      }
+      
+      void reset(Terms delegateTerms, TermsEnum reuseDelegate) throws IOException {
+        this.delegateTerms = delegateTerms;
+        this.reuseDelegate = reuseDelegate;
+        this.delegateTermsEnum = null;
+      }
+      
+      private final TermsEnum delegate() throws IOException {
+        if (delegateTermsEnum == null) {
+          /* pull the iterator only if we really need it -
+           * this can be a relativly heavy operation depending on the 
+           * delegate postings format and they underlying directory
+           * (clone IndexInput) */
+          delegateTermsEnum = delegateTerms.iterator(reuseDelegate);
+        }
+        return delegateTermsEnum;
       }
       
       @Override
       public final BytesRef next() throws IOException {
-        return delegateTermsEnum.next();
+        return delegate().next();
       }
       
       @Override
       public final Comparator<BytesRef> getComparator() {
-        return delegateTermsEnum.getComparator();
+        return delegateTerms.getComparator();
       }
       
       @Override
@@ -320,51 +341,51 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
         if (filter.contains(text) == ContainsResult.NO) {
           return false;
         }
-        return delegateTermsEnum.seekExact(text, useCache);
+        return delegate().seekExact(text, useCache);
       }
       
       @Override
       public final SeekStatus seekCeil(BytesRef text, boolean useCache)
           throws IOException {
-        return delegateTermsEnum.seekCeil(text, useCache);
+        return delegate().seekCeil(text, useCache);
       }
       
       @Override
       public final void seekExact(long ord) throws IOException {
-        delegateTermsEnum.seekExact(ord);
+        delegate().seekExact(ord);
       }
       
       @Override
       public final BytesRef term() throws IOException {
-        return delegateTermsEnum.term();
+        return delegate().term();
       }
       
       @Override
       public final long ord() throws IOException {
-        return delegateTermsEnum.ord();
+        return delegate().ord();
       }
       
       @Override
       public final int docFreq() throws IOException {
-        return delegateTermsEnum.docFreq();
+        return delegate().docFreq();
       }
       
       @Override
       public final long totalTermFreq() throws IOException {
-        return delegateTermsEnum.totalTermFreq();
+        return delegate().totalTermFreq();
       }
       
 
       @Override
       public DocsAndPositionsEnum docsAndPositions(Bits liveDocs,
           DocsAndPositionsEnum reuse, int flags) throws IOException {
-        return delegateTermsEnum.docsAndPositions(liveDocs, reuse, flags);
+        return delegate().docsAndPositions(liveDocs, reuse, flags);
       }
 
       @Override
       public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags)
           throws IOException {
-        return delegateTermsEnum.docs(liveDocs, reuse, flags);
+        return delegate().docs(liveDocs, reuse, flags);
       }
       
       
@@ -377,12 +398,10 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
     private Map<FieldInfo,FuzzySet> bloomFilters = new HashMap<FieldInfo,FuzzySet>();
     private SegmentWriteState state;
     
-    // private PostingsFormat delegatePostingsFormat;
     
     public BloomFilteredFieldsConsumer(FieldsConsumer fieldsConsumer,
         SegmentWriteState state, PostingsFormat delegatePostingsFormat) {
       this.delegateFieldsConsumer = fieldsConsumer;
-      // this.delegatePostingsFormat=delegatePostingsFormat;
       this.state = state;
     }
     
@@ -460,10 +479,12 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       this.bloomFilter = bloomFilter;
     }
     
+    @Override
     public PostingsConsumer startTerm(BytesRef text) throws IOException {
       return delegateTermsConsumer.startTerm(text);
     }
     
+    @Override
     public void finishTerm(BytesRef text, TermStats stats) throws IOException {
       
       // Record this term in our BloomFilter
@@ -473,11 +494,13 @@ public final class BloomFilteringPostingsFormat extends PostingsFormat {
       delegateTermsConsumer.finishTerm(text, stats);
     }
     
+    @Override
     public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount)
         throws IOException {
       delegateTermsConsumer.finish(sumTotalTermFreq, sumDocFreq, docCount);
     }
     
+    @Override
     public Comparator<BytesRef> getComparator() throws IOException {
       return delegateTermsConsumer.getComparator();
     }

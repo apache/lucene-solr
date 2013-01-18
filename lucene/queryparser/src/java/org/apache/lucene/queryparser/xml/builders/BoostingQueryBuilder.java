@@ -36,6 +36,7 @@ public class BoostingQueryBuilder implements QueryBuilder {
     this.factory = factory;
   }
 
+  @Override
   public Query getQuery(Element e) throws ParserException {
     Element mainQueryElem = DOMUtils.getChildByTagOrFail(e, "Query");
     mainQueryElem = DOMUtils.getFirstChildOrFail(mainQueryElem);

@@ -55,6 +55,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
 
   }
 
+  @Override
   public final void add(QueryNode child) {
 
     if (isLeaf() || this.clauses == null || child == null) {
@@ -67,6 +68,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
 
   }
 
+  @Override
   public final void add(List<QueryNode> children) {
 
     if (isLeaf() || this.clauses == null) {
@@ -80,10 +82,12 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
 
   }
 
+  @Override
   public boolean isLeaf() {
     return this.isLeaf;
   }
 
+  @Override
   public final void set(List<QueryNode> children) {
 
     if (isLeaf() || this.clauses == null) {
@@ -112,6 +116,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
     }
   }
 
+  @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
     QueryNodeImpl clone = (QueryNodeImpl) super.clone();
     clone.isLeaf = this.isLeaf;
@@ -144,6 +149,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
    * @return a List for QueryNode object. Returns null, for nodes that do not
    *         contain children. All leaf Nodes return null.
    */
+  @Override
   public final List<QueryNode> getChildren() {
     if (isLeaf() || this.clauses == null) {
       return null;
@@ -151,19 +157,23 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
     return this.clauses;
   }
 
+  @Override
   public void setTag(String tagName, Object value) {
     this.tags.put(tagName.toLowerCase(Locale.ROOT), value);
   }
 
+  @Override
   public void unsetTag(String tagName) {
     this.tags.remove(tagName.toLowerCase(Locale.ROOT));
   }
 
   /** verify if a node contains a tag */
+  @Override
   public boolean containsTag(String tagName) {
     return this.tags.containsKey(tagName.toLowerCase(Locale.ROOT));
   }
 
+  @Override
   public Object getTag(String tagName) {
     return this.tags.get(tagName.toLowerCase(Locale.ROOT));
   }
@@ -174,6 +184,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
     this.parent = parent;
   }
 
+  @Override
   public QueryNode getParent() {
     return this.parent;
   }
@@ -225,6 +236,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
    * 
    * @return a map containing all tags attached to this query node
    */
+  @Override
   @SuppressWarnings("unchecked")
   public Map<String, Object> getTagMap() {
     return (Map<String, Object>) this.tags.clone();

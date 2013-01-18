@@ -86,28 +86,34 @@ public class BitDocSet extends DocSetBase {
   }
   ***/
 
+  @Override
   public DocIterator iterator() {
     return new DocIterator() {
       private final OpenBitSetIterator iter = new OpenBitSetIterator(bits);
       private int pos = iter.nextDoc();
+      @Override
       public boolean hasNext() {
         return pos != DocIdSetIterator.NO_MORE_DOCS;
       }
 
+      @Override
       public Integer next() {
         return nextDoc();
       }
 
+      @Override
       public void remove() {
         bits.clear(pos);
       }
 
+      @Override
       public int nextDoc() {
         int old=pos;
         pos=iter.nextDoc();
         return old;
       }
 
+      @Override
       public float score() {
         return 0.0f;
       }
@@ -136,6 +142,7 @@ public class BitDocSet extends DocSetBase {
     size=-1;  // invalidate size
   }
 
+  @Override
   public int size() {
     if (size!=-1) return size;
     return size=(int)bits.cardinality();
@@ -152,6 +159,7 @@ public class BitDocSet extends DocSetBase {
   /** Returns true of the doc exists in the set.
    *  Should only be called when doc < OpenBitSet.size()
    */
+  @Override
   public boolean exists(int doc) {
     return bits.fastGet(doc);
   }
@@ -229,6 +237,7 @@ public class BitDocSet extends DocSetBase {
   }
 
 
+  @Override
   public long memSize() {
     return (bits.getBits().length << 3) + 16;
   }

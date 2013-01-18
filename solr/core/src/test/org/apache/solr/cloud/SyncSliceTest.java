@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -115,7 +114,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     waitForRecoveriesToFinish(false);
 
     // shard should be inconsistent
-    String shardFailMessage = checkShardConsistency("shard1", true);
+    String shardFailMessage = checkShardConsistency("shard1", true, false);
     assertNotNull(shardFailMessage);
     
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -130,6 +129,8 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
     
     HttpSolrServer baseServer = new HttpSolrServer(baseUrl);
+    baseServer.setConnectionTimeout(15000);
+    baseServer.setSoTimeout(30000);
     baseServer.request(request);
     
     waitForThingsToLevelOut(15);
@@ -157,12 +158,11 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     
     chaosMonkey.killJetty(leaderJetty);
 
-    // we are careful to make sure the downed node is no longer in the state,
-    // because on some systems (especially freebsd w/ blackhole enabled), trying
-    // to talk to a downed node causes grief
-    waitToSeeDownInClusterState(leaderJetty, jetties);
-
-    waitForThingsToLevelOut(45);
+    Thread.sleep(2000);
+    
+    waitForThingsToLevelOut(90);
+    
+    Thread.sleep(1000);
     
     checkShardConsistency(false, true);
     
@@ -193,7 +193,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     //System.out.println("leader:" + leaderJetty.url);
     //System.out.println("skip list:" + skipServers);
     
-    // we are skipping  one nodes
+    // we are skipping  2 nodes
     assertEquals(2, skipServers.size());
     
     // more docs than can peer sync
@@ -204,12 +204,16 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     
     commit();
     
+    Thread.sleep(1000);
+    
     waitForRecoveriesToFinish(false);
     
     // shard should be inconsistent
-    shardFailMessage = checkShardConsistency("shard1", true);
-    assertNotNull(shardFailMessage);
+    shardFailMessage = waitTillInconsistent();
     
+    assertNotNull(
+        "shard1 should have just been set up to be inconsistent - but it's still consistent",
+        shardFailMessage); 
     
     jetties = new HashSet<CloudJettyRunner>();
     jetties.addAll(shardToJetty.get("shard1"));
@@ -220,14 +224,42 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     // kill the current leader
     chaosMonkey.killJetty(leaderJetty);
     
-    waitToSeeDownInClusterState(leaderJetty, jetties);
+    Thread.sleep(3000);
     
-    Thread.sleep(4000);
+    waitForThingsToLevelOut(90);
+    
+    Thread.sleep(2000);
     
     waitForRecoveriesToFinish(false);
 
     checkShardConsistency(true, true);
     
+  }
+
+  private String waitTillInconsistent() throws Exception, InterruptedException {
+    String shardFailMessage = null;
+    
+    shardFailMessage = pollConsistency(shardFailMessage, 0);
+    shardFailMessage = pollConsistency(shardFailMessage, 3000);
+    shardFailMessage = pollConsistency(shardFailMessage, 5000);
+    shardFailMessage = pollConsistency(shardFailMessage, 8000);
+    
+    return shardFailMessage;
+  }
+
+  private String pollConsistency(String shardFailMessage, int sleep)
+      throws InterruptedException, Exception {
+    try {
+      commit();
+    } catch (Throwable t) {
+      t.printStackTrace();
+    }
+    if (shardFailMessage == null) {
+      // try again
+      Thread.sleep(sleep);
+      shardFailMessage = checkShardConsistency("shard1", true, false);
+    }
+    return shardFailMessage;
   }
 
   private List<String> getRandomJetty() {
@@ -251,17 +283,6 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
     skipServers.add(cjetty.url + "/");
     return skipServers;
   }
-
-  private void waitToSeeDownInClusterState(CloudJettyRunner leaderJetty,
-      Set<CloudJettyRunner> jetties) throws InterruptedException {
-
-    for (CloudJettyRunner cjetty : jetties) {
-      waitToSeeNotLive(((SolrDispatchFilter) cjetty.jetty.getDispatchFilter()
-          .getFilter()).getCores().getZkController().getZkStateReader(),
-          leaderJetty);
-    }
-    waitToSeeNotLive(cloudClient.getZkStateReader(), leaderJetty);
-  }
   
   protected void indexDoc(List<String> skipServers, Object... fields) throws IOException,
       SolrServerException {
@@ -283,6 +304,7 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
   }
   
   // skip the randoms - they can deadlock...
+  @Override
   protected void indexr(Object... fields) throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     addFields(doc, fields);

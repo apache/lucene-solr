@@ -29,12 +29,11 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 public class AdaptiveAccumulatorTest extends BaseSampleTestTopK {
 
   @Override
-  protected FacetsAccumulator getSamplingAccumulator(Sampler sampler,
-      TaxonomyReader taxoReader, IndexReader indexReader,
-      FacetSearchParams searchParams) {
-    AdaptiveFacetsAccumulator res = new AdaptiveFacetsAccumulator(searchParams,
-        indexReader, taxoReader);
+  protected FacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
+      IndexReader indexReader, FacetSearchParams searchParams) {
+    AdaptiveFacetsAccumulator res = new AdaptiveFacetsAccumulator(searchParams, indexReader, taxoReader);
     res.setSampler(sampler);
     return res;
   }
+  
 }

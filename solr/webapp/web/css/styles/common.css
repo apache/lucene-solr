@@ -417,12 +417,27 @@ pre.syntax .hexcolor
   color: #40a070;
 }
 
+pre.syntax.language-json .number
+{
+  color: blue;
+}
+
+pre.syntax.language-json .literal
+{
+  color: firebrick;
+}
+
 pre.syntax .string,
 pre.syntax .tag .value,
 pre.syntax .phpdoc,
 pre.syntax .tex .formula
 {
   color: #d14;
+}
+
+pre.syntax.language-json .string
+{
+  color: green;
 }
 
 pre.syntax .title,
@@ -462,6 +477,12 @@ pre.syntax .instancevar,
 pre.syntax .lisp .body
 {
   color: #008080;
+}
+
+pre.syntax.language-json .attribute
+{
+  color: black;
+  font-weight: bold;
 }
 
 pre.syntax .regexp

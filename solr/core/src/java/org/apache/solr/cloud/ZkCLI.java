@@ -123,12 +123,12 @@ public class ZkCLI {
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp(ZK_CLI_NAME, options);
         System.out.println("Examples:");
-        System.out.println("zkcli.sh -cmd " + BOOTSTRAP + " -" + SOLRHOME + " /opt/solr");
-        System.out.println("zkcli.sh -cmd " + UPCONFIG + " -" + CONFDIR + " /opt/solr/collection1/conf" + " -" + CONFNAME + " myconf");
-        System.out.println("zkcli.sh -cmd " + DOWNCONFIG + " -" + CONFDIR + " /opt/solr/collection1/conf" + " -" + CONFNAME + " myconf");
-        System.out.println("zkcli.sh -cmd " + LINKCONFIG + " -" + COLLECTION + " collection1" + " -" + CONFNAME + " myconf");
-        System.out.println("zkcli.sh -cmd " + MAKEPATH + " /apache/solr");
-        System.out.println("zkcli.sh -cmd " + CLEAR + " /solr");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + BOOTSTRAP + " -" + SOLRHOME + " /opt/solr");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + UPCONFIG + " -" + CONFDIR + " /opt/solr/collection1/conf" + " -" + CONFNAME + " myconf");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + DOWNCONFIG + " -" + CONFDIR + " /opt/solr/collection1/conf" + " -" + CONFNAME + " myconf");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + LINKCONFIG + " -" + COLLECTION + " collection1" + " -" + CONFNAME + " myconf");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + MAKEPATH + " /apache/solr");
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLEAR + " /solr");
         return;
       }
       
@@ -173,6 +173,12 @@ public class ZkCLI {
           InputSource cfgis = new InputSource(new File(solrHome, SOLR_XML)
               .toURI().toASCIIString());
           Config cfg = new Config(loader, null, cfgis, null, false);
+          
+          if(!ZkController.checkChrootPath(zkServerAddress, true)) {
+            System.out.println("A chroot was specified in zkHost but the znode doesn't exist. ");
+            System.exit(1);
+          }
+          
           ZkController.bootstrapConf(zkClient, cfg, solrHome);
           
         } else if (line.getOptionValue(CMD).equals(UPCONFIG)) {
@@ -183,6 +189,11 @@ public class ZkCLI {
           }
           String confDir = line.getOptionValue(CONFDIR);
           String confName = line.getOptionValue(CONFNAME);
+          
+          if(!ZkController.checkChrootPath(zkServerAddress, true)) {
+            System.out.println("A chroot was specified in zkHost but the znode doesn't exist. ");
+            System.exit(1);
+          }
           
           ZkController.uploadConfigDir(zkClient, new File(confDir), confName);
         } else if (line.getOptionValue(CMD).equals(DOWNCONFIG)) {

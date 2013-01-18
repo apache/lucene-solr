@@ -45,13 +45,16 @@ public class OpenStringBuilder implements Appendable, CharSequence {
 
   public char[] getArray() { return buf; }
   public int size() { return len; }
+  @Override
   public int length() { return len; }
   public int capacity() { return buf.length; }
 
+  @Override
   public Appendable append(CharSequence csq) {
     return append(csq, 0, csq.length());
   }
 
+  @Override
   public Appendable append(CharSequence csq, int start, int end) {
     reserve(end-start);
     for (int i=start; i<end; i++) {
@@ -60,11 +63,13 @@ public class OpenStringBuilder implements Appendable, CharSequence {
     return this;
   }
 
+  @Override
   public Appendable append(char c) {
     write(c);
     return this;
   }
 
+  @Override
   public char charAt(int index) {
     return buf[index];
   }
@@ -73,6 +78,7 @@ public class OpenStringBuilder implements Appendable, CharSequence {
     buf[index] = ch;    
   }
 
+  @Override
   public CharSequence subSequence(int start, int end) {
     throw new UnsupportedOperationException(); // todo
   }
@@ -139,6 +145,7 @@ public class OpenStringBuilder implements Appendable, CharSequence {
     return newbuf;
   }
 
+  @Override
   public String toString() {
     return new String(buf, 0, size());
   }

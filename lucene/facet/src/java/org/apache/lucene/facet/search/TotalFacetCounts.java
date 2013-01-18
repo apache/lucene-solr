@@ -8,21 +8,23 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.lucene.index.IndexReader;
 
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
 import org.apache.lucene.facet.search.aggregator.CountingAggregator;
-import org.apache.lucene.facet.search.cache.CategoryListCache;
-import org.apache.lucene.facet.search.cache.CategoryListData;
+import org.apache.lucene.facet.search.params.CountFacetRequest;
+import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
+import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.facet.util.ScoredDocIdsUtils;
+import org.apache.lucene.index.IndexReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -146,13 +148,16 @@ public class TotalFacetCounts {
       dos.close();
     }
   }
+  
+  // needed because FacetSearchParams do not allow empty FacetRequests
+  private static final List<FacetRequest> DUMMY_REQ = Arrays.asList(
+      new FacetRequest[] { new CountFacetRequest(CategoryPath.EMPTY, 1) });
 
-  static TotalFacetCounts compute(final IndexReader indexReader,
-      final TaxonomyReader taxonomy, final FacetIndexingParams facetIndexingParams,
-      final CategoryListCache clCache) throws IOException {
+  static TotalFacetCounts compute(final IndexReader indexReader, final TaxonomyReader taxonomy, 
+      final FacetIndexingParams facetIndexingParams) throws IOException {
     int partitionSize = PartitionsUtils.partitionSize(facetIndexingParams, taxonomy);
     final int[][] counts = new int[(int) Math.ceil(taxonomy.getSize()  /(float) partitionSize)][partitionSize];
-    FacetSearchParams newSearchParams = new FacetSearchParams(facetIndexingParams); 
+    FacetSearchParams newSearchParams = new FacetSearchParams(DUMMY_REQ, facetIndexingParams); 
       //createAllListsSearchParams(facetIndexingParams,  this.totalCounts);
     FacetsAccumulator fe = new StandardFacetsAccumulator(newSearchParams, indexReader, taxonomy) {
       @Override
@@ -162,8 +167,7 @@ public class TotalFacetCounts {
         Aggregator aggregator = new CountingAggregator(counts[partition]);
         HashMap<CategoryListIterator, Aggregator> map = new HashMap<CategoryListIterator, Aggregator>();
         for (CategoryListParams clp: facetIndexingParams.getAllCategoryListParams()) {
-          final CategoryListIterator cli = clIteraor(clCache, clp, indexReader, partition);
-          map.put(cli, aggregator);
+          map.put(clp.createCategoryListIterator(partition), aggregator);
         }
         return map;
       }
@@ -173,14 +177,4 @@ public class TotalFacetCounts {
     return new TotalFacetCounts(taxonomy, facetIndexingParams, counts, CreationType.Computed);
   }
   
-  static CategoryListIterator clIteraor(CategoryListCache clCache, CategoryListParams clp, 
-      IndexReader indexReader, int partition) throws IOException {
-    if (clCache != null) {
-      CategoryListData cld = clCache.get(clp);
-      if (cld != null) {
-        return cld.iterator(partition);
-      }
-    }
-    return clp.createCategoryListIterator(indexReader, partition);
-  }
 }

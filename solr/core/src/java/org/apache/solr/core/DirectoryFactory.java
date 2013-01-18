@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
@@ -34,7 +35,15 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     Closeable {
-  
+
+  // Estimate 10M docs, 100GB size, to avoid caching by NRTCachingDirectory
+  // Stayed away from upper bounds of the int/long in case any other code tried to aggregate these numbers.
+  // A large estimate should currently have no other side effects.
+  public static final IOContext IOCONTEXT_NO_CACHE = new IOContext(new FlushInfo(10*1000*1000, 100L*1000*1000*1000));
+
+  // hint about what the directory contains - default is index directory
+  public enum DirContext {DEFAULT, META_DATA}
+
   private static final Logger log = LoggerFactory.getLogger(DirectoryFactory.class.getName());
   
   /**
@@ -56,6 +65,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * 
    * @throws IOException If there is a low-level I/O error.
    */
+  @Override
   public abstract void close() throws IOException;
   
   /**
@@ -63,7 +73,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * 
    * @throws IOException If there is a low-level I/O error.
    */
-  protected abstract Directory create(String path) throws IOException;
+  protected abstract Directory create(String path,  DirContext dirContext) throws IOException;
   
   /**
    * Returns true if a Directory exists for a given path.
@@ -81,12 +91,22 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public abstract void remove(Directory dir) throws IOException;
   
   /**
+   * This remove is special in that it may be called even after
+   * the factory has been closed. Remove only makes sense for
+   * persistent directory factories.
+   * 
+   * @param path to remove
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public abstract void remove(String path) throws IOException;
+  
+  /**
    * Override for more efficient moves.
    * 
    * @throws IOException If there is a low-level I/O error.
    */
-  public void move(Directory fromDir, Directory toDir, String fileName) throws IOException {
-    fromDir.copy(toDir, fileName, fileName, IOContext.DEFAULT);
+  public void move(Directory fromDir, Directory toDir, String fileName, IOContext ioContext) throws IOException {
+    fromDir.copy(toDir, fileName, fileName, ioContext);
     fromDir.deleteFile(fileName);
   }
   
@@ -100,7 +120,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * 
    * @throws IOException If there is a low-level I/O error.
    */
-  public abstract Directory get(String path, String rawLockType)
+  public abstract Directory get(String path, DirContext dirContext, String rawLockType)
       throws IOException;
   
   /**
@@ -112,7 +132,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * 
    * @throws IOException If there is a low-level I/O error.
    */
-  public abstract Directory get(String path, String rawLockType,
+  public abstract Directory get(String path,  DirContext dirContext, String rawLockType,
       boolean forceNew) throws IOException;
   
   /**
@@ -121,6 +141,12 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
    * 
    */
   public abstract void incRef(Directory directory);
+  
+  
+  /**
+   * @return true if data is kept after close.
+   */
+  public abstract boolean isPersistent();
   
   /**
    * Releases the Directory so that it may be closed when it is no longer
@@ -158,7 +184,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   
   public static long sizeOf(Directory directory, String file) throws IOException {
     if (!directory.fileExists(file)) {
-      throw new IllegalArgumentException(file + " does not exist");
+      return 0;
     }
     
     return directory.fileLength(file);

@@ -32,6 +32,7 @@ public class UIMATypeAwareAnalyzerTest extends BaseTokenStreamTestCase {
 
   private UIMATypeAwareAnalyzer analyzer;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -39,6 +40,7 @@ public class UIMATypeAwareAnalyzerTest extends BaseTokenStreamTestCase {
         "org.apache.uima.TokenAnnotation", "posTag");
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     analyzer.close();

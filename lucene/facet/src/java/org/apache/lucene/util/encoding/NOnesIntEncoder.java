@@ -1,7 +1,7 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -50,11 +50,10 @@ import java.io.OutputStream;
  */
 public class NOnesIntEncoder extends FourFlagsIntEncoder {
 
+  private final IntsRef internalBuffer;
+  
   /** Number of consecutive '1's to be translated into single target value '2'. */
-  private int n;
-
-  /** Counts the number of consecutive ones seen. */
-  private int onesCounter = 0;
+  private final int n;
 
   /**
    * Constructs an encoder with a given value of N (N: Number of consecutive
@@ -62,38 +61,44 @@ public class NOnesIntEncoder extends FourFlagsIntEncoder {
    */
   public NOnesIntEncoder(int n) {
     this.n = n;
+    internalBuffer = new IntsRef(n);
   }
 
   @Override
-  public void close() throws IOException {
-    // We might have ones in our buffer, encode them as neccesary.
-    while (onesCounter-- > 0) {
-      super.encode(1);
+  public void encode(IntsRef values, BytesRef buf) {
+    internalBuffer.length = 0;
+    // make sure the internal buffer is large enough
+    if (values.length > internalBuffer.ints.length) {
+      internalBuffer.grow(values.length);
     }
-
-    super.close();
-  }
-
-  @Override
-  public void encode(int value) throws IOException {
-    if (value == 1) {
-      // Increment the number of consecutive ones seen so far
-      if (++onesCounter == n) {
-        super.encode(2);
-        onesCounter = 0;
+    
+    int onesCounter = 0;
+    int upto = values.offset + values.length;
+    for (int i = values.offset; i < upto; i++) {
+      int value = values.ints[i];
+      if (value == 1) {
+        // every N 1's should be encoded as '2'
+        if (++onesCounter == n) {
+          internalBuffer.ints[internalBuffer.length++] = 2;
+          onesCounter = 0;
+        }
+      } else {
+        // there might have been 1's that we need to encode
+        while (onesCounter > 0) {
+          --onesCounter;
+          internalBuffer.ints[internalBuffer.length++] = 1;
+        }
+        
+        // encode value as value+1
+        internalBuffer.ints[internalBuffer.length++] = value + 1;
       }
-      return;
     }
-
-    // If it's not one - there might have been ones we had to encode prior to
-    // this value
+    // there might have been 1's that we need to encode
     while (onesCounter > 0) {
       --onesCounter;
-      super.encode(1);
+      internalBuffer.ints[internalBuffer.length++] = 1;
     }
-
-    // encode value + 1 --> the translation.
-    super.encode(value + 1);
+    super.encode(internalBuffer, buf);
   }
 
   @Override
@@ -102,14 +107,8 @@ public class NOnesIntEncoder extends FourFlagsIntEncoder {
   }
 
   @Override
-  public void reInit(OutputStream out) {
-    super.reInit(out);
-    onesCounter = 0;
-  }
-
-  @Override
   public String toString() {
-    return "NOnes (" + n + ") (" + super.toString() + ")";
+    return "NOnes(" + n + ") (" + super.toString() + ")";
   }
 
 }

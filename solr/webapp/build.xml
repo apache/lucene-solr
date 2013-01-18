@@ -44,7 +44,7 @@
                     implementation.title="org.apache.solr"
                     spec.version="${solr.spec.version}"/>
     <ant dir="${common-solr.dir}" inheritall="false" target="contribs-add-to-war"/>
-    <war destfile="${dist}/apache-solr-${version}${solr.war.suffix}.war"
+    <war destfile="${dist}/solr-${version}${solr.war.suffix}.war"
          webxml="web/WEB-INF/web.xml"
          manifest="${manifest.file}">
       <lib dir="${common-solr.dir}/core/lib" excludes="${exclude.from.war},${common.classpath.excludes}">
@@ -54,8 +54,8 @@
       <lib dir="${common-solr.dir}/solrj/lib" excludes="${exclude.from.war},${common.classpath.excludes}"/>
       <lib dir="${lucene-libs}" excludes="${exclude.from.war},${common.classpath.excludes}" />
       <lib dir="${dist}" excludes="${exclude.from.war},${common.classpath.excludes}">
-        <include name="apache-solr-solrj-${version}.jar" />
-        <include name="apache-solr-core-${version}.jar" />
+        <include name="solr-solrj-${version}.jar" />
+        <include name="solr-core-${version}.jar" />
       </lib>
       <fileset dir="${dest}/web" excludes="${exclude.from.war}"/> <!-- contribs' additions -->
       <fileset dir="web" excludes="${exclude.from.war}"/>
@@ -64,7 +64,7 @@
   </target>
 
   <target name="dist-maven" depends="dist, filter-pom-templates, install-maven-tasks, m2-deploy-solr-parent-pom">
-    <m2-deploy jar.file="${dist}/apache-solr-${version}.war"
+    <m2-deploy jar.file="${dist}/solr-${version}.war"
                pom.xml="${filtered.pom.templates.dir}/solr/webapp/pom.xml"/>
   </target>
 </project>

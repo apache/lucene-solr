@@ -89,6 +89,7 @@ public class TestRTGBase extends SolrTestCaseJ4 {
       this.val = val;
     }
 
+    @Override
     public String toString() {
       return "{version="+version+",val="+val+"}";
     }
@@ -134,7 +135,7 @@ public class TestRTGBase extends SolrTestCaseJ4 {
     if (!termsEnum.seekExact(termBytes, false)) {
       return -1;
     }
-    DocsEnum docs = termsEnum.docs(MultiFields.getLiveDocs(r), null, 0);
+    DocsEnum docs = termsEnum.docs(MultiFields.getLiveDocs(r), null, DocsEnum.FLAG_NONE);
     int id = docs.nextDoc();
     if (id != DocIdSetIterator.NO_MORE_DOCS) {
       int next = docs.nextDoc();

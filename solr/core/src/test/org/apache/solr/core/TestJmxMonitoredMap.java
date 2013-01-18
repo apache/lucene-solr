@@ -176,31 +176,38 @@ public class TestJmxMonitoredMap extends LuceneTestCase {
   }
 
   private class MockInfoMBean implements SolrInfoMBean {
+    @Override
     public String getName() {
       return "mock";
     }
 
+    @Override
     public Category getCategory() {
       return Category.OTHER;
     }
 
+    @Override
     public String getDescription() {
       return "mock";
     }
 
+    @Override
     public URL[] getDocs() {
       // TODO Auto-generated method stub
       return null;
     }
 
+    @Override
     public String getVersion() {
       return "mock";
     }
 
+    @Override
     public String getSource() {
       return "mock";
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public NamedList getStatistics() {
       NamedList myList = new NamedList<Integer>();

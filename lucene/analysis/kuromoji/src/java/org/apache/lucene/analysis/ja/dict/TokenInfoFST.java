@@ -19,8 +19,8 @@ package org.apache.lucene.analysis.ja.dict;
 
 import java.io.IOException;
 
-import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
+import org.apache.lucene.util.fst.FST;
 
 /**
  * Thin wrapper around an FST with root-arc caching for Japanese.
@@ -48,13 +48,13 @@ public final class TokenInfoFST {
     rootCache = cacheRootArcs();
   }
   
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"rawtypes","unchecked"})
   private FST.Arc<Long>[] cacheRootArcs() throws IOException {
     FST.Arc<Long> rootCache[] = new FST.Arc[1+(cacheCeiling-0x3040)];
     FST.Arc<Long> firstArc = new FST.Arc<Long>();
     fst.getFirstArc(firstArc);
     FST.Arc<Long> arc = new FST.Arc<Long>();
-    final FST.BytesReader fstReader = fst.getBytesReader(0);
+    final FST.BytesReader fstReader = fst.getBytesReader();
     // TODO: jump to 3040, readNextRealArc to ceiling? (just be careful we don't add bugs)
     for (int i = 0; i < rootCache.length; i++) {
       if (fst.findTargetArc(0x3040 + i, firstArc, arc, fstReader) != null) {
@@ -83,8 +83,8 @@ public final class TokenInfoFST {
     return fst.getFirstArc(arc);
   }
 
-  public FST.BytesReader getBytesReader(int pos) {
-    return fst.getBytesReader(pos);
+  public FST.BytesReader getBytesReader() {
+    return fst.getBytesReader();
   }
   
   /** @lucene.internal for testing only */

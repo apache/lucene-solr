@@ -81,6 +81,7 @@ public final class CannedBinaryTokenStream extends TokenStream {
       return bytes;
     }
 
+    @Override
     public void setBytesRef(BytesRef bytes) {
       this.bytes.copyBytes(bytes);
     }

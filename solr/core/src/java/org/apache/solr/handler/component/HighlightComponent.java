@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -25,10 +24,12 @@ import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.highlight.PostingsSolrHighlighter;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -57,6 +58,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     return hl==null ? null: hl.getHighlighter();    
   }
 
+  @Override
   public void init(PluginInfo info) {
     this.info = info;
   }
@@ -71,13 +73,14 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
         try {
           QParser parser = QParser.getParser(hlq, null, rb.req);
           rb.setHighlightQuery(parser.getHighlightQuery());
-        } catch (ParseException e) {
+        } catch (SyntaxError e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
         }
       }
     }
   }
 
+  @Override
   public void inform(SolrCore core) {
     List<PluginInfo> children = info.getChildren("highlighting");
     if(children.isEmpty()) {
@@ -126,7 +129,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
       }
       
       if(highlightQuery != null) {
-        boolean rewrite = !(Boolean.valueOf(params.get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true")) &&
+        boolean rewrite = (highlighter instanceof PostingsSolrHighlighter == false) && !(Boolean.valueOf(params.get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true")) &&
             Boolean.valueOf(params.get(HighlightParams.HIGHLIGHT_MULTI_TERM, "true")));
         highlightQuery = rewrite ?  highlightQuery.rewrite(req.getSearcher().getIndexReader()) : highlightQuery;
       }

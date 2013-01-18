@@ -23,8 +23,13 @@ import java.io.Writer;
 import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.ParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TimeZone;
 import java.nio.ByteBuffer;
 
 import org.apache.solr.common.SolrDocument;
@@ -32,7 +37,11 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.*;
+import org.apache.solr.common.util.Base64;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.DateUtil;
+import org.apache.solr.common.util.XML;
 
 
 /**
@@ -104,41 +113,57 @@ public class ClientUtils
           // currently only supports a single value
           for (Entry<Object,Object> entry : ((Map<Object,Object>)v).entrySet()) {
             update = entry.getKey().toString();
-            Object fieldVal = entry.getValue();
-            v = fieldVal;
+            v = entry.getValue();
+            if (v instanceof Collection) {
+              Collection values = (Collection) v;
+              for (Object value : values) {
+                writeVal(writer, boost, name, value, update);
+                boost = 1.0f;
+              }
+            } else  {
+              writeVal(writer, boost, name, v, update);
+              boost = 1.0f;
+            }
           }
+        } else  {
+          writeVal(writer, boost, name, v, update);
+          // only write the boost for the first multi-valued field
+          // otherwise, the used boost is the product of all the boost values
+          boost = 1.0f;
         }
-
-        if (v instanceof Date) {
-          v = DateUtil.getThreadLocalDateFormat().format( (Date)v );
-        } else if (v instanceof byte[]) {
-          byte[] bytes = (byte[]) v;
-          v = Base64.byteArrayToBase64(bytes, 0,bytes.length);
-        } else if (v instanceof ByteBuffer) {
-          ByteBuffer bytes = (ByteBuffer) v;
-          v = Base64.byteArrayToBase64(bytes.array(), bytes.position(),bytes.limit() - bytes.position());
-        }
-
-        if (update == null) {
-          if( boost != 1.0f ) {
-            XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost );
-          } else if (v != null) {
-            XML.writeXML(writer, "field", v.toString(), "name", name );
-          }
-        } else {
-          if( boost != 1.0f ) {
-            XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost, "update", update);
-          } else if (v != null) {
-            XML.writeXML(writer, "field", v.toString(), "name", name, "update", update);
-          }
-        }
-
-        // only write the boost for the first multi-valued field
-        // otherwise, the used boost is the product of all the boost values
-        boost = 1.0f;
       }
     }
     writer.write("</doc>");
+  }
+
+  private static void writeVal(Writer writer, float boost, String name, Object v, String update) throws IOException {
+    if (v instanceof Date) {
+      v = DateUtil.getThreadLocalDateFormat().format( (Date)v );
+    } else if (v instanceof byte[]) {
+      byte[] bytes = (byte[]) v;
+      v = Base64.byteArrayToBase64(bytes, 0, bytes.length);
+    } else if (v instanceof ByteBuffer) {
+      ByteBuffer bytes = (ByteBuffer) v;
+      v = Base64.byteArrayToBase64(bytes.array(), bytes.position(),bytes.limit() - bytes.position());
+    }
+
+    if (update == null) {
+      if( boost != 1.0f ) {
+        XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost);
+      } else if (v != null) {
+        XML.writeXML(writer, "field", v.toString(), "name", name );
+      }
+    } else {
+      if( boost != 1.0f ) {
+        XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost, "update", update);
+      } else {
+        if (v == null)  {
+          XML.writeXML(writer, "field", null, "name", name, "update", update, "null", true);
+        } else  {
+          XML.writeXML(writer, "field", v.toString(), "name", name, "update", update);
+        }
+      }
+    }
   }
 
 
@@ -242,15 +267,13 @@ public class ClientUtils
     catch (IOException e) {throw new RuntimeException(e);}  // can't happen
     return sb.toString();
   }
-  
-  public static void appendMap(String collection, Map<String,Slice> map1, Map<String,Slice> map2) {
-    if (map1==null)
-      map1 = new HashMap<String,Slice>();
-    if (map2!=null) {
-      Set<Entry<String,Slice>> entrySet = map2.entrySet();
-      for (Entry<String,Slice> entry : entrySet) {
-        map1.put(collection + "_" + entry.getKey(), entry.getValue());
-      }
+
+  /** Constructs a slices map from a collection of slices and handles disambiguation if multiple collections are being queried simultaneously */
+  public static void addSlices(Map<String,Slice> target, String collectionName, Collection<Slice> slices, boolean multiCollection) {
+    for (Slice slice : slices) {
+      String key = slice.getName();
+      if (multiCollection) key = collectionName + "_" + key;
+      target.put(key, slice);
     }
   }
 }

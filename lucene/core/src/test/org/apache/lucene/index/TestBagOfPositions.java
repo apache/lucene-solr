@@ -24,6 +24,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -47,7 +48,9 @@ public class TestBagOfPositions extends LuceneTestCase {
     final int maxTermsPerDoc = _TestUtil.nextInt(random(), 10, 20);
     boolean isSimpleText = "SimpleText".equals(_TestUtil.getPostingsFormat("field"));
 
-    if (isSimpleText && (TEST_NIGHTLY || RANDOM_MULTIPLIER > 1)) {
+    IndexWriterConfig iwc = newIndexWriterConfig(random(), TEST_VERSION_CURRENT, new MockAnalyzer(random()));
+
+    if ((isSimpleText || iwc.getMergePolicy() instanceof MockRandomMergePolicy) && (TEST_NIGHTLY || RANDOM_MULTIPLIER > 1)) {
       // Otherwise test can take way too long (> 2 hours)
       numTerms /= 2;
     }
@@ -66,7 +69,8 @@ public class TestBagOfPositions extends LuceneTestCase {
     final ConcurrentLinkedQueue<String> postings = new ConcurrentLinkedQueue<String>(postingsList);
 
     Directory dir = newFSDirectory(_TestUtil.getTempDir("bagofpositions"));
-    final RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+
+    final RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
 
     int threadCount = _TestUtil.nextInt(random(), 1, 5);
     if (VERBOSE) {

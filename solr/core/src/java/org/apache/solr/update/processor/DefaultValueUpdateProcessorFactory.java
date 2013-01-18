@@ -71,10 +71,12 @@ public class DefaultValueUpdateProcessorFactory
     super.init(args);
   }
 
+  @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, 
                                             SolrQueryResponse rsp, 
                                             UpdateRequestProcessor next ) {
     return new DefaultValueUpdateProcessor(fieldName, next) {
+      @Override
       public Object getDefaultValue() { return defaultValue; }
     };
   }

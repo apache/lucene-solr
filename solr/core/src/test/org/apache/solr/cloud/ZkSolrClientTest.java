@@ -209,6 +209,7 @@ public class ZkSolrClientTest extends AbstractSolrTestCase {
 
       zkClient.getChildren("/collections", new Watcher() {
 
+        @Override
         public void process(WatchedEvent event) {
           if (DEBUG) {
             System.out.println("children changed");

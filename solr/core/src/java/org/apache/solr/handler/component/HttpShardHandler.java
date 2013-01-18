@@ -17,6 +17,7 @@ package org.apache.solr.handler.component;
  */
 
 import java.net.ConnectException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,8 +41,8 @@ import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -126,11 +127,13 @@ public class HttpShardHandler extends ShardHandler {
   }
 
 
+  @Override
   public void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
     // do this outside of the callable for thread safety reasons
     final List<String> urls = getURLs(shard);
 
     Callable<ShardResponse> task = new Callable<ShardResponse>() {
+      @Override
       public ShardResponse call() throws Exception {
 
         ShardResponse srsp = new ShardResponse();
@@ -193,6 +196,7 @@ public class HttpShardHandler extends ShardHandler {
   /** returns a ShardResponse of the last response correlated with a ShardRequest.  This won't 
    * return early if it runs into an error.  
    **/
+  @Override
   public ShardResponse takeCompletedIncludingErrors() {
     return take(false);
   }
@@ -201,6 +205,7 @@ public class HttpShardHandler extends ShardHandler {
   /** returns a ShardResponse of the last response correlated with a ShardRequest,
    * or immediately returns a ShardResponse if there was an error detected
    */
+  @Override
   public ShardResponse takeCompletedOrError() {
     return take(true);
   }
@@ -233,6 +238,7 @@ public class HttpShardHandler extends ShardHandler {
   }
 
 
+  @Override
   public void cancelAll() {
     for (Future<ShardResponse> future : pending) {
       // TODO: any issues with interrupting?  shouldn't be if
@@ -240,6 +246,8 @@ public class HttpShardHandler extends ShardHandler {
       future.cancel(true);
     }
   }
+
+  @Override
   public void checkDistributed(ResponseBuilder rb) {
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
@@ -279,14 +287,17 @@ public class HttpShardHandler extends ShardHandler {
           }
         }
       } else if (zkController != null) {
-        // we weren't provided with a list of slices to query, so find the list that will cover the complete index
+        // we weren't provided with an explicit list of slices to query via "shards", so use the cluster state
 
         clusterState =  zkController.getClusterState();
+        String shardKeys = params.get(ShardParams.SHARD_KEYS);
 
-        // This can be more efficient... we only record the name, even though we
-        // have the shard info we need in the next step of mapping slice->shards
-        
-        // Stores the comma-separated list of specified collections.
+        // This will be the complete list of slices we need to query for this request.
+        slices = new HashMap<String,Slice>();
+
+        // we need to find out what collections this request is for.
+
+        // A comma-separated list of specified collections.
         // Eg: "collection1,collection2,collection3"
         String collections = params.get("collection");
         if (collections != null) {
@@ -294,50 +305,60 @@ public class HttpShardHandler extends ShardHandler {
           // each parameter and store as a seperate member of a List.
           List<String> collectionList = StrUtils.splitSmart(collections, ",",
               true);
-          
-          // First create an empty HashMap to add the slice info to.
-          slices = new HashMap<String,Slice>();
-          
           // In turn, retrieve the slices that cover each collection from the
           // cloud state and add them to the Map 'slices'.
-          for (int i = 0; i < collectionList.size(); i++) {
-            String collection = collectionList.get(i);
-            ClientUtils.appendMap(collection, slices, clusterState.getSlices(collection));
+          for (String collectionName : collectionList) {
+            // The original code produced <collection-name>_<shard-name> when the collections
+            // parameter was specified (see ClientUtils.appendMap)
+            // Is this necessary if ony one collection is specified?
+            // i.e. should we change multiCollection to collectionList.size() > 1?
+            addSlices(slices, clusterState, params, collectionName,  shardKeys, true);
           }
         } else {
-          // If no collections were specified, default to the collection for
-          // this core.
-          slices = clusterState.getSlices(cloudDescriptor.getCollectionName());
-          if (slices == null) {
-            throw new SolrException(ErrorCode.BAD_REQUEST,
-                "Could not find collection:"
-                    + cloudDescriptor.getCollectionName());
-          }
+          // just this collection
+          String collectionName = cloudDescriptor.getCollectionName();
+          addSlices(slices, clusterState, params, collectionName,  shardKeys, false);
         }
+
         
         // Store the logical slices in the ResponseBuilder and create a new
         // String array to hold the physical shards (which will be mapped
         // later).
         rb.slices = slices.keySet().toArray(new String[slices.size()]);
         rb.shards = new String[rb.slices.length];
-
-        /***
-         rb.slices = new String[slices.size()];
-         for (int i=0; i<rb.slices.length; i++) {
-         rb.slices[i] = slices.get(i).getName();
-         }
-         ***/
       }
 
       //
       // Map slices to shards
       //
       if (zkController != null) {
+
+        // Are we hosting the shard that this request is for, and are we active? If so, then handle it ourselves
+        // and make it a non-distributed request.
+        String ourSlice = cloudDescriptor.getShardId();
+        String ourCollection = cloudDescriptor.getCollectionName();
+        if (rb.slices.length == 1
+            && ( rb.slices[0].equals(ourSlice) || rb.slices[0].equals(ourCollection + "_" + ourSlice) )  // handle the <collection>_<slice> format
+            && ZkStateReader.ACTIVE.equals(cloudDescriptor.getLastPublished()) )
+        {
+          boolean shortCircuit = params.getBool("shortCircuit", true);       // currently just a debugging parameter to check distrib search on a single node
+
+          String targetHandler = params.get(ShardParams.SHARDS_QT);
+          shortCircuit = shortCircuit && targetHandler == null;             // if a different handler is specified, don't short-circuit
+
+          if (shortCircuit) {
+            rb.isDistrib = false;
+            return;
+          }
+          // We shouldn't need to do anything to handle "shard.rows" since it was previously meant to be an optimization?
+        }
+
+
         for (int i=0; i<rb.shards.length; i++) {
           if (rb.shards[i] == null) {
             if (clusterState == null) {
               clusterState =  zkController.getClusterState();
-              slices = clusterState.getSlices(cloudDescriptor.getCollectionName());
+              slices = clusterState.getSlicesMap(cloudDescriptor.getCollectionName());
             }
             String sliceName = rb.slices[i];
 
@@ -388,5 +409,13 @@ public class HttpShardHandler extends ShardHandler {
     }
   }
 
-}
 
+  private void addSlices(Map<String,Slice> target, ClusterState state, SolrParams params, String collectionName, String shardKeys, boolean multiCollection) {
+    DocCollection coll = state.getCollection(collectionName);
+    Collection<Slice> slices = coll.getRouter().getSearchSlices(shardKeys, params , coll);
+    ClientUtils.addSlices(target, collectionName, slices, multiCollection);
+  }
+
+
+
+}

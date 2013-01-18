@@ -41,6 +41,7 @@ public class StandardFilterFactory extends TokenFilterFactory {
     assureMatchVersion();
   }
   
+  @Override
   public StandardFilter create(TokenStream input) {
     return new StandardFilter(luceneMatchVersion, input);
   }

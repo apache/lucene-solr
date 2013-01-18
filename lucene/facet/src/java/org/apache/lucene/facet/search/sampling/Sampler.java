@@ -1,10 +1,9 @@
 package org.apache.lucene.facet.search.sampling;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
-
-import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.ScoredDocIDs;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
@@ -14,6 +13,7 @@ import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.search.results.MutableFacetResultNode;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.IndexReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -58,6 +58,7 @@ public abstract class Sampler {
   
   /**
    * Construct with certain {@link SamplingParams}
+   * 
    * @param params sampling params in effect
    * @throws IllegalArgumentException if the provided SamplingParams are not valid 
    */
@@ -108,16 +109,15 @@ public abstract class Sampler {
    * @param sampleSetSize required size of sample set
    * @return sample of the input set in the required size
    */
-  protected abstract SampleResult createSample(ScoredDocIDs docids, int actualSize,
-      int sampleSetSize) throws IOException;
+  protected abstract SampleResult createSample(ScoredDocIDs docids, int actualSize, int sampleSetSize) 
+      throws IOException;
 
   /**
    * Get a fixer of sample facet accumulation results. Default implementation
    * returns a <code>TakmiSampleFixer</code> which is adequate only for
    * counting. For any other accumulator, provide a different fixer.
    */
-  public SampleFixer getSampleFixer(
-      IndexReader indexReader, TaxonomyReader taxonomyReader,
+  public SampleFixer getSampleFixer(IndexReader indexReader, TaxonomyReader taxonomyReader,
       FacetSearchParams searchParams) {
     return new TakmiSampleFixer(indexReader, taxonomyReader, searchParams);
   }
@@ -159,10 +159,10 @@ public abstract class Sampler {
     OverSampledFacetRequest sampledFreq = null;
     
     try {
-      sampledFreq = (OverSampledFacetRequest)facetResult.getFacetRequest();
+      sampledFreq = (OverSampledFacetRequest) facetResult.getFacetRequest();
     } catch (ClassCastException e) {
       throw new IllegalArgumentException(
-          "It is only valid to call this method with result obtained for a" +
+          "It is only valid to call this method with result obtained for a " +
           "facet request created through sampler.overSamlpingSearchParams()",
           e);
     }
@@ -183,11 +183,12 @@ public abstract class Sampler {
     // So now we can sample -> altering the searchParams to accommodate for the statistical error for the sampling
     double overSampleFactor = getSamplingParams().getOversampleFactor();
     if (overSampleFactor > 1) { // any factoring to do?
-      res = new FacetSearchParams(original.getFacetIndexingParams());
-      for (FacetRequest frq: original.getFacetRequests()) {
+      List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
+      for (FacetRequest frq : original.getFacetRequests()) {
         int overSampledNumResults = (int) Math.ceil(frq.getNumResults() * overSampleFactor);
-        res.addFacetRequest(new OverSampledFacetRequest(frq, overSampledNumResults));
+        facetRequests.add(new OverSampledFacetRequest(frq, overSampledNumResults));
       }
+      res = new FacetSearchParams(facetRequests, original.getFacetIndexingParams());
     }
     return res;
   }
@@ -202,7 +203,7 @@ public abstract class Sampler {
   private static class OverSampledFacetRequest extends FacetRequest {
     final FacetRequest orig;
     public OverSampledFacetRequest(FacetRequest orig, int num) {
-      super(orig.getCategoryPath(), num);
+      super(orig.categoryPath, num);
       this.orig = orig;
       setDepth(orig.getDepth());
       setNumLabel(orig.getNumLabel());
@@ -212,19 +213,9 @@ public abstract class Sampler {
     }
     
     @Override
-    public CategoryListIterator createCategoryListIterator(IndexReader reader,
-        TaxonomyReader taxo, FacetSearchParams sParams, int partition)
+    public Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) 
         throws IOException {
-      return orig.createCategoryListIterator(reader, taxo, sParams, partition);
-    }
-
-    
-    @Override
-    public Aggregator createAggregator(boolean useComplements,
-        FacetArrays arrays, IndexReader indexReader,
-        TaxonomyReader taxonomy) throws IOException {
-      return orig.createAggregator(useComplements, arrays, indexReader,
-          taxonomy);
+      return orig.createAggregator(useComplements, arrays, taxonomy);
     }
 
     @Override
@@ -242,4 +233,5 @@ public abstract class Sampler {
       return orig.supportsComplements();
     }
   }
+
 }

@@ -32,6 +32,7 @@ public class FieldQueryNodeBuilder implements StandardQueryBuilder {
     // empty constructor
   }
 
+  @Override
   public TermQuery build(QueryNode queryNode) throws QueryNodeException {
     FieldQueryNode fieldNode = (FieldQueryNode) queryNode;
 

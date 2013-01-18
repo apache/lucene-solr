@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
-import org.apache.lucene.facet.search.results.MutableFacetResultNode;
 import org.apache.lucene.facet.search.results.IntermediateFacetResult;
-import org.apache.lucene.facet.taxonomy.ChildrenArrays;
+import org.apache.lucene.facet.search.results.MutableFacetResultNode;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.util.ResultSortUtils;
 
 /*
@@ -55,11 +55,11 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
   public IntermediateFacetResult fetchPartitionResult(FacetArrays facetArrays, int offset)
   throws IOException {
     TopKFacetResult res = null;
-    int ordinal = taxonomyReader.getOrdinal(facetRequest.getCategoryPath());
+    int ordinal = taxonomyReader.getOrdinal(facetRequest.categoryPath);
     if (ordinal != TaxonomyReader.INVALID_ORDINAL) {
       double value = 0;  
       if (isSelfPartition(ordinal, facetArrays, offset)) {
-        int partitionSize = facetArrays.getArraysLength();
+        int partitionSize = facetArrays.arrayLength;
         value = facetRequest.getValueOf(facetArrays, ordinal % partitionSize);
       }
       
@@ -79,7 +79,7 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
   @Override
   public IntermediateFacetResult mergeResults(IntermediateFacetResult... tmpResults) throws IOException {
     
-    int ordinal = taxonomyReader.getOrdinal(facetRequest.getCategoryPath());
+    int ordinal = taxonomyReader.getOrdinal(facetRequest.categoryPath);
     MutableFacetResultNode resNode = new MutableFacetResultNode(ordinal, 0);
     
     int totalFacets = 0;
@@ -121,11 +121,11 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
    */
   private int heapDescendants(int ordinal, Heap<FacetResultNode> pq,
       MutableFacetResultNode parentResultNode, FacetArrays facetArrays, int offset) throws IOException {
-    int partitionSize = facetArrays.getArraysLength();
+    int partitionSize = facetArrays.arrayLength;
     int endOffset = offset + partitionSize;
-    ChildrenArrays childrenArray = taxonomyReader.getChildrenArrays();
-    int[] youngestChild = childrenArray.getYoungestChildArray();
-    int[] olderSibling = childrenArray.getOlderSiblingArray();
+    ParallelTaxonomyArrays childrenArray = taxonomyReader.getParallelTaxonomyArrays();
+    int[] children = childrenArray.children();
+    int[] siblings = childrenArray.siblings();
     FacetResultNode reusable = null;
     int localDepth = 0;
     int depth = facetRequest.getDepth();
@@ -134,9 +134,9 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
     
     int tosOrdinal; // top of stack element
     
-    int yc = youngestChild[ordinal];
+    int yc = children[ordinal];
     while (yc >= endOffset) {
-      yc = olderSibling[yc];
+      yc = siblings[yc];
     }
     // make use of the fact that TaxonomyReader.INVALID_ORDINAL == -1, < endOffset
     // and it, too, can stop the loop.
@@ -161,7 +161,7 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
         // need to proceed to its sibling
         localDepth--;
         // change element now on top of stack to its sibling.
-        ordinalStack[localDepth] = olderSibling[ordinalStack[localDepth]];
+        ordinalStack[localDepth] = siblings[ordinalStack[localDepth]];
         continue;
       }
       // top of stack is not invalid, this is the first time we see it on top of stack.
@@ -187,9 +187,9 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
       }
       if (localDepth < depth) {
         // push kid of current tos
-        yc = youngestChild[tosOrdinal];
+        yc = children[tosOrdinal];
         while (yc >= endOffset) {
-          yc = olderSibling[yc];
+          yc = siblings[yc];
         }
         ordinalStack[++localDepth] = yc;
       } else { // localDepth == depth; current tos exhausted its possible children, mark this by pushing INVALID_ORDINAL

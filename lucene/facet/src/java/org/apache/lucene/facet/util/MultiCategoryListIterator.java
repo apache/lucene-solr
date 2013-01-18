@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.facet.search.CategoryListIterator;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,51 +35,34 @@ public class MultiCategoryListIterator implements CategoryListIterator {
 
   private final CategoryListIterator[] iterators;
   private final List<CategoryListIterator> validIterators;
-  private final List<CategoryListIterator> perDocValidIterators;
 
   /** Receives the iterators to iterate on */
   public MultiCategoryListIterator(CategoryListIterator... iterators) {
     this.iterators = iterators;
     this.validIterators = new ArrayList<CategoryListIterator>();
-    this.perDocValidIterators = new ArrayList<CategoryListIterator>();
   }
 
-  /** Fails if all given iterators fail to init */
-  public boolean init() throws IOException {
+  @Override
+  public boolean setNextReader(AtomicReaderContext context) throws IOException {
+    validIterators.clear();
     for (CategoryListIterator cli : iterators) {
-      if (cli.init()) {
+      if (cli.setNextReader(context)) {
         validIterators.add(cli);
       }
     }
     return !validIterators.isEmpty();
   }
-
-  /**
-   * Return a value larger than {@link Integer#MAX_VALUE} only if all
-   * iterators are exhausted
-   */
-  public long nextCategory() throws IOException {
-    while (!perDocValidIterators.isEmpty()) {
-      long value = perDocValidIterators.get(0).nextCategory();
-      if (value <= Integer.MAX_VALUE) {
-        return value;
-      }
-      perDocValidIterators.remove(0);
-    }
-    return 0x100000000L;
-  }
-
-  /**
-   * Fails only if skipTo on all the provided iterators returned {@code false}
-   */
-  public boolean skipTo(int docId) throws IOException {
-    perDocValidIterators.clear();
+  
+  @Override
+  public void getOrdinals(int docID, IntsRef ints) throws IOException {
+    IntsRef tmp = new IntsRef(ints.length);
     for (CategoryListIterator cli : validIterators) {
-      if (cli.skipTo(docId)) {
-        perDocValidIterators.add(cli);
+      cli.getOrdinals(docID, tmp);
+      if (ints.ints.length < ints.length + tmp.length) {
+        ints.grow(ints.length + tmp.length);
       }
+      ints.length += tmp.length;
     }
-    return !perDocValidIterators.isEmpty();
   }
 
 }

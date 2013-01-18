@@ -19,14 +19,18 @@ package org.apache.solr.client.solrj;
 
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import junit.framework.Assert;
 
 import org.apache.lucene.util._TestUtil;
@@ -35,7 +39,6 @@ import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -53,7 +56,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
@@ -1379,6 +1381,58 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertEquals("Doc count does not match", 1, resp.getResults().getNumFound());
     assertEquals("price was not updated?", 200.0f, resp.getResults().get(0).getFirstValue("price_f"));
     assertEquals("no name?", "gadget", resp.getResults().get(0).getFirstValue("name"));
+  }
+
+  @Test
+  public void testUpdateMultiValuedField() throws Exception {
+    SolrServer solrServer = getSolrServer();
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "123");
+    solrServer.add(doc);
+    solrServer.commit(true, true);
+    QueryResponse response = solrServer.query(new SolrQuery("id:123"));
+    assertEquals("Failed to add doc to cloud server", 1, response.getResults().getNumFound());
+
+    Map<String, List<String>> operation = new HashMap<String, List<String>>();
+    operation.put("set", Arrays.asList("first", "second", "third"));
+    doc.addField("multi_ss", operation);
+    solrServer.add(doc);
+    solrServer.commit(true, true);
+    response = solrServer.query(new SolrQuery("id:123"));
+    assertTrue("Multi-valued field did not return a collection", response.getResults().get(0).get("multi_ss") instanceof List);
+    List<String> values = (List<String>) response.getResults().get(0).get("multi_ss");
+    assertEquals("Field values was not updated with all values via atomic update", 3, values.size());
+
+    operation.clear();
+    operation.put("add", Arrays.asList("fourth", "fifth"));
+    doc.removeField("multi_ss");
+    doc.addField("multi_ss", operation);
+    solrServer.add(doc);
+    solrServer.commit(true, true);
+    response = solrServer.query(new SolrQuery("id:123"));
+    values = (List<String>) response.getResults().get(0).get("multi_ss");
+    assertEquals("Field values was not updated with all values via atomic update", 5, values.size());
+  }
+
+  @Test
+  public void testSetNullUpdates() throws Exception {
+    SolrServer solrServer = getSolrServer();
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", "testSetNullUpdates");
+    doc.addField("single_s", "test-value");
+    doc.addField("multi_ss", Arrays.asList("first", "second"));
+    solrServer.add(doc);
+    solrServer.commit(true, true);
+    doc.removeField("single_s");
+    doc.removeField("multi_ss");
+    Map<String, Object> map = Maps.newHashMap();
+    map.put("set", null);
+    doc.addField("multi_ss", map);
+    solrServer.add(doc);
+    solrServer.commit(true, true);
+    QueryResponse response = solrServer.query(new SolrQuery("id:testSetNullUpdates"));
+    assertNotNull("Entire doc was replaced because null update was not written", response.getResults().get(0).getFieldValue("single_s"));
+    assertNull("Null update failed. Value still exists in document", response.getResults().get(0).getFieldValue("multi_ss"));
   }
   
   @Test

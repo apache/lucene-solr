@@ -118,6 +118,7 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
   }
 
   /** Signed int order comparison */
+  @Override
   public int compareTo(CharsRef other) {
     if (this == other)
       return 0;
@@ -197,10 +198,12 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
     return new String(chars, offset, length);
   }
 
+  @Override
   public int length() {
     return length;
   }
 
+  @Override
   public char charAt(int index) {
     // NOTE: must do a real check here to meet the specs of CharSequence
     if (index < 0 || index >= length) {
@@ -209,12 +212,13 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
     return chars[offset + index];
   }
 
+  @Override
   public CharSequence subSequence(int start, int end) {
     // NOTE: must do a real check here to meet the specs of CharSequence
     if (start < 0 || end > length || start > end) {
       throw new IndexOutOfBoundsException();
     }
-    return new CharsRef(chars, offset + start, offset + end);
+    return new CharsRef(chars, offset + start, end - start);
   }
   
   /** @deprecated This comparator is only a transition mechanism */
@@ -233,6 +237,7 @@ public final class CharsRef implements Comparable<CharsRef>, CharSequence, Clone
     // Only singleton
     private UTF16SortedAsUTF8Comparator() {};
 
+    @Override
     public int compare(CharsRef a, CharsRef b) {
       if (a == b)
         return 0;

@@ -34,7 +34,7 @@
   <lib dir="../../../../contrib/extraction/lib" />
 
   <lib dir="../../../../contrib/dataimporthandler/lib/" regex=".*jar$" />
-  <lib dir="../../../../dist/" regex="apache-solr-dataimporthandler-.*\.jar" />
+  <lib dir="../../../../dist/" regex="solr-dataimporthandler-.*\.jar" />
 
   <!-- <indexConfig> section could go here, but we want the defaults -->
 
@@ -188,7 +188,7 @@
     -->
   <requestDispatcher handleSelect="true" >
     <!--Make sure your system has some authentication before enabling remote streaming!  -->
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
+    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" formdataUploadLimitInKB="2048" />
         
     <!-- Set HTTP caching related parameters (for proxy caches and clients).
           

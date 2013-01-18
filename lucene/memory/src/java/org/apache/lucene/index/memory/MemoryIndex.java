@@ -219,6 +219,7 @@ public class MemoryIndex {
    * Arrays.binarySearch() and Arrays.sort()
    */
   private static final Comparator<Object> termComparator = new Comparator<Object>() {
+    @Override
     @SuppressWarnings({"unchecked","rawtypes"})
     public int compare(Object o1, Object o2) {
       if (o1 instanceof Map.Entry<?,?>) o1 = ((Map.Entry<?,?>) o1).getKey();

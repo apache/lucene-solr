@@ -51,10 +51,12 @@ public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
   /**
    * Save the args and pass them to each standard handler
    */
+  @Override
   public void init(NamedList args) {
     this.initArgs = args;
   }
   
+  @Override
   public void inform(SolrCore core) 
   {
     String path = null;
@@ -101,6 +103,7 @@ public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
   }
 
   
+  @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
         "The AdminHandler should never be called directly" );
@@ -108,30 +111,37 @@ public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
   
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
+  @Override
   public String getDescription() {
     return "Register Standard Admin Handlers";
   }
   
+  @Override
   public String getVersion() {
     return getClass().getPackage().getSpecificationVersion();
   }
 
+  @Override
   public String getSource() {
     return "$URL$";
   }
 
+  @Override
   public Category getCategory() {
     return Category.QUERYHANDLER;
   }
 
+  @Override
   public URL[] getDocs() {
     return null;
   }
 
+  @Override
   public String getName() {
     return this.getClass().getName();
   }
 
+  @Override
   public NamedList getStatistics() {
     return null;
   }

@@ -51,6 +51,7 @@ public class BeiderMorseFilterFactory extends TokenFilterFactory {
   /** Sole constructor. See {@link AbstractAnalysisFactory} for initialization lifecycle. */
   public BeiderMorseFilterFactory() {}
   
+  @Override
   public void init(Map<String,String> args) {
     super.init(args);
     

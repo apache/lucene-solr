@@ -39,7 +39,7 @@ var set_healthcheck_status = function( status )
 // #/:core
 sammy.get
 (
-  /^#\/([\w\d-]+)$/,
+  new RegExp( app.core_regex_base + '$' ),
   function( context )
   {
     var core_basepath = this.active_core.attr( 'data-basepath' );
@@ -114,6 +114,7 @@ sammy.get
               var data = {
                 'index_num-docs' : response['index']['numDocs'],
                 'index_max-doc' : response['index']['maxDoc'],
+                'index_deleted-docs' : response['index']['deletedDocs'],
                 'index_version' : response['index']['version'],
                 'index_segmentCount' : response['index']['segmentCount'],
                 'index_last-modified' : response['index']['lastModified']

@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
@@ -161,6 +162,7 @@ public class PhraseQuery extends Query {
       }
     }
 
+    @Override
     public int compareTo(PostingsAndFreq other) {
       if (docFreq != other.docFreq) {
         return docFreq - other.docFreq;
@@ -265,7 +267,8 @@ public class PhraseQuery extends Query {
           return null;
         }
         te.seekExact(t.bytes(), state);
-        final DocsAndPositionsEnum postingsEnum = te.docsAndPositions(liveDocs, null, 0);
+        DocsAndPositionsEnum postingsEnum = te.docsAndPositions(liveDocs, null, DocsEnum.FLAG_NONE);
+
         // PhraseQuery on a field that did not index
         // positions.
         if (postingsEnum == null) {

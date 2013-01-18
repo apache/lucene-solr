@@ -37,6 +37,7 @@ final class BitsSlice implements Bits {
     assert length >= 0: "length=" + length;
   }
     
+  @Override
   public boolean get(int doc) {
     if (doc >= length) {
       throw new RuntimeException("doc " + doc + " is out of bounds 0 .. " + (length-1));
@@ -45,6 +46,7 @@ final class BitsSlice implements Bits {
     return parent.get(doc+start);
   }
 
+  @Override
   public int length() {
     return length;
   }

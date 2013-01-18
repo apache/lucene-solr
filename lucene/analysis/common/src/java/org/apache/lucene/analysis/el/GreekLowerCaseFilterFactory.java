@@ -48,10 +48,12 @@ public class GreekLowerCaseFilterFactory extends TokenFilterFactory implements M
           + "Please process your documents as Unicode instead.");
   }
 
+  @Override
   public GreekLowerCaseFilter create(TokenStream in) {
     return new GreekLowerCaseFilter(luceneMatchVersion, in);
   }
 
+  @Override
   public AbstractAnalysisFactory getMultiTermComponent() {
     return this;
   }

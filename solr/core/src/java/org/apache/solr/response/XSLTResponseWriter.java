@@ -56,6 +56,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
   private static final Logger log = LoggerFactory.getLogger(XSLTResponseWriter.class);
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
   
+  @Override
   public void init(NamedList n) {
       final SolrParams p = SolrParams.toSolrParams(n);
       xsltCacheLifetimeSeconds = p.getInt(XSLT_CACHE_PARAM,XSLT_CACHE_DEFAULT);
@@ -63,6 +64,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
   }
 
   
+  @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     Transformer t = null;
     try {
@@ -91,6 +93,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
     return mediaType;
   }
 
+  @Override
   public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
     final Transformer t = getTransformer(request);
     

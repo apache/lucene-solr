@@ -186,6 +186,7 @@ public abstract class Analyzer implements Closeable {
   }
 
   /** Frees persistent resources used by this Analyzer */
+  @Override
   public void close() {
     reuseStrategy.close();
   }
@@ -334,6 +335,7 @@ public abstract class Analyzer implements Closeable {
     /**
      * Closes the ReuseStrategy, freeing any resources
      */
+    @Override
     public void close() {
       if (storedValue != null) {
         storedValue.close();

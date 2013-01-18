@@ -35,6 +35,7 @@ public class MatchNoDocsQueryNodeBuilder implements StandardQueryBuilder {
     // empty constructor
   }
 
+  @Override
   public BooleanQuery build(QueryNode queryNode) throws QueryNodeException {
 
     // validates node

@@ -33,6 +33,8 @@ import java.util.Set;
 import junit.framework.Assert;
 
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.util. _TestUtil;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -49,6 +51,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,10 +67,107 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void initialize() {
+    assumeFalse("SOLR-4147: ibm 64bit has jvm bugs!", Constants.JRE_IS_64BIT && Constants.JAVA_VENDOR.startsWith("IBM"));
     r = new Random(random().nextLong());
   }
+  
+  /**
+   * Set's the value of the "hostContext" system property to a random path 
+   * like string (which may or may not contain sub-paths).  This is used 
+   * in the default constructor for this test to help ensure no code paths have
+   * hardcoded assumptions about the servlet context used to run solr.
+   * <p>
+   * Test configs may use the <code>${hostContext}</code> variable to access 
+   * this system property.
+   * </p>
+   * @see #BaseDistributedSearchTestCase()
+   * @see #clearHostContext
+   */
+  @BeforeClass
+  public static void initHostContext() {
+    // Can't use randomRealisticUnicodeString because unescaped unicode is 
+    // not allowed in URL paths
+    // Can't use URLEncoder.encode(randomRealisticUnicodeString) because
+    // Jetty freaks out and returns 404's when the context uses escapes
 
-  protected int shardCount = 4;
+    StringBuilder hostContext = new StringBuilder("/");
+    if (random().nextBoolean()) {
+      // half the time we use the root context, the other half...
+
+      // Remember: randomSimpleString might be the empty string
+      hostContext.append(_TestUtil.randomSimpleString(random(), 2));
+      if (random().nextBoolean()) {
+        hostContext.append("_");
+      }
+      hostContext.append(_TestUtil.randomSimpleString(random(), 3));
+      if ( ! "/".equals(hostContext)) {
+        // if our random string is empty, this might add a trailing slash, 
+        // but our code should be ok with that
+        hostContext.append("/").append(_TestUtil.randomSimpleString(random(), 2));
+      } else {
+        // we got 'lucky' and still just have the root context,
+        // NOOP: don't try to add a subdir to nothing (ie "//" is bad)
+      }
+    }
+    // paranoia, we *really* don't want to ever get "//" in a path...
+    final String hc = hostContext.toString().replaceAll("\\/+","/");
+
+    log.info("Setting hostContext system property: " + hc);
+    System.setProperty("hostContext", hc);
+  }
+
+  /**
+   * Clears the "hostContext" system property
+   * @see #initHostContext
+   */
+  @AfterClass
+  public static void clearHostContext() throws Exception {
+    System.clearProperty("hostContext");
+  }
+
+  private static String getHostContextSuitableForServletContext() {
+    String ctx = System.getProperty("hostContext","/solr");
+    if ("".equals(ctx)) ctx = "/solr";
+    if (ctx.endsWith("/")) ctx = ctx.substring(0,ctx.length()-1);;
+    if (!ctx.startsWith("/")) ctx = "/" + ctx;
+    return ctx;
+  }
+
+  /**
+   * Constructs a test in which the jetty+solr instances as well as the 
+   * solr clients all use the value of the "hostContext" system property.
+   * <p>
+   * If the system property is not set, or is set to the empty string 
+   * (neither of which should normally happen unless a subclass explicitly 
+   * modifies the property set by {@link #initHostContext} prior to calling 
+   * this constructor) a servlet context of "/solr" is used. (this is for 
+   * consistency with the default behavior of solr.xml parsing when using 
+   * <code>hostContext="${hostContext:}"</code>
+   * </p>
+   * <p>
+   * If the system property is set to a value which does not begin with a 
+   * "/" (which should normally happen unless a subclass explicitly 
+   * modifies the property set by {@link #initHostContext} prior to calling 
+   * this constructor) a leading "/" will be prepended.
+   * </p>
+   *
+   * @see #initHostContext
+   */
+  protected BaseDistributedSearchTestCase() {
+    this(getHostContextSuitableForServletContext());
+  }
+
+  /**
+   * @param context explicit servlet context path to use (eg: "/solr")
+   */
+  protected BaseDistributedSearchTestCase(final String context) {
+    this.context = context;
+    this.deadServers = new String[] {"[ff01::114]:33332" + context, 
+                                     "[ff01::083]:33332" + context, 
+                                     "[ff01::213]:33332" + context};
+  }
+
+  protected int shardCount = 4;      // the actual number of solr cores that will be created in the cluster
 
   /**
    * Sub classes can set this flag in their constructor to true if they
@@ -82,12 +182,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected List<SolrServer> clients = new ArrayList<SolrServer>();
   protected List<JettySolrRunner> jettys = new ArrayList<JettySolrRunner>();
   
-  protected String context = "/solr";
+  protected String context;
+  protected String[] deadServers;
   protected String shards;
   protected String[] shardsArr;
-  // Some ISPs redirect to their own web site for domains that don't exist, causing this to fail
-  // protected String[] deadServers = {"does_not_exist_54321.com:33331/solr","127.0.0.1:33332/solr"};
-  protected String[] deadServers = {"[ff01::114]:33332/solr", "[ff01::083]:33332/solr", "[ff01::213]:33332/solr"};
   protected File testDir;
   protected SolrServer controlClient;
 
@@ -256,7 +354,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   
   public JettySolrRunner createJetty(File solrHome, String dataDir, String shardList, String solrConfigOverride, String schemaOverride) throws Exception {
 
-    JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(), "/solr", 0, solrConfigOverride, schemaOverride);
+    JettySolrRunner jetty = new JettySolrRunner(solrHome.getAbsolutePath(), context, 0, solrConfigOverride, schemaOverride);
     jetty.setShards(shardList);
     jetty.setDataDir(dataDir);
     jetty.start();
@@ -269,7 +367,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       // setup the server...
       String url = "http://127.0.0.1:" + port + context;
       HttpSolrServer s = new HttpSolrServer(url);
-      s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
+      s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);;
+      s.setSoTimeout(60000);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);
       return s;

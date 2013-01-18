@@ -42,6 +42,7 @@ public class BooleanFilterBuilder implements FilterBuilder {
     this.factory = factory;
   }
 
+  @Override
   public Filter getFilter(Element e) throws ParserException {
     BooleanFilter bf = new BooleanFilter();
     NodeList nl = e.getChildNodes();

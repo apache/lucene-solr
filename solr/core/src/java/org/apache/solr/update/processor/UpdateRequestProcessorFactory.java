@@ -34,6 +34,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  */
 public abstract class UpdateRequestProcessorFactory implements NamedListInitializedPlugin
 {    
+  @Override
   public void init( NamedList args )
   {
     // could process the Node

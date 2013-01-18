@@ -17,10 +17,12 @@ import org.apache.uima.jcas.tcas.Annotation_Type;
  * @generated */
 public class DummySentimentAnnotation_Type extends Annotation_Type {
   /** @generated */
+  @Override
   protected FSGenerator getFSGenerator() {return fsGenerator;}
   /** @generated */
   private final FSGenerator fsGenerator = 
     new FSGenerator() {
+      @Override
       public FeatureStructure createFS(int addr, CASImpl cas) {
         if (DummySentimentAnnotation_Type.this.useExistingInstance) {
           // Return eq fs instance if already created

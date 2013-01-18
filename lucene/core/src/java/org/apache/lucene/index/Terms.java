@@ -80,7 +80,7 @@ public abstract class Terms {
    *  if there are no terms.  This method may be invoked
    *  many times; it's best to cache a single instance &
    *  reuse it. */
-  public abstract Comparator<BytesRef> getComparator() throws IOException;
+  public abstract Comparator<BytesRef> getComparator();
 
   /** Returns the number of terms for this field, or -1 if this 
    *  measure isn't stored by the codec. Note that, just like 

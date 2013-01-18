@@ -393,6 +393,7 @@ public abstract class LuceneTestCase extends Assert {
     .around(suiteFailureMarker)
     .around(new TestRuleAssertionsRequired())
     .around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {
+      @Override
       protected boolean accept(java.lang.reflect.Field field) {
         // Don't count known classes that consume memory once.
         if (STATIC_LEAK_IGNORED_TYPES.contains(field.getType().getName())) {

@@ -194,7 +194,7 @@ public final class TermsFilter extends Filter {
           spare.offset = offsets[i];
           spare.length = offsets[i+1] - offsets[i];
           if (termsEnum.seekExact(spare, false)) { // don't use cache since we could pollute the cache here easily
-            docs = termsEnum.docs(acceptDocs, docs, 0); // no freq since we don't need them
+            docs = termsEnum.docs(acceptDocs, docs, DocsEnum.FLAG_NONE); // no freq since we don't need them
             if (result == null) {
               if (docs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
                 result = new FixedBitSet(reader.maxDoc());
@@ -253,17 +253,21 @@ public final class TermsFilter extends Filter {
   public String toString() {
     StringBuilder builder = new StringBuilder();
     BytesRef spare = new BytesRef(termsBytes);
+    boolean first = true;
     for (int i = 0; i < termsAndFields.length; i++) {
       TermsAndField current = termsAndFields[i];
       for (int j = current.start; j < current.end; j++) {
         spare.offset = offsets[j];
         spare.length = offsets[j+1] - offsets[j];
+        if (!first) {
+          builder.append(' ');
+        }
+        first = false;
         builder.append(current.field).append(':');
         builder.append(spare.utf8ToString());
-        builder.append(' ');
       }
-
     }
+
     return builder.toString();
   }
   

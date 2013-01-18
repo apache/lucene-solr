@@ -54,6 +54,7 @@ public class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?>>
    * 
    * @see FieldableNode
    */
+  @Override
   public CharSequence getField() {
     CharSequence field = null;
     T lower = getLowerBound();
@@ -75,6 +76,7 @@ public class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?>>
    * 
    * @param fieldName the field associated with this node
    */
+  @Override
   public void setField(CharSequence fieldName) {
     T lower = getLowerBound();
     T upper = getUpperBound();
@@ -94,6 +96,7 @@ public class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?>>
    * 
    * @return the lower bound node.
    */
+  @Override
   @SuppressWarnings("unchecked")
   public T getLowerBound() {
     return (T) getChildren().get(0);
@@ -104,6 +107,7 @@ public class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?>>
    * 
    * @return the upper bound node.
    */
+  @Override
   @SuppressWarnings("unchecked")
   public T getUpperBound() {
     return (T) getChildren().get(1);
@@ -114,6 +118,7 @@ public class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?>>
    * 
    * @return <code>true</code> if the lower bound is inclusive, otherwise, <code>false</code>
    */
+  @Override
   public boolean isLowerInclusive() {
     return lowerInclusive;
   }
@@ -123,6 +128,7 @@ public class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?>>
    * 
    * @return <code>true</code> if the upper bound is inclusive, otherwise, <code>false</code>
    */
+  @Override
   public boolean isUpperInclusive() {
     return upperInclusive;
   }
@@ -167,6 +173,7 @@ public class AbstractRangeQueryNode<T extends FieldValuePairQueryNode<?>>
     
   }
   
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     StringBuilder sb = new StringBuilder();
     

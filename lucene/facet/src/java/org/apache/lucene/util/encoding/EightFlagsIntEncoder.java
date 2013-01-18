@@ -1,6 +1,7 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,14 +21,15 @@ import java.io.IOException;
  */
 
 /**
- * A {@link ChunksIntEncoder} which encodes data in chunks of 8. Every group starts with a single
- * byte (called indicator) which represents 8 - 1 bit flags, where the value:
+ * A {@link ChunksIntEncoder} which encodes data in chunks of 8. Every group
+ * starts with a single byte (called indicator) which represents 8 - 1 bit
+ * flags, where the value:
  * <ul>
  * <li>1 means the encoded value is '1'
  * <li>0 means the value is encoded using {@link VInt8IntEncoder}, and the
  * encoded bytes follow the indicator.<br>
- * Since value 0 is illegal, and 1 is encoded in the indicator, the actual
- * value that is encoded is <code>value-2</code>, which saves some more bits.
+ * Since value 0 is illegal, and 1 is encoded in the indicator, the actual value
+ * that is encoded is <code>value-2</code>, which saves some more bits.
  * </ul>
  * Encoding example:
  * <ul>
@@ -46,28 +48,38 @@ import java.io.IOException;
  */
 public class EightFlagsIntEncoder extends ChunksIntEncoder {
 
-  /**
+  /*
    * Holds all combinations of <i>indicator</i> flags for fast encoding (saves
    * time on bit manipulation at encode time)
    */
-  private static byte[] encodeTable = new byte[] { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, (byte) 0x80 };
+  private static final byte[] ENCODE_TABLE = new byte[] { 0x1, 0x2, 0x4, 0x8, 0x10, 0x20, 0x40, (byte) 0x80 };
 
   public EightFlagsIntEncoder() {
     super(8);
   }
 
   @Override
-  public void encode(int data) throws IOException {
-    if (data == 1) {
-      indicator |= encodeTable[ordinal];
-    } else {
-      encodeQueue[encodeQueueSize++] = data - 2;
+  public void encode(IntsRef values, BytesRef buf) {
+    buf.offset = buf.length = 0;
+    int upto = values.offset + values.length;
+    for (int i = values.offset; i < upto; i++) {
+      int value = values.ints[i];
+      if (value == 1) {
+        indicator |= ENCODE_TABLE[ordinal];
+      } else {
+        encodeQueue.ints[encodeQueue.length++] = value - 2;
+      }
+      ++ordinal;
+      
+      // encode the chunk and the indicator
+      if (ordinal == 8) {
+        encodeChunk(buf);
+      }
     }
-    ++ordinal;
-
-    // If 8 values were encoded thus far, 'flush' them including the indicator.
-    if ((ordinal & 0x7) == 0) {
-      encodeChunk();
+    
+    // encode remaining values
+    if (ordinal != 0) {
+      encodeChunk(buf);
     }
   }
 
@@ -78,7 +90,7 @@ public class EightFlagsIntEncoder extends ChunksIntEncoder {
 
   @Override
   public String toString() {
-    return "EightFlags (" + encoder.toString() + ")";
+    return "EightFlags(VInt)";
   }
 
 }

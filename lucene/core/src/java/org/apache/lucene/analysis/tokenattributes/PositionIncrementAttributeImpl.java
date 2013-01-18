@@ -26,6 +26,7 @@ public class PositionIncrementAttributeImpl extends AttributeImpl implements Pos
   /** Initialize this attribute with position increment of 1 */
   public PositionIncrementAttributeImpl() {}
 
+  @Override
   public void setPositionIncrement(int positionIncrement) {
     if (positionIncrement < 0) {
       throw new IllegalArgumentException
@@ -34,6 +35,7 @@ public class PositionIncrementAttributeImpl extends AttributeImpl implements Pos
     this.positionIncrement = positionIncrement;
   }
 
+  @Override
   public int getPositionIncrement() {
     return positionIncrement;
   }

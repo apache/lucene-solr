@@ -24,7 +24,10 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
@@ -41,6 +44,41 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     createJetty(ExternalPaths.EXAMPLE_HOME, null, null);
+  }
+
+  public void test404ViaHttp() throws SolrServerException {
+    SolrServer server = getSolrServer();
+    QueryRequest request = new QueryRequest(params("file",
+                                                   "does-not-exist-404.txt"));
+    request.setPath("/admin/file");
+    try {
+      QueryResponse resp = request.process(server);
+      fail("didn't get 404 exception");
+    } catch (SolrException e) {
+      assertEquals(404, e.code());
+    }
+  }
+
+  public void test404Locally() throws Exception {
+
+    // we need to test that executing the handler directly does not 
+    // throw an exception, just sets the exception on the response.
+    initCore("solrconfig.xml", "schema.xml");
+    try {
+      // bypass TestHarness since it will throw any exception found in the
+      // response.
+      SolrCore core = h.getCore();
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      core.execute(core.getRequestHandler("/admin/file"),
+                   req("file", "does-not-exist-404.txt"), rsp);
+      assertNotNull("no exception in response", rsp.getException());
+      assertTrue("wrong type of exception: " + rsp.getException().getClass(),
+                 rsp.getException() instanceof SolrException);
+      assertEquals(404, ((SolrException)rsp.getException()).code());
+
+    } catch (Exception e) {
+      assertNull("Should not have caught an exception", e);
+    }
   }
 
   public void testDirList() throws SolrServerException {

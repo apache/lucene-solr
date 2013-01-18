@@ -109,23 +109,28 @@ public class FastOutputStream extends OutputStream implements DataOutput {
   }
 
   ////////////////// DataOutput methods ///////////////////
+  @Override
   public void writeBoolean(boolean v) throws IOException {
     write(v ? 1:0);
   }
 
+  @Override
   public void writeByte(int v) throws IOException {
     write((byte)v);
   }
 
+  @Override
   public void writeShort(int v) throws IOException {
     write((byte)(v >>> 8));
     write((byte)v);
   }
 
+  @Override
   public void writeChar(int v) throws IOException {
     writeShort(v);
   }
 
+  @Override
   public void writeInt(int v) throws IOException {
     reserve(4);
     buf[pos] = (byte)(v>>>24);
@@ -135,6 +140,7 @@ public class FastOutputStream extends OutputStream implements DataOutput {
     pos+=4;
   }
 
+  @Override
   public void writeLong(long v) throws IOException {
     reserve(8);
     buf[pos] = (byte)(v>>>56);
@@ -148,26 +154,31 @@ public class FastOutputStream extends OutputStream implements DataOutput {
     pos+=8;
   }
 
+  @Override
   public void writeFloat(float v) throws IOException {
     writeInt(Float.floatToRawIntBits(v));
   }
 
+  @Override
   public void writeDouble(double v) throws IOException {
     writeLong(Double.doubleToRawLongBits(v));
   }
 
+  @Override
   public void writeBytes(String s) throws IOException {
     // non-optimized version, but this shouldn't be used anyway
     for (int i=0; i<s.length(); i++)
       write((byte)s.charAt(i));
   }
 
+  @Override
   public void writeChars(String s) throws IOException {
     // non-optimized version
     for (int i=0; i<s.length(); i++)
       writeChar(s.charAt(i)); 
   }
 
+  @Override
   public void writeUTF(String s) throws IOException {
     // non-optimized version, but this shouldn't be used anyway
     DataOutputStream daos = new DataOutputStream(this);

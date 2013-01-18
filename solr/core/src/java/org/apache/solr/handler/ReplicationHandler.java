@@ -60,6 +60,7 @@ import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrDeletionPolicy;
 import org.apache.solr.core.SolrEventListener;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -361,7 +362,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       // use a set to workaround possible Lucene bug which returns same file
       // name multiple times
       Collection<String> files = new HashSet<String>(commit.getFileNames());
-      dir = core.getDirectoryFactory().get(core.getNewIndexDir(), null);
+      dir = core.getDirectoryFactory().get(core.getNewIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       try {
         
         for (String fileName : files) {
@@ -467,7 +468,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     Directory dir;
     long size = 0;
     try {
-      dir = core.getDirectoryFactory().get(core.getIndexDir(), null);
+      dir = core.getDirectoryFactory().get(core.getNewIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       try {
         size = DirectoryFactory.sizeOfDirectory(dir);
       } finally {
@@ -777,6 +778,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 //    }
 //  }
 
+  @Override
   @SuppressWarnings("unchecked")
   public void inform(SolrCore core) {
     this.core = core;
@@ -927,19 +929,23 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    */
   private void registerFileStreamResponseWriter() {
     core.registerResponseWriter(FILE_STREAM, new BinaryQueryResponseWriter() {
+      @Override
       public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse resp) throws IOException {
         DirectoryFileStream stream = (DirectoryFileStream) resp.getValues().get(FILE_STREAM);
         stream.write(out);
       }
 
+      @Override
       public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) {
         throw new RuntimeException("This is a binary writer , Cannot write to a characterstream");
       }
 
+      @Override
       public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
         return "application/octet-stream";
       }
 
+      @Override
       public void init(NamedList args) { /*no op*/ }
     });
 
@@ -955,11 +961,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    */
   private SolrEventListener getEventListener(final boolean snapshoot, final boolean getCommit) {
     return new SolrEventListener() {
+      @Override
       public void init(NamedList args) {/*no op*/ }
 
       /**
        * This refreshes the latest replicateable index commit and optionally can create Snapshots as well
        */
+      @Override
       public void postCommit() {
         IndexCommit currentCommitPoint = core.getDeletionPolicy().getLatestCommit();
 
@@ -992,6 +1000,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
       }
 
+      @Override
       public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) { /*no op*/}
 
       @Override
@@ -1062,7 +1071,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         while (true) {
           offset = offset == -1 ? 0 : offset;
           int read = (int) Math.min(buf.length, filelen - offset);
-          in.readBytes(buf, offset == -1 ? 0 : (int) offset, read);
+          in.readBytes(buf, 0, read);
           
           fos.writeInt((int) read);
           if (useChecksum) {
@@ -1082,6 +1091,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             fos.close();
             break;
           }
+          offset += read;
+          in.seek(offset);
         }
       } catch (IOException e) {
         LOG.warn("Exception while writing response for params: " + params, e);
@@ -1108,6 +1119,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       super(solrParams);
     }
 
+    @Override
     public void write(OutputStream out) throws IOException {
       String fileName = params.get(FILE);
       String cfileName = params.get(CONF_FILE_SHORT);

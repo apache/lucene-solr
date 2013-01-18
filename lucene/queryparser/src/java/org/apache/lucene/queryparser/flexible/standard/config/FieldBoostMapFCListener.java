@@ -43,6 +43,7 @@ public class FieldBoostMapFCListener implements FieldConfigListener {
     this.config = config;
   }
 
+  @Override
   public void buildFieldConfig(FieldConfig fieldConfig) {
     Map<String, Float> fieldBoostMap = this.config.get(ConfigurationKeys.FIELD_BOOST_MAP);
     

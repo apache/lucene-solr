@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 
 /**
  * Test-case for RAMDirectoryFactory
@@ -37,13 +38,13 @@ public class RAMDirectoryFactoryTest extends LuceneTestCase {
     final Directory directory = new RAMDirectory();
     RAMDirectoryFactory factory = new RAMDirectoryFactory()  {
       @Override
-      protected Directory create(String path) {
+      protected Directory create(String path, DirContext dirContext) {
         return directory;
       }
     };
     String path = "/fake/path";
-    Directory dir1 = factory.get(path, null);
-    Directory dir2 = factory.get(path, null);
+    Directory dir1 = factory.get(path, DirContext.DEFAULT, null);
+    Directory dir2 = factory.get(path, DirContext.DEFAULT, null);
     assertEquals("RAMDirectoryFactory should not create new instance of RefCntRamDirectory " +
         "every time open() is called for the same path", dir1, dir2);
 
@@ -53,7 +54,7 @@ public class RAMDirectoryFactoryTest extends LuceneTestCase {
 
   private void dotestOpenSucceedForEmptyDir() throws IOException {
     RAMDirectoryFactory factory = new RAMDirectoryFactory();
-    Directory dir = factory.get("/fake/path", null);
+    Directory dir = factory.get("/fake/path", DirContext.DEFAULT, null);
     assertNotNull("RAMDirectoryFactory should create RefCntRamDirectory even if the path doen't lead " +
         "to index directory on the file system", dir);
     factory.release(dir);

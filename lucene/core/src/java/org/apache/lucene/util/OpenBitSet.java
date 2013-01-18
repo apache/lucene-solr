@@ -162,6 +162,7 @@ public class OpenBitSet extends DocIdSet implements Bits, Cloneable {
 
 
   /** Returns true or false for the specified bit index. */
+  @Override
   public boolean get(int index) {
     int i = index >> 6;               // div 64
     // signed shift will keep a negative index and force an

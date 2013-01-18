@@ -200,7 +200,7 @@ public class WFSTCompletionLookup extends Lookup {
   private Long lookupPrefix(BytesRef scratch, Arc<Long> arc) throws /*Bogus*/IOException {
     assert 0 == fst.outputs.getNoOutput().longValue();
     long output = 0;
-    BytesReader bytesReader = fst.getBytesReader(0);
+    BytesReader bytesReader = fst.getBytesReader();
     
     fst.getFirstArc(arc);
     
@@ -278,6 +278,7 @@ public class WFSTCompletionLookup extends Lookup {
   }
   
   static final Comparator<Long> weightComparator = new Comparator<Long> () {
+    @Override
     public int compare(Long left, Long right) {
       return left.compareTo(right);
     }  

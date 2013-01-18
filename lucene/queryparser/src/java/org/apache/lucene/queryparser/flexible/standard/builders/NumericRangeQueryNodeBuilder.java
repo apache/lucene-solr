@@ -43,6 +43,7 @@ public class NumericRangeQueryNodeBuilder implements StandardQueryBuilder {
   // empty constructor
   }
   
+  @Override
   public NumericRangeQuery<? extends Number> build(QueryNode queryNode)
       throws QueryNodeException {
     NumericRangeQueryNode numericRangeNode = (NumericRangeQueryNode) queryNode;

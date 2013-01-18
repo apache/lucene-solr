@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.cl2o.Cl2oTaxonomyWriterCache;
 import org.apache.lucene.facet.taxonomy.writercache.lru.LruTaxonomyWriterCache;
@@ -51,11 +52,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     @Override
     public int get(CategoryPath categoryPath) { return -1; }
     @Override
-    public int get(CategoryPath categoryPath, int length) { return -1; }
-    @Override
     public boolean put(CategoryPath categoryPath, int ordinal) { return true; }
-    @Override
-    public boolean put(CategoryPath categoryPath, int prefixLen, int ordinal) { return true; }
     @Override
     public boolean isFull() { return true; }
     @Override
@@ -87,9 +84,9 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
     taxoWriter.addCategory(new CategoryPath("a"));
     taxoWriter.addCategory(new CategoryPath("b"));
-    Map <String, String> userCommitData = new HashMap<String, String>();
+    Map<String, String> userCommitData = new HashMap<String, String>();
     userCommitData.put("testing", "1 2 3");
-    taxoWriter.commit(userCommitData);
+    taxoWriter.setCommitData(userCommitData);
     taxoWriter.close();
     DirectoryReader r = DirectoryReader.open(dir);
     assertEquals("2 categories plus root should have been committed to the underlying directory", 3, r.numDocs());
@@ -104,9 +101,14 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     // that the taxonomy index has been recreated.
     taxoWriter = new DirectoryTaxonomyWriter(dir, OpenMode.CREATE_OR_APPEND, NO_OP_CACHE);
     taxoWriter.addCategory(new CategoryPath("c")); // add a category so that commit will happen
-    taxoWriter.commit(new HashMap<String, String>(){{
+    taxoWriter.setCommitData(new HashMap<String, String>(){{
       put("just", "data");
     }});
+    taxoWriter.commit();
+    
+    // verify taxoWriter.getCommitData()
+    assertNotNull(DirectoryTaxonomyWriter.INDEX_EPOCH
+        + " not found in taoxWriter.commitData", taxoWriter.getCommitData().get(DirectoryTaxonomyWriter.INDEX_EPOCH));
     taxoWriter.close();
     
     r = DirectoryReader.open(dir);
@@ -163,9 +165,10 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
 
   private void touchTaxo(DirectoryTaxonomyWriter taxoWriter, CategoryPath cp) throws IOException {
     taxoWriter.addCategory(cp);
-    taxoWriter.commit(new HashMap<String, String>(){{
+    taxoWriter.setCommitData(new HashMap<String, String>(){{
       put("just", "data");
     }});
+    taxoWriter.commit();
   }
   
   @Test
@@ -231,7 +234,7 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     final int range = ncats * 3; // affects the categories selection
     final AtomicInteger numCats = new AtomicInteger(ncats);
     final Directory dir = newDirectory();
-    final ConcurrentHashMap<Integer,Integer> values = new ConcurrentHashMap<Integer,Integer>();
+    final ConcurrentHashMap<String,String> values = new ConcurrentHashMap<String,String>();
     final double d = random().nextDouble();
     final TaxonomyWriterCache cache;
     if (d < 0.7) {
@@ -255,8 +258,18 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
           while (numCats.decrementAndGet() > 0) {
             try {
               int value = random.nextInt(range);
-              tw.addCategory(new CategoryPath("a", Integer.toString(value)));
-              values.put(value, value);
+              CategoryPath cp = new CategoryPath(Integer.toString(value / 1000), Integer.toString(value / 10000),
+                  Integer.toString(value / 100000), Integer.toString(value));
+              int ord = tw.addCategory(cp);
+              assertTrue("invalid parent for ordinal " + ord + ", category " + cp, tw.getParent(ord) != -1);
+              String l1 = cp.subpath(1).toString('/');
+              String l2 = cp.subpath(2).toString('/');
+              String l3 = cp.subpath(3).toString('/');
+              String l4 = cp.subpath(4).toString('/');
+              values.put(l1, l1);
+              values.put(l2, l2);
+              values.put(l3, l3);
+              values.put(l4, l4);
             } catch (IOException e) {
               throw new RuntimeException(e);
             }
@@ -270,9 +283,20 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     tw.close();
     
     DirectoryTaxonomyReader dtr = new DirectoryTaxonomyReader(dir);
-    assertEquals("mismatch number of categories", values.size() + 2, dtr.getSize()); // +2 for root category + "a"
-    for (Integer value : values.keySet()) {
-      assertTrue("category not found a/" + value, dtr.getOrdinal(new CategoryPath("a", value.toString())) > 0);
+    assertEquals("mismatch number of categories", values.size() + 1, dtr.getSize()); // +1 for root category
+    int[] parents = dtr.getParallelTaxonomyArrays().parents();
+    for (String cat : values.keySet()) {
+      CategoryPath cp = new CategoryPath(cat, '/');
+      assertTrue("category not found " + cp, dtr.getOrdinal(cp) > 0);
+      int level = cp.length;
+      int parentOrd = 0; // for root, parent is always virtual ROOT (ord=0)
+      CategoryPath path = CategoryPath.EMPTY;
+      for (int i = 0; i < level; i++) {
+        path = cp.subpath(i + 1);
+        int ord = dtr.getOrdinal(path);
+        assertEquals("invalid parent for cp=" + path, parentOrd, parents[ord]);
+        parentOrd = ord; // next level should have this parent
+      }
     }
     dtr.close();
     
@@ -289,12 +313,12 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
   public void testReplaceTaxonomy() throws Exception {
     Directory input = newDirectory();
     DirectoryTaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(input);
-    taxoWriter.addCategory(new CategoryPath("a"));
+    int ordA = taxoWriter.addCategory(new CategoryPath("a"));
     taxoWriter.close();
     
     Directory dir = newDirectory();
     taxoWriter = new DirectoryTaxonomyWriter(dir);
-    int ordinal = taxoWriter.addCategory(new CategoryPath("b"));
+    int ordB = taxoWriter.addCategory(new CategoryPath("b"));
     taxoWriter.addCategory(new CategoryPath("c"));
     taxoWriter.commit();
     
@@ -303,11 +327,16 @@ public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
     // replace the taxonomy with the input one
     taxoWriter.replaceTaxonomy(input);
     
+    // LUCENE-4633: make sure that category "a" is not added again in any case
+    taxoWriter.addTaxonomy(input, new MemoryOrdinalMap());
+    assertEquals("no categories should have been added", 2, taxoWriter.getSize()); // root + 'a'
+    assertEquals("category 'a' received new ordinal?", ordA, taxoWriter.addCategory(new CategoryPath("a")));
+
     // add the same category again -- it should not receive the same ordinal !
-    int newOrdinal = taxoWriter.addCategory(new CategoryPath("b"));
-    assertNotSame("new ordinal cannot be the original ordinal", ordinal, newOrdinal);
-    assertEquals("ordinal should have been 2 since only one category was added by replaceTaxonomy", 2, newOrdinal);
-    
+    int newOrdB = taxoWriter.addCategory(new CategoryPath("b"));
+    assertNotSame("new ordinal cannot be the original ordinal", ordB, newOrdB);
+    assertEquals("ordinal should have been 2 since only one category was added by replaceTaxonomy", 2, newOrdB);
+
     taxoWriter.close();
     
     long newEpoch = getEpoch(dir);

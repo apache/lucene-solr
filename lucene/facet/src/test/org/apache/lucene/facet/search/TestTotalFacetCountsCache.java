@@ -2,22 +2,12 @@ package org.apache.lucene.facet.search;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
-import org.junit.Before;
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.facet.FacetTestUtils;
 import org.apache.lucene.facet.FacetTestUtils.IndexTaxonomyReaderPair;
 import org.apache.lucene.facet.FacetTestUtils.IndexTaxonomyWriterPair;
@@ -25,8 +15,7 @@ import org.apache.lucene.facet.example.ExampleResult;
 import org.apache.lucene.facet.example.TestMultiCLExample;
 import org.apache.lucene.facet.example.multiCL.MultiCLIndexer;
 import org.apache.lucene.facet.example.multiCL.MultiCLSearcher;
-import org.apache.lucene.facet.index.CategoryDocumentBuilder;
-import org.apache.lucene.facet.index.params.DefaultFacetIndexingParams;
+import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.TotalFacetCounts.CreationType;
 import org.apache.lucene.facet.search.results.FacetResult;
@@ -36,9 +25,18 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SlowRAMDirectory;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Before;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -80,7 +78,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     @Override
     public void run() {
       try {
-        tfc = TFC.getTotalCounts(r, tr, iParams, null);
+        tfc = TFC.getTotalCounts(r, tr, iParams);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -90,10 +88,10 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
   /** Utility method to add a document and facets to an index/taxonomy. */
   static void addFacets(FacetIndexingParams iParams, IndexWriter iw,
                         TaxonomyWriter tw, String... strings) throws IOException {
-    ArrayList<CategoryPath> cps = new ArrayList<CategoryPath>();
-    cps.add(new CategoryPath(strings));
-    CategoryDocumentBuilder builder = new CategoryDocumentBuilder(tw, iParams);
-    iw.addDocument(builder.setCategoryPaths(cps).build(new Document()));
+    Document doc = new Document();
+    FacetFields facetFields = new FacetFields(tw, iParams);
+    facetFields.addFields(doc, Collections.singletonList(new CategoryPath(strings)));
+    iw.addDocument(doc);
   }
 
   /** Clears the cache and sets its size to one. */
@@ -145,7 +143,6 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     MockDirectoryWrapper indexDir = new MockDirectoryWrapper(random(), slowIndexDir);
     SlowRAMDirectory slowTaxoDir = new SlowRAMDirectory(-1, random());
     MockDirectoryWrapper taxoDir = new MockDirectoryWrapper(random(), slowTaxoDir);
-    
 
     // Index documents without the "slowness"
     MultiCLIndexer.index(indexDir, taxoDir);
@@ -196,7 +193,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     // it references a different TFC cache. This will still result
     // in valid results, but will only search one of the category lists
     // instead of all of them.
-    multis[numThreads - 1] = new Multi(slowIndexReader, slowTaxoReader, new DefaultFacetIndexingParams());
+    multis[numThreads - 1] = new Multi(slowIndexReader, slowTaxoReader, FacetIndexingParams.ALL_PARENTS);
 
     // Gentleman, start your engines
     for (Multi m : multis) {
@@ -252,7 +249,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
 
     // Create our index/taxonomy writers
     IndexTaxonomyWriterPair[] writers = FacetTestUtils.createIndexTaxonomyWriterPair(dirs);
-    DefaultFacetIndexingParams iParams = new DefaultFacetIndexingParams();
+    FacetIndexingParams iParams = FacetIndexingParams.ALL_PARENTS;
 
     // Add a facet to the index
     addFacets(iParams, writers[0].indexWriter, writers[0].taxWriter, "a", "b");
@@ -267,29 +264,29 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     // As this is the first time we have invoked the TotalFacetCountsManager, 
     // we should expect to compute and not read from disk.
     TotalFacetCounts totalCounts = 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     int prevGen = assertRecomputed(totalCounts, 0, "after first attempt to get it!");
 
     // Repeating same operation should pull from the cache - not recomputed. 
     assertTrue("Should be obtained from cache at 2nd attempt",totalCounts == 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null));
+      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams));
 
     // Repeat the same operation as above. but clear first - now should recompute again
     initCache();
-    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     prevGen = assertRecomputed(totalCounts, prevGen, "after cache clear, 3rd attempt to get it!");
     
     //store to file
     File outputFile = _TestUtil.createTempFile("test", "tmp", TEMP_DIR);
     initCache();
-    TFC.store(outputFile, readers[0].indexReader, readers[0].taxReader, iParams, null);
-    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+    TFC.store(outputFile, readers[0].indexReader, readers[0].taxReader, iParams);
+    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     prevGen = assertRecomputed(totalCounts, prevGen, "after cache clear, 4th attempt to get it!");
 
     //clear and load
     initCache();
     TFC.load(outputFile, readers[0].indexReader, readers[0].taxReader, iParams);
-    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     prevGen = assertReadFromDisc(totalCounts, prevGen, "after 5th attempt to get it!");
 
     // Add a new facet to the index, commit and refresh readers
@@ -309,12 +306,12 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     readers[0].indexReader = r2;
 
     // now use the new reader - should recompute
-    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+    totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     prevGen = assertRecomputed(totalCounts, prevGen, "after updating the index - 7th attempt!");
 
     // try again - should not recompute
     assertTrue("Should be obtained from cache at 8th attempt",totalCounts == 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null));
+      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams));
     
     readers[0].close();
     outputFile.delete();
@@ -347,11 +344,10 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     // Create temporary RAMDirectories
     Directory[][] dirs = FacetTestUtils.createIndexTaxonomyDirs(1);
     // Create our index/taxonomy writers
-    IndexTaxonomyWriterPair[] writers = FacetTestUtils
-    .createIndexTaxonomyWriterPair(dirs);
-    DefaultFacetIndexingParams iParams = new DefaultFacetIndexingParams() {
+    IndexTaxonomyWriterPair[] writers = FacetTestUtils.createIndexTaxonomyWriterPair(dirs);
+    FacetIndexingParams iParams = new FacetIndexingParams() {
       @Override
-      protected int fixedPartitionSize() {
+      public int getPartitionSize() {
         return 2;
       }
     };
@@ -365,7 +361,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
 
     // Create TFC and write cache to disk
     File outputFile = _TestUtil.createTempFile("test", "tmp", TEMP_DIR);
-    TFC.store(outputFile, readers[0].indexReader, readers[0].taxReader, iParams, null);
+    TFC.store(outputFile, readers[0].indexReader, readers[0].taxReader, iParams);
     
     // Make the taxonomy grow without touching the index
     for (int i = 0; i < 10; i++) {
@@ -381,8 +377,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
 
     // With the bug, this next call should result in an exception
     TFC.load(outputFile, readers[0].indexReader, readers[0].taxReader, iParams);
-    TotalFacetCounts totalCounts = TFC.getTotalCounts(
-        readers[0].indexReader, readers[0].taxReader, iParams, null);
+    TotalFacetCounts totalCounts = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     assertReadFromDisc(totalCounts, 0, "after reading from disk.");
     outputFile.delete();
     writers[0].close();
@@ -403,7 +398,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     IndexWriter w = new IndexWriter(indexDir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
-    DefaultFacetIndexingParams iParams = new DefaultFacetIndexingParams();
+    FacetIndexingParams iParams = FacetIndexingParams.ALL_PARENTS;
     // Add documents and facets
     for (int i = 0; i < 1000; i++) {
       addFacets(iParams, w, tw, "facet", Integer.toString(i));
@@ -454,7 +449,7 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     Directory[][] dirs = FacetTestUtils.createIndexTaxonomyDirs(2);
     // Create our index/taxonomy writers
     IndexTaxonomyWriterPair[] writers = FacetTestUtils.createIndexTaxonomyWriterPair(dirs);
-    DefaultFacetIndexingParams iParams = new DefaultFacetIndexingParams();
+    FacetIndexingParams iParams = FacetIndexingParams.ALL_PARENTS;
 
     // Add a facet to the index
     addFacets(iParams, writers[0].indexWriter, writers[0].taxWriter, "a", "b");
@@ -471,28 +466,25 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     // As this is the first time we have invoked the TotalFacetCountsManager, we
     // should expect to compute.
     TotalFacetCounts totalCounts0 = 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     int prevGen = -1;
     prevGen = assertRecomputed(totalCounts0, prevGen, "after attempt 1");
     assertTrue("attempt 1b for same input [0] shout find it in cache",
-        totalCounts0 == TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null));
+        totalCounts0 == TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams));
     
     // 2nd Reader - As this is the first time we have invoked the
     // TotalFacetCountsManager, we should expect a state of NEW to be returned.
-    TotalFacetCounts totalCounts1 = 
-      TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams, null);
+    TotalFacetCounts totalCounts1 = TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams);
     prevGen = assertRecomputed(totalCounts1, prevGen, "after attempt 2");
     assertTrue("attempt 2b for same input [1] shout find it in cache",
-        totalCounts1 == TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams, null));
+        totalCounts1 == TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams));
 
     // Right now cache size is one, so first TFC is gone and should be recomputed  
-    totalCounts0 = 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+    totalCounts0 = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     prevGen = assertRecomputed(totalCounts0, prevGen, "after attempt 3");
     
     // Similarly will recompute the second result  
-    totalCounts1 = 
-      TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams, null);
+    totalCounts1 = TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams);
     prevGen = assertRecomputed(totalCounts1, prevGen, "after attempt 4");
 
     // Now we set the cache size to two, meaning both should exist in the
@@ -500,17 +492,15 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
     TFC.setCacheSize(2);
 
     // Re-compute totalCounts0 (was evicted from the cache when the cache was smaller)
-    totalCounts0 = 
-      TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+    totalCounts0 = TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
     prevGen = assertRecomputed(totalCounts0, prevGen, "after attempt 5");
 
     // now both are in the larger cache and should not be recomputed 
-    totalCounts1 = TFC.getTotalCounts(readers[1].indexReader,
-        readers[1].taxReader, iParams, null);
+    totalCounts1 = TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams);
     assertTrue("with cache of size 2 res no. 0 should come from cache",
-        totalCounts0 == TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null));
+        totalCounts0 == TFC.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams));
     assertTrue("with cache of size 2 res no. 1 should come from cache",
-        totalCounts1 == TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams, null));
+        totalCounts1 == TFC.getTotalCounts(readers[1].indexReader, readers[1].taxReader, iParams));
     
     writers[0].close();
     writers[1].close();

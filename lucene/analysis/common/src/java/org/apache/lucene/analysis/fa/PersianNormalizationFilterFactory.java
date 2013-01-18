@@ -36,6 +36,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *
  */
 public class PersianNormalizationFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+  @Override
   public PersianNormalizationFilter create(TokenStream input) {
     return new PersianNormalizationFilter(input);
   }

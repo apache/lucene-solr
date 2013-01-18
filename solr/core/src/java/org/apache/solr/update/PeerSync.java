@@ -443,10 +443,11 @@ public class PeerSync  {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DISTRIB_UPDATE_PARAM, FROMLEADER.toString());
-    // params.set("peersync",true); // debugging
+    params.set("peersync",true); // debugging
     SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, params);
     SolrQueryResponse rsp = new SolrQueryResponse();
 
+    // TODO: use the standard update processor chain now that it has support to skip processors before the DistributedUpdateProcessor?
     RunUpdateProcessorFactory runFac = new RunUpdateProcessorFactory();
     DistributedUpdateProcessorFactory magicFac = new DistributedUpdateProcessorFactory();
     runFac.init(new NamedList());

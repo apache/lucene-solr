@@ -73,10 +73,12 @@ public class FloatToObjectMap<T> implements Iterable<T> {
       }
     }
 
+    @Override
     public boolean hasNext() {
       return (index != 0);
     }
 
+    @Override
     public int next() {
       // Save the last index visited
       lastIndex = index;
@@ -94,6 +96,7 @@ public class FloatToObjectMap<T> implements Iterable<T> {
       return lastIndex;
     }
 
+    @Override
     public void remove() {
       FloatToObjectMap.this.remove(keys[lastIndex]);
     }
@@ -108,14 +111,17 @@ public class FloatToObjectMap<T> implements Iterable<T> {
 
     KeyIterator() { }
 
+    @Override
     public boolean hasNext() {
       return iterator.hasNext();
     }
 
+    @Override
     public float next() {
       return keys[iterator.next()];
     }
 
+    @Override
     public void remove() {
       iterator.remove();
     }
@@ -130,15 +136,18 @@ public class FloatToObjectMap<T> implements Iterable<T> {
 
     ValueIterator() { }
 
+    @Override
     public boolean hasNext() {
       return iterator.hasNext();
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public T next() {
       return (T) values[iterator.next()];
     }
 
+    @Override
     public void remove() {
       iterator.remove();
     }
@@ -445,6 +454,7 @@ public class FloatToObjectMap<T> implements Iterable<T> {
   /**
    * Returns a new iterator for the mapped objects.
    */
+  @Override
   public Iterator<T> iterator() {
     return new ValueIterator();
   }

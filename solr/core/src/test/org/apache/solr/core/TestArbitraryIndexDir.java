@@ -29,11 +29,11 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.handler.SnapPuller;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
 import org.junit.AfterClass;
@@ -86,12 +86,12 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
   }
 
   @Test
-  public void testLoadNewIndexDir() throws IOException, ParserConfigurationException, SAXException, ParseException {
+  public void testLoadNewIndexDir() throws IOException, ParserConfigurationException, SAXException {
     //add a doc in original index dir
     assertU(adoc("id", String.valueOf(1),
         "name", "name"+String.valueOf(1)));
     //create a new index dir and index.properties file
-    File idxprops = new File(h.getCore().getDataDir() + "index.properties");
+    File idxprops = new File(h.getCore().getDataDir() + SnapPuller.INDEX_PROPERTIES);
     Properties p = new Properties();
     File newDir = new File(h.getCore().getDataDir() + "index_temp");
     newDir.mkdirs();
@@ -102,7 +102,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
       p.store(os, "index properties");
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Unable to write index.properties", e);
+          "Unable to write " + SnapPuller.INDEX_PROPERTIES, e);
     } finally {
       if (os != null) os.close();
     }

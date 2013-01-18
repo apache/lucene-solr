@@ -73,6 +73,7 @@ public class NearSpansOrdered extends Spans {
 
   private final Spans[] subSpansByDoc;
   private final Comparator<Spans> spanDocComparator = new Comparator<Spans>() {
+    @Override
     public int compare(Spans o1, Spans o2) {
       return o1.doc() - o2.doc();
     }

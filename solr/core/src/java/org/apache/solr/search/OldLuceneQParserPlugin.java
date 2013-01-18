@@ -28,6 +28,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class OldLuceneQParserPlugin extends QParserPlugin {
   public static String NAME = "lucenePlusSort";
 
+  @Override
   public void init(NamedList args) {
   }
 

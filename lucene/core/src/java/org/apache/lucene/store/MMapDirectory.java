@@ -186,6 +186,7 @@ public class MMapDirectory extends FSDirectory {
     if (useUnmapHack) {
       try {
         AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
+          @Override
           public Object run() throws Exception {
             final Method getCleanerMethod = buffer.getClass()
               .getMethod("cleaner");

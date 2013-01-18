@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -37,9 +36,6 @@ import java.util.Properties;
  *
  * @since solr 1.4
  */
-@ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class
-})
 public class TestSolrCoreProperties extends LuceneTestCase {
   private static final String CONF_DIR = "." + File.separator + "solr" + File.separator + "collection1" + File.separator + "conf" + File.separator;
   JettySolrRunner solrJetty;

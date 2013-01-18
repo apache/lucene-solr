@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -72,7 +71,7 @@ public class TestTransactionRollback extends LuceneTestCase {
         new RollbackDeletionPolicy(id)).setIndexCommit(last));
     Map<String,String> data = new HashMap<String,String>();
     data.put("index", "Rolled back to 1-"+id);
-    w.commit(data);
+    w.setCommitData(data);
     w.close();
   }
 
@@ -142,7 +141,8 @@ public class TestTransactionRollback extends LuceneTestCase {
       if (currentRecordId%10 == 0) {
         Map<String,String> data = new HashMap<String,String>();
         data.put("index", "records 1-"+currentRecordId);
-        w.commit(data);
+        w.setCommitData(data);
+        w.commit();
       }
     }
 
@@ -163,9 +163,11 @@ public class TestTransactionRollback extends LuceneTestCase {
       this.rollbackPoint = rollbackPoint;
     }
 
+    @Override
     public void onCommit(List<? extends IndexCommit> commits) throws IOException {
     }
 
+    @Override
     public void onInit(List<? extends IndexCommit> commits) throws IOException {
       for (final IndexCommit commit : commits) {
         Map<String,String> userData=commit.getUserData();
@@ -196,8 +198,10 @@ public class TestTransactionRollback extends LuceneTestCase {
 
   class DeleteLastCommitPolicy implements IndexDeletionPolicy {
 
+    @Override
     public void onCommit(List<? extends IndexCommit> commits) throws IOException {}
 
+    @Override
     public void onInit(List<? extends IndexCommit> commits) throws IOException {
       commits.get(commits.size()-1).delete();
     }
@@ -218,7 +222,9 @@ public class TestTransactionRollback extends LuceneTestCase {
 
   // Keeps all commit points (used to build index)
   class KeepAllDeletionPolicy implements IndexDeletionPolicy {
+    @Override
     public void onCommit(List<? extends IndexCommit> commits) throws IOException {}
+    @Override
     public void onInit(List<? extends IndexCommit> commits) throws IOException {}
   }
 }

@@ -79,6 +79,7 @@ public abstract class AbstractSolrTestCase extends SolrTestCaseJ4 {
   /** Subclasses that override setUp can optionally call this method
    * to log the fact that their setUp process has ended.
    */
+  @Override
   public void postSetUp() {
     log.info("####POSTSETUP " + getTestName());
   }
@@ -89,6 +90,7 @@ public abstract class AbstractSolrTestCase extends SolrTestCaseJ4 {
    * since subclasses will want to call super.tearDown() at the *end* of their
    * tearDown method.
    */
+  @Override
   public void preTearDown() {
     log.info("####PRETEARDOWN " + getTestName());      
   }

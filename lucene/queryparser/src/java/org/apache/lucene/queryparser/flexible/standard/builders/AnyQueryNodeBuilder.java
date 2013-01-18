@@ -40,6 +40,7 @@ public class AnyQueryNodeBuilder implements StandardQueryBuilder {
     // empty constructor
   }
 
+  @Override
   public BooleanQuery build(QueryNode queryNode) throws QueryNodeException {
     AnyQueryNode andNode = (AnyQueryNode) queryNode;
 

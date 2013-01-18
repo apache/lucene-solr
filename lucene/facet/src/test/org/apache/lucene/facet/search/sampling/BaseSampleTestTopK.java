@@ -14,6 +14,8 @@ import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.ScoredDocIDs;
 import org.apache.lucene.facet.search.ScoredDocIdCollector;
+import org.apache.lucene.facet.search.params.FacetRequest;
+import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -43,16 +45,29 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
   /** since there is a chance that this test would fail even if the code is correct, retry the sampling */
   protected static final int RETRIES = 10;
   
-  protected abstract FacetsAccumulator getSamplingAccumulator(Sampler sampler,
-      TaxonomyReader taxoReader, IndexReader indexReader,
-      FacetSearchParams searchParams);
+  @Override
+  protected FacetSearchParams searchParamsWithRequests(int numResults, int partitionSize) {
+    FacetSearchParams res = super.searchParamsWithRequests(numResults, partitionSize);
+    for (FacetRequest req : res.getFacetRequests()) {
+      // randomize the way we aggregate results
+      if (random().nextBoolean()) {
+        req.setResultMode(ResultMode.GLOBAL_FLAT);
+      } else {
+        req.setResultMode(ResultMode.PER_NODE_IN_TREE);
+      }
+    }
+    return res;
+  }
+  
+  protected abstract FacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
+      IndexReader indexReader, FacetSearchParams searchParams);
   
   /**
    * Try out faceted search with sampling enabled and complements either disabled or enforced
    * Lots of randomly generated data is being indexed, and later on a "90% docs" faceted search
    * is performed. The results are compared to non-sampled ones.
    */
-  public void testCountUsingSamping() throws Exception {
+  public void testCountUsingSampling() throws Exception {
     boolean useRandomSampler = random().nextBoolean();
     for (int partitionSize : partitionSizes) {
       try {
@@ -73,7 +88,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
         
         // try several times in case of failure, because the test has a chance to fail 
         // if the top K facets are not sufficiently common with the sample set
-        for (int nTrial=0; nTrial<RETRIES; nTrial++) {
+        for (int nTrial = 0; nTrial < RETRIES; nTrial++) {
           try {
             // complement with sampling!
             final Sampler sampler = createSampler(nTrial, docCollector.getScoredDocIDs(), useRandomSampler);
@@ -83,7 +98,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
             
             break; // succeeded
           } catch (NotSameResultError e) {
-            if (nTrial>=RETRIES-1) {
+            if (nTrial >= RETRIES - 1) {
               throw e; // no more retries allowed, must fail
             }
           }
@@ -103,14 +118,11 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
     assertSameResults(expected, sampledResults);
   }
   
-  private FacetsCollector samplingCollector(
-      final boolean complement,
-      final Sampler sampler,
+  private FacetsCollector samplingCollector(final boolean complement, final Sampler sampler,
       FacetSearchParams samplingSearchParams) {
     FacetsCollector samplingFC = new FacetsCollector(samplingSearchParams, indexReader, taxoReader) {
       @Override
-      protected FacetsAccumulator initFacetsAccumulator(
-          FacetSearchParams facetSearchParams, IndexReader indexReader,
+      protected FacetsAccumulator initFacetsAccumulator(FacetSearchParams facetSearchParams, IndexReader indexReader,
           TaxonomyReader taxonomyReader) {
         FacetsAccumulator acc = getSamplingAccumulator(sampler, taxonomyReader, indexReader, facetSearchParams);
         acc.setComplementThreshold(complement ? FacetsAccumulator.FORCE_COMPLEMENT : FacetsAccumulator.DISABLE_COMPLEMENT);
@@ -128,12 +140,13 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
     samplingParams.setMinSampleSize((int) (100 * retryFactor));
     samplingParams.setMaxSampleSize((int) (10000 * retryFactor));
     samplingParams.setOversampleFactor(5.0 * retryFactor);
+    samplingParams.setSamplingThreshold(11000); //force sampling
 
-    samplingParams.setSampingThreshold(11000); //force sampling 
     Sampler sampler = useRandomSampler ? 
         new RandomSampler(samplingParams, new Random(random().nextLong())) :
           new RepeatableSampler(samplingParams);
     assertTrue("must enable sampling for this test!",sampler.shouldSample(scoredDocIDs));
     return sampler;
   }
+  
 }

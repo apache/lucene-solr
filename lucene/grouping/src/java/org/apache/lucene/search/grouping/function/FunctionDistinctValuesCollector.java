@@ -54,10 +54,12 @@ public class FunctionDistinctValuesCollector extends AbstractDistinctValuesColle
     }
   }
 
+  @Override
   public List<GroupCount> getGroups() {
     return new ArrayList<GroupCount>(groupMap.values());
   }
 
+  @Override
   public void collect(int doc) throws IOException {
     groupFiller.fillValue(doc);
     GroupCount groupCount = groupMap.get(groupMval);
@@ -67,6 +69,7 @@ public class FunctionDistinctValuesCollector extends AbstractDistinctValuesColle
     }
   }
 
+  @Override
   public void setNextReader(AtomicReaderContext context) throws IOException {
     FunctionValues values = groupSource.getValues(vsContext, context);
     groupFiller = values.getValueFiller();

@@ -18,12 +18,10 @@
 package org.apache.solr.search;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.*;
 import org.apache.lucene.search.grouping.function.FunctionAllGroupHeadsCollector;
@@ -128,7 +126,7 @@ public class Grouping {
    *
    * @param field The fieldname to group by.
    */
-  public void addFieldCommand(String field, SolrQueryRequest request) throws ParseException {
+  public void addFieldCommand(String field, SolrQueryRequest request) throws SyntaxError {
     SchemaField schemaField = searcher.getSchema().getField(field); // Throws an exception when field doesn't exist. Bad request.
     FieldType fieldType = schemaField.getType();
     ValueSource valueSource = fieldType.getValueSource(schemaField, null);
@@ -160,7 +158,7 @@ public class Grouping {
     commands.add(gc);
   }
 
-  public void addFunctionCommand(String groupByStr, SolrQueryRequest request) throws ParseException {
+  public void addFunctionCommand(String groupByStr, SolrQueryRequest request) throws SyntaxError {
     QParser parser = QParser.getParser(groupByStr, "func", request);
     Query q = parser.getQuery();
     final Grouping.Command gc;
@@ -203,7 +201,7 @@ public class Grouping {
     commands.add(gc);
   }
 
-  public void addQueryCommand(String groupByStr, SolrQueryRequest request) throws ParseException {
+  public void addQueryCommand(String groupByStr, SolrQueryRequest request) throws SyntaxError {
     QParser parser = QParser.getParser(groupByStr, null, request);
     Query gq = parser.getQuery();
     Grouping.CommandQuery gc = new CommandQuery();
@@ -683,6 +681,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     protected void prepare() throws IOException {
       actualGroupsToFind = getMax(offset, numGroups, maxDoc);
     }
@@ -690,6 +689,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     protected Collector createFirstPassCollector() throws IOException {
       // Ok we don't want groups, but do want a total count
       if (actualGroupsToFind <= 0) {
@@ -705,6 +705,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     protected Collector createSecondPassCollector() throws IOException {
       if (actualGroupsToFind <= 0) {
         allGroupsCollector = new TermAllGroupsCollector(groupBy);
@@ -749,6 +750,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     protected void finish() throws IOException {
       result = secondPass != null ? secondPass.getTopGroups(0) : null;
       if (main) {
@@ -798,6 +800,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     public int getMatches() {
       if (result == null && fallBackCollector == null) {
         return 0;
@@ -809,6 +812,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     protected Integer getNumberOfGroups() {
       return allGroupsCollector == null ? null : allGroupsCollector.getGroupCount();
     }
@@ -827,6 +831,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     protected void prepare() throws IOException {
       actualGroupsToFind = getMax(offset, numGroups, maxDoc);
     }
@@ -834,6 +839,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     protected Collector createFirstPassCollector() throws IOException {
       DocSet groupFilt = searcher.getDocSet(query);
       topCollector = newCollector(groupSort, needScores);
@@ -853,6 +859,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     protected void finish() throws IOException {
       TopDocsCollector topDocsCollector = (TopDocsCollector) collector.getDelegate();
       TopDocs topDocs = topDocsCollector.topDocs();
@@ -868,6 +875,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     public int getMatches() {
       return collector.getMatches();
     }
@@ -891,6 +899,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     protected void prepare() throws IOException {
       Map context = ValueSource.newContext(searcher);
       groupBy.createWeight(context, searcher);
@@ -900,6 +909,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     protected Collector createFirstPassCollector() throws IOException {
       // Ok we don't want groups, but do want a total count
       if (actualGroupsToFind <= 0) {
@@ -915,6 +925,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     protected Collector createSecondPassCollector() throws IOException {
       if (actualGroupsToFind <= 0) {
         allGroupsCollector = new FunctionAllGroupsCollector(groupBy, context);
@@ -956,6 +967,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     protected void finish() throws IOException {
       result = secondPass != null ? secondPass.getTopGroups(0) : null;
       if (main) {
@@ -991,6 +1003,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     public int getMatches() {
       if (result == null && fallBackCollector == null) {
         return 0;
@@ -1002,6 +1015,7 @@ public class Grouping {
     /**
      * {@inheritDoc}
      */
+    @Override
     protected Integer getNumberOfGroups() {
       return allGroupsCollector == null ? null : allGroupsCollector.getGroupCount();
     }

@@ -53,6 +53,7 @@ public class BufferingTermFreqIteratorWrapper implements TermFreqIterator {
    
   }
 
+  @Override
   public long weight() {
     return freqs[curPos];
   }

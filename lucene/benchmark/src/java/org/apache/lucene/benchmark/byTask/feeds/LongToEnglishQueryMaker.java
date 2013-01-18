@@ -40,10 +40,12 @@ public class LongToEnglishQueryMaker implements QueryMaker {
   private final RuleBasedNumberFormat rnbf = new RuleBasedNumberFormat(Locale.ROOT,
                                                                        RuleBasedNumberFormat.SPELLOUT);
 
+  @Override
   public Query makeQuery(int size) throws Exception {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public synchronized Query makeQuery() throws Exception {
     return parser.parse("" + rnbf.format(getNextCounter()) + "");
   }
@@ -55,15 +57,18 @@ public class LongToEnglishQueryMaker implements QueryMaker {
     return counter++;
   }
 
+  @Override
   public void setConfig(Config config) throws Exception {
     Analyzer anlzr = NewAnalyzerTask.createAnalyzer(config.get("analyzer", StandardAnalyzer.class.getName()));
     parser = new QueryParser(Version.LUCENE_CURRENT, DocMaker.BODY_FIELD, anlzr);
   }
 
+  @Override
   public void resetInputs() {
     counter = Long.MIN_VALUE + 10;
   }
 
+  @Override
   public String printQueries() {
     return "LongToEnglish: [" + Long.MIN_VALUE + " TO " + counter + "]";
   }

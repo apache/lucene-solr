@@ -28,14 +28,17 @@ import org.apache.lucene.util.AttributeReflector;
 public class InflectionAttributeImpl extends AttributeImpl implements InflectionAttribute, Cloneable {
   private Token token;
   
+  @Override
   public String getInflectionType() {
     return token == null ? null : token.getInflectionType();
   }
   
+  @Override
   public String getInflectionForm() {
     return token == null ? null : token.getInflectionForm();
   }
   
+  @Override
   public void setToken(Token token) {
     this.token = token;
   }

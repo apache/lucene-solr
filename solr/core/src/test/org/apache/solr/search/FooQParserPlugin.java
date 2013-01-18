@@ -17,7 +17,6 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -32,6 +31,7 @@ public class FooQParserPlugin extends QParserPlugin {
     return new FooQParser(qstr, localParams, params, req);
   }
 
+  @Override
   public void init(NamedList args) {
   }
 }
@@ -42,7 +42,7 @@ class FooQParser extends QParser {
   }
 
   @Override
-  public Query parse() throws ParseException {
+  public Query parse() throws SyntaxError {
     return new TermQuery(new Term(localParams.get(QueryParsing.F), localParams.get(QueryParsing.V)));
   }
 }

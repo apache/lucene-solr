@@ -22,49 +22,6 @@ var core_basepath = null;
 var navigation_element = null;
 var replication_element = null;
 
-var convert_duration_to_seconds = function( str )
-{
-  var ret = 0;
-  var parts = new String( str ).split( ':' ).reverse();
-  var parts_count = parts.length;
-    
-  for( var i = 0; i < parts_count; i++ )
-  {
-    ret += parseInt( parts[i], 10 ) * Math.pow( 60, i );
-  }
-
-  return ret;
-}
-
-var convert_seconds_to_readable_time = function( value )
-{
-  var text = [];
-  value = parseInt( value );
-
-  var minutes = Math.floor( value / 60 );
-  var hours = Math.floor( minutes / 60 );
-
-  if( 0 !== hours )
-  {
-    text.push( hours + 'h' );
-    value -= hours * 60 * 60;
-    minutes -= hours * 60;
-  }
-
-  if( 0 !== minutes )
-  {
-    text.push( minutes + 'm' );
-    value -= minutes * 60;
-  }
-
-  if( 0 !== value )
-  {
-    text.push( value + 's' );
-  }
-
-  return text.join( ' ' );
-}
-
 var init_timer = function( next_tick )
 {
   if( timer_timeout )
@@ -83,7 +40,7 @@ var update_timer = function( next_tick )
   }
 
   $( 'p .tick', timer_element )
-    .text( convert_seconds_to_readable_time( next_tick ) );
+    .text( app.convert_seconds_to_readable_time( next_tick ) );
 
   timer_timeout = window.setTimeout
   (
@@ -151,7 +108,7 @@ var replication_fetch_status = function()
 
           var eta_element = $( '#eta', progress_element );
           $( 'span', eta_element )
-            .text( convert_seconds_to_readable_time( data.slave.timeRemaining ) );
+            .text( app.convert_seconds_to_readable_time( data.slave.timeRemaining ) );
 
           var bar_element = $( '#bar', progress_element );
           $( '.files span', bar_element )
@@ -394,7 +351,7 @@ var replication_fetch_status = function()
               timer_element = $( '.timer', navigation_element );
               approx_element = $( '.approx', timer_element );
 
-              var next_tick = convert_duration_to_seconds( data.slave.pollInterval );
+              var next_tick = app.convert_duration_to_seconds( data.slave.pollInterval );
               approx_element.show();
 
               if( data.slave.nextExecutionAt )
@@ -490,7 +447,7 @@ var replication_fetch_status = function()
 // #/:core/replication
 sammy.get
 (
-  /^#\/([\w\d-]+)\/(replication)$/,
+  new RegExp( app.core_regex_base + '\\/(replication)$' ),
   function( context )
   {
     core_basepath = this.active_core.attr( 'data-basepath' );

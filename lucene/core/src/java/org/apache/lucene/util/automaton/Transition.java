@@ -179,6 +179,7 @@ public class Transition implements Cloneable {
   }
 
   private static final class CompareByDestThenMinMaxSingle implements Comparator<Transition> {
+    @Override
     public int compare(Transition t1, Transition t2) {
       if (t1.to != t2.to) {
         if (t1.to.number < t2.to.number) return -1;
@@ -195,6 +196,7 @@ public class Transition implements Cloneable {
   public static final Comparator<Transition> CompareByDestThenMinMax = new CompareByDestThenMinMaxSingle();
 
   private static final class CompareByMinMaxThenDestSingle implements Comparator<Transition> {
+    @Override
     public int compare(Transition t1, Transition t2) {
       if (t1.min < t2.min) return -1;
       if (t1.min > t2.min) return 1;

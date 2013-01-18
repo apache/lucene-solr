@@ -48,40 +48,56 @@ public class TrieTokenizerFactory extends TokenizerFactory {
     this.precisionStep = precisionStep;
   }
 
+  @Override
   public TrieTokenizer create(Reader input) {
-    return new TrieTokenizer(input, type, precisionStep, TrieTokenizer.getNumericTokenStream(precisionStep));
+    return new TrieTokenizer(input, type, TrieTokenizer.getNumericTokenStream(precisionStep));
   }
 }
 
 final class TrieTokenizer extends Tokenizer {
   protected static final DateField dateField = new DateField();
-  protected final int precisionStep;
   protected final TrieTypes type;
   protected final NumericTokenStream ts;
   
   protected final OffsetAttribute ofsAtt = addAttribute(OffsetAttribute.class);
   protected int startOfs, endOfs;
+  protected boolean hasValue;
+  protected final char[] buf = new char[32];
 
   static NumericTokenStream getNumericTokenStream(int precisionStep) {
     return new NumericTokenStream(precisionStep);
   }
 
-  public TrieTokenizer(Reader input, TrieTypes type, int precisionStep, NumericTokenStream ts) {
+  public TrieTokenizer(Reader input, TrieTypes type, NumericTokenStream ts) {
     // must share the attribute source with the NumericTokenStream we delegate to
     super(ts, input);
     this.type = type;
-    this.precisionStep = precisionStep;
     this.ts = ts;
   }
 
   @Override
   public void reset() {
    try {
-      char[] buf = new char[32];
-      int len = input.read(buf);
+      int upto = 0;
+      while (upto < buf.length) {
+        final int length = input.read(buf, upto, buf.length - upto);
+        if (length == -1) break;
+        upto += length;
+      }
+      // skip remaining data if buffer was too short:
+      if (upto == buf.length) {
+        input.skip(Long.MAX_VALUE);
+      }
+
       this.startOfs = correctOffset(0);
-      this.endOfs = correctOffset(len);
-      String v = new String(buf, 0, len);
+      this.endOfs = correctOffset(upto);
+      
+      if (upto == 0) {
+        hasValue = false;
+        return;
+      }
+
+      final String v = new String(buf, 0, upto);
       try {
         switch (type) {
           case INTEGER:
@@ -106,21 +122,24 @@ final class TrieTokenizer extends Tokenizer {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 
                                 "Invalid Number: " + v);
       }
+      hasValue = true;
+      ts.reset();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to create TrieIndexTokenizer", e);
     }
-    ts.reset();
   }
 
   @Override
   public void close() throws IOException {
     super.close();
-    ts.close();
+    if (hasValue) {
+      ts.close();
+    }
   }
 
   @Override
   public boolean incrementToken() {
-    if (ts.incrementToken()) {
+    if (hasValue && ts.incrementToken()) {
       ofsAtt.setOffset(startOfs, endOfs);
       return true;
     }
@@ -129,7 +148,9 @@ final class TrieTokenizer extends Tokenizer {
 
   @Override
   public void end() throws IOException {
-    ts.end();
+    if (hasValue) {
+      ts.end();
+    }
     ofsAtt.setOffset(endOfs, endOfs);
   }
 }

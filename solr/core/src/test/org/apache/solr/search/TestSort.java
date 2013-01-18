@@ -270,6 +270,7 @@ public class TestSort extends SolrTestCaseJ4 {
         searcher.search(new MatchAllDocsQuery(), filt, myCollector);
 
         Collections.sort(collectedDocs, new Comparator<MyDoc>() {
+          @Override
           public int compare(MyDoc o1, MyDoc o2) {
             String v1 = o1.val==null ? nullRep : o1.val;
             String v2 = o2.val==null ? nullRep : o2.val;

@@ -45,9 +45,22 @@ public class TestMaxFailuresRule extends WithNestedTests {
   }
 
   public static class Nested extends WithNestedTests.AbstractNestedTest {
-    @Repeat(iterations = 500)
+    public static final int TOTAL_ITERS = 500;
+    public static final int DESIRED_FAILURES = TOTAL_ITERS / 10;
+    private int numFails = 0;
+    private int numIters = 0;
+
+    @Repeat(iterations = TOTAL_ITERS)
     public void testFailSometimes() {
-      assertFalse(random().nextInt(5) == 0);
+      numIters++;
+      boolean fail = random().nextInt(5) == 0;
+      if (fail) numFails++;
+      // some seeds are really lucky ... so cheat.
+      if (numFails < DESIRED_FAILURES && 
+          DESIRED_FAILURES <= TOTAL_ITERS - numIters) {
+        fail = true;
+      }
+      assertFalse(fail);
     }
   }
 
@@ -95,6 +108,7 @@ public class TestMaxFailuresRule extends WithNestedTests {
       // resulting from ignored tests.
       Assert.assertTrue(results.toString(), 
           results.toString().matches("(S*F){2}A+"));
+
     } finally {
       LuceneTestCase.ignoreAfterMaxFailures.maxFailures = maxFailures;
       LuceneTestCase.ignoreAfterMaxFailures.failuresSoFar = failuresSoFar;

@@ -29,11 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.solr.common.SolrException;
@@ -78,7 +76,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     SolrParams params = req.getParams();
 
     // Set field flags
-    ReturnFields returnFields = new ReturnFields( req );
+    ReturnFields returnFields = new SolrReturnFields( req );
     rsp.setReturnFields( returnFields );
     int flags = 0;
     if (returnFields.wantsScore()) {
@@ -108,7 +106,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
           }
         }
       }
-    } catch (ParseException e) {
+    } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
@@ -259,6 +257,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     public float boost;
         
     public static Comparator<InterestingTerm> BOOST_ORDER = new Comparator<InterestingTerm>() {
+      @Override
       public int compare(InterestingTerm t1, InterestingTerm t2) {
         float d = t1.boost - t2.boost;
         if( d == 0 ) {
@@ -300,8 +299,10 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       mlt.setAnalyzer( searcher.getSchema().getAnalyzer() );
       
       // configurable params
+      
       mlt.setMinTermFreq(       params.getInt(MoreLikeThisParams.MIN_TERM_FREQ,         MoreLikeThis.DEFAULT_MIN_TERM_FREQ));
       mlt.setMinDocFreq(        params.getInt(MoreLikeThisParams.MIN_DOC_FREQ,          MoreLikeThis.DEFAULT_MIN_DOC_FREQ));
+      mlt.setMaxDocFreq(        params.getInt(MoreLikeThisParams.MAX_DOC_FREQ,          MoreLikeThis.DEFAULT_MAX_DOC_FREQ));
       mlt.setMinWordLen(        params.getInt(MoreLikeThisParams.MIN_WORD_LEN,          MoreLikeThis.DEFAULT_MIN_WORD_LENGTH));
       mlt.setMaxWordLen(        params.getInt(MoreLikeThisParams.MAX_WORD_LEN,          MoreLikeThis.DEFAULT_MAX_WORD_LENGTH));
       mlt.setMaxQueryTerms(     params.getInt(MoreLikeThisParams.MAX_QUERY_TERMS,       MoreLikeThis.DEFAULT_MAX_QUERY_TERMS));
@@ -398,6 +399,33 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         mlt.add(name, sim.docList);
       }
       return mlt;
+    }
+    
+    public NamedList<BooleanQuery> getMoreLikeTheseQuery(DocList docs)
+        throws IOException {
+      IndexSchema schema = searcher.getSchema();
+      NamedList<BooleanQuery> result = new NamedList<BooleanQuery>();
+      DocIterator iterator = docs.iterator();
+      while (iterator.hasNext()) {
+        int id = iterator.nextDoc();
+        String uniqueId = schema.printableUniqueKey(reader.document(id));
+
+        BooleanQuery mltquery = (BooleanQuery) mlt.like(id);
+        if (mltquery.clauses().size() == 0) {
+          return result;
+        }
+        mltquery = (BooleanQuery) getBoostedQuery(mltquery);
+        
+        // exclude current document from results
+        BooleanQuery mltQuery = new BooleanQuery();
+        mltQuery.add(mltquery, BooleanClause.Occur.MUST);
+        
+        mltQuery.add(
+            new TermQuery(new Term(uniqueKeyField.getName(), uniqueId)), BooleanClause.Occur.MUST_NOT);
+        result.add(uniqueId, mltQuery);
+      }
+
+      return result;
     }
     
     private void fillInterestingTermsFromMLTQuery( Query query, List<InterestingTerm> terms )

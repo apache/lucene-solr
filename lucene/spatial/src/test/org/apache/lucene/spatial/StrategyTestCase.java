@@ -31,8 +31,9 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
-import org.junit.Assert;
+import org.apache.lucene.spatial.query.SpatialOperation;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -42,6 +43,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -64,7 +66,6 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   protected final SpatialArgsParser argsParser = new SpatialArgsParser();
 
   protected SpatialStrategy strategy;
-  protected SpatialContext ctx;
   protected boolean storeShape = true;
 
   protected void executeQueries(SpatialMatchConcern concern, String... testQueryFile) throws IOException {
@@ -82,7 +83,10 @@ public abstract class StrategyTestCase extends SpatialTestCase {
   }
 
   protected List<Document> getDocuments(String testDataFile) throws IOException {
-    Iterator<SampleData> sampleData = getSampleData(testDataFile);
+    return getDocuments(getSampleData(testDataFile));
+  }
+
+  protected List<Document> getDocuments(Iterator<SampleData> sampleData) {
     List<Document> documents = new ArrayList<Document>();
     while (sampleData.hasNext()) {
       SampleData data = sampleData.next();
@@ -128,50 +132,52 @@ public abstract class StrategyTestCase extends SpatialTestCase {
       SpatialMatchConcern concern) {
     while (queries.hasNext()) {
       SpatialTestQuery q = queries.next();
+      runTestQuery(concern, q);
+    }
+  }
 
-      String msg = q.line; //"Query: " + q.args.toString(ctx);
-      SearchResults got = executeQuery(strategy.makeQuery(q.args), 100);
-      if (storeShape && got.numFound > 0) {
-        //check stored value is there & parses
-        assertNotNull(ctx.readShape(got.results.get(0).document.get(strategy.getFieldName())));
-      }
-      if (concern.orderIsImportant) {
-        Iterator<String> ids = q.ids.iterator();
-        for (SearchResult r : got.results) {
-          String id = r.document.get("id");
-          if(!ids.hasNext()) {
-            Assert.fail(msg + " :: Did not get enough results.  Expect" + q.ids+", got: "+got.toDebugString());
-          }
-          Assert.assertEquals( "out of order: " + msg, ids.next(), id);
+  public void runTestQuery(SpatialMatchConcern concern, SpatialTestQuery q) {
+    String msg = q.toString(); //"Query: " + q.args.toString(ctx);
+    SearchResults got = executeQuery(strategy.makeQuery(q.args), Math.max(100, q.ids.size()+1));
+    if (storeShape && got.numFound > 0) {
+      //check stored value is there & parses
+      assertNotNull(ctx.readShape(got.results.get(0).document.get(strategy.getFieldName())));
+    }
+    if (concern.orderIsImportant) {
+      Iterator<String> ids = q.ids.iterator();
+      for (SearchResult r : got.results) {
+        String id = r.document.get("id");
+        if (!ids.hasNext()) {
+          fail(msg + " :: Did not get enough results.  Expect" + q.ids + ", got: " + got.toDebugString());
         }
-        
-        if (ids.hasNext()) {
-          Assert.fail(msg + " :: expect more results then we got: " + ids.next());
+        assertEquals("out of order: " + msg, ids.next(), id);
+      }
+
+      if (ids.hasNext()) {
+        fail(msg + " :: expect more results then we got: " + ids.next());
+      }
+    } else {
+      // We are looking at how the results overlap
+      if (concern.resultsAreSuperset) {
+        Set<String> found = new HashSet<String>();
+        for (SearchResult r : got.results) {
+          found.add(r.document.get("id"));
+        }
+        for (String s : q.ids) {
+          if (!found.contains(s)) {
+            fail("Results are mising id: " + s + " :: " + found);
+          }
         }
       } else {
-        // We are looking at how the results overlap
-        if( concern.resultsAreSuperset ) {
-          Set<String> found = new HashSet<String>();
-          for (SearchResult r : got.results) {
-            found.add(r.document.get("id"));
-          }
-          for( String s : q.ids ) {
-            if( !found.contains( s ) ) {
-              Assert.fail( "Results are mising id: "+s + " :: " + found );
-            }
-          }
+        List<String> found = new ArrayList<String>();
+        for (SearchResult r : got.results) {
+          found.add(r.document.get("id"));
         }
-        else {
-          List<String> found = new ArrayList<String>();
-          for (SearchResult r : got.results) {
-            found.add(r.document.get("id"));
-          }
 
-          // sort both so that the order is not important
-          Collections.sort(q.ids);
-          Collections.sort(found);
-          Assert.assertEquals(msg, q.ids.toString(), found.toString());
-        }
+        // sort both so that the order is not important
+        Collections.sort(q.ids);
+        Collections.sort(found);
+        assertEquals(msg, q.ids.toString(), found.toString());
       }
     }
   }
@@ -216,6 +222,21 @@ public abstract class StrategyTestCase extends SpatialTestCase {
     }
 
     CheckHits.checkExplanations(q, "", indexSearcher);
+  }
+
+  protected void assertOperation(Map<String,Shape> indexedDocs,
+                                 SpatialOperation operation, Shape queryShape) {
+    //Generate truth via brute force
+    Set<String> expectedIds = new HashSet<String>();
+    for (Map.Entry<String, Shape> stringShapeEntry : indexedDocs.entrySet()) {
+      if (operation.evaluate(stringShapeEntry.getValue(), queryShape))
+        expectedIds.add(stringShapeEntry.getKey());
+    }
+
+    SpatialTestQuery testQuery = new SpatialTestQuery();
+    testQuery.args = new SpatialArgs(operation, queryShape);
+    testQuery.ids = new ArrayList<String>(expectedIds);
+    runTestQuery(SpatialMatchConcern.FILTER, testQuery);
   }
 
 }

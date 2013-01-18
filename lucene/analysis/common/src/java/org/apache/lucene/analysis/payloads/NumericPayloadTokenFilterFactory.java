@@ -46,6 +46,7 @@ public class NumericPayloadTokenFilterFactory extends TokenFilterFactory {
     }
     payload = Float.parseFloat(payloadArg);
   }
+  @Override
   public NumericPayloadTokenFilter create(TokenStream input) {
     return new NumericPayloadTokenFilter(input,payload,typeMatch);
   }

@@ -25,49 +25,8 @@ mechanisms to create new ones. The super class for all encoders is
 encoders there is a matching {@link
 org.apache.lucene.util.encoding.IntDecoder} implementation (not all
 encoders need a decoder).
-<p>An encoder encodes the integers that are passed to {@link
-org.apache.lucene.util.encoding.IntEncoder#encode(int) encode} into a
-set output stream (see {@link
-org.apache.lucene.util.encoding.IntEncoder#reInit(OutputStream)
-reInit}). One should always call {@link
-org.apache.lucene.util.encoding.IntEncoder#close() close} when all
-integers have been encoded, to ensure proper finish by the encoder. Some
-encoders buffer values in-memory and encode in batches in order to
-optimize the encoding, and not closing them may result in loss of
-information or corrupt stream.
-<p>A proper and typical usage of an encoder looks like this:
-<blockquote><pre class="prettyprint"><code>
-int[] data = &lt;the values to encode&gt;
-IntEncoder encoder = new VInt8IntEncoder();
-OutputStream out = new ByteArrayOutputStream();
-encoder.reInit(out);
-for (int val : data) {
-  encoder.encode(val);
-}
-encoder.close();
-
-// Print the bytes in binary
-byte[] bytes = out.toByteArray();
-for (byte b : bytes) {
-  System.out.println(Integer.toBinaryString(b));
-}
-</code></pre></blockquote>
-Each encoder also implements {@link
-org.apache.lucene.util.encoding.IntEncoder#createMatchingDecoder()
-createMatchingDecoder} which returns the matching decoder for this encoder.
-As mentioned above, not all encoders have a matching decoder (like some
-encoder filters which are explained next), however every encoder should
-return a decoder following a call to that method. To complete the
-example above, one can easily iterate over the decoded values like this:
-<blockquote><pre class="prettyprint"><code>
-IntDecoder d = e.createMatchingDecoder();
-d.reInit(new ByteArrayInputStream(bytes));
-long val;
-while ((val = d.decode()) != IntDecoder.EOS) {
-  System.out.println(val);
-}
-</code></pre></blockquote>
-<p>Some encoders don't perform any encoding at all, or do not include an
+<p>
+Some encoders don't perform any encoding at all, or do not include an
 encoding logic. Those are called {@link
 org.apache.lucene.util.encoding.IntEncoderFilter}s. A filter is an
 encoder which delegates the encoding task to a given encoder, however
@@ -76,91 +35,6 @@ example is {@link org.apache.lucene.util.encoding.DGapIntEncoder}
 which encodes the gaps between values rather than the values themselves.
 Another example is {@link
 org.apache.lucene.util.encoding.SortingIntEncoder} which sorts all the
-values in ascending order before they are sent for encoding. This
-encoder aggregates the values in its {@link
-org.apache.lucene.util.encoding.IntEncoder#encode(int) encode} implementation 
-and decoding only happens upon calling {@link
-org.apache.lucene.util.encoding.IntEncoder#close() close}.
-<h4>Extending IntEncoder</h4>
-Extending {@link org.apache.lucene.util.encoding.IntEncoder} is a very
-easy task. One only needs to implement {@link
-org.apache.lucene.util.encoding.IntEncoder#encode(int) encode} and
-{@link org.apache.lucene.util.encoding.IntEncoder#createMatchingDecoder()
-createMatchingDecoder} as the base implementation takes care of
-re-initializing the output stream and closing it. The following example
-illustrates how can one write an encoder (and a matching decoder) which
-'tags' the stream with type/ID of the encoder. Such tagging is important
-in scenarios where an application uses different encoders for different
-streams, and wants to manage some sort of mapping between an encoder ID
-to an IntEncoder/Decoder implementation, so a proper decoder will be
-initialized on the fly:
-<blockquote><pre class="prettyprint"><code>
-public class TaggingIntEncoder extends IntEncoderFilter {
-  
-  public TaggingIntEncoder(IntEncoder encoder) {
-    super(encoder);
-  }
-  
-  &#64;Override
-  public void encode(int value) throws IOException {
-    encoder.encode(value);
-  }
-
-  &#64;Override
-  public IntDecoder createMatchingDecoder() {
-    return new TaggingIntDecoder();
-  }
-	
-  &#64;Override
-  public void reInit(OutputStream out) {
-    super.reInit(os);
-    // Assumes the application has a static EncodersMap class which is able to 
-    // return a unique ID for a given encoder.
-    int encoderID = EncodersMap.getID(encoder);
-    this.out.write(encoderID);
-  }
-
-  &#64;Override
-  public String toString() {
-    return "Tagging (" + encoder.toString() + ")";
-  }
-
-}
-</code></pre></blockquote>
-And the matching decoder:
-<blockquote><pre class="prettyprint"><code>
-public class TaggingIntDecoder extends IntDecoder {
-  
-  // Will be initialized upon calling reInit.
-  private IntDecoder decoder;
-  
-  &#64;Override
-  public void reInit(InputStream in) {
-    super.reInit(in);
-    
-    // Read the ID of the encoder that tagged this stream.
-    int encoderID = in.read();
-    
-    // Assumes EncodersMap can return the proper IntEncoder given the ID.
-    decoder = EncodersMap.getEncoder(encoderID).createMatchingDecoder();
-  }
-	
-  &#64;Override
-  public long decode() throws IOException {
-    return decoder.decode();
-  }
-
-  &#64;Override
-  public String toString() {
-    return "Tagging (" + decoder == null ? "none" : decoder.toString() + ")";
-  }
-
-}
-</code></pre></blockquote>
-The example implements <code>TaggingIntEncoder</code> as a filter over another 
-encoder. Even though it does not do any filtering on the actual values, it feels 
-right to present it as a filter. Anyway, this is just an example code and one 
-can choose to implement it however it makes sense to the application. For 
-simplicity, error checking was omitted from the sample code.
+values in ascending order before they are sent for encoding.
 </body>
 </html>

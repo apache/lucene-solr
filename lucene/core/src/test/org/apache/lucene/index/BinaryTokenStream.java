@@ -58,18 +58,22 @@ public final class BinaryTokenStream extends TokenStream {
   public static class ByteTermAttributeImpl extends AttributeImpl implements ByteTermAttribute,TermToBytesRefAttribute {
     private BytesRef bytes;
     
+    @Override
     public int fillBytesRef() {
       return bytes.hashCode();
     }
     
+    @Override
     public BytesRef getBytesRef() {
       return bytes;
     }
 
+    @Override
     public void setBytesRef(BytesRef bytes) {
       this.bytes = bytes;
     }
     
+    @Override
     public void clear() {}
     
     @Override

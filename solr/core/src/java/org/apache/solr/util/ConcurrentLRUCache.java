@@ -493,6 +493,7 @@ public class ConcurrentLRUCache<K,V> {
       this.lastAccessed = lastAccessed;
     }
 
+    @Override
     public int compareTo(CacheEntry<K,V> that) {
       if (this.lastAccessedCopy == that.lastAccessedCopy) return 0;
       return this.lastAccessedCopy < that.lastAccessedCopy ? 1 : -1;

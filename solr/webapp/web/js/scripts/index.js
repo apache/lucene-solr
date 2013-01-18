@@ -36,15 +36,13 @@ var generate_bar = function( bar_container, bar_data, convert_label_values )
   $( '.bar-max.val', bar_holder ).text( bar_data['max'] );
     
   bar_level++;
-  var total_width = Math.round( ( bar_data['total'] * max_width ) / bar_data['max'] );
-  $( '.bar-total.bar', bar_holder ).width( Math.max( total_width, 1 ) );
+  $( '.bar-total.bar', bar_holder ).width( new String( (bar_data['total']/bar_data['max'])*100 ) + '%' );
   $( '.bar-total.val', bar_holder ).text( bar_data['total'] );
 
   if( bar_data['used'] )
   {
     bar_level++;
-    var used_width = Math.round( ( bar_data['used'] * max_width ) / bar_data['max'] );
-    $( '.bar-used.bar', bar_holder ).width( Math.min( used_width, total_width - 1 ) );
+    $( '.bar-used.bar', bar_holder ).width( new String( (bar_data['used']/bar_data['total'])*100 ) + '%' );
     $( '.bar-used.val', bar_holder ).text( bar_data['used'] );
   }
 
@@ -233,7 +231,7 @@ sammy.get
     
           var data = {
             'start_time' : app.dashboard_values['jvm']['jmx']['startTime'],
-            'host' : app.dashboard_values['core']['host'],
+            'host' : app.dashboard_values['core']['host'] || '-',
             'dir_instance' : app.dashboard_values['core']['directory']['instance'],
             'dir_data' : app.dashboard_values['core']['directory']['data'],
             'dir_index' : app.dashboard_values['core']['directory']['index'],

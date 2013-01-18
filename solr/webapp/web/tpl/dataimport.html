@@ -18,27 +18,49 @@ limitations under the License.
 
   <div id="frame">
 
+    <div id="error"></div>
+
     <div id="current_state">
 
-      <span class="time"></span>
+      <p class="last_update">Last Update: <abbr>Unknown</abbr></p>
       <div class="info">
+
         <strong></strong>
-        <div class="details"></div>
+        <div class="details">
+          <div class="docs"></div>
+          <div class="dates"></div>
+        </div>
+
+        <button class="abort-import warn"><span data-aborting="Aborting Import">Abort Import</span></button>
+
       </div>
     
     </div>
 
-    <div id="config-error">
+    <div class="block hidden" id="raw_output">
 
-      Dataimport XML-Configuration is not valid
+      <h2>
+        <a class="toggle"><span>Raw Status-Output</span></a>
+      </h2>
+        
+      <div class="message-container">
+          <div class="message"></div>
+      </div>
 
+      <div class="content">
+
+        <div id="raw_output_container"></div>
+
+      </div>
+    
     </div>
 
     <div class="block hidden" id="config">
 
-      <h2>
-        <a class="toggle"><span>Dataimport Configuration</span></a>
-        <a class="reload_config" title="Reload Configuration">Reload</a>
+      <h2 class="clearfix">
+        <a class="toggle"><span>Configuration</span></a>
+        <a class="r reload_config" title="Reload Configuration">Reload</a>
+        <a class="r debug_mode">Debug-Mode</a>
       </h2>
         
       <div class="message-container">
@@ -49,9 +71,37 @@ limitations under the License.
 
         <div id="dataimport_config">
 
-          <div class="loader">Loading ...</div>
-        
+          <div class="formatted">
+
+            <div class="loader">Loading ...</div>
+          
+          </div>
+
+          <div class="editable">
+
+            <textarea></textarea>
+          
+          </div>
+
         </div>
+
+      </div>
+    
+    </div>
+
+    <div class="block hidden" id="debug_response">
+
+      <h2>
+        <a class="toggle"><span>Raw Debug-Response</span></a>
+      </h2>
+        
+      <div class="message-container">
+          <div class="message"></div>
+      </div>
+
+      <div class="content">
+
+        <em>No Request executed</em>
 
       </div>
     
@@ -97,6 +147,11 @@ limitations under the License.
         <a rel="help">Optimize</a>
       </label>
 
+      <label for="debug" class="checkbox">
+        <input type="checkbox" name="debug" id="debug" value="true">
+        <a rel="help">Debug</a>
+      </label>
+
       <label for="entity">
         <a rel="help">Entity</a>
       </label>
@@ -106,17 +161,22 @@ limitations under the License.
         <a rel="help">Start</a>,
         <a rel="help">Rows</a>
       </label>
-      <input type="text" id="start" placeholder="0">
-      <input type="text" id="rows" placeholder="10">
+      <div class="clearfix">
+        <input type="text" id="start" placeholder="0">
+        <input type="text" id="rows" placeholder="10">
+      </div>
 
       <label for="custom_parameters">
         <a rel="help">Custom Parameters</a>
       </label>
       <input type="text" id="custom_parameters" value="" placeholder="key1=val1&amp;key2=val2">
 
-      <button type="submit">Execute Import</button>
+      <button class="execute" type="submit"><span data-debugmode="Execute with this Configuration →">Execute</span></button>
+      <button class="refresh-status"><span>Refresh Status</span></button>
     
     </form>
+
+    <p id="auto-refresh-status"><a>Auto-Refresh Status</a></p>
   
   </div>
 

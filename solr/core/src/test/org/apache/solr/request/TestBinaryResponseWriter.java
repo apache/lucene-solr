@@ -30,6 +30,7 @@ import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.BinaryResponseWriter.Resolver;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
 
@@ -81,7 +82,7 @@ public class TestBinaryResponseWriter extends AbstractSolrTestCase {
     in.addField("ddd_s", "ddd");
     in.addField("eee_s", "eee");    
 
-    Resolver r = new Resolver(req, new ReturnFields(req));
+    Resolver r = new Resolver(req, new SolrReturnFields(req));
     Object o = r.resolve(in, new JavaBinCodec());
 
     assertNotNull("obj is null", o);

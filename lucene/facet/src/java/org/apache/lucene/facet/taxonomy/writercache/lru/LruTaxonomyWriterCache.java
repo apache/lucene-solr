@@ -87,23 +87,6 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
   }
 
   @Override
-  public synchronized int get(CategoryPath categoryPath, int length) {
-    if (length<0 || length>categoryPath.length()) {
-      length = categoryPath.length();
-    }
-    // TODO (Facet): unfortunately, we make a copy here! we can avoid part of
-    // the copy by creating a wrapper object (but this still creates a new
-    // object). A better implementation of the cache would not use Java's
-    // hash table, but rather some other hash table we can control, and
-    // pass the length parameter into it...
-    Integer res = cache.get(new CategoryPath(categoryPath, length));
-    if (res==null) {
-      return -1;
-    }
-    return res.intValue();
-  }
-
-  @Override
   public synchronized boolean put(CategoryPath categoryPath, int ordinal) {
     boolean ret = cache.put(categoryPath, new Integer(ordinal));
     // If the cache is full, we need to clear one or more old entries
@@ -115,22 +98,6 @@ public class LruTaxonomyWriterCache implements TaxonomyWriterCache {
     // (put() removes the 2/3rd oldest entries).
     if (ret) {
       cache.makeRoomLRU();
-    }
-    return ret;
-  }
-
-  @Override
-  public synchronized boolean put(CategoryPath categoryPath, int prefixLen, int ordinal) {
-    boolean ret = cache.put(categoryPath, prefixLen, new Integer(ordinal));
-    // If the cache is full, we need to clear one or more old entries
-    // from the cache. However, if we delete from the cache a recent
-    // addition that isn't yet in our reader, for this entry to be
-    // visible to us we need to make sure that the changes have been
-    // committed and we reopen the reader. Because this is a slow
-    // operation, we don't delete entries one-by-one but rather in bulk
-    // (put() removes the 2/3rd oldest entries).
-    if (ret) { 
-      cache.makeRoomLRU(); 
     }
     return ret;
   }

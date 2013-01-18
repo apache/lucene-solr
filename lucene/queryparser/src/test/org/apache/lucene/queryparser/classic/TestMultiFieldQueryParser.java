@@ -18,6 +18,7 @@ package org.apache.lucene.queryparser.classic;
  */
 
 import java.io.Reader;
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -33,6 +34,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -300,7 +302,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
   }
   
   /**
-   * Return empty tokens for field "f1".
+   * Return no tokens for field "f1".
    */
   private static class AnalyzerReturningNull extends Analyzer {
     MockAnalyzer stdAnalyzer = new MockAnalyzer(random());
@@ -310,12 +312,20 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     }
 
     @Override
-    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+    protected Reader initReader(String fieldName, Reader reader) {
       if ("f1".equals(fieldName)) {
-        return new TokenStreamComponents(new EmptyTokenizer(reader));
+        // we don't use the reader, so close it:
+        IOUtils.closeWhileHandlingException(reader);
+        // return empty reader, so MockTokenizer returns no tokens:
+        return new StringReader("");
       } else {
-        return stdAnalyzer.createComponents(fieldName, reader);
+        return super.initReader(fieldName, reader);
       }
+    }
+
+    @Override
+    public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+      return stdAnalyzer.createComponents(fieldName, reader);
     }
   }
 

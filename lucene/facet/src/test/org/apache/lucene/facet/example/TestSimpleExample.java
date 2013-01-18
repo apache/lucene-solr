@@ -34,7 +34,7 @@ import org.apache.lucene.facet.search.results.FacetResultNode;
 public class TestSimpleExample extends LuceneTestCase {
 
   @Test
-  public void testSimple () throws Exception {
+  public void testSimple() throws Exception {
     ExampleResult res = new SimpleMain().runSimple();
     assertNotNull("Null result!", res);
     assertNotNull("Null facet result!", res.getFacetResults());
@@ -47,7 +47,7 @@ public class TestSimpleExample extends LuceneTestCase {
    * As result, facets that without drill down got count of 2 will now get a count of 1. 
    */
   @Test
-  public void testDrillDown () throws Exception {
+  public void testDrillDown() throws Exception {
     ExampleResult res = new SimpleMain().runDrillDown();
     assertNotNull("Null result!", res);
     assertNotNull("Null facet result!", res.getFacetResults());

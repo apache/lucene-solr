@@ -190,6 +190,7 @@ public class DateField extends PrimitiveFieldType {
     }
   }
 
+  @Override
   public StorableField createField(SchemaField field, Object value, float boost) {
     // Convert to a string before indexing
     if(value instanceof Date) {

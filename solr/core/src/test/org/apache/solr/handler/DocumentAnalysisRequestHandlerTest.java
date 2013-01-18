@@ -122,6 +122,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
       sourceInfo = "rawBytes";
     }
 
+    @Override
     public InputStream getStream() throws IOException {
       return new ByteArrayInputStream(bytes);
     }

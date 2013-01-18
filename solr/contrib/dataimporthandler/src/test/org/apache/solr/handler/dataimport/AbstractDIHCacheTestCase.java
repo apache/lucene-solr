@@ -81,6 +81,7 @@ public class AbstractDIHCacheTestCase {
       this.data = data;
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public int compareTo(ControlData cd) {
       Comparable c1 = (Comparable) data[0];
@@ -88,6 +89,7 @@ public class AbstractDIHCacheTestCase {
       return c1.compareTo(c2);
     }
 
+    @Override
     public Iterator<Object> iterator() {
       return Arrays.asList(data).iterator();
     }

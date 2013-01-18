@@ -48,8 +48,10 @@ limitations under the License.
           <a rel="help">start</a>,
           <a rel="help">rows</a>
         </label>
-        <input type="text" name="start" id="start" placeholder="0" pattern="[0-9]+" title="Number of leading documents to skip. (Integer)">
-        <input type="text" name="rows" id="rows" placeholder="10" pattern="[0-9]+" title="Number of documents to return after 'start'. (Integer)">
+        <div class="clearfix">
+          <input type="text" name="start" id="start" placeholder="0" pattern="[0-9]+" title="Number of leading documents to skip. (Integer)">
+          <input type="text" name="rows" id="rows" placeholder="10" pattern="[0-9]+" title="Number of documents to return after 'start'. (Integer)">
+        </div>
 
         <label for="fl">
           <a rel="help">fl</a>
@@ -60,6 +62,11 @@ limitations under the License.
           <a rel="help">df</a>
         </label>
         <input type="text" name="df" id="df" value="" title="Default search field">
+
+        <label for="custom_parameters">
+          <a rel="help">Raw Query Parameters</a>
+        </label>
+        <input type="text" id="custom_parameters" value="" placeholder="key1=val1&amp;key2=val2">
 
         <label for="wt">
           <a rel="help">wt</a>
@@ -74,7 +81,7 @@ limitations under the License.
         </select>
 
         <label for="indent" class="checkbox">
-          <input type="checkbox" name="indent" id="indent" value="true" title="Indent results.">
+          <input type="checkbox" name="indent" id="indent" value="true" title="Indent results." checked="checked">
           <a rel="help">indent</a>
         </label>
 
@@ -160,6 +167,34 @@ limitations under the License.
 
         <label for="edismax_bf">bf</label>
         <input type="text" name="bf" id="edismax_bf" title="Boost function (added).">
+
+        <label for="edismax_uf" title="User Fields">uf</label>
+        <input type="text" name="uf" id="edismax_uf">
+
+        <label for="edismax_pf2" title="bigram phrase boost fields">pf2</label>
+        <input type="text" name="pf2" id="edismax_pf2">
+
+        <label for="edismax_pf3" title="trigram phrase boost fields">pf3</label>
+        <input type="text" name="pf3" id="edismax_pf3">
+
+        <label for="edismax_ps2" title="phrase slop for bigram phrases">ps2</label>
+        <input type="text" name="ps2" id="edismax_ps2">
+
+        <label for="edismax_ps3" title="phrase slop for trigram phrases">ps3</label>
+        <input type="text" name="ps3" id="edismax_ps3">
+
+        <label for="edismax_boost" title="multiplicative boost function">boost</label>
+        <input type="text" name="boost" id="edismax_boost">
+
+        <label for="edismax_stopwords" class="checkbox" title="remove stopwords from mandatory 'matching' component">
+          <input type="checkbox" name="stopwords" id="edismax_stopwords" value="true" checked="checked">
+          stopwords
+        </label>
+
+        <label for="edismax_lowercaseOperators" class="checkbox" title="Enable lower-case 'and' and 'or' as operators">
+          <input type="checkbox" name="lowercaseOperators" id="edismax_lowercaseOperators" value="true" checked="checked">
+          lowercaseOperators
+        </label>
       
         </div>
       </fieldset>

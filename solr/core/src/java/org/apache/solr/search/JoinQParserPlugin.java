@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.*;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.intervals.IntervalIterator;
 import org.apache.lucene.search.similarities.Similarity;
@@ -49,12 +48,15 @@ import java.util.Set;
 public class JoinQParserPlugin extends QParserPlugin {
   public static String NAME = "join";
 
+  @Override
   public void init(NamedList args) {
   }
 
+  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
-      public Query parse() throws ParseException {
+      @Override
+      public Query parse() throws SyntaxError {
         String fromField = getParam("from");
         String fromIndex = getParam("fromIndex");
         String toField = getParam("to");
@@ -123,6 +125,7 @@ class JoinQuery extends Query {
   public void extractTerms(Set terms) {
   }
 
+  @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
     return new JoinQueryWeight((SolrIndexSearcher)searcher);
   }
@@ -193,6 +196,7 @@ class JoinQuery extends Query {
       this.toSearcher = searcher;
     }
 
+    @Override
     public Query getQuery() {
       return JoinQuery.this;
     }
@@ -342,7 +346,7 @@ class JoinQuery extends Query {
         if (freq < minDocFreqFrom) {
           fromTermDirectCount++;
           // OK to skip liveDocs, since we check for intersection with docs matching query
-          fromDeState.docsEnum = fromDeState.termsEnum.docs(null, fromDeState.docsEnum, 0);
+          fromDeState.docsEnum = fromDeState.termsEnum.docs(null, fromDeState.docsEnum, DocsEnum.FLAG_NONE);
           DocsEnum docsEnum = fromDeState.docsEnum;
 
           if (docsEnum instanceof MultiDocsEnum) {
@@ -407,7 +411,7 @@ class JoinQuery extends Query {
               toTermDirectCount++;
 
               // need to use liveDocs here so we don't map to any deleted ones
-              toDeState.docsEnum = toDeState.termsEnum.docs(toDeState.liveDocs, toDeState.docsEnum, 0);
+              toDeState.docsEnum = toDeState.termsEnum.docs(toDeState.liveDocs, toDeState.docsEnum, DocsEnum.FLAG_NONE);
               DocsEnum docsEnum = toDeState.docsEnum;              
 
               if (docsEnum instanceof MultiDocsEnum) {

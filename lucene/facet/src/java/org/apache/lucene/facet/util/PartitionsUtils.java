@@ -1,8 +1,6 @@
 package org.apache.lucene.facet.util;
 
-import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /*
@@ -29,38 +27,15 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  */
 public final class PartitionsUtils {
 
-  /**
-   * Get the offset for a given partition.  That is, what is the minimum number an
-   * ordinal could be for a particular partition. 
-   */
-  public final static int partitionOffset (  FacetIndexingParams iParams, 
-                        int partitionNumber, 
-                        final TaxonomyReader taxonomyReader) {
-    return partitionNumber * partitionSize(iParams, taxonomyReader);
-  }
-
-  /**
-   * @see #partitionOffset(FacetIndexingParams, int, TaxonomyReader)
-   */
-  public final static int partitionOffset (  FacetSearchParams sParams, 
-                        int partitionNumber, 
-                        final TaxonomyReader taxonomyReader) {
-    return partitionOffset(sParams.getFacetIndexingParams(), partitionNumber, taxonomyReader);
-  }
-
+  /** The prefix that is added to the name of the partition. */
+  public static final String PART_NAME_PREFIX = "$part";
+  
   /**
    * Get the partition size in this parameter, or return the size of the taxonomy, which
    * is smaller.  (Guarantees usage of as little memory as possible at search time).
    */
   public final static int partitionSize(FacetIndexingParams indexingParams, final TaxonomyReader taxonomyReader) {
     return Math.min(indexingParams.getPartitionSize(), taxonomyReader.getSize());
-  }
-
-  /**
-   * @see #partitionSize(FacetIndexingParams, TaxonomyReader)
-   */
-  public final static int partitionSize(FacetSearchParams sParams, final TaxonomyReader taxonomyReader) {
-    return partitionSize(sParams.getFacetIndexingParams(), taxonomyReader);
   }
 
   /**
@@ -74,31 +49,23 @@ public final class PartitionsUtils {
   }
 
   /**
-   * @see #partitionNumber(FacetIndexingParams, int)
-   */
-  public final static int partitionNumber(FacetSearchParams sParams, int ordinal) {
-    return partitionNumber(sParams.getFacetIndexingParams(), ordinal);
-  }
-
-  /**
    * Partition name by category ordinal
    */
-  public final static String partitionNameByOrdinal(  FacetIndexingParams iParams, 
-                            CategoryListParams clParams, 
-                            int ordinal) {
-    int partition = partitionNumber(iParams, ordinal); 
-    return partitionName(clParams, partition);
+  public final static String partitionNameByOrdinal(FacetIndexingParams iParams, int ordinal) {
+    int partition = partitionNumber(iParams, ordinal);
+    return partitionName(partition);
   }
 
-  /** 
-   * Partition name by its number
-   */
-  public final static String partitionName(CategoryListParams clParams, int partition) {
-    String term = clParams.getTerm().text();
+  /** Partition name by its number */
+  public final static String partitionName(int partition) {
+    // TODO would be good if this method isn't called when partitions are not enabled.
+    // perhaps through some specialization code.
     if (partition == 0) {
-      return term; // for backwards compatibility we do not add a partition number in this case
+      // since regular faceted search code goes through this method too,
+      // return the same value for partition 0 and when there are no partitions
+      return "";
     }
-    return term + partition;
+    return PART_NAME_PREFIX + Integer.toString(partition);
   }
 
 }

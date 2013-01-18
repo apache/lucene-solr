@@ -196,7 +196,8 @@ public class SimplePostTool {
         fatal("System Property 'data' is not valid for this tool: " + mode);
       }
       String params = System.getProperty("params", "");
-      urlStr = System.getProperty("url", SimplePostTool.appendParam(DEFAULT_POST_URL, params));
+      urlStr = System.getProperty("url", DEFAULT_POST_URL);
+      urlStr = SimplePostTool.appendParam(urlStr, params);
       URL url = new URL(urlStr);
       boolean auto = isOn(System.getProperty("auto", DEFAULT_AUTO));
       String type = System.getProperty("type");
@@ -800,7 +801,7 @@ public class SimplePostTool {
             " " + urlc.getResponseMessage() + " for url "+url);
       }
     } catch (IOException e) {
-      warn("An error occured posting data to "+url+". Please check that Solr is running.");
+      warn("An error occurred posting data to "+url+". Please check that Solr is running.");
     }
   }
 
@@ -984,6 +985,7 @@ public class SimplePostTool {
       }
     }
     
+    @Override
     public boolean accept(File file)
     {
       return p.matcher(file.getName()).find();

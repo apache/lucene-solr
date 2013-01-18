@@ -1,7 +1,5 @@
 package org.apache.lucene.facet.search.params;
 
-import org.apache.lucene.index.IndexReader;
-
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
 import org.apache.lucene.facet.search.aggregator.ComplementCountingAggregator;
@@ -47,9 +45,7 @@ public class CountFacetRequest extends FacetRequest {
   }
 
   @Override
-  public Aggregator createAggregator(boolean useComplements,
-                                      FacetArrays arrays, IndexReader reader,
-                                      TaxonomyReader taxonomy) {
+  public Aggregator createAggregator(boolean useComplements, FacetArrays arrays, TaxonomyReader taxonomy) {
     // we rely on that, if needed, result is cleared by arrays!
     int[] a = arrays.getIntArray();
     if (useComplements) {

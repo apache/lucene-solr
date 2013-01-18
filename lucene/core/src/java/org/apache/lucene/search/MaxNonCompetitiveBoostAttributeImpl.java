@@ -27,18 +27,22 @@ public final class MaxNonCompetitiveBoostAttributeImpl extends AttributeImpl imp
   private float maxNonCompetitiveBoost = Float.NEGATIVE_INFINITY;
   private BytesRef competitiveTerm = null;
 
+  @Override
   public void setMaxNonCompetitiveBoost(final float maxNonCompetitiveBoost) {
     this.maxNonCompetitiveBoost = maxNonCompetitiveBoost;
   }
   
+  @Override
   public float getMaxNonCompetitiveBoost() {
     return maxNonCompetitiveBoost;
   }
 
+  @Override
   public void setCompetitiveTerm(final BytesRef competitiveTerm) {
     this.competitiveTerm = competitiveTerm;
   }
   
+  @Override
   public BytesRef getCompetitiveTerm() {
     return competitiveTerm;
   }

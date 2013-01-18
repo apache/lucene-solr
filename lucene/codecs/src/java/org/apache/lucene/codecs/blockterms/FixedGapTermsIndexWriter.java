@@ -212,6 +212,7 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     }
   }
 
+  @Override
   public void close() throws IOException {
     boolean success = false;
     try {

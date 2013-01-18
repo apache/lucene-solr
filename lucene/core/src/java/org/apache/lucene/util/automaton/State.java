@@ -68,15 +68,19 @@ public class State implements Comparable<State> {
   }
 
   private class TransitionsIterable implements Iterable<Transition> {
+    @Override
     public Iterator<Transition> iterator() {
       return new Iterator<Transition>() {
         int upto;
+        @Override
         public boolean hasNext() {
           return upto < numTransitions;
         }
+        @Override
         public Transition next() {
           return transitionsArray[upto++];
         }
+        @Override
         public void remove() {
           throw new UnsupportedOperationException();
         }
@@ -269,6 +273,7 @@ public class State implements Comparable<State> {
    * Compares this object with the specified object for order. States are
    * ordered by the time of construction.
    */
+  @Override
   public int compareTo(State s) {
     return s.id - id;
   }

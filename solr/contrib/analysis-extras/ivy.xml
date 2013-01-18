@@ -20,9 +20,9 @@
     <info organisation="org.apache.solr" module="analysis-extras"/>
     <dependencies>
       <dependency org="com.ibm.icu" name="icu4j" rev="49.1" transitive="false"/>
-      <dependency org="org.carrot2" name="morfologik-polish" rev="1.5.3" transitive="false"/>
-      <dependency org="org.carrot2" name="morfologik-fsa" rev="1.5.3" transitive="false"/>
-      <dependency org="org.carrot2" name="morfologik-stemming" rev="1.5.3" transitive="false"/>
+      <dependency org="org.carrot2" name="morfologik-polish" rev="1.5.5" transitive="false"/>
+      <dependency org="org.carrot2" name="morfologik-fsa" rev="1.5.5" transitive="false"/>
+      <dependency org="org.carrot2" name="morfologik-stemming" rev="1.5.5" transitive="false"/>
       <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
     </dependencies>
 </ivy-module>

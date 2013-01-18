@@ -56,6 +56,9 @@ public class ChaosMonkey {
   private static final int EXPIRE_PERCENT = 10; // 0 - 10 = 0 - 100%
   private Map<String,List<CloudJettyRunner>> shardToJetty;
   
+  private static final boolean CONN_LOSS = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.connloss", "true"));
+  private static final boolean EXP = Boolean.valueOf(System.getProperty("solr.tests.cloud.cm.exp", "true"));
+  
   private ZkTestServer zkServer;
   private ZkStateReader zkStateReader;
   private String collection;
@@ -83,9 +86,9 @@ public class ChaosMonkey {
     this.zkStateReader = zkStateReader;
     this.collection = collection;
     Random random = LuceneTestCase.random();
-    expireSessions = true; //= random.nextBoolean();
+    expireSessions = EXP; //= random.nextBoolean();
     
-    causeConnectionLoss = true;//= random.nextBoolean();
+    causeConnectionLoss = CONN_LOSS;//= random.nextBoolean();
     monkeyLog("init - expire sessions:" + expireSessions
         + " cause connection loss:" + causeConnectionLoss);
   }
@@ -263,7 +266,7 @@ public class ChaosMonkey {
   }
 
   private String getRandomSlice() {
-    Map<String,Slice> slices = zkStateReader.getClusterState().getSlices(collection);
+    Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(collection);
     
     List<String> sliceKeyList = new ArrayList<String>(slices.size());
     sliceKeyList.addAll(slices.keySet());
@@ -292,7 +295,7 @@ public class ChaosMonkey {
       // get latest cloud state
       zkStateReader.updateClusterState(true);
       
-      Slice theShards = zkStateReader.getClusterState().getSlices(collection)
+      Slice theShards = zkStateReader.getClusterState().getSlicesMap(collection)
           .get(slice);
       
       ZkNodeProps props = theShards.getReplicasMap().get(cloudJetty.coreNodeName);
@@ -347,7 +350,7 @@ public class ChaosMonkey {
       
       ZkNodeProps leader = null;
       try {
-        leader = zkStateReader.getLeaderProps(collection, slice);
+        leader = zkStateReader.getLeaderRetry(collection, slice);
       } catch (Throwable t) {
         log.error("Could not get leader", t);
         return null;

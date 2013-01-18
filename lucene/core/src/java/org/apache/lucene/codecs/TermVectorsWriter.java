@@ -71,18 +71,27 @@ public abstract class TermVectorsWriter implements Closeable {
    *  has no vector fields, in this case <code>numVectorFields</code> 
    *  will be zero. */
   public abstract void startDocument(int numVectorFields) throws IOException;
-  
+
+  /** Called after a doc and all its fields have been added. */
+  public void finishDocument() throws IOException {};
+
   /** Called before writing the terms of the field.
    *  {@link #startTerm(BytesRef, int)} will be called <code>numTerms</code> times. */
   public abstract void startField(FieldInfo info, int numTerms, boolean positions, boolean offsets, boolean payloads) throws IOException;
-  
+
+  /** Called after a field and all its terms have been added. */
+  public void finishField() throws IOException {};
+
   /** Adds a term and its term frequency <code>freq</code>.
    * If this field has positions and/or offsets enabled, then
    * {@link #addPosition(int, int, int, BytesRef)} will be called 
    * <code>freq</code> times respectively.
    */
   public abstract void startTerm(BytesRef term, int freq) throws IOException;
-  
+
+  /** Called after a term and all its positions have been added. */
+  public void finishTerm() throws IOException {}
+
   /** Adds a term position and offsets */
   public abstract void addPosition(int position, int startOffset, int endOffset, BytesRef payload) throws IOException;
   
@@ -97,7 +106,7 @@ public abstract class TermVectorsWriter implements Closeable {
    *  check that this is the case to detect the JRE bug described 
    *  in LUCENE-1282. */
   public abstract void finish(FieldInfos fis, int numDocs) throws IOException;
-  
+
   /** 
    * Called by IndexWriter when writing new segments.
    * <p>
@@ -197,6 +206,7 @@ public abstract class TermVectorsWriter implements Closeable {
   protected final void addAllDocVectors(Fields vectors, MergeState mergeState) throws IOException {
     if (vectors == null) {
       startDocument(0);
+      finishDocument();
       return;
     }
 
@@ -275,15 +285,19 @@ public abstract class TermVectorsWriter implements Closeable {
             addPosition(pos, startOffset, endOffset, payload);
           }
         }
+        finishTerm();
       }
       assert termCount == numTerms;
+      finishField();
     }
     assert fieldCount == numFields;
+    finishDocument();
   }
   
   /** Return the BytesRef Comparator used to sort terms
    *  before feeding to this API. */
   public abstract Comparator<BytesRef> getComparator() throws IOException;
 
+  @Override
   public abstract void close() throws IOException;
 }

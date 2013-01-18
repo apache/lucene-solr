@@ -39,18 +39,22 @@ public class MessageImpl implements Message {
     this.arguments = args;
   }
 
+  @Override
   public Object[] getArguments() {
     return this.arguments;
   }
 
+  @Override
   public String getKey() {
     return this.key;
   }
 
+  @Override
   public String getLocalizedMessage() {
     return getLocalizedMessage(Locale.getDefault());
   }
 
+  @Override
   public String getLocalizedMessage(Locale locale) {
     return NLS.getLocalizedMessage(getKey(), locale, getArguments());
   }

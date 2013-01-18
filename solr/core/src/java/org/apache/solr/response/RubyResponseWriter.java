@@ -25,11 +25,13 @@ import org.apache.solr.request.SolrQueryRequest;
 public class RubyResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_RUBY_UTF8="text/x-ruby;charset=UTF-8";
 
+  @Override
   public void init(NamedList n) {
     /* NOOP */
   }
   
- public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+ @Override
+public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     RubyWriter w = new RubyWriter(writer, req, rsp);
     try {
       w.writeResponse();
@@ -38,6 +40,7 @@ public class RubyResponseWriter implements QueryResponseWriter {
     }
   }
 
+  @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return CONTENT_TYPE_TEXT_UTF8;
   }

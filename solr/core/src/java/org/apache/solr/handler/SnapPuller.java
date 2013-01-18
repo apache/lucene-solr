@@ -36,10 +36,7 @@ import static org.apache.solr.handler.ReplicationHandler.NAME;
 import static org.apache.solr.handler.ReplicationHandler.OFFSET;
 import static org.apache.solr.handler.ReplicationHandler.SIZE;
 
-import java.io.EOFException;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -74,7 +71,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.client.solrj.SolrServer;
@@ -86,9 +82,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -99,6 +97,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.FileUtils;
+import org.apache.solr.util.PropertiesInputStream;
+import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,6 +111,8 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.4
  */
 public class SnapPuller {
+  public static final String INDEX_PROPERTIES = "index.properties";
+
   private static final Logger LOG = LoggerFactory.getLogger(SnapPuller.class.getName());
 
   private final String masterUrl;
@@ -211,6 +213,7 @@ public class SnapPuller {
 
   private void startExecutorService() {
     Runnable task = new Runnable() {
+      @Override
       public void run() {
         if (pollDisabled.get()) {
           LOG.info("Poll disabled");
@@ -296,7 +299,9 @@ public class SnapPuller {
     successfulInstall = false;
     replicationStartTime = System.currentTimeMillis();
     Directory tmpIndexDir = null;
+    String tmpIndex = null;
     Directory indexDir = null;
+    String indexDirPath = null;
     boolean deleteTmpIdxDir = true;
     try {
       //get the current 'replicateable' index version in the master
@@ -365,15 +370,18 @@ public class SnapPuller {
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generateion of master is older than that of the slave , it means they are not compatible to be copied
       // then a new index direcory to be created and all the files need to be copied
-      boolean isFullCopyNeeded = IndexDeletionPolicyWrapper.getCommitTimestamp(commit) >= latestVersion || forceReplication;
-      
-      String tmpIdxDirName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
-      String tmpIndex = createTempindexDir(core, tmpIdxDirName);
+      boolean isFullCopyNeeded = IndexDeletionPolicyWrapper
+          .getCommitTimestamp(commit) >= latestVersion
+          || commit.getGeneration() >= latestGeneration || forceReplication;
 
-      tmpIndexDir = core.getDirectoryFactory().get(tmpIndex, null);
+      String tmpIdxDirName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
+      tmpIndex = createTempindexDir(core, tmpIdxDirName);
+
+      tmpIndexDir = core.getDirectoryFactory().get(tmpIndex, DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       
       // make sure it's the newest known index dir...
-      indexDir = core.getDirectoryFactory().get(core.getNewIndexDir(), null);
+      indexDirPath = core.getNewIndexDir();
+      indexDir = core.getDirectoryFactory().get(indexDirPath, DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       Directory oldDirectory = null;
 
       try {
@@ -422,12 +430,15 @@ public class SnapPuller {
         if (isFullCopyNeeded) {
           // we have to do this before commit
           final Directory freezeIndexDir = indexDir;
+          final String freezeIndexDirPath = indexDirPath;
           core.getDirectoryFactory().addCloseListener(oldDirectory, new CloseListener(){
 
             @Override
             public void preClose() {
               LOG.info("removing old index files " + freezeIndexDir);
-              DirectoryFactory.empty(freezeIndexDir);
+              if (core.getDirectoryFactory().exists(freezeIndexDirPath)) {
+                DirectoryFactory.empty(freezeIndexDir);
+              }
             }
             
             @Override
@@ -466,7 +477,9 @@ public class SnapPuller {
       } finally {
         if (deleteTmpIdxDir) {
           LOG.info("removing temporary index download directory files " + tmpIndexDir);
-          DirectoryFactory.empty(tmpIndexDir);
+          if (tmpIndex != null && core.getDirectoryFactory().exists(tmpIndex)) {
+            DirectoryFactory.empty(tmpIndexDir);
+          }
         } 
       }
     } finally {
@@ -519,9 +532,9 @@ public class SnapPuller {
   /**
    * Helper method to record the last replication's details so that we can show them on the statistics page across
    * restarts.
+   * @throws IOException on IO error
    */
-  private void logReplicationTimeAndConfFiles(Collection<Map<String, Object>> modifiedConfFiles, boolean successfulInstall) {
-    FileOutputStream outFile = null;
+  private void logReplicationTimeAndConfFiles(Collection<Map<String, Object>> modifiedConfFiles, boolean successfulInstall) throws IOException {
     List<String> confFiles = new ArrayList<String>();
     if (modifiedConfFiles != null && !modifiedConfFiles.isEmpty())
       for (Map<String, Object> map1 : modifiedConfFiles)
@@ -530,7 +543,10 @@ public class SnapPuller {
     Properties props = replicationHandler.loadReplicationProperties();
     long replicationTime = System.currentTimeMillis();
     long replicationTimeTaken = (replicationTime - getReplicationStartTime()) / 1000;
+    Directory dir = null;
     try {
+      dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), DirContext.META_DATA, solrCore.getSolrConfig().indexConfig.lockType);
+      
       int indexCount = 1, confFilesCount = 1;
       if (props.containsKey(TIMES_INDEX_REPLICATED)) {
         indexCount = Integer.valueOf(props.getProperty(TIMES_INDEX_REPLICATED)) + 1;
@@ -560,15 +576,21 @@ public class SnapPuller {
         sb = readToStringBuffer(replicationTime, props.getProperty(REPLICATION_FAILED_AT_LIST));
         props.setProperty(REPLICATION_FAILED_AT_LIST, sb.toString());
       }
-      File f = new File(solrCore.getDataDir(), REPLICATION_PROPERTIES);
-      outFile = new FileOutputStream(f);
-      props.store(outFile, "Replication details");
-      outFile.close();
+
+      final IndexOutput out = dir.createOutput(REPLICATION_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
+      OutputStream outFile = new PropertiesOutputStream(out);
+      try {
+        props.store(outFile, "Replication details");
+        dir.sync(Collections.singleton(REPLICATION_PROPERTIES));
+      } finally {
+        IOUtils.closeQuietly(outFile);
+      }
     } catch (Exception e) {
       LOG.warn("Exception while updating statistics", e);
-    }
-    finally {
-      IOUtils.closeQuietly(outFile);
+    } finally {
+      if (dir != null) {
+        solrCore.getDirectoryFactory().release(dir);
+      }
     }
   }
 
@@ -706,7 +728,7 @@ public class SnapPuller {
     String indexDir = solrCore.getIndexDir();
     
     // it's okay to use null for lock factory since we know this dir will exist
-    Directory dir = solrCore.getDirectoryFactory().get(indexDir, null);
+    Directory dir = solrCore.getDirectoryFactory().get(indexDir, DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
     try {
       for (Map<String,Object> file : filesToDownload) {
         if (!dir.fileExists((String) file.get(NAME)) || downloadCompleteIndex) {
@@ -758,7 +780,7 @@ public class SnapPuller {
       return false;
     }
     try {
-      solrCore.getDirectoryFactory().move(tmpIdxDir, indexDir, fname);
+      solrCore.getDirectoryFactory().move(tmpIdxDir, indexDir, fname, DirectoryFactory.IOCONTEXT_NO_CACHE);
       success = true;
     } catch (IOException e) {
       SolrException.log(LOG, "Could not move file", e);
@@ -829,68 +851,38 @@ public class SnapPuller {
     Properties p = new Properties();
     Directory dir = null;
     try {
-      dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), null);
-      if (dir.fileExists("index.properties")){
-        final IndexInput input = dir.openInput("index.properties", IOContext.DEFAULT);
+      dir = solrCore.getDirectoryFactory().get(solrCore.getDataDir(), DirContext.META_DATA, solrCore.getSolrConfig().indexConfig.lockType);
+      if (dir.fileExists(SnapPuller.INDEX_PROPERTIES)){
+        final IndexInput input = dir.openInput(SnapPuller.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
   
-        final InputStream is = new InputStream() {
-          
-          @Override
-          public int read() throws IOException {
-            byte next;
-            try {
-              next = input.readByte();
-            } catch (EOFException e) {
-              return -1;
-            }
-            return next;
-          }
-          
-          @Override
-          public void close() throws IOException {
-            super.close();
-            input.close();
-          }
-        };
-        
+        final InputStream is = new PropertiesInputStream(input);
         try {
           p.load(is);
         } catch (Exception e) {
-          LOG.error("Unable to load index.properties", e);
+          LOG.error("Unable to load " + SnapPuller.INDEX_PROPERTIES, e);
         } finally {
           IOUtils.closeQuietly(is);
         }
       }
       try {
-        dir.deleteFile("index.properties");
+        dir.deleteFile(SnapPuller.INDEX_PROPERTIES);
       } catch (IOException e) {
         // no problem
       }
-      final IndexOutput out = dir.createOutput("index.properties", IOContext.DEFAULT);
+      final IndexOutput out = dir.createOutput(SnapPuller.INDEX_PROPERTIES, DirectoryFactory.IOCONTEXT_NO_CACHE);
       p.put("index", tmpIdxDirName);
       OutputStream os = null;
       try {
-        os = new OutputStream() {
-          
-          @Override
-          public void write(int b) throws IOException {
-            out.writeByte((byte) b);
-          }
-          
-          @Override
-          public void close() throws IOException {
-            super.close();
-            out.close();
-          }
-        };
-        p.store(os, "index properties");
+        os = new PropertiesOutputStream(out);
+        p.store(os, SnapPuller.INDEX_PROPERTIES);
+        dir.sync(Collections.singleton(INDEX_PROPERTIES));
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Unable to write index.properties", e);
+            "Unable to write " + SnapPuller.INDEX_PROPERTIES, e);
       } finally {
         IOUtils.closeQuietly(os);
       }
-        return true;
+      return true;
 
     } catch (IOException e1) {
       throw new RuntimeException(e1);
@@ -1088,7 +1080,7 @@ public class SnapPuller {
 
       indexGen = latestGen;
       
-      outStream = copy2Dir.createOutput(saveAs, IOContext.DEFAULT);
+      outStream = copy2Dir.createOutput(saveAs, DirectoryFactory.IOCONTEXT_NO_CACHE);
 
       if (includeChecksum)
         checksum = new Adler32();
@@ -1118,6 +1110,7 @@ public class SnapPuller {
         cleanup();
         //if cleanup suceeds . The file is downloaded fully. do an fsync
         fsyncService.submit(new Runnable(){
+          @Override
           public void run() {
             try {
               copy2Dir.sync(Collections.singleton(saveAs));
@@ -1379,6 +1372,7 @@ public class SnapPuller {
         cleanup();
         //if cleanup suceeds . The file is downloaded fully. do an fsync
         fsyncService.submit(new Runnable(){
+          @Override
           public void run() {
             try {
               FileUtils.sync(file);
@@ -1593,7 +1587,22 @@ public class SnapPuller {
   }
 
   public void destroy() {
-    if (executorService != null) executorService.shutdown();
+    try {
+      if (executorService != null) executorService.shutdown();
+    } catch (Throwable e) {
+      SolrException.log(LOG, e);
+    }
+    try {
+      abortPull();
+    } catch (Throwable e) {
+      SolrException.log(LOG, e);
+    }
+    try {
+      if (executorService != null) ExecutorUtil
+          .shutdownNowAndAwaitTermination(executorService);
+    } catch (Throwable e) {
+      SolrException.log(LOG, e);
+    }
   }
 
   String getMasterUrl() {

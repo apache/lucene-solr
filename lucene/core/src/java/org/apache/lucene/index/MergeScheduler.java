@@ -38,5 +38,6 @@ public abstract class MergeScheduler implements Closeable {
   public abstract void merge(IndexWriter writer) throws IOException;
 
   /** Close this MergeScheduler. */
+  @Override
   public abstract void close() throws IOException;
 }

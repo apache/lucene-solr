@@ -233,6 +233,7 @@ public class NRTCachingDirectory extends Directory {
     }
   }
 
+  @Override
   public synchronized IndexInputSlicer createSlicer(final String name, final IOContext context) throws IOException {
     ensureOpen();
     if (VERBOSE) {

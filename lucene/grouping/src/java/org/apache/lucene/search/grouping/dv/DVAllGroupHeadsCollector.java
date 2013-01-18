@@ -114,10 +114,12 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
       this.scorer = scorer;
     }
 
+    @Override
     public int compare(int compIDX, int doc) throws IOException {
       return comparators[compIDX].compareBottom(doc);
     }
 
+    @Override
     public void updateDocHead(int doc) throws IOException {
       for (FieldComparator<?> comparator : comparators) {
         comparator.copy(0, doc);
@@ -173,6 +175,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
       }
     }
 
+    @Override
     protected void retrieveGroupHeadAndAddIfNotExist(int doc) throws IOException {
       final Comparable<?> groupValue = getGroupValue(doc);
       GroupHead groupHead = groups.get(groupValue);
@@ -190,10 +193,12 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
 
     protected abstract Comparable<?> duplicate(Comparable<?> value);
 
+    @Override
     protected Collection<GroupHead> getCollectedGroupHeads() {
       return groups.values();
     }
 
+    @Override
     public void setNextReader(AtomicReaderContext context) throws IOException {
       super.setNextReader(context);
       for (GroupHead groupHead : groups.values()) {
@@ -204,6 +209,7 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
       }
     }
 
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
       for (GroupHead groupHead : groups.values()) {
@@ -222,14 +228,17 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 
+      @Override
       protected Comparable<?> getGroupValue(int doc) {
         return source.getBytes(doc, scratchBytesRef);
       }
 
+      @Override
       protected Comparable<?> duplicate(Comparable<?> value) {
         return BytesRef.deepCopyOf((BytesRef) value);
       }
 
+      @Override
       protected void setDocValuesSources(DocValues.Source source) {
         this.source = source.asSortedSource();
       }
@@ -248,14 +257,17 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 
+      @Override
       protected Comparable<?> getGroupValue(int doc) {
         return source.getBytes(doc, scratchBytesRef);
       }
 
+      @Override
       protected Comparable<?> duplicate(Comparable<?> value) {
         return BytesRef.deepCopyOf((BytesRef) value);
       }
 
+      @Override
       protected void setDocValuesSources(DocValues.Source source) {
         this.source = source;
       }
@@ -270,14 +282,17 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 
+      @Override
       protected Comparable<?> getGroupValue(int doc) {
         return source.getInt(doc);
       }
 
+      @Override
       protected Comparable<?> duplicate(Comparable<?> value) {
         return value;
       }
 
+      @Override
       protected void setDocValuesSources(DocValues.Source source) {
         this.source = source;
       }
@@ -291,14 +306,17 @@ public abstract class DVAllGroupHeadsCollector<GH extends AbstractAllGroupHeadsC
         super(groupField, valueType, sortWithinGroup, diskResident);
       }
 
+      @Override
       protected Comparable<?> getGroupValue(int doc) {
         return source.getFloat(doc);
       }
 
+      @Override
       protected Comparable<?> duplicate(Comparable<?> value) {
         return value;
       }
 
+      @Override
       protected void setDocValuesSources(DocValues.Source source) {
         this.source = source;
       }

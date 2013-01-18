@@ -17,22 +17,24 @@ package org.apache.solr.cloud;
  * the License.
  */
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ClosableThread;
-import org.apache.solr.common.cloud.HashPartitioner;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -45,7 +47,7 @@ import org.slf4j.LoggerFactory;
 public class Overseer {
   public static final String QUEUE_OPERATION = "operation";
 
-  private static final int STATE_UPDATE_DELAY = 500;  // delay between cloud state updates
+  private static final int STATE_UPDATE_DELAY = 1500;  // delay between cloud state updates
 
   private static Logger log = LoggerFactory.getLogger(Overseer.class);
   
@@ -73,44 +75,48 @@ public class Overseer {
     @Override
     public void run() {
         
-      if(!this.isClosed && amILeader()) {
+      if (!this.isClosed && amILeader()) {
         // see if there's something left from the previous Overseer and re
         // process all events that were not persisted into cloud state
-          synchronized (reader.getUpdateLock()) { //XXX this only protects against edits inside single node
-            try {
-              byte[] head = workQueue.peek();
+        synchronized (reader.getUpdateLock()) { // XXX this only protects
+                                                // against edits inside single
+                                                // node
+          try {
+            byte[] head = workQueue.peek();
+            
+            if (head != null) {
+              reader.updateClusterState(true);
+              ClusterState clusterState = reader.getClusterState();
+              log.info("Replaying operations from work queue.");
               
-              if (head != null) {
-                reader.updateClusterState(true);
-                ClusterState clusterState = reader.getClusterState();
-                log.info("Replaying operations from work queue.");
+              while (head != null && amILeader()) {
+                final ZkNodeProps message = ZkNodeProps.load(head);
+                final String operation = message.getStr(QUEUE_OPERATION);
+                clusterState = processMessage(clusterState, message, operation);
+                zkClient.setData(ZkStateReader.CLUSTER_STATE,
+                    ZkStateReader.toJSON(clusterState), true);
                 
-                while (head != null && amILeader()) {
-                  final ZkNodeProps message = ZkNodeProps.load(head);
-                  final String operation = message
-                      .getStr(QUEUE_OPERATION);
-                  clusterState = processMessage(clusterState, message, operation);
-                  zkClient.setData(ZkStateReader.CLUSTER_STATE,
-                      ZkStateReader.toJSON(clusterState), true);
-                  workQueue.remove();
-                  head = workQueue.peek();
-                }
+                workQueue.poll();
+                
+                head = workQueue.peek();
               }
-            } catch (KeeperException e) {
-              if (e.code() == KeeperException.Code.SESSIONEXPIRED
-                  || e.code() == KeeperException.Code.CONNECTIONLOSS) {
-                log.warn("Solr cannot talk to ZK");
-                return;
-              }
-              SolrException.log(log, "", e);
-              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                  "", e);
-            } catch (InterruptedException e) {
-              Thread.currentThread().interrupt();
+            }
+          } catch (KeeperException e) {
+            if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
+              log.warn("Solr cannot talk to ZK, exiting Overseer work queue loop", e);
               return;
             }
+            log.error("Exception in Overseer work queue loop", e);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+            
+          } catch (Exception e) {
+            log.error("Exception in Overseer work queue loop", e);
           }
         }
+        
+      }
       
       log.info("Starting to work on the main queue");
       while (!this.isClosed && amILeader()) {
@@ -128,7 +134,8 @@ public class Overseer {
                 
                 clusterState = processMessage(clusterState, message, operation);
                 workQueue.offer(head);
-                stateUpdateQueue.remove();
+                
+                stateUpdateQueue.poll();
                 head = stateUpdateQueue.peek();
               }
               zkClient.setData(ZkStateReader.CLUSTER_STATE,
@@ -138,17 +145,17 @@ public class Overseer {
             while (workQueue.poll() != null);
             
           } catch (KeeperException e) {
-            if (e.code() == KeeperException.Code.SESSIONEXPIRED
-                || e.code() == KeeperException.Code.CONNECTIONLOSS) {
-              log.warn("Overseer cannot talk to ZK");
+            if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
+              log.warn("Solr cannot talk to ZK, exiting Overseer main queue loop", e);
               return;
             }
-            SolrException.log(log, "", e);
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
+            log.error("Exception in Overseer main queue loop", e);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;
+            
+          } catch (Exception e) {
+            log.error("Exception in Overseer main queue loop", e);
           }
         }
         
@@ -229,7 +236,7 @@ public class Overseer {
           //request new shardId 
           if (collectionExists) {
             // use existing numShards
-            numShards = state.getCollectionStates().get(collection).size();
+            numShards = state.getCollectionStates().get(collection).getSlices().size();
             log.info("Collection already exists with " + ZkStateReader.NUM_SHARDS_PROP + "=" + numShards);
           }
           sliceName = AssignShard.assignShard(collection, state, numShards);
@@ -274,16 +281,23 @@ public class Overseer {
           return newClusterState;
       }
 
+    private  Map<String,Object> defaultCollectionProps() {
+      HashMap<String,Object> props = new HashMap<String, Object>(2);
+      props.put(DocCollection.DOC_ROUTER, DocRouter.DEFAULT_NAME);
+      return props;
+    }
+
       private ClusterState createCollection(ClusterState state, String collectionName, int numShards) {
         log.info("Create collection {} with numShards {}", collectionName, numShards);
-        
-        HashPartitioner hp = new HashPartitioner();
-        List<HashPartitioner.Range> ranges = hp.partitionRange(numShards, hp.fullRange());
+
+        DocRouter router = DocRouter.DEFAULT;
+        List<DocRouter.Range> ranges = router.partitionRange(numShards, router.fullRange());
+
+        Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>();
 
 
-        Map<String, Map<String, Slice>> newStates = new LinkedHashMap<String,Map<String, Slice>>();
         Map<String, Slice> newSlices = new LinkedHashMap<String,Slice>();
-        newStates.putAll(state.getCollectionStates());
+        newCollections.putAll(state.getCollectionStates());
         for (int i = 0; i < numShards; i++) {
           final String sliceName = "shard" + (i+1);
 
@@ -292,20 +306,26 @@ public class Overseer {
 
           newSlices.put(sliceName, new Slice(sliceName, null, sliceProps));
         }
-        newStates.put(collectionName, newSlices);
-        ClusterState newClusterState = new ClusterState(state.getLiveNodes(), newStates);
+
+        // TODO: fill in with collection properties read from the /collections/<collectionName> node
+        Map<String,Object> collectionProps = defaultCollectionProps();
+
+        DocCollection newCollection = new DocCollection(collectionName, newSlices, collectionProps, router);
+
+        newCollections.put(collectionName, newCollection);
+        ClusterState newClusterState = new ClusterState(state.getLiveNodes(), newCollections);
         return newClusterState;
       }
-      
+
       /*
        * Return an already assigned id or null if not assigned
        */
       private String getAssignedId(final ClusterState state, final String nodeName,
           final ZkNodeProps coreState) {
         final String key = coreState.getStr(ZkStateReader.NODE_NAME_PROP) + "_" +  coreState.getStr(ZkStateReader.CORE_NAME_PROP);
-        Map<String, Slice> slices = state.getSlices(coreState.getStr(ZkStateReader.COLLECTION_PROP));
+        Collection<Slice> slices = state.getSlices(coreState.getStr(ZkStateReader.COLLECTION_PROP));
         if (slices != null) {
-          for (Slice slice : slices.values()) {
+          for (Slice slice : slices) {
             if (slice.getReplicasMap().get(key) != null) {
               return slice.getName();
             }
@@ -314,40 +334,49 @@ public class Overseer {
         return null;
       }
       
-      private ClusterState updateSlice(ClusterState state, String collection, Slice slice) {
+      private ClusterState updateSlice(ClusterState state, String collectionName, Slice slice) {
         // System.out.println("###!!!### OLD CLUSTERSTATE: " + JSONUtil.toJSON(state.getCollectionStates()));
         // System.out.println("Updating slice:" + slice);
 
-        Map<String, Map<String, Slice>> newCollections = new LinkedHashMap<String,Map<String,Slice>>(state.getCollectionStates());  // make a shallow copy
-        Map<String, Slice> slices = newCollections.get(collection);
-        if (slices == null) {
+        Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(state.getCollectionStates());  // make a shallow copy
+        DocCollection coll = newCollections.get(collectionName);
+        Map<String,Slice> slices;
+        Map<String,Object> props;
+        DocRouter router;
+
+        if (coll == null) {
+          //  when updateSlice is called on a collection that doesn't exist, it's currently when a core is publishing itself
+          // without explicitly creating a collection.  In this current case, we assume custom sharding with an "implicit" router.
           slices = new HashMap<String, Slice>(1);
+          props = new HashMap<String,Object>(1);
+          props.put(DocCollection.DOC_ROUTER, ImplicitDocRouter.NAME);
+          router = new ImplicitDocRouter();
         } else {
-          slices = new LinkedHashMap<String, Slice>(slices); // make a shallow copy
+          props = coll.getProperties();
+          router = coll.getRouter();
+          slices = new LinkedHashMap<String, Slice>(coll.getSlicesMap()); // make a shallow copy
         }
-        slices.put(slice.getName(),  slice);
-        newCollections.put(collection, slices);
+        slices.put(slice.getName(), slice);
+        DocCollection newCollection = new DocCollection(collectionName, slices, props, router);
+        newCollections.put(collectionName, newCollection);
 
         // System.out.println("###!!!### NEW CLUSTERSTATE: " + JSONUtil.toJSON(newCollections));
 
         return new ClusterState(state.getLiveNodes(), newCollections);
       }
       
-      private ClusterState setShardLeader(ClusterState state, String collection, String sliceName, String leaderUrl) {
+      private ClusterState setShardLeader(ClusterState state, String collectionName, String sliceName, String leaderUrl) {
 
-        final Map<String, Map<String, Slice>> newStates = new LinkedHashMap<String,Map<String,Slice>>(state.getCollectionStates());
-
-        Map<String, Slice> slices = newStates.get(collection);
-
-        if(slices==null) {
-          log.error("Could not mark shard leader for non existing collection:" + collection);
+        final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(state.getCollectionStates());
+        DocCollection coll = newCollections.get(collectionName);
+        if(coll == null) {
+          log.error("Could not mark shard leader for non existing collection:" + collectionName);
           return state;
         }
 
+        Map<String, Slice> slices = coll.getSlicesMap();
         // make a shallow copy and add it to the new collection
         slices = new LinkedHashMap<String,Slice>(slices);
-        newStates.put(collection, slices);
-
 
         Slice slice = slices.get(sliceName);
         if (slice == null) {
@@ -383,7 +412,11 @@ public class Overseer {
           Slice newSlice = new Slice(slice.getName(), newReplicas, slice.getProperties());
           slices.put(newSlice.getName(), newSlice);
         }
-        return new ClusterState(state.getLiveNodes(), newStates);
+
+
+        DocCollection newCollection = new DocCollection(coll.getName(), slices, coll.getProperties(), coll.getRouter());
+        newCollections.put(collectionName, newCollection);
+        return new ClusterState(state.getLiveNodes(), newCollections);
       }
 
       /*
@@ -394,51 +427,57 @@ public class Overseer {
         final String coreNodeName = message.getStr(ZkStateReader.NODE_NAME_PROP) + "_" + message.getStr(ZkStateReader.CORE_NAME_PROP);
         final String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
 
-        final LinkedHashMap<String, Map<String, Slice>> newStates = new LinkedHashMap<String,Map<String,Slice>>();
-        for(String collectionName: clusterState.getCollections()) {
-          if(collection.equals(collectionName)) {
-            Map<String, Slice> slices = clusterState.getSlices(collection);
-            LinkedHashMap<String, Slice> newSlices = new LinkedHashMap<String, Slice>();
-            for(Slice slice: slices.values()) {
-              if(slice.getReplicasMap().containsKey(coreNodeName)) {
-                Map<String, Replica> newReplicas = slice.getReplicasCopy();
-                newReplicas.remove(coreNodeName);
-                if (newReplicas.size() != 0) {
-                  Slice newSlice = new Slice(slice.getName(), newReplicas,
-                      slice.getProperties());
-                  newSlices.put(slice.getName(), newSlice);
-                }
-              } else {
-                newSlices.put(slice.getName(), slice);
-              }
-            }
-            int cnt = 0;
-            for (Slice slice : newSlices.values()) {
-              cnt+=slice.getReplicasMap().size();
-            }
-            // TODO: if no nodes are left after this unload
-            // remove from zk - do we have a race where Overseer
-            // see's registered nodes and publishes though?
-            if (cnt > 0) {
-              newStates.put(collectionName, newSlices);
+        final Map<String, DocCollection> newCollections = new LinkedHashMap<String,DocCollection>(clusterState.getCollectionStates()); // shallow copy
+        DocCollection coll = newCollections.get(collection);
+        if (coll == null) {
+          // TODO: log/error that we didn't find it?
+          return clusterState;
+        }
+
+        Map<String, Slice> newSlices = new LinkedHashMap<String, Slice>();
+        for (Slice slice : coll.getSlices()) {
+          Replica replica = slice.getReplica(coreNodeName);
+          if (replica != null) {
+            Map<String, Replica> newReplicas = slice.getReplicasCopy();
+            newReplicas.remove(coreNodeName);
+            // TODO TODO TODO!!! if there are no replicas left for the slice, and the slice has no hash range, remove it
+            // if (newReplicas.size() == 0 && slice.getRange() == null) {
+            // if there are no replicas left for the slice remove it
+            if (newReplicas.size() == 0) {
+              slice = null;
             } else {
-              // TODO: it might be better logically to have this in ZkController
-              // but for tests (it's easier) it seems better for the moment to leave CoreContainer and/or
-              // ZkController out of the Overseer.
-              try {
-                zkClient.clean("/collections/" + collectionName);
-              } catch (InterruptedException e) {
-                SolrException.log(log, "Cleaning up collection in zk was interrupted:" + collectionName, e);
-                Thread.currentThread().interrupt();
-              } catch (KeeperException e) {
-                SolrException.log(log, "Problem cleaning up collection in zk:" + collectionName, e);
-              }
+              slice = new Slice(slice.getName(), newReplicas, slice.getProperties());
             }
-          } else {
-            newStates.put(collectionName, clusterState.getSlices(collectionName));
+          }
+
+          if (slice != null) {
+            newSlices.put(slice.getName(), slice);
           }
         }
-        ClusterState newState = new ClusterState(clusterState.getLiveNodes(), newStates);
+
+        // if there are no slices left in the collection, remove it?
+        if (newSlices.size() == 0) {
+          newCollections.remove(coll.getName());
+
+          // TODO: it might be better logically to have this in ZkController
+          // but for tests (it's easier) it seems better for the moment to leave CoreContainer and/or
+          // ZkController out of the Overseer.
+          try {
+            zkClient.clean("/collections/" + collection);
+          } catch (InterruptedException e) {
+            SolrException.log(log, "Cleaning up collection in zk was interrupted:" + collection, e);
+            Thread.currentThread().interrupt();
+          } catch (KeeperException e) {
+            SolrException.log(log, "Problem cleaning up collection in zk:" + collection, e);
+          }
+
+
+        } else {
+          DocCollection newCollection = new DocCollection(coll.getName(), newSlices, coll.getProperties(), coll.getRouter());
+          newCollections.put(newCollection.getName(), newCollection);
+        }
+
+        ClusterState newState = new ClusterState(clusterState.getLiveNodes(), newCollections);
         return newState;
      }
 

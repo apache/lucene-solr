@@ -78,6 +78,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   @Override
   void skippingLongTerm() {}
 
+  @Override
   public int compareTo(FreqProxTermsWriterPerField other) {
     return fieldInfo.name.compareTo(other.fieldInfo.name);
   }

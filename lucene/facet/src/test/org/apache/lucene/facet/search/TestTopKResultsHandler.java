@@ -1,18 +1,20 @@
 package org.apache.lucene.facet.search;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.junit.Test;
-
 import org.apache.lucene.facet.search.params.CountFacetRequest;
+import org.apache.lucene.facet.search.params.FacetRequest;
+import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -65,7 +67,7 @@ public class TestTopKResultsHandler extends BaseTestTopK {
   }
   
   /**
-   * Strait forward test: Adding specific documents with specific facets and
+   * Straightforward test: Adding specific documents with specific facets and
    * counting them in the most basic form.
    */
   @Test
@@ -73,16 +75,19 @@ public class TestTopKResultsHandler extends BaseTestTopK {
     for (int partitionSize : partitionSizes) {
       initIndex(partitionSize);
 
-      // do different facet counts and compare to control
-      FacetSearchParams sParams = getFacetedSearchParams(partitionSize);
-      
-      sParams.addFacetRequest(new CountFacetRequest(new CategoryPath("a"), 100));
+      List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
+      facetRequests.add(new CountFacetRequest(new CategoryPath("a"), 100));
       CountFacetRequest cfra = new CountFacetRequest(new CategoryPath("a"), 100);
       cfra.setDepth(3);
-      sParams.addFacetRequest(cfra);
-      sParams.addFacetRequest(new CountFacetRequest(new CategoryPath("a", "b"), 100));
-      sParams.addFacetRequest(new CountFacetRequest(new CategoryPath("a", "b", "1"), 100));
-      sParams.addFacetRequest(new CountFacetRequest(new CategoryPath("a", "c"), 100));
+      // makes it easier to check the results in the test.
+      cfra.setResultMode(ResultMode.GLOBAL_FLAT);
+      facetRequests.add(cfra);
+      facetRequests.add(new CountFacetRequest(new CategoryPath("a", "b"), 100));
+      facetRequests.add(new CountFacetRequest(new CategoryPath("a", "b", "1"), 100));
+      facetRequests.add(new CountFacetRequest(new CategoryPath("a", "c"), 100));
+      
+      // do different facet counts and compare to control
+      FacetSearchParams sParams = getFacetSearchParams(facetRequests, getFacetIndexingParams(partitionSize));
 
       FacetsCollector fc = new FacetsCollector(sParams, indexReader, taxoReader) {
         @Override
@@ -154,8 +159,8 @@ public class TestTopKResultsHandler extends BaseTestTopK {
 
       // do different facet counts and compare to control
       CategoryPath path = new CategoryPath("a", "b");
-      FacetSearchParams sParams = getFacetedSearchParams(partitionSize);
-      sParams.addFacetRequest(new CountFacetRequest(path, Integer.MAX_VALUE));
+      FacetSearchParams sParams = getFacetSearchParams(
+          getFacetIndexingParams(partitionSize), new CountFacetRequest(path, Integer.MAX_VALUE));
 
       FacetsCollector fc = new FacetsCollector(sParams, indexReader, taxoReader) {
         @Override
@@ -180,8 +185,8 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       assertEquals(path + " should only have 4 desendants", 4, res.getNumValidDescendants());
 
       // As a control base results, ask for top-1000 results
-      FacetSearchParams sParams2 = getFacetedSearchParams(partitionSize);
-      sParams2.addFacetRequest(new CountFacetRequest(path, Integer.MAX_VALUE));
+      FacetSearchParams sParams2 = getFacetSearchParams(
+          getFacetIndexingParams(partitionSize), new CountFacetRequest(path, Integer.MAX_VALUE));
 
       FacetsCollector fc2 = new FacetsCollector(sParams2, indexReader, taxoReader) {
         @Override
@@ -217,8 +222,9 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       initIndex(partitionSize);
 
       CategoryPath path = new CategoryPath("Miau Hattulla");
-      FacetSearchParams sParams = getFacetedSearchParams(partitionSize);
-      sParams.addFacetRequest(new CountFacetRequest(path, 10));
+      FacetSearchParams sParams = getFacetSearchParams(
+          getFacetIndexingParams(partitionSize),
+          new CountFacetRequest(path, 10));
 
       FacetsCollector fc = new FacetsCollector(sParams, indexReader, taxoReader);
       

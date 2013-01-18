@@ -82,11 +82,7 @@ var sammy = $.sammy
       {},
       function( context )
       {
-        if( app.timeout )
-        {
-          console.debug( 'Clearing Timeout #' + app.timeout );
-          clearTimeout( app.timeout );
-        }
+        app.clear_timeout();
 
         var menu_wrapper = $( '#menu-wrapper' );
 
@@ -100,7 +96,7 @@ var sammy = $.sammy
         {
           var selector = '~' === this.params.splat[0][0]
                        ? '#' + this.params.splat[0].replace( /^~/, '' ) + '.global'
-                       : '#menu-selector #' + this.params.splat[0];
+                       : '#menu-selector #' + this.params.splat[0].replace( /\./g, '__' );
 
           var active_element = $( selector, menu_wrapper );
                     
@@ -131,7 +127,7 @@ var sammy = $.sammy
 
 var solr_admin = function( app_config )
 {
-  self = this,
+  that = this,
 
   menu_element = null,
 
@@ -152,6 +148,8 @@ var solr_admin = function( app_config )
 
   this.timeout = null;
 
+  this.core_regex_base = '^#\\/([\\w\\d-\\.]+)';
+
   show_global_error = function( error )
   {
     var main = $( '#main' );
@@ -170,6 +168,110 @@ var solr_admin = function( app_config )
     }
   };
 
+  sort_cores_data = function sort_cores_data( cores_status )
+  {
+    // build array of core-names for sorting
+    var core_names = [];
+    for( var core_name in cores_status )
+    {
+      core_names.push( core_name );
+    }
+    core_names.sort();
+
+    var core_count = core_names.length;
+    var cores = {};
+
+    for( var i = 0; i < core_count; i++ )
+    {
+      var core_name = core_names[i];
+      cores[core_name] = cores_status[core_name];
+    }
+
+    return cores;
+  };
+
+  this.set_cores_data = function set_cores_data( cores )
+  {
+    that.cores_data = sort_cores_data( cores.status );
+    
+    that.menu_element
+      .empty();
+
+    var core_count = 0;
+    for( var core_name in that.cores_data )
+    {
+      core_count++;
+      var core_path = config.solr_path + '/' + core_name;
+      var classes = [];
+
+      if( !environment_basepath )
+      {
+        environment_basepath = core_path;
+      }
+
+      if( cores.status[core_name]['isDefaultCore'] )
+      {
+        classes.push( 'default' );
+      }
+
+      var core_tpl = '<li id="' + core_name.replace( /\./g, '__' ) + '" '
+                   + '    class="' + classes.join( ' ' ) + '"'
+                   + '    data-basepath="' + core_path + '"'
+                   + '    schema="' + cores.status[core_name]['schema'] + '"'
+                   + '    config="' + cores.status[core_name]['config'] + '"'
+                   + '>' + "\n"
+                   + '  <p><a href="#/' + core_name + '" title="' + core_name + '">' + core_name + '</a></p>' + "\n"
+                   + '  <ul>' + "\n"
+
+                   + '    <li class="ping"><a rel="' + core_path + '/admin/ping"><span>Ping</span></a></li>' + "\n"
+                   + '    <li class="query"><a href="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n"
+                   + '    <li class="schema"><a href="#/' + core_name + '/schema"><span>Schema</span></a></li>' + "\n"
+                   + '    <li class="config"><a href="#/' + core_name + '/config"><span>Config</span></a></li>' + "\n"
+                   + '    <li class="replication"><a href="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n"
+                   + '    <li class="analysis"><a href="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n"
+                   + '    <li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>' + "\n"
+                   + '    <li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n"
+                   + '    <li class="dataimport"><a href="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n"
+
+                   + '    </ul>' + "\n"
+                   + '</li>';
+
+      that.menu_element
+        .append( core_tpl );
+    }
+
+    if( cores.initFailures )
+    {
+      var failures = [];
+      for( var core_name in cores.initFailures )
+      {
+        failures.push
+        (
+          '<li>' +
+            '<strong>' + core_name.esc() + ':</strong>' + "\n" +
+            cores.initFailures[core_name].esc() + "\n" +
+          '</li>'
+        );
+      }
+
+      if( 0 !== failures.length )
+      {
+        var init_failures = $( '#init-failures' );
+
+        init_failures.show();
+        $( 'ul', init_failures ).html( failures.join( "\n" ) );
+      }
+    }
+
+    if( 0 === core_count )
+    {
+      show_global_error
+      ( 
+        '<div class="message">There are no SolrCores running. <br/> Using the Solr Admin UI currently requires at least one SolrCore.</div>'
+      );
+    } // else: we have at least one core....
+  };
+
   this.run = function()
   {
     $.ajax
@@ -184,84 +286,16 @@ var solr_admin = function( app_config )
         },
         success : function( response )
         {
-          self.cores_data = response.status;
-          var core_count = 0;
+          that.set_cores_data( response );
 
           for( var core_name in response.status )
           {
-            core_count++;
             var core_path = config.solr_path + '/' + core_name;
-            var schema =  response['status'][core_name]['schema'];
-            var solrconfig =  response['status'][core_name]['config'];
-            var classes = [];
-
             if( !environment_basepath )
             {
               environment_basepath = core_path;
             }
-
-            if( response['status'][core_name]['isDefaultCore'] )
-            {
-              classes.push( 'default' );
-            }
-
-            var core_tpl = '<li id="' + core_name + '" '
-                         + '    class="' + classes.join( ' ' ) + '"'
-                         + '    data-basepath="' + core_path + '"'
-                         + '    schema="' + schema + '"'
-                         + '    config="' + solrconfig + '"'
-                         + '>' + "\n"
-                         + '  <p><a href="#/' + core_name + '">' + core_name + '</a></p>' + "\n"
-                         + '  <ul>' + "\n"
-
-                         + '    <li class="ping"><a rel="' + core_path + '/admin/ping"><span>Ping</span></a></li>' + "\n"
-                         + '    <li class="query"><a href="#/' + core_name + '/query"><span>Query</span></a></li>' + "\n"
-                         + '    <li class="schema"><a href="#/' + core_name + '/schema"><span>Schema</span></a></li>' + "\n"
-                         + '    <li class="config"><a href="#/' + core_name + '/config"><span>Config</span></a></li>' + "\n"
-                         + '    <li class="replication"><a href="#/' + core_name + '/replication"><span>Replication</span></a></li>' + "\n"
-                         + '    <li class="analysis"><a href="#/' + core_name + '/analysis"><span>Analysis</span></a></li>' + "\n"
-                         + '    <li class="schema-browser"><a href="#/' + core_name + '/schema-browser"><span>Schema Browser</span></a></li>' + "\n"
-                         + '    <li class="plugins"><a href="#/' + core_name + '/plugins"><span>Plugins / Stats</span></a></li>' + "\n"
-                         + '    <li class="dataimport"><a href="#/' + core_name + '/dataimport"><span>Dataimport</span></a></li>' + "\n"
-
-                         + '    </ul>' + "\n"
-                         + '</li>';
-
-            self.menu_element
-              .append( core_tpl );
           }
-
-          if( response.initFailures )
-          {
-            var failures = [];
-            for( var core_name in response.initFailures )
-            {
-              failures.push
-              (
-                '<li>' + 
-                  '<strong>' + core_name.esc() + ':</strong>' + "\n" +
-                  response.initFailures[core_name].esc() + "\n" +
-                '</li>'
-              );
-            }
-
-            if( 0 !== failures.length )
-            {
-              var init_failures = $( '#init-failures' );
-
-              init_failures.show();
-              $( 'ul', init_failures ).html( failures.join( "\n" ) );
-            }
-          }
-
-          if( 0 === core_count )
-          {
-            show_global_error
-            (
-              '<div class="message">There are no SolrCores running. <br/> Using the Solr Admin UI currently requires at least one SolrCore.</div>'
-            );
-            return;
-          } // else: we have at least one core....
 
           var system_url = environment_basepath + '/admin/system?wt=json';
           $.ajax
@@ -274,7 +308,7 @@ var solr_admin = function( app_config )
               },
               success : function( response )
               {
-                self.dashboard_values = response;
+                that.dashboard_values = response;
 
                 var environment_args = null;
                 var cloud_args = null;
@@ -361,7 +395,78 @@ var solr_admin = function( app_config )
         }
       }
     );
-  }
+  };
+
+  this.convert_duration_to_seconds = function convert_duration_to_seconds( str )
+  {
+    var seconds = 0;
+    var arr = new String( str || '' ).split( '.' );
+    var parts = arr[0].split( ':' ).reverse();
+    var parts_count = parts.length;
+
+    for( var i = 0; i < parts_count; i++ )
+    {
+      seconds += ( parseInt( parts[i], 10 ) || 0 ) * Math.pow( 60, i );
+    }
+
+    // treat more or equal than .5 as additional second
+    if( arr[1] && 5 <= parseInt( arr[1][0], 10 ) )
+    {
+      seconds++;
+    }
+
+    return seconds;
+  };
+
+  this.convert_seconds_to_readable_time = function convert_seconds_to_readable_time( seconds )
+  {
+    seconds = parseInt( seconds || 0, 10 );
+    var minutes = Math.floor( seconds / 60 );
+    var hours = Math.floor( minutes / 60 );
+
+    var text = [];
+    if( 0 !== hours )
+    {
+      text.push( hours + 'h' );
+      seconds -= hours * 60 * 60;
+      minutes -= hours * 60;
+    }
+
+    if( 0 !== minutes )
+    {
+      text.push( minutes + 'm' );
+      seconds -= minutes * 60;
+    }
+
+    if( 0 !== seconds )
+    {
+      text.push( ( '0' + seconds ).substr( -2 ) + 's' );
+    }
+
+    return text.join( ' ' );
+  };
+
+  this.clear_timeout = function clear_timeout()
+  {
+    if( !app.timeout )
+    {
+      return false;
+    }
+
+    console.debug( 'Clearing Timeout #' + this.timeout );
+    clearTimeout( this.timeout );
+    this.timeout = null;
+  };
+
+  this.format_json = function format_json( json_str )
+  {
+    if( JSON.stringify && JSON.parse )
+    {
+      json_str = JSON.stringify( JSON.parse( json_str ), undefined, 2 );
+    }
+
+    return json_str;
+  };
 
 };
 

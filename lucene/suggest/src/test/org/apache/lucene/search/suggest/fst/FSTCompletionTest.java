@@ -35,6 +35,7 @@ public class FSTCompletionTest extends LuceneTestCase {
   private FSTCompletion completion;
   private FSTCompletion completionAlphabetical;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
 

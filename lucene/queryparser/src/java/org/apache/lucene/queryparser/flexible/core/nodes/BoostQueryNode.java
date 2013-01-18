@@ -100,6 +100,7 @@ public class BoostQueryNode extends QueryNodeImpl {
         + getChild().toString() + "\n</boost>";
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     if (getChild() == null)
       return "";

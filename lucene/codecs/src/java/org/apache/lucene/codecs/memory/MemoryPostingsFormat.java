@@ -70,10 +70,6 @@ import org.apache.lucene.util.packed.PackedInts;
  * queries that rely on advance will (AND BooleanQuery,
  * PhraseQuery) will be relatively slow!
  *
- * <p><b>NOTE</b>: this codec cannot address more than ~2.1 GB
- * of postings, because the underlying FST uses an int
- * to address the underlying byte[].
- *
  * @lucene.experimental */
 
 // TODO: Maybe name this 'Cached' or something to reflect
@@ -88,6 +84,13 @@ public final class MemoryPostingsFormat extends PostingsFormat {
     this(false, PackedInts.DEFAULT);
   }
 
+  /**
+   * Create MemoryPostingsFormat, specifying advanced FST options.
+   * @param doPackFST true if a packed FST should be built.
+   *        NOTE: packed FSTs are limited to ~2.1 GB of postings.
+   * @param acceptableOverheadRatio allowable overhead for packed ints
+   *        during FST construction.
+   */
   public MemoryPostingsFormat(boolean doPackFST, float acceptableOverheadRatio) {
     super("Memory");
     this.doPackFST = doPackFST;
@@ -113,7 +116,7 @@ public final class MemoryPostingsFormat extends PostingsFormat {
       this.field = field;
       this.doPackFST = doPackFST;
       this.acceptableOverheadRatio = acceptableOverheadRatio;
-      builder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, doPackFST, acceptableOverheadRatio);
+      builder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, doPackFST, acceptableOverheadRatio, true, 15);
     }
 
     private class PostingsWriter extends PostingsConsumer {
@@ -269,9 +272,6 @@ public final class MemoryPostingsFormat extends PostingsFormat {
         out.writeVLong(sumDocFreq);
         out.writeVInt(docCount);
         FST<BytesRef> fst = builder.finish();
-        if (doPackFST) {
-          fst = fst.pack(3, Math.max(10, fst.getNodeCount()/4), acceptableOverheadRatio);
-        }
         fst.save(out);
         //System.out.println("finish field=" + field.name + " fp=" + out.getFilePointer());
       }

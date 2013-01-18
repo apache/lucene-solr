@@ -637,6 +637,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
         termOrd = -1;
       }
 
+      @Override
       public Comparator<BytesRef> getComparator() {
         return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
@@ -1032,6 +1033,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
         }
       }
 
+      @Override
       public Comparator<BytesRef> getComparator() {
         return BytesRef.getUTF8SortedAsUnicodeComparator();
       }

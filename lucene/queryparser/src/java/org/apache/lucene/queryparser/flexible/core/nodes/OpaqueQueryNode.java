@@ -49,6 +49,7 @@ public class OpaqueQueryNode extends QueryNodeImpl {
     return "<opaque schema='" + this.schema + "' value='" + this.value + "'/>";
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     return "@" + this.schema + ":'" + this.value + "'";
   }

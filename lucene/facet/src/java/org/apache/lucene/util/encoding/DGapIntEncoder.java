@@ -1,7 +1,7 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,7 +27,7 @@ import java.io.OutputStream;
  * space) if the values are 'close' to each other.
  * <p>
  * <b>NOTE:</b> this encoder assumes the values are given to
- * {@link #encode(int)} in an ascending sorted manner, which ensures only
+ * {@link #encode(IntsRef, BytesRef)} in an ascending sorted manner, which ensures only
  * positive values are encoded and thus yields better performance. If you are
  * not sure whether the values are sorted or not, it is possible to chain this
  * encoder with {@link SortingIntEncoder} to ensure the values will be
@@ -35,9 +35,7 @@ import java.io.OutputStream;
  * 
  * @lucene.experimental
  */
-public class DGapIntEncoder extends IntEncoderFilter {
-
-  private int prev = 0;
+public final class DGapIntEncoder extends IntEncoderFilter {
 
   /** Initializes with the given encoder. */
   public DGapIntEncoder(IntEncoder encoder) {
@@ -45,9 +43,15 @@ public class DGapIntEncoder extends IntEncoderFilter {
   }
 
   @Override
-  public void encode(int value) throws IOException {
-    encoder.encode(value - prev);
-    prev = value;
+  public void encode(IntsRef values, BytesRef buf) {
+    int prev = 0;
+    int upto = values.offset + values.length;
+    for (int i = values.offset; i < upto; i++) {
+      int tmp = values.ints[i];
+      values.ints[i] -= prev;
+      prev = tmp;
+    }
+    encoder.encode(values, buf);
   }
 
   @Override
@@ -56,14 +60,8 @@ public class DGapIntEncoder extends IntEncoderFilter {
   }
   
   @Override
-  public void reInit(OutputStream out) {
-    super.reInit(out);
-    prev = 0;
-  }
-
-  @Override
   public String toString() {
-    return "DGap (" + encoder.toString() + ")";
+    return "DGap(" + encoder.toString() + ")";
   }
   
 }

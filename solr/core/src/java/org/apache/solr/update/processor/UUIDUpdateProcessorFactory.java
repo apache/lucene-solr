@@ -54,10 +54,12 @@ import org.apache.solr.update.AddUpdateCommand;
 public class UUIDUpdateProcessorFactory
   extends AbstractDefaultValueUpdateProcessorFactory {
 
+  @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, 
                                             SolrQueryResponse rsp, 
                                             UpdateRequestProcessor next ) {
     return new DefaultValueUpdateProcessor(fieldName, next) {
+      @Override
       public Object getDefaultValue() { 
         return UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
       }

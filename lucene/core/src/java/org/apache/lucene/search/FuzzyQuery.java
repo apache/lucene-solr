@@ -96,7 +96,7 @@ public class FuzzyQuery extends MultiTermQuery {
   
   /**
    * Calls {@link #FuzzyQuery(Term, int, int, int, boolean) 
-   * FuzzyQuery(term, minimumSimilarity, prefixLength, defaultMaxExpansions, defaultTranspositions)}.
+   * FuzzyQuery(term, maxEdits, prefixLength, defaultMaxExpansions, defaultTranspositions)}.
    */
   public FuzzyQuery(Term term, int maxEdits, int prefixLength) {
     this(term, maxEdits, prefixLength, defaultMaxExpansions, defaultTranspositions);

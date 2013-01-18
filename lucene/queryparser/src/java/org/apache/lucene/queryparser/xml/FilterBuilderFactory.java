@@ -31,6 +31,7 @@ public class FilterBuilderFactory implements FilterBuilder {
 
   HashMap<String, FilterBuilder> builders = new HashMap<String, FilterBuilder>();
 
+  @Override
   public Filter getFilter(Element n) throws ParserException {
     FilterBuilder builder = builders.get(n.getNodeName());
     if (builder == null) {

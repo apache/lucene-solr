@@ -12,12 +12,6 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-    <!-- Increase the maximum POST size to 1 MB to be able to handle large shard requests -->
-    <Call name="setAttribute">
-      <Arg>org.eclipse.jetty.server.Request.maxFormContentSize</Arg>
-      <Arg>200000</Arg>
-    </Call>
-
     <!-- =========================================================== -->
     <!-- Server Thread Pool                                          -->
     <!-- =========================================================== -->
@@ -100,7 +94,7 @@
                 <Set name="filename">
                    logs/request.yyyy_mm_dd.log
                 </Set>
-                <Set name="filenameDateFormat">yyyy_mm_dd</Set>
+                <Set name="filenameDateFormat">yyyy_MM_dd</Set>
                 <Set name="retainDays">90</Set>
                 <Set name="append">true</Set>
                 <Set name="extended">false</Set>

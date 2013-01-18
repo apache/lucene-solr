@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *
  */
 public class GermanStemFilterFactory extends TokenFilterFactory {
+  @Override
   public GermanStemFilter create(TokenStream in) {
     return new GermanStemFilter(in);
   }

@@ -40,7 +40,7 @@ start() {
 			NUMSHARDS="1"
 		fi
         	echo "Instance is running zk, numshards=$NUMSHARDS"
-		OPT="-DzkRun -Dbootstrap_confdir=solr/conf -DnumShards=$NUMSHARDS"
+		OPT="-DzkRun -Dbootstrap_conf=true -DnumShards=$NUMSHARDS"
         fi
 	setports $1
 	cd ../example$1

@@ -201,10 +201,10 @@ public final class JapaneseTokenizer extends Tokenizer {
     characterDefinition = unkDictionary.getCharacterDefinition();
     this.userDictionary = userDictionary;
     costs = ConnectionCosts.getInstance();
-    fstReader = fst.getBytesReader(0);
+    fstReader = fst.getBytesReader();
     if (userDictionary != null) {
       userFST = userDictionary.getFST();
-      userFSTReader = userFST.getBytesReader(0);
+      userFSTReader = userFST.getBytesReader();
     } else {
       userFST = null;
       userFSTReader = null;

@@ -72,10 +72,12 @@ public class ObjectToFloatMap<K> {
       }
     }
 
+    @Override
     public boolean hasNext() {
       return (index != 0);
     }
 
+    @Override
     public int next() {
       // Save the last index visited
       lastIndex = index;
@@ -93,6 +95,7 @@ public class ObjectToFloatMap<K> {
       return lastIndex;
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public void remove() {
       ObjectToFloatMap.this.remove((K) keys[lastIndex]);
@@ -108,15 +111,18 @@ public class ObjectToFloatMap<K> {
 
     KeyIterator() { }
     
+    @Override
     public boolean hasNext() {
       return iterator.hasNext();
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public K next() {
       return (K) keys[iterator.next()];
     }
 
+    @Override
     public void remove() {
       iterator.remove();
     }
@@ -131,14 +137,17 @@ public class ObjectToFloatMap<K> {
 
     ValueIterator() { }
     
+    @Override
     public boolean hasNext() {
       return iterator.hasNext();
     }
 
+    @Override
     public float next() {
       return values[iterator.next()];
     }
 
+    @Override
     public void remove() {
       iterator.remove();
     }

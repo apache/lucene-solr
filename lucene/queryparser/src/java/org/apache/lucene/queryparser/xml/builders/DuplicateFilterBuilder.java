@@ -32,6 +32,7 @@ import org.w3c.dom.Element;
  */
 public class DuplicateFilterBuilder implements FilterBuilder {
 
+  @Override
   public Filter getFilter(Element e) throws ParserException {
     String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     DuplicateFilter df = new DuplicateFilter(fieldName);

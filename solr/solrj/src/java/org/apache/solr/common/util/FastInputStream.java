@@ -65,6 +65,7 @@ public class FastInputStream extends InputStream implements DataInput {
   }
 
 
+  @Override
   public int readUnsignedByte() throws IOException {
     if (pos >= end) {
       refill();
@@ -140,10 +141,12 @@ public class FastInputStream extends InputStream implements DataInput {
     in.close();
   }
 
+  @Override
   public void readFully(byte b[]) throws IOException {
     readFully(b, 0, b.length);
   }
 
+  @Override
   public void readFully(byte b[], int off, int len) throws IOException {
     while (len>0) {
       int ret = read(b, off, len);
@@ -155,6 +158,7 @@ public class FastInputStream extends InputStream implements DataInput {
     }
   }
 
+  @Override
   public int skipBytes(int n) throws IOException {
     if (end-pos >= n) {
       pos += n;
@@ -177,10 +181,12 @@ public class FastInputStream extends InputStream implements DataInput {
     return r;
   }
 
+  @Override
   public boolean readBoolean() throws IOException {
     return readByte()==1;
   }
 
+  @Override
   public byte readByte() throws IOException {
     if (pos >= end) {
       refill();
@@ -190,18 +196,22 @@ public class FastInputStream extends InputStream implements DataInput {
   }
 
 
+  @Override
   public short readShort() throws IOException {
     return (short)((readUnsignedByte() << 8) | readUnsignedByte());
   }
 
+  @Override
   public int readUnsignedShort() throws IOException {
     return (readUnsignedByte() << 8) | readUnsignedByte();
   }
 
+  @Override
   public char readChar() throws IOException {
     return (char)((readUnsignedByte() << 8) | readUnsignedByte());
   }
 
+  @Override
   public int readInt() throws IOException {
     return  ((readUnsignedByte() << 24)
             |(readUnsignedByte() << 16)
@@ -209,6 +219,7 @@ public class FastInputStream extends InputStream implements DataInput {
             | readUnsignedByte());
   }
 
+  @Override
   public long readLong() throws IOException {
     return  (((long)readUnsignedByte()) << 56)
             | (((long)readUnsignedByte()) << 48)
@@ -220,18 +231,22 @@ public class FastInputStream extends InputStream implements DataInput {
             | (readUnsignedByte());
   }
 
+  @Override
   public float readFloat() throws IOException {
     return Float.intBitsToFloat(readInt());    
   }
 
+  @Override
   public double readDouble() throws IOException {
     return Double.longBitsToDouble(readLong());    
   }
 
+  @Override
   public String readLine() throws IOException {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public String readUTF() throws IOException {
     return new DataInputStream(this).readUTF();
   }

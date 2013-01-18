@@ -43,6 +43,7 @@ public class FuzzyLikeThisQueryBuilder implements QueryBuilder {
     this.analyzer = analyzer;
   }
 
+  @Override
   public Query getQuery(Element e) throws ParserException {
     NodeList nl = e.getElementsByTagName("Field");
     int maxNumTerms = DOMUtils.getAttribute(e, "maxNumTerms", DEFAULT_MAX_NUM_TERMS);

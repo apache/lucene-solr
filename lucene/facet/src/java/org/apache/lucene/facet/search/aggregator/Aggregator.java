@@ -2,6 +2,9 @@ package org.apache.lucene.facet.search.aggregator;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.util.IntsRef;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,32 +23,26 @@ import java.io.IOException;
  */
 
 /**
- * An Aggregator is the analogue of Lucene's Collector (see
- * {@link org.apache.lucene.search.Collector}), for processing the categories
- * belonging to a certain document. The Aggregator is responsible for doing
- * whatever it wishes with the categories it is fed, e.g., counting the number
- * of times that each category appears, or performing some computation on their
- * association values.
- * <P>
- * Much of the function of an Aggregator implementation is not described by this
- * interface. This includes the constructor and getter methods to retrieve the
- * results of the aggregation.
+ * Aggregates the categories of documents given to
+ * {@link #aggregate(int, float, IntsRef)}. Note that the document IDs are local
+ * to the reader given to {@link #setNextReader(AtomicReaderContext)}.
  * 
  * @lucene.experimental
  */
 public interface Aggregator {
 
   /**
-   * Specify the document (and its score in the search) that the following
-   * {@link #aggregate(int)} calls will pertain to.
+   * Sets the {@link AtomicReaderContext} for which
+   * {@link #aggregate(int, float, IntsRef)} calls will be made. If this method
+   * returns false, {@link #aggregate(int, float, IntsRef)} should not be called
+   * for this reader.
    */
-  void setNextDoc(int docid, float score) throws IOException;
-
+  public boolean setNextReader(AtomicReaderContext context) throws IOException;
+  
   /**
-   * Collect (and do whatever an implementation deems appropriate) the
-   * category given by its ordinal. This category belongs to a document
-   * given earlier by {@link #setNextDoc(int, float)}.
+   * Aggregate the ordinals of the given document ID (and its score). The given
+   * ordinals offset is always zero.
    */
-  void aggregate(int ordinal);
-
+  public void aggregate(int docID, float score, IntsRef ordinals) throws IOException;
+  
 }

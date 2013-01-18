@@ -115,6 +115,7 @@ public class LuceneCarrot2TokenizerFactory implements ITokenizerFactory {
             "org.apache.lucene.analysis.cn.smart.WordTokenFilter", false);
       }
 
+      @Override
       public short nextToken() throws IOException {
         final boolean hasNextToken = wordTokenFilter.incrementToken();
         if (hasNextToken) {
@@ -137,10 +138,12 @@ public class LuceneCarrot2TokenizerFactory implements ITokenizerFactory {
         return ITokenizer.TT_EOF;
       }
 
+      @Override
       public void setTermBuffer(MutableCharArray array) {
         array.reset(term.buffer(), 0, term.length());
       }
 
+      @Override
       public void reset(Reader input) {
         try {
           sentenceTokenizer.setReader(input);

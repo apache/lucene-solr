@@ -31,6 +31,7 @@ public class SuggestWordScoreComparator implements Comparator<SuggestWord> {
    */
   public SuggestWordScoreComparator() {}
 
+  @Override
   public int compare(SuggestWord first, SuggestWord second) {
     // first criteria: the distance
     if (first.score > second.score) {

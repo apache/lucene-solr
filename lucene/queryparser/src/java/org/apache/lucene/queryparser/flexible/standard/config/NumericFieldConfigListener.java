@@ -54,6 +54,7 @@ public class NumericFieldConfigListener implements FieldConfigListener {
     
   }
   
+  @Override
   public void buildFieldConfig(FieldConfig fieldConfig) {
     Map<String,NumericConfig> numericConfigMap = config
         .get(ConfigurationKeys.NUMERIC_CONFIG_MAP);

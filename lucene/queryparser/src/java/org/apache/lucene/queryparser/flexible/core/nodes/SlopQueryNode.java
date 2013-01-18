@@ -77,6 +77,7 @@ public class SlopQueryNode extends QueryNodeImpl implements FieldableNode {
         + getChild().toString() + "\n</slop>";
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     if (getChild() == null)
       return "";
@@ -93,6 +94,7 @@ public class SlopQueryNode extends QueryNodeImpl implements FieldableNode {
     return clone;
   }
 
+  @Override
   public CharSequence getField() {
     QueryNode child = getChild();
 
@@ -104,6 +106,7 @@ public class SlopQueryNode extends QueryNodeImpl implements FieldableNode {
 
   }
 
+  @Override
   public void setField(CharSequence fieldName) {
     QueryNode child = getChild();
 

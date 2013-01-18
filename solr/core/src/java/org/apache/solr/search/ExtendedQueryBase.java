@@ -49,6 +49,7 @@ public class ExtendedQueryBase extends Query implements ExtendedQuery {
     this.cost = cost;
   }
 
+  @Override
   public int getCost() {
     return cost;
   }

@@ -609,6 +609,7 @@ public class PulsingPostingsReader extends PostingsReaderBase {
     private final Map<PulsingPostingsReader,DocsEnum> enums = 
       new IdentityHashMap<PulsingPostingsReader,DocsEnum>();
       
+    @Override
     public Map<PulsingPostingsReader,DocsEnum> enums() {
       return enums;
     }

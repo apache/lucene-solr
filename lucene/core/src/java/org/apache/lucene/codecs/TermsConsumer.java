@@ -23,6 +23,7 @@ import java.util.Comparator;
 import org.apache.lucene.index.FieldInfo; // javadocs
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.MultiDocsEnum;
@@ -103,7 +104,7 @@ public abstract class TermsConsumer {
       while((term = termsEnum.next()) != null) {
         // We can pass null for liveDocs, because the
         // mapping enum will skip the non-live docs:
-        docsEnumIn = (MultiDocsEnum) termsEnum.docs(null, docsEnumIn, 0);
+        docsEnumIn = (MultiDocsEnum) termsEnum.docs(null, docsEnumIn, DocsEnum.FLAG_NONE);
         if (docsEnumIn != null) {
           docsEnum.reset(docsEnumIn);
           final PostingsConsumer postingsConsumer = startTerm(term);

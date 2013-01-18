@@ -103,8 +103,8 @@ import org.apache.lucene.util.ThreadInterruptedException;
  *   <li>SegCodec is the {@link Codec#getName() name} of the Codec that encoded
  *       this segment.</li>
  *   <li>CommitUserData stores an optional user-supplied opaque
- *       Map&lt;String,String&gt; that was passed to {@link IndexWriter#commit(java.util.Map)} 
- *       or {@link IndexWriter#prepareCommit(java.util.Map)}.</li>
+ *       Map&lt;String,String&gt; that was passed to 
+ *       {@link IndexWriter#setCommitData(java.util.Map)}.</li>
  * </ul>
  * </p>
  * 
@@ -868,9 +868,6 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
         // Ignore; this file is only used in a retry
         // fallback on init.
       }
-      if (t instanceof ThreadInterruptedException) {
-        throw (ThreadInterruptedException) t;
-      }
     }
   }
 
@@ -903,7 +900,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
 
   /** Return {@code userData} saved with this commit.
    * 
-   * @see IndexWriter#commit(Map)
+   * @see IndexWriter#commit()
    */
   public Map<String,String> getUserData() {
     return userData;
@@ -991,6 +988,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentInfoPerCom
   
   /** Returns an <b>unmodifiable</b> {@link Iterator} of contained segments in order. */
   // @Override (comment out until Java 6)
+  @Override
   public Iterator<SegmentInfoPerCommit> iterator() {
     return asList().iterator();
   }

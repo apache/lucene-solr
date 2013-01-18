@@ -62,6 +62,7 @@ public class QueryNodeException extends Exception implements NLSException {
 
   }
 
+  @Override
   public Message getMessageObject() {
     return this.message;
   }

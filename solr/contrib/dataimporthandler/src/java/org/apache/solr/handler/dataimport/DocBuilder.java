@@ -68,7 +68,6 @@ public class DocBuilder {
   Map<String, Object> session = new HashMap<String, Object>();
 
   static final ThreadLocal<DocBuilder> INSTANCE = new ThreadLocal<DocBuilder>();
-  //private Map<String, Object> functionsNamespace;
   private Map<String, Object> persistedProperties;
   
   private DIHProperties propWriter;
@@ -640,11 +639,20 @@ public class DocBuilder {
         if (field != null) {
           for (EntityField f : field) {
             String name = f.getName();
+            boolean multiValued = f.isMultiValued();
+            boolean toWrite = f.isToWrite();
             if(f.isDynamicName()){
               name =  vr.replaceTokens(name);
+              SchemaField schemaField = dataImporter.getSchemaField(name);
+              if(schemaField == null) {
+                toWrite = false;
+              } else {
+                multiValued = schemaField.multiValued();
+                toWrite = true;
+              }
             }
-            if (f.isToWrite()) {
-              addFieldToDoc(entry.getValue(), name, f.getBoost(), f.isMultiValued(), doc);
+            if (toWrite) {
+              addFieldToDoc(entry.getValue(), name, f.getBoost(), multiValued, doc);
             }
           }
         }

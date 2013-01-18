@@ -92,22 +92,35 @@ public class FileDataSource extends DataSource<Reader> {
 
   static File getFile(String basePath, String query) {
     try {
-      File file0 = new File(query);
-      File file = file0;
+      File file = new File(query);
 
-      if (!file.isAbsolute())
-        file = new File(basePath + query);
-
-      if (file.isFile() && file.canRead()) {
-        LOG.debug("Accessing File: " + file.toString());
-        return file;
-      } else if (file != file0)
-        if (file0.isFile() && file0.canRead()) {
-          LOG.debug("Accessing File0: " + file0.toString());
-          return  file0;
+      // If it's not an absolute path, try relative from basePath. 
+      if (!file.isAbsolute()) {
+        // Resolve and correct basePath.
+        File basePathFile;
+        if (basePath == null) {
+          basePathFile = new File(".").getAbsoluteFile(); 
+          LOG.warn("FileDataSource.basePath is empty. " +
+              "Resolving to: " + basePathFile.getAbsolutePath());
+        } else {
+          basePathFile = new File(basePath);
+          if (!basePathFile.isAbsolute()) {
+            basePathFile = basePathFile.getAbsoluteFile();
+            LOG.warn("FileDataSource.basePath is not absolute. Resolving to: "
+                + basePathFile.getAbsolutePath());
+          }
         }
 
-      throw new FileNotFoundException("Could not find file: " + query);
+        file = new File(basePathFile, query).getAbsoluteFile();
+      }
+
+      if (file.isFile() && file.canRead()) {
+        LOG.debug("Accessing File: " + file.getAbsolutePath());
+        return file;
+      } else {
+        throw new FileNotFoundException("Could not find file: " + query + 
+            " (resolved to: " + file.getAbsolutePath());
+      }
     } catch (FileNotFoundException e) {
       throw new RuntimeException(e);
     }

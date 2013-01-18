@@ -18,6 +18,8 @@ package org.apache.solr.handler.admin;
  */
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -26,6 +28,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerCollectionProcessor;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -147,6 +150,8 @@ public class CollectionsHandler extends RequestHandlerBase {
     ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
     
     HttpSolrServer server = new HttpSolrServer(nodeProps.getBaseUrl());
+    server.setConnectionTimeout(15000);
+    server.setSoTimeout(30000);
     RequestSyncShard reqSyncShard = new CoreAdminRequest.RequestSyncShard();
     reqSyncShard.setCollection(collection);
     reqSyncShard.setShard(shard);
@@ -176,14 +181,32 @@ public class CollectionsHandler extends RequestHandlerBase {
   private void handleCreateAction(SolrQueryRequest req,
       SolrQueryResponse rsp) throws InterruptedException, KeeperException {
     log.info("Creating Collection : " + req.getParamString());
-    Integer numReplicas = req.getParams().getInt(OverseerCollectionProcessor.REPLICATION_FACTOR, 0);
+    Integer numReplicas = req.getParams().getInt(OverseerCollectionProcessor.REPLICATION_FACTOR, 1);
     String name = req.getParams().required().get("name");
     String configName = req.getParams().get("collection.configName");
-    String numShards = req.getParams().get("numShards");
+    String numShards = req.getParams().get(OverseerCollectionProcessor.NUM_SLICES);
+    String maxShardsPerNode = req.getParams().get(OverseerCollectionProcessor.MAX_SHARDS_PER_NODE);
+    String createNodeSetStr = req.getParams().get(OverseerCollectionProcessor.CREATE_NODE_SET);
     
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-        OverseerCollectionProcessor.CREATECOLLECTION, OverseerCollectionProcessor.REPLICATION_FACTOR, numReplicas.toString(), "name", name,
-        "collection.configName", configName, "numShards", numShards);
+    if (name == null) {
+      log.error("Collection name is required to create a new collection");
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "Collection name is required to create a new collection");
+    }
+    
+    Map<String,Object> props = new HashMap<String,Object>();
+    props.put(Overseer.QUEUE_OPERATION,
+        OverseerCollectionProcessor.CREATECOLLECTION);
+    props.put(OverseerCollectionProcessor.REPLICATION_FACTOR, numReplicas.toString());
+    props.put("name", name);
+    if (configName != null) {
+      props.put("collection.configName", configName);
+    }
+    props.put(OverseerCollectionProcessor.NUM_SLICES, numShards);
+    props.put(OverseerCollectionProcessor.MAX_SHARDS_PER_NODE, maxShardsPerNode);
+    props.put(OverseerCollectionProcessor.CREATE_NODE_SET, createNodeSetStr);
+    
+    ZkNodeProps m = new ZkNodeProps(props);
 
     // TODO: what if you want to block until the collection is available?
     coreContainer.getZkController().getOverseerCollectionQueue().offer(ZkStateReader.toJSON(m));

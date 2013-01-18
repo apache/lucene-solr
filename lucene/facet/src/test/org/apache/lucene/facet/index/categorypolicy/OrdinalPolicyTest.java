@@ -1,16 +1,12 @@
 package org.apache.lucene.facet.index.categorypolicy;
 
-import org.apache.lucene.store.Directory;
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.index.categorypolicy.DefaultOrdinalPolicy;
-import org.apache.lucene.facet.index.categorypolicy.NonTopLevelOrdinalPolicy;
-import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -34,13 +30,11 @@ public class OrdinalPolicyTest extends LuceneTestCase {
   @Test
   public void testDefaultOrdinalPolicy() {
     // check ordinal policy
-    OrdinalPolicy ordinalPolicy = new DefaultOrdinalPolicy();
-    assertFalse("default ordinal policy should not match root", ordinalPolicy
-        .shouldAdd(TaxonomyReader.ROOT_ORDINAL));
+    OrdinalPolicy ordinalPolicy = OrdinalPolicy.ALL_PARENTS;
+    assertFalse("default ordinal policy should not match root", ordinalPolicy.shouldAdd(TaxonomyReader.ROOT_ORDINAL));
     for (int i = 0; i < 300; i++) {
       int ordinal = 1 + random().nextInt(Integer.MAX_VALUE - 1);
-      assertTrue("default ordinal policy should match " + ordinal,
-          ordinalPolicy.shouldAdd(ordinal));
+      assertTrue("default ordinal policy should match " + ordinal, ordinalPolicy.shouldAdd(ordinal));
     }
   }
 
@@ -54,8 +48,7 @@ public class OrdinalPolicyTest extends LuceneTestCase {
     String[] topLevelStrings = new String[10];
     for (int i = 0; i < 10; i++) {
       topLevelStrings[i] = Integer.valueOf(random().nextInt(30)).toString();
-      topLevelOrdinals[i] = taxonomy.addCategory(new CategoryPath(
-          topLevelStrings[i]));
+      topLevelOrdinals[i] = taxonomy.addCategory(new CategoryPath(topLevelStrings[i]));
     }
     int[] nonTopLevelOrdinals = new int[300];
     for (int i = 0; i < 300; i++) {
@@ -65,22 +58,18 @@ public class OrdinalPolicyTest extends LuceneTestCase {
       for (int j = 1; j < components.length; j++) {
         components[j] = (Integer.valueOf(random().nextInt(30))).toString();
       }
-      nonTopLevelOrdinals[i] = taxonomy.addCategory(new CategoryPath(
-          components));
+      nonTopLevelOrdinals[i] = taxonomy.addCategory(new CategoryPath(components));
     }
     // check ordinal policy
     OrdinalPolicy ordinalPolicy = new NonTopLevelOrdinalPolicy();
     ordinalPolicy.init(taxonomy);
-    assertFalse("top level ordinal policy should not match root", ordinalPolicy
-        .shouldAdd(TaxonomyReader.ROOT_ORDINAL));
+    assertFalse("top level ordinal policy should not match root", ordinalPolicy.shouldAdd(TaxonomyReader.ROOT_ORDINAL));
     for (int i = 0; i < 10; i++) {
-      assertFalse("top level ordinal policy should not match "
-          + topLevelOrdinals[i],
+      assertFalse("top level ordinal policy should not match " + topLevelOrdinals[i], 
           ordinalPolicy.shouldAdd(topLevelOrdinals[i]));
     }
     for (int i = 0; i < 300; i++) {
-      assertTrue("top level ordinal policy should match "
-          + nonTopLevelOrdinals[i],
+      assertTrue("top level ordinal policy should match " + nonTopLevelOrdinals[i],
           ordinalPolicy.shouldAdd(nonTopLevelOrdinals[i]));
     }
 

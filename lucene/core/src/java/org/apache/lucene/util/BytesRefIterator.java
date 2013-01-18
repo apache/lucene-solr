@@ -54,6 +54,7 @@ public interface BytesRefIterator {
       return null;
     }
     
+    @Override
     public Comparator<BytesRef> getComparator() {
       return null;
     }

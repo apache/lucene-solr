@@ -99,6 +99,7 @@ public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroup
    */
   protected abstract Collection<GH> getCollectedGroupHeads();
 
+  @Override
   public void collect(int doc) throws IOException {
     retrieveGroupHeadAndAddIfNotExist(doc);
     if (temporalResult.stop) {
@@ -125,6 +126,7 @@ public abstract class AbstractAllGroupHeadsCollector<GH extends AbstractAllGroup
     groupHead.updateDocHead(doc);
   }
 
+  @Override
   public boolean acceptsDocsOutOfOrder() {
     return true;
   }

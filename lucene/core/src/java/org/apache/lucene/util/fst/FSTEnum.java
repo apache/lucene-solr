@@ -17,10 +17,10 @@ package org.apache.lucene.util.fst;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
-
-import java.io.IOException;
 
 /** Can next() and advance() through the terms in an FST
  *
@@ -46,7 +46,7 @@ abstract class FSTEnum<T> {
    *  term before target.  */
   protected FSTEnum(FST<T> fst) {
     this.fst = fst;
-    fstReader = fst.getBytesReader(0);
+    fstReader = fst.getBytesReader();
     NO_OUTPUT = fst.outputs.getNoOutput();
     fst.getFirstArc(getArc(0));
     output[0] = NO_OUTPUT;
@@ -145,7 +145,7 @@ abstract class FSTEnum<T> {
         // Arcs are fixed array -- use binary search to find
         // the target.
 
-        final FST.BytesReader in = fst.getBytesReader(0);
+        final FST.BytesReader in = fst.getBytesReader();
         int low = arc.arcIdx;
         int high = arc.numArcs-1;
         int mid = 0;
@@ -153,8 +153,8 @@ abstract class FSTEnum<T> {
         boolean found = false;
         while (low <= high) {
           mid = (low + high) >>> 1;
-          in.pos = arc.posArcsStart;
-          in.skip(arc.bytesPerArc*mid+1);
+          in.setPosition(arc.posArcsStart);
+          in.skipBytes(arc.bytesPerArc*mid+1);
           final int midLabel = fst.readLabel(in);
           final int cmp = midLabel - targetLabel;
           //System.out.println("  cycle low=" + low + " high=" + high + " mid=" + mid + " midLabel=" + midLabel + " cmp=" + cmp);
@@ -284,7 +284,7 @@ abstract class FSTEnum<T> {
         // Arcs are fixed array -- use binary search to find
         // the target.
 
-        final FST.BytesReader in = fst.getBytesReader(0);
+        final FST.BytesReader in = fst.getBytesReader();
         int low = arc.arcIdx;
         int high = arc.numArcs-1;
         int mid = 0;
@@ -292,8 +292,8 @@ abstract class FSTEnum<T> {
         boolean found = false;
         while (low <= high) {
           mid = (low + high) >>> 1;
-          in.pos = arc.posArcsStart;
-          in.skip(arc.bytesPerArc*mid+1);
+          in.setPosition(arc.posArcsStart);
+          in.skipBytes(arc.bytesPerArc*mid+1);
           final int midLabel = fst.readLabel(in);
           final int cmp = midLabel - targetLabel;
           //System.out.println("  cycle low=" + low + " high=" + high + " mid=" + mid + " midLabel=" + midLabel + " cmp=" + cmp);
@@ -434,7 +434,7 @@ abstract class FSTEnum<T> {
     FST.Arc<T> arc = getArc(upto-1);
     int targetLabel = getTargetLabel();
 
-    final FST.BytesReader fstReader = fst.getBytesReader(0);
+    final FST.BytesReader fstReader = fst.getBytesReader();
 
     while(true) {
       //System.out.println("  cycle target=" + (targetLabel == -1 ? "-1" : (char) targetLabel));

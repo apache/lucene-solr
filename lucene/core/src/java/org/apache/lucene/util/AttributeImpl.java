@@ -51,6 +51,7 @@ public abstract class AttributeImpl implements Cloneable, Attribute {
   public final String reflectAsString(final boolean prependAttClass) {
     final StringBuilder buffer = new StringBuilder();
     reflectWith(new AttributeReflector() {
+      @Override
       public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
         if (buffer.length() > 0) {
           buffer.append(',');

@@ -17,6 +17,7 @@
 
 package org.apache.solr.update.processor;
 
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 
 import javax.script.Invocable;
@@ -38,6 +39,8 @@ public class ScriptEngineTest extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    assumeFalse("https://twitter.com/UweSays/status/260487231880433664 / SOLR-4233: OS X bogusly starts AWT!",
+        Constants.MAC_OS_X);
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByExtension("js"));
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("JavaScript"));
   }

@@ -35,6 +35,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -81,9 +82,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
     private void deleteNode(final String path) {
       try {
-        Stat stat = zkClient.exists(path, null, false);
+        Stat stat = zkClient.exists(path, null, true);
         if (stat != null) {
-          zkClient.delete(path, stat.getVersion(), false);
+          zkClient.delete(path, stat.getVersion(), true);
         }
       } catch (KeeperException e) {
         fail("Unexpected KeeperException!" + e);
@@ -148,7 +149,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     }
     
     private String getShardId(final String coreName) {
-      Map<String,Slice> slices = zkStateReader.getClusterState().getSlices(
+      Map<String,Slice> slices = zkStateReader.getClusterState().getSlicesMap(
           collection);
       if (slices != null) {
         for (Slice slice : slices.values()) {
@@ -301,11 +302,14 @@ public class OverseerTest extends SolrTestCaseJ4 {
         cloudStateSliceCount = 0;
         reader.updateClusterState(true);
         ClusterState state = reader.getClusterState();
-        Map<String,Slice> slices = state.getSlices("collection1");
-        for (String name : slices.keySet()) {
-          cloudStateSliceCount += slices.get(name).getReplicasMap().size();
+        Map<String,Slice> slices = state.getSlicesMap("collection1");
+        if (slices != null) {
+          for (String name : slices.keySet()) {
+            cloudStateSliceCount += slices.get(name).getReplicasMap().size();
+          }
+          if (coreCount == cloudStateSliceCount) break;
         }
-        if (coreCount == cloudStateSliceCount) break;
+
         Thread.sleep(200);
       }
       assertEquals("Unable to verify all cores have been assigned an id in cloudstate", 
@@ -313,7 +317,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       // make sure all cores have been returned an id
       int assignedCount = 0;
-      for (int i = 0; i < 90; i++) {
+      for (int i = 0; i < 120; i++) {
         assignedCount = 0;
         for (int j = 0; j < coreCount; j++) {
           if (ids[j] != null) {
@@ -712,8 +716,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       ClusterState state = reader.getClusterState();
       
       int numFound = 0;
-      for (Map<String,Slice> collection : state.getCollectionStates().values()) {
-        for (Slice slice : collection.values()) {
+      for (DocCollection collection : state.getCollectionStates().values()) {
+        for (Slice slice : collection.getSlices()) {
           if (slice.getReplicasMap().get("node1_core1") != null) {
             numFound++;
           }

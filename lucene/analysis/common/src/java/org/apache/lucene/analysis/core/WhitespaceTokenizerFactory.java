@@ -40,6 +40,7 @@ public class WhitespaceTokenizerFactory extends TokenizerFactory {
     assureMatchVersion();
   }
 
+  @Override
   public WhitespaceTokenizer create(Reader input) {
     return new WhitespaceTokenizer(luceneMatchVersion,input);
   }

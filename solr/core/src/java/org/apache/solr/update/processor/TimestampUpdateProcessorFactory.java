@@ -56,10 +56,12 @@ import org.apache.solr.common.params.CommonParams; // javadoc
 public class TimestampUpdateProcessorFactory
   extends AbstractDefaultValueUpdateProcessorFactory {
 
+  @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, 
                                             SolrQueryResponse rsp, 
                                             UpdateRequestProcessor next ) {
     return new DefaultValueUpdateProcessor(fieldName, next) {
+      @Override
       public Object getDefaultValue() { 
         return SolrRequestInfo.getRequestInfo().getNOW();
       }

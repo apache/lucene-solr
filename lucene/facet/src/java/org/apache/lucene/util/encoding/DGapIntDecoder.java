@@ -1,7 +1,7 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
-import java.io.InputStream;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,42 +21,32 @@ import java.io.InputStream;
  */
 
 /**
- * An {@link IntDecoder} which wraps another {@link IntDecoder} and reverts the
- * d-gap that was encoded by {@link DGapIntEncoder}. The wrapped decoder
- * performs the actual decoding, while this class simply adds the decoded value
- * to the previous value.
+ * An {@link IntDecoder} which wraps another decoder and reverts the d-gap that
+ * was encoded by {@link DGapIntEncoder}.
  * 
  * @lucene.experimental
  */
-public class DGapIntDecoder extends IntDecoder {
+public final class DGapIntDecoder extends IntDecoder {
 
   private final IntDecoder decoder;
-
-  private int prev = 0;
 
   public DGapIntDecoder(IntDecoder decoder) {
     this.decoder = decoder;
   }
 
   @Override
-  public long decode() throws IOException {
-    long decode = decoder.decode();
-    if (decode == EOS) {
-      return EOS;
+  public void decode(BytesRef buf, IntsRef values) {
+    decoder.decode(buf, values);
+    int prev = 0;
+    for (int i = 0; i < values.length; i++) {
+      values.ints[i] += prev;
+      prev = values.ints[i];
     }
-
-    return prev += decode;
-  }
-
-  @Override
-  public void reInit(InputStream in) {
-    decoder.reInit(in);
-    prev = 0;
   }
 
   @Override
   public String toString() {
-    return "DGap (" + decoder.toString() + ")";
+    return "DGap(" + decoder.toString() + ")";
   }
 
 }

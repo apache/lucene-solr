@@ -24,7 +24,10 @@ import org.apache.lucene.store.DataOutput;
 /**
  * A data compressor.
  */
-abstract class Compressor {
+public abstract class Compressor {
+
+  /** Sole constructor, typically called from sub-classes. */
+  protected Compressor() {}
 
   /**
    * Compress bytes into <code>out</code>. It it the responsibility of the

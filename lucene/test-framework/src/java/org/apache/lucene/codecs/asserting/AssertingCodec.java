@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.asserting;
 
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 
@@ -29,6 +30,7 @@ public final class AssertingCodec extends FilterCodec {
 
   private final PostingsFormat postings = new AssertingPostingsFormat();
   private final TermVectorsFormat vectors = new AssertingTermVectorsFormat();
+  private final StoredFieldsFormat storedFields = new AssertingStoredFieldsFormat();
 
   public AssertingCodec() {
     super("Asserting", new Lucene41Codec());
@@ -44,4 +46,8 @@ public final class AssertingCodec extends FilterCodec {
     return vectors;
   }
 
+  @Override
+  public StoredFieldsFormat storedFieldsFormat() {
+    return storedFields;
+  }
 }

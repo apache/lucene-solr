@@ -22,6 +22,14 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <dataDir>${solr.data.dir:}</dataDir>
 
+  <!-- an update processor the explicitly excludes distrib to test
+       clean errors when people attempt atomic updates w/o it
+  -->
+  <updateRequestProcessorChain name="nodistrib" >
+   <processor class="solr.NoOpDistributingUpdateProcessorFactory" />
+   <processor class="solr.RunUpdateProcessorFactory" />
+ </updateRequestProcessorChain>
+
   <requestHandler name="standard" class="solr.StandardRequestHandler">
   </requestHandler>
 
@@ -38,6 +46,29 @@
       <!-- <str name="dir">/tmp/solr/</str> -->
     </updateLog>
   </updateHandler>
+
+  <updateRequestProcessorChain name="dedupe">
+    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
+      <bool name="enabled">true</bool>
+      <bool name="overwriteDupes">true</bool>
+      <str name="fields">v_t,t_field</str>
+      <str name="signatureClass">org.apache.solr.update.processor.TextProfileSignature</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+  <updateRequestProcessorChain name="stored_sig">
+    <!-- this chain is valid even though the signature field is not
+         indexed, because we are not asking for dups to be overwritten
+      -->
+    <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
+      <bool name="enabled">true</bool>
+      <str name="signatureField">non_indexed_signature_sS</str>
+      <bool name="overwriteDupes">false</bool>
+      <str name="fields">v_t,t_field</str>
+      <str name="signatureClass">org.apache.solr.update.processor.TextProfileSignature</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
 
   <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
 

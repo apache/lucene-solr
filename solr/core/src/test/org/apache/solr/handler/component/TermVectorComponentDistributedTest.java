@@ -22,6 +22,7 @@ import org.apache.solr.common.params.TermVectorParams;
 
 public class TermVectorComponentDistributedTest extends BaseDistributedSearchTestCase {
 
+  @Override
   public void doTest() throws Exception {
 
     handle.clear();

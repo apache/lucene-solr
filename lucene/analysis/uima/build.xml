@@ -24,12 +24,10 @@
   </description>
 	
   <property name="tests.userdir" value="src/test-files"/>
-  <property name="tests.jvms" value="1" />
+  <property name="tests.jvms.override" value="1" />
 
   <path id="uimajars">
-    <pathelement path="lib/uimaj-core-2.3.1.jar"/>
-    <pathelement path="lib/Tagger-2.3.1.jar"/>
-    <pathelement path="lib/WhitespaceTokenizer-2.3.1.jar"/>
+    <fileset dir="lib"/>
   </path>
 
   <import file="../analysis-module-build.xml"/>

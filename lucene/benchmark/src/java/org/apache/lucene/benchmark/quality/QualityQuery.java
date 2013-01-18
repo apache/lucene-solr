@@ -71,6 +71,7 @@ public class QualityQuery implements Comparable<QualityQuery> {
 
   /* for a nicer sort of input queries before running them.
    * Try first as ints, fall back to string if not int. */ 
+  @Override
   public int compareTo(QualityQuery other) {
     try {
       // compare as ints when ids ints

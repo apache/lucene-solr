@@ -36,6 +36,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class RawQParserPlugin extends QParserPlugin {
   public static String NAME = "raw";
 
+  @Override
   public void init(NamedList args) {
   }
 

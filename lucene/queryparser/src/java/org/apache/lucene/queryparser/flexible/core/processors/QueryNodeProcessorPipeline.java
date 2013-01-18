@@ -67,6 +67,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
    * @see QueryNodeProcessor#setQueryConfigHandler(QueryConfigHandler)
    * @see QueryConfigHandler
    */
+  @Override
   public QueryConfigHandler getQueryConfigHandler() {
     return this.queryConfig;
   }
@@ -82,6 +83,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
    * 
    * @see QueryNode
    */
+  @Override
   public QueryNode process(QueryNode queryTree) throws QueryNodeException {
 
     for (QueryNodeProcessor processor : this.processors) {
@@ -101,6 +103,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
    * @see QueryNodeProcessor#getQueryConfigHandler()
    * @see QueryConfigHandler
    */
+  @Override
   public void setQueryConfigHandler(QueryConfigHandler queryConfigHandler) {
     this.queryConfig = queryConfigHandler;
 
@@ -113,6 +116,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#add(Object)
    */
+  @Override
   public boolean add(QueryNodeProcessor processor) {
     boolean added = this.processors.add(processor);
 
@@ -127,6 +131,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#add(int, Object)
    */
+  @Override
   public void add(int index, QueryNodeProcessor processor) {
     this.processors.add(index, processor);
     processor.setQueryConfigHandler(this.queryConfig);
@@ -136,6 +141,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#addAll(Collection)
    */
+  @Override
   public boolean addAll(Collection<? extends QueryNodeProcessor> c) {
     boolean anyAdded = this.processors.addAll(c);
 
@@ -150,6 +156,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#addAll(int, Collection)
    */
+  @Override
   public boolean addAll(int index, Collection<? extends QueryNodeProcessor> c) {
     boolean anyAdded = this.processors.addAll(index, c);
 
@@ -164,6 +171,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#clear()
    */
+  @Override
   public void clear() {
     this.processors.clear();
   }
@@ -171,6 +179,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#contains(Object)
    */
+  @Override
   public boolean contains(Object o) {
     return this.processors.contains(o);
   }
@@ -178,6 +187,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#containsAll(Collection)
    */
+  @Override
   public boolean containsAll(Collection<?> c) {
     return this.processors.containsAll(c);
   }
@@ -185,6 +195,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#get(int)
    */
+  @Override
   public QueryNodeProcessor get(int index) {
     return this.processors.get(index);
   }
@@ -192,6 +203,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#indexOf(Object)
    */
+  @Override
   public int indexOf(Object o) {
     return this.processors.indexOf(o);
   }
@@ -199,6 +211,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#isEmpty()
    */
+  @Override
   public boolean isEmpty() {
     return this.processors.isEmpty();
   }
@@ -206,6 +219,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#iterator()
    */
+  @Override
   public Iterator<QueryNodeProcessor> iterator() {
     return this.processors.iterator();
   }
@@ -213,6 +227,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#lastIndexOf(Object)
    */
+  @Override
   public int lastIndexOf(Object o) {
     return this.processors.lastIndexOf(o);
   }
@@ -220,6 +235,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#listIterator()
    */
+  @Override
   public ListIterator<QueryNodeProcessor> listIterator() {
     return this.processors.listIterator();
   }
@@ -227,6 +243,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#listIterator(int)
    */
+  @Override
   public ListIterator<QueryNodeProcessor> listIterator(int index) {
     return this.processors.listIterator(index);
   }
@@ -234,6 +251,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#remove(Object)
    */
+  @Override
   public boolean remove(Object o) {
     return this.processors.remove(o);
   }
@@ -241,6 +259,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#remove(int)
    */
+  @Override
   public QueryNodeProcessor remove(int index) {
     return this.processors.remove(index);
   }
@@ -248,6 +267,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#removeAll(Collection)
    */
+  @Override
   public boolean removeAll(Collection<?> c) {
     return this.processors.removeAll(c);
   }
@@ -255,6 +275,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#retainAll(Collection)
    */
+  @Override
   public boolean retainAll(Collection<?> c) {
     return this.processors.retainAll(c);
   }
@@ -262,6 +283,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#set(int, Object)
    */
+  @Override
   public QueryNodeProcessor set(int index, QueryNodeProcessor processor) {
     QueryNodeProcessor oldProcessor = this.processors.set(index, processor);
     
@@ -276,6 +298,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#size()
    */
+  @Override
   public int size() {
     return this.processors.size();
   }
@@ -283,6 +306,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#subList(int, int)
    */
+  @Override
   public List<QueryNodeProcessor> subList(int fromIndex, int toIndex) {
     return this.processors.subList(fromIndex, toIndex);
   }
@@ -290,6 +314,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#toArray(Object[])
    */
+  @Override
   public <T> T[] toArray(T[] array) {
     return this.processors.toArray(array);
   }
@@ -297,6 +322,7 @@ public class QueryNodeProcessorPipeline implements QueryNodeProcessor,
   /**
    * @see List#toArray()
    */
+  @Override
   public Object[] toArray() {
     return this.processors.toArray();
   }

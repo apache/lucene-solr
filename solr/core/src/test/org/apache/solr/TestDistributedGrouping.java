@@ -43,6 +43,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
   String tdate_b = "b_n_tdt";
   String oddField="oddField_s";
 
+  @Override
   public void doTest() throws Exception {
     del("*:*");
     commit();
@@ -50,6 +51,8 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     handle.clear();
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
+    handle.put("grouped", UNORDERED);   // distrib grouping doesn't guarantee order of top level group commands
+
     // Test distributed grouping with empty indices
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc");
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", i1 + " asc, id asc", "hl","true","hl.fl",t1);
@@ -162,6 +165,30 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", 10, "sort", i1 + " asc, id asc");
     query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", 10, "sort", i1 + " asc, id asc");
 
+    // SOLR-4150: what if group.query has no matches, 
+    // or only matches on one shard
+    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", 
+          "group.query", t1 + ":kings OR " + t1 + ":eggs", 
+          "group.query", "id:5", // single doc, so only one shard will have it
+          "group.limit", 10, "sort", i1 + " asc, id asc");
+    handle.put(t1 + ":this_will_never_match", SKIP); // :TODO: SOLR-4181
+    query("q", "*:*", "rows", 100, "fl", "id," + i1, "group", "true", 
+          "group.query", t1 + ":kings OR " + t1 + ":eggs", 
+          "group.query", t1 + ":this_will_never_match",
+          "group.limit", 10, "sort", i1 + " asc, id asc");
+
+    // SOLR-4164: main query matches nothing, or only matches on one shard
+    query("q", "bogus_s:nothing", // no docs match
+          "group", "true", 
+          "group.query", t1 + ":this_will_never_match",
+          "group.field", i1, 
+          "fl", "id", "group.limit", "2", "group.format", "simple");
+    query("q", "id:5", // one doc matches, so only one shard
+          "rows", 100, "fl", "id," + i1, "group", "true", 
+          "group.query", t1 + ":kings OR " + t1 + ":eggs", 
+          "group.field", i1,
+          "group.limit", 10, "sort", i1 + " asc, id asc");
+
     // SOLR-3109
     query("q", t1 + ":eggs", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", tlong + " asc, id asc");
     query("q", i1 + ":232", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", tlong + " asc, id asc");
@@ -178,6 +205,19 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     // SOLR-3436
     query("q", "*:*", "fq", s1 + ":a", "fl", "id," + i1, "group", "true", "group.field", i1, "sort", i1 + " asc, id asc", "group.ngroups", "true");
     query("q", "*:*", "fq", s1 + ":a", "rows", 0, "fl", "id," + i1, "group", "true", "group.field", i1, "sort", i1 + " asc, id asc", "group.ngroups", "true");
+
+    // SOLR-3960 - include a postfilter
+    for (String facet : new String[] { "false", "true"}) {
+      for (String fcache : new String[] { "", " cache=false cost=200"}) {
+      query("q", "*:*", "rows", 100, "fl", "id," + i1, 
+            "group.limit", 10, "sort", i1 + " asc, id asc",
+            "group", "true", "group.field", i1, 
+            "fq", "{!frange l=50 "+fcache+"}"+tlong,
+            "facet.field", t1,
+            "facet", facet
+            );
+      }
+    }
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     Object[] q =  {"q", "*:*", "fq", s1 + ":a", "rows", 1, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "group.ngroups", "true"};

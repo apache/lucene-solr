@@ -80,7 +80,7 @@ public class TestScoredDocIdCollector extends FacetTestBase {
     }
 
     // verify by facet values
-    List<FacetResult> countRes = findFacets(scoredDocIDs, getFacetedSearchParams());
+    List<FacetResult> countRes = findFacets(scoredDocIDs, getFacetSearchParams());
     List<FacetResult> scoreRes = findFacets(scoredDocIDs, sumScoreSearchParams());
 
     assertEquals("Wrong number of facet count results!", 1, countRes.size());
@@ -160,16 +160,11 @@ public class TestScoredDocIdCollector extends FacetTestBase {
   /* use a scoring aggregator */
   private FacetSearchParams sumScoreSearchParams() {
     // this will use default faceted indexing params, not altering anything about indexing
-    FacetSearchParams res = super.getFacetedSearchParams();
-    res.addFacetRequest(new ScoreFacetRequest(new CategoryPath("root", "a"), 10));
-    return res;
+    return new FacetSearchParams(new ScoreFacetRequest(new CategoryPath("root", "a"), 10));
   }
 
-  @Override
-  protected FacetSearchParams getFacetedSearchParams() {
-    FacetSearchParams res = super.getFacetedSearchParams();
-    res.addFacetRequest(new CountFacetRequest(new CategoryPath("root","a"), 10));
-    return res;
+  private FacetSearchParams getFacetSearchParams() {
+    return new FacetSearchParams(new CountFacetRequest(new CategoryPath("root","a"), 10));
   }
 
 }

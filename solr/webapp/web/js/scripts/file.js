@@ -18,7 +18,7 @@
 // #/:core/schema, #/:core/config
 sammy.get
 (
-  /^#\/([\w\d-]+)\/(schema|config)$/,
+  new RegExp( app.core_regex_base + '\\/(schema|config)$' ),
   function( context )
   {
     var core_basepath = this.active_core.attr( 'data-basepath' );

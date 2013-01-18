@@ -140,6 +140,7 @@ public class CSVStrategy implements Cloneable, Serializable {
       return this.printerNewline;
     }
 
+    @Override
     public Object clone() {
       try {
         return super.clone();

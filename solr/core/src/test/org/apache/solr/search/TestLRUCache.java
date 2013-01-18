@@ -124,6 +124,7 @@ public class TestLRUCache extends LuceneTestCase {
   
   private CacheRegenerator createCodeRegenerator() {
     CacheRegenerator cr = new CacheRegenerator() {
+      @Override
       @SuppressWarnings("unchecked")
       public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache,
                                     SolrCache oldCache, Object oldKey, Object oldVal) {

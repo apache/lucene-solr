@@ -58,6 +58,7 @@ abstract class Packed64SingleBlock extends PackedInts.MutableImpl {
     Arrays.fill(blocks, 0L);
   }
 
+  @Override
   public long ramBytesUsed() {
     return RamUsageEstimator.sizeOf(blocks);
   }

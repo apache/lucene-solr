@@ -121,7 +121,7 @@ class LZ4 {
       matchLen += MIN_MATCH;
 
       // copying a multiple of 8 bytes can make decompression from 5% to 10% faster
-      final int fastLen = ((matchLen - 1) & 0xFFFFFFF8) + 8;
+      final int fastLen = (matchLen + 7) & 0xFFFFFFF8;
       if (matchDec < matchLen || dOff + fastLen > destEnd) {
         // overlap -> naive incremental copy
         for (int ref = dOff - matchDec, end = dOff + matchLen; dOff < end; ++ref, ++dOff) {
@@ -222,7 +222,7 @@ class LZ4 {
         }
 
         // compute match length
-        final int matchLen = MIN_MATCH + commonBytes(bytes, ref + 4, off + 4, limit);
+        final int matchLen = MIN_MATCH + commonBytes(bytes, ref + MIN_MATCH, off + MIN_MATCH, limit);
 
         encodeSequence(bytes, anchor, ref, off, matchLen, out);
         off += matchLen;
@@ -504,53 +504,6 @@ class LZ4 {
     }
 
     encodeLastLiterals(src, anchor, srcEnd - anchor, out);
-  }
-
-  /** Copy bytes from <code>in</code> to <code>out</code> where
-   *  <code>in</code> is a LZ4-encoded stream. This method copies enough bytes
-   *  so that <code>out</code> can be used later on to restore the first
-   *  <code>length</code> bytes of the stream. This method always reads at
-   *  least one byte from <code>in</code> so make sure not to call this method
-   *  if <code>in</code> reached the end of the stream, even if
-   *  <code>length=0</code>. */
-  public static int copyCompressedData(DataInput in, int length, DataOutput out) throws IOException {
-    int n = 0;
-    do {
-      // literals
-      final byte token = in.readByte();
-      out.writeByte(token);
-      int literalLen = (token & 0xFF) >>> 4;
-      if (literalLen == 0x0F) {
-        byte len;
-        while ((len = in.readByte()) == (byte) 0xFF) {
-          literalLen += 0xFF;
-          out.writeByte(len);
-        }
-        literalLen += len & 0xFF;
-        out.writeByte(len);
-      }
-      out.copyBytes(in, literalLen);
-      n += literalLen;
-      if (n >= length) {
-        break;
-      }
-
-      // matchs
-      out.copyBytes(in, 2); // match dec
-      int matchLen = token & 0x0F;
-      if (matchLen == 0x0F) {
-        byte len;
-        while ((len = in.readByte()) == (byte) 0xFF) {
-          matchLen += 0xFF;
-          out.writeByte(len);
-        }
-        matchLen += len & 0xFF;
-        out.writeByte(len);
-      }
-      matchLen += MIN_MATCH;
-      n += matchLen;
-    } while (n < length);
-    return n;
   }
 
 }

@@ -35,6 +35,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertU(adoc("id","1", "text",v,  "text_np",v));
     v="now cow";
     assertU(adoc("id","2", "text",v,  "text_np",v));
+    assertU(adoc("id","3", "foo_s","a ' \" \\ {! ) } ( { z"));  // A value filled with special chars
+
+    assertU(adoc("id","10", "qqq_s","X"));
+    assertU(adoc("id","11", "www_s","X"));
+    assertU(adoc("id","12", "eee_s","X"));
+    assertU(adoc("id","13", "eee_s","'balance'"));
+
     assertU(commit());
   }
 
@@ -47,6 +54,42 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     // should generate a query of (now OR cow) and match both docs
     assertQ(req("q","text_np:now-cow", "indent","true")
         ,"//*[@numFound='2']"
+    );
+  }
+
+  @Test
+  public void testLocalParamsInQP() throws Exception {
+    assertJQ(req("q","qaz {!term f=text v=$qq} wsx", "qq","now")
+        ,"/response/numFound==2"
+    );
+
+    assertJQ(req("q","qaz {!term f=text v=$qq} wsx", "qq","nomatch")
+        ,"/response/numFound==0"
+    );
+
+    assertJQ(req("q","qaz {!term f=text}now wsx", "qq","now")
+        ,"/response/numFound==2"
+    );
+
+    assertJQ(req("q","qaz {!term f=foo_s v='a \\' \" \\\\ {! ) } ( { z'} wsx")           // single quote escaping
+        ,"/response/numFound==1"
+    );
+
+    assertJQ(req("q","qaz {!term f=foo_s v=\"a ' \\\" \\\\ {! ) } ( { z\"} wsx")         // double quote escaping
+        ,"/response/numFound==1"
+    );
+
+    // double-join to test back-to-back local params
+    assertJQ(req("q","qaz {!join from=www_s to=eee_s}{!join from=qqq_s to=www_s}id:10" )
+        ,"/response/docs/[0]/id=='12'"
+    );
+  }
+
+  @Test
+  public void testSolr4121() throws Exception {
+    // At one point, balanced quotes messed up the parser(SOLR-4121)
+    assertJQ(req("q","eee_s:'balance'", "indent","true")
+        ,"/response/numFound==1"
     );
   }
 }

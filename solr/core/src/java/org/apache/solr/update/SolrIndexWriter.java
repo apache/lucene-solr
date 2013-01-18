@@ -30,7 +30,9 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
+import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.schema.IndexSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +59,7 @@ public class SolrIndexWriter extends IndexWriter {
   public static SolrIndexWriter create(String name, String path, DirectoryFactory directoryFactory, boolean create, IndexSchema schema, SolrIndexConfig config, IndexDeletionPolicy delPolicy, Codec codec, boolean forceNewDirectory) throws IOException {
 
     SolrIndexWriter w = null;
-    final Directory d = directoryFactory.get(path, config.lockType, forceNewDirectory);
+    final Directory d = directoryFactory.get(path, DirContext.DEFAULT, config.lockType, forceNewDirectory);
     try {
       w = new SolrIndexWriter(name, path, d, create, schema, 
                               config, delPolicy, codec);
@@ -137,18 +139,36 @@ public class SolrIndexWriter extends IndexWriter {
   public void close() throws IOException {
     log.debug("Closing Writer " + name);
     Directory directory = getDirectory();
-    final InfoStream infoStream = isClosed ? null : getConfig().getInfoStream();    
+    final InfoStream infoStream = isClosed ? null : getConfig().getInfoStream();
     try {
-      super.close();
+      while (true) {
+        try {
+          super.close();
+        } catch (ThreadInterruptedException e) {
+          // don't allow interruption
+          continue;
+        } catch (Throwable t) {
+          log.error("Error closing IndexWriter, trying rollback", t);
+          super.rollback();
+        }
+        if (IndexWriter.isLocked(directory)) {
+          try {
+            IndexWriter.unlock(directory);
+          } catch (Throwable t) {
+            log.error("Coud not unlock directory after seemingly failed IndexWriter#close()", t);
+          }
+        }
+        break;
+      }
     } finally {
-      if(infoStream != null) {
+      if (infoStream != null) {
         infoStream.close();
       }
       
       isClosed = true;
-
+      
       directoryFactory.release(directory);
-     
+      
       numCloses.incrementAndGet();
     }
   }
@@ -156,7 +176,15 @@ public class SolrIndexWriter extends IndexWriter {
   @Override
   public void rollback() throws IOException {
     try {
-      super.rollback();
+      while (true) {
+        try {
+          super.rollback();
+        } catch (ThreadInterruptedException e) {
+          // don't allow interruption
+          continue;
+        }
+        break;
+      }
     } finally {
       isClosed = true;
       directoryFactory.release(getDirectory());

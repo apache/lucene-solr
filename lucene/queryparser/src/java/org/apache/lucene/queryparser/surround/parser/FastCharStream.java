@@ -39,6 +39,7 @@ public final class FastCharStream implements CharStream {
     input = r;
   }
 
+  @Override
   public final char readChar() throws IOException {
     if (bufferPosition >= bufferLength)
       refill();
@@ -73,25 +74,30 @@ public final class FastCharStream implements CharStream {
       bufferLength += charsRead;
   }
 
+  @Override
   public final char BeginToken() throws IOException {
     tokenStart = bufferPosition;
     return readChar();
   }
 
+  @Override
   public final void backup(int amount) {
     bufferPosition -= amount;
   }
 
+  @Override
   public final String GetImage() {
     return new String(buffer, tokenStart, bufferPosition - tokenStart);
   }
 
+  @Override
   public final char[] GetSuffix(int len) {
     char[] value = new char[len];
     System.arraycopy(buffer, bufferPosition - len, value, 0, len);
     return value;
   }
 
+  @Override
   public final void Done() {
     try {
       input.close();
@@ -99,21 +105,27 @@ public final class FastCharStream implements CharStream {
     }
   }
 
+  @Override
   public final int getColumn() {
     return bufferStart + bufferPosition;
   }
+  @Override
   public final int getLine() {
     return 1;
   }
+  @Override
   public final int getEndColumn() {
     return bufferStart + bufferPosition;
   }
+  @Override
   public final int getEndLine() {
     return 1;
   }
+  @Override
   public final int getBeginColumn() {
     return bufferStart + tokenStart;
   }
+  @Override
   public final int getBeginLine() {
     return 1;
   }

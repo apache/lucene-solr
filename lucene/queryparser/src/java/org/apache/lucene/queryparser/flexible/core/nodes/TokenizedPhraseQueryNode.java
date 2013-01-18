@@ -48,6 +48,7 @@ public class TokenizedPhraseQueryNode extends QueryNodeImpl implements
   }
 
   // This text representation is not re-parseable
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     if (getChildren() == null || getChildren().size() == 0)
       return "";
@@ -72,6 +73,7 @@ public class TokenizedPhraseQueryNode extends QueryNodeImpl implements
     return clone;
   }
 
+  @Override
   public CharSequence getField() {
     List<QueryNode> children = getChildren();
 
@@ -84,6 +86,7 @@ public class TokenizedPhraseQueryNode extends QueryNodeImpl implements
 
   }
 
+  @Override
   public void setField(CharSequence fieldName) {
     List<QueryNode> children = getChildren();
 

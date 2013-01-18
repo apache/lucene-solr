@@ -56,11 +56,14 @@
       mavenVersion="${maven-version}" failonerror="true" fork="true">
       <arg value="-fae"/>
       <arg value="install"/>
+      <syspropertyset>
+        <propertyref builtin="commandline"/>
+      </syspropertyset>
     </mvn>
   </target>
 
   <target xmlns:ivy="antlib:org.apache.ivy.ant" name="-check-svn-working-copy" depends="ivy-availability-check,ivy-fail,ivy-configure,resolve-groovy">
-    <ivy:cachepath organisation="org.tmatesoft.svnkit" module="svnkit" revision="1.7.5-v1"
+    <ivy:cachepath organisation="org.tmatesoft.svnkit" module="svnkit" revision="1.7.6"
       inline="true" conf="default" type="jar" transitive="true" pathid="svnkit.classpath"/>
     <script language="groovy" taskname="svn">
       <classpath>

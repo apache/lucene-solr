@@ -59,7 +59,7 @@ public class MappingCharFilter extends BaseCharFilter {
     cachedRootArcs = normMap.cachedRootArcs;
 
     if (map != null) {
-      fstReader = map.getBytesReader(0);
+      fstReader = map.getBytesReader();
     } else {
       fstReader = null;
     }

@@ -578,6 +578,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     return result;
   }
 
+  @Override
   public void inform(SolrCore core) {
     if (initParams != null) {
       LOG.info("Initializing spell checkers");
@@ -660,9 +661,11 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       this.buildOnOptimize = buildOnOptimize;
     }
 
+    @Override
     public void init(NamedList args) {
     }
 
+    @Override
     public void newSearcher(SolrIndexSearcher newSearcher,
                             SolrIndexSearcher currentSearcher) {
       if (currentSearcher == null) {
@@ -699,6 +702,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       }
     }
 
+    @Override
     public void postCommit() {
     }
 

@@ -2,18 +2,15 @@ package org.apache.lucene.facet.search;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Random;
-
-import org.apache.lucene.index.IndexReader;
 
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.search.sampling.RandomSampler;
-import org.apache.lucene.facet.search.sampling.RepeatableSampler;
 import org.apache.lucene.facet.search.sampling.Sampler;
 import org.apache.lucene.facet.search.sampling.SamplingAccumulator;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.IndexReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -53,20 +50,20 @@ public final class AdaptiveFacetsAccumulator extends StandardFacetsAccumulator {
    * Create an {@link AdaptiveFacetsAccumulator} 
    * @see StandardFacetsAccumulator#StandardFacetsAccumulator(FacetSearchParams, IndexReader, TaxonomyReader)
    */
-  public AdaptiveFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader,
+  public AdaptiveFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader, 
       TaxonomyReader taxonomyReader) {
     super(searchParams, indexReader, taxonomyReader);
   }
 
   /**
-   * Create an {@link AdaptiveFacetsAccumulator} 
-   * @see StandardFacetsAccumulator#StandardFacetsAccumulator(FacetSearchParams, IndexReader, TaxonomyReader, 
-   *                               IntArrayAllocator, FloatArrayAllocator)
+   * Create an {@link AdaptiveFacetsAccumulator}
+   * 
+   * @see StandardFacetsAccumulator#StandardFacetsAccumulator(FacetSearchParams,
+   *      IndexReader, TaxonomyReader, FacetArrays)
    */
   public AdaptiveFacetsAccumulator(FacetSearchParams searchParams, IndexReader indexReader,
-      TaxonomyReader taxonomyReader, IntArrayAllocator intArrayAllocator,
-      FloatArrayAllocator floatArrayAllocator) {
-    super(searchParams, indexReader, taxonomyReader, intArrayAllocator, floatArrayAllocator);
+      TaxonomyReader taxonomyReader, FacetArrays facetArrays) {
+    super(searchParams, indexReader, taxonomyReader, facetArrays);
   }
 
   /**

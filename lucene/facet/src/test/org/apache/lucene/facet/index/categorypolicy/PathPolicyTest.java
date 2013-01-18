@@ -1,15 +1,11 @@
 package org.apache.lucene.facet.index.categorypolicy;
 
-import org.apache.lucene.store.Directory;
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.index.categorypolicy.DefaultPathPolicy;
-import org.apache.lucene.facet.index.categorypolicy.NonTopLevelPathPolicy;
-import org.apache.lucene.facet.index.categorypolicy.PathPolicy;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,10 +29,9 @@ public class PathPolicyTest extends LuceneTestCase {
   @Test
   public void testDefaultPathPolicy() {
     // check path policy
-    CategoryPath cp = new CategoryPath();
-    PathPolicy pathPolicy = new DefaultPathPolicy();
-    assertFalse("default path policy should not accept root", 
-        pathPolicy.shouldAdd(cp));
+    CategoryPath cp = CategoryPath.EMPTY;
+    PathPolicy pathPolicy = PathPolicy.ALL_CATEGORIES;
+    assertFalse("default path policy should not accept root", pathPolicy.shouldAdd(cp));
     for (int i = 0; i < 300; i++) {
       int nComponents = 1 + random().nextInt(10);
       String[] components = new String[nComponents];
@@ -44,9 +39,7 @@ public class PathPolicyTest extends LuceneTestCase {
         components[j] = (Integer.valueOf(random().nextInt(30))).toString();
       }
       cp = new CategoryPath(components);
-      assertTrue("default path policy should accept "
-          + cp.toString('/'),
-          pathPolicy.shouldAdd(cp));
+      assertTrue("default path policy should accept " + cp.toString('/'), pathPolicy.shouldAdd(cp));
     }
   }
 
@@ -78,7 +71,7 @@ public class PathPolicyTest extends LuceneTestCase {
     // check ordinal policy
     PathPolicy pathPolicy = new NonTopLevelPathPolicy();
     assertFalse("top level path policy should not match root",
-        pathPolicy.shouldAdd(new CategoryPath()));
+        pathPolicy.shouldAdd(CategoryPath.EMPTY));
     for (int i = 0; i < 10; i++) {
       assertFalse("top level path policy should not match "
           + topLevelPaths[i],

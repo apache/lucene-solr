@@ -374,7 +374,7 @@ public class TestLongPostings extends LuceneTestCase {
       final DocsEnum postings;
 
       if (options == IndexOptions.DOCS_ONLY) {
-        docs = _TestUtil.docs(random(), r, "field", new BytesRef(term), null, null, 0);
+        docs = _TestUtil.docs(random(), r, "field", new BytesRef(term), null, null, DocsEnum.FLAG_NONE);
         postings = null;
       } else {
         docs = postings = _TestUtil.docs(random(), r, "field", new BytesRef(term), null, null, DocsEnum.FLAG_FREQS);

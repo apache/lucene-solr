@@ -35,6 +35,7 @@ public class ConstantScoreQueryBuilder implements QueryBuilder {
     this.filterFactory = filterFactory;
   }
 
+  @Override
   public Query getQuery(Element e) throws ParserException {
     Element filterElem = DOMUtils.getFirstChildOrFail(e);
 

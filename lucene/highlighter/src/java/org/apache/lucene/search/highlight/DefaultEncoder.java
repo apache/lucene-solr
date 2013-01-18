@@ -25,6 +25,7 @@ public class DefaultEncoder implements Encoder
   {
   }
 
+  @Override
   public String encodeText(String originalText)
   {
     return originalText;

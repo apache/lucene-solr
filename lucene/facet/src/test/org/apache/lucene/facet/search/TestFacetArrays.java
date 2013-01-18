@@ -1,11 +1,7 @@
 package org.apache.lucene.facet.search;
 
-import org.junit.Test;
-
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.search.FacetArrays;
-import org.apache.lucene.facet.search.FloatArrayAllocator;
-import org.apache.lucene.facet.search.IntArrayAllocator;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,26 +23,39 @@ import org.apache.lucene.facet.search.IntArrayAllocator;
 public class TestFacetArrays extends LuceneTestCase {
 
   @Test
-  public void testSimple() {
-    FacetArrays arrays = new FacetArrays(new IntArrayAllocator(1, 1), new FloatArrayAllocator(1, 1));
-
-    int[] intArray = arrays.getIntArray();
-    // Set the element, then free
-    intArray[0] = 1;
-    arrays.free();
-
-    // We should expect a cleared array back
-    intArray = arrays.getIntArray();
-    assertEquals("Expected a cleared array back, but the array is still filled", 0, intArray[0]);
-
-    float[] floatArray = arrays.getFloatArray();
-    // Set the element, then free
-    floatArray[0] = 1.0f;
-    arrays.free();
-
-    // We should expect a cleared array back
-    floatArray = arrays.getFloatArray();
-    assertEquals("Expected a cleared array back, but the array is still filled", 0.0f, floatArray[0], 0.0);
+  public void testFacetArrays() {
+    for (boolean reusing : new boolean[] { false, true }) {
+      final FacetArrays arrays;
+      if (reusing) {
+        arrays = new ReusingFacetArrays(new ArraysPool(1, 1));
+      } else {
+        arrays = new FacetArrays(1);
+      }
+      
+      int[] intArray = arrays.getIntArray();
+      // Set the element, then free
+      intArray[0] = 1;
+      arrays.free();
+      
+      // We should expect a cleared array back
+      int[] newIntArray = arrays.getIntArray();
+      assertEquals("Expected a cleared array back, but the array is still filled", 0, newIntArray[0]);
+      
+      float[] floatArray = arrays.getFloatArray();
+      // Set the element, then free
+      floatArray[0] = 1.0f;
+      arrays.free();
+      
+      // We should expect a cleared array back
+      float[] newFloatArray = arrays.getFloatArray();
+      assertEquals("Expected a cleared array back, but the array is still filled", 0.0f, newFloatArray[0], 0.0);
+      
+      if (reusing) {
+        // same instance should be returned after free()
+        assertSame("ReusingFacetArrays did not reuse the array!", intArray, newIntArray);
+        assertSame("ReusingFacetArrays did not reuse the array!", floatArray, newFloatArray);
+      }
+    }
   }
   
 }

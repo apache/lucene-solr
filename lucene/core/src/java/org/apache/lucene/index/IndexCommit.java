@@ -107,10 +107,11 @@ public abstract class IndexCommit implements Comparable<IndexCommit> {
   public abstract long getGeneration();
 
   /** Returns userData, previously passed to {@link
-   *  IndexWriter#commit(Map)} for this commit.  Map is
+   *  IndexWriter#setCommitData(Map)} for this commit.  Map is
    *  String -> String. */
   public abstract Map<String,String> getUserData() throws IOException;
   
+  @Override
   public int compareTo(IndexCommit commit) {
     if (getDirectory() != commit.getDirectory()) {
       throw new UnsupportedOperationException("cannot compare IndexCommits from different Directory instances");

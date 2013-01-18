@@ -30,7 +30,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.solr.common.cloud.HashPartitioner;
+import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
@@ -48,8 +48,8 @@ public class SolrIndexSplitter {
 
   SolrIndexSearcher searcher;
   SchemaField field;
-  List<HashPartitioner.Range> ranges;
-  HashPartitioner.Range[] rangesArr; // same as ranges list, but an array for extra speed in inner loops
+  List<DocRouter.Range> ranges;
+  DocRouter.Range[] rangesArr; // same as ranges list, but an array for extra speed in inner loops
   List<String> paths;
   List<SolrCore> cores;
 
@@ -57,7 +57,7 @@ public class SolrIndexSplitter {
     field = cmd.getReq().getSchema().getUniqueKeyField();
     searcher = cmd.getReq().getSearcher();
     ranges = cmd.ranges;
-    rangesArr = ranges.toArray(new HashPartitioner.Range[ranges.size()]);
+    rangesArr = ranges.toArray(new DocRouter.Range[ranges.size()]);
     paths = cmd.paths;
     cores = cmd.cores;
   }
@@ -151,7 +151,7 @@ public class SolrIndexSplitter {
       // TODO: hook in custom hashes (or store hashes)
       int hash = Hash.murmurhash3_x86_32(term.bytes, term.offset, term.length, 0);
 
-      docsEnum = termsEnum.docs(liveDocs, docsEnum, 0x0);
+      docsEnum = termsEnum.docs(liveDocs, docsEnum, DocsEnum.FLAG_NONE);
       for (;;) {
         int doc = docsEnum.nextDoc();
         if (doc == DocsEnum.NO_MORE_DOCS) break;

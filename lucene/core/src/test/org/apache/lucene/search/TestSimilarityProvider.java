@@ -95,6 +95,7 @@ public class TestSimilarityProvider extends LuceneTestCase {
     private Similarity sim1 = new Sim1();
     private Similarity sim2 = new Sim2();
     
+    @Override
     public Similarity get(String field) {
       if (field.equals("foo")) {
         return sim1;
@@ -106,10 +107,12 @@ public class TestSimilarityProvider extends LuceneTestCase {
   
   private class Sim1 extends TFIDFSimilarity {
     
+    @Override
     public float coord(int overlap, int maxOverlap) {
       return 1f;
     }
 
+    @Override
     public float queryNorm(float sumOfSquaredWeights) {
       return 1f;
     }
@@ -142,10 +145,12 @@ public class TestSimilarityProvider extends LuceneTestCase {
   
   private class Sim2 extends TFIDFSimilarity {
     
+    @Override
     public float coord(int overlap, int maxOverlap) {
       return 1f;
     }
 
+    @Override
     public float queryNorm(float sumOfSquaredWeights) {
       return 1f;
     }

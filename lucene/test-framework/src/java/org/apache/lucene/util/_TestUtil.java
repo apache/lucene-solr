@@ -95,17 +95,35 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
  */
 public class _TestUtil {
 
-  /** Returns temp dir, based on String arg in its name;
-   *  does not create the directory. */
+  // the max number of retries we're going to do in getTempDir
+  private static final int GET_TEMP_DIR_RETRY_THRESHOLD = 1000;
+  
+  /**
+   * Returns a temp directory, based on the given description. Creates the
+   * directory.
+   */
   public static File getTempDir(String desc) {
-    try {
-      File f = createTempFile(desc, "tmp", LuceneTestCase.TEMP_DIR);
-      f.delete();
-      LuceneTestCase.closeAfterSuite(new CloseableFile(f, LuceneTestCase.suiteFailureMarker));
-      return f;
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    if (desc.length() < 3) {
+      throw new IllegalArgumentException("description must be at least 3 characters");
     }
+    // always pull a long from master random. that way, the randomness of the test
+    // is not affected by whether it initialized the counter (in genTempFile) or not.
+    // note that the Random used by genTempFile is *not* the master Random, and therefore
+    // does not affect the randomness of the test.
+    final Random random = new Random(RandomizedContext.current().getRandom().nextLong());
+    int attempt = 0;
+    File f;
+    do {
+      f = genTempFile(random, desc, "tmp", LuceneTestCase.TEMP_DIR);
+    } while (!f.mkdir() && (attempt++) < GET_TEMP_DIR_RETRY_THRESHOLD);
+    
+    if (attempt > GET_TEMP_DIR_RETRY_THRESHOLD) {
+      throw new RuntimeException(
+          "failed to get a temporary dir too many times. check your temp directory and consider manually cleaning it.");
+    }
+    
+    LuceneTestCase.closeAfterSuite(new CloseableFile(f, LuceneTestCase.suiteFailureMarker));
+    return f;
   }
 
   /**
@@ -711,6 +729,7 @@ public class _TestUtil {
   public static <T> void assertAttributeReflection(final AttributeImpl att, Map<String,T> reflectedValues) {
     final Map<String,Object> map = new HashMap<String,Object>();
     att.reflectWith(new AttributeReflector() {
+      @Override
       public void reflect(Class<? extends Attribute> attClass, String key, Object value) {
         map.put(attClass.getName() + '#' + key, value);
       }
@@ -737,43 +756,38 @@ public class _TestUtil {
    */
   public static File createTempFile(String prefix, String suffix, File directory)
       throws IOException {
-    // Force a prefix null check first
     if (prefix.length() < 3) {
-      throw new IllegalArgumentException("prefix must be 3");
+      throw new IllegalArgumentException("prefix must be at least 3 characters");
     }
     String newSuffix = suffix == null ? ".tmp" : suffix;
-    File result;
-    // just pull one long always: we don't want to rely upon what may or may not
-    // already exist. otherwise tests might not reproduce, depending on when you last
-    // ran 'ant clean'
+    // always pull a long from master random. that way, the randomness of the test
+    // is not affected by whether it initialized the counter (in genTempFile) or not.
+    // note that the Random used by genTempFile is *not* the master Random, and therefore
+    // does not affect the randomness of the test.
     final Random random = new Random(RandomizedContext.current().getRandom().nextLong());
+    File result;
     do {
       result = genTempFile(random, prefix, newSuffix, directory);
     } while (!result.createNewFile());
     return result;
   }
 
-  /* Temp file counter */
-  private static int counter = 0;
-
   /* identify for differnt VM processes */
-  private static int counterBase = 0;
-
-  private static class TempFileLocker {};
-  private static TempFileLocker tempFileLocker = new TempFileLocker();
+  private static String counterBase;
+  
+  /* Temp file counter */
+  private static int counter;
+  private static final Object counterLock = new Object();
 
   private static File genTempFile(Random random, String prefix, String suffix, File directory) {
-    int identify = 0;
-
-    synchronized (tempFileLocker) {
-      if (counter == 0) {
-        int newInt = random.nextInt();
-        counter = ((newInt / 65535) & 0xFFFF) + 0x2710;
-        counterBase = counter;
+    final int identify;
+    synchronized (counterLock) {
+      if (counterBase == null) { // init once
+        counter = random.nextInt() & 0xFFFF; // up to five digits number
+        counterBase = Integer.toString(counter);
       }
       identify = counter++;
     }
-
     StringBuilder newName = new StringBuilder();
     newName.append(prefix);
     newName.append(counterBase);

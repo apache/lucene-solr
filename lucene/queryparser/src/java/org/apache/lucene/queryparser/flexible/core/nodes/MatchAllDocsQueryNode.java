@@ -34,6 +34,7 @@ public class MatchAllDocsQueryNode extends QueryNodeImpl {
     return "<matchAllDocs field='*' term='*'/>";
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     return "*:*";
   }

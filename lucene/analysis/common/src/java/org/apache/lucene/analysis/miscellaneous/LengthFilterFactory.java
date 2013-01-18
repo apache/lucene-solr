@@ -53,6 +53,7 @@ public class LengthFilterFactory extends TokenFilterFactory {
     enablePositionIncrements = getBoolean("enablePositionIncrements",false);
   }
   
+  @Override
   public LengthFilter create(TokenStream input) {
     return new LengthFilter(enablePositionIncrements, input,min,max);
   }

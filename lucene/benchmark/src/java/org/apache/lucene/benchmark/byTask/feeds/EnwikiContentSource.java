@@ -53,6 +53,7 @@ public class EnwikiContentSource extends ContentSource {
   private class Parser extends DefaultHandler implements Runnable {
     private Thread t;
     private boolean threadDone;
+    private boolean stopped = false;
     private String[] tuple;
     private NoMoreDataException nmde;
     private StringBuilder contents = new StringBuilder();
@@ -70,12 +71,18 @@ public class EnwikiContentSource extends ContentSource {
       }
       String[] result;
       synchronized(this){
-        while(tuple == null && nmde == null && !threadDone) {
+        while(tuple == null && nmde == null && !threadDone && !stopped) {
           try {
             wait();
           } catch (InterruptedException ie) {
             throw new ThreadInterruptedException(ie);
           }
+        }
+        if (tuple != null) {
+          result = tuple;
+          tuple = null;
+          notify();
+          return result;
         }
         if (nmde != null) {
           // Set to null so we will re-start thread in case
@@ -83,18 +90,12 @@ public class EnwikiContentSource extends ContentSource {
           t = null;
           throw nmde;
         }
-        if (t != null && threadDone) {
-          // The thread has exited yet did not hit end of
-          // data, so this means it hit an exception.  We
-          // throw NoMorDataException here to force
-          // benchmark to stop the current alg:
-          throw new NoMoreDataException();
-        }
-        result = tuple;
-        tuple = null;
-        notify();
+        // The thread has exited yet did not hit end of
+        // data, so this means it hit an exception.  We
+        // throw NoMorDataException here to force
+        // benchmark to stop the current alg:
+        throw new NoMoreDataException();
       }
-      return result;
     }
     
     String time(String original) {
@@ -132,7 +133,7 @@ public class EnwikiContentSource extends ContentSource {
             tmpTuple[BODY] = body.replaceAll("[\t\n]", " ");
             tmpTuple[ID] = id;
             synchronized(this) {
-              while (tuple != null) {
+              while (tuple != null && !stopped) {
                 try {
                   wait();
                 } catch (InterruptedException ie) {
@@ -169,38 +170,40 @@ public class EnwikiContentSource extends ContentSource {
       }
     }
 
+    @Override
     public void run() {
 
       try {
         XMLReader reader = XMLReaderFactory.createXMLReader();
         reader.setContentHandler(this);
         reader.setErrorHandler(this);
-        while(true){
+        while(!stopped){
           final InputStream localFileIS = is;
-          try {
-            // To work around a bug in XERCES (XERCESJ-1257), we assume the XML is always UTF8, so we simply provide reader.
-            CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
-                .onMalformedInput(CodingErrorAction.REPORT)
-                .onUnmappableCharacter(CodingErrorAction.REPORT);
-            reader.parse(new InputSource(new BufferedReader(new InputStreamReader(localFileIS, decoder))));
-          } catch (IOException ioe) {
-            synchronized(EnwikiContentSource.this) {
-              if (localFileIS != is) {
-                // fileIS was closed on us, so, just fall
-                // through
-              } else
-                // Exception is real
-                throw ioe;
+          if (localFileIS != null) { // null means fileIS was closed on us 
+            try {
+              // To work around a bug in XERCES (XERCESJ-1257), we assume the XML is always UTF8, so we simply provide reader.
+              CharsetDecoder decoder = IOUtils.CHARSET_UTF_8.newDecoder()
+                  .onMalformedInput(CodingErrorAction.REPORT)
+                  .onUnmappableCharacter(CodingErrorAction.REPORT);
+              reader.parse(new InputSource(new BufferedReader(new InputStreamReader(localFileIS, decoder))));
+            } catch (IOException ioe) {
+              synchronized(EnwikiContentSource.this) {
+                if (localFileIS != is) {
+                  // fileIS was closed on us, so, just fall through
+                } else
+                  // Exception is real
+                  throw ioe;
+              }
             }
           }
           synchronized(this) {
-            if (!forever) {
+            if (stopped || !forever) {
               nmde = new NoMoreDataException();
               notify();
               return;
             } else if (localFileIS == is) {
               // If file is not already re-opened then re-open it now
-              is = StreamUtils.inputStream(file);
+              is = openInputStream();
             }
           }
         }
@@ -238,6 +241,17 @@ public class EnwikiContentSource extends ContentSource {
           // this element should be discarded.
       }
     }
+
+    private void stop() {
+      synchronized (this) {
+        stopped = true;
+        if (tuple != null) {
+          tuple = null;
+          notify();
+        }
+      }
+    }
+
   }
 
   private static final Map<String,Integer> ELEMENTS = new HashMap<String,Integer>();
@@ -280,6 +294,7 @@ public class EnwikiContentSource extends ContentSource {
   @Override
   public void close() throws IOException {
     synchronized (EnwikiContentSource.this) {
+      parser.stop();
       if (is != null) {
         is.close();
         is = null;
@@ -301,7 +316,12 @@ public class EnwikiContentSource extends ContentSource {
   @Override
   public void resetInputs() throws IOException {
     super.resetInputs();
-    is = StreamUtils.inputStream(file);
+    is = openInputStream();
+  }
+
+  /** Open the input stream. */
+  protected InputStream openInputStream() throws IOException {
+    return StreamUtils.inputStream(file);
   }
   
   @Override
@@ -309,10 +329,9 @@ public class EnwikiContentSource extends ContentSource {
     super.setConfig(config);
     keepImages = config.get("keep.image.only.docs", true);
     String fileName = config.get("docs.file", null);
-    if (fileName == null) {
-      throw new IllegalArgumentException("docs.file must be set");
+    if (fileName != null) {
+      file = new File(fileName).getAbsoluteFile();
     }
-    file = new File(fileName).getAbsoluteFile();
   }
   
 }

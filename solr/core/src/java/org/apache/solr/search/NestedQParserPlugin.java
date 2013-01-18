@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -35,6 +34,7 @@ import org.apache.solr.request.SolrQueryRequest;
 public class NestedQParserPlugin extends QParserPlugin {
   public static String NAME = "query";
 
+  @Override
   public void init(NamedList args) {
   }
 
@@ -46,7 +46,7 @@ public class NestedQParserPlugin extends QParserPlugin {
       String b;
 
       @Override
-      public Query parse() throws ParseException {
+      public Query parse() throws SyntaxError {
         baseParser = subQuery(localParams.get(QueryParsing.V), null);
         return baseParser.getQuery();
       }
@@ -57,7 +57,7 @@ public class NestedQParserPlugin extends QParserPlugin {
       }
 
       @Override
-      public Query getHighlightQuery() throws ParseException {
+      public Query getHighlightQuery() throws SyntaxError {
         return baseParser.getHighlightQuery();
       }
 

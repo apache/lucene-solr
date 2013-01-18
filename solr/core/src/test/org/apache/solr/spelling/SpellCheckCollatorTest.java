@@ -376,13 +376,14 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   public void testContextSensitiveCollate() throws Exception {
     //                     DirectSolrSpellChecker   IndexBasedSpellChecker
     String[] dictionary = {"direct",                "default_teststop" };
-    for(int i=0 ; i<1 ; i++) {
+    for(int i=0 ; i<=1 ; i++) {
       assertQ(
         req(
           "q", "teststop:(flew AND form AND heathrow)",
           "qt", "spellCheckCompRH",
           "indent", "true",
           SpellCheckComponent.COMPONENT_NAME, "true",
+          SpellCheckComponent.SPELLCHECK_BUILD, "true",
           SpellCheckComponent.SPELLCHECK_DICT, dictionary[i],
           SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true",
           SpellCheckComponent.SPELLCHECK_COUNT, "10",

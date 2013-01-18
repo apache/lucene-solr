@@ -421,6 +421,7 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
       while (pos < keys.length && keys[pos] == null) pos++;
     }
 
+    @Override
     public boolean hasNext() {
       return pos < keys.length;
     }
@@ -451,11 +452,13 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
     }
 
     /** use nextCharArray() + currentValue() for better efficiency. */
+    @Override
     public Map.Entry<Object,V> next() {
       goNext();
       return new MapEntry(lastPos, allowModify);
     }
 
+    @Override
     public void remove() {
       throw new UnsupportedOperationException();
     }
@@ -470,16 +473,19 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
       this.allowModify = allowModify;
     }
 
+    @Override
     public Object getKey() {
       // we must clone here, as putAll to another CharArrayMap
       // with other case sensitivity flag would corrupt the keys
       return keys[pos].clone();
     }
 
+    @Override
     public V getValue() {
       return values[pos];
     }
 
+    @Override
     public V setValue(V value) {
       if (!allowModify)
         throw new UnsupportedOperationException();

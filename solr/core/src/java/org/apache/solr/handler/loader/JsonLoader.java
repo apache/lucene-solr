@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
 public class JsonLoader extends ContentStreamLoader {
   final static Logger log = LoggerFactory.getLogger( JsonLoader.class );
   
+  @Override
   public String getDefaultWT() {
     return "json";
   }

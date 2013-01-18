@@ -1,6 +1,7 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,24 +25,25 @@ import java.io.IOException;
  * 
  * @lucene.experimental
  */
-public class SimpleIntEncoder extends IntEncoder {
+public final class SimpleIntEncoder extends IntEncoder {
 
-  /**
-   * This method makes sure the value wasn't previously encoded by checking
-   * against the Set. If the value wasn't encoded, it's added to the Set, and
-   * encoded with {#link Vint8#encode}
-   * 
-   * @param value
-   *            an integer to be encoded
-   * @throws IOException
-   *             possibly thrown by the OutputStream
-   */
   @Override
-  public void encode(int value) throws IOException {
-    out.write(value >>> 24);
-    out.write((value >> 16) & 0xFF);
-    out.write((value >> 8) & 0xFF);
-    out.write(value & 0xFF);
+  public void encode(IntsRef values, BytesRef buf) {
+    buf.offset = buf.length = 0;
+    // ensure there's enough room in the buffer
+    int bytesNeeded = values.length * 4;
+    if (buf.bytes.length < bytesNeeded) {
+      buf.grow(bytesNeeded);
+    }
+    
+    int upto = values.offset + values.length;
+    for (int i = values.offset; i < upto; i++) {
+      int value = values.ints[i];
+      buf.bytes[buf.length++] = (byte) (value >>> 24);
+      buf.bytes[buf.length++] = (byte) ((value >> 16) & 0xFF);
+      buf.bytes[buf.length++] = (byte) ((value >> 8) & 0xFF);
+      buf.bytes[buf.length++] = (byte) (value & 0xFF);
+    }
   }
 
   @Override

@@ -53,6 +53,7 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
   public static final String PROTECTED_TOKENS = "protected";
   public static final String TYPES = "types";
   
+  @Override
   public void inform(ResourceLoader loader) throws IOException {
     String wordFiles = args.get(PROTECTED_TOKENS);
     if (wordFiles != null) {  
@@ -106,6 +107,7 @@ public class WordDelimiterFilterFactory extends TokenFilterFactory implements Re
     }
   }
 
+  @Override
   public WordDelimiterFilter create(TokenStream input) {
     return new WordDelimiterFilter(input, typeTable == null ? WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE : typeTable,
                                    flags, protectedWords);

@@ -51,6 +51,7 @@ public class ExtractReuters {
 
   public void extract() {
     File[] sgmFiles = reutersDir.listFiles(new FileFilter() {
+      @Override
       public boolean accept(File file) {
         return file.getName().endsWith(".sgm");
       }

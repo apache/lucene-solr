@@ -28,6 +28,9 @@ public interface CoreAdminParams
   /** What Core are we talking about **/
   public final static String CORE = "core";
 
+  /** Should the STATUS request include index info **/
+  public final static String INDEX_INFO = "indexInfo";
+
   /** Persistent -- should it save the cores state? **/
   public final static String PERSISTENT = "persistent";
   
@@ -36,6 +39,8 @@ public interface CoreAdminParams
 
   /** If you rename something, what is the new name **/
   public final static String DATA_DIR = "dataDir";
+  
+  public final static String ULOG_DIR = "ulogDir";
 
   /** Name of the other core in actions involving 2 cores **/
   public final static String OTHER = "other";

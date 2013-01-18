@@ -301,20 +301,24 @@ public class TestJoinUtil extends LuceneTestCase {
 
           int docBase;
 
+          @Override
           public void collect(int doc) throws IOException {
             actualResult.set(doc + docBase);
             topScoreDocCollector.collect(doc);
           }
 
+          @Override
           public void setNextReader(AtomicReaderContext context) {
             docBase = context.docBase;
             topScoreDocCollector.setNextReader(context);
           }
 
+          @Override
           public void setScorer(Scorer scorer) throws IOException {
             topScoreDocCollector.setScorer(scorer);
           }
 
+          @Override
           public boolean acceptsDocsOutOfOrder() {
             return scoreDocsInOrder;
           }
@@ -465,6 +469,7 @@ public class TestJoinUtil extends LuceneTestCase {
           private TermsEnum docTermsEnum;
           private DocTermOrds.TermOrdsIterator reuse;
 
+          @Override
           public void collect(int doc) throws IOException {
             if (docTermOrds.isEmpty()) {
               return;
@@ -497,16 +502,19 @@ public class TestJoinUtil extends LuceneTestCase {
             } while (chunk >= buffer.length);
           }
 
+          @Override
           public void setNextReader(AtomicReaderContext context) throws IOException {
             docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), fromField);
             docTermsEnum = docTermOrds.getOrdTermsEnum(context.reader());
             reuse = null;
           }
 
+          @Override
           public void setScorer(Scorer scorer) {
             this.scorer = scorer;
           }
 
+          @Override
           public boolean acceptsDocsOutOfOrder() {
             return false;
           }
@@ -518,6 +526,7 @@ public class TestJoinUtil extends LuceneTestCase {
           private FieldCache.DocTerms terms;
           private final BytesRef spare = new BytesRef();
 
+          @Override
           public void collect(int doc) throws IOException {
             BytesRef joinValue = terms.getTerm(doc, spare);
             if (joinValue == null) {
@@ -531,14 +540,17 @@ public class TestJoinUtil extends LuceneTestCase {
             joinScore.addScore(scorer.score());
           }
 
+          @Override
           public void setNextReader(AtomicReaderContext context) throws IOException {
             terms = FieldCache.DEFAULT.getTerms(context.reader(), fromField);
           }
 
+          @Override
           public void setScorer(Scorer scorer) {
             this.scorer = scorer;
           }
 
+          @Override
           public boolean acceptsDocsOutOfOrder() {
             return false;
           }
@@ -558,7 +570,7 @@ public class TestJoinUtil extends LuceneTestCase {
             for (BytesRef joinValue : joinValues) {
               termsEnum = terms.iterator(termsEnum);
               if (termsEnum.seekExact(joinValue, true)) {
-                docsEnum = termsEnum.docs(slowCompositeReader.getLiveDocs(), docsEnum, 0);
+                docsEnum = termsEnum.docs(slowCompositeReader.getLiveDocs(), docsEnum, DocsEnum.FLAG_NONE);
                 JoinScore joinScore = joinValueToJoinScores.get(joinValue);
 
                 for (int doc = docsEnum.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docsEnum.nextDoc()) {
@@ -579,6 +591,7 @@ public class TestJoinUtil extends LuceneTestCase {
             private DocTermOrds.TermOrdsIterator reuse;
             private int docBase;
 
+            @Override
             public void collect(int doc) throws IOException {
               if (docTermOrds.isEmpty()) {
                 return;
@@ -611,6 +624,7 @@ public class TestJoinUtil extends LuceneTestCase {
               } while (chunk >= buffer.length);
             }
 
+            @Override
             public void setNextReader(AtomicReaderContext context) throws IOException {
               docBase = context.docBase;
               docTermOrds = FieldCache.DEFAULT.getDocTermOrds(context.reader(), toField);
@@ -618,7 +632,9 @@ public class TestJoinUtil extends LuceneTestCase {
               reuse = null;
             }
 
+            @Override
             public boolean acceptsDocsOutOfOrder() {return false;}
+            @Override
             public void setScorer(Scorer scorer) {}
           });
         }
@@ -629,6 +645,7 @@ public class TestJoinUtil extends LuceneTestCase {
           private int docBase;
           private final BytesRef spare = new BytesRef();
 
+          @Override
           public void collect(int doc) {
             JoinScore joinScore = joinValueToJoinScores.get(terms.getTerm(doc, spare));
             if (joinScore == null) {
@@ -637,12 +654,15 @@ public class TestJoinUtil extends LuceneTestCase {
             docToJoinScore.put(docBase + doc, joinScore);
           }
 
+          @Override
           public void setNextReader(AtomicReaderContext context) throws IOException {
             terms = FieldCache.DEFAULT.getTerms(context.reader(), toField);
             docBase = context.docBase;
           }
 
+          @Override
           public boolean acceptsDocsOutOfOrder() {return false;}
+          @Override
           public void setScorer(Scorer scorer) {}
         });
       }
@@ -669,6 +689,7 @@ public class TestJoinUtil extends LuceneTestCase {
     List<Map.Entry<Integer,JoinScore>> hits = new ArrayList<Map.Entry<Integer, JoinScore>>(hitsToJoinScores.entrySet());
     Collections.sort(hits, new Comparator<Map.Entry<Integer, JoinScore>>() {
 
+      @Override
       public int compare(Map.Entry<Integer, JoinScore> hit1, Map.Entry<Integer, JoinScore> hit2) {
         float score1 = hit1.getValue().score(scoreMode);
         float score2 = hit2.getValue().score(scoreMode);

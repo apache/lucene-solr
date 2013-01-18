@@ -2,7 +2,9 @@ package org.apache.lucene.facet.index.params;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 
@@ -24,79 +26,71 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  */
 
 /**
- * A FacetIndexingParams that utilizes different category lists, defined by the
- * dimension specified CategoryPaths (see
- * {@link PerDimensionIndexingParams#addCategoryListParams(CategoryPath, CategoryListParams)}
+ * A {@link FacetIndexingParams} that utilizes different category lists, defined
+ * by the dimension specified by a {@link CategoryPath category} (see
+ * {@link #PerDimensionIndexingParams(Map, CategoryListParams)}.
  * <p>
  * A 'dimension' is defined as the first or "zero-th" component in a
- * CategoryPath. For example, if a CategoryPath is defined as
- * "/Author/American/Mark Twain", then the dimension is "Author".
- * <p>
- * This class also uses the 'default' CategoryListParams (as specified by
- * {@link CategoryListParams#CategoryListParams()} when
- * {@link #getCategoryListParams(CategoryPath)} is called for a CategoryPath
- * whose dimension component has not been specifically defined.
+ * {@link CategoryPath}. For example, if a category is defined as
+ * "Author/American/Mark Twain", then the dimension would be "Author".
  * 
  * @lucene.experimental
  */
-public class PerDimensionIndexingParams extends DefaultFacetIndexingParams {
+public class PerDimensionIndexingParams extends FacetIndexingParams {
 
-  // "Root" or "first component" of a Category Path maps to a
-  // CategoryListParams
-  private final Map<String, CategoryListParams> clParamsMap = new HashMap<String, CategoryListParams>();
+  private final Map<String, CategoryListParams> clParamsMap;
 
   /**
-   * Construct with the default {@link CategoryListParams} as the default
-   * CategoryListParams for unspecified CategoryPaths.
-   */
-  public PerDimensionIndexingParams() {
-    this(new CategoryListParams());
-  }
-
-  /**
-   * Construct with the included categoryListParams as the default
-   * CategoryListParams for unspecified CategoryPaths.
+   * Initializes a new instance with the given dimension-to-params mapping. The
+   * dimension is considered as what's returned by
+   * {@link CategoryPath#components cp.components[0]}.
    * 
-   * @param categoryListParams
-   *            the default categoryListParams to use
+   * <p>
+   * <b>NOTE:</b> for any dimension whose {@link CategoryListParams} is not
+   * defined in the mapping, a default {@link CategoryListParams} will be used.
+   * 
+   * @see #PerDimensionIndexingParams(Map, CategoryListParams)
    */
-  public PerDimensionIndexingParams(CategoryListParams categoryListParams) {
-    super(categoryListParams);
+  public PerDimensionIndexingParams(Map<CategoryPath, CategoryListParams> paramsMap) {
+    this(paramsMap, DEFAULT_CATEGORY_LIST_PARAMS);
   }
 
   /**
-   * Get all the categoryListParams, including the default.
+   * Same as {@link #PerDimensionIndexingParams(Map)}, only the given
+   * {@link CategoryListParams} will be used for any dimension that is not
+   * specified in the given mapping.
    */
-  @Override
-  public Iterable<CategoryListParams> getAllCategoryListParams() {
-    ArrayList<CategoryListParams> vals = 
-      new ArrayList<CategoryListParams>(clParamsMap.values());
-    for (CategoryListParams clp : super.getAllCategoryListParams()) {
-      vals.add(clp);
+  public PerDimensionIndexingParams(Map<CategoryPath, CategoryListParams> paramsMap, 
+      CategoryListParams categoryListParams) {
+    super(categoryListParams);
+    clParamsMap = new HashMap<String,CategoryListParams>();
+    for (Entry<CategoryPath, CategoryListParams> e : paramsMap.entrySet()) {
+      clParamsMap.put(e.getKey().components[0], e.getValue());
     }
+  }
+
+  @Override
+  public List<CategoryListParams> getAllCategoryListParams() {
+    ArrayList<CategoryListParams> vals = new ArrayList<CategoryListParams>(clParamsMap.values());
+    vals.add(clParams); // add the default too
     return vals;
   }
 
   /**
-   * Get the CategoryListParams based on the dimension or "zero-th category"
-   * of the specified CategoryPath.
+   * Returns the {@link CategoryListParams} for the corresponding dimension
+   * which is returned by {@code category.getComponent(0)}. If {@code category}
+   * is {@code null}, or was not specified in the map given to the constructor,
+   * returns the default {@link CategoryListParams}.
    */
   @Override
   public CategoryListParams getCategoryListParams(CategoryPath category) {
     if (category != null) {
-      CategoryListParams clParams = clParamsMap.get(category.getComponent(0));
+      CategoryListParams clParams = clParamsMap.get(category.components[0]);
       if (clParams != null) {
         return clParams;
       }
     }
-    return super.getCategoryListParams(category);
+    return clParams;
   }
 
-  /**
-   * Add a CategoryListParams for a given CategoryPath's dimension or
-   * "zero-th" category.
-   */
-  public void addCategoryListParams(CategoryPath category, CategoryListParams clParams) {
-    clParamsMap.put(category.getComponent(0), clParams);
-  }
 }

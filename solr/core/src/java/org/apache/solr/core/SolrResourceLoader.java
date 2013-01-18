@@ -159,6 +159,7 @@ public class SolrResourceLoader implements ResourceLoader
     if (file.canRead()) {
       this.classLoader = replaceClassLoader(classLoader, file.getParentFile(),
                                             new FileFilter() {
+                                              @Override
                                               public boolean accept(File pathname) {
                                                 return pathname.equals(file);
                                               }
@@ -288,6 +289,7 @@ public class SolrResourceLoader implements ResourceLoader
    * Override this method to customize loading resources.
    *@return the stream for the named resource
    */
+  @Override
   public InputStream openResource(String resource) throws IOException {
     InputStream is=null;
     try {
@@ -449,6 +451,7 @@ public class SolrResourceLoader implements ResourceLoader
   
   static final String empty[] = new String[0];
   
+  @Override
   public <T> T newInstance(String name, Class<T> expectedType) {
     return newInstance(name, expectedType, empty);
   }

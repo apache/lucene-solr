@@ -176,6 +176,7 @@ public class TestFastLRUCache extends LuceneTestCase {
 
   private CacheRegenerator createCodeRegenerator() {
     CacheRegenerator cr = new CacheRegenerator() {
+        @Override
         public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache,
                                       SolrCache oldCache, Object oldKey, Object oldVal) {
           newCache.put(oldKey, oldVal);

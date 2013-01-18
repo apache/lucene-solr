@@ -34,6 +34,7 @@ public interface QueryNode {
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser);
 
   /** for printing */
+  @Override
   public String toString();
 
   /** get Children nodes */

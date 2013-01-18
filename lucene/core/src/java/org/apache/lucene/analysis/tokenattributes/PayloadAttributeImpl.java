@@ -36,10 +36,12 @@ public class PayloadAttributeImpl extends AttributeImpl implements PayloadAttrib
     this.payload = payload;
   }
   
+  @Override
   public BytesRef getPayload() {
     return this.payload;
   }
 
+  @Override
   public void setPayload(BytesRef payload) {
     this.payload = payload;
   }

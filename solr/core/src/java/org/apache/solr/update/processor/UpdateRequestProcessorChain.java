@@ -81,6 +81,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
    * @see RunUpdateProcessorFactory
    * @see DistributedUpdateProcessorFactory
    */
+  @Override
   public void init(PluginInfo info) {
     final String infomsg = "updateRequestProcessorChain \"" + 
       (null != info.name ? info.name : "") + "\"" + 
@@ -144,8 +145,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
    * If the <code>DISTRIB_UPDATE_PARAM</code> is present in the request and is 
    * non-blank, then any factory in this chain prior to the instance of 
    * <code>{@link DistributingUpdateProcessorFactory}</code> will be skipped, 
-   * and the <code>UpdateRequestProcessor</code> returned will be from that 
-   * <code>DistributingUpdateProcessorFactory</code>
+   * except for the log update processor factory.
    *
    * @see UpdateRequestProcessorFactory#getInstance
    * @see DistributingUpdateProcessorFactory#DISTRIB_UPDATE_PARAM
@@ -156,18 +156,28 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     UpdateRequestProcessor processor = null;
     UpdateRequestProcessor last = null;
     
-    final String distribPhase = req.getParams().get
-      (DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM, "");
-    final boolean skipToDistrib = ! distribPhase.trim().isEmpty();
+    final String distribPhase = req.getParams().get(DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
+    final boolean skipToDistrib = distribPhase != null;
+    boolean afterDistrib = true;  // we iterate backwards, so true to start
 
     for (int i = chain.length-1; i>=0; i--) {
-      processor = chain[i].getInstance(req, rsp, last);
-      last = processor == null ? last : processor;
-      if (skipToDistrib 
-          && chain[i] instanceof DistributingUpdateProcessorFactory) {
-        break;
+      UpdateRequestProcessorFactory factory = chain[i];
+
+      if (skipToDistrib) {
+        if (afterDistrib) {
+          if (factory instanceof DistributingUpdateProcessorFactory) {
+            afterDistrib = false;
+          }
+        } else if (!(factory instanceof LogUpdateProcessorFactory)) {    // TODO: use a marker interface for this?
+          // skip anything that is not the log factory
+          continue;
+        }
       }
+
+      processor = factory.getInstance(req, rsp, last);
+      last = processor == null ? last : processor;
     }
+
     return last;
   }
 

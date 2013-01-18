@@ -26,6 +26,7 @@ import org.apache.lucene.util.BytesRef;
  *
  **/
 public abstract class AbstractEncoder implements PayloadEncoder {
+  @Override
   public BytesRef encode(char[] buffer) {
     return encode(buffer, 0, buffer.length);
   }

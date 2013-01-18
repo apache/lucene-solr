@@ -99,6 +99,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   }
 
   // make sure any threads stop retrying
+  @Override
   public void close() {
     close = true;
     log.warn("Stopping recovery for zkNodeName=" + coreZkNodeName + "core=" + coreName );
@@ -174,7 +175,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
   private void commitOnLeader(String leaderUrl) throws SolrServerException, IOException {
     HttpSolrServer server = new HttpSolrServer(leaderUrl);
     server.setConnectionTimeout(30000);
-    server.setSoTimeout(30000);
+    server.setSoTimeout(60000);
     UpdateRequest ureq = new UpdateRequest();
     ureq.setParams(new ModifiableSolrParams());
     ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -189,7 +190,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       IOException {
     HttpSolrServer server = new HttpSolrServer(leaderBaseUrl);
     server.setConnectionTimeout(45000);
-    server.setSoTimeout(45000);
+    server.setSoTimeout(120000);
     WaitForState prepCmd = new WaitForState();
     prepCmd.setCoreName(leaderCoreName);
     prepCmd.setNodeName(zkController.getNodeName());
@@ -317,7 +318,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
       try {
         CloudDescriptor cloudDesc = core.getCoreDescriptor()
             .getCloudDescriptor();
-        ZkNodeProps leaderprops = zkStateReader.getLeaderProps(
+        ZkNodeProps leaderprops = zkStateReader.getLeaderRetry(
             cloudDesc.getCollectionName(), cloudDesc.getShardId());
       
         String leaderBaseUrl = leaderprops.getStr(ZkStateReader.BASE_URL_PROP);
@@ -340,6 +341,18 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         }
         
         zkController.publish(core.getCoreDescriptor(), ZkStateReader.RECOVERING);
+        
+        
+        sendPrepRecoveryCmd(leaderBaseUrl, leaderCoreName);
+        
+        // we wait a bit so that any updates on the leader
+        // that started before they saw recovering state 
+        // are sure to have finished
+        try {
+          Thread.sleep(2000);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
 
         // first thing we just try to sync
         if (firstTime) {
@@ -386,17 +399,6 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
         }
 
         log.info("Starting Replication Recovery. core=" + coreName);
-        
-        sendPrepRecoveryCmd(leaderBaseUrl, leaderCoreName);
-        
-        // we wait a bit so that any updates on the leader
-        // that started before they saw recovering state 
-        // are sure to have finished
-        try {
-          Thread.sleep(2000);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
         
         log.info("Begin buffering updates. core=" + coreName);
         ulog.bufferUpdates();
@@ -532,6 +534,7 @@ public class RecoveryStrategy extends Thread implements ClosableThread {
     return future;
   }
 
+  @Override
   public boolean isClosed() {
     return close;
   }

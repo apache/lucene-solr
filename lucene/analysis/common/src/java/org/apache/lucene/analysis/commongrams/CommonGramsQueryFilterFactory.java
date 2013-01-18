@@ -50,6 +50,7 @@ public class CommonGramsQueryFilterFactory extends TokenFilterFactory
     assureMatchVersion();
   }
 
+  @Override
   public void inform(ResourceLoader loader) throws IOException {
     String commonWordFiles = args.get("words");
     ignoreCase = getBoolean("ignoreCase", false);
@@ -82,6 +83,7 @@ public class CommonGramsQueryFilterFactory extends TokenFilterFactory
   /**
    * Create a CommonGramsFilter and wrap it with a CommonGramsQueryFilter
    */
+  @Override
   public CommonGramsQueryFilter create(TokenStream input) {
     CommonGramsFilter commonGrams = new CommonGramsFilter(luceneMatchVersion, input, commonWords);
     CommonGramsQueryFilter commonGramsQuery = new CommonGramsQueryFilter(

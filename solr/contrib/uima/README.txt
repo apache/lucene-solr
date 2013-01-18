@@ -19,7 +19,7 @@ To start using Solr UIMA Metadata Extraction Library you should go through the f
 
    <lib dir="../../contrib/uima/lib" />
    <lib dir="../../contrib/uima/lucene-libs" />
-   <lib dir="../../dist/" regex="apache-solr-uima-\d.*\.jar" />
+   <lib dir="../../dist/" regex="solr-uima-\d.*\.jar" />
 
 2. modify your schema.xml adding the fields you want to be hold metadata specifying proper values for type, indexed, stored and multiValued options:
 

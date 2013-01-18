@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * @lucene.experimental
  */
 public class SmartChineseWordTokenFilterFactory extends TokenFilterFactory {
+  @Override
   public TokenFilter create(TokenStream input) {
       return new WordTokenFilter(input);
   }

@@ -103,6 +103,7 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
    *
    * @return An iterator over the document analyses map.
    */
+  @Override
   public Iterator<Map.Entry<String, DocumentAnalysis>> iterator() {
     return documentAnalysisByKey.entrySet().iterator();
   }
@@ -152,6 +153,7 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
      *
      * @return An iterator over the field analyses map.
      */
+    @Override
     public Iterator<Map.Entry<String, FieldAnalysis>> iterator() {
       return fieldAnalysisByFieldName.entrySet().iterator();
     }

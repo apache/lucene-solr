@@ -168,6 +168,7 @@ public class DistributedQueue {
     
     public LatchChildWatcher() {}
     
+    @Override
     public void process(WatchedEvent event) {
       LOG.info("Watcher fired on path: " + event.getPath() + " state: "
           + event.getState() + " type " + event.getType());

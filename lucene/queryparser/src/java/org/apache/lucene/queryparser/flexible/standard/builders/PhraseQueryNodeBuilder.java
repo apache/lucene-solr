@@ -37,6 +37,7 @@ public class PhraseQueryNodeBuilder implements StandardQueryBuilder {
     // empty constructor
   }
 
+  @Override
   public PhraseQuery build(QueryNode queryNode) throws QueryNodeException {
     TokenizedPhraseQueryNode phraseNode = (TokenizedPhraseQueryNode) queryNode;
 

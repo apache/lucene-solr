@@ -32,6 +32,7 @@ public abstract class Fields implements Iterable<String> {
 
   /** Returns an iterator that will step through all fields
    *  names.  This will not return null.  */
+  @Override
   public abstract Iterator<String> iterator();
 
   /** Get the {@link Terms} for this field.  This will return

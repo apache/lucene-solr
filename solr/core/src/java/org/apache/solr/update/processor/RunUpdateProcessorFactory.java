@@ -18,7 +18,8 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
-
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.*;
@@ -58,6 +59,13 @@ class RunUpdateProcessor extends UpdateRequestProcessor
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
+    
+    if (DistributedUpdateProcessor.isAtomicUpdate(cmd)) {
+      throw new SolrException
+        (SolrException.ErrorCode.BAD_REQUEST,
+         "RunUpdateProcessor has recieved an AddUpdateCommand containing a document that appears to still contain Atomic document update operations, most likely because DistributedUpdateProcessorFactory was explicitly disabled from this updateRequestProcessorChain");
+    }
+
     updateHandler.addDoc(cmd);
     super.processAdd(cmd);
     changesSinceCommit = true;

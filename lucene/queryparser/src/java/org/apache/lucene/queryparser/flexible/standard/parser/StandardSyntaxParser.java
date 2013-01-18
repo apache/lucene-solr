@@ -58,6 +58,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
      *  @param query  the query string to be parsed.
      *  @throws ParseException if the parsing fails
      */
+    @Override
     public QueryNode parse(CharSequence query, CharSequence field) throws QueryNodeParseException {
       ReInit(new FastCharStream(new StringReader(query.toString())));
       try {

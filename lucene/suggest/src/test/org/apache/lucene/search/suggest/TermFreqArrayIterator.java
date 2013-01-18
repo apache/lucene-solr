@@ -44,6 +44,7 @@ public final class TermFreqArrayIterator implements TermFreqIterator {
     this(i.iterator());
   }
   
+  @Override
   public long weight() {
     return current.v;
   }

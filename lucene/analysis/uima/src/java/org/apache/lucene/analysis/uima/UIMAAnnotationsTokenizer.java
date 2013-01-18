@@ -47,6 +47,7 @@ public final class UIMAAnnotationsTokenizer extends BaseUIMATokenizer {
     this.offsetAttr = addAttribute(OffsetAttribute.class);
   }
 
+  @Override
   protected void initializeIterator() throws IOException {
     try {
       analyzeInput();

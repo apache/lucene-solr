@@ -68,6 +68,7 @@ public class ScoreOrderFragmentsBuilder extends BaseFragmentsBuilder {
    */
   public static class ScoreComparator implements Comparator<WeightedFragInfo> {
 
+    @Override
     public int compare( WeightedFragInfo o1, WeightedFragInfo o2 ) {
       if( o1.getTotalBoost() > o2.getTotalBoost() ) return -1;
       else if( o1.getTotalBoost() < o2.getTotalBoost() ) return 1;

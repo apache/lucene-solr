@@ -30,10 +30,10 @@
   <target name="init" depends="module-build.init,jar-lucene-core"/>
   
   <path id="classpath">
-	 <pathelement path="${analyzers-common.jar}"/>
+   <pathelement path="${analyzers-common.jar}"/>
    <pathelement path="${queryparser.jar}"/>
    <pathelement path="${lucene-core.jar}"/>
-   <pathelement location="lib/servlet-api-2.4.jar"/>
+   <fileset dir="lib"/>
   </path>
 
   <target name="javadocs" depends="javadocs-analyzers-common,javadocs-queryparser,compile-core">

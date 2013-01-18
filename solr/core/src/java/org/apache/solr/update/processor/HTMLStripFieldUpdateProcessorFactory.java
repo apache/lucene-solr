@@ -43,8 +43,7 @@ import java.io.StringWriter;
  * <pre class="prettyprint">
  * &lt;processor class="solr.HTMLStripFieldUpdateProcessorFactory"&gt;
  *   &lt;str name="typeClass"&gt;solr.StrField&lt;/str&gt;
- * &lt;/processor&gt;
- * </pre>
+ * &lt;/processor&gt;</pre>
  */
 public final class HTMLStripFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
@@ -61,6 +60,7 @@ public final class HTMLStripFieldUpdateProcessorFactory extends FieldMutatingUpd
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
     return new FieldValueMutatingUpdateProcessor(getSelector(), next) {
+      @Override
       protected Object mutateValue(final Object src) {
         if (src instanceof CharSequence) {
           CharSequence s = (CharSequence)src;

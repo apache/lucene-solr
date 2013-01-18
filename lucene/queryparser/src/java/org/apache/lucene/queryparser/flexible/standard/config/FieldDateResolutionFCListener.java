@@ -45,6 +45,7 @@ public class FieldDateResolutionFCListener implements FieldConfigListener {
     this.config = config;
   }
 
+  @Override
   public void buildFieldConfig(FieldConfig fieldConfig) {
     DateTools.Resolution dateRes = null;
     Map<CharSequence, DateTools.Resolution> dateResMap = this.config.get(ConfigurationKeys.FIELD_DATE_RESOLUTION_MAP);

@@ -113,6 +113,7 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
         this.snowballStemmer = snowballStemmer;
       }
 
+      @Override
       public CharSequence stem(CharSequence word) {
         snowballStemmer.setCurrent(word.toString());
         if (snowballStemmer.stem()) {
@@ -185,6 +186,7 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
         normalizer = new org.apache.lucene.analysis.ar.ArabicNormalizer();
       }
 
+      @Override
       public CharSequence stem(CharSequence word) {
         if (word.length() > buffer.length) {
           buffer = new char[word.length()];

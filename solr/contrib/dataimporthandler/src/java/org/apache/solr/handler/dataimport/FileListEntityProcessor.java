@@ -157,7 +157,7 @@ public class FileListEntityProcessor extends EntityProcessorBase {
       String expr = null;
       expr = m.group(1).replaceAll("NOW", "");
       try {
-        return DateFormatEvaluator.getDateMathParser(Locale.ROOT).parseMath(expr);
+        return DateFormatEvaluator.getDateMathParser(Locale.ROOT, TimeZone.getDefault()).parseMath(expr);
       } catch (ParseException exp) {
         throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
                 "Invalid expression for date", exp);
@@ -225,6 +225,7 @@ public class FileListEntityProcessor extends EntityProcessorBase {
     // Rather we make use of the fileDetails array which is populated as
     // a side affect of the accept method.
     dir.list(new FilenameFilter() {
+      @Override
       public boolean accept(File dir, String name) {
         File fileObj = new File(dir, name);
         if (fileObj.isDirectory()) {

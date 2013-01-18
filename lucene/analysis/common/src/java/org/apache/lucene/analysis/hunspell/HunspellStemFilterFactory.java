@@ -67,6 +67,7 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
    *  
    * @param loader ResourceLoader used to load the files
    */
+  @Override
   public void inform(ResourceLoader loader) throws IOException {
     assureMatchVersion();
     String dictionaryArg = args.get(PARAM_DICTIONARY);
@@ -116,6 +117,7 @@ public class HunspellStemFilterFactory extends TokenFilterFactory implements Res
    * @param tokenStream TokenStream that will be filtered
    * @return HunspellStemFilter that filters the TokenStream 
    */
+  @Override
   public TokenStream create(TokenStream tokenStream) {
     return new HunspellStemFilter(tokenStream, dictionary);
   }

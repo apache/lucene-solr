@@ -44,6 +44,7 @@ public class BooleanQueryBuilder implements QueryBuilder {
     * @see org.apache.lucene.xmlparser.QueryObjectBuilder#process(org.w3c.dom.Element)
     */
 
+  @Override
   public Query getQuery(Element e) throws ParserException {
     BooleanQuery bq = new BooleanQuery(DOMUtils.getAttribute(e, "disableCoord", false));
     bq.setMinimumNumberShouldMatch(DOMUtils.getAttribute(e, "minimumNumberShouldMatch", 0));

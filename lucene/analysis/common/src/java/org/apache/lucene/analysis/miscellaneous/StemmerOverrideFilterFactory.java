@@ -39,6 +39,7 @@ public class StemmerOverrideFilterFactory extends TokenFilterFactory implements 
   private CharArrayMap<String> dictionary = null;
   private boolean ignoreCase;
 
+  @Override
   public void inform(ResourceLoader loader) throws IOException {
     String dictionaryFiles = args.get("dictionary");
     ignoreCase = getBoolean("ignoreCase", false);
@@ -63,6 +64,7 @@ public class StemmerOverrideFilterFactory extends TokenFilterFactory implements 
     return ignoreCase;
   }
 
+  @Override
   public TokenStream create(TokenStream input) {
     return dictionary == null ? input : new StemmerOverrideFilter(luceneMatchVersion, input, dictionary);
   }

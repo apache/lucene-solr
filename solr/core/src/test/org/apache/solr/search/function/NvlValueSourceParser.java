@@ -20,9 +20,9 @@ package org.apache.solr.search.function;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SimpleFloatFunction;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.FunctionQParser;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.ValueSourceParser;
 
 /**
@@ -46,7 +46,7 @@ public class NvlValueSourceParser extends ValueSourceParser {
     private float nvlFloatValue = 0.0f;
 
     @Override
-    public ValueSource parse(FunctionQParser fp) throws ParseException {
+    public ValueSource parse(FunctionQParser fp) throws SyntaxError {
       ValueSource source = fp.parseValueSource();
       final float nvl = fp.parseFloat();
 

@@ -57,6 +57,7 @@ public class DirContentSource extends ContentSource {
   public static class Iterator implements java.util.Iterator<File> {
 
     static class Comparator implements java.util.Comparator<File> {
+      @Override
       public int compare(File _a, File _b) {
         String a = _a.toString();
         String b = _b.toString();
@@ -106,12 +107,14 @@ public class DirContentSource extends ContentSource {
     void push(File f) {
       push(f.listFiles(new FileFilter() {
 
+        @Override
         public boolean accept(File file) {
           return file.isDirectory();
         }
       }));
       push(f.listFiles(new FileFilter() {
 
+        @Override
         public boolean accept(File file) {
           return file.getName().endsWith(".txt");
         }
@@ -131,10 +134,12 @@ public class DirContentSource extends ContentSource {
       return count;
     }
 
+    @Override
     public boolean hasNext() {
       return stack.size() > 0;
     }
     
+    @Override
     public File next() {
       assert hasNext();
       count++;
@@ -144,6 +149,7 @@ public class DirContentSource extends ContentSource {
       return object;
     }
 
+    @Override
     public void remove() {
       throw new RuntimeException("cannot");
     }

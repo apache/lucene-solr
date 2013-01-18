@@ -85,6 +85,7 @@ public abstract class QueryNodeProcessorImpl implements QueryNodeProcessor {
     this.queryConfig = queryConfigHandler;
   }
 
+  @Override
   public QueryNode process(QueryNode queryTree) throws QueryNodeException {
     return processIteration(queryTree);
   }
@@ -181,6 +182,7 @@ public abstract class QueryNodeProcessorImpl implements QueryNodeProcessor {
    * @see QueryNodeProcessor#getQueryConfigHandler()
    * @see QueryConfigHandler
    */
+  @Override
   public void setQueryConfigHandler(QueryConfigHandler queryConfigHandler) {
     this.queryConfig = queryConfigHandler;
   }
@@ -194,6 +196,7 @@ public abstract class QueryNodeProcessorImpl implements QueryNodeProcessor {
    * @see QueryNodeProcessor#setQueryConfigHandler(QueryConfigHandler)
    * @see QueryConfigHandler
    */
+  @Override
   public QueryConfigHandler getQueryConfigHandler() {
     return this.queryConfig;
   }

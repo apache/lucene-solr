@@ -30,9 +30,11 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
+import org.junit.AfterClass;
 
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
+  private static String tmpSolrHome;
   int port = 0;
   static final String context = "/solr";
 
@@ -40,9 +42,17 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml");
+    createTempDir();
+    tmpSolrHome = TEMP_DIR + File.separator + AnalysisAfterCoreReloadTest.class.getSimpleName() + System.currentTimeMillis();
+    FileUtils.copyDirectory(new File(TEST_HOME()), new File(tmpSolrHome).getAbsoluteFile());
+    initCore("solrconfig.xml", "schema.xml", new File(tmpSolrHome).getAbsolutePath());
   }
 
+  @AfterClass
+  public static void AfterClass() throws Exception {
+    FileUtils.deleteDirectory(new File(tmpSolrHome).getAbsoluteFile());
+  }
+  
   public void testStopwordsAfterCoreReload() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField( "id", "42" );

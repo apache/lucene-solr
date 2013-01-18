@@ -36,6 +36,7 @@ public class TermRangeQueryNodeBuilder implements StandardQueryBuilder {
   // empty constructor
   }
   
+  @Override
   public TermRangeQuery build(QueryNode queryNode) throws QueryNodeException {
     TermRangeQueryNode rangeNode = (TermRangeQueryNode) queryNode;
     FieldQueryNode upper = rangeNode.getUpperBound();

@@ -16,22 +16,14 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.function.*;
-
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * Create a range query over a function.
@@ -46,6 +38,7 @@ import java.util.Map;
 public class FunctionRangeQParserPlugin extends QParserPlugin {
   public static String NAME = "frange";
 
+  @Override
   public void init(NamedList args) {
   }
 
@@ -56,7 +49,7 @@ public class FunctionRangeQParserPlugin extends QParserPlugin {
       String funcStr;
 
       @Override
-      public Query parse() throws ParseException {
+      public Query parse() throws SyntaxError {
         funcStr = localParams.get(QueryParsing.V, null);
         Query funcQ = subQuery(funcStr, FunctionQParserPlugin.NAME).getQuery();
         if (funcQ instanceof FunctionQuery) {

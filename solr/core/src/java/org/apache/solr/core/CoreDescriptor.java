@@ -31,13 +31,14 @@ public class CoreDescriptor {
   protected String name;
   protected String instanceDir;
   protected String dataDir;
+  protected String ulogDir;
   protected String configName;
   protected String propertiesName;
   protected String schemaName;
   private final CoreContainer coreContainer;
   private Properties coreProperties;
   private boolean loadOnStartup = true;
-  private boolean swappable = false;
+  private boolean isTransient = false;
 
 
   private CloudDescriptor cloudDesc;
@@ -218,11 +219,19 @@ public class CoreDescriptor {
     this.loadOnStartup = loadOnStartup;
   }
 
-  public boolean isSwappable() {
-    return swappable;
+  public boolean isTransient() {
+    return isTransient;
   }
 
-  public void setSwappable(boolean swappable) {
-    this.swappable = swappable;
+  public void setTransient(boolean aTransient) {
+    this.isTransient = aTransient;
+  }
+
+  public String getUlogDir() {
+    return ulogDir;
+  }
+
+  public void setUlogDir(String ulogDir) {
+    this.ulogDir = ulogDir;
   }
 }

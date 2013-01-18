@@ -35,6 +35,7 @@ import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseIn
  */
 public class SingleFragListBuilder implements FragListBuilder {
 
+  @Override
   public FieldFragList createFieldFragList(FieldPhraseList fieldPhraseList,
       int fragCharSize) {
 

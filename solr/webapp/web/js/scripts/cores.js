@@ -36,7 +36,7 @@ sammy.bind
         },
         success : function( response, text_status, xhr )
         {
-          app.cores_data = response.status;
+          app.set_cores_data( response );
           params.callback( app.cores_data );
         },
         error : function( xhr, text_status, error_thrown)
@@ -189,7 +189,7 @@ sammy.get
                 // index-data
 
                 $( '.lastModified dd', index_data_element )
-                  .html( core_data.index.lastModified );
+                  .html( core_data.index.lastModified || '-' );
 
                 $( '.version dd', index_data_element )
                   .html( core_data.index.version );
@@ -199,6 +199,9 @@ sammy.get
 
                 $( '.maxDoc dd', index_data_element )
                   .html( core_data.index.maxDoc );
+                
+                $( '.deletedDocs dd', index_data_element )
+                  .html( core_data.index.deletedDocs || '-' );
 
                 $( '.optimized dd', index_data_element )
                   .addClass( !core_data.index.hasDeletions ? 'ico-1' : 'ico-0' );

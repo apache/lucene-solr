@@ -127,18 +127,21 @@ public class ZkStateReader {
   
   private boolean closeClient = false;
 
-  private ZkCmdExecutor cmdExecutor = new ZkCmdExecutor();
+  private ZkCmdExecutor cmdExecutor;
   
   public ZkStateReader(SolrZkClient zkClient) {
     this.zkClient = zkClient;
+    initZkCmdExecutor(zkClient.getZkClientTimeout());
   }
-  
+
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) throws InterruptedException, TimeoutException, IOException {
     closeClient = true;
+    initZkCmdExecutor(zkClientTimeout);
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
         // on reconnect, reload cloud info
         new OnReconnect() {
 
+          @Override
           public void command() {
             try {
               ZkStateReader.this.createClusterStateWatchersAndUpdate();
@@ -156,6 +159,11 @@ public class ZkStateReader {
 
           }
         });
+  }
+  
+  private void initZkCmdExecutor(int zkClientTimeout) {
+    // we must retry at least as long as the session timeout
+    cmdExecutor = new ZkCmdExecutor(zkClientTimeout);
   }
   
   // load and publish a new CollectionInfo
@@ -186,7 +194,7 @@ public class ZkStateReader {
           if (EventType.None.equals(event.getType())) {
             return;
           }
-          log.info("A cluster state change has occurred - updating... ({})", ZkStateReader.this.clusterState == null ? 0 : ZkStateReader.this.clusterState.getLiveNodes().size());
+          log.info("A cluster state change: {}, has occurred - updating... (live nodes size: {})", (event) , ZkStateReader.this.clusterState == null ? 0 : ZkStateReader.this.clusterState.getLiveNodes().size());
           try {
             
             // delayed approach
@@ -317,6 +325,7 @@ public class ZkStateReader {
       clusterStateUpdateScheduled = true;
       updateCloudExecutor.schedule(new Runnable() {
         
+        @Override
         public void run() {
           log.info("Updating cluster state from ZooKeeper...");
           synchronized (getUpdateLock()) {
@@ -391,25 +400,28 @@ public class ZkStateReader {
   
   public String getLeaderUrl(String collection, String shard, int timeout)
       throws InterruptedException, KeeperException {
-    ZkCoreNodeProps props = new ZkCoreNodeProps(getLeaderProps(collection,
+    ZkCoreNodeProps props = new ZkCoreNodeProps(getLeaderRetry(collection,
         shard, timeout));
     return props.getCoreUrl();
   }
   
   /**
-   * Get shard leader properties.
+   * Get shard leader properties, with retry if none exist.
    */
-  public ZkNodeProps getLeaderProps(String collection, String shard) throws InterruptedException {
-    return getLeaderProps(collection, shard, 1000);
+  public Replica getLeaderRetry(String collection, String shard) throws InterruptedException {
+    return getLeaderRetry(collection, shard, 1000);
   }
-  
-  public ZkNodeProps getLeaderProps(String collection, String shard, int timeout) throws InterruptedException {
+
+  /**
+   * Get shard leader properties, with retry if none exist.
+   */
+  public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException {
     long timeoutAt = System.currentTimeMillis() + timeout;
     while (System.currentTimeMillis() < timeoutAt) {
       if (clusterState != null) {    
-        final ZkNodeProps nodeProps = clusterState.getLeader(collection, shard);     
-        if (nodeProps != null && getClusterState().liveNodesContain((String) nodeProps.get(ZkStateReader.NODE_NAME_PROP))) {
-          return nodeProps;
+        Replica replica = clusterState.getLeader(collection, shard);
+        if (replica != null && getClusterState().liveNodesContain(replica.getNodeName())) {
+          return replica;
         }
       }
       Thread.sleep(50);
@@ -450,7 +462,7 @@ public class ZkStateReader {
     if (clusterState == null) {
       return null;
     }
-    Map<String,Slice> slices = clusterState.getSlices(collection);
+    Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     if (slices == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
           "Could not find collection in zk: " + collection + " "

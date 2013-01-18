@@ -17,6 +17,9 @@ package org.apache.lucene.spatial.query;
  * limitations under the License.
  */
 
+import com.spatial4j.core.shape.Shape;
+import com.spatial4j.core.shape.SpatialRelation;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,14 +28,16 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * A clause that compares a stored geometry to a supplied geometry.
+ * A clause that compares a stored geometry to a supplied geometry. For more
+ * explanation of each operation, consider looking at the source implementation
+ * of {@link #evaluate(com.spatial4j.core.shape.Shape, com.spatial4j.core.shape.Shape)}.
  *
  * @see <a href="http://edndoc.esri.com/arcsde/9.1/general_topics/understand_spatial_relations.htm">
  *   ESRIs docs on spatial relations</a>
  *
  * @lucene.experimental
  */
-public class SpatialOperation implements Serializable {
+public abstract class SpatialOperation implements Serializable {
   // Private registry
   private static final Map<String, SpatialOperation> registry = new HashMap<String, SpatialOperation>();
   private static final List<SpatialOperation> list = new ArrayList<SpatialOperation>();
@@ -40,15 +45,55 @@ public class SpatialOperation implements Serializable {
   // Geometry Operations
 
   /** Bounding box of the *indexed* shape. */
-  public static final SpatialOperation BBoxIntersects = new SpatialOperation("BBoxIntersects", true, false, false);
+  public static final SpatialOperation BBoxIntersects = new SpatialOperation("BBoxIntersects", true, false, false) {
+    @Override
+    public boolean evaluate(Shape indexedShape, Shape queryShape) {
+      return indexedShape.getBoundingBox().relate(queryShape).intersects();
+    }
+  };
   /** Bounding box of the *indexed* shape. */
-  public static final SpatialOperation BBoxWithin     = new SpatialOperation("BBoxWithin", true, false, false);
-  public static final SpatialOperation Contains       = new SpatialOperation("Contains", true, true, false);
-  public static final SpatialOperation Intersects     = new SpatialOperation("Intersects", true, false, false);
-  public static final SpatialOperation IsEqualTo      = new SpatialOperation("IsEqualTo", false, false, false);
-  public static final SpatialOperation IsDisjointTo   = new SpatialOperation("IsDisjointTo", false, false, false);
-  public static final SpatialOperation IsWithin       = new SpatialOperation("IsWithin", true, false, true);
-  public static final SpatialOperation Overlaps       = new SpatialOperation("Overlaps", true, false, true);
+  public static final SpatialOperation BBoxWithin     = new SpatialOperation("BBoxWithin", true, false, false) {
+    @Override
+    public boolean evaluate(Shape indexedShape, Shape queryShape) {
+      return indexedShape.getBoundingBox().relate(queryShape) == SpatialRelation.WITHIN;
+    }
+  };
+  public static final SpatialOperation Contains       = new SpatialOperation("Contains", true, true, false) {
+    @Override
+    public boolean evaluate(Shape indexedShape, Shape queryShape) {
+      return indexedShape.hasArea() && indexedShape.relate(queryShape) == SpatialRelation.CONTAINS;
+    }
+  };
+  public static final SpatialOperation Intersects     = new SpatialOperation("Intersects", true, false, false) {
+    @Override
+    public boolean evaluate(Shape indexedShape, Shape queryShape) {
+      return indexedShape.relate(queryShape).intersects();
+    }
+  };
+  public static final SpatialOperation IsEqualTo      = new SpatialOperation("IsEqualTo", false, false, false) {
+    @Override
+    public boolean evaluate(Shape indexedShape, Shape queryShape) {
+      return indexedShape.equals(queryShape);
+    }
+  };
+  public static final SpatialOperation IsDisjointTo   = new SpatialOperation("IsDisjointTo", false, false, false) {
+    @Override
+    public boolean evaluate(Shape indexedShape, Shape queryShape) {
+      return ! indexedShape.relate(queryShape).intersects();
+    }
+  };
+  public static final SpatialOperation IsWithin       = new SpatialOperation("IsWithin", true, false, true) {
+    @Override
+    public boolean evaluate(Shape indexedShape, Shape queryShape) {
+      return queryShape.hasArea() && indexedShape.relate(queryShape) == SpatialRelation.WITHIN;
+    }
+  };
+  public static final SpatialOperation Overlaps       = new SpatialOperation("Overlaps", true, false, true) {
+    @Override
+    public boolean evaluate(Shape indexedShape, Shape queryShape) {
+      return queryShape.hasArea() && indexedShape.relate(queryShape).intersects();
+    }
+  };
 
   // Member variables
   private final boolean scoreIsMeaningful;
@@ -90,6 +135,11 @@ public class SpatialOperation implements Serializable {
     return false;
   }
 
+  /**
+   * Returns whether the relationship between indexedShape and queryShape is
+   * satisfied by this operation.
+   */
+  public abstract boolean evaluate(Shape indexedShape, Shape queryShape);
 
   // ================================================= Getters / Setters =============================================
 

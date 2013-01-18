@@ -30,11 +30,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
 
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequestExt;
@@ -43,6 +40,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.AdjustableSemaphore;
 import org.slf4j.Logger;
@@ -50,18 +48,10 @@ import org.slf4j.LoggerFactory;
 
 
 public class SolrCmdDistributor {
-  private static final int MAX_RETRIES_ON_FORWARD = 10;
+  private static final int MAX_RETRIES_ON_FORWARD = 15;
   public static Logger log = LoggerFactory.getLogger(SolrCmdDistributor.class);
 
-  static final HttpClient client;
   static AdjustableSemaphore semaphore = new AdjustableSemaphore(8);
-  
-  static {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 500);
-    params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 16);
-    client = HttpClientUtil.createClient(params);
-  }
   
   CompletionService<Request> completionService;
   Set<Future<Request>> pending;
@@ -73,6 +63,7 @@ public class SolrCmdDistributor {
   
   private final Map<Node,List<AddRequest>> adds = new HashMap<Node,List<AddRequest>>();
   private final Map<Node,List<DeleteRequest>> deletes = new HashMap<Node,List<DeleteRequest>>();
+  private UpdateShardHandler updateShardHandler;
   
   class AddRequest {
     AddUpdateCommand cmd;
@@ -88,14 +79,15 @@ public class SolrCmdDistributor {
     public boolean abortCheck();
   }
   
-  public SolrCmdDistributor(int numHosts, ThreadPoolExecutor executor) {
+  public SolrCmdDistributor(int numHosts, UpdateShardHandler updateShardHandler) {
     int maxPermits = Math.max(16, numHosts * 16);
     // limits how many tasks can actually execute at once
     if (maxPermits != semaphore.getMaxPermits()) {
       semaphore.setMaxPermits(maxPermits);
     }
-
-    completionService = new ExecutorCompletionService<Request>(executor);
+    
+    this.updateShardHandler = updateShardHandler;
+    completionService = new ExecutorCompletionService<Request>(updateShardHandler.getCmdDistribExecutor());
     pending = new HashSet<Future<Request>>();
   }
   
@@ -329,7 +321,7 @@ public class SolrCmdDistributor {
           }
   
           HttpSolrServer server = new HttpSolrServer(fullUrl,
-              client);
+              updateShardHandler.getHttpClient());
           
           if (Thread.currentThread().isInterrupted()) {
             clonedRequest.rspCode = 503;
@@ -363,10 +355,12 @@ public class SolrCmdDistributor {
       pending.add(completionService.submit(task));
     } catch (RejectedExecutionException e) {
       semaphore.release();
-      throw e;
+      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Shutting down", e);
     }
     
   }
+
+  public static Diagnostics.Callable testing_errorHook;  // called on error when forwarding request.  Currently data=[this, Request]
 
   void checkResponses(boolean block) {
 
@@ -381,7 +375,9 @@ public class SolrCmdDistributor {
           Request sreq = future.get();
           if (sreq.rspCode != 0) {
             // error during request
-            
+
+            if (testing_errorHook != null) Diagnostics.call(testing_errorHook, this, sreq);
+
             // if there is a retry url, we want to retry...
             boolean isRetry = sreq.node.checkRetry();
             boolean doRetry = false;
@@ -411,7 +407,6 @@ public class SolrCmdDistributor {
               SolrException.log(SolrCmdDistributor.log, "forwarding update to " + sreq.node.getUrl() + " failed - retrying ... ");
               Thread.sleep(500);
               submit(sreq);
-              checkResponses(block);
             } else {
               Exception e = sreq.exception;
               Error error = new Error();
@@ -460,26 +455,20 @@ public class SolrCmdDistributor {
   }
 
   public static class StdNode extends Node {
-    protected String url;
-    protected String baseUrl;
-    protected String coreName;
-    private ZkCoreNodeProps nodeProps;
+    protected ZkCoreNodeProps nodeProps;
 
     public StdNode(ZkCoreNodeProps nodeProps) {
-      this.url = nodeProps.getCoreUrl();
-      this.baseUrl = nodeProps.getBaseUrl();
-      this.coreName = nodeProps.getCoreName();
       this.nodeProps = nodeProps;
     }
     
     @Override
     public String getUrl() {
-      return url;
+      return nodeProps.getCoreUrl();
     }
     
     @Override
     public String toString() {
-      return this.getClass().getSimpleName() + ": " + url;
+      return this.getClass().getSimpleName() + ": " + nodeProps.getCoreUrl();
     }
 
     @Override
@@ -489,18 +478,21 @@ public class SolrCmdDistributor {
 
     @Override
     public String getBaseUrl() {
-      return baseUrl;
+      return nodeProps.getBaseUrl();
     }
 
     @Override
     public String getCoreName() {
-      return coreName;
+      return nodeProps.getCoreName();
     }
 
     @Override
     public int hashCode() {
       final int prime = 31;
       int result = 1;
+      String baseUrl = nodeProps.getBaseUrl();
+      String coreName = nodeProps.getCoreName();
+      String url = nodeProps.getCoreUrl();
       result = prime * result + ((baseUrl == null) ? 0 : baseUrl.hashCode());
       result = prime * result + ((coreName == null) ? 0 : coreName.hashCode());
       result = prime * result + ((url == null) ? 0 : url.hashCode());
@@ -513,18 +505,22 @@ public class SolrCmdDistributor {
       if (obj == null) return false;
       if (getClass() != obj.getClass()) return false;
       StdNode other = (StdNode) obj;
+      String baseUrl = nodeProps.getBaseUrl();
+      String coreName = nodeProps.getCoreName();
+      String url = nodeProps.getCoreUrl();
       if (baseUrl == null) {
-        if (other.baseUrl != null) return false;
-      } else if (!baseUrl.equals(other.baseUrl)) return false;
+        if (other.nodeProps.getBaseUrl() != null) return false;
+      } else if (!baseUrl.equals(other.nodeProps.getBaseUrl())) return false;
       if (coreName == null) {
-        if (other.coreName != null) return false;
-      } else if (!coreName.equals(other.coreName)) return false;
+        if (other.nodeProps.getCoreName() != null) return false;
+      } else if (!coreName.equals(other.nodeProps.getCoreName())) return false;
       if (url == null) {
-        if (other.url != null) return false;
-      } else if (!url.equals(other.url)) return false;
+        if (other.nodeProps.getCoreUrl() != null) return false;
+      } else if (!url.equals(other.nodeProps.getCoreUrl())) return false;
       return true;
     }
 
+    @Override
     public ZkCoreNodeProps getNodeProps() {
       return nodeProps;
     }

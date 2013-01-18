@@ -64,7 +64,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     chain = "dedupe"; // set the default that most tests expect
   }
 
-  void checkNumDocs(int n) {
+  static void checkNumDocs(int n) {
     SolrQueryRequest req = req();
     try {
       assertEquals(n, req.getSearcher().getIndexReader().numDocs());
@@ -347,12 +347,17 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     public UnusualList(int size) {
       super(size);
     }
+    @Override
     public String toString() {
       return "UNUSUAL:" + super.toString();
     }
   }
 
-  private void addDoc(String doc) throws Exception {
+  private void addDoc(String doc) throws Exception  {
+    addDoc(doc, chain);
+  }
+
+  static void addDoc(String doc, String chain) throws Exception {
     Map<String, String[]> params = new HashMap<String, String[]>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     params.put(UpdateParams.UPDATE_CHAIN, new String[] { chain });

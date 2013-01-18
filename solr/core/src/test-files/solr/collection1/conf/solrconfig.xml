@@ -40,7 +40,12 @@
   <!--  The DirectoryFactory to use for indexes.
         solr.StandardDirectoryFactory, the default, is filesystem based.
         solr.RAMDirectoryFactory is memory based and not persistent. -->
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}">
+    <double name="maxWriteMBPerSecDefault">1000000</double>
+    <double name="maxWriteMBPerSecFlush">2000000</double>
+    <double name="maxWriteMBPerSecMerge">3000000</double>
+    <double name="maxWriteMBPerSecRead">4000000</double>
+  </directoryFactory>
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LUCENE_CURRENT}</luceneMatchVersion>
 
@@ -90,7 +95,7 @@
     -->
     
     <updateLog enable="${enable.update.log:false}">
-  	  <str name="dir">${solr.data.dir:}</str>
+  	  <str name="dir">${solr.ulog.dir:}</str>
     </updateLog> 
 
   </updateHandler>
@@ -396,6 +401,10 @@
 				<str>spellcheck</str>
 			</arr>
  </requestHandler>
+ 
+  <requestHandler name="mltrh" class="org.apache.solr.handler.component.SearchHandler">
+
+  </requestHandler>
 
   <searchComponent name="tvComponent" class="org.apache.solr.handler.component.TermVectorComponent"/>
 

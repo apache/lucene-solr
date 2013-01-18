@@ -325,6 +325,7 @@ $.Autocompleter = function(input, options) {
 		if (!options.matchCase)
 			term = term.toLowerCase();
 		var data = cache.load(term);
+		data = null; // Avoid buggy cache and go to Solr every time 
 		// recieve the cached data
 		if (data && data.length) {
 			success(term, data);
@@ -398,7 +399,7 @@ $.Autocompleter.defaults = {
 	max: 100,
 	mustMatch: false,
 	extraParams: {},
-	selectFirst: true,
+	selectFirst: false,
 	formatItem: function(row) { return row[0]; },
 	formatMatch: null,
 	autoFill: false,

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.commons.io.FileUtils;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -46,12 +48,22 @@ public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCas
     "    </entity>\n" +
     "  </document>\n" +
     "</dataConfig>\n";
+  private static String tmpSolrHome;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
+  public static void createTempSolrHomeAndCore() throws Exception {
+    createTempDir();
+    tmpSolrHome = TEMP_DIR + File.separator + TestNonWritablePersistFile.class.getSimpleName() + System.currentTimeMillis();
+    FileUtils.copyDirectory(getFile("dih/solr"), new File(tmpSolrHome).getAbsoluteFile());
+    initCore("dataimport-solrconfig.xml", "dataimport-schema.xml", 
+             new File(tmpSolrHome).getAbsolutePath());
   }  
   
+  @AfterClass
+  public static void destroyTempSolrHomeAndCore() throws Exception {
+    FileUtils.deleteDirectory(new File(tmpSolrHome).getAbsoluteFile());
+  }
+
   @Test
   @SuppressWarnings("unchecked")
   public void testNonWritablePersistFile() throws Exception {

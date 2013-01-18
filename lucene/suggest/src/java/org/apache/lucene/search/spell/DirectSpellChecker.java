@@ -17,20 +17,12 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.PriorityQueue;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.BoostAttribute;
+import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
@@ -38,6 +30,14 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.PriorityQueue;
 
 /**
  * Simple automaton-based spellchecker.
@@ -384,9 +384,22 @@ public class DirectSpellChecker {
     }
     return suggestions;
   }
-  
-  private Collection<ScoreTerm> suggestSimilar(Term term, int numSug, 
-      IndexReader ir, int docfreq, int editDistance, float accuracy, final CharsRef spare) throws IOException {
+
+  /**
+   * Provide spelling corrections based on several parameters.
+   *
+   * @param term The term to suggest spelling corrections for
+   * @param numSug The maximum number of spelling corrections
+   * @param ir The index reader to fetch the candidate spelling corrections from
+   * @param docfreq The minimum document frequency a potential suggestion need to have in order to be included
+   * @param editDistance The maximum edit distance candidates are allowed to have
+   * @param accuracy The minimum accuracy a suggested spelling correction needs to have in order to be included
+   * @param spare a chars scratch
+   * @return a collection of spelling corrections sorted by <code>ScoreTerm</code>'s natural order.
+   * @throws IOException If I/O related errors occur
+   */
+  protected Collection<ScoreTerm> suggestSimilar(Term term, int numSug, IndexReader ir, int docfreq, int editDistance,
+                                                 float accuracy, final CharsRef spare) throws IOException {
     
     AttributeSource atts = new AttributeSource();
     MaxNonCompetitiveBoostAttribute maxBoostAtt =
@@ -449,15 +462,44 @@ public class DirectSpellChecker {
       
     return stQueue;
   }
-  
-  private static class ScoreTerm implements Comparable<ScoreTerm> {
+
+  /**
+   * Holds a spelling correction for internal usage inside {@link DirectSpellChecker}.
+   */
+  protected static class ScoreTerm implements Comparable<ScoreTerm> {
+
+    /**
+     * The actual spellcheck correction.
+     */
     public BytesRef term;
+
+    /**
+     * The boost representing the similarity from the FuzzyTermsEnum (internal similarity score)
+     */
     public float boost;
+
+    /**
+     * The df of the spellcheck correction.
+     */
     public int docfreq;
-    
+
+    /**
+     * The spellcheck correction represented as string, can be <code>null</code>.
+     */
     public String termAsString;
+
+    /**
+     * The similarity score.
+     */
     public float score;
-    
+
+    /**
+     * Constructor.
+     */
+    public ScoreTerm() {
+    }
+
+    @Override
     public int compareTo(ScoreTerm other) {
       if (term.bytesEquals(other.term))
         return 0; // consistent with equals

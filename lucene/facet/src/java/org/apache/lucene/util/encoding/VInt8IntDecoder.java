@@ -1,6 +1,9 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,33 +23,36 @@ import java.io.IOException;
  */
 
 /**
- * An {@link IntDecoder} which can decode values encoded by
- * {@link VInt8IntEncoder}.
+ * Decodes values encoded by {@link VInt8IntEncoder}.
  * 
  * @lucene.experimental
  */
-public class VInt8IntDecoder extends IntDecoder {
-
-  private boolean legalEOS = true;
+public final class VInt8IntDecoder extends IntDecoder {
 
   @Override
-  public long decode() throws IOException {
+  public void decode(BytesRef buf, IntsRef values) {
+    values.offset = values.length = 0;
+
+    // grow the buffer up front, even if by a large number of values (buf.length)
+    // that saves the need to check inside the loop for every decoded value if
+    // the buffer needs to grow.
+    if (values.ints.length < buf.length) {
+      values.ints = new int[ArrayUtil.oversize(buf.length, RamUsageEstimator.NUM_BYTES_INT)];
+    }
+
+    // it is better if the decoding is inlined like so, and not e.g.
+    // in a utility method
+    int upto = buf.offset + buf.length;
     int value = 0;
-    while (true) {
-      int first = in.read();
-      if (first < 0) {
-        if (!legalEOS) {
-          throw new IOException("Unexpected End-Of-Stream");
-        }
-        return EOS;
+    int offset = buf.offset;
+    while (offset < upto) {
+      byte b = buf.bytes[offset++];
+      if (b >= 0) {
+        values.ints[values.length++] = (value << 7) | b;
+        value = 0;
+      } else {
+        value = (value << 7) | (b & 0x7F);
       }
-      value |= first & 0x7F;
-      if ((first & 0x80) == 0) {
-        legalEOS = true;
-        return value;
-      }
-      legalEOS = false;
-      value <<= 7;
     }
   }
 

@@ -20,13 +20,15 @@ package org.apache.lucene.codecs.compressing;
 import java.io.IOException;
 
 import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * An decompressor.
+ * A decompressor.
  */
-abstract class Decompressor implements Cloneable {
+public abstract class Decompressor implements Cloneable {
+
+  /** Sole constructor, typically called from sub-classes. */
+  protected Decompressor() {}
 
   /**
    * Decompress bytes that were stored between offsets <code>offset</code> and
@@ -43,10 +45,6 @@ abstract class Decompressor implements Cloneable {
    * @param bytes a {@link BytesRef} where to store the decompressed data
    */
   public abstract void decompress(DataInput in, int originalLength, int offset, int length, BytesRef bytes) throws IOException;
-
-  /** Copy a compressed stream whose original length is
-   * <code>originalLength</code> from <code>in</code> to <code>out</code>. */
-  public abstract void copyCompressedData(DataInput in, int originalLength, DataOutput out) throws IOException;
 
   @Override
   public abstract Decompressor clone();

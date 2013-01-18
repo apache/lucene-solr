@@ -19,12 +19,10 @@ package org.apache.solr.search;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.*;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.function.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,7 +58,7 @@ public class FunctionQParser extends QParser {
   }
 
   @Override
-  public Query parse() throws ParseException {
+  public Query parse() throws SyntaxError {
     sp = new QueryParsing.StrParser(getString());
 
     ValueSource vs = null;
@@ -92,7 +90,7 @@ public class FunctionQParser extends QParser {
     }
 
     if (parseToEnd && sp.pos < sp.end) {
-      throw new ParseException("Unexpected text after function: " + sp.val.substring(sp.pos, sp.end));
+      throw new SyntaxError("Unexpected text after function: " + sp.val.substring(sp.pos, sp.end));
     }
 
     if (lst != null) {
@@ -107,7 +105,7 @@ public class FunctionQParser extends QParser {
    * 
    * @return whether more args exist
    */
-  public boolean hasMoreArguments() throws ParseException {
+  public boolean hasMoreArguments() throws SyntaxError {
     int ch = sp.peek();
     /* determine whether the function is ending with a paren or end of str */
     return (! (ch == 0 || ch == ')') );
@@ -116,9 +114,9 @@ public class FunctionQParser extends QParser {
   /*
    * TODO: Doc
    */
-  public String parseId() throws ParseException {
+  public String parseId() throws SyntaxError {
     String value = parseArg();
-    if (argWasQuoted) throw new ParseException("Expected identifier instead of quoted string:" + value);
+    if (argWasQuoted) throw new SyntaxError("Expected identifier instead of quoted string:" + value);
     return value;
   }
   
@@ -127,9 +125,9 @@ public class FunctionQParser extends QParser {
    * 
    * @return Float
    */
-  public Float parseFloat() throws ParseException {
+  public Float parseFloat() throws SyntaxError {
     String str = parseArg();
-    if (argWasQuoted()) throw new ParseException("Expected float instead of quoted string:" + str);
+    if (argWasQuoted()) throw new SyntaxError("Expected float instead of quoted string:" + str);
     float value = Float.parseFloat(str);
     return value;
   }
@@ -138,9 +136,9 @@ public class FunctionQParser extends QParser {
    * Parse a Double
    * @return double
    */
-  public double parseDouble() throws ParseException {
+  public double parseDouble() throws SyntaxError {
     String str = parseArg();
-    if (argWasQuoted()) throw new ParseException("Expected double instead of quoted string:" + str);
+    if (argWasQuoted()) throw new SyntaxError("Expected double instead of quoted string:" + str);
     double value = Double.parseDouble(str);
     return value;
   }
@@ -149,9 +147,9 @@ public class FunctionQParser extends QParser {
    * Parse an integer
    * @return An int
    */
-  public int parseInt() throws ParseException {
+  public int parseInt() throws SyntaxError {
     String str = parseArg();
-    if (argWasQuoted()) throw new ParseException("Expected double instead of quoted string:" + str);
+    if (argWasQuoted()) throw new SyntaxError("Expected double instead of quoted string:" + str);
     int value = Integer.parseInt(str);
     return value;
   }
@@ -162,7 +160,7 @@ public class FunctionQParser extends QParser {
     return argWasQuoted;
   }
 
-  public String parseArg() throws ParseException {
+  public String parseArg() throws SyntaxError {
     argWasQuoted = false;
 
     sp.eatws();
@@ -186,7 +184,7 @@ public class FunctionQParser extends QParser {
         int valStart = sp.pos;
         for (;;) {
           if (sp.pos >= sp.end) {
-            throw new ParseException("Missing end to unquoted value starting at " + valStart + " str='" + sp.val +"'");
+            throw new SyntaxError("Missing end to unquoted value starting at " + valStart + " str='" + sp.val +"'");
           }
           char c = sp.val.charAt(sp.pos);
           if (c==')' || c==',' || Character.isWhitespace(c)) {
@@ -209,7 +207,7 @@ public class FunctionQParser extends QParser {
    * 
    * @return List&lt;ValueSource&gt;
    */
-  public List<ValueSource> parseValueSourceList() throws ParseException {
+  public List<ValueSource> parseValueSourceList() throws SyntaxError {
     List<ValueSource> sources = new ArrayList<ValueSource>(3);
     while (hasMoreArguments()) {
       sources.add(parseValueSource(true));
@@ -220,7 +218,7 @@ public class FunctionQParser extends QParser {
   /**
    * Parse an individual ValueSource.
    */
-  public ValueSource parseValueSource() throws ParseException {
+  public ValueSource parseValueSource() throws SyntaxError {
     /* consume the delimiter afterward for an external call to parseValueSource */
     return parseValueSource(true);
   }
@@ -228,7 +226,7 @@ public class FunctionQParser extends QParser {
   /*
    * TODO: Doc
    */
-  public Query parseNestedQuery() throws ParseException {
+  public Query parseNestedQuery() throws SyntaxError {
     Query nestedQuery;
     
     if (sp.opt("$")) {
@@ -257,10 +255,10 @@ public class FunctionQParser extends QParser {
           sub = subQuery(qs, null);
           // int subEnd = sub.findEnd(')');
           // TODO.. implement functions to find the end of a nested query
-          throw new ParseException("Nested local params must have value in v parameter.  got '" + qs + "'");
+          throw new SyntaxError("Nested local params must have value in v parameter.  got '" + qs + "'");
         }
       } else {
-        throw new ParseException("Nested function query must use $param or {!v=value} forms. got '" + qs + "'");
+        throw new SyntaxError("Nested function query must use $param or {!v=value} forms. got '" + qs + "'");
       }
   
       sp.pos += end-start;  // advance past nested query
@@ -276,7 +274,7 @@ public class FunctionQParser extends QParser {
    * 
    * @param doConsumeDelimiter whether to consume a delimiter following the ValueSource  
    */
-  protected ValueSource parseValueSource(boolean doConsumeDelimiter) throws ParseException {
+  protected ValueSource parseValueSource(boolean doConsumeDelimiter) throws SyntaxError {
     ValueSource valueSource;
     
     int ch = sp.peek();
@@ -297,7 +295,7 @@ public class FunctionQParser extends QParser {
       String param = sp.getId();
       String val = getParam(param);
       if (val == null) {
-        throw new ParseException("Missing param " + param + " while parsing function '" + sp.val + "'");
+        throw new SyntaxError("Missing param " + param + " while parsing function '" + sp.val + "'");
       }
 
       QParser subParser = subQuery(val, "func");
@@ -349,7 +347,7 @@ public class FunctionQParser extends QParser {
         // a function... look it up.
         ValueSourceParser argParser = req.getCore().getValueSourceParser(id);
         if (argParser==null) {
-          throw new ParseException("Unknown function " + id + " in FunctionQuery(" + sp + ")");
+          throw new SyntaxError("Unknown function " + id + " in FunctionQuery(" + sp + ")");
         }
         valueSource = argParser.parse(this);
         sp.expect(")");
@@ -379,7 +377,7 @@ public class FunctionQParser extends QParser {
    * 
    * @return whether a delimiter was consumed
    */
-  protected boolean consumeArgumentDelimiter() throws ParseException {
+  protected boolean consumeArgumentDelimiter() throws SyntaxError {
     /* if a list of args is ending, don't expect the comma */
     if (hasMoreArguments()) {
       sp.expect(",");

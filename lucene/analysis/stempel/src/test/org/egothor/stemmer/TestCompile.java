@@ -60,7 +60,9 @@ import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.net.URI;
@@ -69,12 +71,18 @@ import java.util.StringTokenizer;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestCompile extends LuceneTestCase {
   
   public void testCompile() throws Exception {
-    URI uri = getClass().getResource("testRules.txt").toURI();
-    String path = uri.getPath();
+    File dir = _TestUtil.getTempDir("testCompile");
+    dir.mkdirs();
+    InputStream input = getClass().getResourceAsStream("testRules.txt");
+    File output = new File(dir, "testRules.txt");
+    copy(input, output);
+    input.close();
+    String path = output.getAbsolutePath();
     Compile.main(new String[] {"test", path});
     String compiled = path + ".out";
     Trie trie = loadTrie(compiled);
@@ -84,8 +92,13 @@ public class TestCompile extends LuceneTestCase {
   }
   
   public void testCompileBackwards() throws Exception {
-    URI uri = getClass().getResource("testRules.txt").toURI();
-    String path = uri.getPath();
+    File dir = _TestUtil.getTempDir("testCompile");
+    dir.mkdirs();
+    InputStream input = getClass().getResourceAsStream("testRules.txt");
+    File output = new File(dir, "testRules.txt");
+    copy(input, output);
+    input.close();
+    String path = output.getAbsolutePath();
     Compile.main(new String[] {"-test", path});
     String compiled = path + ".out";
     Trie trie = loadTrie(compiled);
@@ -95,8 +108,13 @@ public class TestCompile extends LuceneTestCase {
   }
   
   public void testCompileMulti() throws Exception {
-    URI uri = getClass().getResource("testRules.txt").toURI();
-    String path = uri.getPath();
+    File dir = _TestUtil.getTempDir("testCompile");
+    dir.mkdirs();
+    InputStream input = getClass().getResourceAsStream("testRules.txt");
+    File output = new File(dir, "testRules.txt");
+    copy(input, output);
+    input.close();
+    String path = output.getAbsolutePath();
     Compile.main(new String[] {"Mtest", path});
     String compiled = path + ".out";
     Trie trie = loadTrie(compiled);
@@ -150,6 +168,21 @@ public class TestCompile extends LuceneTestCase {
       } catch (java.util.NoSuchElementException x) {
         // no base token (stem) on a line
       }
+    }
+    
+    in.close();
+  }
+  
+  private static void copy(InputStream input, File output) throws IOException {
+    FileOutputStream os = new FileOutputStream(output);
+    try {
+      byte buffer[] = new byte[1024];
+      int len;
+      while ((len = input.read(buffer)) > 0) {
+        os.write(buffer, 0, len);
+      }
+    } finally {
+      os.close();
     }
   }
 }

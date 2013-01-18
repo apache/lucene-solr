@@ -39,8 +39,7 @@ import org.apache.solr.response.SolrQueryResponse;
  *   &lt;lst name="exclude"&gt;
  *     &lt;str name="fieldRegex"&gt;.*_literal&lt;/str&gt;
  *   &lt;/lst&gt;
- * &lt;/processor&gt;
- * </pre>
+ * &lt;/processor&gt;</pre>
  */
 public final class TrimFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
@@ -56,6 +55,7 @@ public final class TrimFieldUpdateProcessorFactory extends FieldMutatingUpdatePr
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
     return new FieldValueMutatingUpdateProcessor(getSelector(), next) {
+      @Override
       protected Object mutateValue(final Object src) {
         if (src instanceof CharSequence) {
           return ((CharSequence)src).toString().trim();

@@ -389,7 +389,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       if (text == null) { // Ran off the end of the terms enum without finding any live docs with that field in them.
         return null;
       }
-      docsEnum = termsEnum.docs(reader.getLiveDocs(), docsEnum, 0);
+      docsEnum = termsEnum.docs(reader.getLiveDocs(), docsEnum, DocsEnum.FLAG_NONE);
       if (docsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
         return reader.document(docsEnum.docID());
       }
@@ -547,6 +547,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
     indexInfo.add("numDocs", reader.numDocs());
     indexInfo.add("maxDoc", reader.maxDoc());
+    indexInfo.add("deletedDocs", reader.maxDoc() - reader.numDocs());
 
     indexInfo.add("version", reader.getVersion());  // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
     indexInfo.add("segmentCount", reader.leaves().size());

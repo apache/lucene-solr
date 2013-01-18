@@ -441,6 +441,7 @@ public class TermsComponent extends SearchComponent {
       TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[data.size()]);
 
       Arrays.sort(arr, new Comparator<TermsResponse.Term>() {
+        @Override
         public int compare(TermsResponse.Term o1, TermsResponse.Term o2) {
           return o1.getTerm().compareTo(o2.getTerm());
         }
@@ -454,6 +455,7 @@ public class TermsComponent extends SearchComponent {
       TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[data.size()]);
 
       Arrays.sort(arr, new Comparator<TermsResponse.Term>() {
+        @Override
         public int compare(TermsResponse.Term o1, TermsResponse.Term o2) {
           long freq1 = o1.getFrequency();
           long freq2 = o2.getFrequency();

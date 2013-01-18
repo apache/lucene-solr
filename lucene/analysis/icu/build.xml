@@ -26,13 +26,18 @@
   <import file="../analysis-module-build.xml"/>
 
   <path id="icujar">
-     <pathelement location="lib/icu4j-49.1.jar"/>
+     <fileset dir="lib"/>
   </path>
 
   <path id="classpath">
     <pathelement path="${analyzers-common.jar}"/>
     <path refid="icujar"/>
     <path refid="base.classpath"/>
+  </path>
+
+  <path id="test.classpath">
+    <path refid="test.base.classpath" />
+    <pathelement path="src/test-files" />
   </path>
 
   <target name="compile-core" depends="jar-analyzers-common, common.compile-core" />

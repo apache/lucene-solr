@@ -61,10 +61,12 @@ public class TestDeletionPolicy extends LuceneTestCase {
     int numOnInit;
     int numOnCommit;
     Directory dir;
+    @Override
     public void onInit(List<? extends IndexCommit> commits) throws IOException {
       verifyCommitOrder(commits);
       numOnInit++;
     }
+    @Override
     public void onCommit(List<? extends IndexCommit> commits) throws IOException {
       IndexCommit lastCommit =  commits.get(commits.size()-1);
       DirectoryReader r = DirectoryReader.open(dir);
@@ -82,6 +84,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
   class KeepNoneOnInitDeletionPolicy implements IndexDeletionPolicy {
     int numOnInit;
     int numOnCommit;
+    @Override
     public void onInit(List<? extends IndexCommit> commits) throws IOException {
       verifyCommitOrder(commits);
       numOnInit++;
@@ -91,6 +94,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         assertTrue(commit.isDeleted());
       }
     }
+    @Override
     public void onCommit(List<? extends IndexCommit> commits) throws IOException {
       verifyCommitOrder(commits);
       int size = commits.size();
@@ -113,6 +117,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       this.numToKeep = numToKeep;
     }
 
+    @Override
     public void onInit(List<? extends IndexCommit> commits) throws IOException {
       if (VERBOSE) {
         System.out.println("TEST: onInit");
@@ -123,6 +128,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       doDeletes(commits, false);
     }
 
+    @Override
     public void onCommit(List<? extends IndexCommit> commits) throws IOException {
       if (VERBOSE) {
         System.out.println("TEST: onCommit");
@@ -170,11 +176,13 @@ public class TestDeletionPolicy extends LuceneTestCase {
       this.expirationTimeSeconds = seconds;
     }
 
+    @Override
     public void onInit(List<? extends IndexCommit> commits) throws IOException {
       verifyCommitOrder(commits);
       onCommit(commits);
     }
 
+    @Override
     public void onCommit(List<? extends IndexCommit> commits) throws IOException {
       verifyCommitOrder(commits);
 
@@ -212,7 +220,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     Map<String,String> commitData = new HashMap<String,String>();
     commitData.put("commitTime", String.valueOf(System.currentTimeMillis()));
-    writer.commit(commitData);
+    writer.setCommitData(commitData);
+    writer.commit();
     writer.close();
 
     long lastDeleteTime = 0;
@@ -234,7 +243,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
       }
       commitData = new HashMap<String,String>();
       commitData.put("commitTime", String.valueOf(System.currentTimeMillis()));
-      writer.commit(commitData);
+      writer.setCommitData(commitData);
+      writer.commit();
       writer.close();
 
       Thread.sleep((int) (1000.0*(SECONDS/5.0)));

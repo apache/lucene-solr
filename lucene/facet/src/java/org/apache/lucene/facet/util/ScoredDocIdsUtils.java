@@ -3,16 +3,17 @@ package org.apache.lucene.facet.util;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.facet.search.ScoredDocIDs;
+import org.apache.lucene.facet.search.ScoredDocIDsIterator;
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.OpenBitSetDISI;
-
-import org.apache.lucene.facet.search.ScoredDocIDs;
-import org.apache.lucene.facet.search.ScoredDocIDsIterator;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -49,48 +50,57 @@ public class ScoredDocIdsUtils {
    * @param reader holding the number of documents & information about deletions.
    */
   public final static ScoredDocIDs getComplementSet(final ScoredDocIDs docids, final IndexReader reader)
-  throws IOException {
+      throws IOException {
     final int maxDoc = reader.maxDoc();
 
     DocIdSet docIdSet = docids.getDocIDs();
-    final OpenBitSet complement;
-    if (docIdSet instanceof OpenBitSet) {
+    final FixedBitSet complement;
+    if (docIdSet instanceof FixedBitSet) {
       // That is the most common case, if ScoredDocIdsCollector was used.
-      complement = ((OpenBitSet) docIdSet).clone();
+      complement = ((FixedBitSet) docIdSet).clone();
     } else {
-      complement = new OpenBitSetDISI(docIdSet.iterator(), maxDoc);
+      complement = new FixedBitSet(maxDoc);
+      DocIdSetIterator iter = docIdSet.iterator();
+      int doc;
+      while ((doc = iter.nextDoc()) < maxDoc) {
+        complement.set(doc);
+      }
     }
-
     complement.flip(0, maxDoc);
-
-    // Remove all Deletions from the complement set
     clearDeleted(reader, complement);
 
     return createScoredDocIds(complement, maxDoc);
   }
-
-  /**
-   * Clear all deleted documents from a given open-bit-set according to a given reader 
-   */
-  private static void clearDeleted(final IndexReader reader, 
-      final OpenBitSet set) throws IOException {
-
+  
+  /** Clear all deleted documents from a given open-bit-set according to a given reader */
+  private static void clearDeleted(final IndexReader reader, final FixedBitSet set) throws IOException {
+    
     // If there are no deleted docs
     if (!reader.hasDeletions()) {
       return; // return immediately
     }
     
-    Bits bits = MultiFields.getLiveDocs(reader);
-
     DocIdSetIterator it = set.iterator();
-    int doc = DocIdSetIterator.NO_MORE_DOCS;
-    while ((doc = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-      if (!bits.get(doc)) {
-        set.fastClear(doc);
+    int doc = it.nextDoc(); 
+    for (AtomicReaderContext context : reader.leaves()) {
+      AtomicReader r = context.reader();
+      final int maxDoc = r.maxDoc() + context.docBase;
+      if (doc >= maxDoc) { // skip this segment
+        continue;
       }
+      if (!r.hasDeletions()) { // skip all docs that belong to this reader as it has no deletions
+        while ((doc = it.nextDoc()) < maxDoc) {}
+        continue;
+      }
+      Bits liveDocs = r.getLiveDocs();
+      do {
+        if (!liveDocs.get(doc - context.docBase)) {
+          set.clear(doc);
+        }
+      } while ((doc = it.nextDoc()) < maxDoc);
     }
   }
-
+  
   /**
    * Create a subset of an existing ScoredDocIDs object.
    * 
@@ -118,6 +128,7 @@ public class ScoredDocIdsUtils {
 
     return new ScoredDocIDs() {
 
+      @Override
       public DocIdSet getDocIDs() {
         return new DocIdSet() {
 
@@ -155,19 +166,24 @@ public class ScoredDocIdsUtils {
         };
       }
 
+      @Override
       public ScoredDocIDsIterator iterator() {
         return new ScoredDocIDsIterator() {
 
           int next = -1;
 
+          @Override
           public boolean next() { return ++next < size; }
 
+          @Override
           public float getScore() { return scores[next]; }
 
+          @Override
           public int getDocID() { return docids[next]; }
         };
       }
 
+      @Override
       public int size() { return size; }
 
     };
@@ -191,11 +207,14 @@ public class ScoredDocIdsUtils {
   public static final ScoredDocIDs createScoredDocIds(final DocIdSet docIdSet, final int maxDoc) {
     return new ScoredDocIDs() {
       private int size = -1;
+      @Override
       public DocIdSet getDocIDs() { return docIdSet; }
 
+      @Override
       public ScoredDocIDsIterator iterator() throws IOException {
         final DocIdSetIterator docIterator = docIdSet.iterator();
         return new ScoredDocIDsIterator() {
+          @Override
           public boolean next() {
             try {
               return docIterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
@@ -204,12 +223,15 @@ public class ScoredDocIdsUtils {
             }
           }
 
+          @Override
           public float getScore() { return DEFAULT_SCORE; }
 
+          @Override
           public int getDocID() { return docIterator.docID(); }
         };
       }
 
+      @Override
       public int size() {
         // lazy size computation
         if (size < 0) {
@@ -238,10 +260,12 @@ public class ScoredDocIdsUtils {
       this.maxDoc = reader.maxDoc();
     }
 
+    @Override
     public int size() {  
       return maxDoc;
     }
 
+    @Override
     public DocIdSet getDocIDs() {
       return new DocIdSet() {
 
@@ -260,8 +284,7 @@ public class ScoredDocIdsUtils {
               if (target <= next) {
                 target = next + 1;
               }
-              return next = target >= maxDoc ? NO_MORE_DOCS
-                  : target;
+              return next = target >= maxDoc ? NO_MORE_DOCS : target;
             }
 
             @Override
@@ -279,10 +302,12 @@ public class ScoredDocIdsUtils {
       };
     }
 
+    @Override
     public ScoredDocIDsIterator iterator() {
       try {
         final DocIdSetIterator iter = getDocIDs().iterator();
         return new ScoredDocIDsIterator() {
+          @Override
           public boolean next() {
             try {
               return iter.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
@@ -292,10 +317,12 @@ public class ScoredDocIdsUtils {
             }
           }
 
+          @Override
           public float getScore() {
             return DEFAULT_SCORE;
           }
 
+          @Override
           public int getDocID() {
             return iter.docID();
           }
@@ -324,10 +351,12 @@ public class ScoredDocIdsUtils {
       this.reader = reader;
     }
 
+    @Override
     public int size() {
       return reader.numDocs();
     }
 
+    @Override
     public DocIdSet getDocIDs() {
       return new DocIdSet() {
 
@@ -369,10 +398,12 @@ public class ScoredDocIdsUtils {
       };
     }
 
+    @Override
     public ScoredDocIDsIterator iterator() {
       try {
         final DocIdSetIterator iter = getDocIDs().iterator();
         return new ScoredDocIDsIterator() {
+          @Override
           public boolean next() {
             try {
               return iter.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
@@ -382,10 +413,12 @@ public class ScoredDocIdsUtils {
             }
           }
 
+          @Override
           public float getScore() {
             return DEFAULT_SCORE;
           }
 
+          @Override
           public int getDocID() {
             return iter.docID();
           }
@@ -396,4 +429,5 @@ public class ScoredDocIdsUtils {
       }
     }
   }
+  
 }

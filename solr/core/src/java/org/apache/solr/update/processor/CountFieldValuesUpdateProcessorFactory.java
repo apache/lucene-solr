@@ -50,20 +50,17 @@ import org.apache.commons.lang.StringUtils;
  * </p>
  *
  * <pre class="prettyprint">
- * &lt;updateRequestProcessorChain&gt;
- *   &lt;processor class="solr.CloneFieldUpdateProcessorFactory"&gt;
- *     &lt;str name="source"&gt;category&lt;/str&gt;
- *     &lt;str name="dest"&gt;category_count&lt;/str&gt;
- *   &lt;/processor&gt;
- *   &lt;processor class="solr.CountFieldValuesUpdateProcessorFactory"&gt;
- *     &lt;str name="fieldName"&gt;category_count&lt;/str&gt;
- *   &lt;/processor&gt;
- *   &lt;processor class="solr.DefaultValueUpdateProcessorFactory"&gt;
- *     &lt;str name="fieldName"&gt;category_count&lt;/str&gt;
- *     &lt;int name="value"&gt;0&lt;/int&gt;
- *   &lt;/processor&gt;
- * &lt;/updateRequestProcessorChain&gt;
- * </pre>
+ * &lt;processor class="solr.CloneFieldUpdateProcessorFactory"&gt;
+ *   &lt;str name="source"&gt;category&lt;/str&gt;
+ *   &lt;str name="dest"&gt;category_count&lt;/str&gt;
+ * &lt;/processor&gt;
+ * &lt;processor class="solr.CountFieldValuesUpdateProcessorFactory"&gt;
+ *   &lt;str name="fieldName"&gt;category_count&lt;/str&gt;
+ * &lt;/processor&gt;
+ * &lt;processor class="solr.DefaultValueUpdateProcessorFactory"&gt;
+ *   &lt;str name="fieldName"&gt;category_count&lt;/str&gt;
+ *   &lt;int name="value"&gt;0&lt;/int&gt;
+ * &lt;/processor&gt;</pre>
  *
  * <p>
  * <b>NOTE:</b> The use of {@link DefaultValueUpdateProcessorFactory} is 
@@ -83,6 +80,7 @@ public final class CountFieldValuesUpdateProcessorFactory extends FieldMutatingU
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
     return new FieldMutatingUpdateProcessor(getSelector(), next) {
+      @Override
       protected SolrInputField mutate(final SolrInputField src) {
         SolrInputField result = new SolrInputField(src.getName());
         result.setValue(src.getValueCount(),

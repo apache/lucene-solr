@@ -15,6 +15,27 @@
  limitations under the License.
 */
 
+var zk_error = function zk_error( xhr, text_status, error_thrown )
+{
+  var zk = null;
+  try
+  {
+    eval( 'zk = ' + xhr.responseText + ';' );
+  }
+  catch( e ) {}
+
+  var message = '<p class="txt">Loading of "<code>' + xhr.url + '</code>" '
+              + 'failed (HTTP-Status <code>' + xhr.status + '</code>)</p>' + "\n";
+
+  if( zk.error )
+  {
+    message += '<p class="msg">"' + zk.error.esc() + '"</p>' + "\n";
+  }
+  
+  this.closest( '#cloud' )
+    .html( '<div class="block" id="error">' + message + '</div>' );
+};
+
 var init_debug = function( cloud_element )
 {
   var debug_element = $( '#debug', cloud_element );
@@ -369,13 +390,13 @@ var prepare_graph = function( graph_element, callback )
               for( var c in state )
               {
                 var shards = [];
-                for( var s in state[c] )
+                for( var s in state[c].shards )
                 {
                   var nodes = [];
-                  for( var n in state[c][s].replicas )
+                  for( var n in state[c].shards[s].replicas )
                   {
                     leaf_count++;
-                    var replica = state[c][s].replicas[n]
+                    var replica = state[c].shards[s].replicas[n]
 
                     var uri = replica.base_url;
                     var parts = uri.match( /^(\w+:)\/\/(([\w\d\.-]+)(:(\d+))?)(.+)$/ );
@@ -415,7 +436,7 @@ var prepare_graph = function( graph_element, callback )
                   var shard = {
                     name: s,
                     data: {
-                      type : 'shard',
+                      type : 'shard'
                     },
                     children: nodes
                   };
@@ -425,7 +446,7 @@ var prepare_graph = function( graph_element, callback )
                 var collection = {
                   name: c,
                   data: {
-                    type : 'collection',
+                    type : 'collection'
                   },
                   children: shards
                 };
@@ -633,19 +654,7 @@ var init_tree = function( tree_element )
             }
           );
       },
-      error : function( xhr, text_status, error_thrown )
-      {
-        var message = 'Loading of <code>' + app.config.zookeeper_path + '</code> failed with "' + text_status + '" '
-                    + '(<code>' + error_thrown.message + '</code>)';
-
-        if( 200 !== xhr.status )
-        {
-          message = 'Loading of <code>' + app.config.zookeeper_path + '</code> failed with HTTP-Status ' + xhr.status + ' ';
-        }
-
-        this
-          .html( '<div class="block" id="error">' + message + '</div>' );
-      },
+      error : zk_error,
       complete : function( xhr, text_status )
       {
       }
@@ -710,8 +719,20 @@ sammy.get
             }
           );
 
-        $( 'a[href="' + context.path + '"]', navigation_element )
-          .trigger( 'activate' );
+        $.ajax
+        (
+          {
+            url : app.config.solr_path + '/zookeeper?wt=json',
+            dataType : 'json',
+            context : cloud_element,
+            success : function( response, text_status, xhr )
+            {
+              $( 'a[href="' + context.path + '"]', navigation_element )
+                .trigger( 'activate' );
+            },
+            error : zk_error
+          }
+        );
         
       }
     );

@@ -58,6 +58,7 @@ public class SimpleFSDirectory extends FSDirectory {
     return new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + path.getPath() + "\")", path, context, getReadChunkSize());
   }
 
+  @Override
   public IndexInputSlicer createSlicer(final String name,
       final IOContext context) throws IOException {
     ensureOpen();

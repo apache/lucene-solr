@@ -25,9 +25,7 @@
   <import file="../common-build.xml"/>
 
   <path id="classpath">
-    <fileset dir="lib">
-      <include name="asm-debug-all-4.0.jar"/>
-    </fileset>
+    <fileset dir="lib"/>
   </path>
 
   <!--  

@@ -50,6 +50,7 @@ public class TermsFilterBuilder implements FilterBuilder {
     *
     * @see org.apache.lucene.xmlparser.FilterBuilder#process(org.w3c.dom.Element)
     */
+  @Override
   public Filter getFilter(Element e) throws ParserException {
     List<BytesRef> terms = new ArrayList<BytesRef>();
     String text = DOMUtils.getNonBlankTextOrFail(e);

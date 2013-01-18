@@ -120,6 +120,7 @@ public class PathHierarchyTokenizerFactory extends TokenizerFactory {
     }
   }
 
+  @Override
   public Tokenizer create(Reader input) {
     if( reverse ) {
       return new ReversePathHierarchyTokenizer(input, delimiter, replacement, skip);

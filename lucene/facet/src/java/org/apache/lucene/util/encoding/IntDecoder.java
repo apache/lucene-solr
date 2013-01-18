@@ -1,7 +1,7 @@
 package org.apache.lucene.util.encoding;
 
-import java.io.IOException;
-import java.io.InputStream;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,33 +21,16 @@ import java.io.InputStream;
  */
 
 /**
- * Decodes integers from a set {@link InputStream}. For re-usability, the
- * decoder's input stream can be set by ({@link #reInit(InputStream)}).
- * By design, Decoders are NOT thread-safe.
+ * Decodes integers from a set {@link BytesRef}.
  * 
  * @lucene.experimental
  */
 public abstract class IntDecoder {
   
-  /** A special long value which is used to indicate end-of-stream has reached. */
-  public static final long EOS = 0x100000000L;
-
-  /** Input stream from which the encoded bytes are read */
-  protected InputStream in;
-
-  /** Sets the input stream from which the encoded data is read. */
-  public void reInit(InputStream in) {
-    this.in = in;
-  }
-  
   /**
-   * Decodes data received from the input stream, and returns one decoded
-   * integer. If end of stream is reached, {@link #EOS} is returned.
-   * 
-   * @return one decoded integer as long or {@link #EOS} if end-of-stream
-   *         reached.
-   * @throws IOException if an I/O error occurs
+   * Decodes the values from the buffer into the given {@link IntsRef}. Note
+   * that {@code values.offset} and {@code values.length} are set to 0.
    */
-  public abstract long decode() throws IOException;
+  public abstract void decode(BytesRef buf, IntsRef values);
 
 }

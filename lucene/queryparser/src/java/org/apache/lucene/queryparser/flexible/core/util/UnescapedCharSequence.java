@@ -63,14 +63,17 @@ public final class UnescapedCharSequence implements CharSequence {
     }
   }
 
+  @Override
   public char charAt(int index) {
     return this.chars[index];
   }
 
+  @Override
   public int length() {
     return this.chars.length;
   }
 
+  @Override
   public CharSequence subSequence(int start, int end) {
     int newLength = end - start;
 

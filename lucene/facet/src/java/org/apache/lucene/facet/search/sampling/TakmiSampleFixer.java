@@ -58,6 +58,7 @@ class TakmiSampleFixer implements SampleFixer {
     this.searchParams = searchParams;
   }
 
+  @Override
   public void fixResult(ScoredDocIDs origDocIds, FacetResult fres)
       throws IOException {
     FacetResultNode topRes = fres.getFacetResultNode();
@@ -90,8 +91,7 @@ class TakmiSampleFixer implements SampleFixer {
    *          full set of matching documents.
    * @throws IOException If there is a low-level I/O error.
    */
-  private void recount(FacetResultNode fresNode, ScoredDocIDs docIds)
-      throws IOException {
+  private void recount(FacetResultNode fresNode, ScoredDocIDs docIds) throws IOException {
     // TODO (Facet): change from void to return the new, smaller docSet, and use
     // that for the children, as this will make their intersection ops faster.
     // can do this only when the new set is "sufficiently" smaller.
@@ -108,8 +108,7 @@ class TakmiSampleFixer implements SampleFixer {
     Bits liveDocs = MultiFields.getLiveDocs(indexReader);
     int updatedCount = countIntersection(MultiFields.getTermDocsEnum(indexReader, liveDocs,
                                                                      drillDownTerm.field(), drillDownTerm.bytes(),
-                                                                     0),
-                                         docIds.iterator());
+                                                                     0), docIds.iterator());
 
     fresNode.setValue(updatedCount);
   }

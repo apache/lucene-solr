@@ -43,8 +43,7 @@ import org.apache.solr.core.SolrCore;
  *     &lt;str&gt;solr.TrieIntField&lt;/str&gt;
  *     &lt;str&gt;solr.TrieLongField&lt;/str&gt;
  *   &lt;/arr&gt;
- * &lt;/processor&gt;
- * </pre>
+ * &lt;/processor&gt;</pre>
  */
 public final class FieldLengthUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
@@ -68,6 +67,7 @@ public final class FieldLengthUpdateProcessorFactory extends FieldMutatingUpdate
                                             SolrQueryResponse rsp,
                                             UpdateRequestProcessor next) {
     return new FieldValueMutatingUpdateProcessor(getSelector(), next) {
+      @Override
       protected Object mutateValue(final Object src) {
         if (src instanceof CharSequence) {
           return new Integer(((CharSequence)src).length());

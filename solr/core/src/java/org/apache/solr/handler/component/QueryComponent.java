@@ -23,7 +23,6 @@ import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.SearchGroup;
@@ -94,7 +93,7 @@ public class QueryComponent extends SearchComponent
     SolrQueryResponse rsp = rb.rsp;
 
     // Set field flags    
-    ReturnFields returnFields = new ReturnFields( req );
+    ReturnFields returnFields = new SolrReturnFields( req );
     rsp.setReturnFields( returnFields );
     int flags = 0;
     if (returnFields.wantsScore()) {
@@ -144,7 +143,7 @@ public class QueryComponent extends SearchComponent
           rb.setFilters( filters );
         }
       }
-    } catch (ParseException e) {
+    } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
@@ -402,7 +401,7 @@ public class QueryComponent extends SearchComponent
           rsp.getToLog().add("hits", grouping.getCommands().get(0).getMatches());
         }
         return;
-      } catch (ParseException e) {
+      } catch (SyntaxError e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
     }
@@ -659,6 +658,7 @@ public class QueryComponent extends SearchComponent
 
     EndResultTransformer.SolrDocumentSource solrDocumentSource = new EndResultTransformer.SolrDocumentSource() {
 
+      @Override
       public SolrDocument retrieve(ScoreDoc doc) {
         ShardDoc solrDoc = (ShardDoc) doc;
         return rb.retrievedDocuments.get(solrDoc.id);

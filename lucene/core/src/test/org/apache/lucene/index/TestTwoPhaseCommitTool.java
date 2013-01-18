@@ -18,10 +18,8 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.TwoPhaseCommitTool.TwoPhaseCommitWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestTwoPhaseCommitTool extends LuceneTestCase {
@@ -41,6 +39,7 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
       this.failOnRollback = failOnRollback;
     }
 
+    @Override
     public void prepareCommit() throws IOException {
       prepareCommit(null);
     }
@@ -53,6 +52,7 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
       }
     }
 
+    @Override
     public void commit() throws IOException {
       commit(null);
     }
@@ -65,6 +65,7 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
       }
     }
 
+    @Override
     public void rollback() throws IOException {
       rollbackCalled = true;
       if (failOnRollback) {
@@ -115,27 +116,6 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
         assertTrue("rollback was not called while a failure occurred during the 2-phase commit", tpc.rollbackCalled);
       }
     }
-  }
-
-  public void testWrapper() throws Exception {
-    // tests that TwoPhaseCommitWrapper delegates prepare/commit w/ commitData
-    TwoPhaseCommitImpl impl = new TwoPhaseCommitImpl(false, false, false);
-    HashMap<String, String> commitData = new HashMap<String, String>();
-    TwoPhaseCommitWrapper wrapper = new TwoPhaseCommitWrapper(impl, commitData);
-
-    wrapper.prepareCommit();
-    assertSame(commitData, impl.prepareCommitData);
-
-    // wrapper should ignore passed commitData
-    wrapper.prepareCommit(new HashMap<String, String>());
-    assertSame(commitData, impl.prepareCommitData);
-
-    wrapper.commit();
-    assertSame(commitData, impl.commitData);
-
-    // wrapper should ignore passed commitData
-    wrapper.commit(new HashMap<String, String>());
-    assertSame(commitData, impl.commitData);
   }
 
   public void testNullTPCs() throws Exception {

@@ -17,12 +17,20 @@
 
 package org.apache.solr.client.solrj;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import junit.framework.Assert;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -36,15 +44,10 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Test for LBHttpSolrServer
@@ -57,6 +60,8 @@ import java.util.Set;
     QuickPatchThreadsFilter.class
 })
 public class TestLBHttpSolrServer extends LuceneTestCase {
+  private static final Logger log = LoggerFactory
+      .getLogger(TestLBHttpSolrServer.class);
   SolrInstance[] solr = new SolrInstance[3];
   HttpClient httpClient;
 
@@ -216,7 +221,13 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
   private void waitForServer(int maximum, LBHttpSolrServer server, int nServers, String serverName) throws Exception {
     long endTime = System.currentTimeMillis() + maximum;
     while (System.currentTimeMillis() < endTime) {
-      QueryResponse resp = server.query(new SolrQuery("*:*"));
+      QueryResponse resp;
+      try {
+        resp = server.query(new SolrQuery("*:*"));
+      } catch (Exception e) {
+        log.warn("", e);
+        continue;
+      }
       String name = resp.getResults().get(0).getFieldValue("name").toString();
       if (name.equals(serverName))
         return;

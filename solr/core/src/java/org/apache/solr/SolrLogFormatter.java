@@ -196,12 +196,8 @@ sb.append("(group_name=").append(tg.getName()).append(")");
           sb.append(" url="+info.url + " node="+zkController.getNodeName());
         }
 
-        if(info.coreProps == null) {
-          info.coreProps = getCoreProps(zkController, core);
-        }
-
-        Map<String, Object> coreProps = getCoreProps(zkController, core);
-        if(!coreProps.equals(info.coreProps)) {
+        Map<String, Object> coreProps = getReplicaProps(zkController, core);
+        if (info.coreProps == null || !coreProps.equals(info.coreProps)) {
           info.coreProps = coreProps;
           final String corePropsString = "coll:" + core.getCoreDescriptor().getCloudDescriptor().getCollectionName() + " core:" + core.getName() + " props:" + coreProps;
           sb.append(" " + info.shortId + "_STATE=" + corePropsString);
@@ -261,11 +257,11 @@ sb.append("(group_name=").append(tg.getName()).append(")");
     return sb.toString();
   }
 
-  private Map<String,Object> getCoreProps(ZkController zkController, SolrCore core) {
+  private Map<String,Object> getReplicaProps(ZkController zkController, SolrCore core) {
     final String collection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-    Replica props = zkController.getClusterState().getShardProps(collection,  ZkStateReader.getCoreNodeName(zkController.getNodeName(), core.getName()));
-    if(props!=null) {
-      return props.getProperties(); 
+    Replica replica = zkController.getClusterState().getReplica(collection, ZkStateReader.getCoreNodeName(zkController.getNodeName(), core.getName()));
+    if(replica!=null) {
+      return replica.getProperties();
     }
     return Collections.EMPTY_MAP;
   }
@@ -430,6 +426,7 @@ sb.append("(group_name=").append(tg.getName()).append(")");
     public MyThreadGroup(String name) {
       super(name);
     }
+    @Override
     public String getTag() { return "HELLO"; }
   }
   

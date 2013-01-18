@@ -85,6 +85,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     codec.marshal(updateRequest, baos);
     final List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
+      @Override
       public void update(SolrInputDocument document, UpdateRequest req) {
         Assert.assertNotNull(req.getParams());
         docs.add(document);
@@ -124,6 +125,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     // imagine someone adding a custom Bean that implements Iterable 
     // but is not a Collection
     doc.addField("iter", new Iterable<String>() { 
+        @Override
         public Iterator<String> iterator() { return values.iterator(); } 
       });
     doc.addField("desc", "1");
@@ -134,6 +136,7 @@ public class TestUpdateRequestCodec extends LuceneTestCase {
     codec.marshal(updateRequest, baos);
     final List<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
+      @Override
       public void update(SolrInputDocument document, UpdateRequest req) {
         Assert.assertNotNull(req.getParams());
         docs.add(document);

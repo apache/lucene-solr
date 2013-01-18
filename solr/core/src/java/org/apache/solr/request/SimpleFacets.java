@@ -18,7 +18,6 @@
 package org.apache.solr.request;
 
 import org.apache.lucene.index.*;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.grouping.AbstractAllGroupHeadsCollector;
 import org.apache.lucene.search.grouping.term.TermGroupFacetCollector;
@@ -95,7 +94,7 @@ public class SimpleFacets {
   }
 
 
-  protected void parseParams(String type, String param) throws ParseException, IOException {
+  protected void parseParams(String type, String param) throws SyntaxError, IOException {
     localParams = QueryParsing.getLocalParams(param, req.getParams());
     docs = docsOrig;
     facetValue = param;
@@ -209,7 +208,7 @@ public class SimpleFacets {
 
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    } catch (ParseException e) {
+    } catch (SyntaxError e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, e);
     }
     return facetResponse;
@@ -221,7 +220,7 @@ public class SimpleFacets {
    *
    * @see FacetParams#FACET_QUERY
    */
-  public NamedList<Integer> getFacetQueryCounts() throws IOException,ParseException {
+  public NamedList<Integer> getFacetQueryCounts() throws IOException,SyntaxError {
 
     NamedList<Integer> res = new SimpleOrderedMap<Integer>();
 
@@ -387,6 +386,7 @@ public class SimpleFacets {
 
 
   static final Executor directExecutor = new Executor() {
+    @Override
     public void execute(Runnable r) {
       r.run();
     }
@@ -409,7 +409,7 @@ public class SimpleFacets {
    * @see #getFacetTermEnumCounts
    */
   public NamedList<Object> getFacetFieldCounts()
-          throws IOException, ParseException {
+          throws IOException, SyntaxError {
 
     NamedList<Object> res = new SimpleOrderedMap<Object>();
     String[] facetFs = params.getParams(FacetParams.FACET_FIELD);
@@ -756,7 +756,7 @@ public class SimpleFacets {
             // TODO: specialize when base docset is a bitset or hash set (skipDocs)?  or does it matter for this?
             // TODO: do this per-segment for better efficiency (MultiDocsEnum just uses base class impl)
             // TODO: would passing deleted docs lead to better efficiency over checking the fastForRandomSet?
-            docsEnum = termsEnum.docs(null, docsEnum, 0);
+            docsEnum = termsEnum.docs(null, docsEnum, DocsEnum.FLAG_NONE);
             c=0;
 
             if (docsEnum instanceof MultiDocsEnum) {
@@ -826,7 +826,7 @@ public class SimpleFacets {
    */
   @Deprecated
   public NamedList<Object> getFacetDateCounts()
-    throws IOException, ParseException {
+    throws IOException, SyntaxError {
 
     final NamedList<Object> resOuter = new SimpleOrderedMap<Object>();
     final String[] fields = params.getParams(FacetParams.FACET_DATE);
@@ -845,7 +845,7 @@ public class SimpleFacets {
    */
   @Deprecated
   public void getFacetDateCounts(String dateFacet, NamedList<Object> resOuter)
-      throws IOException, ParseException {
+      throws IOException, SyntaxError {
 
     final IndexSchema schema = searcher.getSchema();
 
@@ -1008,7 +1008,7 @@ public class SimpleFacets {
    * @see FacetParams#FACET_RANGE
    */
 
-  public NamedList<Object> getFacetRangeCounts() throws IOException, ParseException {
+  public NamedList<Object> getFacetRangeCounts() throws IOException, SyntaxError {
     final NamedList<Object> resOuter = new SimpleOrderedMap<Object>();
     final String[] fields = params.getParams(FacetParams.FACET_RANGE);
 
@@ -1022,7 +1022,7 @@ public class SimpleFacets {
   }
 
   void getFacetRangeCounts(String facetRange, NamedList<Object> resOuter)
-      throws IOException, ParseException {
+      throws IOException, SyntaxError {
 
     final IndexSchema schema = searcher.getSchema();
 
@@ -1249,6 +1249,7 @@ public class SimpleFacets {
       CountPair<?,?> that = (CountPair<?,?>) o;
       return (this.key.equals(that.key) && this.val.equals(that.val));
     }
+    @Override
     public int compareTo(CountPair<K,V> o) {
       int vc = o.val.compareTo(val);
       return (0 != vc ? vc : key.compareTo(o.key));

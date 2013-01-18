@@ -70,7 +70,7 @@ public abstract class ShapeFieldCacheProvider<T extends Shape> {
       while (term != null) {
         T shape = readShape(term);
         if( shape != null ) {
-          docs = te.docs(null, docs, 0);
+          docs = te.docs(null, docs, DocsEnum.FLAG_NONE);
           Integer docid = docs.nextDoc();
           while (docid != DocIdSetIterator.NO_MORE_DOCS) {
             idx.add( docid, shape );

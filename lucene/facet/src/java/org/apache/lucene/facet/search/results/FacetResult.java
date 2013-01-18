@@ -39,7 +39,7 @@ public class FacetResult {
   /**
    * Facet result node matching the root of the {@link #getFacetRequest() facet request}.
    * @see #getFacetRequest()
-   * @see FacetRequest#getCategoryPath()
+   * @see FacetRequest#categoryPath
    */
   public final FacetResultNode getFacetResultNode() {
     return this.rootNode;

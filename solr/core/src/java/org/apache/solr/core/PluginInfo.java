@@ -74,7 +74,7 @@ public class PluginInfo {
     if (type != null) sb.append("type = " + type + ",");
     if (name != null) sb.append("name = " + name + ",");
     if (className != null) sb.append("class = " + className + ",");
-    if (initArgs.size() > 0) sb.append("args = " + initArgs);
+    if (initArgs != null && initArgs.size() > 0) sb.append("args = " + initArgs);
     sb.append("}");
     return sb.toString();
   }

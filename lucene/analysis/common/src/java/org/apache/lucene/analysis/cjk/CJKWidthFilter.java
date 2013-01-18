@@ -58,6 +58,7 @@ public final class CJKWidthFilter extends TokenFilter {
     super(input);
   }
 
+  @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       char text[] = termAtt.buffer();

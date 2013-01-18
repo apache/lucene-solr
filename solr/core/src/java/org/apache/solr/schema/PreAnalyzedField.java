@@ -212,6 +212,7 @@ public class PreAnalyzedField extends FieldType {
       return binaryValue;
     }
     
+    @Override
     public final boolean incrementToken() {
       // lazy init the iterator
       if (it == null) {

@@ -68,6 +68,7 @@ public class ShingleFilterFactory extends TokenFilterFactory {
                      ? args.get("tokenSeparator")
                      : ShingleFilter.TOKEN_SEPARATOR;
   }
+  @Override
   public ShingleFilter create(TokenStream input) {
     ShingleFilter r = new ShingleFilter(input, minShingleSize, maxShingleSize);
     r.setOutputUnigrams(outputUnigrams);

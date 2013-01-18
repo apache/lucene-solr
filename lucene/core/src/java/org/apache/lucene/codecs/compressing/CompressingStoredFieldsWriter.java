@@ -47,7 +47,11 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
-final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
+/**
+ * {@link StoredFieldsWriter} impl for {@link CompressingStoredFieldsFormat}.
+ * @lucene.experimental
+ */
+public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   static final int         STRING = 0x00;
   static final int       BYTE_ARR = 0x01;
@@ -66,6 +70,7 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   private final Directory directory;
   private final String segment;
+  private final String segmentSuffix;
   private CompressingStoredFieldsIndexWriter indexWriter;
   private IndexOutput fieldsStream;
 
@@ -79,11 +84,13 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   private int docBase; // doc ID at the beginning of the chunk
   private int numBufferedDocs; // docBase + numBufferedDocs == current doc ID
 
-  public CompressingStoredFieldsWriter(Directory directory, SegmentInfo si, IOContext context,
+  /** Sole constructor. */
+  public CompressingStoredFieldsWriter(Directory directory, SegmentInfo si, String segmentSuffix, IOContext context,
       String formatName, CompressionMode compressionMode, int chunkSize) throws IOException {
     assert directory != null;
     this.directory = directory;
     this.segment = si.name;
+    this.segmentSuffix = segmentSuffix;
     this.compressionMode = compressionMode;
     this.compressor = compressionMode.newCompressor();
     this.chunkSize = chunkSize;
@@ -94,9 +101,9 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     this.numBufferedDocs = 0;
 
     boolean success = false;
-    IndexOutput indexStream = directory.createOutput(IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION), context);
+    IndexOutput indexStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION), context);
     try {
-      fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION), context);
+      fieldsStream = directory.createOutput(IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION), context);
 
       final String codecNameIdx = formatName + CODEC_SFX_IDX;
       final String codecNameDat = formatName + CODEC_SFX_DAT;
@@ -129,19 +136,8 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     }
   }
 
-  private void endWithPreviousDocument() throws IOException {
-    if (numBufferedDocs > 0) {
-      endOffsets[numBufferedDocs - 1] = bufferedDocs.length;
-    }
-  }
-
   @Override
   public void startDocument(int numStoredFields) throws IOException {
-    endWithPreviousDocument();
-    if (triggerFlush()) {
-      flush();
-    }
-
     if (numBufferedDocs == this.numStoredFields.length) {
       final int newLength = ArrayUtil.oversize(numBufferedDocs + 1, 4);
       this.numStoredFields = Arrays.copyOf(this.numStoredFields, newLength);
@@ -149,6 +145,14 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
     }
     this.numStoredFields[numBufferedDocs] = numStoredFields;
     ++numBufferedDocs;
+  }
+
+  @Override
+  public void finishDocument() throws IOException {
+    endOffsets[numBufferedDocs - 1] = bufferedDocs.length;
+    if (triggerFlush()) {
+      flush();
+    }
   }
 
   private static void saveInts(int[] values, int length, DataOutput out) throws IOException {
@@ -282,15 +286,16 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   public void abort() {
     IOUtils.closeWhileHandlingException(this);
     IOUtils.deleteFilesIgnoringExceptions(directory,
-        IndexFileNames.segmentFileName(segment, "", FIELDS_EXTENSION),
-        IndexFileNames.segmentFileName(segment, "", FIELDS_INDEX_EXTENSION));
+        IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_EXTENSION),
+        IndexFileNames.segmentFileName(segment, segmentSuffix, FIELDS_INDEX_EXTENSION));
   }
 
   @Override
   public void finish(FieldInfos fis, int numDocs) throws IOException {
-    endWithPreviousDocument();
     if (numBufferedDocs > 0) {
       flush();
+    } else {
+      assert bufferedDocs.length == 0;
     }
     if (docBase != numDocs) {
       throw new RuntimeException("Wrote " + docBase + " docs, finish called with numDocs=" + numDocs);
@@ -344,17 +349,13 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
             }
 
             if (compressionMode == matchingFieldsReader.getCompressionMode() // same compression mode
-                && (numBufferedDocs == 0 || triggerFlush()) // starting a new chunk
+                && numBufferedDocs == 0 // starting a new chunk
                 && startOffsets[it.chunkDocs - 1] < chunkSize // chunk is small enough
                 && startOffsets[it.chunkDocs - 1] + it.lengths[it.chunkDocs - 1] >= chunkSize // chunk is large enough
                 && nextDeletedDoc(it.docBase, liveDocs, it.docBase + it.chunkDocs) == it.docBase + it.chunkDocs) { // no deletion in the chunk
               assert docID == it.docBase;
 
               // no need to decompress, just copy data
-              endWithPreviousDocument();
-              if (triggerFlush()) {
-                flush();
-              }
               indexWriter.writeIndex(it.chunkDocs, fieldsStream.getFilePointer());
               writeHeader(this.docBase, it.chunkDocs, it.numStoredFields, it.lengths);
               it.copyCompressedData(fieldsStream);
@@ -373,6 +374,7 @@ final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
                 final int diff = docID - it.docBase;
                 startDocument(it.numStoredFields[diff]);
                 bufferedDocs.writeBytes(it.bytes.bytes, it.bytes.offset + startOffsets[diff], it.lengths[diff]);
+                finishDocument();
                 ++docCount;
                 mergeState.checkAbort.work(300);
               }

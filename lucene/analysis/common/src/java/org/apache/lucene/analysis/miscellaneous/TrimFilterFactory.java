@@ -49,6 +49,7 @@ public class TrimFilterFactory extends TokenFilterFactory {
     }
   }
   
+  @Override
   public TrimFilter create(TokenStream input) {
     return new TrimFilter(input, updateOffsets);
   }

@@ -42,6 +42,7 @@ public abstract class TermsIndexReaderBase implements Closeable {
 
   public abstract FieldIndexEnum getFieldEnum(FieldInfo fieldInfo);
 
+  @Override
   public abstract void close() throws IOException;
 
   public abstract boolean supportsOrd();

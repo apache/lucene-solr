@@ -316,6 +316,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
       } else {
         try {
           xpathReader.streamRecords(data, new XPathRecordReader.Handler() {
+            @Override
             @SuppressWarnings("unchecked")
             public void handle(Map<String, Object> record, String xpath) {
               rows.add(readRow(record, xpath));
@@ -425,6 +426,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
       public void run() {
         try {
           xpathReader.streamRecords(data, new XPathRecordReader.Handler() {
+            @Override
             @SuppressWarnings("unchecked")
             public void handle(Map<String, Object> record, String xpath) {
               if (isEnd.get()) {
@@ -475,10 +477,12 @@ public class XPathEntityProcessor extends EntityProcessorBase {
       private Map<String, Object> lastRow;
       int count = 0;
 
+      @Override
       public boolean hasNext() {
         return !isEnd.get();
       }
 
+      @Override
       public Map<String, Object> next() {
         Map<String, Object> row;
         
@@ -514,6 +518,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
         return lastRow = row;
       }
 
+      @Override
       public void remove() {
         /*no op*/
       }

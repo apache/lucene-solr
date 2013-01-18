@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.TokenStream;
  *
  */
 public class ASCIIFoldingFilterFactory extends TokenFilterFactory implements MultiTermAwareComponent {
+  @Override
   public ASCIIFoldingFilter create(TokenStream input) {
     return new ASCIIFoldingFilter(input);
   }

@@ -122,6 +122,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
     System.err.println("-- construction time");
     for (final Class<? extends Lookup> cls : benchmarkClasses) {
       BenchmarkResult result = measure(new Callable<Integer>() {
+        @Override
         public Integer call() throws Exception {
           final Lookup lookup = buildLookup(cls, dictionaryInput);          
           return lookup.hashCode();
@@ -222,6 +223,7 @@ public class LookupBenchmarkTest extends LuceneTestCase {
       }
 
       BenchmarkResult result = measure(new Callable<Integer>() {
+        @Override
         public Integer call() throws Exception {
           int v = 0;
           for (String term : input) {

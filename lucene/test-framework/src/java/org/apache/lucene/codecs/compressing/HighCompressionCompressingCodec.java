@@ -21,13 +21,15 @@ package org.apache.lucene.codecs.compressing;
 public class HighCompressionCompressingCodec extends CompressingCodec {
 
   /** Constructor that allows to configure the chunk size. */
-  public HighCompressionCompressingCodec(int chunkSize) {
-    super("HighCompressionCompressingStoredFields", CompressionMode.HIGH_COMPRESSION, chunkSize);
+  public HighCompressionCompressingCodec(int chunkSize, boolean withSegmentSuffix) {
+    super("HighCompressionCompressingStoredFields",
+          withSegmentSuffix ? "HighCompressionCompressingStoredFields" : "",
+          CompressionMode.HIGH_COMPRESSION, chunkSize);
   }
 
   /** Default constructor. */
   public HighCompressionCompressingCodec() {
-    this(1 << 14);
+    this(1 << 14, false);
   }
 
 }
