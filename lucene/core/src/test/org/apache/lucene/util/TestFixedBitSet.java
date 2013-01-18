@@ -265,7 +265,18 @@ public class TestFixedBitSet extends LuceneTestCase {
   }
   
   private FixedBitSet makeFixedBitSet(int[] a, int numBits) {
-    FixedBitSet bs = new FixedBitSet(numBits);
+    FixedBitSet bs;
+    if (random().nextBoolean()) {
+      int bits2words = FixedBitSet.bits2words(numBits);
+      long[] words = new long[bits2words + random().nextInt(100)];
+      for (int i = bits2words; i < words.length; i++) {
+        words[i] = random().nextLong();
+      }
+      bs = new FixedBitSet(words, numBits);
+
+    } else {
+      bs = new FixedBitSet(numBits);
+    }
     for (int e: a) {
       bs.set(e);
     }
@@ -290,6 +301,23 @@ public class TestFixedBitSet extends LuceneTestCase {
     checkPrevSetBitArray(new int[] {}, 0);
     checkPrevSetBitArray(new int[] {0}, 1);
     checkPrevSetBitArray(new int[] {0,2}, 3);
+  }
+  
+  
+  private void checkNextSetBitArray(int [] a, int numBits) {
+    FixedBitSet obs = makeFixedBitSet(a, numBits);
+    BitSet bs = makeBitSet(a);
+    doNextSetBit(bs, obs);
+  }
+  
+  public void testNextBitSet() {
+    int[] setBits = new int[0+random().nextInt(1000)];
+    for (int i = 0; i < setBits.length; i++) {
+      setBits[i] = random().nextInt(setBits.length);
+    }
+    checkNextSetBitArray(setBits, setBits.length + random().nextInt(10));
+    
+    checkNextSetBitArray(new int[0], setBits.length + random().nextInt(10));
   }
 }
 
