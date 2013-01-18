@@ -31,13 +31,13 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
 // nocommit move this back to test-framework!!!
-public class MultiSimpleDocValues {
+public class MultiDocValues {
   
   // moved to src/java so SlowWrapper can use it... uggggggh
-  public static NumericDocValues simpleNormValues(final IndexReader r, final String field) throws IOException {
+  public static NumericDocValues getNormValues(final IndexReader r, final String field) throws IOException {
     final List<AtomicReaderContext> leaves = r.leaves();
     if (leaves.size() == 1) {
-      return leaves.get(0).reader().simpleNormValues(field);
+      return leaves.get(0).reader().getNormValues(field);
     }
     FieldInfo fi = MultiFields.getMergedFieldInfos(r).fieldInfo(field);
     if (fi == null || fi.hasNorms() == false) {
@@ -45,7 +45,7 @@ public class MultiSimpleDocValues {
     }
     boolean anyReal = false;
     for(AtomicReaderContext ctx : leaves) {
-      NumericDocValues norms = ctx.reader().simpleNormValues(field);
+      NumericDocValues norms = ctx.reader().getNormValues(field);
 
       if (norms != null) {
         anyReal = true;
@@ -60,7 +60,7 @@ public class MultiSimpleDocValues {
         int subIndex = ReaderUtil.subIndex(docID, leaves);
         NumericDocValues norms;
         try {
-          norms = leaves.get(subIndex).reader().simpleNormValues(field);
+          norms = leaves.get(subIndex).reader().getNormValues(field);
         } catch (IOException ioe) {
           throw new RuntimeException(ioe);
         }
@@ -73,7 +73,7 @@ public class MultiSimpleDocValues {
     };
   }
 
-  public static NumericDocValues simpleNumericValues(final IndexReader r, final String field) throws IOException {
+  public static NumericDocValues getNumericValues(final IndexReader r, final String field) throws IOException {
     final List<AtomicReaderContext> leaves = r.leaves();
     if (leaves.size() == 1) {
       return leaves.get(0).reader().getNumericDocValues(field);
@@ -110,7 +110,7 @@ public class MultiSimpleDocValues {
     }
   }
 
-  public static BinaryDocValues simpleBinaryValues(final IndexReader r, final String field) throws IOException {
+  public static BinaryDocValues getBinaryValues(final IndexReader r, final String field) throws IOException {
     final List<AtomicReaderContext> leaves = r.leaves();
     if (leaves.size() == 1) {
       return leaves.get(0).reader().getBinaryDocValues(field);
@@ -150,7 +150,7 @@ public class MultiSimpleDocValues {
     }
   }
   
-  public static SortedDocValues simpleSortedValues(final IndexReader r, final String field) throws IOException {
+  public static SortedDocValues getSortedValues(final IndexReader r, final String field) throws IOException {
     final List<AtomicReaderContext> leaves = r.leaves();
     if (leaves.size() == 1) {
       return leaves.get(0).reader().getSortedDocValues(field);

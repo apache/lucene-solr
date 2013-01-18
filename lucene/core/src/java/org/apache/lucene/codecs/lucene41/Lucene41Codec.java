@@ -23,8 +23,8 @@ import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.SimpleDocValuesFormat;
-import org.apache.lucene.codecs.SimpleNormsFormat;
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
@@ -61,9 +61,9 @@ public class Lucene41Codec extends Codec {
   };
   
   
-  private final SimpleDocValuesFormat simpleDocValuesFormat = new PerFieldDocValuesFormat() {
+  private final DocValuesFormat simpleDocValuesFormat = new PerFieldDocValuesFormat() {
     @Override
-    public SimpleDocValuesFormat getDocValuesFormatForField(String field) {
+    public DocValuesFormat getDocValuesFormatForField(String field) {
       return Lucene41Codec.this.getDocValuesFormatForField(field);
     }
   };
@@ -117,23 +117,23 @@ public class Lucene41Codec extends Codec {
    *  
    *  The default implementation always returns "Lucene41"
    */
-  public SimpleDocValuesFormat getDocValuesFormatForField(String field) {
+  public DocValuesFormat getDocValuesFormatForField(String field) {
     return defaultDVFormat;
   }
   
   @Override
-  public SimpleDocValuesFormat simpleDocValuesFormat() {
+  public DocValuesFormat docValuesFormat() {
     return simpleDocValuesFormat;
   }
 
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
   // nocommit
-  private final SimpleDocValuesFormat defaultDVFormat = SimpleDocValuesFormat.forName("Lucene41");
+  private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene41");
 
-  private final SimpleNormsFormat simpleNormsFormat = new Lucene41SimpleNormsFormat();
+  private final NormsFormat simpleNormsFormat = new Lucene41SimpleNormsFormat();
 
   @Override
-  public SimpleNormsFormat simpleNormsFormat() {
+  public NormsFormat normsFormat() {
     return simpleNormsFormat;
   }
 }

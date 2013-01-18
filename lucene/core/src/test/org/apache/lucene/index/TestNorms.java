@@ -83,12 +83,12 @@ public class TestNorms extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
     
-    NumericDocValues fooNorms = MultiSimpleDocValues.simpleNormValues(reader, "foo");
+    NumericDocValues fooNorms = MultiDocValues.getNormValues(reader, "foo");
     for (int i = 0; i < reader.maxDoc(); i++) {
       assertEquals(0, fooNorms.get(i));
     }
     
-    NumericDocValues barNorms = MultiSimpleDocValues.simpleNormValues(reader, "bar");
+    NumericDocValues barNorms = MultiDocValues.getNormValues(reader, "bar");
     for (int i = 0; i < reader.maxDoc(); i++) {
       assertEquals(1, barNorms.get(i));
     }
@@ -101,7 +101,7 @@ public class TestNorms extends LuceneTestCase {
     Directory dir = newFSDirectory(_TestUtil.getTempDir("TestNorms.testMaxByteNorms"));
     buildIndex(dir);
     AtomicReader open = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
-    NumericDocValues normValues = open.simpleNormValues(byteTestField);
+    NumericDocValues normValues = open.getNormValues(byteTestField);
     assertNotNull(normValues);
     for (int i = 0; i < open.maxDoc(); i++) {
       StoredDocument document = open.document(i);

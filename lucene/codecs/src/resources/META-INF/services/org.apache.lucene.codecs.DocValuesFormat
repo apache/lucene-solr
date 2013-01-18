@@ -15,4 +15,4 @@
 
 org.apache.lucene.codecs.diskdv.DiskDocValuesFormat
 org.apache.lucene.codecs.memory.MemoryDocValuesFormat
-org.apache.lucene.codecs.simpletext.SimpleTextSimpleDocValuesFormat
+org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat

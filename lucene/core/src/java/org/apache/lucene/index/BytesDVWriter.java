@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.apache.lucene.codecs.SimpleDVConsumer;
+import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefArray;
 import org.apache.lucene.util.Counter;
@@ -65,7 +65,7 @@ class BytesDVWriter extends DocValuesWriter {
   }
 
   @Override
-  public void flush(SegmentWriteState state, SimpleDVConsumer dvConsumer) throws IOException {
+  public void flush(SegmentWriteState state, DocValuesConsumer dvConsumer) throws IOException {
     final int maxDoc = state.segmentInfo.getDocCount();
 
     dvConsumer.addBinaryField(fieldInfo,

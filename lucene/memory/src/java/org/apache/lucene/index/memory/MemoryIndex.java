@@ -1148,7 +1148,7 @@ public class MemoryIndex {
     private Similarity cachedSimilarity;
     
     @Override
-    public NumericDocValues simpleNormValues(String field) {
+    public NumericDocValues getNormValues(String field) {
       if (fieldInfos.get(field).omitsNorms())
         return null;
       NumericDocValues norms = cachedNormValues;

@@ -29,7 +29,7 @@ import org.apache.lucene.index.MultiReader; // javadoc
  * MultiReader} or {@link DirectoryReader}) to emulate an
  * atomic reader.  This requires implementing the postings
  * APIs on-the-fly, using the static methods in {@link
- * MultiFields}, {@link MultiSimpleDocValues}, by stepping through
+ * MultiFields}, {@link MultiDocValues}, by stepping through
  * the sub-readers to merge fields/terms, appending docs, etc.
  *
  * <p><b>NOTE</b>: this class almost always results in a
@@ -82,26 +82,26 @@ public final class SlowCompositeReaderWrapper extends AtomicReader {
   @Override
   public NumericDocValues getNumericDocValues(String field) throws IOException {
     ensureOpen();
-    return MultiSimpleDocValues.simpleNumericValues(in, field);
+    return MultiDocValues.getNumericValues(in, field);
   }
 
   @Override
   public BinaryDocValues getBinaryDocValues(String field) throws IOException {
     ensureOpen();
-    return MultiSimpleDocValues.simpleBinaryValues(in, field);
+    return MultiDocValues.getBinaryValues(in, field);
   }
 
   @Override
   public SortedDocValues getSortedDocValues(String field) throws IOException {
     ensureOpen();
-    return MultiSimpleDocValues.simpleSortedValues(in, field);
+    return MultiDocValues.getSortedValues(in, field);
   }
 
   @Override
-  public NumericDocValues simpleNormValues(String field) throws IOException {
+  public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
     // nocommit hmm
-    return MultiSimpleDocValues.simpleNormValues(in, field);
+    return MultiDocValues.getNormValues(in, field);
   }
   
   @Override

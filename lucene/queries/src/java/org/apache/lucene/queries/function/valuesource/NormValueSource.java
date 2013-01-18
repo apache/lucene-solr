@@ -62,7 +62,7 @@ public class NormValueSource extends ValueSource {
     if (similarity == null) {
       throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as DefaultSimilarity)");
     }
-    final NumericDocValues norms = readerContext.reader().simpleNormValues(field);
+    final NumericDocValues norms = readerContext.reader().getNormValues(field);
 
     if (norms == null) {
       return new ConstDoubleDocValues(0.0, this);

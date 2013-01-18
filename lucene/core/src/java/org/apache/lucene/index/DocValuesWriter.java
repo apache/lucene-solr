@@ -19,10 +19,10 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.SimpleDVConsumer;
+import org.apache.lucene.codecs.DocValuesConsumer;
 
 abstract class DocValuesWriter {
   abstract void abort() throws IOException;
   abstract void finish(int numDoc);
-  abstract void flush(SegmentWriteState state, SimpleDVConsumer consumer) throws IOException;
+  abstract void flush(SegmentWriteState state, DocValuesConsumer consumer) throws IOException;
 }

@@ -403,7 +403,7 @@ public class TestDocSet extends LuceneTestCase {
       }
 
       @Override
-      public NumericDocValues simpleNormValues(String field) {
+      public NumericDocValues getNormValues(String field) {
         return null;
       }
 

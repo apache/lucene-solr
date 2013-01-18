@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  */
 import java.io.IOException;
 
-import org.apache.lucene.codecs.SimpleDVConsumer;
+import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.search.similarities.Similarity;
 
 final class NormsConsumerPerField extends InvertedDocEndConsumerPerField implements Comparable<NormsConsumerPerField> {
@@ -52,7 +52,7 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
     }
   }
   
-  void flush(SegmentWriteState state, SimpleDVConsumer normsWriter) throws IOException {
+  void flush(SegmentWriteState state, DocValuesConsumer normsWriter) throws IOException {
     int docCount = state.segmentInfo.getDocCount();
     if (consumer == null) {
       return; // null type - not omitted but not written -

@@ -862,7 +862,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
       }
       w.commit();
       IndexReader reader = w.getReader();
-      SortedDocValues docValues = MultiSimpleDocValues.simpleSortedValues(reader, "field");
+      SortedDocValues docValues = MultiDocValues.getSortedValues(reader, "field");
       int[] sort = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
       BytesRef expected = new BytesRef();
       BytesRef actual = new BytesRef();

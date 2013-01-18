@@ -26,9 +26,9 @@ import java.util.ServiceLoader; // javadocs
 import java.util.TreeMap;
 
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.SimpleDVConsumer;
-import org.apache.lucene.codecs.SimpleDVProducer;
-import org.apache.lucene.codecs.SimpleDocValuesFormat;
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
@@ -54,7 +54,7 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.experimental
  */
 
-public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
+public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
   /** Name of this {@link PostingsFormat}. */
   public static final String PER_FIELD_NAME = "PerFieldDV40";
 
@@ -73,13 +73,13 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
   }
 
   @Override
-  public final SimpleDVConsumer fieldsConsumer(SegmentWriteState state)
+  public final DocValuesConsumer fieldsConsumer(SegmentWriteState state)
       throws IOException {
     return new FieldsWriter(state);
   }
   
   static class SimpleDVConsumerAndSuffix implements Closeable {
-    SimpleDVConsumer consumer;
+    DocValuesConsumer consumer;
     int suffix;
     
     @Override
@@ -88,9 +88,9 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
     }
   }
     
-  private class FieldsWriter extends SimpleDVConsumer {
+  private class FieldsWriter extends DocValuesConsumer {
 
-    private final Map<SimpleDocValuesFormat,SimpleDVConsumerAndSuffix> formats = new HashMap<SimpleDocValuesFormat,SimpleDVConsumerAndSuffix>();
+    private final Map<DocValuesFormat,SimpleDVConsumerAndSuffix> formats = new HashMap<DocValuesFormat,SimpleDVConsumerAndSuffix>();
     private final Map<String,Integer> suffixes = new HashMap<String,Integer>();
     
     private final SegmentWriteState segmentWriteState;
@@ -114,8 +114,8 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
       getInstance(field).addSortedField(field, values, docToOrd);
     }
 
-    private SimpleDVConsumer getInstance(FieldInfo field) throws IOException {
-      final SimpleDocValuesFormat format = getDocValuesFormatForField(field.name);
+    private DocValuesConsumer getInstance(FieldInfo field) throws IOException {
+      final DocValuesFormat format = getDocValuesFormatForField(field.name);
       if (format == null) {
         throw new IllegalStateException("invalid null DocValuesFormat for field=\"" + field.name + "\"");
       }
@@ -185,10 +185,10 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
   // nocommit what if SimpleNormsFormat wants to use this
   // ...?  we have a "boolean isNorms" issue...?  I guess we
   // just need to make a PerFieldNormsFormat?
-  private class FieldsReader extends SimpleDVProducer {
+  private class FieldsReader extends DocValuesProducer {
 
-    private final Map<String,SimpleDVProducer> fields = new TreeMap<String,SimpleDVProducer>();
-    private final Map<String,SimpleDVProducer> formats = new HashMap<String,SimpleDVProducer>();
+    private final Map<String,DocValuesProducer> fields = new TreeMap<String,DocValuesProducer>();
+    private final Map<String,DocValuesProducer> formats = new HashMap<String,DocValuesProducer>();
 
     public FieldsReader(final SegmentReadState readState) throws IOException {
 
@@ -204,7 +204,7 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
               // null formatName means the field is in fieldInfos, but has no docvalues!
               final String suffix = fi.getAttribute(PER_FIELD_SUFFIX_KEY);
               assert suffix != null;
-              SimpleDocValuesFormat format = SimpleDocValuesFormat.forName(formatName);
+              DocValuesFormat format = DocValuesFormat.forName(formatName);
               String segmentSuffix = getSuffix(formatName, suffix);
               if (!formats.containsKey(segmentSuffix)) {
                 formats.put(segmentSuffix, format.fieldsProducer(new SegmentReadState(readState, segmentSuffix)));
@@ -223,17 +223,17 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
 
     private FieldsReader(FieldsReader other) {
 
-      Map<SimpleDVProducer,SimpleDVProducer> oldToNew = new IdentityHashMap<SimpleDVProducer,SimpleDVProducer>();
+      Map<DocValuesProducer,DocValuesProducer> oldToNew = new IdentityHashMap<DocValuesProducer,DocValuesProducer>();
       // First clone all formats
-      for(Map.Entry<String,SimpleDVProducer> ent : other.formats.entrySet()) {
-        SimpleDVProducer values = ent.getValue();
+      for(Map.Entry<String,DocValuesProducer> ent : other.formats.entrySet()) {
+        DocValuesProducer values = ent.getValue();
         formats.put(ent.getKey(), values);
         oldToNew.put(ent.getValue(), values);
       }
 
       // Then rebuild fields:
-      for(Map.Entry<String,SimpleDVProducer> ent : other.fields.entrySet()) {
-        SimpleDVProducer producer = oldToNew.get(ent.getValue());
+      for(Map.Entry<String,DocValuesProducer> ent : other.fields.entrySet()) {
+        DocValuesProducer producer = oldToNew.get(ent.getValue());
         assert producer != null;
         fields.put(ent.getKey(), producer);
       }
@@ -241,19 +241,19 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
 
     @Override
     public NumericDocValues getNumeric(FieldInfo field) throws IOException {
-      SimpleDVProducer producer = fields.get(field.name);
+      DocValuesProducer producer = fields.get(field.name);
       return producer == null ? null : producer.getNumeric(field);
     }
 
     @Override
     public BinaryDocValues getBinary(FieldInfo field) throws IOException {
-      SimpleDVProducer producer = fields.get(field.name);
+      DocValuesProducer producer = fields.get(field.name);
       return producer == null ? null : producer.getBinary(field);
     }
 
     @Override
     public SortedDocValues getSorted(FieldInfo field) throws IOException {
-      SimpleDVProducer producer = fields.get(field.name);
+      DocValuesProducer producer = fields.get(field.name);
       return producer == null ? null : producer.getSorted(field);
     }
 
@@ -263,13 +263,13 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
     }
 
     @Override
-    public SimpleDVProducer clone() {
+    public DocValuesProducer clone() {
       return new FieldsReader(this);
     }
   }
 
   @Override
-  public final SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException {
+  public final DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
     return new FieldsReader(state);
   }
 
@@ -279,5 +279,5 @@ public abstract class PerFieldDocValuesFormat extends SimpleDocValuesFormat {
    * <p>
    * The field to format mapping is written to the index, so
    * this method is only invoked when writing, not when reading. */
-  public abstract SimpleDocValuesFormat getDocValuesFormatForField(String field);
+  public abstract DocValuesFormat getDocValuesFormatForField(String field);
 }

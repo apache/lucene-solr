@@ -528,8 +528,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
     
     for (String field : leftFields) {
       // nocommit cutover to per-segment comparison
-      NumericDocValues leftNorms = MultiSimpleDocValues.simpleNormValues(leftReader, field);
-      NumericDocValues rightNorms = MultiSimpleDocValues.simpleNormValues(rightReader, field);
+      NumericDocValues leftNorms = MultiDocValues.getNormValues(leftReader, field);
+      NumericDocValues rightNorms = MultiDocValues.getNormValues(rightReader, field);
       if (leftNorms != null && rightNorms != null) {
         assertDocValues(leftReader.maxDoc(), leftNorms, rightNorms);
       } else {
@@ -617,8 +617,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
     for (String field : leftFields) {
 
       {
-        NumericDocValues leftValues = MultiSimpleDocValues.simpleNumericValues(leftReader, field);
-        NumericDocValues rightValues = MultiSimpleDocValues.simpleNumericValues(rightReader, field);
+        NumericDocValues leftValues = MultiDocValues.getNumericValues(leftReader, field);
+        NumericDocValues rightValues = MultiDocValues.getNumericValues(rightReader, field);
         if (leftValues != null && rightValues != null) {
           assertDocValues(leftReader.maxDoc(), leftValues, rightValues);
         } else {
@@ -628,8 +628,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
       }
 
       {
-        BinaryDocValues leftValues = MultiSimpleDocValues.simpleBinaryValues(leftReader, field);
-        BinaryDocValues rightValues = MultiSimpleDocValues.simpleBinaryValues(rightReader, field);
+        BinaryDocValues leftValues = MultiDocValues.getBinaryValues(leftReader, field);
+        BinaryDocValues rightValues = MultiDocValues.getBinaryValues(rightReader, field);
         if (leftValues != null && rightValues != null) {
           BytesRef scratchLeft = new BytesRef();
           BytesRef scratchRight = new BytesRef();

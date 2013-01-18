@@ -177,8 +177,8 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       if (iwTerms == null) {
         assertNull(memTerms);
       } else {
-        NumericDocValues normValues = competitor.simpleNormValues(field);
-        NumericDocValues memNormValues = memIndexReader.simpleNormValues(field);
+        NumericDocValues normValues = competitor.getNormValues(field);
+        NumericDocValues memNormValues = memIndexReader.getNormValues(field);
         if (normValues != null) {
           // mem idx always computes norms on the fly
           assertNotNull(memNormValues);

@@ -69,7 +69,7 @@ public class TestUniqueTermCount extends LuceneTestCase {
   }
   
   public void test() throws Exception {
-    NumericDocValues fooNorms = MultiSimpleDocValues.simpleNormValues(reader, "foo");
+    NumericDocValues fooNorms = MultiDocValues.getNormValues(reader, "foo");
     assertNotNull(fooNorms);
     for (int i = 0; i < reader.maxDoc(); i++) {
       assertEquals(expected.get(i).longValue(), fooNorms.get(i));

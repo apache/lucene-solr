@@ -20,11 +20,11 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 import java.util.Comparator;
 
-import org.apache.lucene.codecs.SimpleDVConsumer;
-import org.apache.lucene.codecs.SimpleDVProducer;
-import org.apache.lucene.codecs.SimpleNormsFormat;
-import org.apache.lucene.codecs.simpletext.SimpleTextSimpleDocValuesFormat.SimpleTextDocValuesReader;
-import org.apache.lucene.codecs.simpletext.SimpleTextSimpleDocValuesFormat.SimpleTextDocValuesWriter;
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat.SimpleTextDocValuesReader;
+import org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat.SimpleTextDocValuesWriter;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -39,17 +39,17 @@ import org.apache.lucene.util.BytesRef;
  * 
  * @lucene.experimental
  */
-public class SimpleTextSimpleNormsFormat extends SimpleNormsFormat {
+public class SimpleTextNormsFormat extends NormsFormat {
   // nocommit put back to len once we replace current norms format:
   private static final String NORMS_SEG_EXTENSION = "slen";
   
   @Override
-  public SimpleDVConsumer normsConsumer(SegmentWriteState state) throws IOException {
+  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
     return new SimpleTextSimpleNormsConsumer(state);
   }
   
   @Override
-  public SimpleDVProducer normsProducer(SegmentReadState state) throws IOException {
+  public DocValuesProducer normsProducer(SegmentReadState state) throws IOException {
     return new SimpleTextSimpleNormsProducer(state);
   }
   

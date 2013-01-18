@@ -20,8 +20,8 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.codecs.SimpleDVConsumer;
-import org.apache.lucene.codecs.SimpleNormsFormat;
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.util.IOUtils;
 
@@ -40,10 +40,10 @@ final class NormsConsumer extends InvertedDocEndConsumer {
   @Override
   public void flush(Map<String,InvertedDocEndConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException {
     boolean success = false;
-    SimpleDVConsumer normsConsumer = null;
+    DocValuesConsumer normsConsumer = null;
     try {
       if (state.fieldInfos.hasNorms()) {
-        SimpleNormsFormat normsFormat = state.segmentInfo.getCodec().simpleNormsFormat();
+        NormsFormat normsFormat = state.segmentInfo.getCodec().normsFormat();
         assert normsFormat != null;
         normsConsumer = normsFormat.normsConsumer(state);
 

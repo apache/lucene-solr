@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.SimpleDocValuesFormat;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -708,11 +708,11 @@ public class TestDemoDocValue extends LuceneTestCase {
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
     // TODO: Fix the CFS/suffixing of Lucene41DocValues so it actually works with this
-    final SimpleDocValuesFormat fast = SimpleDocValuesFormat.forName("Memory");
-    final SimpleDocValuesFormat slow = SimpleDocValuesFormat.forName("SimpleText");
+    final DocValuesFormat fast = DocValuesFormat.forName("Memory");
+    final DocValuesFormat slow = DocValuesFormat.forName("SimpleText");
     iwc.setCodec(new Lucene41Codec() {
       @Override
-      public SimpleDocValuesFormat getDocValuesFormatForField(String field) {
+      public DocValuesFormat getDocValuesFormatForField(String field) {
         if ("dv1".equals(field)) {
           return fast;
         } else {

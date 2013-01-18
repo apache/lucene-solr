@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.codecs.SimpleDVConsumer;
-import org.apache.lucene.codecs.SimpleDocValuesFormat;
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
@@ -77,7 +77,7 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
   @Override
   void flush(SegmentWriteState state) throws IOException {
     if (!writers.isEmpty()) {
-      SimpleDocValuesFormat fmt = state.segmentInfo.getCodec().simpleDocValuesFormat();
+      DocValuesFormat fmt = state.segmentInfo.getCodec().docValuesFormat();
       // nocommit once we make
       // Codec.simpleDocValuesFormat abstract, change
       // this to assert fmt != null!
@@ -85,7 +85,7 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
         return;
       }
 
-      SimpleDVConsumer dvConsumer = fmt.fieldsConsumer(state);
+      DocValuesConsumer dvConsumer = fmt.fieldsConsumer(state);
       // nocommit change to assert != null:
       if (dvConsumer == null) {
         return;

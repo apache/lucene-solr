@@ -679,7 +679,7 @@ public class CheckIndex {
           checkSimpleNorms(info, reader, infoStream);
           ++status.totFields;
         } else {
-          if (reader.simpleNormValues(info.name) != null) {
+          if (reader.getNormValues(info.name) != null) {
             throw new RuntimeException("field: " + info.name + " should omit norms but has them!");
           }
         }
@@ -1368,7 +1368,7 @@ public class CheckIndex {
   public static void checkSimpleNorms(FieldInfo fi, AtomicReader reader, PrintStream infoStream) throws IOException {
     switch(fi.getNormType()) {
       case NUMERIC:
-        checkNumericDocValues(fi.name, reader, reader.simpleNormValues(fi.name));
+        checkNumericDocValues(fi.name, reader, reader.getNormValues(fi.name));
         break;
       default:
         throw new AssertionError("wtf: " + fi.getNormType());

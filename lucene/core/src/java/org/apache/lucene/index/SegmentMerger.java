@@ -26,7 +26,7 @@ import java.util.Map;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosWriter;
 import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.SimpleDVConsumer;
+import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsWriter;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
@@ -164,8 +164,8 @@ final class SegmentMerger {
 
   private void mergeSimpleDocValues(SegmentWriteState segmentWriteState) throws IOException {
 
-    if (codec.simpleDocValuesFormat() != null) {
-      SimpleDVConsumer consumer = codec.simpleDocValuesFormat().fieldsConsumer(segmentWriteState);
+    if (codec.docValuesFormat() != null) {
+      DocValuesConsumer consumer = codec.docValuesFormat().fieldsConsumer(segmentWriteState);
       boolean success = false;
       try {
         for (FieldInfo field : mergeState.fieldInfos) {
@@ -218,15 +218,15 @@ final class SegmentMerger {
   }
 
   private void mergeSimpleNorms(SegmentWriteState segmentWriteState) throws IOException {
-    if (codec.simpleNormsFormat() != null) {
-      SimpleDVConsumer consumer = codec.simpleNormsFormat().normsConsumer(segmentWriteState);
+    if (codec.normsFormat() != null) {
+      DocValuesConsumer consumer = codec.normsFormat().normsConsumer(segmentWriteState);
       boolean success = false;
       try {
         for (FieldInfo field : mergeState.fieldInfos) {
           if (field.hasNorms()) {
             List<NumericDocValues> toMerge = new ArrayList<NumericDocValues>();
             for (AtomicReader reader : mergeState.readers) {
-              NumericDocValues norms = reader.simpleNormValues(field.name);
+              NumericDocValues norms = reader.getNormValues(field.name);
               if (norms == null) {
                 norms = NumericDocValues.EMPTY;
               }

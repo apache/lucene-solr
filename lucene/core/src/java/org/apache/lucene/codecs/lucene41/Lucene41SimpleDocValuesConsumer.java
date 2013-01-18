@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.SimpleDVConsumer;
+import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
@@ -47,7 +47,7 @@ import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
  * the latter is typically much smaller with lucene's sims, as only some byte values are used,
  * but its often a nonlinear mapping, especially if you dont use crazy boosts.
  */
-class Lucene41SimpleDocValuesConsumer extends SimpleDVConsumer {
+class Lucene41SimpleDocValuesConsumer extends DocValuesConsumer {
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
   

@@ -565,8 +565,8 @@ public void testFilesOpenClose() throws IOException {
     // check norms
     for(FieldInfo fieldInfo : fieldInfos1) {
       String curField = fieldInfo.name;
-      NumericDocValues norms1 = MultiSimpleDocValues.simpleNormValues(index1, curField);
-      NumericDocValues norms2 = MultiSimpleDocValues.simpleNormValues(index2, curField);
+      NumericDocValues norms1 = MultiDocValues.getNormValues(index1, curField);
+      NumericDocValues norms2 = MultiDocValues.getNormValues(index2, curField);
       if (norms1 != null && norms2 != null) {
         // todo: generalize this (like TestDuelingCodecs assert)
         for (int i = 0; i < index1.maxDoc(); i++) {

@@ -198,12 +198,12 @@ public abstract class SimilarityBase extends Similarity {
       ExactSimScorer subScorers[] = new ExactSimScorer[subStats.length];
       for (int i = 0; i < subScorers.length; i++) {
         BasicStats basicstats = (BasicStats) subStats[i];
-        subScorers[i] = new BasicExactDocScorer(basicstats, context.reader().simpleNormValues(basicstats.field));
+        subScorers[i] = new BasicExactDocScorer(basicstats, context.reader().getNormValues(basicstats.field));
       }
       return new MultiSimilarity.MultiExactDocScorer(subScorers);
     } else {
       BasicStats basicstats = (BasicStats) stats;
-      return new BasicExactDocScorer(basicstats, context.reader().simpleNormValues(basicstats.field));
+      return new BasicExactDocScorer(basicstats, context.reader().getNormValues(basicstats.field));
     }
   }
   
@@ -216,12 +216,12 @@ public abstract class SimilarityBase extends Similarity {
       SloppySimScorer subScorers[] = new SloppySimScorer[subStats.length];
       for (int i = 0; i < subScorers.length; i++) {
         BasicStats basicstats = (BasicStats) subStats[i];
-        subScorers[i] = new BasicSloppyDocScorer(basicstats, context.reader().simpleNormValues(basicstats.field));
+        subScorers[i] = new BasicSloppyDocScorer(basicstats, context.reader().getNormValues(basicstats.field));
       }
       return new MultiSimilarity.MultiSloppyDocScorer(subScorers);
     } else {
       BasicStats basicstats = (BasicStats) stats;
-      return new BasicSloppyDocScorer(basicstats, context.reader().simpleNormValues(basicstats.field));
+      return new BasicSloppyDocScorer(basicstats, context.reader().getNormValues(basicstats.field));
     }
   }
   

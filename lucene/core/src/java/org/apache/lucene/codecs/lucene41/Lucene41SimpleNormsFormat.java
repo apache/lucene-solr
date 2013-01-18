@@ -19,21 +19,21 @@ package org.apache.lucene.codecs.lucene41;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.SimpleDVConsumer;
-import org.apache.lucene.codecs.SimpleDVProducer;
-import org.apache.lucene.codecs.SimpleNormsFormat;
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
-public class Lucene41SimpleNormsFormat extends SimpleNormsFormat {
+public class Lucene41SimpleNormsFormat extends NormsFormat {
 
   @Override
-  public SimpleDVConsumer normsConsumer(SegmentWriteState state) throws IOException {
+  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
     return new Lucene41SimpleDocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
   
   @Override
-  public SimpleDVProducer normsProducer(SegmentReadState state) throws IOException {
+  public DocValuesProducer normsProducer(SegmentReadState state) throws IOException {
     return new Lucene41SimpleDocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
   

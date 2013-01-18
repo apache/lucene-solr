@@ -53,7 +53,7 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * <a name="indextime"/>
  * At indexing time, the indexer calls {@link #computeNorm(FieldInvertState)}, allowing
  * the Similarity implementation to set a per-document value for the field that will 
- * be later accessible via {@link AtomicReader#simpleNormValues(String)}.  Lucene makes no assumption
+ * be later accessible via {@link AtomicReader#getNormValues(String)}.  Lucene makes no assumption
  * about what is in this norm, but it is most useful for encoding length normalization 
  * information.
  * <p>

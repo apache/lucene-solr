@@ -29,9 +29,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.codecs.SimpleDVConsumer;
-import org.apache.lucene.codecs.SimpleDVProducer;
-import org.apache.lucene.codecs.SimpleDocValuesFormat;
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
@@ -54,7 +54,7 @@ import org.apache.lucene.util.StringHelper;
  * <b><font color="red">FOR RECREATIONAL USE ONLY</font></B>
  * @lucene.experimental
  */
-public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
+public class SimpleTextDocValuesFormat extends DocValuesFormat {
   final static BytesRef END     = new BytesRef("END");
   final static BytesRef FIELD   = new BytesRef("field ");
   // used for numerics
@@ -68,17 +68,17 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   final static BytesRef NUMVALUES = new BytesRef("  numvalues ");
   final static BytesRef ORDPATTERN = new BytesRef("  ordpattern ");
   
-  public SimpleTextSimpleDocValuesFormat() {
+  public SimpleTextDocValuesFormat() {
     super("SimpleText");
   }
 
   @Override
-  public SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+  public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     return new SimpleTextDocValuesWriter(state, "dat");
   }
 
   @Override
-  public SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException {
+  public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
     return new SimpleTextDocValuesReader(state, "dat");
   }
   
@@ -136,7 +136,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
    *  and saving the offset/etc for each field. 
    */
   // nocommit not public
-  public static class SimpleTextDocValuesWriter extends SimpleDVConsumer {
+  public static class SimpleTextDocValuesWriter extends DocValuesConsumer {
     final IndexOutput data;
     final BytesRef scratch = new BytesRef();
     final int numDocs;
@@ -381,7 +381,7 @@ public class SimpleTextSimpleDocValuesFormat extends SimpleDocValuesFormat {
   // "all docs have empty BytesREf"
 
   // nocommit not public
-  public static class SimpleTextDocValuesReader extends SimpleDVProducer {
+  public static class SimpleTextDocValuesReader extends DocValuesProducer {
 
     static class OneField {
       FieldInfo fieldInfo;

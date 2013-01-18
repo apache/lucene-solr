@@ -333,9 +333,9 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
 
       DefaultSimilarity sim = (DefaultSimilarity) searcher.getSimilarity();
       
-      NumericDocValues titleNorms = reader.simpleNormValues("title");
-      NumericDocValues fooNorms = reader.simpleNormValues("foo_t");
-      NumericDocValues textNorms =  reader.simpleNormValues("text");
+      NumericDocValues titleNorms = reader.getNormValues("title");
+      NumericDocValues fooNorms = reader.getNormValues("foo_t");
+      NumericDocValues textNorms =  reader.getNormValues("text");
 
       assertEquals(expectedNorm(sim, 2, TITLE_BOOST * DOC_BOOST),
                    titleNorms.get(docid));

@@ -17,25 +17,24 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.index.SegmentReadState;
-import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SortedDocValues;
 
-/**
- * format for normalization factors
- */
-public abstract class SimpleNormsFormat {
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
-  protected SimpleNormsFormat() {
-  }
+// nocommit add javadocs stating that this must open all
+// necessary files "on init", not later eg in .getXXX, else
+// an IW that deletes a commit will cause an SR to hit
+// exceptions....
 
-  /** Returns a {@link SimpleDVConsumer} to write norms to the
-   *  index. */
-  public abstract SimpleDVConsumer normsConsumer(SegmentWriteState state) throws IOException;
+public abstract class DocValuesProducer implements Closeable {
 
-  /** Returns a {@link SimpleDVProducer} to read norms from the
-   *  index. */
-  public abstract SimpleDVProducer normsProducer(SegmentReadState state) throws IOException;
+  public abstract NumericDocValues getNumeric(FieldInfo field) throws IOException;
+
+  public abstract BinaryDocValues getBinary(FieldInfo field) throws IOException;
+
+  public abstract SortedDocValues getSorted(FieldInfo field) throws IOException;
 }

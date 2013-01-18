@@ -290,12 +290,12 @@ public class TestOmitNorms extends LuceneTestCase {
 
     IndexReader ir1 = riw.getReader();
     // todo: generalize
-    NumericDocValues norms1 = MultiSimpleDocValues.simpleNormValues(ir1, field);
+    NumericDocValues norms1 = MultiDocValues.getNormValues(ir1, field);
     
     // fully merge and validate MultiNorms against single segment.
     riw.forceMerge(1);
     DirectoryReader ir2 = riw.getReader();
-    NumericDocValues norms2 = getOnlySegmentReader(ir2).simpleNormValues(field);
+    NumericDocValues norms2 = getOnlySegmentReader(ir2).getNormValues(field);
 
     if (norms1 == null) {
       assertNull(norms2);

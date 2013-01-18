@@ -67,7 +67,7 @@ public class TestMaxTermFrequency extends LuceneTestCase {
   }
   
   public void test() throws Exception {
-    NumericDocValues fooNorms = MultiSimpleDocValues.simpleNormValues(reader, "foo");
+    NumericDocValues fooNorms = MultiDocValues.getNormValues(reader, "foo");
     for (int i = 0; i < reader.maxDoc(); i++) {
       assertEquals(expected.get(i).intValue(), fooNorms.get(i) & 0xff);
     }

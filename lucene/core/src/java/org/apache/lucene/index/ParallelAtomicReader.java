@@ -285,10 +285,10 @@ public final class ParallelAtomicReader extends AtomicReader {
   }
 
   @Override
-  public NumericDocValues simpleNormValues(String field) throws IOException {
+  public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
     AtomicReader reader = fieldToReader.get(field);
-    NumericDocValues values = reader == null ? null : reader.simpleNormValues(field);
+    NumericDocValues values = reader == null ? null : reader.getNormValues(field);
     return values;
   }
 }

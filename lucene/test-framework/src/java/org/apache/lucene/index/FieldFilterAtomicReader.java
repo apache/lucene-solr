@@ -132,8 +132,8 @@ public final class FieldFilterAtomicReader extends FilterAtomicReader {
   }
 
   @Override
-  public NumericDocValues simpleNormValues(String field) throws IOException {
-    return hasField(field) ? super.simpleNormValues(field) : null;
+  public NumericDocValues getNormValues(String field) throws IOException {
+    return hasField(field) ? super.getNormValues(field) : null;
   }
 
   @Override

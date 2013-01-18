@@ -214,7 +214,7 @@ public class BM25Similarity extends Similarity {
   @Override
   public final ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
     BM25Stats bm25stats = (BM25Stats) stats;
-    final NumericDocValues norms = context.reader().simpleNormValues(bm25stats.field);
+    final NumericDocValues norms = context.reader().getNormValues(bm25stats.field);
     return norms == null 
       ? new ExactBM25DocScorerNoNorms(bm25stats)
       : new ExactBM25DocScorer(bm25stats, norms);
@@ -223,7 +223,7 @@ public class BM25Similarity extends Similarity {
   @Override
   public final SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
     BM25Stats bm25stats = (BM25Stats) stats;
-    return new SloppyBM25DocScorer(bm25stats, context.reader().simpleNormValues(bm25stats.field));
+    return new SloppyBM25DocScorer(bm25stats, context.reader().getNormValues(bm25stats.field));
   }
   
   private class ExactBM25DocScorer extends ExactSimScorer {

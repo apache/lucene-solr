@@ -424,8 +424,8 @@ public class FilterAtomicReader extends AtomicReader {
   }
 
   @Override
-  public NumericDocValues simpleNormValues(String field) throws IOException {
+  public NumericDocValues getNormValues(String field) throws IOException {
     ensureOpen();
-    return in.simpleNormValues(field);
+    return in.getNormValues(field);
   }
 }

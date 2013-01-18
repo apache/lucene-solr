@@ -757,13 +757,13 @@ public abstract class TFIDFSimilarity extends Similarity {
   @Override
   public final ExactSimScorer exactSimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
     IDFStats idfstats = (IDFStats) stats;
-    return new ExactTFIDFDocScorer(idfstats, context.reader().simpleNormValues(idfstats.field));
+    return new ExactTFIDFDocScorer(idfstats, context.reader().getNormValues(idfstats.field));
   }
 
   @Override
   public final SloppySimScorer sloppySimScorer(SimWeight stats, AtomicReaderContext context) throws IOException {
     IDFStats idfstats = (IDFStats) stats;
-    return new SloppyTFIDFDocScorer(idfstats, context.reader().simpleNormValues(idfstats.field));
+    return new SloppyTFIDFDocScorer(idfstats, context.reader().getNormValues(idfstats.field));
   }
   
   // TODO: we can specialize these for omitNorms up front, but we should test that it doesn't confuse stupid hotspot.

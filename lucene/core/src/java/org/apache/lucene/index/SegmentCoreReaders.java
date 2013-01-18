@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.SimpleDVProducer;
+import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
@@ -54,8 +54,8 @@ final class SegmentCoreReaders {
   final FieldInfos fieldInfos;
   
   final FieldsProducer fields;
-  final SimpleDVProducer simpleDVProducer;
-  final SimpleDVProducer simpleNormsProducer;
+  final DocValuesProducer simpleDVProducer;
+  final DocValuesProducer simpleNormsProducer;
 
   final int termsIndexDivisor;
   
@@ -132,9 +132,9 @@ final class SegmentCoreReaders {
       // TODO: since we don't write any norms file if there are no norms,
       // kinda jaky to assume the codec handles the case of no norms file at all gracefully?!
       // nocommit shouldn't need null check:
-      if (codec.simpleDocValuesFormat() != null) {
+      if (codec.docValuesFormat() != null) {
         if (fieldInfos.hasDocValues()) {
-          simpleDVProducer = codec.simpleDocValuesFormat().fieldsProducer(segmentReadState);
+          simpleDVProducer = codec.docValuesFormat().fieldsProducer(segmentReadState);
         } else {
           simpleDVProducer = null;
         }
@@ -142,9 +142,9 @@ final class SegmentCoreReaders {
         simpleDVProducer = null;
       }
       // nocommit shouldn't need null check:
-      if (codec.simpleNormsFormat() != null) {
+      if (codec.normsFormat() != null) {
         if (fieldInfos.hasNorms()) {
-          simpleNormsProducer = codec.simpleNormsFormat().normsProducer(segmentReadState);
+          simpleNormsProducer = codec.normsFormat().normsProducer(segmentReadState);
         } else {
           simpleNormsProducer = null;
         }

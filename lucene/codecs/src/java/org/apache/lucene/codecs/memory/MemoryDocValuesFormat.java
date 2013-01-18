@@ -19,11 +19,11 @@ package org.apache.lucene.codecs.memory;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.SimpleDVConsumer;
-import org.apache.lucene.codecs.SimpleDVProducer;
-import org.apache.lucene.codecs.SimpleDocValuesFormat;
-import org.apache.lucene.codecs.simpletext.SimpleTextSimpleDocValuesFormat.SimpleTextDocValuesReader;
-import org.apache.lucene.codecs.simpletext.SimpleTextSimpleDocValuesFormat.SimpleTextDocValuesWriter;
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat.SimpleTextDocValuesReader;
+import org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat.SimpleTextDocValuesWriter;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
@@ -37,14 +37,14 @@ import org.apache.lucene.util.packed.PackedInts;
  *  search time. */
 
 // nocommit: nuke this wrapper and just make a nice impl for 4.1 (e.g. FST for sortedbytes)
-public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
+public class MemoryDocValuesFormat extends DocValuesFormat {
 
   public MemoryDocValuesFormat() {
     super("Memory");
   }
 
   @Override
-  public SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+  public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     // nocommit use a more efficient format ;):
     return new SimpleTextDocValuesWriter(state, "dat");
   }
@@ -53,11 +53,11 @@ public class MemoryDocValuesFormat extends SimpleDocValuesFormat {
   // per-thread!
   
   @Override
-  public SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException {
+  public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
     final int maxDoc = state.segmentInfo.getDocCount();
-    final SimpleDVProducer producer = new SimpleTextDocValuesReader(state, "dat");
+    final DocValuesProducer producer = new SimpleTextDocValuesReader(state, "dat");
 
-    return new SimpleDVProducer() {
+    return new DocValuesProducer() {
 
       @Override
       public NumericDocValues getNumeric(FieldInfo field) throws IOException {

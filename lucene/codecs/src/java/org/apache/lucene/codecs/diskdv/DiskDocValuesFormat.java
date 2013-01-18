@@ -19,9 +19,9 @@ package org.apache.lucene.codecs.diskdv;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.SimpleDVConsumer;
-import org.apache.lucene.codecs.SimpleDVProducer;
-import org.apache.lucene.codecs.SimpleDocValuesFormat;
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesProducer;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -37,19 +37,19 @@ import org.apache.lucene.index.SegmentWriteState;
  * fixedLength SortedField = BINARY + NUMERIC (ords)
  * variableLength SortedField = BINARY + NUMERIC (addresses) + NUMERIC (ords) 
  */
-public class DiskDocValuesFormat extends SimpleDocValuesFormat {
+public class DiskDocValuesFormat extends DocValuesFormat {
 
   public DiskDocValuesFormat() {
     super("Disk");
   }
 
   @Override
-  public SimpleDVConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+  public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     return new DiskDocValuesConsumer(state);
   }
 
   @Override
-  public SimpleDVProducer fieldsProducer(SegmentReadState state) throws IOException {
+  public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
     return new DiskDocValuesProducer(state);
   }
   

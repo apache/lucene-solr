@@ -28,7 +28,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.SimpleDocValuesFormat;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41Codec;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat;
@@ -45,7 +45,7 @@ import org.apache.lucene.codecs.mocksep.MockSepPostingsFormat;
 import org.apache.lucene.codecs.nestedpulsing.NestedPulsingPostingsFormat;
 import org.apache.lucene.codecs.pulsing.Pulsing41PostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
-import org.apache.lucene.codecs.simpletext.SimpleTextSimpleDocValuesFormat;
+import org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -63,7 +63,7 @@ public class RandomCodec extends Lucene41Codec {
   private List<PostingsFormat> formats = new ArrayList<PostingsFormat>();
   
   /** Shuffled list of docvalues formats to use for new mappings */
-  private List<SimpleDocValuesFormat> dvFormats = new ArrayList<SimpleDocValuesFormat>();
+  private List<DocValuesFormat> dvFormats = new ArrayList<DocValuesFormat>();
   
   /** unique set of format names this codec knows about */
   public Set<String> formatNames = new HashSet<String>();
@@ -76,7 +76,7 @@ public class RandomCodec extends Lucene41Codec {
   // otherwise DWPT's .toString() calls that iterate over the map can 
   // cause concurrentmodificationexception if indexwriter's infostream is on
   private Map<String,PostingsFormat> previousMappings = Collections.synchronizedMap(new HashMap<String,PostingsFormat>());
-  private Map<String,SimpleDocValuesFormat> previousDVMappings = Collections.synchronizedMap(new HashMap<String,SimpleDocValuesFormat>());
+  private Map<String,DocValuesFormat> previousDVMappings = Collections.synchronizedMap(new HashMap<String,DocValuesFormat>());
   private final int perFieldSeed;
 
   @Override
@@ -96,11 +96,11 @@ public class RandomCodec extends Lucene41Codec {
   }
 
   @Override
-  public SimpleDocValuesFormat getDocValuesFormatForField(String name) {
-    SimpleDocValuesFormat codec = previousDVMappings.get(name);
+  public DocValuesFormat getDocValuesFormatForField(String name) {
+    DocValuesFormat codec = previousDVMappings.get(name);
     if (codec == null) {
       codec = dvFormats.get(Math.abs(perFieldSeed ^ name.hashCode()) % dvFormats.size());
-      if (codec instanceof SimpleTextSimpleDocValuesFormat && perFieldSeed % 5 != 0) {
+      if (codec instanceof SimpleTextDocValuesFormat && perFieldSeed % 5 != 0) {
         // make simpletext rarer, choose again
         codec = dvFormats.get(Math.abs(perFieldSeed ^ name.toUpperCase(Locale.ROOT).hashCode()) % dvFormats.size());
       }
@@ -143,7 +143,7 @@ public class RandomCodec extends Lucene41Codec {
     
     addDocValues(avoidCodecs,
         new DiskDocValuesFormat(),
-        new SimpleTextSimpleDocValuesFormat(),
+        new SimpleTextDocValuesFormat(),
         new MemoryDocValuesFormat());
 
     Collections.shuffle(formats, random);
@@ -167,8 +167,8 @@ public class RandomCodec extends Lucene41Codec {
     }
   }
   
-  private final void addDocValues(Set<String> avoidCodecs, SimpleDocValuesFormat... docvalues) {
-    for (SimpleDocValuesFormat d : docvalues) {
+  private final void addDocValues(Set<String> avoidCodecs, DocValuesFormat... docvalues) {
+    for (DocValuesFormat d : docvalues) {
       if (!avoidCodecs.contains(d.getName())) {
         dvFormats.add(d);
         dvFormatNames.add(d.getName());
