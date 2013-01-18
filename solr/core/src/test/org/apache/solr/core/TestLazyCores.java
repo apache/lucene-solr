@@ -34,8 +34,10 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 
 public class TestLazyCores extends SolrTestCaseJ4 {
 
@@ -241,6 +243,44 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       core7.close();
       core8.close();
       core9.close();
+    } finally {
+      cc.shutdown();
+    }
+  }
+
+  // Test case for SOLR-4300
+  @Test
+  public void testRace() throws Exception {
+    final List<SolrCore> _theCores = new ArrayList<SolrCore>();
+    final CoreContainer cc = init();
+    try {
+
+      Thread[] threads = new Thread[15];
+      for (int idx = 0; idx < threads.length; idx++) {
+        threads[idx] = new Thread() {
+          @Override
+          public void run() {
+            SolrCore core = cc.getCore("collectionLazy3");
+            synchronized (_theCores) {
+              _theCores.add(core);
+            }
+          }
+        };
+        threads[idx].start();
+      }
+
+      for (Thread thread : threads) {
+        thread.join();
+      }
+
+      for (int idx = 0; idx < _theCores.size() - 1; ++idx) {
+        assertEquals("Cores should be the same!", _theCores.get(idx), _theCores.get(idx + 1));
+      }
+
+      for (SolrCore core : _theCores) {
+        core.close();
+      }
+
     } finally {
       cc.shutdown();
     }

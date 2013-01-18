@@ -39,6 +39,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 public final class FixedBitSet extends DocIdSet implements Bits {
   private final long[] bits;
   private final int numBits;
+  private final int wordLength;
 
   /** returns the number of 64 bit words it would take to hold numBits */
   public static int bits2words(int numBits) {
@@ -52,23 +53,29 @@ public final class FixedBitSet extends DocIdSet implements Bits {
   public FixedBitSet(int numBits) {
     this.numBits = numBits;
     bits = new long[bits2words(numBits)];
+    wordLength = bits.length;
   }
 
-  public FixedBitSet(long[]storedBits,int numBits) {
+  public FixedBitSet(long[] storedBits, int numBits) {
+    this.wordLength = bits2words(numBits);
+    if (wordLength > storedBits.length) {
+      throw new IllegalArgumentException("The given long array is too small  to hold " + numBits + " bits");
+    }
     this.numBits = numBits;
     this.bits = storedBits;
   }      
   
   /** Makes full copy. */
   public FixedBitSet(FixedBitSet other) {
-    bits = new long[other.bits.length];
-    System.arraycopy(other.bits, 0, bits, 0, bits.length);
+    bits = new long[other.wordLength];
+    System.arraycopy(other.bits, 0, bits, 0, other.wordLength);
     numBits = other.numBits;
+    wordLength = other.wordLength;
   }
 
   @Override
   public DocIdSetIterator iterator() {
-    return new OpenBitSetIterator(bits, bits.length);
+    return new OpenBitSetIterator(bits, wordLength);
   }
 
   @Override
@@ -159,7 +166,7 @@ public final class FixedBitSet extends DocIdSet implements Bits {
       return (i<<6) + subIndex + Long.numberOfTrailingZeros(word);
     }
 
-    while(++i < bits.length) {
+    while(++i < wordLength) {
       word = bits[i];
       if (word != 0) {
         return (i<<6) + Long.numberOfTrailingZeros(word);
@@ -211,12 +218,12 @@ public final class FixedBitSet extends DocIdSet implements Bits {
 
   /** this = this OR other */
   public void or(FixedBitSet other) {
-    or(other.bits, other.bits.length);
+    or(other.bits, other.wordLength);
   }
   
   private void or(final long[] otherArr, final int otherLen) {
     final long[] thisArr = this.bits;
-    int pos = Math.min(thisArr.length, otherLen);
+    int pos = Math.min(wordLength, otherLen);
     while (--pos >= 0) {
       thisArr[pos] |= otherArr[pos];
     }
@@ -247,17 +254,17 @@ public final class FixedBitSet extends DocIdSet implements Bits {
 
   /** this = this AND other */
   public void and(FixedBitSet other) {
-    and(other.bits, other.bits.length);
+    and(other.bits, other.wordLength);
   }
   
   private void and(final long[] otherArr, final int otherLen) {
     final long[] thisArr = this.bits;
-    int pos = Math.min(thisArr.length, otherLen);
+    int pos = Math.min(this.wordLength, otherLen);
     while(--pos >= 0) {
       thisArr[pos] &= otherArr[pos];
     }
-    if (thisArr.length > otherLen) {
-      Arrays.fill(thisArr, otherLen, thisArr.length, 0L);
+    if (this.wordLength > otherLen) {
+      Arrays.fill(thisArr, otherLen, this.wordLength, 0L);
     }
   }
 
@@ -285,7 +292,7 @@ public final class FixedBitSet extends DocIdSet implements Bits {
   
   private void andNot(final long[] otherArr, final int otherLen) {
     final long[] thisArr = this.bits;
-    int pos = Math.min(thisArr.length, otherLen);
+    int pos = Math.min(this.wordLength, otherLen);
     while(--pos >= 0) {
       thisArr[pos] &= ~otherArr[pos];
     }
@@ -418,7 +425,7 @@ public final class FixedBitSet extends DocIdSet implements Bits {
   @Override
   public int hashCode() {
     long h = 0;
-    for (int i = bits.length; --i>=0;) {
+    for (int i = wordLength; --i>=0;) {
       h ^= bits[i];
       h = (h << 1) | (h >>> 63); // rotate left
     }

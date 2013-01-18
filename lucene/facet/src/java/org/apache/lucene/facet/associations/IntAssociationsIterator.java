@@ -2,7 +2,7 @@ package org.apache.lucene.facet.associations;
 
 import java.io.IOException;
 
-import org.apache.lucene.util.collections.IntToFloatMap;
+import org.apache.lucene.util.collections.IntToIntMap;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,33 +22,36 @@ import org.apache.lucene.util.collections.IntToFloatMap;
  */
 
 /**
- * An {@link AssociationsPayloadIterator} over integer association values.
+ * An {@link AssociationsIterator} over integer association values.
  * 
  * @lucene.experimental
  */
-public class FloatAssociationsPayloadIterator extends AssociationsPayloadIterator<CategoryFloatAssociation> {
+public class IntAssociationsIterator extends AssociationsIterator<CategoryIntAssociation> {
 
-  private final IntToFloatMap ordinalAssociations = new IntToFloatMap();
+  private final IntToIntMap ordinalAssociations = new IntToIntMap();
 
-  public FloatAssociationsPayloadIterator(String field, CategoryFloatAssociation association) throws IOException {
+  /**
+   * Constructs a new {@link IntAssociationsIterator}.
+   */
+  public IntAssociationsIterator(String field, CategoryIntAssociation association) throws IOException {
     super(field, association);
   }
 
   @Override
-  protected void handleAssociation(int ordinal, CategoryFloatAssociation association) {
+  protected void handleAssociation(int ordinal, CategoryIntAssociation association) {
     ordinalAssociations.put(ordinal, association.getValue());
   }
-
+  
   /**
-   * Returns the float association values of the categories that are associated
-   * with the given document, or {@code null} if the document has no
+   * Returns the integer association values of the categories that are
+   * associated with the given document, or {@code null} if the document has no
    * associations.
    * <p>
    * <b>NOTE:</b> you are not expected to modify the returned map.
    */
-  public IntToFloatMap getAssociations(int docID) throws IOException {
+  public IntToIntMap getAssociations(int docID) throws IOException {
     ordinalAssociations.clear();
     return setNextDoc(docID) ? ordinalAssociations : null;
   }
-  
+
 }

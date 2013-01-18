@@ -90,8 +90,9 @@ public class TaxonomyMergeUtils {
 
     DirectoryReader reader = DirectoryReader.open(srcIndexDir, -1);
     List<AtomicReaderContext> leaves = reader.leaves();
-    AtomicReader wrappedLeaves[] = new AtomicReader[leaves.size()];
-    for (int i = 0; i < leaves.size(); i++) {
+    int numReaders = leaves.size();
+    AtomicReader wrappedLeaves[] = new AtomicReader[numReaders];
+    for (int i = 0; i < numReaders; i++) {
       wrappedLeaves[i] = new OrdinalMappingAtomicReader(leaves.get(i).reader(), ordinalMap, params);
     }
     try {

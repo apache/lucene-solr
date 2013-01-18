@@ -19,6 +19,21 @@ Changes in backwards compatibility policy
   (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
   Robert Muir)
 
+======================= Lucene 4.2.0 =======================
+
+Changes in backwards compatibility policy
+
+* LUCENE-4602: FacetFields now stores facet ordinals in a DocValues field, 
+  rather than a payload. This forces rebuilding existing indexes, or do a
+  one time migration using FacetsPayloadMigratingReader. Since DocValues 
+  support in-memory caching, CategoryListCache was removed too.
+  (Shai Erera, Michael McCandless)
+
+Optimizations
+
+* LUCENE-4687: BloomFilterPostingsFormat now lazily initializes delegate
+  TermsEnum only if needed to do a seek or get a DocsEnum. (Simon Willnauer) 
+
 * LUCENE-4677, LUCENE-4682: unpacked FSTs now use vInt to encode the node target,
   to reduce their size (Mike McCandless)
 
@@ -28,6 +43,11 @@ Changes in backwards compatibility policy
 
 * LUCENE-3298: FST can now be larger than 2.1 GB / 2.1 B nodes.
   (James Dyer, Mike McCandless)
+
+New Features
+
+* LUCENE-4686: New specialized DGapVInt8IntEncoder for facets (now the 
+  default). (Shai Erera)
 
 ======================= Lucene 4.1.0 =======================
 
@@ -150,7 +170,7 @@ New Features
   remove stop words then "ghost chr..." could suggest "The Ghost of
   Christmas Past"; if SynonymFilter is used to map wifi and wireless
   network to hotspot, then "wirele..." could suggest "wifi router";
-  token normalization likes stemmers, accent removel, etc. would allow
+  token normalization likes stemmers, accent removal, etc. would allow
   the suggester to ignore such variations. (Robert Muir, Sudarshan
   Gaikaiwari, Mike McCandless)
 
@@ -202,7 +222,7 @@ API Changes
   information about the trigger of the merge ie. merge triggered due
   to a segment merge or a full flush etc. (Simon Willnauer)
 
-* Lucene-4415: TermsFilter is now immutable. All terms need to be provided
+* LUCENE-4415: TermsFilter is now immutable. All terms need to be provided
   as constructor argument. (Simon Willnauer)
 
 * LUCENE-4520: ValueSource.getSortField no longer throws IOExceptions
@@ -227,6 +247,9 @@ API Changes
 * LUCENE-4663: Deprecate IndexSearcher.document(int, Set). This was not intended
   to be final, nor named document(). Use IndexSearcher.doc(int, Set) instead.
   (Robert Muir)
+
+* LUCENE-4684: Made DirectSpellChecker extendable.
+  (Martijn van Groningen)
   
 Bug Fixes
 
@@ -343,6 +366,9 @@ Bug Fixes
   DEFAULT_ARTICLES list passed to ElisionFilter.  (David Leunen via Steve Rowe)
 
 * LUCENE-4671: Fix CharsRef.subSequence method.  (Tim Smith via Robert Muir)
+
+* LUCENE-4465: Let ConstantScoreQuery's Scorer return its child scorer.
+  (selckin via Uwe Schindler)
     
 Changes in Runtime Behavior
   

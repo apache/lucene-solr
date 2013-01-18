@@ -87,7 +87,7 @@ public class FilterAtomicReader extends AtomicReader {
     }
 
     @Override
-    public Comparator<BytesRef> getComparator() throws IOException {
+    public Comparator<BytesRef> getComparator() {
       return in.getComparator();
     }
 

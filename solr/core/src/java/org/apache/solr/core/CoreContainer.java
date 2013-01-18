@@ -128,6 +128,8 @@ public class CoreContainer
 
   protected final Map<String, CoreDescriptor> dynamicDescriptors = new LinkedHashMap<String, CoreDescriptor>();
 
+  protected final Set<String> pendingDynamicCoreLoads = new HashSet<String>();
+
   protected final Map<String,Exception> coreInitFailures = 
     Collections.synchronizedMap(new LinkedHashMap<String,Exception>());
   
@@ -1245,17 +1247,8 @@ public class CoreContainer
       }
     }
   }
-  
-  /** Gets a core by name and increase its refcount.
-   * @see SolrCore#close() 
-   * @param name the core name
-   * @return the core if found
-   */
-  public SolrCore getCore(String name) {
-    name = checkDefault(name);
-    // Do this in two phases since we don't want to lock access to the cores over a load.
+  private SolrCore getCoreFromAnyList(String name) {
     SolrCore core;
-
     synchronized (cores) {
       core = cores.get(name);
       if (core != null) {
@@ -1274,20 +1267,64 @@ public class CoreContainer
         return core;
       }
     }
+    return null;
+  }
+  /** Gets a core by name and increase its refcount.
+   * @see SolrCore#close() 
+   * @param name the core name
+   * @return the core if found
+   */
+  public SolrCore getCore(String name) {
+    name = checkDefault(name);
+    // Do this in two phases since we don't want to lock access to the cores over a load.
+    SolrCore core = getCoreFromAnyList(name);
+
+    if (core != null) return core;
+
+    // OK, it's not presently in any list, is it in the list of dynamic cores but not loaded yet? If so, load it.
     CoreDescriptor desc =  dynamicDescriptors.get(name);
     if (desc == null) { //Nope, no transient core with this name
       return null;
     }
+
+    // Keep multiple threads from loading the same core at the same time.
     try {
-      core = create(desc); // This should throw an error if it fails.
-      core.open();
-      if (desc.isTransient()) {
-        registerLazyCore(name, core, false);    // This is a transient core
-      } else {
-        register(name, core, false); // This is a "permanent", although deferred-load core
+      boolean isPending;
+      synchronized (pendingDynamicCoreLoads) {
+        isPending = pendingDynamicCoreLoads.contains(name);
+        if (! isPending) {
+          pendingDynamicCoreLoads.add(name);
+        }
       }
-    } catch (Exception ex) {
-      throw recordAndThrow(name, "Unable to create core" + name, ex);
+
+      while (isPending) {
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException e) {
+          return null; // Seems best not to do anything at all if the thread is interrupted
+        }
+
+        synchronized (pendingDynamicCoreLoads) {
+          if (!pendingDynamicCoreLoads.contains(name)) {
+            // NOTE: If, for some reason, the load failed, we'll return null here and presumably the log will show
+            // why. We'll fail all over again next time if the problem isn't corrected.
+            return getCoreFromAnyList(name);
+          }
+        }
+      }
+      try {
+        core = create(desc); // This should throw an error if it fails.
+        core.open();
+        if (desc.isTransient()) {
+          registerLazyCore(name, core, false);    // This is a transient core
+        } else {
+          register(name, core, false); // This is a "permanent", although deferred-load core
+        }
+      } catch (Exception ex) {
+        throw recordAndThrow(name, "Unable to create core" + name, ex);
+      }
+    } finally {
+      pendingDynamicCoreLoads.remove(name);
     }
     return core;
   }

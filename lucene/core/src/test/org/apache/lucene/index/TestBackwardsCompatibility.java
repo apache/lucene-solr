@@ -83,14 +83,22 @@ import org.junit.Ignore;
 @SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
 public class TestBackwardsCompatibility extends LuceneTestCase {
 
-  // Uncomment these cases & run them on an older Lucene
-  // version, to generate an index to test backwards
-  // compatibility.  Then, cd to build/test/index.cfs and
-  // run "zip index.<VERSION>.cfs.zip *"; cd to
-  // build/test/index.nocfs and run "zip
-  // index.<VERSION>.nocfs.zip *".  Then move those 2 zip
-  // files to your trunk checkout and add them to the
-  // oldNames array.
+  // Uncomment these cases & run them on an older Lucene version,
+  // to generate indexes to test backwards compatibility.  These
+  // indexes will be created under directory /tmp/idx/.
+  //
+  // However, you must first disable the Lucene TestSecurityManager,
+  // which will otherwise disallow writing outside of the build/
+  // directory - to do this, comment out the "java.security.manager"
+  // <sysproperty> under the "test-macro" <macrodef>.
+  //
+  // Zip up the generated indexes:
+  //
+  //    cd /tmp/idx/index.cfs   ; zip index.<VERSION>.cfs.zip *
+  //    cd /tmp/idx/index.nocfs ; zip index.<VERSION>.nocfs.zip *
+  //
+  // Then move those 2 zip files to your trunk checkout and add them
+  // to the oldNames array.
 
   /*
   public void testCreateCFS() throws IOException {
@@ -151,6 +159,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   
   final static String[] oldNames = {"40.cfs",
                                     "40.nocfs",
+                                    "41.cfs",
+                                    "41.nocfs",
   };
   
   final String[] unsupportedNames = {"19.cfs",
@@ -545,7 +555,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public File createIndex(String dirName, boolean doCFS, boolean fullyMerged) throws IOException {
     // we use a real directory name that is not cleaned up, because this method is only used to create backwards indexes:
-    File indexDir = new File("/tmp/4x", dirName);
+    File indexDir = new File("/tmp/idx", dirName);
     _TestUtil.rmDir(indexDir);
     Directory dir = newFSDirectory(indexDir);
     LogByteSizeMergePolicy mp = new LogByteSizeMergePolicy();

@@ -1,13 +1,5 @@
 package org.apache.lucene.facet.search.params;
 
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.facet.util.PartitionsUtils;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
@@ -30,28 +22,6 @@ import org.junit.Test;
 
 public class FacetSearchParamsTest extends LuceneTestCase {
 
-  @Test
-  public void testAddFacetRequest() throws Exception {
-    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("a", "b"), 1));
-    assertEquals("expected 1 facet request", 1, fsp.getFacetRequests().size());
-  }
-  
-  @Test
-  public void testPartitionSizeWithCategories() throws Exception {
-    Directory dir = newDirectory();
-    TaxonomyWriter tw = new DirectoryTaxonomyWriter(dir);
-    tw.addCategory(new CategoryPath("a"));
-    tw.commit();
-    tw.close();
-    TaxonomyReader tr = new DirectoryTaxonomyReader(dir);
-    assertEquals("unexpected partition offset for 1 categories", 2,
-        PartitionsUtils.partitionOffset(FacetIndexingParams.ALL_PARENTS, 1, tr));
-    assertEquals("unexpected partition size for 1 categories", 2,
-        PartitionsUtils.partitionSize(FacetIndexingParams.ALL_PARENTS,tr));
-    tr.close();
-    dir.close();
-  }
-  
   @Test
   public void testSearchParamsWithNullRequest() throws Exception {
     try {

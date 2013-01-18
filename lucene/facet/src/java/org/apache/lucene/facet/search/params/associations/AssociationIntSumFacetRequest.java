@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
+import org.apache.lucene.facet.search.aggregator.associations.AssociationFloatSumAggregator;
 import org.apache.lucene.facet.search.aggregator.associations.AssociationIntSumAggregator;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
@@ -28,7 +29,10 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 /**
  * A {@link FacetRequest} for weighting facets according to their integer
- * association by summing the association values.
+ * association by summing the association values. Note that this class caches
+ * the associations data in-memory by default. You can override
+ * {@link #createAggregator(boolean, FacetArrays, TaxonomyReader)} to return an
+ * {@link AssociationFloatSumAggregator} which does otherwise.
  * 
  * @lucene.experimental
  */

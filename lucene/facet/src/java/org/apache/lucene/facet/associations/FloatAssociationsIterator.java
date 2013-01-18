@@ -2,7 +2,7 @@ package org.apache.lucene.facet.associations;
 
 import java.io.IOException;
 
-import org.apache.lucene.util.collections.IntToIntMap;
+import org.apache.lucene.util.collections.IntToFloatMap;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,33 +22,36 @@ import org.apache.lucene.util.collections.IntToIntMap;
  */
 
 /**
- * An {@link AssociationsPayloadIterator} over integer association values.
+ * An {@link AssociationsIterator} over integer association values.
  * 
  * @lucene.experimental
  */
-public class IntAssociationsPayloadIterator extends AssociationsPayloadIterator<CategoryIntAssociation> {
+public class FloatAssociationsIterator extends AssociationsIterator<CategoryFloatAssociation> {
 
-  private final IntToIntMap ordinalAssociations = new IntToIntMap();
-
-  public IntAssociationsPayloadIterator(String field, CategoryIntAssociation association) throws IOException {
+  private final IntToFloatMap ordinalAssociations = new IntToFloatMap();
+  
+  /**
+   * Constructs a new {@link FloatAssociationsIterator}.
+   */
+  public FloatAssociationsIterator(String field, CategoryFloatAssociation association) throws IOException {
     super(field, association);
   }
 
   @Override
-  protected void handleAssociation(int ordinal, CategoryIntAssociation association) {
+  protected void handleAssociation(int ordinal, CategoryFloatAssociation association) {
     ordinalAssociations.put(ordinal, association.getValue());
   }
-  
+
   /**
-   * Returns the integer association values of the categories that are
-   * associated with the given document, or {@code null} if the document has no
+   * Returns the float association values of the categories that are associated
+   * with the given document, or {@code null} if the document has no
    * associations.
    * <p>
    * <b>NOTE:</b> you are not expected to modify the returned map.
    */
-  public IntToIntMap getAssociations(int docID) throws IOException {
+  public IntToFloatMap getAssociations(int docID) throws IOException {
     ordinalAssociations.clear();
     return setNextDoc(docID) ? ordinalAssociations : null;
   }
-
+  
 }

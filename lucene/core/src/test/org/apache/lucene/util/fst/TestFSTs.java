@@ -1033,7 +1033,7 @@ public class TestFSTs extends LuceneTestCase {
         throws IOException {
         if (FST.targetHasArcs(arc)) {
           int childCount = 0;
-          BytesReader fstReader = fst.getBytesReader(0);
+          BytesReader fstReader = fst.getBytesReader();
           for (arc = fst.readFirstTargetArc(arc, arc, fstReader);; 
                arc = fst.readNextArc(arc, fstReader), childCount++)
           {
@@ -1168,12 +1168,12 @@ public class TestFSTs extends LuceneTestCase {
     assertEquals(nothing, startArc.nextFinalOutput);
 
     FST.Arc<Long> arc = fst.readFirstTargetArc(startArc, new FST.Arc<Long>(),
-                                               fst.getBytesReader(0));
+                                               fst.getBytesReader());
     assertEquals('a', arc.label);
     assertEquals(17, arc.nextFinalOutput.longValue());
     assertTrue(arc.isFinal());
 
-    arc = fst.readNextArc(arc, fst.getBytesReader(0));
+    arc = fst.readNextArc(arc, fst.getBytesReader());
     assertEquals('b', arc.label);
     assertFalse(arc.isFinal());
     assertEquals(42, arc.output.longValue());
@@ -1303,7 +1303,7 @@ public class TestFSTs extends LuceneTestCase {
     //Util.toDot(fst, w, false, false);
     //w.close();
     
-    BytesReader reader = fst.getBytesReader(0);
+    BytesReader reader = fst.getBytesReader();
     
     //System.out.println("testing: " + allPrefixes.size() + " prefixes");
     for (String prefix : allPrefixes) {
@@ -1424,7 +1424,7 @@ public class TestFSTs extends LuceneTestCase {
     //Util.toDot(fst, w, false, false);
     //w.close();
     
-    BytesReader reader = fst.getBytesReader(0);
+    BytesReader reader = fst.getBytesReader();
     
     //System.out.println("testing: " + allPrefixes.size() + " prefixes");
     for (String prefix : allPrefixes) {

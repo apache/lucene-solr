@@ -59,7 +59,9 @@ public class EightFlagsIntEncoder extends ChunksIntEncoder {
   }
 
   @Override
-  protected void doEncode(IntsRef values, BytesRef buf, int upto) {
+  public void encode(IntsRef values, BytesRef buf) {
+    buf.offset = buf.length = 0;
+    int upto = values.offset + values.length;
     for (int i = values.offset; i < upto; i++) {
       int value = values.ints[i];
       if (value == 1) {
@@ -88,7 +90,7 @@ public class EightFlagsIntEncoder extends ChunksIntEncoder {
 
   @Override
   public String toString() {
-    return "EightFlags (VInt)";
+    return "EightFlags(VInt)";
   }
 
 }

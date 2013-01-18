@@ -1,10 +1,12 @@
 package org.apache.lucene.facet.index.params;
 
-import org.apache.lucene.index.Term;
-import org.junit.Test;
-
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.facet.index.params.CategoryListParams;
+import org.apache.lucene.util.encoding.DGapVInt8IntEncoder;
+import org.apache.lucene.util.encoding.IntDecoder;
+import org.apache.lucene.util.encoding.IntEncoder;
+import org.apache.lucene.util.encoding.SortingIntEncoder;
+import org.apache.lucene.util.encoding.UniqueValuesIntEncoder;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -28,9 +30,11 @@ public class CategoryListParamsTest extends LuceneTestCase {
   @Test
   public void testDefaultSettings() {
     CategoryListParams clp = new CategoryListParams();
-    assertEquals("wrong default term", new Term("$facets", "$fulltree$"), clp.getTerm());
-    assertEquals("unexpected default encoder", "Sorting (Unique (DGap (VInt8)))", clp.createEncoder().toString());
-    assertEquals("unexpected default decoder", "DGap (VInt8)", clp.createEncoder().createMatchingDecoder().toString());
+    assertEquals("wrong default field", "$facets", clp.field);
+    IntEncoder encoder = new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapVInt8IntEncoder()));
+    IntDecoder decoder = encoder.createMatchingDecoder();
+    assertEquals("unexpected default encoder", encoder.toString(), clp.createEncoder().toString());
+    assertEquals("unexpected default decoder", decoder.toString(), clp.createEncoder().createMatchingDecoder().toString());
   }
   
   /**
@@ -64,8 +68,8 @@ public class CategoryListParamsTest extends LuceneTestCase {
         clParams1.hashCode(), clParams2.hashCode());
 
     // Test 2 CategoryListParams with the same specified Term
-    clParams1 = new CategoryListParams(new Term("test"));
-    clParams2 = new CategoryListParams(new Term("test"));
+    clParams1 = new CategoryListParams("test");
+    clParams2 = new CategoryListParams("test");
     assertEquals(
         "2 CategoryListParams with the same term should equal each other.",
         clParams1, clParams2);
@@ -73,8 +77,8 @@ public class CategoryListParamsTest extends LuceneTestCase {
         clParams1.hashCode(), clParams2.hashCode());
     
     // Test 2 CategoryListParams with DIFFERENT terms
-    clParams1 = new CategoryListParams(new Term("test1"));
-    clParams2 = new CategoryListParams(new Term("test2"));
+    clParams1 = new CategoryListParams("test1");
+    clParams2 = new CategoryListParams("test2");
     assertFalse(
         "2 CategoryListParams with the different terms should NOT equal each other.",
         clParams1.equals(clParams2));

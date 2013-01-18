@@ -218,7 +218,7 @@ class Lucene41DocValuesProducer extends DocValuesProducer {
     final FST<Long> fst = instance;
     
     // per-thread resources
-    final BytesReader in = fst.getBytesReader(0);
+    final BytesReader in = fst.getBytesReader();
     final Arc<Long> firstArc = new Arc<Long>();
     final Arc<Long> scratchArc = new Arc<Long>();
     final IntsRef scratchInts = new IntsRef();

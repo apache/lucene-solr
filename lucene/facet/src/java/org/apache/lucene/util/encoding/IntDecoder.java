@@ -28,43 +28,9 @@ import org.apache.lucene.util.IntsRef;
 public abstract class IntDecoder {
   
   /**
-   * Performs the actual decoding. Values should be read from
-   * {@link BytesRef#offset} up to {@code upto}. Also, {@code values} offset and
-   * length are set to 0 and the encoder is expected to update
-   * {@link IntsRef#length}, but not {@link IntsRef#offset}.
-   * 
-   * <p>
-   * <b>NOTE:</b> it is ok to use the buffer's offset as the current position in
-   * the buffer (and modify it), it will be reset by
-   * {@link #decode(BytesRef, IntsRef)}.
-   */
-  protected abstract void doDecode(BytesRef buf, IntsRef values, int upto);
-  
-  /**
-   * Called before {@link #doDecode(BytesRef, IntsRef, int)} so that decoders
-   * can reset their state.
-   */
-  protected void reset() {
-    // do nothing by default
-  }
-  
-  /**
    * Decodes the values from the buffer into the given {@link IntsRef}. Note
    * that {@code values.offset} and {@code values.length} are set to 0.
    */
-  public final void decode(BytesRef buf, IntsRef values) {
-    values.offset = values.length = 0; // must do that because we cannot grow() them otherwise
-    
-    // some decoders may use the buffer's offset as a position index, so save
-    // current offset.
-    int bufOffset = buf.offset;
-    
-    reset();
-    doDecode(buf, values, buf.offset + buf.length);
-    assert values.offset == 0 : "offset should not have been modified by the decoder.";
-    
-    // fix offset
-    buf.offset = bufOffset;
-  }
+  public abstract void decode(BytesRef buf, IntsRef values);
 
 }

@@ -139,7 +139,7 @@ public class FSTCompletion {
     try {
       List<Arc<Object>> rootArcs = new ArrayList<Arc<Object>>();
       Arc<Object> arc = automaton.getFirstArc(new Arc<Object>());
-      FST.BytesReader fstReader = automaton.getBytesReader(0);
+      FST.BytesReader fstReader = automaton.getBytesReader();
       automaton.readFirstTargetArc(arc, arc, fstReader);
       while (true) {
         rootArcs.add(new Arc<Object>().copyFrom(arc));
@@ -173,7 +173,7 @@ public class FSTCompletion {
     // Get the UTF-8 bytes representation of the input key.
     try {
       final FST.Arc<Object> scratch = new FST.Arc<Object>();
-      FST.BytesReader fstReader = automaton.getBytesReader(0);
+      FST.BytesReader fstReader = automaton.getBytesReader();
       for (; rootArcIndex < rootArcs.length; rootArcIndex++) {
         final FST.Arc<Object> rootArc = rootArcs[rootArcIndex];
         final FST.Arc<Object> arc = scratch.copyFrom(rootArc);
@@ -338,7 +338,7 @@ public class FSTCompletion {
     final int max = utf8.offset + utf8.length;
     // Cannot save as instance var since multiple threads
     // can use FSTCompletion at once...
-    final FST.BytesReader fstReader = automaton.getBytesReader(0);
+    final FST.BytesReader fstReader = automaton.getBytesReader();
     for (int i = utf8.offset; i < max; i++) {
       if (automaton.findTargetArc(utf8.bytes[i] & 0xff, arc, arc, fstReader) == null) {
         // No matching prefixes, return an empty result.
@@ -362,7 +362,7 @@ public class FSTCompletion {
     }
     assert output.offset == 0;
     output.bytes[output.length++] = (byte) arc.label;
-    FST.BytesReader fstReader = automaton.getBytesReader(0);
+    FST.BytesReader fstReader = automaton.getBytesReader();
     automaton.readFirstTargetArc(arc, arc, fstReader);
     while (true) {
       if (arc.label == FST.END_LABEL) {

@@ -1,7 +1,9 @@
 package org.apache.lucene.util.encoding;
 
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,32 +23,45 @@ import org.apache.lucene.util.IntsRef;
  */
 
 /**
- * An {@link IntDecoder} which wraps another decoder and reverts the d-gap that
- * was encoded by {@link DGapIntEncoder}.
+ * Decodes values encoded by {@link DGapVInt8IntDecoder}.
  * 
  * @lucene.experimental
  */
-public final class DGapIntDecoder extends IntDecoder {
-
-  private final IntDecoder decoder;
-
-  public DGapIntDecoder(IntDecoder decoder) {
-    this.decoder = decoder;
-  }
+public final class DGapVInt8IntDecoder extends IntDecoder {
 
   @Override
   public void decode(BytesRef buf, IntsRef values) {
-    decoder.decode(buf, values);
+    values.offset = values.length = 0;
+
+    // grow the buffer up front, even if by a large number of values (buf.length)
+    // that saves the need to check inside the loop for every decoded value if
+    // the buffer needs to grow.
+    if (values.ints.length < buf.length) {
+      values.ints = new int[ArrayUtil.oversize(buf.length, RamUsageEstimator.NUM_BYTES_INT)];
+    }
+
+    // it is better if the decoding is inlined like so, and not e.g.
+    // in a utility method
+    int upto = buf.offset + buf.length;
+    int value = 0;
+    int offset = buf.offset;
     int prev = 0;
-    for (int i = 0; i < values.length; i++) {
-      values.ints[i] += prev;
-      prev = values.ints[i];
+    while (offset < upto) {
+      byte b = buf.bytes[offset++];
+      if (b >= 0) {
+        values.ints[values.length] = ((value << 7) | b) + prev;
+        value = 0;
+        prev = values.ints[values.length];
+        values.length++;
+      } else {
+        value = (value << 7) | (b & 0x7F);
+      }
     }
   }
 
   @Override
   public String toString() {
-    return "DGap(" + decoder.toString() + ")";
+    return "DGapVInt8";
   }
 
-}
+} 

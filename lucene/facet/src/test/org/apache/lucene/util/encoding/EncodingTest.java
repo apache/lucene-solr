@@ -64,9 +64,12 @@ public class EncodingTest extends LuceneTestCase {
     
     BytesRef bytes = new BytesRef(100); // some initial capacity - encoders should grow the byte[]
     IntsRef values = new IntsRef(100); // some initial capacity - decoders should grow the int[]
-    encoding(encoder, data, bytes);
-    decoding(bytes, values, encoder.createMatchingDecoder());
-    assertTrue(expected.intsEquals(values));
+    for (int i = 0; i < 2; i++) {
+      // run 2 iterations to catch encoders/decoders which don't reset properly
+      encoding(encoder, data, bytes);
+      decoding(bytes, values, encoder.createMatchingDecoder());
+      assertTrue(expected.intsEquals(values));
+    }
   }
 
   private static void encoding(IntEncoder encoder, IntsRef data, BytesRef bytes) throws IOException {
@@ -146,6 +149,11 @@ public class EncodingTest extends LuceneTestCase {
   @Test
   public void testSortingUniqueDGapNOnes3() throws Exception {
     encoderTest(new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new NOnesIntEncoder(3)))), data, uniqueSortedData);
+  }
+  
+  @Test
+  public void testSortingUniqueDGapVInt() throws Exception {
+    encoderTest(new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapVInt8IntEncoder())), data, uniqueSortedData);
   }
 
 }

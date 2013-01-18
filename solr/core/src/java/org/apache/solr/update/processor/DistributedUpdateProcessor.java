@@ -227,7 +227,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         DistribPhase phase =
             DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
 
-        doDefensiveChecks(shardId, phase);
+        doDefensiveChecks(phase);
 
 
         if (DistribPhase.FROMLEADER == phase) {
@@ -279,7 +279,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
 
-  private void doDefensiveChecks(String shardId, DistribPhase phase) {
+  private void doDefensiveChecks(DistribPhase phase) {
     boolean isReplayOrPeersync = (updateCommand.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.REPLAY)) != 0;
     if (isReplayOrPeersync) return;
 

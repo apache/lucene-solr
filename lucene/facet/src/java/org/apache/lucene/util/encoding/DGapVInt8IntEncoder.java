@@ -21,33 +21,16 @@ import org.apache.lucene.util.IntsRef;
  */
 
 /**
- * An {@link IntEncoder} which implements variable length encoding. A number is
- * encoded as follows:
- * <ul>
- * <li>If it is less than 127 and non-negative, i.e. uses only 7 bits, it is
- * encoded as a single byte: 0bbbbbbb.
- * <li>If it occupies more than 7 bits, it is represented as a series of bytes,
- * each byte carrying 7 bits. All but the last byte have the MSB set, the last
- * one has it unset.
- * </ul>
- * Example:
- * <ol>
- * <li>n = 117 = 01110101: This has less than 8 significant bits, therefore is
- * encoded as 01110101 = 0x75.
- * <li>n = 100000 = (binary) 11000011010100000. This has 17 significant bits,
- * thus needs three Vint8 bytes. Pad it to a multiple of 7 bits, then split it
- * into chunks of 7 and add an MSB, 0 for the last byte, 1 for the others:
- * 1|0000110 1|0001101 0|0100000 = 0x86 0x8D 0x20.
- * </ol>
- * <b>NOTE:</b> although this encoder is not limited to values &ge; 0, it is not
- * recommended for use with negative values, as their encoding will result in 5
- * bytes written to the output stream, rather than 4. For such values, either
- * use {@link SimpleIntEncoder} or write your own version of variable length
- * encoding, which can better handle negative values.
+ * An {@link IntEncoder} which implements variable length encoding for the gap
+ * between values. It's a specialized form of the combination of
+ * {@link DGapIntEncoder} and {@link VInt8IntEncoder}.
+ * 
+ * @see VInt8IntEncoder
+ * @see DGapIntEncoder
  * 
  * @lucene.experimental
  */
-public final class VInt8IntEncoder extends IntEncoder {
+public final class DGapVInt8IntEncoder extends IntEncoder {
 
   @Override
   public void encode(IntsRef values, BytesRef buf) {
@@ -58,10 +41,11 @@ public final class VInt8IntEncoder extends IntEncoder {
     }
     
     int upto = values.offset + values.length;
+    int prev = 0;
     for (int i = values.offset; i < upto; i++) {
       // it is better if the encoding is inlined like so, and not e.g.
       // in a utility method
-      int value = values.ints[i];
+      int value = values.ints[i] - prev;
       if ((value & ~0x7F) == 0) {
         buf.bytes[buf.length] = (byte) value;
         buf.length++;
@@ -88,17 +72,18 @@ public final class VInt8IntEncoder extends IntEncoder {
         buf.bytes[buf.length + 4] = (byte) (value & 0x7F);
         buf.length += 5;
       }
+      prev = values.ints[i];
     }
   }
 
   @Override
   public IntDecoder createMatchingDecoder() {
-    return new VInt8IntDecoder();
+    return new DGapVInt8IntDecoder();
   }
 
   @Override
   public String toString() {
-    return "VInt8";
+    return "DGapVInt8";
   }
 
 } 

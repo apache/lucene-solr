@@ -148,7 +148,7 @@ public class HyphenationCompoundWordTokenFilter extends
    */
   public static HyphenationTree getHyphenationTree(File hyphenationFile)
       throws IOException {
-    return getHyphenationTree(new InputSource(hyphenationFile.toURL().toExternalForm()));
+    return getHyphenationTree(new InputSource(hyphenationFile.toURI().toASCIIString()));
   }
 
   /**

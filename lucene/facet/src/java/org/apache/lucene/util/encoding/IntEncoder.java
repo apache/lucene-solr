@@ -32,31 +32,10 @@ public abstract class IntEncoder {
   public IntEncoder() {}
 
   /**
-   * Performs the actual encoding. Values should be read from
-   * {@link IntsRef#offset} up to {@code upto}. Also, it is guaranteed that
-   * {@code buf's} offset and length are set to 0 and the encoder is expected to
-   * update {@link BytesRef#length}, but not {@link BytesRef#offset}.
-   */
-  protected abstract void doEncode(IntsRef values, BytesRef buf, int upto);
-  
-  /**
-   * Called before {@link #doEncode(IntsRef, BytesRef, int)} so that encoders
-   * can reset their state.
-   */
-  protected void reset() {
-    // do nothing by default
-  }
-
-  /**
    * Encodes the values to the given buffer. Note that the buffer's offset and
    * length are set to 0.
    */
-  public final void encode(IntsRef values, BytesRef buf) {
-    buf.offset = buf.length = 0;
-    reset();
-    doEncode(values, buf, values.offset + values.length);
-    assert buf.offset == 0 : "offset should not have been modified by the encoder.";
-  }
+  public abstract void encode(IntsRef values, BytesRef buf);
 
   /**
    * Returns an {@link IntDecoder} which can decode the values that were encoded

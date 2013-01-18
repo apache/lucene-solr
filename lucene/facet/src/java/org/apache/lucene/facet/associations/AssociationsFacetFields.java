@@ -114,7 +114,7 @@ public class AssociationsFacetFields extends FacetFields {
   }
   
   @Override
-  protected FieldType fieldType() {
+  protected FieldType drillDownFieldType() {
     return DRILL_DOWN_TYPE;
   }
 

@@ -200,7 +200,7 @@ public class WFSTCompletionLookup extends Lookup {
   private Long lookupPrefix(BytesRef scratch, Arc<Long> arc) throws /*Bogus*/IOException {
     assert 0 == fst.outputs.getNoOutput().longValue();
     long output = 0;
-    BytesReader bytesReader = fst.getBytesReader(0);
+    BytesReader bytesReader = fst.getBytesReader();
     
     fst.getFirstArc(arc);
     

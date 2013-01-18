@@ -3,7 +3,7 @@ package org.apache.lucene.facet.search.aggregator.associations;
 import java.io.IOException;
 
 import org.apache.lucene.facet.associations.CategoryIntAssociation;
-import org.apache.lucene.facet.associations.IntAssociationsPayloadIterator;
+import org.apache.lucene.facet.associations.IntAssociationsIterator;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.search.aggregator.Aggregator;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -37,15 +37,15 @@ public class AssociationIntSumAggregator implements Aggregator {
 
   protected final String field;
   protected final int[] sumArray;
-  protected final IntAssociationsPayloadIterator associations;
+  protected final IntAssociationsIterator associations;
 
   public AssociationIntSumAggregator(int[] sumArray) throws IOException {
-    this(CategoryListParams.DEFAULT_TERM.field(), sumArray);
+    this(CategoryListParams.DEFAULT_FIELD, sumArray);
   }
   
   public AssociationIntSumAggregator(String field, int[] sumArray) throws IOException {
     this.field = field;
-    associations = new IntAssociationsPayloadIterator(field, new CategoryIntAssociation());
+    associations = new IntAssociationsIterator(field, new CategoryIntAssociation());
     this.sumArray = sumArray;
   }
 

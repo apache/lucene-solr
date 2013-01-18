@@ -42,6 +42,40 @@ Other Changes
 ----------------------
 
 
+==================  4.2.0 ==================
+
+Versions of Major Components
+---------------------
+Apache Tika 1.2
+Carrot2 3.6.2
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.5
+
+Upgrading from Solr 4.1.0
+----------------------
+
+(No upgrade instructions yet)
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+Bug Fixes
+----------------------
+
+* SOLR-4309: /browse: Improve JQuery autosuggest behavior (janhoy)
+
+Optimizations
+----------------------
+
+Other Changes
+----------------------
+
+
+
 ==================  4.1.0 ==================
 
 Versions of Major Components
@@ -210,6 +244,30 @@ New Features
 * SOLR-4302: New parameter 'indexInfo' (defaults to true) in CoreAdmin STATUS
   command can be used to omit index specific information (Shahar Davidson via shalin)
 
+* SOLR-2592: Collection specific document routing.  The "compositeId"
+  router is the default for collections with hash based routing (i.e. when
+  numShards=N is specified on collection creation).  Documents with ids sharing
+  the same domain (prefix) will be routed to the same shard, allowing for
+  efficient querying.
+
+  Example:
+    The following two documents will be indexed to the same shard
+    since they share the same domain "customerB!". 
+    <code>
+       {"id" : "customerB!doc1" [...] }
+       {"id" : "customerB!doc2" [...] }
+    </code>
+    At query time, one can specify a "shard.keys" parameter that lists what
+    shards the query should cover.
+       http://.../query?q=my_query&shard.keys=customerB!
+
+  Collections that do not specify numShards at collection creation time
+  use custom sharding and default to the "implicit" router.  Document updates
+  received by a shard will be indexed to that shard, unless a "_shard_" parameter
+  or document field names a different shard.
+  (Michael Garski, Dan Rosher, yonik)
+
+
 Optimizations
 ----------------------
 
@@ -257,6 +315,9 @@ Optimizations
 
 Bug Fixes
 ----------------------
+
+* SOLR-4288: Improve logging for FileDataSource (basePath, relative 
+  resources). (Dawid Weiss)
 
 * SOLR-4007: Morfologik dictionaries not available in Solr field type
   due to class loader lookup problems. (Lance Norskog, Dawid Weiss)
@@ -348,7 +409,7 @@ Bug Fixes
 
 * SOLR-4064: When there is an unexpected exception while trying to run the new
   leader process, the SolrCore will not correctly rejoin the election.
-  (Po Rui Via Mark Miller)
+  (Po Rui via Mark Miller)
 
 * SOLR-3989: SolrZkClient constructor dropped exception cause when throwing
   a new RuntimeException. (Colin Bartolome, yonik)
@@ -518,6 +579,9 @@ Bug Fixes
 
 * SOLR-4303: On replication, if the generation of the master is lower than the
   slave we need to force a full copy of the index. (Mark Miller, Gregg Donovan)
+  
+* SOLR-4266: HttpSolrServer does not release connection properly on exception
+  when no response parser is used. (Steve Molloy via Mark Miller)
 
 Other Changes
 ----------------------
@@ -605,6 +669,9 @@ Other Changes
 * SOLR-4016: Deduplication does not work with atomic/partial updates so
   disallow atomic update requests which change signature generating fields.
   (Joel Nothman, yonik, shalin)
+
+* SOLR-4308: Remove the problematic and now unnecessary log4j-over-slf4j.
+  (Mark Miller)
 
 ==================  4.0.0 ==================
 

@@ -204,7 +204,7 @@ public class FSTTester<T> {
     final FST.Arc<T> arc = fst.getFirstArc(new FST.Arc<T>());
     final T NO_OUTPUT = fst.outputs.getNoOutput();
     T output = NO_OUTPUT;
-    final FST.BytesReader fstReader = fst.getBytesReader(0);
+    final FST.BytesReader fstReader = fst.getBytesReader();
 
     for(int i=0;i<=term.length;i++) {
       final int label;
@@ -241,7 +241,7 @@ public class FSTTester<T> {
     in.offset = 0;
     final T NO_OUTPUT = fst.outputs.getNoOutput();
     T output = NO_OUTPUT;
-    final FST.BytesReader fstReader = fst.getBytesReader(0);
+    final FST.BytesReader fstReader = fst.getBytesReader();
 
     while(true) {
       // read all arcs:

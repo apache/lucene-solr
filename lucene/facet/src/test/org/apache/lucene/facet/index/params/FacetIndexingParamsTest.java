@@ -35,8 +35,7 @@ public class FacetIndexingParamsTest extends LuceneTestCase {
     assertNotNull("Missing default category list", dfip.getAllCategoryListParams());
     assertEquals("all categories have the same CategoryListParams by default",
         dfip.getCategoryListParams(null), dfip.getCategoryListParams(new CategoryPath("a")));
-    assertEquals("Expected default category list term is $facets:$fulltree$",
-        new Term("$facets", "$fulltree$"), dfip.getCategoryListParams(null).getTerm());
+    assertEquals("Expected default category list field is $facets", "$facets", dfip.getCategoryListParams(null).field);
     String expectedDDText = "a"
         + dfip.getFacetDelimChar() + "b";
     CategoryPath cp = new CategoryPath("a", "b");
@@ -48,13 +47,13 @@ public class FacetIndexingParamsTest extends LuceneTestCase {
     assertEquals("wrong drill-down term text", expectedDDText, new String(
         buf, 0, numchars));
     CategoryListParams clParams = dfip.getCategoryListParams(null);
-    assertEquals("partition for all ordinals is the first", "$fulltree$", 
-        PartitionsUtils.partitionNameByOrdinal(dfip, clParams , 250));
+    assertEquals("partition for all ordinals is the first", "", 
+        PartitionsUtils.partitionNameByOrdinal(dfip, 250));
     assertEquals("for partition 0, the same name should be returned",
-        "$fulltree$", PartitionsUtils.partitionName(clParams, 0));
+        "", PartitionsUtils.partitionName(0));
     assertEquals(
         "for any other, it's the concatenation of name + partition",
-        "$fulltree$1", PartitionsUtils.partitionName(clParams, 1));
+        PartitionsUtils.PART_NAME_PREFIX + "1", PartitionsUtils.partitionName(1));
     assertEquals("default partition number is always 0", 0, 
         PartitionsUtils.partitionNumber(dfip,100));
     assertEquals("default partition size is unbounded", Integer.MAX_VALUE,
@@ -63,11 +62,9 @@ public class FacetIndexingParamsTest extends LuceneTestCase {
 
   @Test
   public void testCategoryListParamsWithDefaultIndexingParams() {
-    CategoryListParams clp = new CategoryListParams(
-        new Term("clp", "value"));
+    CategoryListParams clp = new CategoryListParams("clp");
     FacetIndexingParams dfip = new FacetIndexingParams(clp);
-    assertEquals("Expected default category list term is " + clp.getTerm(),
-        clp.getTerm(), dfip.getCategoryListParams(null).getTerm());
+    assertEquals("Expected default category list field is " + clp.field, clp.field, dfip.getCategoryListParams(null).field);
   }
 
   @Test

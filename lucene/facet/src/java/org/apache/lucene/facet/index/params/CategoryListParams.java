@@ -4,15 +4,13 @@ import java.io.IOException;
 import java.io.Serializable;
 
 import org.apache.lucene.facet.search.CategoryListIterator;
-import org.apache.lucene.facet.search.PayloadCategoryListIteraor;
+import org.apache.lucene.facet.search.DocValuesCategoryListIterator;
 import org.apache.lucene.facet.util.PartitionsUtils;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.util.encoding.DGapIntEncoder;
+import org.apache.lucene.util.encoding.DGapVInt8IntEncoder;
 import org.apache.lucene.util.encoding.IntDecoder;
 import org.apache.lucene.util.encoding.IntEncoder;
 import org.apache.lucene.util.encoding.SortingIntEncoder;
 import org.apache.lucene.util.encoding.UniqueValuesIntEncoder;
-import org.apache.lucene.util.encoding.VInt8IntEncoder;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -38,39 +36,26 @@ import org.apache.lucene.util.encoding.VInt8IntEncoder;
  */
 public class CategoryListParams implements Serializable {
 
-  /** The default term used to store the facets information. */
-  public static final Term DEFAULT_TERM = new Term("$facets", "$fulltree$");
+  /** The default field used to store the facets information. */
+  public static final String DEFAULT_FIELD = "$facets";
 
-  private final Term term;
+  public final String field;
 
   private final int hashCode;
 
-  /**
-   * Constructs a default category list parameters object, using
-   * {@link #DEFAULT_TERM}.
-   */
+  /** Constructs a default category list parameters object, using {@link #DEFAULT_FIELD}. */
   public CategoryListParams() {
-    this(DEFAULT_TERM);
+    this(DEFAULT_FIELD);
   }
 
-  /**
-   * Constructs a category list parameters object, using the given {@link Term}.
-   * @param term who's payload hold the category-list.
-   */
-  public CategoryListParams(Term term) {
-    this.term = term;
+  /** Constructs a category list parameters object, using the given field. */
+  public CategoryListParams(String field) {
+    this.field = field;
     // Pre-compute the hashCode because these objects are immutable.  Saves
     // some time on the comparisons later.
-    this.hashCode = term.hashCode();
+    this.hashCode = field.hashCode();
   }
   
-  /** 
-   * A {@link Term} who's payload holds the category-list. 
-   */
-  public final Term getTerm() {
-    return term;
-  }
-
   /**
    * Allows to override how categories are encoded and decoded. A matching
    * {@link IntDecoder} is provided by the {@link IntEncoder}.
@@ -92,7 +77,7 @@ public class CategoryListParams implements Serializable {
    * counting facets.
    */
   public IntEncoder createEncoder() {
-    return new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapIntEncoder(new VInt8IntEncoder())));
+    return new SortingIntEncoder(new UniqueValuesIntEncoder(new DGapVInt8IntEncoder()));
   }
 
   @Override
@@ -110,7 +95,7 @@ public class CategoryListParams implements Serializable {
     // The above hashcodes might equal each other in the case of a collision,
     // so at this point only directly term equality testing will settle
     // the equality test.
-    return this.term.equals(other.term);
+    return field.equals(other.field);
   }
 
   @Override
@@ -120,9 +105,9 @@ public class CategoryListParams implements Serializable {
 
   /** Create the {@link CategoryListIterator} for the specified partition. */
   public CategoryListIterator createCategoryListIterator(int partition) throws IOException {
-    String categoryListTermStr = PartitionsUtils.partitionName(this, partition);
-    Term payloadTerm = new Term(term.field(), categoryListTermStr);
-    return new PayloadCategoryListIteraor(payloadTerm, createEncoder().createMatchingDecoder());
+    String categoryListTermStr = PartitionsUtils.partitionName(partition);
+    String docValuesField = field + categoryListTermStr;
+    return new DocValuesCategoryListIterator(docValuesField, createEncoder().createMatchingDecoder());
   }
   
 }

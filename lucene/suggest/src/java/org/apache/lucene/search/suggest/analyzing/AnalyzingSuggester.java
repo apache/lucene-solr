@@ -587,7 +587,7 @@ public class AnalyzingSuggester extends Lookup {
 
       //System.out.println("  prefixPaths: " + prefixPaths.size());
 
-      BytesReader bytesReader = fst.getBytesReader(0);
+      BytesReader bytesReader = fst.getBytesReader();
 
       FST.Arc<Pair<Long,BytesRef>> scratchArc = new FST.Arc<Pair<Long,BytesRef>>();
 

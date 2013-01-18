@@ -30,19 +30,13 @@
 
   <property name="examples.dir" location="src/examples"/>
 
-  <path id="classpath">
-    <path refid="base.classpath" />
-    <pathelement location="${build.dir}/classes/java" />
-    <pathelement location="${build.dir}/classes/examples" />
-  </path>
-    
   <path id="examples.classpath">
     <path refid="classpath" />
     <pathelement location="${build.dir}/classes/java" />
     <pathelement path="${analyzers-common.jar}" />
   </path>
 
-  <path id="test.classpath">
+	<path id="test.classpath">
     <path refid="test.base.classpath" />
     <pathelement location="${build.dir}/classes/examples" />
     <!-- TODO, cut over tests to MockAnalyzer etc and nuke this dependency -->

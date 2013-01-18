@@ -3,7 +3,7 @@ package org.apache.lucene.facet.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.encoding.IntDecoder;
@@ -25,57 +25,62 @@ import org.apache.lucene.util.encoding.IntDecoder;
  * limitations under the License.
  */
 
-/**
- * A {@link CategoryListIterator} which reads the category ordinals from a
- * payload.
- * 
- * @lucene.experimental
- */
-public class PayloadCategoryListIteraor implements CategoryListIterator {
-
-  private final IntDecoder decoder;
-  private final Term term;
-  private final PayloadIterator pi;
-  private final int hashCode;
+/** A {@link CategoryListIterator} which reads the ordinals from a {@link BinaryDocValues}. */
+public class DocValuesCategoryListIterator implements CategoryListIterator {
   
-  public PayloadCategoryListIteraor(Term term, IntDecoder decoder) throws IOException {
-    pi = new PayloadIterator(term);
+  private final IntDecoder decoder;
+  private final String field;
+  private final int hashCode;
+  private final BytesRef bytes = new BytesRef(32);
+  
+  private BinaryDocValues current;
+  
+  /**
+   * Constructs a new {@link DocValuesCategoryListIterator}.
+   */
+  public DocValuesCategoryListIterator(String field, IntDecoder decoder) {
+    this.field = field;
     this.decoder = decoder;
-    hashCode = term.hashCode();
-    this.term = term;
+    this.hashCode = field.hashCode();
   }
-
-  @Override
-  public boolean equals(Object other) {
-    if (!(other instanceof PayloadCategoryListIteraor)) {
-      return false;
-    }
-    PayloadCategoryListIteraor that = (PayloadCategoryListIteraor) other;
-    if (hashCode != that.hashCode) {
-      return false;
-    }
-    
-    // Hash codes are the same, check equals() to avoid cases of hash-collisions.
-    return term.equals(that.term);
-  }
-
+  
   @Override
   public int hashCode() {
     return hashCode;
   }
-
+  
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof DocValuesCategoryListIterator)) {
+      return false;
+    }
+    DocValuesCategoryListIterator other = (DocValuesCategoryListIterator) o;
+    if (hashCode != other.hashCode) {
+      return false;
+    }
+    
+    // Hash codes are the same, check equals() to avoid cases of hash-collisions.
+    return field.equals(other.field);
+  }
+  
   @Override
   public boolean setNextReader(AtomicReaderContext context) throws IOException {
-    return pi.setNextReader(context);
+    current = context.reader().getBinaryDocValues(field);
+    return current != null;
   }
   
   @Override
   public void getOrdinals(int docID, IntsRef ints) throws IOException {
+    current.get(docID, bytes);
     ints.length = 0;
-    BytesRef payload = pi.getPayload(docID);
-    if (payload != null) {
-      decoder.decode(payload, ints);
+    if (bytes.length > 0) {
+      decoder.decode(bytes, ints);
     }
   }
-
+  
+  @Override
+  public String toString() {
+    return field;
+  }
+  
 }

@@ -85,12 +85,12 @@ public class TestTotalFacetCounts extends LuceneTestCase {
 
     TotalFacetCountsCache tfcc = TotalFacetCountsCache.getSingleton();
     File tmpFile = _TestUtil.createTempFile("test", "tmp", TEMP_DIR);
-    tfcc.store(tmpFile, readers[0].indexReader, readers[0].taxReader, iParams, null);
+    tfcc.store(tmpFile, readers[0].indexReader, readers[0].taxReader, iParams);
     tfcc.clear(); // not really required because TFCC overrides on load(), but in the test we need not rely on this.
     tfcc.load(tmpFile, readers[0].indexReader, readers[0].taxReader, iParams);
     
     // now retrieve the one just loaded
-    TotalFacetCounts totalCounts = tfcc.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams, null);
+    TotalFacetCounts totalCounts = tfcc.getTotalCounts(readers[0].indexReader, readers[0].taxReader, iParams);
 
     int partition = 0;
     for (int i=0; i<expectedCounts.length; i+=partitionSize) {

@@ -7,12 +7,10 @@ import java.util.LinkedHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.apache.lucene.index.IndexReader;
-
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.cache.CategoryListCache;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.IndexReader;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -80,16 +78,20 @@ public final class TotalFacetCountsCache {
   }
   
   /**
-   * Get the total facet counts for a reader/taxonomy pair and facet indexing parameters.
-   * If not in cache, computed here and added to the cache for later use.
-   * @param indexReader the documents index
-   * @param taxonomy the taxonomy index
-   * @param facetIndexingParams facet indexing parameters
-   * @param clCache category list cache for faster computation, can be null 
+   * Get the total facet counts for a reader/taxonomy pair and facet indexing
+   * parameters. If not in cache, computed here and added to the cache for later
+   * use.
+   * 
+   * @param indexReader
+   *          the documents index
+   * @param taxonomy
+   *          the taxonomy index
+   * @param facetIndexingParams
+   *          facet indexing parameters
    * @return the total facet counts.
    */
   public TotalFacetCounts getTotalCounts(IndexReader indexReader, TaxonomyReader taxonomy,
-      FacetIndexingParams facetIndexingParams, CategoryListCache clCache) throws IOException {
+      FacetIndexingParams facetIndexingParams) throws IOException {
     // create the key
     TFCKey key = new TFCKey(indexReader, taxonomy, facetIndexingParams);
     // it is important that this call is not synchronized, so that available TFC 
@@ -99,7 +101,7 @@ public final class TotalFacetCountsCache {
       markRecentlyUsed(key); 
       return tfc;
     }
-    return computeAndCache(key, clCache);
+    return computeAndCache(key);
   }
 
   /**
@@ -149,10 +151,10 @@ public final class TotalFacetCountsCache {
    * matter this method is synchronized, which is not too bad, because there is
    * lots of work done in the computations.
    */
-  private synchronized TotalFacetCounts computeAndCache(TFCKey key, CategoryListCache clCache) throws IOException {
+  private synchronized TotalFacetCounts computeAndCache(TFCKey key) throws IOException {
     TotalFacetCounts tfc = cache.get(key); 
     if (tfc == null) {
-      tfc = TotalFacetCounts.compute(key.indexReader, key.taxonomy, key.facetIndexingParams, clCache);
+      tfc = TotalFacetCounts.compute(key.indexReader, key.taxonomy, key.facetIndexingParams);
       lruKeys.add(key);
       cache.put(key,tfc);
       trimCache();
@@ -161,16 +163,22 @@ public final class TotalFacetCountsCache {
   }
 
   /**
-   * Load {@link TotalFacetCounts} matching input parameters from the provided outputFile 
-   * and add them into the cache for the provided indexReader, taxonomy, and facetIndexingParams.
-   * If a {@link TotalFacetCounts} for these parameters already exists in the cache, it will be
-   * replaced by the loaded one.
-   * @param inputFile file from which to read the data 
-   * @param indexReader the documents index
-   * @param taxonomy the taxonomy index
-   * @param facetIndexingParams the facet indexing parameters
-   * @throws IOException on error
-   * @see #store(File, IndexReader, TaxonomyReader, FacetIndexingParams, CategoryListCache)
+   * Load {@link TotalFacetCounts} matching input parameters from the provided
+   * outputFile and add them into the cache for the provided indexReader,
+   * taxonomy, and facetIndexingParams. If a {@link TotalFacetCounts} for these
+   * parameters already exists in the cache, it will be replaced by the loaded
+   * one.
+   * 
+   * @param inputFile
+   *          file from which to read the data
+   * @param indexReader
+   *          the documents index
+   * @param taxonomy
+   *          the taxonomy index
+   * @param facetIndexingParams
+   *          the facet indexing parameters
+   * @throws IOException
+   *           on error
    */
   public synchronized void load(File inputFile, IndexReader indexReader, TaxonomyReader taxonomy,
       FacetIndexingParams facetIndexingParams) throws IOException {
@@ -185,21 +193,27 @@ public final class TotalFacetCountsCache {
   }
   
   /**
-   * Store the {@link TotalFacetCounts} matching input parameters into the provided outputFile,
-   * making them available for a later call to {@link #load(File, IndexReader, TaxonomyReader, FacetIndexingParams)}.
-   * If these {@link TotalFacetCounts} are available in the cache, they are used. But if they are
-   * not in the cache, this call will first compute them (which will also add them to the cache). 
-   * @param outputFile file to store in.
-   * @param indexReader the documents index
-   * @param taxonomy the taxonomy index
-   * @param facetIndexingParams the facet indexing parameters
-   * @param clCache category list cache for faster computation, can be null
-   * @throws IOException on error
+   * Store the {@link TotalFacetCounts} matching input parameters into the
+   * provided outputFile, making them available for a later call to
+   * {@link #load(File, IndexReader, TaxonomyReader, FacetIndexingParams)}. If
+   * these {@link TotalFacetCounts} are available in the cache, they are used.
+   * But if they are not in the cache, this call will first compute them (which
+   * will also add them to the cache).
+   * 
+   * @param outputFile
+   *          file to store in.
+   * @param indexReader
+   *          the documents index
+   * @param taxonomy
+   *          the taxonomy index
+   * @param facetIndexingParams
+   *          the facet indexing parameters
+   * @throws IOException
+   *           on error
    * @see #load(File, IndexReader, TaxonomyReader, FacetIndexingParams)
-   * @see #getTotalCounts(IndexReader, TaxonomyReader, FacetIndexingParams, CategoryListCache)
    */
   public void store(File outputFile, IndexReader indexReader, TaxonomyReader taxonomy,
-      FacetIndexingParams facetIndexingParams, CategoryListCache clCache) throws IOException {
+      FacetIndexingParams facetIndexingParams) throws IOException {
     File parentFile = outputFile.getParentFile();
     if (
         ( outputFile.exists() && (!outputFile.isFile()      || !outputFile.canWrite())) ||
@@ -207,7 +221,7 @@ public final class TotalFacetCountsCache {
       ) {
       throw new IllegalArgumentException("Exepecting a writable file: "+outputFile);
     }
-    TotalFacetCounts tfc = getTotalCounts(indexReader, taxonomy, facetIndexingParams, clCache);
+    TotalFacetCounts tfc = getTotalCounts(indexReader, taxonomy, facetIndexingParams);
     TotalFacetCounts.storeToFile(outputFile, tfc);  
   }
   

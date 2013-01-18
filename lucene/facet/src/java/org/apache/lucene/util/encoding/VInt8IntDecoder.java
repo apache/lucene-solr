@@ -1,7 +1,9 @@
 package org.apache.lucene.util.encoding;
 
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,15 +27,32 @@ import org.apache.lucene.util.IntsRef;
  * 
  * @lucene.experimental
  */
-public class VInt8IntDecoder extends IntDecoder {
+public final class VInt8IntDecoder extends IntDecoder {
 
   @Override
-  protected void doDecode(BytesRef buf, IntsRef values, int upto) {
-    while (buf.offset < upto) {
-      if (values.length == values.ints.length) {
-        values.grow(values.length + 10); // grow by few items, however not too many
+  public void decode(BytesRef buf, IntsRef values) {
+    values.offset = values.length = 0;
+
+    // grow the buffer up front, even if by a large number of values (buf.length)
+    // that saves the need to check inside the loop for every decoded value if
+    // the buffer needs to grow.
+    if (values.ints.length < buf.length) {
+      values.ints = new int[ArrayUtil.oversize(buf.length, RamUsageEstimator.NUM_BYTES_INT)];
+    }
+
+    // it is better if the decoding is inlined like so, and not e.g.
+    // in a utility method
+    int upto = buf.offset + buf.length;
+    int value = 0;
+    int offset = buf.offset;
+    while (offset < upto) {
+      byte b = buf.bytes[offset++];
+      if (b >= 0) {
+        values.ints[values.length++] = (value << 7) | b;
+        value = 0;
+      } else {
+        value = (value << 7) | (b & 0x7F);
       }
-      values.ints[values.length++] = VInt8.decode(buf);
     }
   }
 
