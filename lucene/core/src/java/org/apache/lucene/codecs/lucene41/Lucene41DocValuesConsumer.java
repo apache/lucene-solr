@@ -47,7 +47,7 @@ import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
  * the latter is typically much smaller with lucene's sims, as only some byte values are used,
  * but its often a nonlinear mapping, especially if you dont use crazy boosts.
  */
-class Lucene41SimpleDocValuesConsumer extends DocValuesConsumer {
+class Lucene41DocValuesConsumer extends DocValuesConsumer {
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
   
@@ -57,7 +57,7 @@ class Lucene41SimpleDocValuesConsumer extends DocValuesConsumer {
   
   final IndexOutput data, meta;
   
-  Lucene41SimpleDocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  Lucene41DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     boolean success = false;
     try {
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);

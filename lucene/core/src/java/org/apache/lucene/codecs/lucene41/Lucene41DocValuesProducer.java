@@ -45,7 +45,7 @@ import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.PackedInts;
 
-class Lucene41SimpleDocValuesProducer extends DocValuesProducer {
+class Lucene41DocValuesProducer extends DocValuesProducer {
   // metadata maps (just file pointers and minimal stuff)
   private final Map<Integer,NumericEntry> numerics;
   private final Map<Integer,BinaryEntry> binaries;
@@ -64,15 +64,15 @@ class Lucene41SimpleDocValuesProducer extends DocValuesProducer {
   private final Map<Integer,FST<Long>> fstInstances =
       new HashMap<Integer,FST<Long>>();
     
-  Lucene41SimpleDocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  Lucene41DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     IndexInput in = state.directory.openInput(metaName, state.context);
     boolean success = false;
     try {
       CodecUtil.checkHeader(in, metaCodec, 
-                                Lucene41SimpleDocValuesConsumer.VERSION_START,
-                                Lucene41SimpleDocValuesConsumer.VERSION_START);
+                                Lucene41DocValuesConsumer.VERSION_START,
+                                Lucene41DocValuesConsumer.VERSION_START);
       numerics = new HashMap<Integer,NumericEntry>();
       binaries = new HashMap<Integer,BinaryEntry>();
       fsts = new HashMap<Integer,FSTEntry>();
@@ -89,27 +89,27 @@ class Lucene41SimpleDocValuesProducer extends DocValuesProducer {
     String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
     data = state.directory.openInput(dataName, state.context);
     CodecUtil.checkHeader(data, dataCodec, 
-                                Lucene41SimpleDocValuesConsumer.VERSION_START,
-                                Lucene41SimpleDocValuesConsumer.VERSION_START);
+                                Lucene41DocValuesConsumer.VERSION_START,
+                                Lucene41DocValuesConsumer.VERSION_START);
   }
   
   private void readFields(IndexInput meta, FieldInfos infos) throws IOException {
     int fieldNumber = meta.readVInt();
     while (fieldNumber != -1) {
       int fieldType = meta.readByte();
-      if (fieldType == Lucene41SimpleDocValuesConsumer.NUMBER) {
+      if (fieldType == Lucene41DocValuesConsumer.NUMBER) {
         NumericEntry entry = new NumericEntry();
         entry.offset = meta.readLong();
         entry.tableized = meta.readByte() != 0;
         numerics.put(fieldNumber, entry);
-      } else if (fieldType == Lucene41SimpleDocValuesConsumer.BYTES) {
+      } else if (fieldType == Lucene41DocValuesConsumer.BYTES) {
         BinaryEntry entry = new BinaryEntry();
         entry.offset = meta.readLong();
         entry.numBytes = meta.readLong();
         entry.minLength = meta.readVInt();
         entry.maxLength = meta.readVInt();
         binaries.put(fieldNumber, entry);
-      } else if (fieldType == Lucene41SimpleDocValuesConsumer.FST) {
+      } else if (fieldType == Lucene41DocValuesConsumer.FST) {
         FSTEntry entry = new FSTEntry();
         entry.offset = meta.readLong();
         entry.numOrds = meta.readVInt();

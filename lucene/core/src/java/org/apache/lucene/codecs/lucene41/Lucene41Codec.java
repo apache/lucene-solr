@@ -130,7 +130,7 @@ public class Lucene41Codec extends Codec {
   // nocommit
   private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene41");
 
-  private final NormsFormat simpleNormsFormat = new Lucene41SimpleNormsFormat();
+  private final NormsFormat simpleNormsFormat = new Lucene41NormsFormat();
 
   @Override
   public NormsFormat normsFormat() {

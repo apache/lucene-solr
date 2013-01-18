@@ -27,7 +27,7 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41SimpleNormsFormat;
+import org.apache.lucene.codecs.lucene41.Lucene41NormsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /**
@@ -97,7 +97,7 @@ public final class Lucene40Codec extends Codec {
   }
 
   // nocommit need a read-only Lucene40SimpleNormsFormat:
-  private final NormsFormat simpleNormsFormat = new Lucene41SimpleNormsFormat();
+  private final NormsFormat simpleNormsFormat = new Lucene41NormsFormat();
 
   @Override
   public NormsFormat normsFormat() {
