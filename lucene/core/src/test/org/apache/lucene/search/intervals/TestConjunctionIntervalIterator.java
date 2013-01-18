@@ -78,4 +78,21 @@ public class TestConjunctionIntervalIterator extends IntervalTestBase {
     });
   }
 
+  // andnot(andnot(pease, or(porridge, flurble)), or(foo, bar))
+  public void testConjunctionExclusionQuery() throws IOException {
+    BooleanQuery andnotinner = new BooleanQuery();
+    andnotinner.add(makeTermQuery("pease"), Occur.MUST);
+    BooleanQuery andnotinneror = new BooleanQuery();
+    andnotinneror.add(makeTermQuery("porridge"), Occur.SHOULD);
+    andnotinneror.add(makeTermQuery("flurble"), Occur.SHOULD);
+    andnotinner.add(andnotinneror, Occur.MUST_NOT);
+    BooleanQuery outer = new BooleanQuery();
+    outer.add(andnotinner, Occur.MUST);
+    BooleanQuery andnotouteror = new BooleanQuery();
+    andnotouteror.add(makeTermQuery("foo"), Occur.SHOULD);
+    andnotouteror.add(makeTermQuery("bar"), Occur.SHOULD);
+    outer.add(andnotouteror, Occur.MUST_NOT);
+    checkIntervals(outer, searcher, new int[][]{});
+  }
+
 }

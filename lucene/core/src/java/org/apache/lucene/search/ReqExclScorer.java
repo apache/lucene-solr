@@ -17,12 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.intervals.ConjunctionIntervalIterator;
+import org.apache.lucene.search.intervals.IntervalIterator;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-
-import org.apache.lucene.search.intervals.ConjunctionIntervalIterator;
-import org.apache.lucene.search.intervals.IntervalIterator;
 
 /** A Scorer for queries with a required subscorer
  * and an excluding (prohibited) sub DocIdSetIterator.
@@ -134,6 +134,8 @@ class ReqExclScorer extends Scorer {
 
   @Override
   public IntervalIterator intervals(boolean collectIntervals) throws IOException {
+    if (reqScorer == null)
+      return IntervalIterator.NO_MORE_INTERVALS;
     return new ConjunctionIntervalIterator(this, collectIntervals, reqScorer.intervals(collectIntervals));
   }
 }
