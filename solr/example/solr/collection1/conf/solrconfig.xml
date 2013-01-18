@@ -239,11 +239,8 @@
       -->
 
     <!-- Commit Deletion Policy
-
          Custom deletion policies can be specified here. The class must
          implement org.apache.lucene.index.IndexDeletionPolicy.
-
-         http://lucene.apache.org/java/3_5_0/api/core/org/apache/lucene/index/IndexDeletionPolicy.html
 
          The default Solr IndexDeletionPolicy implementation supports
          deleting index commit points on number of commits, age of
