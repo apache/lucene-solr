@@ -19,17 +19,6 @@ Changes in backwards compatibility policy
   (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
   Robert Muir)
 
-* LUCENE-4677, LUCENE-4682: unpacked FSTs now use vInt to encode the node target,
-  to reduce their size (Mike McCandless)
-
-* LUCENE-4678: FST now uses a paged byte[] structure instead of a
-  single byte[] internally, to avoid large memory spikes during
-  building (James Dyer, Mike McCandless)
-
-* LUCENE-3298: FST can now be larger than 2.1 GB / 2.1 B nodes.
-  (James Dyer, Mike McCandless)
-
-
 ======================= Lucene 4.2.0 =======================
 
 Changes in backwards compatibility policy
@@ -44,6 +33,16 @@ Optimizations
 
 * LUCENE-4687: BloomFilterPostingsFormat now lazily initializes delegate
   TermsEnum only if needed to do a seek or get a DocsEnum. (Simon Willnauer) 
+
+* LUCENE-4677, LUCENE-4682: unpacked FSTs now use vInt to encode the node target,
+  to reduce their size (Mike McCandless)
+
+* LUCENE-4678: FST now uses a paged byte[] structure instead of a
+  single byte[] internally, to avoid large memory spikes during
+  building (James Dyer, Mike McCandless)
+
+* LUCENE-3298: FST can now be larger than 2.1 GB / 2.1 B nodes.
+  (James Dyer, Mike McCandless)
 
 New Features
 
