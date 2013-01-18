@@ -276,13 +276,13 @@ public class BlockTreeTermsReader extends FieldsProducer {
    */
   public static class Stats {
     /** How many nodes in the index FST. */
-    public int indexNodeCount;
+    public long indexNodeCount;
 
     /** How many arcs in the index FST. */
-    public int indexArcCount;
+    public long indexArcCount;
 
     /** Byte size of the index. */
-    public int indexNumBytes;
+    public long indexNumBytes;
 
     /** Total number of terms in the field. */
     public long totalTermCount;
@@ -833,7 +833,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         if (index == null) {
           fstReader = null;
         } else {
-          fstReader = index.getBytesReader(0);
+          fstReader = index.getBytesReader();
         }
 
         // TODO: if the automaton is "smallish" we really
@@ -1277,7 +1277,7 @@ public class BlockTreeTermsReader extends FieldsProducer {
         if (index == null) {
           fstReader = null;
         } else {
-          fstReader = index.getBytesReader(0);
+          fstReader = index.getBytesReader();
         }
 
         // Init w/ root block; don't use index since it may

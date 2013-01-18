@@ -23,7 +23,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.index.FieldInfo.IndexOptions;
-import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -41,6 +40,7 @@ import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.NoOutputs;
 import org.apache.lucene.util.fst.Util;
+import org.apache.lucene.util.packed.PackedInts;
 
 /*
   TODO:
@@ -187,7 +187,7 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
   public final static int DEFAULT_MAX_BLOCK_SIZE = 48;
 
   //public final static boolean DEBUG = false;
-  private final static boolean SAVE_DOT_FILES = false;
+  //private final static boolean SAVE_DOT_FILES = false;
 
   static final int OUTPUT_FLAGS_NUM_BITS = 2;
   static final int OUTPUT_FLAGS_MASK = 0x3;
@@ -419,7 +419,8 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
       final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
       final Builder<BytesRef> indexBuilder = new Builder<BytesRef>(FST.INPUT_TYPE.BYTE1,
                                                                    0, 0, true, false, Integer.MAX_VALUE,
-                                                                   outputs, null, false, true);
+                                                                   outputs, null, false,
+                                                                   PackedInts.COMPACT, true, 15);
       //if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
       //}
@@ -962,7 +963,9 @@ public class BlockTreeTermsWriter extends FieldsConsumer {
                                          0, 0, true,
                                          true, Integer.MAX_VALUE,
                                          noOutputs,
-                                         new FindBlocks(), false, true);
+                                         new FindBlocks(), false,
+                                         PackedInts.COMPACT,
+                                         true, 15);
 
       postingsWriter.setField(fieldInfo);
     }

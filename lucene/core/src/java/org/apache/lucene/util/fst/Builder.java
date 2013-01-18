@@ -36,8 +36,12 @@ import org.apache.lucene.util.packed.PackedInts;
  * <p>NOTE: The algorithm is described at
  * http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.24.3698</p>
  *
- * The parameterized type T is the output type.  See the
+ * <p>The parameterized type T is the output type.  See the
  * subclasses of {@link Outputs}.
+ *
+ * <p>FSTs larger than 2.1GB are now possible (as of Lucene
+ * 4.2).  FSTs containing more than 2.1B nodes are also now
+ * possible, however they cannot be packed.
  *
  * @lucene.experimental
  */
@@ -84,22 +88,11 @@ public class Builder<T> {
   /**
    * Instantiates an FST/FSA builder without any pruning. A shortcut
    * to {@link #Builder(FST.INPUT_TYPE, int, int, boolean,
-   * boolean, int, Outputs, FreezeTail, boolean, boolean)} with
-   * pruning options turned off.
+   * boolean, int, Outputs, FreezeTail, boolean, float,
+   * boolean, int)} with pruning options turned off.
    */
   public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
-    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, false, PackedInts.COMPACT, true);
-  }
-
-  /**
-   * Instantiates an FST/FSA builder with {@link PackedInts#DEFAULT}
-   * <code>acceptableOverheadRatio</code>.
-   */
-  public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
-      boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
-      FreezeTail<T> freezeTail, boolean willPackFST, boolean allowArrayArcs) {
-    this(inputType, minSuffixCount1, minSuffixCount2, doShareSuffix, doShareNonSingletonNodes,
-         shareMaxTailLength, outputs, freezeTail, willPackFST, PackedInts.DEFAULT, allowArrayArcs);
+    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, null, false, PackedInts.COMPACT, true, 15);
   }
 
   /**
@@ -147,10 +140,16 @@ public class Builder<T> {
    * @param allowArrayArcs Pass false to disable the array arc optimization
    *    while building the FST; this will make the resulting
    *    FST smaller but slower to traverse.
+   *
+   * @param bytesPageBits How many bits wide to make each
+   *    byte[] block in the BytesStore; if you know the FST
+   *    will be large then make this larger.  For example 15
+   *    bits = 32768 byte pages.
    */
   public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
                  boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
-                 FreezeTail<T> freezeTail, boolean doPackFST, float acceptableOverheadRatio, boolean allowArrayArcs) {
+                 FreezeTail<T> freezeTail, boolean doPackFST, float acceptableOverheadRatio, boolean allowArrayArcs,
+                 int bytesPageBits) {
     this.minSuffixCount1 = minSuffixCount1;
     this.minSuffixCount2 = minSuffixCount2;
     this.freezeTail = freezeTail;
@@ -158,9 +157,9 @@ public class Builder<T> {
     this.shareMaxTailLength = shareMaxTailLength;
     this.doPackFST = doPackFST;
     this.acceptableOverheadRatio = acceptableOverheadRatio;
-    fst = new FST<T>(inputType, outputs, doPackFST, acceptableOverheadRatio, allowArrayArcs);
+    fst = new FST<T>(inputType, outputs, doPackFST, acceptableOverheadRatio, allowArrayArcs, bytesPageBits);
     if (doShareSuffix) {
-      dedupHash = new NodeHash<T>(fst);
+      dedupHash = new NodeHash<T>(fst, fst.bytes.getReverseReader(false));
     } else {
       dedupHash = null;
     }
@@ -174,7 +173,7 @@ public class Builder<T> {
     }
   }
 
-  public int getTotStateCount() {
+  public long getTotStateCount() {
     return fst.nodeCount;
   }
 
@@ -182,12 +181,12 @@ public class Builder<T> {
     return frontier[0].inputCount;
   }
 
-  public int getMappedStateCount() {
+  public long getMappedStateCount() {
     return dedupHash == null ? 0 : fst.nodeCount;
   }
 
   private CompiledNode compileNode(UnCompiledNode<T> nodeIn, int tailLength) throws IOException {
-    final int node;
+    final long node;
     if (dedupHash != null && (doShareNonSingletonNodes || nodeIn.numArcs <= 1) && tailLength <= shareMaxTailLength) {
       if (nodeIn.numArcs == 0) {
         node = fst.addNode(nodeIn);
@@ -475,7 +474,7 @@ public class Builder<T> {
     fst.finish(compileNode(root, lastInput.length).node);
 
     if (doPackFST) {
-      return fst.pack(3, Math.max(10, fst.getNodeCount()/4), acceptableOverheadRatio);
+      return fst.pack(3, Math.max(10, (int) (fst.getNodeCount()/4)), acceptableOverheadRatio);
     } else {
       return fst;
     }
@@ -513,8 +512,12 @@ public class Builder<T> {
     boolean isCompiled();
   }
 
+  public long fstSizeInBytes() {
+    return fst.sizeInBytes();
+  }
+
   static final class CompiledNode implements Node {
-    int node;
+    long node;
     @Override
     public boolean isCompiled() {
       return true;

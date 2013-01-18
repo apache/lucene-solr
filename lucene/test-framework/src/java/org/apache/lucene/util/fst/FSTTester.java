@@ -40,6 +40,7 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.packed.PackedInts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -203,7 +204,7 @@ public class FSTTester<T> {
     final FST.Arc<T> arc = fst.getFirstArc(new FST.Arc<T>());
     final T NO_OUTPUT = fst.outputs.getNoOutput();
     T output = NO_OUTPUT;
-    final FST.BytesReader fstReader = fst.getBytesReader(0);
+    final FST.BytesReader fstReader = fst.getBytesReader();
 
     for(int i=0;i<=term.length;i++) {
       final int label;
@@ -240,7 +241,7 @@ public class FSTTester<T> {
     in.offset = 0;
     final T NO_OUTPUT = fst.outputs.getNoOutput();
     T output = NO_OUTPUT;
-    final FST.BytesReader fstReader = fst.getBytesReader(0);
+    final FST.BytesReader fstReader = fst.getBytesReader();
 
     while(true) {
       // read all arcs:
@@ -288,7 +289,16 @@ public class FSTTester<T> {
                                               outputs,
                                               null,
                                               willRewrite,
-                                              true);
+                                              PackedInts.DEFAULT,
+                                              true,
+                                              15);
+    if (LuceneTestCase.VERBOSE) {
+      if (willRewrite) {
+        System.out.println("TEST: packed FST");
+      } else {
+        System.out.println("TEST: non-packed FST");
+      }
+    }
 
     for(InputOutput<T> pair : pairs) {
       if (pair.output instanceof List) {
