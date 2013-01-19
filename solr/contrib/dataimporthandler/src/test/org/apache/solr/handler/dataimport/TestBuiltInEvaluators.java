@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.net.URLEncoder;
@@ -116,6 +117,7 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
   }
   
   @Test
+  @Ignore("fails if somewhere on earth is a DST change")
   public void testDateFormatEvaluator() {
     Evaluator dateFormatEval = new DateFormatEvaluator();
     ContextImpl context = new ContextImpl(null, resolver, null,
