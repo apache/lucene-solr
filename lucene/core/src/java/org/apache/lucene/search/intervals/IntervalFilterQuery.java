@@ -192,10 +192,30 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     
   }
 
+  final static class CollectingFilteredIntervalIterator extends WrappedIntervalIterator {
+
+    CollectingFilteredIntervalIterator(Scorer scorer, IntervalFilter filter) throws IOException {
+      super(filter.filter(true, scorer.intervals(true)));
+    }
+
+    @Override
+    public int scorerAdvanced(int docId) throws IOException {
+      int target = scorer.advance(docId);
+      if (target > docId)
+        return target;
+      return inner.scorerAdvanced(target);
+    }
+
+    @Override
+    public String toString() {
+      return "CollectingFilteredIntervalIterator[" + inner + "]";
+    }
+  }
+
   final class IntervalFilterScorer extends Scorer {
 
     private final Scorer other;
-    private IntervalIterator filter;
+    private IntervalIterator filteredIterator;
     private Interval current;
     private final ScorerFactory factory;
     private final Similarity.SloppySimScorer docScorer;
@@ -205,7 +225,7 @@ public class IntervalFilterQuery extends Query implements Cloneable {
       super(weight);
       this.other = other;
       this.factory = factory;
-      this.filter = IntervalFilterQuery.this.filter.filter(false, other.intervals(false));
+      this.filteredIterator = IntervalFilterQuery.this.filter.filter(false, other.intervals(false));
       this.docScorer = docScorer;
     }
 
@@ -217,57 +237,16 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     @Override
     public IntervalIterator intervals(boolean collectIntervals) throws IOException {
       if (collectIntervals) {
-        final Scorer collectingScorer = factory.scorer();
-        final IntervalIterator filter = IntervalFilterQuery.this.filter.filter(true, collectingScorer.intervals(true));
-        return new IntervalIterator(this, true) {
-
-          @Override
-          public int scorerAdvanced(int docId) throws IOException {
-            int target = collectingScorer.advance(docId);
-            if (target > docId)
-              return target;
-            return filter.scorerAdvanced(target);
-          }
-
-          @Override
-          public Interval next() throws IOException {
-            return filter.next();
-          }
-
-          @Override
-          public void collect(IntervalCollector collector) {
-            filter.collect(collector);
-          }
-
-          @Override
-          public IntervalIterator[] subs(boolean inOrder) {
-            return filter.subs(inOrder);
-          }
-
-          @Override
-          public int matchDistance() {
-            return filter.matchDistance();
-          }
-
-          @Override
-          public int docID() {
-            return filter.docID();
-          }
-
-          @Override
-          public String toString() {
-            return IntervalFilterQuery.this.toString(null) + "[" + filter + "]";
-          }
-          
-        };
+        return new CollectingFilteredIntervalIterator(factory.scorer(), IntervalFilterQuery.this.filter);
       }
       
-      return new IntervalIterator(this, collectIntervals) {
+      return new WrappedIntervalIterator(filteredIterator) {
+
         private boolean buffered = true;
         @Override
         public int scorerAdvanced(int docId) throws IOException {
           buffered = true;
-          assert docId == filter.docID();
+          assert docId == inner.docID();
           return docId;
         }
 
@@ -278,24 +257,9 @@ public class IntervalFilterQuery extends Query implements Cloneable {
             return current;
           }
           else if (current != null) {
-            return current = filter.next();
+            return current = filteredIterator.next();
           }
           return null;
-        }
-
-        @Override
-        public void collect(IntervalCollector collector) {
-          filter.collect(collector);
-        }
-
-        @Override
-        public IntervalIterator[] subs(boolean inOrder) {
-          return filter.subs(inOrder);
-        }
-
-        @Override
-        public int matchDistance() {
-          return filter.matchDistance();
         }
         
       };
@@ -310,8 +274,8 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     public int nextDoc() throws IOException {
       int docId = -1;
       while ((docId = other.nextDoc()) != Scorer.NO_MORE_DOCS) {
-        filter.scorerAdvanced(docId);
-        if ((current = filter.next()) != null) { // just check if there is at least one interval that matches!
+        filteredIterator.scorerAdvanced(docId);
+        if ((current = filteredIterator.next()) != null) { // just check if there is at least one interval that matches!
           return other.docID();
         }
       }
@@ -325,8 +289,8 @@ public class IntervalFilterQuery extends Query implements Cloneable {
         return NO_MORE_DOCS;
       }
       do {
-        filter.scorerAdvanced(docId);
-        if ((current = filter.next()) != null) {
+        filteredIterator.scorerAdvanced(docId);
+        if ((current = filteredIterator.next()) != null) {
           return other.docID();
         }
       } while ((docId = other.nextDoc()) != Scorer.NO_MORE_DOCS);
@@ -341,10 +305,10 @@ public class IntervalFilterQuery extends Query implements Cloneable {
     public float sloppyFreq() throws IOException {
       float freq = 0.0f;
       do {
-        int d = filter.matchDistance();
+        int d = filteredIterator.matchDistance();
         freq += docScorer.computeSlopFactor(d);
       }
-      while (filter.next() != null);
+      while (filteredIterator.next() != null);
       return freq;
     }
 
