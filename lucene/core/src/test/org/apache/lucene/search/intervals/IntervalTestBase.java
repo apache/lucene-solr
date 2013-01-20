@@ -24,6 +24,7 @@ import org.junit.Assert;
 import org.junit.Before;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
@@ -102,12 +103,17 @@ public abstract class IntervalTestBase extends LuceneTestCase {
 
     TopDocs td = searcher.search(q, expectedResults.length + 1); // + 1 because you can't pass 0 to search(q, n)
     Assert.assertEquals("Incorrect number of hits in non-collecting query", expectedResults.length, td.totalHits);
+    int[] topdocsids = new int[td.scoreDocs.length];
+    for (int i = 0; i < topdocsids.length; i++) {
+      topdocsids[i] = td.scoreDocs[i].doc;
+    }
+    Arrays.sort(topdocsids);
 
     Iterator<Match> matchIt = m.getMatches().iterator();
     for (int i = 0; i < expectedResults.length; i++) {
       int docMatches[] = expectedResults[i];
       int docid = docMatches[0];
-      Assert.assertEquals("Didn't get a match in document " + docid, docid, td.scoreDocs[i].doc);
+      Assert.assertEquals("Didn't get a match in document " + docid, docid, topdocsids[i]);
       for (int j = 1; j < docMatches.length; j += 2) {
         String expectation = "Expected match at docid " + docid + ", position " + docMatches[j];
         Assert.assertTrue(expectation, matchIt.hasNext());
