@@ -44,6 +44,8 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
 
   @Override
   void finishDocument() {
+    // nocommit catch missing DV fields here?  else we have
+    // null/"" depending on how docs landed in segments?
   }
 
   @Override

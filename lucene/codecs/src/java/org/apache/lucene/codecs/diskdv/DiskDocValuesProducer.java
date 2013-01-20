@@ -161,7 +161,7 @@ class DiskDocValuesProducer extends DocValuesProducer {
         long address = bytes.offset + docID * (long)bytes.maxLength;
         try {
           data.seek(address);
-          if (result.length < bytes.maxLength) {
+          if (result.bytes.length < bytes.maxLength) {
             result.offset = 0;
             result.bytes = new byte[bytes.maxLength];
           }
@@ -185,7 +185,7 @@ class DiskDocValuesProducer extends DocValuesProducer {
         int length = (int) (endAddress - startAddress);
         try {
           data.seek(startAddress);
-          if (result.length < length) {
+          if (result.bytes.length < length) {
             result.offset = 0;
             result.bytes = new byte[length];
           }

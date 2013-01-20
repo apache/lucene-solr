@@ -97,8 +97,6 @@ final class SegmentCoreReaders {
     }
   };
 
-  // nocommit norms too
-  
   private final Set<CoreClosedListener> coreClosedListeners = 
       Collections.synchronizedSet(new LinkedHashSet<CoreClosedListener>());
   
@@ -132,6 +130,7 @@ final class SegmentCoreReaders {
       // TODO: since we don't write any norms file if there are no norms,
       // kinda jaky to assume the codec handles the case of no norms file at all gracefully?!
       // nocommit shouldn't need null check:
+      assert codec.docValuesFormat() != null;
       if (codec.docValuesFormat() != null) {
         if (fieldInfos.hasDocValues()) {
           simpleDVProducer = codec.docValuesFormat().fieldsProducer(segmentReadState);
@@ -254,6 +253,8 @@ final class SegmentCoreReaders {
       // DocValues were not sorted
       return null;
     }
+
+    assert simpleDVProducer != null;
 
     // nocommit change to assert != null!!
     if (simpleDVProducer == null) {

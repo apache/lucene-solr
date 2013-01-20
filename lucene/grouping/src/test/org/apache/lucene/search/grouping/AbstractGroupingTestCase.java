@@ -33,6 +33,7 @@ public abstract class AbstractGroupingTestCase extends LuceneTestCase {
       // For that reason we don't generate empty string
       // groups.
       randomValue = _TestUtil.randomRealisticUnicodeString(random());
+      //randomValue = _TestUtil.randomSimpleString(random());
     } while ("".equals(randomValue));
     return randomValue;
   }

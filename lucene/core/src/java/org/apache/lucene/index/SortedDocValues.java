@@ -176,10 +176,16 @@ public abstract class SortedDocValues extends BinaryDocValues {
       } else if (cmp > 0) {
         high = mid - 1;
       } else {
+        // nocommit is this the right way... else caller can
+        // pass this spare down to DiskDV, which will then
+        // "use" our byte[] ...
+        spare.bytes = BytesRef.EMPTY_BYTES;
         return mid; // key found
       }
     }
 
+    // nocommit is this the right way...
+    spare.bytes = BytesRef.EMPTY_BYTES;
     return -(low + 1);  // key not found.
   }
 }
