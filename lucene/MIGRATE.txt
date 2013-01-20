@@ -515,7 +515,7 @@ If you did this before (value can be String or Reader):
 
 you can now do this:
 
-    new TextField("field", value)
+    new TextField("field", value, Field.Store.NO)
 
 If instead the value was stored:
 
@@ -523,7 +523,7 @@ If instead the value was stored:
 
 you can now do this:
 
-    new Field("field", value, TextField.TYPE_STORED)
+    new TextField("field", value, Field.Store.YES)
 
 If in addition you omit norms:
 
