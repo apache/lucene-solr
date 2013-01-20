@@ -644,8 +644,8 @@ public class TestGrouping extends LuceneTestCase {
           // B/c of DV based impl we can't see the difference between an empty string and a null value.
           // For that reason we don't generate empty string
           // groups.
-          //randomValue = _TestUtil.randomRealisticUnicodeString(random());
-          randomValue = _TestUtil.randomSimpleString(random());
+          randomValue = _TestUtil.randomRealisticUnicodeString(random());
+          //randomValue = _TestUtil.randomSimpleString(random());
         } while ("".equals(randomValue));
 
         groups.add(new BytesRef(randomValue));
@@ -680,6 +680,7 @@ public class TestGrouping extends LuceneTestCase {
       Field idvGroupField = new SortedBytesDocValuesField("group_dv", new BytesRef());
       if (canUseIDV) {
         doc.add(idvGroupField);
+        docNoGroup.add(idvGroupField);
       }
 
       Field group = newStringField("group", "", Field.Store.NO);
@@ -721,6 +722,11 @@ public class TestGrouping extends LuceneTestCase {
           if (canUseIDV) {
             idvGroupField.setBytesValue(BytesRef.deepCopyOf(groupDoc.group));
           }
+        } else if (canUseIDV) {
+          // Must explicitly set empty string, else eg if
+          // the segment has all docs missing the field then
+          // we get null back instead of empty BytesRef:
+          idvGroupField.setBytesValue(new BytesRef());
         }
         sort1.setStringValue(groupDoc.sort1.utf8ToString());
         sort2.setStringValue(groupDoc.sort2.utf8ToString());
@@ -853,6 +859,9 @@ public class TestGrouping extends LuceneTestCase {
           if (canUseIDV && random().nextBoolean()) {
             groupField += "_dv";
           }
+          if (VERBOSE) {
+            System.out.println("  groupField=" + groupField);
+          }
           final AbstractFirstPassGroupingCollector<?> c1 = createRandomFirstPassCollector(groupField, groupSort, groupOffset+topNGroups);
           final CachingCollector cCache;
           final Collector c;
@@ -894,6 +903,7 @@ public class TestGrouping extends LuceneTestCase {
 
           // Search top reader:
           final Query query = new TermQuery(new Term("content", searchTerm));
+
           s.search(query, c);
 
           if (doCache && !useWrappingCollector) {
@@ -981,7 +991,7 @@ public class TestGrouping extends LuceneTestCase {
             } else {
               System.out.println("TEST: expected groups totalGroupedHitCount=" + expectedGroups.totalGroupedHitCount);
               for(GroupDocs<BytesRef> gd : expectedGroups.groups) {
-                System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue) + " totalHits=" + gd.totalHits);
+                System.out.println("  group=" + (gd.groupValue == null ? "null" : gd.groupValue) + " totalHits=" + gd.totalHits + " scoreDocs.len=" + gd.scoreDocs.length);
                 for(ScoreDoc sd : gd.scoreDocs) {
                   System.out.println("    id=" + sd.doc + " score=" + sd.score);
                 }
