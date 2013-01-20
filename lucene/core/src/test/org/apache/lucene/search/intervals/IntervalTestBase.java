@@ -98,12 +98,16 @@ public abstract class IntervalTestBase extends LuceneTestCase {
 
     MatchCollector m = new MatchCollector();
     searcher.search(q, m);
+    Assert.assertEquals("Incorrect number of hits in collecting query", expectedResults.length, m.getHitCount());
 
-    Assert.assertEquals("Incorrect number of hits", expectedResults.length, m.getHitCount());
+    TopDocs td = searcher.search(q, expectedResults.length + 1); // + 1 because you can't pass 0 to search(q, n)
+    Assert.assertEquals("Incorrect number of hits in non-collecting query", expectedResults.length, td.totalHits);
+
     Iterator<Match> matchIt = m.getMatches().iterator();
     for (int i = 0; i < expectedResults.length; i++) {
       int docMatches[] = expectedResults[i];
       int docid = docMatches[0];
+      Assert.assertEquals("Didn't get a match in document " + docid, docid, td.scoreDocs[i].doc);
       for (int j = 1; j < docMatches.length; j += 2) {
         String expectation = "Expected match at docid " + docid + ", position " + docMatches[j];
         Assert.assertTrue(expectation, matchIt.hasNext());
