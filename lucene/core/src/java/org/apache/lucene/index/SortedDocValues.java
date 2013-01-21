@@ -49,102 +49,6 @@ public abstract class SortedDocValues extends BinaryDocValues {
   // API?  why must it be impl'd here...?
   // SortedDocValuesTermsEnum.
 
-  public TermsEnum getTermsEnum() {
-    // nocommit who tests this base impl ...
-    // Default impl just uses the existing API; subclasses
-    // can specialize:
-    return new TermsEnum() {
-      private int currentOrd = -1;
-
-      private final BytesRef term = new BytesRef();
-
-      @Override
-      public SeekStatus seekCeil(BytesRef text, boolean useCache /* ignored */) throws IOException {
-        int ord = lookupTerm(text, term);
-        if (ord > 0) {
-          currentOrd = ord;
-          term.offset = 0;
-          term.copyBytes(text);
-          return SeekStatus.FOUND;
-        } else {
-          currentOrd = -ord-1;
-          if (currentOrd == getValueCount()) {
-            return SeekStatus.END;
-          } else {
-            // nocommit hmm can we avoid this "extra" lookup?:
-            lookupOrd(currentOrd, term);
-            return SeekStatus.NOT_FOUND;
-          }
-        }
-      }
-
-      @Override
-      public void seekExact(long ord) throws IOException {
-        assert ord >= 0 && ord < getValueCount();
-        currentOrd = (int) ord;
-        lookupOrd(currentOrd, term);
-      }
-
-      @Override
-      public BytesRef next() throws IOException {
-        currentOrd++;
-        if (currentOrd >= getValueCount()) {
-          return null;
-        }
-        lookupOrd(currentOrd, term);
-        return term;
-      }
-
-      @Override
-      public BytesRef term() throws IOException {
-        return term;
-      }
-
-      @Override
-      public long ord() throws IOException {
-        return currentOrd;
-      }
-
-      @Override
-      public int docFreq() {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public long totalTermFreq() {
-        return -1;
-      }
-
-      @Override
-      public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUnicodeComparator();
-      }
-
-      @Override
-      public void seekExact(BytesRef term, TermState state) throws IOException {
-        assert state != null && state instanceof OrdTermState;
-        this.seekExact(((OrdTermState)state).ord);
-      }
-
-      @Override
-      public TermState termState() throws IOException {
-        OrdTermState state = new OrdTermState();
-        state.ord = currentOrd;
-        return state;
-      }
-    };
-  }
-
   public static final SortedDocValues EMPTY = new SortedDocValues() {
     @Override
     public int getOrd(int docID) {
@@ -169,8 +73,6 @@ public abstract class SortedDocValues extends BinaryDocValues {
    *  @param key Key to look up
    *  @param spare Spare BytesRef
    **/
-  // nocommit make this protected so codecs can impl better
-  // version ...
   public int lookupTerm(BytesRef key, BytesRef spare) {
 
     int low = 0;

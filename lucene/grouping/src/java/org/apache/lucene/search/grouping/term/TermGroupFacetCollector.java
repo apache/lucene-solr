@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.DocTermOrds;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedDocValuesTermsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.grouping.AbstractGroupFacetCollector;
@@ -168,7 +169,7 @@ public abstract class TermGroupFacetCollector extends AbstractGroupFacetCollecto
 
     @Override
     protected SegmentResult createSegmentResult() throws IOException {
-      return new SegmentResult(segmentFacetCounts, segmentTotalCount, facetFieldTermsIndex.getTermsEnum(), startFacetOrd, endFacetOrd);
+      return new SegmentResult(segmentFacetCounts, segmentTotalCount, new SortedDocValuesTermsEnum(facetFieldTermsIndex), startFacetOrd, endFacetOrd);
     }
 
     private static class SegmentResult extends AbstractGroupFacetCollector.SegmentResult {

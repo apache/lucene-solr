@@ -208,7 +208,7 @@ public class TestFieldCache extends LuceneTestCase {
     int nTerms = termsIndex.getValueCount();
     // System.out.println("nTerms="+nTerms);
 
-    TermsEnum tenum = termsIndex.getTermsEnum();
+    TermsEnum tenum = new SortedDocValuesTermsEnum(termsIndex);
     BytesRef val = new BytesRef();
     for (int i=0; i<nTerms; i++) {
       BytesRef val1 = tenum.next();

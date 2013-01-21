@@ -23,6 +23,7 @@ import java.util.Comparator;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedDocValuesTermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.Bits;
@@ -101,7 +102,7 @@ public final class FieldCacheRewriteMethod extends MultiTermQuery.RewriteMethod 
         
         @Override
         public TermsEnum iterator(TermsEnum reuse) {
-          return fcsi.getTermsEnum();
+          return new SortedDocValuesTermsEnum(fcsi);
         }
 
         @Override
