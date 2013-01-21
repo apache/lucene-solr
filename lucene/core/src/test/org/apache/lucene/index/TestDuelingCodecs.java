@@ -527,7 +527,6 @@ public class TestDuelingCodecs extends LuceneTestCase {
     }
     
     for (String field : leftFields) {
-      // nocommit cutover to per-segment comparison
       NumericDocValues leftNorms = MultiDocValues.getNormValues(leftReader, field);
       NumericDocValues rightNorms = MultiDocValues.getNormValues(rightReader, field);
       if (leftNorms != null && rightNorms != null) {
@@ -615,15 +614,15 @@ public class TestDuelingCodecs extends LuceneTestCase {
     assertEquals(info, leftFields, rightFields);
 
     for (String field : leftFields) {
-
+      // TODO: clean this up... very messy
       {
         NumericDocValues leftValues = MultiDocValues.getNumericValues(leftReader, field);
         NumericDocValues rightValues = MultiDocValues.getNumericValues(rightReader, field);
         if (leftValues != null && rightValues != null) {
           assertDocValues(leftReader.maxDoc(), leftValues, rightValues);
         } else {
-          assertNull(leftValues);
-          assertNull(rightValues);
+          assertNull(info, leftValues);
+          assertNull(info, rightValues);
         }
       }
 
@@ -636,11 +635,37 @@ public class TestDuelingCodecs extends LuceneTestCase {
           for(int docID=0;docID<leftReader.maxDoc();docID++) {
             leftValues.get(docID, scratchLeft);
             rightValues.get(docID, scratchRight);
-            assertEquals(scratchLeft, scratchRight);
+            assertEquals(info, scratchLeft, scratchRight);
           }
         } else {
-          assertNull(leftValues);
-          assertNull(rightValues);
+          assertNull(info, leftValues);
+          assertNull(info, rightValues);
+        }
+      }
+      
+      {
+        SortedDocValues leftValues = MultiDocValues.getSortedValues(leftReader, field);
+        SortedDocValues rightValues = MultiDocValues.getSortedValues(rightReader, field);
+        if (leftValues != null && rightValues != null) {
+          // numOrds
+          assertEquals(info, leftValues.getValueCount(), rightValues.getValueCount());
+          // ords
+          BytesRef scratchLeft = new BytesRef();
+          BytesRef scratchRight = new BytesRef();
+          for (int i = 0; i < leftValues.getValueCount(); i++) {
+            leftValues.lookupOrd(i, scratchLeft);
+            rightValues.lookupOrd(i, scratchRight);
+            assertEquals(info, scratchLeft, scratchRight);
+          }
+          // bytes
+          for(int docID=0;docID<leftReader.maxDoc();docID++) {
+            leftValues.get(docID, scratchLeft);
+            rightValues.get(docID, scratchRight);
+            assertEquals(info, scratchLeft, scratchRight);
+          }
+        } else {
+          assertNull(info, leftValues);
+          assertNull(info, rightValues);
         }
       }
     }
