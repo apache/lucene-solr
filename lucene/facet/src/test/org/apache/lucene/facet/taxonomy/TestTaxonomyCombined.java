@@ -353,7 +353,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     }
 
     // test TaxonomyReader.getCategory():
-    for (int i=0; i<tr.getSize(); i++) {
+    for (int i = 1; i < tr.getSize(); i++) {
       CategoryPath expectedCategory = new CategoryPath(expectedCategories[i]);
       CategoryPath category = tr.getPath(i);
       if (!expectedCategory.equals(category)) {
@@ -367,7 +367,7 @@ public class TestTaxonomyCombined extends LuceneTestCase {
     assertNull(tr.getPath(TaxonomyReader.INVALID_ORDINAL));
 
     // test TaxonomyReader.getOrdinal():
-    for (int i=0; i<expectedCategories.length; i++) {
+    for (int i = 1; i < expectedCategories.length; i++) {
       int expectedOrdinal = i;
       int ordinal = tr.getOrdinal(new CategoryPath(expectedCategories[i]));
       if (expectedOrdinal != ordinal) {

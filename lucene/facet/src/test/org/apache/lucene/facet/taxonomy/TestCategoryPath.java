@@ -131,9 +131,6 @@ public class TestCategoryPath extends LuceneTestCase {
     CategoryPath p = new CategoryPath("hello", "world", "yo");
     assertEquals(3, p.length);
     assertEquals("hello/world/yo", p.toString('/'));
-    
-    p = new CategoryPath(new String[0]);
-    assertEquals(0, p.length);
   }
   
   @Test 

@@ -46,7 +46,6 @@ public class FacetIndexingParamsTest extends LuceneTestCase {
     assertEquals("3 characters should be written", 3, numchars);
     assertEquals("wrong drill-down term text", expectedDDText, new String(
         buf, 0, numchars));
-    CategoryListParams clParams = dfip.getCategoryListParams(null);
     assertEquals("partition for all ordinals is the first", "", 
         PartitionsUtils.partitionNameByOrdinal(dfip, 250));
     assertEquals("for partition 0, the same name should be returned",
@@ -75,7 +74,7 @@ public class FacetIndexingParamsTest extends LuceneTestCase {
     PathPolicy pathPolicy = PathPolicy.ALL_CATEGORIES;
     assertEquals("path policy does not match default for root", pathPolicy.shouldAdd(cp), dfip.getPathPolicy().shouldAdd(cp));
     for (int i = 0; i < 30; i++) {
-      int nComponents = random().nextInt(10);
+      int nComponents = random().nextInt(10) + 1;
       String[] components = new String[nComponents];
       for (int j = 0; j < components.length; j++) {
         components[j] = (Integer.valueOf(random().nextInt(30))).toString();
