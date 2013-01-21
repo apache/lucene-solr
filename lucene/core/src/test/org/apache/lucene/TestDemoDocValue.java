@@ -51,8 +51,6 @@ import org.apache.lucene.util.LuceneTestCase;
  * Please try to keep src/java/overview.html up-to-date when making changes
  * to this class.
  */
-// nocommit
-@SuppressCodecs("Lucene40")
 public class TestDemoDocValue extends LuceneTestCase {
 
   public void testDemoNumber() throws IOException {
