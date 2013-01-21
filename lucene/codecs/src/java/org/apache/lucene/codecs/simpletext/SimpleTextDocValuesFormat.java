@@ -135,8 +135,7 @@ public class SimpleTextDocValuesFormat extends DocValuesFormat {
    *  the reader can just scan this file when it opens, skipping over the data blocks
    *  and saving the offset/etc for each field. 
    */
-  // nocommit not public
-  public static class SimpleTextDocValuesWriter extends DocValuesConsumer {
+  static class SimpleTextDocValuesWriter extends DocValuesConsumer {
     final IndexOutput data;
     final BytesRef scratch = new BytesRef();
     final int numDocs;
@@ -371,17 +370,10 @@ public class SimpleTextDocValuesFormat extends DocValuesFormat {
     }
   };
 
-  // nocommit once we do "in ram cache of direct source"
-  // ... and hopeuflly under SCR control ... then if app
-  // asks for direct soruce but it was already cached in ram
-  // ... we should use the ram cached one!  we don't do this
-  // correctly today ...
-
   // nocommit make sure we test "all docs have 0 value",
   // "all docs have empty BytesREf"
 
-  // nocommit not public
-  public static class SimpleTextDocValuesReader extends DocValuesProducer {
+  static class SimpleTextDocValuesReader extends DocValuesProducer {
 
     static class OneField {
       FieldInfo fieldInfo;
