@@ -28,10 +28,8 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 public class SamplingAccumulatorTest extends BaseSampleTestTopK {
 
   @Override
-  protected FacetsAccumulator getSamplingAccumulator(Sampler sampler,
-      TaxonomyReader taxoReader, IndexReader indexReader,
-      FacetSearchParams searchParams) {
-    return new SamplingAccumulator(sampler, searchParams, indexReader,
-        taxoReader);
+  protected FacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
+      IndexReader indexReader, FacetSearchParams searchParams) {
+    return new SamplingAccumulator(sampler, searchParams, indexReader, taxoReader);
   }
 }

@@ -118,8 +118,8 @@ public class TestFacetsAccumulatorWithComplement extends FacetTestBase {
     FacetResultNode parentResWithComp = countResWithComplement.get(0).getFacetResultNode();
     FacetResultNode parentResNoComp = countResWithComplement.get(0).getFacetResultNode();
     
-    assertEquals("Wrong number of top count aggregated categories with complement!",3,parentResWithComp.getNumSubResults());
-    assertEquals("Wrong number of top count aggregated categories no complement!",3,parentResNoComp.getNumSubResults());
+    assertEquals("Wrong number of top count aggregated categories with complement!",3,parentResWithComp.subResults.size());
+    assertEquals("Wrong number of top count aggregated categories no complement!",3,parentResNoComp.subResults.size());
     
   }
   

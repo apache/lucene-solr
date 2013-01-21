@@ -273,7 +273,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
 
     FacetResult results = res.get(0);
     FacetResultNode resNode = results.getFacetResultNode();
-    Iterable<? extends FacetResultNode> subResults = resNode.getSubResults();
+    Iterable<? extends FacetResultNode> subResults = resNode.subResults;
     Iterator<? extends FacetResultNode> subIter = subResults.iterator();
 
     checkResult(resNode, "Band", 5.0);
@@ -282,7 +282,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
 
     results = res.get(1);
     resNode = results.getFacetResultNode();
-    subResults = resNode.getSubResults();
+    subResults = resNode.subResults;
     subIter = subResults.iterator();
 
     checkResult(resNode, "Band", 5.0);
@@ -296,7 +296,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
 
     results = res.get(2);
     resNode = results.getFacetResultNode();
-    subResults = resNode.getSubResults();
+    subResults = resNode.subResults;
     subIter = subResults.iterator();
 
     checkResult(resNode, "Author", 3.0);
@@ -306,7 +306,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
 
     results = res.get(3);
     resNode = results.getFacetResultNode();
-    subResults = resNode.getSubResults();
+    subResults = resNode.subResults;
     subIter = subResults.iterator();
 
     checkResult(resNode, "Band/Rock & Pop", 4.0);
@@ -352,8 +352,8 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
   }
 
   private static void checkResult(FacetResultNode sub, String label, double value) {
-    assertEquals("Label of subresult " + sub.getLabel() + " was incorrect", label, sub.getLabel().toString());
-    assertEquals("Value for " + sub.getLabel() + " subresult was incorrect", value, sub.getValue(), 0.0);
+    assertEquals("Label of subresult " + sub.label + " was incorrect", label, sub.label.toString());
+    assertEquals("Value for " + sub.label + " subresult was incorrect", value, sub.value, 0.0);
   }
 
 }

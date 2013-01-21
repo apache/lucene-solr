@@ -120,7 +120,7 @@ public abstract class FacetResultsHandler {
    * rendered facet results, fixed their counts, and now it is needed 
    * to sort the results differently according to the fixed counts. 
    * @param facetResult result to be rearranged.
-   * @see FacetResultNode#setValue(double)
+   * @see FacetResultNode#value
    */
   public abstract FacetResult rearrangeFacetResult(FacetResult facetResult);
 

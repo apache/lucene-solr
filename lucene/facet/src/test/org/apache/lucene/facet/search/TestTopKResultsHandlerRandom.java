@@ -88,15 +88,15 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
       int k = 0;
       for (FacetResult fr : allFacetResults) {
         FacetResultNode topResNode = fr.getFacetResultNode();
-        maxNumNodes = Math.max(maxNumNodes, topResNode.getNumSubResults());
+        maxNumNodes = Math.max(maxNumNodes, topResNode.subResults.size());
         int prevCount = Integer.MAX_VALUE;
         int pos = 0;
-        for (FacetResultNode frn: topResNode.getSubResults()) {
-          assertTrue("wrong counts order: prev="+prevCount+" curr="+frn.getValue(), prevCount>=frn.getValue());
-          prevCount = (int) frn.getValue();
-          String key = k+"--"+frn.getLabel()+"=="+frn.getValue();
+        for (FacetResultNode frn: topResNode.subResults) {
+          assertTrue("wrong counts order: prev="+prevCount+" curr="+frn.value, prevCount>=frn.value);
+          prevCount = (int) frn.value;
+          String key = k+"--"+frn.label+"=="+frn.value;
           if (VERBOSE) {
-            System.out.println(frn.getLabel() + " - " + frn.getValue() + "  "+key+"  "+pos);
+            System.out.println(frn.label + " - " + frn.value + "  "+key+"  "+pos);
           }
           all.put(key, pos++); // will use this later to verify order of sub-results
         }
@@ -113,12 +113,12 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
         k = 0;
         for (FacetResult fr : someResults) {
           FacetResultNode topResNode = fr.getFacetResultNode();
-          assertTrue("too many results: n="+n+" but got "+topResNode.getNumSubResults(), n>=topResNode.getNumSubResults());
+          assertTrue("too many results: n="+n+" but got "+topResNode.subResults.size(), n>=topResNode.subResults.size());
           int pos = 0;
-          for (FacetResultNode frn: topResNode.getSubResults()) {
-            String key = k+"--"+frn.getLabel()+"=="+frn.getValue();
+          for (FacetResultNode frn: topResNode.subResults) {
+            String key = k+"--"+frn.label+"=="+frn.value;
             if (VERBOSE) {
-              System.out.println(frn.getLabel() + " - " + frn.getValue() + "  "+key+"  "+pos);
+              System.out.println(frn.label + " - " + frn.value + "  "+key+"  "+pos);
             }
             Integer origPos = all.get(key);
             assertNotNull("missing in all results: "+frn,origPos);

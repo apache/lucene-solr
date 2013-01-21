@@ -1,10 +1,11 @@
 package org.apache.lucene.facet.search.results;
 
-import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
-import org.apache.lucene.facet.search.FacetResultsHandler;
+import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.sampling.SampleFixer;
+import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
@@ -26,85 +27,86 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
  */
 
 /**
- * Result of faceted search for a certain taxonomy node.
+ * Result of faceted search for a certain taxonomy node. This class serves as a
+ * bin of different attributes of the result node, such as its {@link #ordinal}
+ * as well as {@link #label}. You are not expected to modify those values.
  * 
  * @lucene.experimental
  */
-public interface FacetResultNode {
+public class FacetResultNode {
+
+  public static final List<FacetResultNode> EMPTY_SUB_RESULTS = Collections.emptyList();
+  
+  /** The category ordinal of this node. */
+  public int ordinal;
 
   /**
-   * String representation of this facet result node.
-   * Use with caution: might return a very long string.
-   * @param prefix prefix for each result line
-   */
-  public String toString(String prefix);
-
-  /**
-   * Ordinal of the category of this result.
-   */
-  public int getOrdinal();
-
-  /**
-   * Category path of the category of this result, or null if not computed, 
-   * because the application did not request to compute it. 
-   * To force computing the label in case not yet computed use
-   * {@link #getLabel(TaxonomyReader)}.
-   * @see FacetRequest#getNumLabel()
-   * @see #getLabel(TaxonomyReader)
-   */
-  public CategoryPath getLabel();
-
-  /**
-   * Category path of the category of this result.
-   * If not already computed, will be computed now. 
-   * <p> 
-   * Use with <b>caution</b>: loading a label for results is costly, performance wise.
-   * Therefore force labels loading only when really needed.   
-   * @param taxonomyReader taxonomy reader for forcing (lazy) labeling of this result. 
-   * @throws IOException on error
-   * @see FacetRequest#getNumLabel()
-   */
-  public CategoryPath getLabel(TaxonomyReader taxonomyReader) throws IOException;
-
-  /**
-   * Value of this result - usually either count or a value derived from some
-   * computing on the association of it.
-   */
-  public double getValue();
-
-  /**
-   * Value of screened out sub results.
+   * The {@link CategoryPath label} of this result. May be {@code null} if not
+   * computed, in which case use {@link TaxonomyReader#getPath(int)} to label
+   * it.
    * <p>
-   * If only part of valid results are returned, e.g. because top K were requested,
-   * provide info on "what else is there under this result node".
+   * <b>NOTE:</b> by default, all nodes are labeled. Only when
+   * {@link FacetRequest#getNumLabel()} &lt;
+   * {@link FacetRequest#getNumResults()} there will be unlabeled nodes.
    */
-  public double getResidue();
+  public CategoryPath label;
+  
+  /**
+   * The value of this result. Its actual type depends on the
+   * {@link FacetRequest} used (e.g. in case of {@link CountFacetRequest} it is
+   * {@code int}).
+   */
+  public double value;
 
   /**
-   * Contained sub results.
-   * These are either child facets, if a tree result was requested, or simply descendants, in case
-   * tree result was not requested. In the first case, all returned are both descendants of 
-   * this node in the taxonomy and siblings of each other in the taxonomy.
-   * In the latter case they are only guaranteed to be descendants of 
-   * this node in the taxonomy.  
+   * The total value of screened out sub results. If only part of the results
+   * were returned (usually because only the top-K categories are requested),
+   * then this provides information on "what else is there under this result 
+   * node".
    */
-  public Iterable<? extends FacetResultNode> getSubResults();
-
+  public double residue;
+  
   /**
-   * Number of sub results
-   */
-  public int getNumSubResults();
-
-  /**
-   * Expert: Set a new value for this result node.
+   * The sub-results of this result. If {@link FacetRequest#getResultMode()} is
+   * {@link ResultMode#PER_NODE_IN_TREE}, every sub result denotes an immediate
+   * child of this node. Otherwise, it is a descendant of any level.
    * <p>
-   * Allows to modify the value of this facet node. 
-   * Used for example to tune a sampled value, e.g. by 
-   * {@link SampleFixer#fixResult(org.apache.lucene.facet.search.ScoredDocIDs, FacetResult)}  
-   * @param value the new value to set
-   * @see #getValue()
-   * @see FacetResultsHandler#rearrangeFacetResult(FacetResult)
+   * <b>NOTE:</b> this member should not be {@code null}. To denote that a
+   * result does not have sub results, set it to {@link #EMPTY_SUB_RESULTS} (or
+   * don't modify it).
    */
-  public void setValue(double value);
+  public List<FacetResultNode> subResults = EMPTY_SUB_RESULTS;
+
+  public FacetResultNode() {
+    // empty constructor
+  }
+  
+  public FacetResultNode(int ordinal, double value) {
+    this.ordinal = ordinal;
+    this.value = value;
+  }
+  
+  @Override
+  public String toString() {
+    return toString("");
+  }
+  
+  /** Returns a String representation of this facet result node. */
+  public String toString(String prefix) {
+    StringBuilder sb = new StringBuilder(prefix);
+    if (label == null) {
+      sb.append("not labeled (ordinal=").append(ordinal).append(")");
+    } else {
+      sb.append(label.toString());
+    }
+    sb.append(" (").append(Double.toString(value)).append(")");
+    if (residue > 0) {
+      sb.append(" (residue=").append(residue).append(")");
+    }
+    for (FacetResultNode sub : subResults) {
+      sb.append("\n").append(prefix).append(sub.toString(prefix + "  "));
+    }
+    return sb.toString();
+  }
 
 }

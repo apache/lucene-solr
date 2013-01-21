@@ -74,10 +74,9 @@ class TakmiSampleFixer implements SampleFixer {
    *          docids in effect
    * @throws IOException If there is a low-level I/O error.
    */
-  private void fixResultNode(FacetResultNode facetResNode, ScoredDocIDs docIds)
-      throws IOException {
+  private void fixResultNode(FacetResultNode facetResNode, ScoredDocIDs docIds) throws IOException {
     recount(facetResNode, docIds);
-    for (FacetResultNode frn : facetResNode.getSubResults()) {
+    for (FacetResultNode frn : facetResNode.subResults) {
       fixResultNode(frn, docIds);
     }
   }
@@ -101,7 +100,10 @@ class TakmiSampleFixer implements SampleFixer {
      * facet results was exercise, we need to calculate them anyway, so
      * in essence sampling with recounting spends some extra cycles for
      * labeling results for which labels are not required. */
-    CategoryPath catPath = fresNode.getLabel(taxonomyReader); // force labeling
+    if (fresNode.label == null) {
+      fresNode.label = taxonomyReader.getPath(fresNode.ordinal);
+    }
+    CategoryPath catPath = fresNode.label;
 
     Term drillDownTerm = DrillDown.term(searchParams, catPath);
     // TODO (Facet): avoid Multi*?
@@ -109,8 +111,7 @@ class TakmiSampleFixer implements SampleFixer {
     int updatedCount = countIntersection(MultiFields.getTermDocsEnum(indexReader, liveDocs,
                                                                      drillDownTerm.field(), drillDownTerm.bytes(),
                                                                      0), docIds.iterator());
-
-    fresNode.setValue(updatedCount);
+    fresNode.value = updatedCount;
   }
 
   /**

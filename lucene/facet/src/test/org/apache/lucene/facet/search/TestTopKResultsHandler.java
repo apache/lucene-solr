@@ -99,52 +99,46 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       };
       
       searcher.search(new MatchAllDocsQuery(), fc);
-      long start = System.currentTimeMillis();
       List<FacetResult> facetResults = fc.getFacetResults();
-      long end = System.currentTimeMillis();
-
-      if (VERBOSE) {
-        System.out.println("Time: " + (end - start));
-      }
 
       FacetResult fr = facetResults.get(0);
       FacetResultNode parentRes = fr.getFacetResultNode();
-      assertEquals(13.0, parentRes.getValue(), Double.MIN_VALUE);
+      assertEquals(13.0, parentRes.value, Double.MIN_VALUE);
       FacetResultNode[] frn = resultNodesAsArray(parentRes);
-      assertEquals(7.0, frn[0].getValue(), Double.MIN_VALUE);
-      assertEquals(6.0, frn[1].getValue(), Double.MIN_VALUE);
+      assertEquals(7.0, frn[0].value, Double.MIN_VALUE);
+      assertEquals(6.0, frn[1].value, Double.MIN_VALUE);
 
       fr = facetResults.get(1);
       parentRes = fr.getFacetResultNode();
-      assertEquals(13.0, parentRes.getValue(), Double.MIN_VALUE);
+      assertEquals(13.0, parentRes.value, Double.MIN_VALUE);
       frn = resultNodesAsArray(parentRes);
-      assertEquals(7.0, frn[0].getValue(), Double.MIN_VALUE);
-      assertEquals(6.0, frn[1].getValue(), Double.MIN_VALUE);
-      assertEquals(2.0, frn[2].getValue(), Double.MIN_VALUE);
-      assertEquals(2.0, frn[3].getValue(), Double.MIN_VALUE);
-      assertEquals(1.0, frn[4].getValue(), Double.MIN_VALUE);
-      assertEquals(1.0, frn[5].getValue(), Double.MIN_VALUE);
+      assertEquals(7.0, frn[0].value, Double.MIN_VALUE);
+      assertEquals(6.0, frn[1].value, Double.MIN_VALUE);
+      assertEquals(2.0, frn[2].value, Double.MIN_VALUE);
+      assertEquals(2.0, frn[3].value, Double.MIN_VALUE);
+      assertEquals(1.0, frn[4].value, Double.MIN_VALUE);
+      assertEquals(1.0, frn[5].value, Double.MIN_VALUE);
 
       fr = facetResults.get(2);
       parentRes = fr.getFacetResultNode();
-      assertEquals(7.0, parentRes.getValue(), Double.MIN_VALUE);
+      assertEquals(7.0, parentRes.value, Double.MIN_VALUE);
       frn = resultNodesAsArray(parentRes);
-      assertEquals(2.0, frn[0].getValue(), Double.MIN_VALUE);
-      assertEquals(2.0, frn[1].getValue(), Double.MIN_VALUE);
-      assertEquals(1.0, frn[2].getValue(), Double.MIN_VALUE);
-      assertEquals(1.0, frn[3].getValue(), Double.MIN_VALUE);
+      assertEquals(2.0, frn[0].value, Double.MIN_VALUE);
+      assertEquals(2.0, frn[1].value, Double.MIN_VALUE);
+      assertEquals(1.0, frn[2].value, Double.MIN_VALUE);
+      assertEquals(1.0, frn[3].value, Double.MIN_VALUE);
 
       fr = facetResults.get(3);
       parentRes = fr.getFacetResultNode();
-      assertEquals(2.0, parentRes.getValue(), Double.MIN_VALUE);
+      assertEquals(2.0, parentRes.value, Double.MIN_VALUE);
       frn = resultNodesAsArray(parentRes);
       assertEquals(0, frn.length);
 
       fr = facetResults.get(4);
       parentRes = fr.getFacetResultNode();
-      assertEquals(6.0, parentRes.getValue(), Double.MIN_VALUE);
+      assertEquals(6.0, parentRes.value, Double.MIN_VALUE);
       frn = resultNodesAsArray(parentRes);
-      assertEquals(1.0, frn[0].getValue(), Double.MIN_VALUE);
+      assertEquals(1.0, frn[0].value, Double.MIN_VALUE);
       closeAll();
     }
   }
@@ -172,13 +166,7 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       };
       
       searcher.search(new MatchAllDocsQuery(), fc);
-      long start = System.currentTimeMillis();
       List<FacetResult> results = fc.getFacetResults();
-      long end = System.currentTimeMillis();
-
-      if (VERBOSE) {
-        System.out.println("Time: " + (end - start));
-      }
 
       assertEquals("Should only be one result as there's only one request", 1, results.size());
       FacetResult res = results.get(0);
@@ -230,14 +218,8 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       
       searcher.search(new MatchAllDocsQuery(), fc);
       
-      long start = System.currentTimeMillis();
       List<FacetResult> facetResults = fc.getFacetResults();
-      long end = System.currentTimeMillis();
       
-      if (VERBOSE) {
-        System.out.println("Time: " + (end - start));
-      }
-
       assertEquals("Shouldn't have found anything for a FacetRequest "
           + "of a facet that doesn't exist in the index.", 0, facetResults.size());
 
