@@ -50,9 +50,6 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.ORDP
 import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.PATTERN;
 import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.TYPE;
 
-// nocommit make sure we test "all docs have 0 value",
-// "all docs have empty BytesREf"
-
 class SimpleTextDocValuesReader extends DocValuesProducer {
 
   static class OneField {
