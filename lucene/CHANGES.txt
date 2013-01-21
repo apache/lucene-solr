@@ -61,6 +61,10 @@ New Features
 * LUCENE-4703: Add simple PrintTaxonomyStats tool to see summary
   information about the facets taxonomy index.  (Mike McCandless)
 
+* LUCENE-4599: New oal.codecs.compressing.CompressingTermVectorsFormat which
+  compresses term vectors into chunks of documents similarly to
+  CompressingStoredFieldsFormat. (Adrien Grand)
+
 ======================= Lucene 4.1.0 =======================
 
 Changes in backwards compatibility policy

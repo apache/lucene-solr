@@ -71,11 +71,12 @@ public final class BlockPackedReader {
     return i;
   }
 
-  final DataInput in;
+  DataInput in;
   final int packedIntsVersion;
-  final long valueCount;
+  long valueCount;
   final int blockSize;
-  final LongsRef values;
+  final long[] values;
+  final LongsRef valuesRef;
   byte[] blocks;
   int off;
   long ord;
@@ -87,10 +88,17 @@ public final class BlockPackedReader {
    */
   public BlockPackedReader(DataInput in, int packedIntsVersion, int blockSize, long valueCount) {
     checkBlockSize(blockSize);
-    this.in = in;
     this.packedIntsVersion = packedIntsVersion;
     this.blockSize = blockSize;
-    this.values = new LongsRef(blockSize);
+    this.values = new long[blockSize];
+    this.valuesRef = new LongsRef(this.values, 0, 0);
+    reset(in, valueCount);
+  }
+
+  /** Reset the current reader to wrap a stream of <code>valueCount</code>
+   * values contained in <code>in</code>. The block size remains unchanged. */
+  public void reset(DataInput in, long valueCount) {
+    this.in = in;
     assert valueCount >= 0;
     this.valueCount = valueCount;
     off = blockSize;
@@ -159,9 +167,15 @@ public final class BlockPackedReader {
 
   /** Read the next value. */
   public long next() throws IOException {
-    next(1);
-    assert values.length == 1;
-    return values.longs[values.offset];
+    if (ord == valueCount) {
+      throw new EOFException();
+    }
+    if (off == blockSize) {
+      refill();
+    }
+    final long value = values[off++];
+    ++ord;
+    return value;
   }
 
   /** Read between <tt>1</tt> and <code>count</code> values. */
@@ -177,11 +191,11 @@ public final class BlockPackedReader {
     count = Math.min(count, blockSize - off);
     count = (int) Math.min(count, valueCount - ord);
 
-    values.offset = off;
-    values.length = count;
+    valuesRef.offset = off;
+    valuesRef.length = count;
     off += count;
     ord += count;
-    return values;
+    return valuesRef;
   }
 
   private void refill() throws IOException {
@@ -195,7 +209,7 @@ public final class BlockPackedReader {
     assert minEquals0 || minValue != 0;
 
     if (bitsPerValue == 0) {
-      Arrays.fill(values.longs, minValue);
+      Arrays.fill(values, minValue);
     } else {
       final PackedInts.Decoder decoder = PackedInts.getDecoder(PackedInts.Format.PACKED, packedIntsVersion, bitsPerValue);
       final int iterations = blockSize / decoder.valueCount();
@@ -208,11 +222,11 @@ public final class BlockPackedReader {
       final int blocksCount = (int) PackedInts.Format.PACKED.byteCount(packedIntsVersion, valueCount, bitsPerValue);
       in.readBytes(blocks, 0, blocksCount);
 
-      decoder.decode(blocks, 0, values.longs, 0, iterations);
+      decoder.decode(blocks, 0, values, 0, iterations);
 
       if (minValue != 0) {
         for (int i = 0; i < valueCount; ++i) {
-          values.longs[i] += minValue;
+          values[i] += minValue;
         }
       }
     }
