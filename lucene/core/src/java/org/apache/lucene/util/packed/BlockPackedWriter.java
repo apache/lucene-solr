@@ -62,7 +62,7 @@ public final class BlockPackedWriter {
     out.writeByte((byte) i);
   }
 
-  final DataOutput out;
+  DataOutput out;
   final long[] values;
   byte[] blocks;
   int off;
@@ -75,8 +75,14 @@ public final class BlockPackedWriter {
    */
   public BlockPackedWriter(DataOutput out, int blockSize) {
     checkBlockSize(blockSize);
-    this.out = out;
+    reset(out);
     values = new long[blockSize];
+  }
+
+  /** Reset this writer to wrap <code>out</code>. The block size remains unchanged. */
+  public void reset(DataOutput out) {
+    assert out != null;
+    this.out = out;
     off = 0;
     ord = 0L;
     finished = false;
@@ -99,7 +105,8 @@ public final class BlockPackedWriter {
   }
 
   /** Flush all buffered data to disk. This instance is not usable anymore
-   *  after this method has been called. */
+   *  after this method has been called until {@link #reset(DataOutput)} has
+   *  been called. */
   public void finish() throws IOException {
     checkNotFinished();
     if (off > 0) {

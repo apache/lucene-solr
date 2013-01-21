@@ -1482,7 +1482,15 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(newField("c", "val", customType));
     writer.addDocument(doc);
     // Adding just one document does not call flush yet.
-    assertEquals("only the stored and term vector files should exist in the directory", 5 + extraFileCount, dir.listAll().length);
+    int computedExtraFileCount = 0;
+    for (String file : dir.listAll()) {
+      if (file.lastIndexOf('.') < 0
+          // don't count stored fields and term vectors in
+          || !Arrays.asList("fdx", "fdt", "tvx", "tvd", "tvf").contains(file.substring(file.lastIndexOf('.') + 1))) {
+        ++computedExtraFileCount;
+      }
+    }
+    assertEquals("only the stored and term vector files should exist in the directory", extraFileCount, computedExtraFileCount);
 
     doc = new Document();
     doc.add(newField("c", "val", customType));
