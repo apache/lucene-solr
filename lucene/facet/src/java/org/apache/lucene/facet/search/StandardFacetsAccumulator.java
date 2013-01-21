@@ -87,7 +87,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
     this.facetArrays = facetArrays;
     // can only be computed later when docids size is known
     isUsingComplements = false;
-    partitionSize = PartitionsUtils.partitionSize(searchParams.getFacetIndexingParams(), taxonomyReader);
+    partitionSize = PartitionsUtils.partitionSize(searchParams.indexingParams, taxonomyReader);
     maxPartitions = (int) Math.ceil(this.taxonomyReader.getSize() / (double) partitionSize);
     accumulateGuard = new Object();
   }
@@ -95,7 +95,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
   public StandardFacetsAccumulator(FacetSearchParams searchParams,
       IndexReader indexReader, TaxonomyReader taxonomyReader) {
     this(searchParams, indexReader, taxonomyReader, new FacetArrays(
-        PartitionsUtils.partitionSize(searchParams.getFacetIndexingParams(), taxonomyReader)));
+        PartitionsUtils.partitionSize(searchParams.indexingParams, taxonomyReader)));
   }
 
   @Override
@@ -112,7 +112,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
       if (isUsingComplements) {
         try {
           totalFacetCounts = TotalFacetCountsCache.getSingleton().getTotalCounts(indexReader, taxonomyReader, 
-              searchParams.getFacetIndexingParams());
+              searchParams.indexingParams);
           if (totalFacetCounts != null) {
             docids = ScoredDocIdsUtils.getComplementSet(docids, indexReader);
           } else {
@@ -159,7 +159,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
           // In this implementation merges happen after each partition,
           // but other impl could merge only at the end.
           final HashSet<FacetRequest> handledRequests = new HashSet<FacetRequest>();
-          for (FacetRequest fr : searchParams.getFacetRequests()) {
+          for (FacetRequest fr : searchParams.facetRequests) {
             // Handle and merge only facet requests which were not already handled.  
             if (handledRequests.add(fr)) {
               FacetResultsHandler frHndlr = fr.createFacetResultsHandler(taxonomyReader);
@@ -178,7 +178,7 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
 
       // gather results from all requests into a list for returning them
       List<FacetResult> res = new ArrayList<FacetResult>();
-      for (FacetRequest fr : searchParams.getFacetRequests()) {
+      for (FacetRequest fr : searchParams.facetRequests) {
         FacetResultsHandler frHndlr = fr.createFacetResultsHandler(taxonomyReader);
         IntermediateFacetResult tmpResult = fr2tmpRes.get(fr);
         if (tmpResult == null) {
@@ -321,8 +321,8 @@ public class StandardFacetsAccumulator extends FacetsAccumulator {
     
     HashMap<CategoryListIterator, Aggregator> categoryLists = new HashMap<CategoryListIterator, Aggregator>();
 
-    FacetIndexingParams indexingParams = searchParams.getFacetIndexingParams();
-    for (FacetRequest facetRequest : searchParams.getFacetRequests()) {
+    FacetIndexingParams indexingParams = searchParams.indexingParams;
+    for (FacetRequest facetRequest : searchParams.facetRequests) {
       Aggregator categoryAggregator = facetRequest.createAggregator(isUsingComplements, facetArrays, taxonomyReader);
 
       CategoryListIterator cli = indexingParams.getCategoryListParams(facetRequest.categoryPath).createCategoryListIterator(partition);

@@ -7,7 +7,6 @@ import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.search.results.IntermediateFacetResult;
-import org.apache.lucene.facet.search.results.MutableFacetResultNode;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.util.ResultSortUtils;
@@ -64,8 +63,7 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
       }
       
       // TODO (Facet): should initial value of "residue" depend on aggregator if not sum?
-      MutableFacetResultNode parentResultNode = 
-        new MutableFacetResultNode(ordinal, value);
+      FacetResultNode parentResultNode = new FacetResultNode(ordinal, value);
       
       Heap<FacetResultNode> heap = ResultSortUtils.createSuitableHeap(facetRequest);
       int totalFacets = heapDescendants(ordinal, heap, parentResultNode, facetArrays, offset);
@@ -80,7 +78,7 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
   public IntermediateFacetResult mergeResults(IntermediateFacetResult... tmpResults) throws IOException {
     
     int ordinal = taxonomyReader.getOrdinal(facetRequest.categoryPath);
-    MutableFacetResultNode resNode = new MutableFacetResultNode(ordinal, 0);
+    FacetResultNode resNode = new FacetResultNode(ordinal, 0);
     
     int totalFacets = 0;
     Heap<FacetResultNode> heap = null;
@@ -91,7 +89,7 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
       TopKFacetResult fres = (TopKFacetResult) tmpFres;
       totalFacets += fres.getNumValidDescendants();
       // set the value for the result node representing the facet request
-      resNode.increaseValue(fres.getFacetResultNode().getValue());
+      resNode.value += fres.getFacetResultNode().value;
       Heap<FacetResultNode> tmpHeap = fres.getHeap();
       if (heap == null) {
         heap = tmpHeap;
@@ -102,7 +100,7 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
         
         FacetResultNode a = heap.insertWithOverflow(tmpHeap.pop());
         if (a != null) {
-          resNode.increaseResidue(a.getResidue());
+          resNode.residue += a.residue;
         }
       }
     }
@@ -119,8 +117,8 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
    * they join the overall priority queue pq of size K.  
    * @return total number of descendants considered here by pq, excluding ordinal itself.
    */
-  private int heapDescendants(int ordinal, Heap<FacetResultNode> pq,
-      MutableFacetResultNode parentResultNode, FacetArrays facetArrays, int offset) throws IOException {
+  private int heapDescendants(int ordinal, Heap<FacetResultNode> pq, FacetResultNode parentResultNode, 
+      FacetArrays facetArrays, int offset) throws IOException {
     int partitionSize = facetArrays.arrayLength;
     int endOffset = offset + partitionSize;
     ParallelTaxonomyArrays childrenArray = taxonomyReader.getParallelTaxonomyArrays();
@@ -172,16 +170,20 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
         if (value != 0 && !Double.isNaN(value)) {
           // Count current ordinal -- the TOS
           if (reusable == null) {
-            reusable = new MutableFacetResultNode(tosOrdinal, value);
+            reusable = new FacetResultNode(tosOrdinal, value);
           } else {
             // it is safe to cast since reusable was created here.
-            ((MutableFacetResultNode)reusable).reset(tosOrdinal, value);
+            reusable.ordinal = tosOrdinal;
+            reusable.value = value;
+            reusable.subResults.clear();
+            reusable.label = null;
+            reusable.residue = 0;
           }
           ++childrenCounter;
           reusable = pq.insertWithOverflow(reusable);
           if (reusable != null) {
             // TODO (Facet): is other logic (not add) needed, per aggregator?
-            parentResultNode.increaseResidue(reusable.getValue());
+            parentResultNode.residue += reusable.value;
           }
         }
       }
@@ -205,9 +207,12 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
     TopKFacetResult res = (TopKFacetResult) tmpResult; // cast is safe by contract of this class
     if (res != null) {
       Heap<FacetResultNode> heap = res.getHeap();
-      MutableFacetResultNode resNode = (MutableFacetResultNode)res.getFacetResultNode(); // cast safe too
+      FacetResultNode resNode = res.getFacetResultNode();
+      if (resNode.subResults == FacetResultNode.EMPTY_SUB_RESULTS) {
+        resNode.subResults = new ArrayList<FacetResultNode>();
+      }
       for (int i = heap.size(); i > 0; i--) {
-        resNode.insertSubResult(heap.pop());
+        resNode.subResults.add(0, heap.pop());
       }
     }
     return res;
@@ -218,8 +223,8 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
     TopKFacetResult res = (TopKFacetResult) facetResult; // cast is safe by contract of this class
     Heap<FacetResultNode> heap = res.getHeap();
     heap.clear(); // just to be safe
-    MutableFacetResultNode topFrn = (MutableFacetResultNode) res.getFacetResultNode(); // safe cast
-    for (FacetResultNode frn : topFrn.getSubResults()) {
+    FacetResultNode topFrn = res.getFacetResultNode();
+    for (FacetResultNode frn : topFrn.subResults) {
       heap.add(frn);
     }
     int size = heap.size();
@@ -227,23 +232,22 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
     for (int i = heap.size(); i > 0; i--) {
       subResults.add(0,heap.pop());
     }
-    topFrn.setSubResults(subResults);
+    topFrn.subResults = subResults;
     return res;
   }
   
   @Override
-  // label top K sub results
   public void labelResult(FacetResult facetResult) throws IOException {
     if (facetResult != null) { // any result to label?
       FacetResultNode facetResultNode = facetResult.getFacetResultNode();
       if (facetResultNode != null) { // any result to label?
-        facetResultNode.getLabel(taxonomyReader);
+        facetResultNode.label = taxonomyReader.getPath(facetResultNode.ordinal);
         int num2label = facetRequest.getNumLabel();
-        for (FacetResultNode frn : facetResultNode.getSubResults()) {
+        for (FacetResultNode frn : facetResultNode.subResults) {
           if (--num2label < 0) {
             break;
           }
-          frn.getLabel(taxonomyReader);
+          frn.label = taxonomyReader.getPath(frn.ordinal);
         }
       }
     }
@@ -267,7 +271,7 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
      * @param facetResultNode top result node for this facet result.
      * @param totalFacets - number of children of the targetFacet, up till the requested depth.
      */
-    TopKFacetResult(FacetRequest facetRequest, MutableFacetResultNode facetResultNode, int totalFacets) {
+    TopKFacetResult(FacetRequest facetRequest, FacetResultNode facetResultNode, int totalFacets) {
       super(facetRequest, facetResultNode, totalFacets);
     }
     

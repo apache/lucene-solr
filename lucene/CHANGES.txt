@@ -29,6 +29,15 @@ Changes in backwards compatibility policy
   support in-memory caching, CategoryListCache was removed too.
   (Shai Erera, Michael McCandless)
 
+* LUCENE-4697: FacetResultNode is now a concrete class with public members
+  (instead of getter methods). (Shai Erera)
+  
+* LUCENE-4600: FacetsCollector is now an abstract class with two
+  implementations: StandardFacetsCollector (the old version of 
+  FacetsCollector) and CountingFacetsCollector. FacetsCollector.create()
+  returns the most optimized collector for the given parameters.
+  (Shai Erera, Michael McCandless)
+
 Optimizations
 
 * LUCENE-4687: BloomFilterPostingsFormat now lazily initializes delegate
@@ -48,6 +57,13 @@ New Features
 
 * LUCENE-4686: New specialized DGapVInt8IntEncoder for facets (now the 
   default). (Shai Erera)
+
+* LUCENE-4703: Add simple PrintTaxonomyStats tool to see summary
+  information about the facets taxonomy index.  (Mike McCandless)
+
+* LUCENE-4599: New oal.codecs.compressing.CompressingTermVectorsFormat which
+  compresses term vectors into chunks of documents similarly to
+  CompressingStoredFieldsFormat. (Adrien Grand)
 
 ======================= Lucene 4.1.0 =======================
 

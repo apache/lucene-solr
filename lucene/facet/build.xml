@@ -39,8 +39,6 @@
 	<path id="test.classpath">
     <path refid="test.base.classpath" />
     <pathelement location="${build.dir}/classes/examples" />
-    <!-- TODO, cut over tests to MockAnalyzer etc and nuke this dependency -->
-    <pathelement path="${analyzers-common.jar}" />
   </path>
 
   <path id="classpath">

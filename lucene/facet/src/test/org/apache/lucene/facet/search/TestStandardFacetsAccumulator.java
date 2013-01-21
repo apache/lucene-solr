@@ -1,7 +1,6 @@
 package org.apache.lucene.facet.search;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -102,24 +101,22 @@ public class TestStandardFacetsAccumulator extends LuceneTestCase {
     
     // search for "f:a", only segments 1 and 3 should match results
     Query q = new TermQuery(new Term("f", "a"));
-    ArrayList<FacetRequest> requests = new ArrayList<FacetRequest>(1);
-    CountFacetRequest countNoComplements = new CountFacetRequest(new CategoryPath("A"), 10) {
+    FacetRequest countNoComplements = new CountFacetRequest(new CategoryPath("A"), 10) {
       @Override
       public boolean supportsComplements() {
         return false; // disable complements
       }
     };
-    requests.add(countNoComplements);
-    FacetSearchParams fsp = new FacetSearchParams(requests, fip);
-    FacetsCollector fc = new FacetsCollector(fsp , indexReader, taxoReader);
+    FacetSearchParams fsp = new FacetSearchParams(fip, countNoComplements);
+    FacetsCollector fc = new StandardFacetsCollector(fsp , indexReader, taxoReader);
     indexSearcher.search(q, fc);
     List<FacetResult> results = fc.getFacetResults();
     assertEquals("received too many facet results", 1, results.size());
     FacetResultNode frn = results.get(0).getFacetResultNode();
-    assertEquals("wrong weight for \"A\"", 4, (int) frn.getValue());
-    assertEquals("wrong number of children", 2, frn.getNumSubResults());
-    for (FacetResultNode node : frn.getSubResults()) {
-      assertEquals("wrong weight for child " + node.getLabel(), 2, (int) node.getValue());
+    assertEquals("wrong weight for \"A\"", 4, (int) frn.value);
+    assertEquals("wrong number of children", 2, frn.subResults.size());
+    for (FacetResultNode node : frn.subResults) {
+      assertEquals("wrong weight for child " + node.label, 2, (int) node.value);
     }
     IOUtils.close(indexReader, taxoReader);
     

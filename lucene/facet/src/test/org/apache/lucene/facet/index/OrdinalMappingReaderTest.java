@@ -71,13 +71,13 @@ public class OrdinalMappingReaderTest extends LuceneTestCase {
     DirectoryTaxonomyReader taxReader = new DirectoryTaxonomyReader(taxDir);
     IndexSearcher searcher = newSearcher(reader1);
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("tag"), NUM_DOCS));
-    FacetsCollector collector = new FacetsCollector(fsp, reader1, taxReader);
+    FacetsCollector collector = FacetsCollector.create(fsp, reader1, taxReader);
     searcher.search(new MatchAllDocsQuery(), collector);
     FacetResult result = collector.getFacetResults().get(0);
     FacetResultNode node = result.getFacetResultNode();
-    for (FacetResultNode facet: node.getSubResults()) {
-      int weight = (int)facet.getValue();
-      int label = Integer.parseInt(facet.getLabel().components[1]);
+    for (FacetResultNode facet: node.subResults) {
+      int weight = (int)facet.value;
+      int label = Integer.parseInt(facet.label.components[1]);
       //System.out.println(label + ": " + weight);
       if (VERBOSE) {
         System.out.println(label + ": " + weight);

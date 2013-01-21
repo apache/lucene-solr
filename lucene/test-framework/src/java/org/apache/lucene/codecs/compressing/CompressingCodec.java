@@ -21,6 +21,7 @@ import java.util.Random;
 
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.StoredFieldsFormat;
+import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.compressing.dummy.DummyCompressingCodec;
 import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 
@@ -66,6 +67,7 @@ public abstract class CompressingCodec extends FilterCodec {
   }
 
   private final CompressingStoredFieldsFormat storedFieldsFormat;
+  private final CompressingTermVectorsFormat termVectorsFormat;
 
   /**
    * Creates a compressing codec with a given segment suffix
@@ -73,6 +75,7 @@ public abstract class CompressingCodec extends FilterCodec {
   public CompressingCodec(String name, String segmentSuffix, CompressionMode compressionMode, int chunkSize) {
     super(name, new Lucene42Codec());
     this.storedFieldsFormat = new CompressingStoredFieldsFormat(name, segmentSuffix, compressionMode, chunkSize);
+    this.termVectorsFormat = new CompressingTermVectorsFormat(name, segmentSuffix, compressionMode, chunkSize);
   }
   
   /**
@@ -88,7 +91,12 @@ public abstract class CompressingCodec extends FilterCodec {
   }
 
   @Override
+  public TermVectorsFormat termVectorsFormat() {
+    return termVectorsFormat;
+  }
+
+  @Override
   public String toString() {
-    return getName() + "(storedFieldsFormat=" + storedFieldsFormat + ")";
+    return getName() + "(storedFieldsFormat=" + storedFieldsFormat + ", termVectorsFormat=" + termVectorsFormat + ")";
   }
 }

@@ -17,20 +17,23 @@ package org.apache.lucene.facet.search;
  * limitations under the License.
  */
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.FacetTestUtils;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.facet.util.PrintTaxonomyStats;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -89,7 +92,7 @@ public class TestDemoFacets extends LuceneTestCase {
         new CountFacetRequest(new CategoryPath("Author"), 10));
 
     // Aggregatses the facet counts:
-    FacetsCollector c = new FacetsCollector(fsp, searcher.getIndexReader(), taxoReader);
+    FacetsCollector c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
 
     // MatchAllDocsQuery is for "browsing" (counts facets
     // for all non-deleted docs in the index); normally
@@ -101,20 +104,31 @@ public class TestDemoFacets extends LuceneTestCase {
     List<FacetResult> results = c.getFacetResults();
     assertEquals(2, results.size());
     assertEquals("Publish Date (5)\n  2012 (2)\n  2010 (2)\n  1999 (1)\n",
-                 toSimpleString(results.get(0)));
+        FacetTestUtils.toSimpleString(results.get(0)));
     assertEquals("Author (5)\n  Lisa (2)\n  Frank (1)\n  Susan (1)\n  Bob (1)\n",
-                 toSimpleString(results.get(1)));
+        FacetTestUtils.toSimpleString(results.get(1)));
 
     
     // Now user drills down on Publish Date/2010:
     fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("Author"), 10));
     Query q2 = DrillDown.query(fsp, new MatchAllDocsQuery(), new CategoryPath("Publish Date/2010", '/'));
-    c = new FacetsCollector(fsp, searcher.getIndexReader(), taxoReader);
+    c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
     searcher.search(q2, c);
     results = c.getFacetResults();
     assertEquals(1, results.size());
     assertEquals("Author (2)\n  Lisa (1)\n  Bob (1)\n",
-                 toSimpleString(results.get(0)));
+        FacetTestUtils.toSimpleString(results.get(0)));
+
+    // Smoke test PrintTaxonomyStats:
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    PrintTaxonomyStats.printStats(taxoReader, new PrintStream(bos, false, "UTF-8"), true);
+    String result = bos.toString("UTF-8");
+    assertTrue(result.indexOf("/Author: 4 immediate children; 5 total categories") != -1);
+    assertTrue(result.indexOf("/Publish Date: 3 immediate children; 12 total categories") != -1);
+    // Make sure at least a few nodes of the tree came out:
+    assertTrue(result.indexOf("  /1999") != -1);
+    assertTrue(result.indexOf("  /2012") != -1);
+    assertTrue(result.indexOf("      /20") != -1);
 
     taxoReader.close();
     searcher.getIndexReader().close();
@@ -122,16 +136,4 @@ public class TestDemoFacets extends LuceneTestCase {
     taxoDir.close();
   }
 
-  private String toSimpleString(FacetResult fr) {
-    StringBuilder sb = new StringBuilder();
-    toSimpleString(0, sb, fr.getFacetResultNode(), "");
-    return sb.toString();
-  }
-
-  private void toSimpleString(int depth, StringBuilder sb, FacetResultNode node, String indent) {
-    sb.append(indent + node.getLabel().components[depth] + " (" + (int) node.getValue() + ")\n");
-    for(FacetResultNode childNode : node.getSubResults()) {
-      toSimpleString(depth+1, sb, childNode, indent + "  ");
-    }
-  }
 }

@@ -44,7 +44,7 @@ public class TestSameRequestAccumulation extends FacetTestBase {
     final CountFacetRequest facetRequest = new CountFacetRequest(new CategoryPath("root"), 10);
     FacetSearchParams fsp = new FacetSearchParams(facetRequest);
     
-    FacetsCollector fc = new FacetsCollector(fsp, indexReader, taxoReader);
+    FacetsCollector fc = FacetsCollector.create(fsp, indexReader, taxoReader);
     searcher.search(new MatchAllDocsQuery(), fc);
     
     final String expected = fc.getFacetResults().get(0).toString();
@@ -53,9 +53,9 @@ public class TestSameRequestAccumulation extends FacetTestBase {
     fsp = new FacetSearchParams(facetRequest, facetRequest, new CountFacetRequest(new CategoryPath("root"), 10));
 
     // make sure the search params holds 3 requests now
-    assertEquals(3, fsp.getFacetRequests().size());
+    assertEquals(3, fsp.facetRequests.size());
     
-    fc = new FacetsCollector(fsp, indexReader, taxoReader);
+    fc = FacetsCollector.create(fsp, indexReader, taxoReader);
     searcher.search(new MatchAllDocsQuery(), fc);
     List<FacetResult> actual = fc.getFacetResults();
 

@@ -9,7 +9,6 @@ import org.apache.lucene.facet.search.params.FacetRequest.SortOrder;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.search.results.IntermediateFacetResult;
-import org.apache.lucene.facet.search.results.MutableFacetResultNode;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.ParallelTaxonomyArrays;
 import org.apache.lucene.util.PriorityQueue;
@@ -39,7 +38,7 @@ import org.apache.lucene.util.collections.IntToObjectMap;
  * subtree of the taxonomy tree. Its root node,
  * {@link FacetResult#getFacetResultNode()}, is the facet specified by
  * {@link FacetRequest#categoryPath}, and the enumerated children,
- * {@link FacetResultNode#getSubResults()}, of each node in that
+ * {@link FacetResultNode#subResults}, of each node in that
  * {@link FacetResult} are the top K ( = {@link FacetRequest#getNumResults()})
  * among its children in the taxonomy. Top in the sense
  * {@link FacetRequest#getSortBy()}, which can be by the values aggregated in
@@ -70,8 +69,7 @@ import org.apache.lucene.util.collections.IntToObjectMap;
  */
 public class TopKInEachNodeHandler extends FacetResultsHandler {
 
-  public TopKInEachNodeHandler(TaxonomyReader taxonomyReader,
-                                FacetRequest facetRequest) {
+  public TopKInEachNodeHandler(TaxonomyReader taxonomyReader, FacetRequest facetRequest) {
     super(taxonomyReader, facetRequest);
   }
 
@@ -546,7 +544,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
 
     @Override
     protected boolean lessThan(FacetResultNode arg1, FacetResultNode arg2) {
-      return merger.leftGoesNow(arg2.getOrdinal(), arg2.getValue(), arg1.getOrdinal(), arg1.getValue());
+      return merger.leftGoesNow(arg2.ordinal, arg2.value, arg1.ordinal, arg1.value);
     }
 
   }
@@ -718,14 +716,11 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
     if (node == null) {
       return;
     }
-    node.getLabel(this.taxonomyReader); // attach a label -- category path -- to the node
-    if (null == node.getSubResults()) {
-      return;  // if node has no children -- done 
-    }
+    node.label = taxonomyReader.getPath(node.ordinal);
 
-    // otherwise, label the first numToLabel of these children, and recursively -- their children.
+    // label the first numToLabel of these children, and recursively -- their children.
     int numLabeled = 0;
-    for (FacetResultNode frn : node.getSubResults()) { 
+    for (FacetResultNode frn : node.subResults) { 
       // go over the children of node from first to last, no more than numToLable of them
       recursivelyLabel(frn, numToLabel);
       if (++numLabeled >= numToLabel) {
@@ -743,24 +738,23 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
   public FacetResult rearrangeFacetResult(FacetResult facetResult) {
     PriorityQueue<FacetResultNode> nodesHeap = 
       new ResultNodeHeap(this.facetRequest.getNumResults(), this.getSuitableACComparator());
-    MutableFacetResultNode topFrn = (MutableFacetResultNode) facetResult.getFacetResultNode(); // safe cast
+    FacetResultNode topFrn = facetResult.getFacetResultNode();
     rearrangeChilrenOfNode(topFrn, nodesHeap);
     return facetResult;
   }
 
-  private void rearrangeChilrenOfNode(FacetResultNode node,
-                                      PriorityQueue<FacetResultNode> nodesHeap) {
+  private void rearrangeChilrenOfNode(FacetResultNode node, PriorityQueue<FacetResultNode> nodesHeap) {
     nodesHeap.clear(); // just to be safe
-    for (FacetResultNode frn : node.getSubResults()) {
+    for (FacetResultNode frn : node.subResults) {
       nodesHeap.add(frn);
     }
     int size = nodesHeap.size();
     ArrayList<FacetResultNode> subResults = new ArrayList<FacetResultNode>(size);
-    while (nodesHeap.size()>0) {
-      subResults.add(0,nodesHeap.pop());
+    while (nodesHeap.size() > 0) {
+      subResults.add(0, nodesHeap.pop());
     }
-    ((MutableFacetResultNode)node).setSubResults(subResults);
-    for (FacetResultNode frn : node.getSubResults()) {
+    node.subResults = subResults;
+    for (FacetResultNode frn : node.subResults) {
       rearrangeChilrenOfNode(frn, nodesHeap);
     }
 
@@ -777,13 +771,13 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
     if (tmp.isRootNodeIncluded) {
       value = tmp.rootNodeValue;
     }
-    MutableFacetResultNode root = generateNode (ordinal, value, tmp.mapToAACOs);
+    FacetResultNode root = generateNode(ordinal, value, tmp.mapToAACOs);
     return new FacetResult (tmp.facetRequest, root, tmp.totalNumOfFacetsConsidered); 
 
   }
 
-  private MutableFacetResultNode generateNode (int ordinal, double val,  IntToObjectMap<AACO> mapToAACOs) {
-    MutableFacetResultNode node = new MutableFacetResultNode(ordinal, val);
+  private FacetResultNode generateNode(int ordinal, double val,  IntToObjectMap<AACO> mapToAACOs) {
+    FacetResultNode node = new FacetResultNode(ordinal, val);
     AACO aaco = mapToAACOs.get(ordinal);
     if (null == aaco) {
       return node;
@@ -792,8 +786,8 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
     for (int i = 0; i < aaco.ordinals.length; i++) {
       list.add(generateNode(aaco.ordinals[i], aaco.values[i], mapToAACOs));
     }
-    node.setSubResults(list);
-    node.setResidue(aaco.residue);
+    node.subResults = list;
+    node.residue = aaco.residue;
     return node;  
   }
 

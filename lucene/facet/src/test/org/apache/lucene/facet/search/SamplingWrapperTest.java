@@ -29,11 +29,10 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 public class SamplingWrapperTest extends BaseSampleTestTopK {
 
   @Override
-  protected FacetsAccumulator getSamplingAccumulator(Sampler sampler,
-      TaxonomyReader taxoReader, IndexReader indexReader,
-      FacetSearchParams searchParams) {
-    FacetsAccumulator fExtrctr = new StandardFacetsAccumulator(searchParams,
-        indexReader, taxoReader);
-    return new SamplingWrapper(fExtrctr, sampler);
+  protected FacetsAccumulator getSamplingAccumulator(Sampler sampler, TaxonomyReader taxoReader, 
+      IndexReader indexReader, FacetSearchParams searchParams) {
+    FacetsAccumulator fa = new StandardFacetsAccumulator(searchParams, indexReader, taxoReader);
+    return new SamplingWrapper(fa, sampler);
   }
+  
 }

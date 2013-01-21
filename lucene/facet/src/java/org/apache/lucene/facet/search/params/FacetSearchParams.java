@@ -35,8 +35,8 @@ import org.apache.lucene.facet.index.params.FacetIndexingParams;
  */
 public class FacetSearchParams {
 
-  protected final FacetIndexingParams indexingParams;
-  protected final List<FacetRequest> facetRequests;
+  public final FacetIndexingParams indexingParams;
+  public final List<FacetRequest> facetRequests;
   
   /**
    * Initializes with the given {@link FacetRequest requests} and default
@@ -57,6 +57,14 @@ public class FacetSearchParams {
   public FacetSearchParams(List<FacetRequest> facetRequests) {
     this(facetRequests, FacetIndexingParams.ALL_PARENTS);
   }
+  
+  /**
+   * Initilizes with the given {@link FacetRequest requests} and
+   * {@link FacetIndexingParams}.
+   */
+  public FacetSearchParams(FacetIndexingParams indexingParams, FacetRequest... facetRequests) {
+    this(Arrays.asList(facetRequests), indexingParams);
+  }
 
   /**
    * Initilizes with the given {@link FacetRequest requests} and
@@ -66,24 +74,8 @@ public class FacetSearchParams {
     if (facetRequests == null || facetRequests.size() == 0) {
       throw new IllegalArgumentException("at least one FacetRequest must be defined");
     }
-    this.indexingParams = indexingParams;
     this.facetRequests = facetRequests;
-  }
-
-  /**
-   * Returns the {@link FacetIndexingParams} that were passed to the
-   * constructor.
-   */
-  public FacetIndexingParams getFacetIndexingParams() {
-    return indexingParams;
-  }
-  
-  /**
-   * Returns the list of {@link FacetRequest facet requests} that were passed to
-   * the constructor.
-   */
-  public List<FacetRequest> getFacetRequests() {
-    return facetRequests;
+    this.indexingParams = indexingParams;
   }
 
   @Override
@@ -92,10 +84,10 @@ public class FacetSearchParams {
     final char NEWLINE = '\n';
 
     StringBuilder sb = new StringBuilder("IndexingParams: ");
-    sb.append(NEWLINE).append(TAB).append(getFacetIndexingParams());
+    sb.append(NEWLINE).append(TAB).append(indexingParams);
     
     sb.append(NEWLINE).append("FacetRequests:");
-    for (FacetRequest facetRequest : getFacetRequests()) {
+    for (FacetRequest facetRequest : facetRequests) {
       sb.append(NEWLINE).append(TAB).append(facetRequest);
     }
     

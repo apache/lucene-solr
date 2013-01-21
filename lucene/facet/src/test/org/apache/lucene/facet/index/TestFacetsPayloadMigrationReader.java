@@ -266,15 +266,15 @@ public class TestFacetsPayloadMigrationReader extends LuceneTestCase {
       requests.add(new CountFacetRequest(new CategoryPath(dim), 5));
     }
     FacetSearchParams fsp = new FacetSearchParams(requests, fip);
-    FacetsCollector fc = new FacetsCollector(fsp, indexReader, taxoReader);
+    FacetsCollector fc = FacetsCollector.create(fsp, indexReader, taxoReader);
     MatchAllDocsQuery base = new MatchAllDocsQuery();
     searcher.search(base, fc);
     List<FacetResult> facetResults = fc.getFacetResults();
     assertEquals(requests.size(), facetResults.size());
     for (FacetResult res : facetResults) {
       FacetResultNode node = res.getFacetResultNode();
-      String dim = node.getLabel().components[0];
-      assertEquals("wrong count for " + dim, expectedCounts.get(dim).intValue(), (int) node.getValue());
+      String dim = node.label.components[0];
+      assertEquals("wrong count for " + dim, expectedCounts.get(dim).intValue(), (int) node.value);
     }
   }
   
@@ -283,18 +283,16 @@ public class TestFacetsPayloadMigrationReader extends LuceneTestCase {
     // verify drill-down
     for (String dim : expectedCounts.keySet()) {
       CategoryPath drillDownCP = new CategoryPath(dim);
-      ArrayList<FacetRequest> request = new ArrayList<FacetRequest>(1);
-      request.add(new CountFacetRequest(drillDownCP, 10));
-      FacetSearchParams fsp = new FacetSearchParams(request, fip);
+      FacetSearchParams fsp = new FacetSearchParams(fip, new CountFacetRequest(drillDownCP, 10));
       Query drillDown = DrillDown.query(fsp, new MatchAllDocsQuery(), drillDownCP);
       TotalHitCountCollector total = new TotalHitCountCollector();
-      FacetsCollector fc = new FacetsCollector(fsp, indexReader, taxoReader);
+      FacetsCollector fc = FacetsCollector.create(fsp, indexReader, taxoReader);
       searcher.search(drillDown, MultiCollector.wrap(fc, total));
       assertTrue("no results for drill-down query " + drillDown, total.getTotalHits() > 0);
       List<FacetResult> facetResults = fc.getFacetResults();
       assertEquals(1, facetResults.size());
       FacetResultNode rootNode = facetResults.get(0).getFacetResultNode();
-      assertEquals("wrong count for " + dim, expectedCounts.get(dim).intValue(), (int) rootNode.getValue());
+      assertEquals("wrong count for " + dim, expectedCounts.get(dim).intValue(), (int) rootNode.value);
     }
   }
   

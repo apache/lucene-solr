@@ -32,8 +32,8 @@ import org.apache.lucene.facet.search.sampling.Sampler.SampleResult;
  * <p>
  * Note: Sampling accumulation (Accumulation over a sampled-set of the results),
  * does not guarantee accurate values for
- * {@link FacetResult#getNumValidDescendants()} &
- * {@link FacetResultNode#getResidue()}.
+ * {@link FacetResult#getNumValidDescendants()} and
+ * {@link FacetResultNode#residue}.
  * 
  * @lucene.experimental
  */

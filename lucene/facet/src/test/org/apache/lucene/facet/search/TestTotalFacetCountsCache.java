@@ -226,9 +226,9 @@ public class TestTotalFacetCountsCache extends LuceneTestCase {
       FacetResult result = results.get(i);
       assertNotNull("Result should not be null", result);
       FacetResultNode resNode = result.getFacetResultNode();
-      assertEquals("Invalid label", expLabels[i], resNode.getLabel().toString());
-      assertEquals("Invalid value", expValues[i], resNode.getValue(), 0.0);
-      assertEquals("Invalid number of subresults", 0, resNode.getNumSubResults());
+      assertEquals("Invalid label", expLabels[i], resNode.label.toString());
+      assertEquals("Invalid value", expValues[i], resNode.value, 0.0);
+      assertEquals("Invalid number of subresults", 0, resNode.subResults.size());
     }
     // we're done, close the index reader and the taxonomy.
     slowIndexReader.close();

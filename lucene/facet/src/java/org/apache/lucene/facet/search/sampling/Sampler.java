@@ -11,7 +11,6 @@ import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
-import org.apache.lucene.facet.search.results.MutableFacetResultNode;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 
@@ -41,7 +40,7 @@ import org.apache.lucene.index.IndexReader;
  * Note: Sampling accumulation (Accumulation over a sampled-set of the results),
  * does not guarantee accurate values for
  * {@link FacetResult#getNumValidDescendants()} &
- * {@link FacetResultNode#getResidue()}.
+ * {@link FacetResultNode#residue}.
  * 
  * @lucene.experimental
  */
@@ -169,12 +168,39 @@ public abstract class Sampler {
     
     FacetRequest origFrq = sampledFreq.orig;
 
-    MutableFacetResultNode trimmedRootNode = MutableFacetResultNode.toImpl(facetResult.getFacetResultNode());
-    trimmedRootNode.trimSubResults(origFrq.getNumResults());
+    FacetResultNode trimmedRootNode = facetResult.getFacetResultNode();
+    trimSubResults(trimmedRootNode, origFrq.getNumResults());
     
     return new FacetResult(origFrq, trimmedRootNode, facetResult.getNumValidDescendants());
   }
   
+  /** Trim sub results to a given size. */
+  private void trimSubResults(FacetResultNode node, int size) {
+    if (node.subResults == FacetResultNode.EMPTY_SUB_RESULTS || node.subResults.size() == 0) {
+      return;
+    }
+
+    ArrayList<FacetResultNode> trimmed = new ArrayList<FacetResultNode>(size);
+    for (int i = 0; i < node.subResults.size() && i < size; i++) {
+      FacetResultNode trimmedNode = node.subResults.get(i);
+      trimSubResults(trimmedNode, size);
+      trimmed.add(trimmedNode);
+    }
+    
+    /*
+     * If we are trimming, it means Sampling is in effect and the extra
+     * (over-sampled) results are being trimmed. Although the residue is not
+     * guaranteed to be accurate for Sampling, we try our best to fix it.
+     * The node's residue now will take under account the sub-nodes we're
+     * trimming.
+     */
+    for (int i = size; i < node.subResults.size(); i++) {
+      node.residue += node.subResults.get(i).value;
+    }
+    
+    node.subResults = trimmed;
+  }
+
   /**
    * Over-sampled search params, wrapping each request with an over-sampled one.
    */
@@ -184,11 +210,11 @@ public abstract class Sampler {
     double overSampleFactor = getSamplingParams().getOversampleFactor();
     if (overSampleFactor > 1) { // any factoring to do?
       List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
-      for (FacetRequest frq : original.getFacetRequests()) {
+      for (FacetRequest frq : original.facetRequests) {
         int overSampledNumResults = (int) Math.ceil(frq.getNumResults() * overSampleFactor);
         facetRequests.add(new OverSampledFacetRequest(frq, overSampledNumResults));
       }
-      res = new FacetSearchParams(facetRequests, original.getFacetIndexingParams());
+      res = new FacetSearchParams(facetRequests, original.indexingParams);
     }
     return res;
   }

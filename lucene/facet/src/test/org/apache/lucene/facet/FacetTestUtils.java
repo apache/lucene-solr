@@ -4,12 +4,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
+import org.apache.lucene.facet.search.results.FacetResult;
+import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -45,71 +47,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class FacetTestUtils {
 
-  public static Directory[][] createIndexTaxonomyDirs(int number) {
-    Directory[][] dirs = new Directory[number][2];
-    for (int i = 0; i < number; i++) {
-      dirs[i][0] = LuceneTestCase.newDirectory();
-      dirs[i][1] = LuceneTestCase.newDirectory();
-    }
-    return dirs;
-  }
-
-  public static IndexTaxonomyReaderPair[] createIndexTaxonomyReaderPair(
-      Directory[][] dirs) throws IOException {
-    IndexTaxonomyReaderPair[] pairs = new IndexTaxonomyReaderPair[dirs.length];
-    for (int i = 0; i < dirs.length; i++) {
-      IndexTaxonomyReaderPair pair = new IndexTaxonomyReaderPair();
-      pair.indexReader = DirectoryReader.open(dirs[i][0]);
-      pair.indexSearcher = new IndexSearcher(pair.indexReader);
-      pair.taxReader = new DirectoryTaxonomyReader(dirs[i][1]);
-      pairs[i] = pair;
-    }
-    return pairs;
-  }
-
-  public static IndexTaxonomyWriterPair[] createIndexTaxonomyWriterPair(
-      Directory[][] dirs) throws IOException {
-    IndexTaxonomyWriterPair[] pairs = new IndexTaxonomyWriterPair[dirs.length];
-    for (int i = 0; i < dirs.length; i++) {
-      IndexTaxonomyWriterPair pair = new IndexTaxonomyWriterPair();
-      pair.indexWriter = new IndexWriter(dirs[i][0], new IndexWriterConfig(
-          LuceneTestCase.TEST_VERSION_CURRENT, new StandardAnalyzer(
-              LuceneTestCase.TEST_VERSION_CURRENT)));
-      pair.taxWriter = new DirectoryTaxonomyWriter(dirs[i][1]);
-      pair.indexWriter.commit();
-      pair.taxWriter.commit();
-      pairs[i] = pair;
-    }
-    return pairs;
-  }
-
-  public static Collector[] search(IndexSearcher searcher,
-      TaxonomyReader taxonomyReader, FacetIndexingParams iParams, int k,
-      String... facetNames) throws IOException {
-    
-    Collector[] collectors = new Collector[2];
-    
-    List<FacetRequest> fRequests = new ArrayList<FacetRequest>();
-    for (String facetName : facetNames) {
-      CategoryPath cp = new CategoryPath(facetName);
-      FacetRequest fq = new CountFacetRequest(cp, k);
-      fRequests.add(fq);
-    }
-    FacetSearchParams facetSearchParams = new FacetSearchParams(fRequests, iParams);
-
-    TopScoreDocCollector topDocsCollector = TopScoreDocCollector.create(
-        searcher.getIndexReader().maxDoc(), true);
-    FacetsCollector facetsCollector = new FacetsCollector(
-        facetSearchParams, searcher.getIndexReader(), taxonomyReader);
-    Collector mColl = MultiCollector.wrap(topDocsCollector, facetsCollector);
-    
-    collectors[0] = topDocsCollector;
-    collectors[1] = facetsCollector;
-
-    searcher.search(new MatchAllDocsQuery(), mColl);
-    return collectors;
-  }
-  
   public static class IndexTaxonomyReaderPair {
     public DirectoryReader indexReader;
     public DirectoryTaxonomyReader taxReader;
@@ -134,6 +71,78 @@ public class FacetTestUtils {
     public void commit() throws IOException {
       indexWriter.commit();
       taxWriter.commit();
+    }
+  }
+
+  public static Directory[][] createIndexTaxonomyDirs(int number) {
+    Directory[][] dirs = new Directory[number][2];
+    for (int i = 0; i < number; i++) {
+      dirs[i][0] = LuceneTestCase.newDirectory();
+      dirs[i][1] = LuceneTestCase.newDirectory();
+    }
+    return dirs;
+  }
+
+  public static IndexTaxonomyReaderPair[] createIndexTaxonomyReaderPair(Directory[][] dirs) throws IOException {
+    IndexTaxonomyReaderPair[] pairs = new IndexTaxonomyReaderPair[dirs.length];
+    for (int i = 0; i < dirs.length; i++) {
+      IndexTaxonomyReaderPair pair = new IndexTaxonomyReaderPair();
+      pair.indexReader = DirectoryReader.open(dirs[i][0]);
+      pair.indexSearcher = new IndexSearcher(pair.indexReader);
+      pair.taxReader = new DirectoryTaxonomyReader(dirs[i][1]);
+      pairs[i] = pair;
+    }
+    return pairs;
+  }
+  
+  public static IndexTaxonomyWriterPair[] createIndexTaxonomyWriterPair(Directory[][] dirs) throws IOException {
+    IndexTaxonomyWriterPair[] pairs = new IndexTaxonomyWriterPair[dirs.length];
+    for (int i = 0; i < dirs.length; i++) {
+      IndexTaxonomyWriterPair pair = new IndexTaxonomyWriterPair();
+      pair.indexWriter = new IndexWriter(dirs[i][0], new IndexWriterConfig(
+          LuceneTestCase.TEST_VERSION_CURRENT, new MockAnalyzer(LuceneTestCase.random())));
+      pair.taxWriter = new DirectoryTaxonomyWriter(dirs[i][1]);
+      pair.indexWriter.commit();
+      pair.taxWriter.commit();
+      pairs[i] = pair;
+    }
+    return pairs;
+  }
+
+  public static Collector[] search(IndexSearcher searcher, TaxonomyReader taxonomyReader, FacetIndexingParams iParams, 
+      int k, String... facetNames) throws IOException {
+    
+    Collector[] collectors = new Collector[2];
+    
+    List<FacetRequest> fRequests = new ArrayList<FacetRequest>();
+    for (String facetName : facetNames) {
+      CategoryPath cp = new CategoryPath(facetName);
+      FacetRequest fq = new CountFacetRequest(cp, k);
+      fRequests.add(fq);
+    }
+    FacetSearchParams facetSearchParams = new FacetSearchParams(fRequests, iParams);
+
+    TopScoreDocCollector topDocsCollector = TopScoreDocCollector.create(searcher.getIndexReader().maxDoc(), true);
+    FacetsCollector facetsCollector = FacetsCollector.create(facetSearchParams, searcher.getIndexReader(), taxonomyReader);
+    Collector mColl = MultiCollector.wrap(topDocsCollector, facetsCollector);
+    
+    collectors[0] = topDocsCollector;
+    collectors[1] = facetsCollector;
+
+    searcher.search(new MatchAllDocsQuery(), mColl);
+    return collectors;
+  }
+
+  public static String toSimpleString(FacetResult fr) {
+    StringBuilder sb = new StringBuilder();
+    toSimpleString(0, sb, fr.getFacetResultNode(), "");
+    return sb.toString();
+  }
+  
+  private static void toSimpleString(int depth, StringBuilder sb, FacetResultNode node, String indent) {
+    sb.append(indent + node.label.components[depth] + " (" + (int) node.value + ")\n");
+    for (FacetResultNode childNode : node.subResults) {
+      toSimpleString(depth + 1, sb, childNode, indent + "  ");
     }
   }
 

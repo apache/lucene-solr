@@ -4,15 +4,14 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.junit.Test;
-
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,7 +36,7 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
       throws IOException {
     Query q = new MatchAllDocsQuery();
     FacetSearchParams facetSearchParams = searchParamsWithRequests(numResults, partitionSize);
-    FacetsCollector fc = new FacetsCollector(facetSearchParams, indexReader, taxoReader) {
+    FacetsCollector fc = new StandardFacetsCollector(facetSearchParams, indexReader, taxoReader) {
       @Override
       protected FacetsAccumulator initFacetsAccumulator(
           FacetSearchParams facetSearchParams, IndexReader indexReader,
@@ -88,15 +87,15 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
       int k = 0;
       for (FacetResult fr : allFacetResults) {
         FacetResultNode topResNode = fr.getFacetResultNode();
-        maxNumNodes = Math.max(maxNumNodes, topResNode.getNumSubResults());
+        maxNumNodes = Math.max(maxNumNodes, topResNode.subResults.size());
         int prevCount = Integer.MAX_VALUE;
         int pos = 0;
-        for (FacetResultNode frn: topResNode.getSubResults()) {
-          assertTrue("wrong counts order: prev="+prevCount+" curr="+frn.getValue(), prevCount>=frn.getValue());
-          prevCount = (int) frn.getValue();
-          String key = k+"--"+frn.getLabel()+"=="+frn.getValue();
+        for (FacetResultNode frn: topResNode.subResults) {
+          assertTrue("wrong counts order: prev="+prevCount+" curr="+frn.value, prevCount>=frn.value);
+          prevCount = (int) frn.value;
+          String key = k+"--"+frn.label+"=="+frn.value;
           if (VERBOSE) {
-            System.out.println(frn.getLabel() + " - " + frn.getValue() + "  "+key+"  "+pos);
+            System.out.println(frn.label + " - " + frn.value + "  "+key+"  "+pos);
           }
           all.put(key, pos++); // will use this later to verify order of sub-results
         }
@@ -113,12 +112,12 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
         k = 0;
         for (FacetResult fr : someResults) {
           FacetResultNode topResNode = fr.getFacetResultNode();
-          assertTrue("too many results: n="+n+" but got "+topResNode.getNumSubResults(), n>=topResNode.getNumSubResults());
+          assertTrue("too many results: n="+n+" but got "+topResNode.subResults.size(), n>=topResNode.subResults.size());
           int pos = 0;
-          for (FacetResultNode frn: topResNode.getSubResults()) {
-            String key = k+"--"+frn.getLabel()+"=="+frn.getValue();
+          for (FacetResultNode frn: topResNode.subResults) {
+            String key = k+"--"+frn.label+"=="+frn.value;
             if (VERBOSE) {
-              System.out.println(frn.getLabel() + " - " + frn.getValue() + "  "+key+"  "+pos);
+              System.out.println(frn.label + " - " + frn.value + "  "+key+"  "+pos);
             }
             Integer origPos = all.get(key);
             assertNotNull("missing in all results: "+frn,origPos);
