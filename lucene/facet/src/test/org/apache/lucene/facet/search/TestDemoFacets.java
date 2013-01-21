@@ -17,7 +17,9 @@ package org.apache.lucene.facet.search;
  * limitations under the License.
  */
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +33,7 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.facet.util.PrintTaxonomyStats;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -115,6 +118,17 @@ public class TestDemoFacets extends LuceneTestCase {
     assertEquals(1, results.size());
     assertEquals("Author (2)\n  Lisa (1)\n  Bob (1)\n",
         FacetTestUtils.toSimpleString(results.get(0)));
+
+    // Smoke test PrintTaxonomyStats:
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    PrintTaxonomyStats.printStats(taxoReader, new PrintStream(bos, false, "UTF-8"), true);
+    String result = bos.toString("UTF-8");
+    assertTrue(result.indexOf("/Author: 4 immediate children; 5 total categories") != -1);
+    assertTrue(result.indexOf("/Publish Date: 3 immediate children; 12 total categories") != -1);
+    // Make sure at least a few nodes of the tree came out:
+    assertTrue(result.indexOf("  /1999") != -1);
+    assertTrue(result.indexOf("  /2012") != -1);
+    assertTrue(result.indexOf("      /20") != -1);
 
     taxoReader.close();
     searcher.getIndexReader().close();
