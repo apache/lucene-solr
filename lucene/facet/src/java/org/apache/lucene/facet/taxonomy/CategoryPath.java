@@ -60,6 +60,7 @@ public class CategoryPath implements Comparable<CategoryPath> {
   
   /** Construct from the given path components. */
   public CategoryPath(String... components) {
+    assert components.length > 0 : "use CategoryPath.EMPTY to create an empty path";
     this.components = components;
     length = components.length;
   }
