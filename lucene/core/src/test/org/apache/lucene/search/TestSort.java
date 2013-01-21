@@ -445,11 +445,7 @@ public class TestSort extends LuceneTestCase {
     if (dvStringSorted) {
       // If you index as sorted source you can still sort by
       // value instead:
-      // nocommit re-enable?  we need to fix FC.getTerms to
-      // "fallback" to getTermsIndex if the sorted DV is
-      // available
-      //return random().nextBoolean() ? SortField.Type.STRING : SortField.Type.STRING_VAL;
-      return SortField.Type.STRING;
+      return random().nextBoolean() ? SortField.Type.STRING : SortField.Type.STRING_VAL;
     } else {
       return SortField.Type.STRING_VAL;
     }
