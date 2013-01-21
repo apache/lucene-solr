@@ -47,7 +47,7 @@ public final class DrillDown {
    * @see #term(FacetIndexingParams, CategoryPath)
    */
   public static final Term term(FacetSearchParams sParams, CategoryPath path) {
-    return term(sParams.getFacetIndexingParams(), path);
+    return term(sParams.indexingParams, path);
   }
 
   /** Return a drill-down {@link Term} for a category. */
@@ -103,7 +103,7 @@ public final class DrillDown {
    * @see #query(FacetIndexingParams, Query, CategoryPath...)
    */
   public static final Query query(FacetSearchParams sParams, Query baseQuery, CategoryPath... paths) {
-    return query(sParams.getFacetIndexingParams(), baseQuery, paths);
+    return query(sParams.indexingParams, baseQuery, paths);
   }
 
 }

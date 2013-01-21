@@ -4,15 +4,14 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.Query;
-import org.junit.Test;
-
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,7 +36,7 @@ public class TestTopKResultsHandlerRandom extends BaseTestTopK {
       throws IOException {
     Query q = new MatchAllDocsQuery();
     FacetSearchParams facetSearchParams = searchParamsWithRequests(numResults, partitionSize);
-    FacetsCollector fc = new FacetsCollector(facetSearchParams, indexReader, taxoReader) {
+    FacetsCollector fc = new StandardFacetsCollector(facetSearchParams, indexReader, taxoReader) {
       @Override
       protected FacetsAccumulator initFacetsAccumulator(
           FacetSearchParams facetSearchParams, IndexReader indexReader,

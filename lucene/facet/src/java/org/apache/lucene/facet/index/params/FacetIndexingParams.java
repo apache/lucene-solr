@@ -48,7 +48,7 @@ public class FacetIndexingParams {
 
   /**
    * A {@link FacetIndexingParams} which fixes {@link OrdinalPolicy} to
-   * {@link OrdinalPolicy#NO_PARENTS}. This is a singleton equivalent to new
+   * {@link OrdinalPolicy#ALL_PARENTS}. This is a singleton equivalent to new
    * {@link #FacetIndexingParams()}.
    */
   public static final FacetIndexingParams ALL_PARENTS = new FacetIndexingParams();

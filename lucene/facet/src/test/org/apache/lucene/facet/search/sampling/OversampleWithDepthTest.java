@@ -8,6 +8,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsCollector;
+import org.apache.lucene.facet.search.StandardFacetsCollector;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
@@ -109,11 +110,10 @@ public class OversampleWithDepthTest extends LuceneTestCase {
   }
 
   /** search reader <code>r</code>*/
-  private FacetResult searchWithFacets(IndexReader r,
-      TaxonomyReader tr, FacetSearchParams fsp, final SamplingParams params)
-          throws IOException {
+  private FacetResult searchWithFacets(IndexReader r, TaxonomyReader tr, FacetSearchParams fsp, 
+      final SamplingParams params) throws IOException {
     // a FacetsCollector with a sampling accumulator
-    FacetsCollector fcWithSampling = new FacetsCollector(fsp, r, tr) {
+    FacetsCollector fcWithSampling = new StandardFacetsCollector(fsp, r, tr) {
       @Override
       protected FacetsAccumulator initFacetsAccumulator(FacetSearchParams facetSearchParams, IndexReader indexReader,
           TaxonomyReader taxonomyReader) {

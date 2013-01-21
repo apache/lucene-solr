@@ -138,7 +138,7 @@ public abstract class FacetsAccumulator {
 
   /** check if all requests are complementable */
   protected boolean mayComplement() {
-    for (FacetRequest freq:searchParams.getFacetRequests()) {
+    for (FacetRequest freq:searchParams.facetRequests) {
       if (!freq.supportsComplements()) {
         return false;
       }

@@ -334,7 +334,7 @@ public class TestMultipleCategoryLists extends LuceneTestCase {
     FacetSearchParams facetSearchParams = new FacetSearchParams(facetRequests, iParams);
 
     // perform documents search and facets accumulation
-    FacetsCollector facetsCollector = new FacetsCollector(facetSearchParams, ir, tr);
+    FacetsCollector facetsCollector = FacetsCollector.create(facetSearchParams, ir, tr);
     searcher.search(q, MultiCollector.wrap(topDocsCollector, facetsCollector));
     return facetsCollector;
   }

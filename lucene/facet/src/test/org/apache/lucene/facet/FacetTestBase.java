@@ -196,7 +196,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
    * test with different faceted search params.
    */
   protected FacetSearchParams getFacetSearchParams(FacetIndexingParams iParams, FacetRequest... facetRequests) {
-    return new FacetSearchParams(Arrays.asList(facetRequests), iParams);
+    return new FacetSearchParams(iParams, facetRequests);
   }
 
   /**
@@ -315,7 +315,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
       assertCountsAndCardinality(facetCountsTruth, subRes, reqNumResults); // recurse into child results
     }
   }
-  
+
   /** Validate results equality */
   protected static void assertSameResults(List<FacetResult> expected, List<FacetResult> actual) {
     assertEquals("wrong number of facet results", expected.size(), actual.size());

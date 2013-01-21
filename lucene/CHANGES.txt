@@ -32,6 +32,12 @@ Changes in backwards compatibility policy
 * LUCENE-4697: FacetResultNode is now a concrete class with public members
   (instead of getter methods). (Shai Erera)
   
+* LUCENE-4600: FacetsCollector is now an abstract class with two
+  implementations: StandardFacetsCollector (the old version of 
+  FacetsCollector) and CountingFacetsCollector. FacetsCollector.create()
+  returns the most optimized collector for the given parameters.
+  (Shai Erera, Michael McCandless)
+
 Optimizations
 
 * LUCENE-4687: BloomFilterPostingsFormat now lazily initializes delegate

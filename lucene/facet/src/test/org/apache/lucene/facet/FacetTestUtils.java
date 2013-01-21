@@ -83,8 +83,7 @@ public class FacetTestUtils {
     return dirs;
   }
 
-  public static IndexTaxonomyReaderPair[] createIndexTaxonomyReaderPair(
-      Directory[][] dirs) throws IOException {
+  public static IndexTaxonomyReaderPair[] createIndexTaxonomyReaderPair(Directory[][] dirs) throws IOException {
     IndexTaxonomyReaderPair[] pairs = new IndexTaxonomyReaderPair[dirs.length];
     for (int i = 0; i < dirs.length; i++) {
       IndexTaxonomyReaderPair pair = new IndexTaxonomyReaderPair();
@@ -96,8 +95,7 @@ public class FacetTestUtils {
     return pairs;
   }
   
-  public static IndexTaxonomyWriterPair[] createIndexTaxonomyWriterPair(
-      Directory[][] dirs) throws IOException {
+  public static IndexTaxonomyWriterPair[] createIndexTaxonomyWriterPair(Directory[][] dirs) throws IOException {
     IndexTaxonomyWriterPair[] pairs = new IndexTaxonomyWriterPair[dirs.length];
     for (int i = 0; i < dirs.length; i++) {
       IndexTaxonomyWriterPair pair = new IndexTaxonomyWriterPair();
@@ -111,9 +109,8 @@ public class FacetTestUtils {
     return pairs;
   }
 
-  public static Collector[] search(IndexSearcher searcher,
-      TaxonomyReader taxonomyReader, FacetIndexingParams iParams, int k,
-      String... facetNames) throws IOException {
+  public static Collector[] search(IndexSearcher searcher, TaxonomyReader taxonomyReader, FacetIndexingParams iParams, 
+      int k, String... facetNames) throws IOException {
     
     Collector[] collectors = new Collector[2];
     
@@ -125,10 +122,8 @@ public class FacetTestUtils {
     }
     FacetSearchParams facetSearchParams = new FacetSearchParams(fRequests, iParams);
 
-    TopScoreDocCollector topDocsCollector = TopScoreDocCollector.create(
-        searcher.getIndexReader().maxDoc(), true);
-    FacetsCollector facetsCollector = new FacetsCollector(
-        facetSearchParams, searcher.getIndexReader(), taxonomyReader);
+    TopScoreDocCollector topDocsCollector = TopScoreDocCollector.create(searcher.getIndexReader().maxDoc(), true);
+    FacetsCollector facetsCollector = FacetsCollector.create(facetSearchParams, searcher.getIndexReader(), taxonomyReader);
     Collector mColl = MultiCollector.wrap(topDocsCollector, facetsCollector);
     
     collectors[0] = topDocsCollector;

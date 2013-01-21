@@ -71,7 +71,7 @@ public class TestFacetsCollector extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(indexDir);
     DirectoryTaxonomyReader taxo = new DirectoryTaxonomyReader(taxoDir);
     
-    FacetsCollector fc = new FacetsCollector(sParams, r, taxo);
+    FacetsCollector fc = FacetsCollector.create(sParams, r, taxo);
     TopScoreDocCollector topDocs = TopScoreDocCollector.create(10, false);
     new IndexSearcher(r).search(new MatchAllDocsQuery(), MultiCollector.wrap(fc, topDocs));
     

@@ -110,7 +110,7 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     
     Query q = new MatchAllDocsQuery();
 
-    FacetsCollector fc = new FacetsCollector(fsp, reader, taxo);
+    FacetsCollector fc = FacetsCollector.create(fsp, reader, taxo);
     
     IndexSearcher searcher = newSearcher(reader);
     searcher.search(q, fc);
@@ -135,7 +135,7 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     
     Query q = new MatchAllDocsQuery();
 
-    FacetsCollector fc = new FacetsCollector(fsp, reader, taxo);
+    FacetsCollector fc = FacetsCollector.create(fsp, reader, taxo);
     
     IndexSearcher searcher = newSearcher(reader);
     searcher.search(q, fc);
@@ -165,7 +165,7 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     
     Query q = new MatchAllDocsQuery();
 
-    FacetsCollector fc = new FacetsCollector(fsp, reader, taxo);
+    FacetsCollector fc = FacetsCollector.create(fsp, reader, taxo);
     
     IndexSearcher searcher = newSearcher(reader);
     searcher.search(q, fc);

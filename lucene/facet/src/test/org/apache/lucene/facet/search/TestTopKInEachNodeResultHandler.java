@@ -165,7 +165,7 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       facetRequests.add(cfrb20);
       FacetSearchParams facetSearchParams = new FacetSearchParams(facetRequests, iParams);
       
-      FacetArrays facetArrays = new FacetArrays(PartitionsUtils.partitionSize(facetSearchParams.getFacetIndexingParams(), tr));
+      FacetArrays facetArrays = new FacetArrays(PartitionsUtils.partitionSize(facetSearchParams.indexingParams, tr));
       FacetsAccumulator fctExtrctr = new StandardFacetsAccumulator(facetSearchParams, is.getIndexReader(), tr, facetArrays);
       fctExtrctr.setComplementThreshold(FacetsAccumulator.DISABLE_COMPLEMENT);
       long start = System.currentTimeMillis();
