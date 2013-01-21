@@ -17,6 +17,8 @@ package org.apache.lucene.codecs.lucene41;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
@@ -26,13 +28,19 @@ import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
+import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.codecs.compressing.CompressingStoredFieldsFormat;
+import org.apache.lucene.codecs.compressing.CompressionMode;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
+import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 
 /**
  * Implements the Lucene 4.1 index format, with configurable per-field postings formats.
@@ -41,11 +49,18 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
  * {@link FilterCodec}.
  *
  * @see org.apache.lucene.codecs.lucene41 package documentation for file format details.
+ * @deprecated Only for reading old 4.0 segments
  * @lucene.experimental
  */
-// nocommit: make readonly
+@Deprecated
 public class Lucene41Codec extends Codec {
-  private final StoredFieldsFormat fieldsFormat = new Lucene41StoredFieldsFormat();
+  // TODO: slightly evil
+  private final StoredFieldsFormat fieldsFormat = new CompressingStoredFieldsFormat("Lucene41StoredFields", CompressionMode.FAST, 1 << 14) {
+    @Override
+    public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context) throws IOException {
+      throw new UnsupportedOperationException("this codec can only be used for reading");
+    }
+  };
   private final TermVectorsFormat vectorsFormat = new Lucene40TermVectorsFormat();
   private final FieldInfosFormat fieldInfosFormat = new Lucene40FieldInfosFormat();
   private final SegmentInfoFormat infosFormat = new Lucene40SegmentInfoFormat();
@@ -63,8 +78,9 @@ public class Lucene41Codec extends Codec {
     super("Lucene41");
   }
   
+  // TODO: slightly evil
   @Override
-  public final StoredFieldsFormat storedFieldsFormat() {
+  public StoredFieldsFormat storedFieldsFormat() {
     return fieldsFormat;
   }
   
