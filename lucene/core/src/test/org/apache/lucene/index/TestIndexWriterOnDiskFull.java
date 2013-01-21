@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.LongDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
@@ -558,6 +559,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
   {
       Document doc = new Document();
       doc.add(newTextField("content", "aaa", Field.Store.NO));
+      doc.add(new LongDocValuesField("numericdv", 1));
       writer.addDocument(doc);
   }
   
@@ -566,6 +568,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newTextField("content", "aaa " + index, Field.Store.NO));
       doc.add(newTextField("id", "" + index, Field.Store.NO));
+      doc.add(new LongDocValuesField("numericdv", 1));
       writer.addDocument(doc);
   }
 }

@@ -37,15 +37,23 @@ class DiskDocValuesConsumer extends DocValuesConsumer {
   final int maxDoc;
   
   DiskDocValuesConsumer(SegmentWriteState state) throws IOException {
-    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "ddvd");
-    data = state.directory.createOutput(dataName, state.context);
-    CodecUtil.writeHeader(data, DiskDocValuesFormat.DATA_CODEC, 
-                                DiskDocValuesFormat.VERSION_CURRENT);
-    String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "ddvm");
-    meta = state.directory.createOutput(metaName, state.context);
-    CodecUtil.writeHeader(meta, DiskDocValuesFormat.METADATA_CODEC, 
-                                DiskDocValuesFormat.VERSION_CURRENT);
-    maxDoc = state.segmentInfo.getDocCount();
+    boolean success = false;
+    try {
+      String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "ddvd");
+      data = state.directory.createOutput(dataName, state.context);
+      CodecUtil.writeHeader(data, DiskDocValuesFormat.DATA_CODEC, 
+                                  DiskDocValuesFormat.VERSION_CURRENT);
+      String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, "ddvm");
+      meta = state.directory.createOutput(metaName, state.context);
+      CodecUtil.writeHeader(meta, DiskDocValuesFormat.METADATA_CODEC, 
+                                  DiskDocValuesFormat.VERSION_CURRENT);
+      maxDoc = state.segmentInfo.getDocCount();
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.closeWhileHandlingException(this);
+      }
+    }
   }
   
   @Override
@@ -146,7 +154,18 @@ class DiskDocValuesConsumer extends DocValuesConsumer {
   public void close() throws IOException {
     // nocommit: just write this to a RAMfile or something and flush it here, with #fields first.
     // this meta is a tiny file so this hurts nobody
-    meta.writeVInt(-1);
-    IOUtils.close(data, meta);
+    boolean success = false;
+    try {
+      if (meta != null) {
+        meta.writeVInt(-1);
+      }
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(data, meta);
+      } else {
+        IOUtils.closeWhileHandlingException(data, meta);
+      }
+    }
   }
 }
