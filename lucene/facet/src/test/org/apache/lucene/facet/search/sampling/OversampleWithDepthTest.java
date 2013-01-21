@@ -85,10 +85,8 @@ public class OversampleWithDepthTest extends LuceneTestCase {
     FacetResultNode rootNode = res.getFacetResultNode();
     
     // Each node below root should also have sub-results as the requested depth was '2'
-    for (FacetResultNode node : rootNode.getSubResults()) {
-      assertTrue("node " + node.getLabel()
-          + " should have had children as the requested depth was '2'",
-          node.getNumSubResults() > 0);
+    for (FacetResultNode node : rootNode.subResults) {
+      assertTrue("node " + node.label + " should have had children as the requested depth was '2'", node.subResults.size() > 0);
     }
     
     IOUtils.close(r, tr, indexDir, taxoDir);

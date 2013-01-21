@@ -89,10 +89,8 @@ public class TestScoredDocIdCollector extends FacetTestBase {
     FacetResultNode parentCountRes = countRes.get(0).getFacetResultNode();
     FacetResultNode parentScoreRes = scoreRes.get(0).getFacetResultNode();
 
-    assertEquals("Wrong number of top count aggregated categories!", 3,
-        parentCountRes.getNumSubResults());
-    assertEquals("Wrong number of top score aggregated categories!", 3,
-        parentScoreRes.getNumSubResults());
+    assertEquals("Wrong number of top count aggregated categories!", 3, parentCountRes.subResults.size());
+    assertEquals("Wrong number of top score aggregated categories!", 3, parentScoreRes.subResults.size());
 
     // rely on that facet value is computed as doc-score, and
     // accordingly compare values of the two top-category results.
@@ -101,12 +99,8 @@ public class TestScoredDocIdCollector extends FacetTestBase {
     FacetResultNode[] scoreResNodes = resultNodesAsArray(parentScoreRes);
 
     for (int i = 0; i < scoreResNodes.length; i++) {
-      assertEquals("Ordinals differ!", 
-          countResNodes[i].getOrdinal(), scoreResNodes[i].getOrdinal());
-      assertEquals("Wrong scores!", 
-          constScore * countResNodes[i].getValue(),
-          scoreResNodes[i].getValue(), 
-          Double.MIN_VALUE);
+      assertEquals("Ordinals differ!", countResNodes[i].ordinal, scoreResNodes[i].ordinal);
+      assertEquals("Wrong scores!", constScore * countResNodes[i].value, scoreResNodes[i].value, Double.MIN_VALUE);
     }
   }
 

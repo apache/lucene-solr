@@ -148,9 +148,9 @@ public class SimpleSearcher {
     
     // assume the user is interested in the second sub-result
     // (just take the second sub-result returned by the iterator - we know there are 3 results!)
-    Iterator<? extends FacetResultNode> resIterator = fres.getFacetResultNode().getSubResults().iterator();
+    Iterator<? extends FacetResultNode> resIterator = fres.getFacetResultNode().subResults.iterator();
     resIterator.next(); // skip first result
-    CategoryPath categoryOfInterest = resIterator.next().getLabel();
+    CategoryPath categoryOfInterest = resIterator.next().label;
     
     // drill-down preparation: turn the base query into a drill-down query for the category of interest
     Query q2 = DrillDown.query(indexingParams, baseQuery, categoryOfInterest);

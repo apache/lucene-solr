@@ -129,8 +129,8 @@ public class TestDemoFacets extends LuceneTestCase {
   }
 
   private void toSimpleString(int depth, StringBuilder sb, FacetResultNode node, String indent) {
-    sb.append(indent + node.getLabel().components[depth] + " (" + (int) node.getValue() + ")\n");
-    for(FacetResultNode childNode : node.getSubResults()) {
+    sb.append(indent + node.label.components[depth] + " (" + (int) node.value + ")\n");
+    for(FacetResultNode childNode : node.subResults) {
       toSimpleString(depth+1, sb, childNode, indent + "  ");
     }
   }

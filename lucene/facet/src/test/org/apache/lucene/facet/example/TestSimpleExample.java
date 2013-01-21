@@ -57,11 +57,11 @@ public class TestSimpleExample extends LuceneTestCase {
     FacetResult facetResult = res.getFacetResults().get(0);
     assertEquals("Wrong number of facets!",2, facetResult.getNumValidDescendants());
     
-    Iterator<? extends FacetResultNode> resIterator = facetResult.getFacetResultNode().getSubResults().iterator();
+    Iterator<? extends FacetResultNode> resIterator = facetResult.getFacetResultNode().subResults.iterator();
     assertTrue("Too few results", resIterator.hasNext());
-    assertEquals("wrong count for first result out of 2", 1, (int)resIterator.next().getValue());
+    assertEquals("wrong count for first result out of 2", 1, (int)resIterator.next().value);
     assertTrue("Too few results", resIterator.hasNext());
-    assertEquals("wrong count for second result out of 2", 1, (int)resIterator.next().getValue());
+    assertEquals("wrong count for second result out of 2", 1, (int)resIterator.next().value);
     assertFalse("Too many results!", resIterator.hasNext());
   }
 }

@@ -43,45 +43,35 @@ public class TestMultiCLExample extends LuceneTestCase {
     List<FacetResult> results = exampleResults.getFacetResults();
     FacetResult result = results.get(0);
     assertNotNull("Result should not be null", result);
-    assertEquals("Invalid label", "5", result.getFacetResultNode()
-        .getLabel().toString());
-    assertEquals("Invalid value", 2.0, result.getFacetResultNode()
-        .getValue(), 0.0);
-    assertEquals("Invalid # of subresults", 3, result.getFacetResultNode()
-        .getNumSubResults());
+    FacetResultNode node = result.getFacetResultNode();
+    assertEquals("Invalid label", "5", node.label.toString());
+    assertEquals("Invalid value", 2.0, node.value, 0.0);
+    assertEquals("Invalid # of subresults", 3, node.subResults.size());
 
-    Iterator<? extends FacetResultNode> subResults = result
-        .getFacetResultNode().getSubResults().iterator();
+    Iterator<? extends FacetResultNode> subResults = node.subResults.iterator();
     FacetResultNode sub = subResults.next();
-    assertEquals("Invalid subresult value", 1.0, sub.getValue(), 0.0);
-    assertEquals("Invalid subresult label", "5/2", sub.getLabel()
-        .toString());
+    assertEquals("Invalid subresult value", 1.0, sub.value, 0.0);
+    assertEquals("Invalid subresult label", "5/2", sub.label.toString());
     sub = subResults.next();
-    assertEquals("Invalid subresult value", 1.0, sub.getValue(), 0.0);
-    assertEquals("Invalid subresult label", "5/7", sub.getLabel()
-        .toString());
+    assertEquals("Invalid subresult value", 1.0, sub.value, 0.0);
+    assertEquals("Invalid subresult label", "5/7", sub.label.toString());
     sub = subResults.next();
-    assertEquals("Invalid subresult value", 1.0, sub.getValue(), 0.0);
-    assertEquals("Invalid subresult label", "5/5", sub.getLabel()
-        .toString());
+    assertEquals("Invalid subresult value", 1.0, sub.value, 0.0);
+    assertEquals("Invalid subresult label", "5/5", sub.label.toString());
 
     result = results.get(1);
+    node = result.getFacetResultNode();
     assertNotNull("Result should not be null", result);
-    assertEquals("Invalid label", "5/5", result.getFacetResultNode()
-        .getLabel().toString());
-    assertEquals("Invalid value", 1,
-        result.getFacetResultNode().getValue(), 0.0);
-    assertEquals("Invalid number of subresults", 0, result
-        .getFacetResultNode().getNumSubResults());
+    assertEquals("Invalid label", "5/5", node.label.toString());
+    assertEquals("Invalid value", 1, node.value, 0.0);
+    assertEquals("Invalid number of subresults", 0, node.subResults.size());
 
     result = results.get(2);
+    node = result.getFacetResultNode();
     assertNotNull("Result should not be null", result);
-    assertEquals("Invalid label", "6/2", result.getFacetResultNode()
-        .getLabel().toString());
-    assertEquals("Invalid value", 1,
-        result.getFacetResultNode().getValue(), 0.0);
-    assertEquals("Invalid number of subresults", 0, result
-        .getFacetResultNode().getNumSubResults());
+    assertEquals("Invalid label", "6/2", node.label.toString());
+    assertEquals("Invalid value", 1, node.value, 0.0);
+    assertEquals("Invalid number of subresults", 0, node.subResults.size());
 
   }
 

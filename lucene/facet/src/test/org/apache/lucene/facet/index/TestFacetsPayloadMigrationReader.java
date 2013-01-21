@@ -273,8 +273,8 @@ public class TestFacetsPayloadMigrationReader extends LuceneTestCase {
     assertEquals(requests.size(), facetResults.size());
     for (FacetResult res : facetResults) {
       FacetResultNode node = res.getFacetResultNode();
-      String dim = node.getLabel().components[0];
-      assertEquals("wrong count for " + dim, expectedCounts.get(dim).intValue(), (int) node.getValue());
+      String dim = node.label.components[0];
+      assertEquals("wrong count for " + dim, expectedCounts.get(dim).intValue(), (int) node.value);
     }
   }
   
@@ -294,7 +294,7 @@ public class TestFacetsPayloadMigrationReader extends LuceneTestCase {
       List<FacetResult> facetResults = fc.getFacetResults();
       assertEquals(1, facetResults.size());
       FacetResultNode rootNode = facetResults.get(0).getFacetResultNode();
-      assertEquals("wrong count for " + dim, expectedCounts.get(dim).intValue(), (int) rootNode.getValue());
+      assertEquals("wrong count for " + dim, expectedCounts.get(dim).intValue(), (int) rootNode.value);
     }
   }
   

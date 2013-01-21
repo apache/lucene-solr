@@ -73,12 +73,12 @@ public class ResultSortUtils {
 
     @Override
     protected boolean lessThan(FacetResultNode arg0, FacetResultNode arg1) {
-      double value0 = arg0.getValue();
-      double value1 = arg1.getValue();
+      double value0 = arg0.value;
+      double value1 = arg1.value;
 
       int valueCompare = Double.compare(value0, value1);
       if (valueCompare == 0) { 
-        return arg0.getOrdinal() < arg1.getOrdinal();
+        return arg0.ordinal < arg1.ordinal;
       }
 
       return valueCompare < 0;
@@ -93,40 +93,38 @@ public class ResultSortUtils {
 
     @Override
     protected boolean lessThan(FacetResultNode arg0, FacetResultNode arg1) {
-      double value0 = arg0.getValue();
-      double value1 = arg1.getValue();
+      double value0 = arg0.value;
+      double value1 = arg1.value;
 
       int valueCompare = Double.compare(value0, value1);
       if (valueCompare == 0) { 
-        return arg0.getOrdinal() > arg1.getOrdinal();
+        return arg0.ordinal > arg1.ordinal;
       }
 
       return valueCompare > 0;
     }
   }
 
-  private static class MinOrdinalHeap extends
-  PriorityQueue<FacetResultNode> implements Heap<FacetResultNode> {
+  private static class MinOrdinalHeap extends PriorityQueue<FacetResultNode> implements Heap<FacetResultNode> {
     public MinOrdinalHeap(int size) {
       super(size);
     }
 
     @Override
     protected boolean lessThan(FacetResultNode arg0, FacetResultNode arg1) {
-      return arg0.getOrdinal() < arg1.getOrdinal();
+      return arg0.ordinal < arg1.ordinal;
     }
 
   }
 
-  private static class MaxOrdinalHeap extends
-  PriorityQueue<FacetResultNode> implements Heap<FacetResultNode> {
+  private static class MaxOrdinalHeap extends PriorityQueue<FacetResultNode> implements Heap<FacetResultNode> {
     public MaxOrdinalHeap(int size) {
       super(size);
     }
 
     @Override
     protected boolean lessThan(FacetResultNode arg0, FacetResultNode arg1) {
-      return arg0.getOrdinal() > arg1.getOrdinal();
+      return arg0.ordinal > arg1.ordinal;
     }
 
   }
@@ -156,10 +154,9 @@ public class ResultSortUtils {
         Collections.sort(resultNodes, new Comparator<FacetResultNode>() {
           @Override
           public int compare(FacetResultNode o1, FacetResultNode o2) {
-            int value = Double.compare(o1.getValue(), o2
-                .getValue());
+            int value = Double.compare(o1.value, o2.value);
             if (value == 0) {
-              value = o1.getOrdinal() - o2.getOrdinal();
+              value = o1.ordinal - o2.ordinal;
             }
             if (accending) {
               value = -value;
@@ -198,4 +195,5 @@ public class ResultSortUtils {
       resultNodes.clear();
     }
   }
+  
 }

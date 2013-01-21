@@ -45,10 +45,10 @@ public class TestAssociationExample extends LuceneTestCase {
     assertEquals("Wrong number of results!", 1, res.getFacetResults().size());
     assertEquals("Wrong number of facets!", 2, res.getFacetResults().get(0).getNumValidDescendants());
     
-    Iterable<? extends FacetResultNode> it = res.getFacetResults().get(0).getFacetResultNode().getSubResults();
+    Iterable<? extends FacetResultNode> it = res.getFacetResults().get(0).getFacetResultNode().subResults;
     int i = 0;
     for (FacetResultNode fResNode : it) {
-      assertEquals("Wrong result for facet "+fResNode.getLabel(), expectedResults[i++], fResNode.getValue(), 1E-5);
+      assertEquals("Wrong result for facet "+fResNode.label, expectedResults[i++], fResNode.value, 1E-5);
     }
   }
   

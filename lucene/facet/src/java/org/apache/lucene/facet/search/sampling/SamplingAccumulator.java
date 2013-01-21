@@ -49,7 +49,7 @@ import org.apache.lucene.index.IndexReader;
  * Note: Sampling accumulation (Accumulation over a sampled-set of the results),
  * does not guarantee accurate values for
  * {@link FacetResult#getNumValidDescendants()} &
- * {@link FacetResultNode#getResidue()}.
+ * {@link FacetResultNode#residue}.
  * 
  * @see Sampler
  * @lucene.experimental

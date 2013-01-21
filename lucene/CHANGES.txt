@@ -29,6 +29,9 @@ Changes in backwards compatibility policy
   support in-memory caching, CategoryListCache was removed too.
   (Shai Erera, Michael McCandless)
 
+* LUCENE-4697: FacetResultNode is now a concrete class with public members
+  (instead of getter methods). (Shai Erera)
+  
 Optimizations
 
 * LUCENE-4687: BloomFilterPostingsFormat now lazily initializes delegate

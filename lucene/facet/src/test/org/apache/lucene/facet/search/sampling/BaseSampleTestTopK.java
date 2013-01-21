@@ -97,7 +97,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
             assertSampling(expectedResults, q, sampler, samplingSearchParams, true);
             
             break; // succeeded
-          } catch (NotSameResultError e) {
+          } catch (AssertionError e) {
             if (nTrial >= RETRIES - 1) {
               throw e; // no more retries allowed, must fail
             }

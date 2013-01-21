@@ -10,6 +10,8 @@ import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
+import org.apache.lucene.facet.search.results.FacetResult;
+import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -45,6 +47,33 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class FacetTestUtils {
 
+  public static class IndexTaxonomyReaderPair {
+    public DirectoryReader indexReader;
+    public DirectoryTaxonomyReader taxReader;
+    public IndexSearcher indexSearcher;
+
+    public void close() throws IOException {
+      indexReader.close();
+      taxReader.close();
+    }
+
+  }
+
+  public static class IndexTaxonomyWriterPair {
+    public IndexWriter indexWriter;
+    public TaxonomyWriter taxWriter;
+
+    public void close() throws IOException {
+      indexWriter.close();
+      taxWriter.close();
+    }
+
+    public void commit() throws IOException {
+      indexWriter.commit();
+      taxWriter.commit();
+    }
+  }
+
   public static Directory[][] createIndexTaxonomyDirs(int number) {
     Directory[][] dirs = new Directory[number][2];
     for (int i = 0; i < number; i++) {
@@ -66,7 +95,7 @@ public class FacetTestUtils {
     }
     return pairs;
   }
-
+  
   public static IndexTaxonomyWriterPair[] createIndexTaxonomyWriterPair(
       Directory[][] dirs) throws IOException {
     IndexTaxonomyWriterPair[] pairs = new IndexTaxonomyWriterPair[dirs.length];
@@ -109,31 +138,17 @@ public class FacetTestUtils {
     searcher.search(new MatchAllDocsQuery(), mColl);
     return collectors;
   }
-  
-  public static class IndexTaxonomyReaderPair {
-    public DirectoryReader indexReader;
-    public DirectoryTaxonomyReader taxReader;
-    public IndexSearcher indexSearcher;
 
-    public void close() throws IOException {
-      indexReader.close();
-      taxReader.close();
-    }
-
+  public static String toSimpleString(FacetResult fr) {
+    StringBuilder sb = new StringBuilder();
+    toSimpleString(0, sb, fr.getFacetResultNode(), "");
+    return sb.toString();
   }
-
-  public static class IndexTaxonomyWriterPair {
-    public IndexWriter indexWriter;
-    public TaxonomyWriter taxWriter;
-
-    public void close() throws IOException {
-      indexWriter.close();
-      taxWriter.close();
-    }
-
-    public void commit() throws IOException {
-      indexWriter.commit();
-      taxWriter.commit();
+  
+  private static void toSimpleString(int depth, StringBuilder sb, FacetResultNode node, String indent) {
+    sb.append(indent + node.label.components[depth] + " (" + (int) node.value + ")\n");
+    for (FacetResultNode childNode : node.subResults) {
+      toSimpleString(depth + 1, sb, childNode, indent + "  ");
     }
   }
 

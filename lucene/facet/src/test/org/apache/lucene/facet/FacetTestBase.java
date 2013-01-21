@@ -246,7 +246,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
   /** convenience method: convert sub results to an array */  
   protected static FacetResultNode[] resultNodesAsArray(FacetResultNode parentRes) {
     ArrayList<FacetResultNode> a = new ArrayList<FacetResultNode>();
-    for (FacetResultNode frn : parentRes.getSubResults()) {
+    for (FacetResultNode frn : parentRes.subResults) {
       a.add(frn);
     }
     return a.toArray(new FacetResultNode[0]);
@@ -305,42 +305,27 @@ public abstract class FacetTestBase extends LuceneTestCase {
     
   /** Validate counts for returned facets, and that there are not too many results */
   private static void assertCountsAndCardinality(Map<CategoryPath,Integer> facetCountsTruth,  FacetResultNode resNode, int reqNumResults) throws Exception {
-    int actualNumResults = resNode.getNumSubResults();
+    int actualNumResults = resNode.subResults.size();
     if (VERBOSE) {
       System.out.println("NumResults: " + actualNumResults);
     }
     assertTrue("Too many results!", actualNumResults <= reqNumResults);
-    for (FacetResultNode subRes : resNode.getSubResults()) {
-      assertEquals("wrong count for: "+subRes, facetCountsTruth.get(subRes.getLabel()).intValue(), (int)subRes.getValue());
+    for (FacetResultNode subRes : resNode.subResults) {
+      assertEquals("wrong count for: "+subRes, facetCountsTruth.get(subRes.label).intValue(), (int)subRes.value);
       assertCountsAndCardinality(facetCountsTruth, subRes, reqNumResults); // recurse into child results
     }
   }
   
   /** Validate results equality */
   protected static void assertSameResults(List<FacetResult> expected, List<FacetResult> actual) {
-    String expectedResults = resStringValueOnly(expected);
-    String actualResults = resStringValueOnly(actual);
-    if (!expectedResults.equals(actualResults)) {
-      System.err.println("Results are not the same!");
-      System.err.println("Expected:\n" + expectedResults);
-      System.err.println("Actual:\n" + actualResults);
-      throw new NotSameResultError();
-    }
-  }
-  
-  /** exclude the residue and numDecendants because it is incorrect in sampling */
-  private static final String resStringValueOnly(List<FacetResult> results) {
-    StringBuilder sb = new StringBuilder();
-    for (FacetResult facetRes : results) {
-      sb.append(facetRes.toString()).append('\n');
-    }
-    return sb.toString().replaceAll("Residue:.*.0", "").replaceAll("Num valid Descendants.*", "");
-  }
-  
-  /** Special Error class for ability to ignore only this error and retry... */ 
-  public static class NotSameResultError extends Error {
-    public NotSameResultError() {
-      super("Results are not the same!");
+    assertEquals("wrong number of facet results", expected.size(), actual.size());
+    int size = expected.size();
+    for (int i = 0; i < size; i++) {
+      FacetResult expectedResult = expected.get(i);
+      FacetResult actualResult = actual.get(i);
+      String expectedStr = FacetTestUtils.toSimpleString(expectedResult);
+      String actualStr = FacetTestUtils.toSimpleString(actualResult);
+      assertEquals("Results not the same!\nExpected:" + expectedStr + "\nActual:\n" + actualStr, expectedStr, actualStr);
     }
   }
   

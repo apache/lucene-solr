@@ -118,8 +118,8 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     
     assertNotNull("No results!",res);
     assertEquals("Wrong number of results!",2, res.size());
-    assertEquals("Wrong count for category 'a'!",200, (int) res.get(0).getFacetResultNode().getValue());
-    assertEquals("Wrong count for category 'b'!",150, (int) res.get(1).getFacetResultNode().getValue());
+    assertEquals("Wrong count for category 'a'!",200, (int) res.get(0).getFacetResultNode().value);
+    assertEquals("Wrong count for category 'b'!",150, (int) res.get(1).getFacetResultNode().value);
     
     taxo.close();
   }
@@ -143,8 +143,8 @@ public class AssociationsFacetRequestTest extends LuceneTestCase {
     
     assertNotNull("No results!",res);
     assertEquals("Wrong number of results!",2, res.size());
-    assertEquals("Wrong count for category 'a'!",50f, (float) res.get(0).getFacetResultNode().getValue(), 0.00001);
-    assertEquals("Wrong count for category 'b'!",10f, (float) res.get(1).getFacetResultNode().getValue(), 0.00001);
+    assertEquals("Wrong count for category 'a'!",50f, (float) res.get(0).getFacetResultNode().value, 0.00001);
+    assertEquals("Wrong count for category 'b'!",10f, (float) res.get(1).getFacetResultNode().value, 0.00001);
     
     taxo.close();
   }  

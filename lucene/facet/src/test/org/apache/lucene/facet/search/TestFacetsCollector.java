@@ -76,7 +76,7 @@ public class TestFacetsCollector extends LuceneTestCase {
     new IndexSearcher(r).search(new MatchAllDocsQuery(), MultiCollector.wrap(fc, topDocs));
     
     List<FacetResult> res = fc.getFacetResults();
-    double value = res.get(0).getFacetResultNode().getValue();
+    double value = res.get(0).getFacetResultNode().value;
     double expected = topDocs.topDocs().getMaxScore() * r.numDocs();
     assertEquals(expected, value, 1E-10);
     
