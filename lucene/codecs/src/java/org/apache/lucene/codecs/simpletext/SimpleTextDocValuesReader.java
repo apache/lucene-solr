@@ -48,7 +48,7 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.MINV
 import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.NUMVALUES;
 import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.ORDPATTERN;
 import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.PATTERN;
-
+import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.TYPE;
 
 // nocommit make sure we test "all docs have 0 value",
 // "all docs have empty BytesREf"
@@ -56,7 +56,6 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextDocValuesWriter.PATT
 class SimpleTextDocValuesReader extends DocValuesProducer {
 
   static class OneField {
-    FieldInfo fieldInfo;
     long dataStartFilePointer;
     String pattern;
     String ordPattern;
@@ -90,11 +89,10 @@ class SimpleTextDocValuesReader extends DocValuesProducer {
       OneField field = new OneField();
       fields.put(fieldName, field);
 
-      field.fieldInfo = fieldInfo;
-      //System.out.println("  field=" + fieldName);
+      readLine();
+      assert startsWith(TYPE) : scratch.utf8ToString();
 
-      // nocommit hack hack hack!!:
-      DocValuesType dvType = ext.equals("len") ? DocValuesType.NUMERIC : fieldInfo.getDocValuesType();
+      DocValuesType dvType = DocValuesType.valueOf(stripPrefix(TYPE));
       assert dvType != null;
       if (dvType == DocValuesType.NUMERIC) {
         readLine();

@@ -34,6 +34,7 @@ import org.apache.lucene.index.SegmentWriteState;
  *  for numbers this is a "fixed-width" file, for example a single byte range:
  *  <pre>
  *  field myField
+ *    type NUMERIC
  *    minvalue 0
  *    pattern 000
  *  005
@@ -47,6 +48,7 @@ import org.apache.lucene.index.SegmentWriteState;
  *  for bytes this is also a "fixed-width" file, for example:
  *  <pre>
  *  field myField
+ *    type BINARY
  *    maxlength 6
  *    pattern 0
  *  length 6
@@ -61,6 +63,7 @@ import org.apache.lucene.index.SegmentWriteState;
  *  for sorted bytes this is a fixed-width file, for example:
  *  <pre>
  *  field myField
+ *    type SORTED
  *    numvalues 10
  *    maxLength 8
  *    pattern 0

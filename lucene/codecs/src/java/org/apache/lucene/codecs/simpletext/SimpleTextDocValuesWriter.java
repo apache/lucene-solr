@@ -37,6 +37,7 @@ import org.apache.lucene.util.IOUtils;
 class SimpleTextDocValuesWriter extends DocValuesConsumer {
   final static BytesRef END     = new BytesRef("END");
   final static BytesRef FIELD   = new BytesRef("field ");
+  final static BytesRef TYPE    = new BytesRef("  type ");
   // used for numerics
   final static BytesRef MINVALUE = new BytesRef("  minvalue ");
   final static BytesRef PATTERN  = new BytesRef("  pattern ");
@@ -50,15 +51,12 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   final IndexOutput data;
   final BytesRef scratch = new BytesRef();
   final int numDocs;
-  // nocommit
-  final boolean isNorms;
   private final Set<String> fieldsSeen = new HashSet<String>(); // for asserting
   
   public SimpleTextDocValuesWriter(SegmentWriteState state, String ext) throws IOException {
     //System.out.println("WRITE: " + IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext) + " " + state.segmentInfo.getDocCount() + " docs");
     data = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext), state.context);
     numDocs = state.segmentInfo.getDocCount();
-    isNorms = ext.equals("len");
   }
 
   // for asserting
@@ -71,10 +69,9 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   @Override
   public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
     assert fieldSeen(field.name);
-    // nocommit: this must be multiple asserts
-    //assert (field.getDocValuesType() != null && (DocValues.isNumber(field.getDocValuesType()) || DocValues.isFloat(field.getDocValuesType()))) ||
-    //  (field.getNormType() != null && (DocValues.isNumber(field.getNormType()) || DocValues.isFloat(field.getNormType()))): "field=" + field.name;
-    writeFieldEntry(field);
+    assert (field.getDocValuesType() == FieldInfo.DocValuesType.NUMERIC ||
+            field.getNormType() == FieldInfo.DocValuesType.NUMERIC);
+    writeFieldEntry(field, FieldInfo.DocValuesType.NUMERIC);
 
     // first pass to find min/max
     long minValue = Long.MAX_VALUE;
@@ -132,12 +129,11 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
     assert fieldSeen(field.name);
     assert field.getDocValuesType() == DocValuesType.BINARY;
-    assert !isNorms;
     int maxLength = 0;
     for(BytesRef value : values) {
       maxLength = Math.max(maxLength, value.length);
     }
-    writeFieldEntry(field);
+    writeFieldEntry(field, FieldInfo.DocValuesType.BINARY);
 
     // write maxLength
     SimpleTextUtil.write(data, MAXLENGTH);
@@ -181,8 +177,7 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
     assert fieldSeen(field.name);
     assert field.getDocValuesType() == DocValuesType.SORTED;
-    assert !isNorms;
-    writeFieldEntry(field);
+    writeFieldEntry(field, FieldInfo.DocValuesType.SORTED);
 
     int valueCount = 0;
     int maxLength = -1;
@@ -256,9 +251,13 @@ class SimpleTextDocValuesWriter extends DocValuesConsumer {
   }
 
   /** write the header for this field */
-  private void writeFieldEntry(FieldInfo field) throws IOException {
+  private void writeFieldEntry(FieldInfo field, FieldInfo.DocValuesType type) throws IOException {
     SimpleTextUtil.write(data, FIELD);
     SimpleTextUtil.write(data, field.name, scratch);
+    SimpleTextUtil.writeNewline(data);
+    
+    SimpleTextUtil.write(data, TYPE);
+    SimpleTextUtil.write(data, type.toString(), scratch);
     SimpleTextUtil.writeNewline(data);
   }
   
