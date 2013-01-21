@@ -25,9 +25,7 @@ import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
 import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Source;
-import org.apache.lucene.index.DocValues.Type;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FilterAtomicReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
@@ -92,8 +90,8 @@ public class OrdinalMappingAtomicReader extends FilterAtomicReader {
   }
 
   @Override
-  public DocValues docValues(String field) throws IOException {
-    DocValues inner = super.docValues(field);
+  public BinaryDocValues getBinaryDocValues(String field) throws IOException {
+    BinaryDocValues inner = super.getBinaryDocValues(field);
     if (inner == null) {
       return inner;
     }
@@ -102,46 +100,19 @@ public class OrdinalMappingAtomicReader extends FilterAtomicReader {
     if (clp == null) {
       return inner;
     } else {
-      return new OrdinalMappingDocValues(inner, clp);
+      return new OrdinalMappingBinaryDocValues(clp, inner);
     }
   }
   
-  private class OrdinalMappingDocValues extends DocValues {
-
-    private final CategoryListParams clp;
-    private final DocValues delegate;
-    
-    public OrdinalMappingDocValues(DocValues delegate, CategoryListParams clp) {
-      this.delegate = delegate;
-      this.clp = clp;
-    }
-
-    @Override
-    protected Source loadSource() throws IOException {
-      return new OrdinalMappingSource(getType(), clp, delegate.getSource());
-    }
-
-    @Override
-    protected Source loadDirectSource() throws IOException {
-      return new OrdinalMappingSource(getType(), clp, delegate.getDirectSource());
-    }
-
-    @Override
-    public Type getType() {
-      return Type.BYTES_VAR_STRAIGHT;
-    }
-    
-  }
-  
-  private class OrdinalMappingSource extends Source {
+  private class OrdinalMappingBinaryDocValues extends BinaryDocValues {
 
     private final IntEncoder encoder;
     private final IntDecoder decoder;
     private final IntsRef ordinals = new IntsRef(32);
-    private final Source delegate;
+    private final BinaryDocValues delegate;
+    private final BytesRef scratch = new BytesRef();
     
-    protected OrdinalMappingSource(Type type, CategoryListParams clp, Source delegate) {
-      super(type);
+    protected OrdinalMappingBinaryDocValues(CategoryListParams clp, BinaryDocValues delegate) {
       this.delegate = delegate;
       encoder = clp.createEncoder();
       decoder = encoder.createMatchingDecoder();
@@ -149,23 +120,26 @@ public class OrdinalMappingAtomicReader extends FilterAtomicReader {
     
     @SuppressWarnings("synthetic-access")
     @Override
-    public BytesRef getBytes(int docID, BytesRef ref) {
-      ref = delegate.getBytes(docID, ref);
-      if (ref == null || ref.length == 0) {
-        return ref;
-      } else {
-        decoder.decode(ref, ordinals);
+    public void get(int docID, BytesRef result) {
+      // NOTE: this isn't quite koscher, because in general
+      // multiple threads can call BinaryDV.get which would
+      // then conflict on the single scratch instance, but
+      // because this impl is only used for merging, we know
+      // only 1 thread calls us:
+      delegate.get(docID, scratch);
+      if (scratch.length > 0) {
+        // We must use scratch (and not re-use result) here,
+        // else encoder may overwrite the DV provider's
+        // private byte[]:
+        decoder.decode(scratch, ordinals);
         
         // map the ordinals
         for (int i = 0; i < ordinals.length; i++) {
           ordinals.ints[i] = ordinalMap[ordinals.ints[i]];
         }
         
-        encoder.encode(ordinals, ref);
-        return ref;
+        encoder.encode(ordinals, result);
       }
     }
-    
   }
-  
 }
