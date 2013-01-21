@@ -48,6 +48,12 @@ public class CategoryPath implements Comparable<CategoryPath> {
 
   // Used by subpath
   private CategoryPath(CategoryPath copyFrom, int prefixLen) {
+    // while the code which calls this method is safe, at some point a test
+    // tripped on AIOOBE in toString, but we failed to reproduce. adding the
+    // assert as a safety check.
+    assert prefixLen > 0 && prefixLen <= copyFrom.components.length : 
+      "prefixLen cannot be negative nor larger than the given components' length: prefixLen=" + prefixLen
+        + " components.length=" + copyFrom.components.length;
     this.components = copyFrom.components;
     length = prefixLen;
   }
