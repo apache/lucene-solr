@@ -26,6 +26,7 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.IOUtils;
 
 final class DocValuesProcessor extends StoredFieldsConsumer {
 
@@ -80,26 +81,22 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
   void flush(SegmentWriteState state) throws IOException {
     if (!writers.isEmpty()) {
       DocValuesFormat fmt = state.segmentInfo.getCodec().docValuesFormat();
-      // nocommit once we make
-      // Codec.simpleDocValuesFormat abstract, change
-      // this to assert fmt != null!
-      if (fmt == null) {
-        return;
-      }
-
       DocValuesConsumer dvConsumer = fmt.fieldsConsumer(state);
-      // nocommit change to assert != null:
-      if (dvConsumer == null) {
-        return;
+      boolean success = false;
+      try {
+        for(DocValuesWriter writer : writers.values()) {
+          writer.finish(state.segmentInfo.getDocCount());
+          writer.flush(state, dvConsumer);
+        }
+        writers.clear();
+        success = true;
+      } finally {
+        if (success) {
+          IOUtils.close(dvConsumer);
+        } else {
+          IOUtils.closeWhileHandlingException(dvConsumer);
+        }
       }
-
-      for(DocValuesWriter writer : writers.values()) {
-        writer.finish(state.segmentInfo.getDocCount());
-        writer.flush(state, dvConsumer);
-      }
-      
-      writers.clear();
-      dvConsumer.close();
     }
   }
 
