@@ -74,8 +74,6 @@ import org.junit.BeforeClass;
  * @since   lucene 1.4
  */
 
-// nocommit unsuppress this once Lucene40 impls DV 2.0:
-@SuppressCodecs({"Lucene40"})
 public class TestSort extends LuceneTestCase {
   private static int NUM_STRINGS;
   private IndexSearcher full;
@@ -200,10 +198,7 @@ public class TestSort extends LuceneTestCase {
 
     IndexReader reader = writer.getReader();
     writer.close ();
-    // nocommit back to newSearcher(true)? problem is this
-    // sometimes uses slow reader wrapper which does not
-    // provide DV 2.0
-    IndexSearcher s = newSearcher(reader, false);
+    IndexSearcher s = newSearcher(reader);
     return s;
   }
 
@@ -277,10 +272,7 @@ public class TestSort extends LuceneTestCase {
     //System.out.println(writer.getSegmentCount());
     writer.close();
     IndexReader reader = DirectoryReader.open(indexStore);
-    // nocommit back to newSearcher(true)? problem is this
-    // sometimes uses slow reader wrapper which does not
-    // provide DV 2.0
-    IndexSearcher searcher = newSearcher(reader, false);
+    IndexSearcher searcher = newSearcher(reader);
 
     /*
     for(int docID=0;docID<reader.maxDoc();docID++) {

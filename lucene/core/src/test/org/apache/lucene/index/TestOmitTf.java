@@ -254,8 +254,7 @@ public class TestOmitTf extends LuceneTestCase {
         newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer).
             setMaxBufferedDocs(2).
             setSimilarity(new SimpleSimilarity()).
-            setMergePolicy(newLogMergePolicy(2)).
-        setMergeScheduler(new SerialMergeScheduler())  // nocommit
+            setMergePolicy(newLogMergePolicy(2))
     );
         
     StringBuilder sb = new StringBuilder(265);
