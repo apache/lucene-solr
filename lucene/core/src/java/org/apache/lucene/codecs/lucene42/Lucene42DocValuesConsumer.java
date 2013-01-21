@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene41;
+package org.apache.lucene.codecs.lucene42;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,6 +37,7 @@ import org.apache.lucene.util.fst.FST.INPUT_TYPE;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
 
 /**
  * Writes numbers one of two ways:
@@ -46,7 +47,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * the latter is typically much smaller with lucene's sims, as only some byte values are used,
  * but its often a nonlinear mapping, especially if you dont use crazy boosts.
  */
-class Lucene41DocValuesConsumer extends DocValuesConsumer {
+class Lucene42DocValuesConsumer extends DocValuesConsumer {
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
   
@@ -56,7 +57,7 @@ class Lucene41DocValuesConsumer extends DocValuesConsumer {
   
   final IndexOutput data, meta;
   
-  Lucene41DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  Lucene42DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     boolean success = false;
     try {
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
@@ -141,14 +142,15 @@ class Lucene41DocValuesConsumer extends DocValuesConsumer {
     }
 
     data.writeLong(minValue);
- 
-    final PackedInts.Writer writer = PackedInts.getWriter(data, count, bitsPerValue, PackedInts.COMPACT);
+
+    FormatAndBits formatAndBits = PackedInts.fastestFormatAndBits(count, bitsPerValue, PackedInts.COMPACT);   
+    final PackedInts.Writer writer = PackedInts.getWriter(data, count, formatAndBits.bitsPerValue, 0);
     for(Number nv : values) {
       writer.add(nv.longValue() - minValue);
     }
     writer.finish();
   }
-
+  
   @Override
   public void close() throws IOException {
     // nocommit: just write this to a RAMfile or something and flush it here, with #fields first.

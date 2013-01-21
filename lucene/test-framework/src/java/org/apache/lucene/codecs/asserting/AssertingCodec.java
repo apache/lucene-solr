@@ -21,10 +21,10 @@ import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec;
+import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 
 /**
- * Acts like {@link Lucene41Codec} but with additional asserts.
+ * Acts like {@link Lucene42Codec} but with additional asserts.
  */
 public final class AssertingCodec extends FilterCodec {
 
@@ -33,7 +33,7 @@ public final class AssertingCodec extends FilterCodec {
   private final StoredFieldsFormat storedFields = new AssertingStoredFieldsFormat();
 
   public AssertingCodec() {
-    super("Asserting", new Lucene41Codec());
+    super("Asserting", new Lucene42Codec());
   }
 
   @Override

@@ -61,8 +61,8 @@ name of your codec.
   If you just want to customise the {@link org.apache.lucene.codecs.PostingsFormat}, or use different postings
   formats for different fields, then you can register your custom postings format in the same way (in
   META-INF/services/org.apache.lucene.codecs.PostingsFormat), and then extend the default
-  {@link org.apache.lucene.codecs.lucene41.Lucene41Codec} and override
-  {@link org.apache.lucene.codecs.lucene41.Lucene41Codec#getPostingsFormatForField(String)} to return your custom
+  {@link org.apache.lucene.codecs.lucene42.Lucene42Codec} and override
+  {@link org.apache.lucene.codecs.lucene42.Lucene42Codec#getPostingsFormatForField(String)} to return your custom
   postings format.
 </p>
 </body>

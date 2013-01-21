@@ -31,7 +31,7 @@ import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
-import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
+import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /**
@@ -43,9 +43,7 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
  * @see org.apache.lucene.codecs.lucene41 package documentation for file format details.
  * @lucene.experimental
  */
-// NOTE: if we make largish changes in a minor release, easier to just make Lucene42Codec or whatever
-// if they are backwards compatible or smallish we can probably do the backwards in the postingsreader
-// (it writes a minor version, etc).
+// nocommit: make readonly
 public class Lucene41Codec extends Codec {
   private final StoredFieldsFormat fieldsFormat = new Lucene41StoredFieldsFormat();
   private final TermVectorsFormat vectorsFormat = new Lucene40TermVectorsFormat();
@@ -57,14 +55,6 @@ public class Lucene41Codec extends Codec {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       return Lucene41Codec.this.getPostingsFormatForField(field);
-    }
-  };
-  
-  
-  private final DocValuesFormat simpleDocValuesFormat = new PerFieldDocValuesFormat() {
-    @Override
-    public DocValuesFormat getDocValuesFormatForField(String field) {
-      return Lucene41Codec.this.getDocValuesFormatForField(field);
     }
   };
 
@@ -112,28 +102,19 @@ public class Lucene41Codec extends Codec {
     return defaultFormat;
   }
   
-  /** Returns the docvalues format that should be used for writing 
-   *  new segments of <code>field</code>.
-   *  
-   *  The default implementation always returns "Lucene41"
-   */
-  public DocValuesFormat getDocValuesFormatForField(String field) {
-    return defaultDVFormat;
-  }
-  
   @Override
-  public DocValuesFormat docValuesFormat() {
-    return simpleDocValuesFormat;
+  public final DocValuesFormat docValuesFormat() {
+    return dvFormat;
   }
 
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
   // nocommit
-  private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene41");
-
-  private final NormsFormat simpleNormsFormat = new Lucene41NormsFormat();
+  private final DocValuesFormat dvFormat = DocValuesFormat.forName("Lucene42");
+  // nocommit
+  private final NormsFormat normsFormat = new Lucene42NormsFormat();
 
   @Override
-  public NormsFormat normsFormat() {
-    return simpleNormsFormat;
+  public final NormsFormat normsFormat() {
+    return normsFormat;
   }
 }

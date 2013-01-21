@@ -30,7 +30,7 @@ import org.apache.lucene.codecs.blockterms.FixedGapTermsIndexReader;
 import org.apache.lucene.codecs.blockterms.FixedGapTermsIndexWriter;
 import org.apache.lucene.codecs.blockterms.TermsIndexReaderBase;
 import org.apache.lucene.codecs.blockterms.TermsIndexWriterBase;
-import org.apache.lucene.codecs.lucene41.Lucene41Codec; // javadocs
+import org.apache.lucene.codecs.lucene41.Lucene41PostingsFormat; // javadocs
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsReader;
 import org.apache.lucene.codecs.lucene41.Lucene41PostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
@@ -41,7 +41,7 @@ import org.apache.lucene.util.BytesRef;
 // any PostingsBaseFormat and make it ord-able...
 
 /**
- * Customized version of {@link Lucene41Codec} that uses
+ * Customized version of {@link Lucene41PostingsFormat} that uses
  * {@link FixedGapTermsIndexWriter}.
  */
 public final class Lucene41WithOrds extends PostingsFormat {

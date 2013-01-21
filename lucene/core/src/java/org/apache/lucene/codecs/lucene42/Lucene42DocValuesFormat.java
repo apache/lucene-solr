@@ -1,4 +1,4 @@
-package org.apache.lucene.codecs.lucene41;
+package org.apache.lucene.codecs.lucene42;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,24 +21,28 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
-public class Lucene41NormsFormat extends NormsFormat {
+public class Lucene42DocValuesFormat extends DocValuesFormat {
+
+  public Lucene42DocValuesFormat() {
+    super("Lucene42");
+  }
 
   @Override
-  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene41DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
+  public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+    return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
   
   @Override
-  public DocValuesProducer normsProducer(SegmentReadState state) throws IOException {
-    return new Lucene41DocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
+  public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
+    return new Lucene42DocValuesProducer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
   
-  private static final String DATA_CODEC = "Lucene41NormsData";
-  private static final String DATA_EXTENSION = "nvd";
-  private static final String METADATA_CODEC = "Lucene41NormsMetadata";
-  private static final String METADATA_EXTENSION = "nvm";
+  private static final String DATA_CODEC = "Lucene42DocValuesData";
+  private static final String DATA_EXTENSION = "dvd";
+  private static final String METADATA_CODEC = "Lucene42DocValuesMetadata";
+  private static final String METADATA_EXTENSION = "dvm";
 }

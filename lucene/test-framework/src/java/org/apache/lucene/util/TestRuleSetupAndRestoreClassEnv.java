@@ -34,6 +34,7 @@ import org.apache.lucene.codecs.compressing.CompressingCodec;
 import org.apache.lucene.codecs.lucene40.Lucene40Codec;
 import org.apache.lucene.codecs.lucene40.Lucene40RWPostingsFormat;
 import org.apache.lucene.codecs.lucene41.Lucene41Codec;
+import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.index.RandomCodec;
@@ -133,7 +134,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     
     savedCodec = Codec.getDefault();
     int randomVal = random.nextInt(10);
-
+    // nocommit: add 41 impersonation
     if ("Lucene40".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
                                           "random".equals(TEST_POSTINGSFORMAT) &&
                                           randomVal < 2 &&
@@ -147,7 +148,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       } else {
         format = PostingsFormat.forName(TEST_POSTINGSFORMAT);
       }
-      codec = new Lucene41Codec() {       
+      codec = new Lucene42Codec() {       
         @Override
         public PostingsFormat getPostingsFormatForField(String field) {
           return format;
