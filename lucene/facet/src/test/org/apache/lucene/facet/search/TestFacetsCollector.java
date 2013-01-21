@@ -3,7 +3,7 @@ package org.apache.lucene.facet.search;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
@@ -53,7 +53,7 @@ public class TestFacetsCollector extends LuceneTestCase {
 
     TaxonomyWriter taxonomyWriter = new DirectoryTaxonomyWriter(taxoDir);
     IndexWriter iw = new IndexWriter(indexDir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new KeywordAnalyzer()));
+        TEST_VERSION_CURRENT, new MockAnalyzer(random())));
 
     FacetFields facetFields = new FacetFields(taxonomyWriter);
     for(int i = atLeast(2000); i > 0; --i) {

@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
@@ -102,8 +102,7 @@ public class FacetTestUtils {
     for (int i = 0; i < dirs.length; i++) {
       IndexTaxonomyWriterPair pair = new IndexTaxonomyWriterPair();
       pair.indexWriter = new IndexWriter(dirs[i][0], new IndexWriterConfig(
-          LuceneTestCase.TEST_VERSION_CURRENT, new StandardAnalyzer(
-              LuceneTestCase.TEST_VERSION_CURRENT)));
+          LuceneTestCase.TEST_VERSION_CURRENT, new MockAnalyzer(LuceneTestCase.random())));
       pair.taxWriter = new DirectoryTaxonomyWriter(dirs[i][1]);
       pair.indexWriter.commit();
       pair.taxWriter.commit();
