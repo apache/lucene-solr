@@ -210,11 +210,11 @@ public abstract class Sampler {
     double overSampleFactor = getSamplingParams().getOversampleFactor();
     if (overSampleFactor > 1) { // any factoring to do?
       List<FacetRequest> facetRequests = new ArrayList<FacetRequest>();
-      for (FacetRequest frq : original.getFacetRequests()) {
+      for (FacetRequest frq : original.facetRequests) {
         int overSampledNumResults = (int) Math.ceil(frq.getNumResults() * overSampleFactor);
         facetRequests.add(new OverSampledFacetRequest(frq, overSampledNumResults));
       }
-      res = new FacetSearchParams(facetRequests, original.getFacetIndexingParams());
+      res = new FacetSearchParams(facetRequests, original.indexingParams);
     }
     return res;
   }

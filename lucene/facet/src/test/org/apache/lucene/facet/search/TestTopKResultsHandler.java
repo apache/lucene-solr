@@ -89,7 +89,7 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       // do different facet counts and compare to control
       FacetSearchParams sParams = getFacetSearchParams(facetRequests, getFacetIndexingParams(partitionSize));
 
-      FacetsCollector fc = new FacetsCollector(sParams, indexReader, taxoReader) {
+      FacetsCollector fc = new StandardFacetsCollector(sParams, indexReader, taxoReader) {
         @Override
         protected FacetsAccumulator initFacetsAccumulator(FacetSearchParams facetSearchParams, IndexReader indexReader, TaxonomyReader taxonomyReader) {
           FacetsAccumulator fa = new StandardFacetsAccumulator(facetSearchParams, indexReader, taxonomyReader);
@@ -153,10 +153,10 @@ public class TestTopKResultsHandler extends BaseTestTopK {
 
       // do different facet counts and compare to control
       CategoryPath path = new CategoryPath("a", "b");
-      FacetSearchParams sParams = getFacetSearchParams(
-          getFacetIndexingParams(partitionSize), new CountFacetRequest(path, Integer.MAX_VALUE));
+      FacetSearchParams sParams = getFacetSearchParams(getFacetIndexingParams(partitionSize), 
+          new CountFacetRequest(path, Integer.MAX_VALUE));
 
-      FacetsCollector fc = new FacetsCollector(sParams, indexReader, taxoReader) {
+      FacetsCollector fc = new StandardFacetsCollector(sParams, indexReader, taxoReader) {
         @Override
         protected FacetsAccumulator initFacetsAccumulator(FacetSearchParams facetSearchParams, IndexReader indexReader, TaxonomyReader taxonomyReader) {
           FacetsAccumulator fa = new StandardFacetsAccumulator(facetSearchParams, indexReader, taxonomyReader);
@@ -176,7 +176,7 @@ public class TestTopKResultsHandler extends BaseTestTopK {
       FacetSearchParams sParams2 = getFacetSearchParams(
           getFacetIndexingParams(partitionSize), new CountFacetRequest(path, Integer.MAX_VALUE));
 
-      FacetsCollector fc2 = new FacetsCollector(sParams2, indexReader, taxoReader) {
+      FacetsCollector fc2 = new StandardFacetsCollector(sParams2, indexReader, taxoReader) {
         @Override
         protected FacetsAccumulator initFacetsAccumulator(FacetSearchParams facetSearchParams, IndexReader indexReader, TaxonomyReader taxonomyReader) {
           FacetsAccumulator fa = new StandardFacetsAccumulator(facetSearchParams, indexReader, taxonomyReader);
@@ -214,7 +214,7 @@ public class TestTopKResultsHandler extends BaseTestTopK {
           getFacetIndexingParams(partitionSize),
           new CountFacetRequest(path, 10));
 
-      FacetsCollector fc = new FacetsCollector(sParams, indexReader, taxoReader);
+      FacetsCollector fc = FacetsCollector.create(sParams, indexReader, taxoReader);
       
       searcher.search(new MatchAllDocsQuery(), fc);
       

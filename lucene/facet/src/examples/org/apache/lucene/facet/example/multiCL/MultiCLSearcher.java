@@ -109,8 +109,7 @@ public class MultiCLSearcher {
     // behavior - in those
     // situations other, more low-level interfaces are available, as
     // demonstrated in other search examples.
-    FacetsCollector facetsCollector = new FacetsCollector(
-        facetSearchParams, indexReader, taxo);
+    FacetsCollector facetsCollector = FacetsCollector.create(facetSearchParams, indexReader, taxo);
 
     // perform documents search and facets accumulation
     searcher.search(q, MultiCollector.wrap(topDocsCollector, facetsCollector));

@@ -3,22 +3,22 @@ package org.apache.lucene.facet.search.sampling;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-
-import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.facet.search.BaseTestTopK;
 import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.ScoredDocIDs;
 import org.apache.lucene.facet.search.ScoredDocIdCollector;
+import org.apache.lucene.facet.search.StandardFacetsCollector;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest.ResultMode;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.MultiCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -48,7 +48,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
   @Override
   protected FacetSearchParams searchParamsWithRequests(int numResults, int partitionSize) {
     FacetSearchParams res = super.searchParamsWithRequests(numResults, partitionSize);
-    for (FacetRequest req : res.getFacetRequests()) {
+    for (FacetRequest req : res.facetRequests) {
       // randomize the way we aggregate results
       if (random().nextBoolean()) {
         req.setResultMode(ResultMode.GLOBAL_FLAT);
@@ -78,7 +78,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
         ScoredDocIdCollector docCollector = ScoredDocIdCollector.create(indexReader.maxDoc(), false);
         
         FacetSearchParams expectedSearchParams = searchParamsWithRequests(K, partitionSize); 
-        FacetsCollector fc = new FacetsCollector(expectedSearchParams, indexReader, taxoReader);
+        FacetsCollector fc = FacetsCollector.create(expectedSearchParams, indexReader, taxoReader);
         
         searcher.search(q, MultiCollector.wrap(docCollector, fc));
         
@@ -120,7 +120,7 @@ public abstract class BaseSampleTestTopK extends BaseTestTopK {
   
   private FacetsCollector samplingCollector(final boolean complement, final Sampler sampler,
       FacetSearchParams samplingSearchParams) {
-    FacetsCollector samplingFC = new FacetsCollector(samplingSearchParams, indexReader, taxoReader) {
+    FacetsCollector samplingFC = new StandardFacetsCollector(samplingSearchParams, indexReader, taxoReader) {
       @Override
       protected FacetsAccumulator initFacetsAccumulator(FacetSearchParams facetSearchParams, IndexReader indexReader,
           TaxonomyReader taxonomyReader) {

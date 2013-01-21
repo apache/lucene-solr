@@ -104,9 +104,9 @@ public class SimpleSearcher {
     }
     
     // Faceted search parameters indicate which facets are we interested in
-    FacetSearchParams facetSearchParams = new FacetSearchParams(Arrays.asList(facetRequests), indexingParams);
+    FacetSearchParams facetSearchParams = new FacetSearchParams(indexingParams, facetRequests);
 
-    FacetsCollector facetsCollector = new FacetsCollector(facetSearchParams, indexReader, taxoReader);
+    FacetsCollector facetsCollector = FacetsCollector.create(facetSearchParams, indexReader, taxoReader);
 
     // perform documents search and facets accumulation
     searcher.search(q, MultiCollector.wrap(topDocsCollector, facetsCollector));

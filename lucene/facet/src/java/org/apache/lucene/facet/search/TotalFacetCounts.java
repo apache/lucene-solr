@@ -8,9 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.facet.index.params.CategoryListParams;
@@ -150,14 +148,13 @@ public class TotalFacetCounts {
   }
   
   // needed because FacetSearchParams do not allow empty FacetRequests
-  private static final List<FacetRequest> DUMMY_REQ = Arrays.asList(
-      new FacetRequest[] { new CountFacetRequest(CategoryPath.EMPTY, 1) });
+  private static final FacetRequest DUMMY_REQ = new CountFacetRequest(CategoryPath.EMPTY, 1);
 
   static TotalFacetCounts compute(final IndexReader indexReader, final TaxonomyReader taxonomy, 
       final FacetIndexingParams facetIndexingParams) throws IOException {
     int partitionSize = PartitionsUtils.partitionSize(facetIndexingParams, taxonomy);
     final int[][] counts = new int[(int) Math.ceil(taxonomy.getSize()  /(float) partitionSize)][partitionSize];
-    FacetSearchParams newSearchParams = new FacetSearchParams(DUMMY_REQ, facetIndexingParams); 
+    FacetSearchParams newSearchParams = new FacetSearchParams(facetIndexingParams, DUMMY_REQ); 
       //createAllListsSearchParams(facetIndexingParams,  this.totalCounts);
     FacetsAccumulator fe = new StandardFacetsAccumulator(newSearchParams, indexReader, taxonomy) {
       @Override
