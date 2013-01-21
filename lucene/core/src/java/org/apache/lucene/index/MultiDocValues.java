@@ -53,7 +53,7 @@ public class MultiDocValues {
       }
     }
 
-    // assert anyReal; // nocommit: unsafe until 4.0 is done
+    assert anyReal;
 
     return new NumericDocValues() {
       @Override
@@ -65,7 +65,7 @@ public class MultiDocValues {
         } catch (IOException ioe) {
           throw new RuntimeException(ioe);
         }
-        if (norms == null) { // WTF? should be EMPTY?
+        if (norms == null) {
           return 0;
         } else {
           return norms.get(docID - leaves.get(subIndex).docBase);

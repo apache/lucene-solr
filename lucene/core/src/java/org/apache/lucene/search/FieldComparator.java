@@ -84,7 +84,6 @@ import org.apache.lucene.util.BytesRef;
  * @lucene.experimental
  */
 public abstract class FieldComparator<T> {
-  // nocommit remove the doc values comparators
 
   /**
    * Compare hit at slot1 with hit at slot2.

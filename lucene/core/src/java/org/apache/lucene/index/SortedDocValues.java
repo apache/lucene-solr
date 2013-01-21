@@ -17,10 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Comparator;
-
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 public abstract class SortedDocValues extends BinaryDocValues {
@@ -40,14 +36,6 @@ public abstract class SortedDocValues extends BinaryDocValues {
       lookupOrd(ord, result);
     }
   }
-
-  // nocommit make this final, and impl seekExact(term) to
-  // fwd to lookupTerm
-
-  // nocommit should we nuke this?  the iterator can be
-  // efficiently built "on top" since ord is part of the
-  // API?  why must it be impl'd here...?
-  // SortedDocValuesTermsEnum.
 
   public static final SortedDocValues EMPTY = new SortedDocValues() {
     @Override

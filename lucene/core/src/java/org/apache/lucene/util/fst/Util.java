@@ -113,8 +113,10 @@ public final class Util {
     return getByOutput(fst, targetOutput, in, arc, scratchArc, result);
   }
     
-  /** Expert: like {@link Util#getByOutput(FST, long)} except reusing */
-  // nocommit
+  /** 
+   * Expert: like {@link Util#getByOutput(FST, long)} except reusing 
+   * BytesReader, initial and scratch Arc, and result.
+   */
   public static IntsRef getByOutput(FST<Long> fst, long targetOutput, BytesReader in, Arc<Long> arc, Arc<Long> scratchArc, IntsRef result) throws IOException {
     long output = arc.output;
     int upto = 0;

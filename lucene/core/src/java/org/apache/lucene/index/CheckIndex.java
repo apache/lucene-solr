@@ -676,7 +676,7 @@ public class CheckIndex {
       }
       for (FieldInfo info : reader.getFieldInfos()) {
         if (info.hasNorms()) {
-          checkSimpleNorms(info, reader, infoStream);
+          checkNorms(info, reader, infoStream);
           ++status.totFields;
         } else {
           if (reader.getNormValues(info.name) != null) {
@@ -1262,7 +1262,7 @@ public class CheckIndex {
       for (FieldInfo fieldInfo : reader.getFieldInfos()) {
         if (fieldInfo.hasDocValues()) {
           status.totalValueFields++;
-          checkSimpleDocValues(fieldInfo, reader, infoStream);
+          checkDocValues(fieldInfo, reader, infoStream);
         } else {
           if (reader.getBinaryDocValues(fieldInfo.name) != null ||
               reader.getNumericDocValues(fieldInfo.name) != null ||
@@ -1284,10 +1284,6 @@ public class CheckIndex {
   }
   
   private static void checkBinaryDocValues(String fieldName, AtomicReader reader, BinaryDocValues dv) {
-    // nocommit remove this:
-    if (dv == null) {
-      return;
-    }
     // nocommit what else to check ...
     BytesRef scratch = new BytesRef();
     for (int i = 0; i < reader.maxDoc(); i++) {
@@ -1296,10 +1292,6 @@ public class CheckIndex {
   }
   
   private static void checkSortedDocValues(String fieldName, AtomicReader reader, SortedDocValues dv) {
-    // nocommit remove this:
-    if (dv == null) {
-      return;
-    }
     checkBinaryDocValues(fieldName, reader, dv);
     final int maxOrd = dv.getValueCount()-1;
     FixedBitSet seenOrds = new FixedBitSet(dv.getValueCount());
@@ -1332,23 +1324,13 @@ public class CheckIndex {
   }
   
   private static void checkNumericDocValues(String fieldName, AtomicReader reader, NumericDocValues ndv) {
-    // nocommit remove this:
-    if (ndv == null) {
-      return;
-    }
     // nocommit what else to check!
     for (int i = 0; i < reader.maxDoc(); i++) {
       ndv.get(i);
     }
   }
   
-  // nocommit
-  public static void checkSimpleDocValues(FieldInfo fi, AtomicReader reader, PrintStream infoStream) throws Exception {
-    // nocommit: just for debugging
-    Map<String,String> atts = fi.attributes();
-    if (atts != null) {
-      msg(infoStream, "  field: " + fi.name + ": " + atts);
-    }
+  private static void checkDocValues(FieldInfo fi, AtomicReader reader, PrintStream infoStream) throws Exception {
     switch(fi.getDocValuesType()) {
       case SORTED:
         checkSortedDocValues(fi.name, reader, reader.getSortedDocValues(fi.name));
@@ -1364,8 +1346,7 @@ public class CheckIndex {
     }
   }
   
-  // nocommit
-  public static void checkSimpleNorms(FieldInfo fi, AtomicReader reader, PrintStream infoStream) throws IOException {
+  private static void checkNorms(FieldInfo fi, AtomicReader reader, PrintStream infoStream) throws IOException {
     switch(fi.getNormType()) {
       case NUMERIC:
         checkNumericDocValues(fi.name, reader, reader.getNormValues(fi.name));
