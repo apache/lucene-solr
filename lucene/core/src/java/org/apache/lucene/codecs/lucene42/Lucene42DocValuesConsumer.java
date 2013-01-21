@@ -37,7 +37,6 @@ import org.apache.lucene.util.fst.FST.INPUT_TYPE;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.PackedInts;
-import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
 
 /**
  * Writes numbers one of two ways:
@@ -143,8 +142,7 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
 
     data.writeLong(minValue);
 
-    FormatAndBits formatAndBits = PackedInts.fastestFormatAndBits(count, bitsPerValue, PackedInts.COMPACT);   
-    final PackedInts.Writer writer = PackedInts.getWriter(data, count, formatAndBits.bitsPerValue, 0);
+    final PackedInts.Writer writer = PackedInts.getWriter(data, count, bitsPerValue, PackedInts.COMPACT);
     for(Number nv : values) {
       writer.add(nv.longValue() - minValue);
     }
