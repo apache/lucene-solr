@@ -82,13 +82,34 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
               startingGun.await();
               int iters = atLeast(1000);
               BytesRef scratch = new BytesRef();
+              BytesRef scratch2 = new BytesRef();
               for(int iter=0;iter<iters;iter++) {
                 int docID = threadRandom.nextInt(numDocs);
-                assertEquals(numbers.get(docID).longValue(), ndv.get(docID));
+                switch(threadRandom.nextInt(6)) {
+                case 0:
+                  assertEquals((byte) numbers.get(docID).longValue(), FieldCache.DEFAULT.getBytes(ar, "number", false).get(docID));
+                  break;
+                case 1:
+                  assertEquals((short) numbers.get(docID).longValue(), FieldCache.DEFAULT.getShorts(ar, "number", false).get(docID));
+                  break;
+                case 2:
+                  assertEquals((int) numbers.get(docID).longValue(), FieldCache.DEFAULT.getInts(ar, "number", false).get(docID));
+                  break;
+                case 3:
+                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getLongs(ar, "number", false).get(docID));
+                  break;
+                case 4:
+                  assertEquals(Float.intBitsToFloat((int) numbers.get(docID).longValue()), FieldCache.DEFAULT.getFloats(ar, "number", false).get(docID), 0.0f);
+                  break;
+                case 5:
+                  assertEquals(Double.longBitsToDouble(numbers.get(docID).longValue()), FieldCache.DEFAULT.getDoubles(ar, "number", false).get(docID), 0.0);
+                  break;
+                }
                 bdv.get(docID, scratch);
                 assertEquals(binary.get(docID), scratch);
-                sdv.get(docID, scratch);
-                assertEquals(sorted.get(docID), scratch);
+                // Cannot share a single scratch against two "sources":
+                sdv.get(docID, scratch2);
+                assertEquals(sorted.get(docID), scratch2);
               }
             } catch (Exception e) {
               throw new RuntimeException(e);

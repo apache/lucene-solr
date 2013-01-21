@@ -21,6 +21,12 @@ import org.apache.lucene.util.BytesRef;
 
 public abstract class BinaryDocValues {
 
+  /** Lookup the value for document.
+   *
+   *  <p><b>NOTE</b>: you should not share the provided
+   *  {@link BytesRef} result with other doc values sources
+   *  (other BinaryDocValues or SortedDocValues): a single
+   *  "private" instance should be used for each source. */
   public abstract void get(int docID, BytesRef result);
 
   public static final byte[] MISSING = new byte[0];

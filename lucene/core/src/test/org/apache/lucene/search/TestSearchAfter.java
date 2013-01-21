@@ -41,7 +41,7 @@ import org.apache.lucene.util._TestUtil;
 /**
  * Tests IndexSearcher's searchAfter() method
  */
-
+// nocommit fail w/ OOME?: ant test  -Dtestcase=TestSearchAfter -Dtests.method=testQueries -Dtests.seed=98B4DA915983D1AE -Dtests.slow=true -Dtests.locale=sr -Dtests.timezone=Etc/GMT+2 -Dtests.file.encoding=UTF-8
 public class TestSearchAfter extends LuceneTestCase {
   private Directory dir;
   private IndexReader reader;

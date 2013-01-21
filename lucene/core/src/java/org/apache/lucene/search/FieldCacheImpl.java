@@ -370,7 +370,19 @@ class FieldCacheImpl implements FieldCache {
   // inherit javadocs
   public Bytes getBytes(AtomicReader reader, String field, ByteParser parser, boolean setDocsWithField)
       throws IOException {
-    return (Bytes) caches.get(Byte.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
+    final NumericDocValues valuesIn = reader.getNumericDocValues(field);
+    if (valuesIn != null) {
+      // Not cached here by FieldCacheImpl (cached instead
+      // per-thread by SegmentReader):
+      return new Bytes() {
+        @Override
+        public byte get(int docID) {
+          return (byte) valuesIn.get(docID);
+        }
+      };
+    } else {
+      return (Bytes) caches.get(Byte.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
+    }
   }
 
   // nocommit move up?
@@ -396,50 +408,39 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      final NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
-      if (valuesIn != null) {
-        return new Bytes() {
+      int maxDoc = reader.maxDoc();
+      final byte[] values;
+      final ByteParser parser = (ByteParser) key.custom;
+      if (parser == null) {
+        // Confusing: must delegate to wrapper (vs simply
+        // setting parser = DEFAULT_SHORT_PARSER) so cache
+        // key includes DEFAULT_SHORT_PARSER:
+        return wrapper.getBytes(reader, key.field, DEFAULT_BYTE_PARSER, setDocsWithField);
+      }
+
+      values = new byte[maxDoc];
+
+      Uninvert u = new Uninvert() {
+          private byte currentValue;
+
           @Override
-          public byte get(int docID) {
-            return (byte) valuesIn.get(docID);
+          public void visitTerm(BytesRef term) {
+            currentValue = parser.parseByte(term);
+          }
+
+          @Override
+          public void visitDoc(int docID) {
+            values[docID] = currentValue;
           }
         };
-      } else {
 
-        int maxDoc = reader.maxDoc();
-        final byte[] values;
-        final ByteParser parser = (ByteParser) key.custom;
-        if (parser == null) {
-          // Confusing: must delegate to wrapper (vs simply
-          // setting parser = DEFAULT_SHORT_PARSER) so cache
-          // key includes DEFAULT_SHORT_PARSER:
-          return wrapper.getBytes(reader, key.field, DEFAULT_BYTE_PARSER, setDocsWithField);
-        }
+      u.uninvert(reader, key.field, setDocsWithField);
 
-        values = new byte[maxDoc];
-
-        Uninvert u = new Uninvert() {
-            private byte currentValue;
-
-            @Override
-            public void visitTerm(BytesRef term) {
-              currentValue = parser.parseByte(term);
-            }
-
-            @Override
-            public void visitDoc(int docID) {
-              values[docID] = currentValue;
-            }
-          };
-
-        u.uninvert(reader, key.field, setDocsWithField);
-
-        if (setDocsWithField) {
-          wrapper.setDocsWithField(reader, key.field, u.docsWithField);
-        }
-
-        return new BytesFromArray(values);
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, key.field, u.docsWithField);
       }
+
+      return new BytesFromArray(values);
     }
   }
   
@@ -451,7 +452,19 @@ class FieldCacheImpl implements FieldCache {
   // inherit javadocs
   public Shorts getShorts(AtomicReader reader, String field, ShortParser parser, boolean setDocsWithField)
       throws IOException {
-    return (Shorts) caches.get(Short.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
+    final NumericDocValues valuesIn = reader.getNumericDocValues(field);
+    if (valuesIn != null) {
+      // Not cached here by FieldCacheImpl (cached instead
+      // per-thread by SegmentReader):
+      return new Shorts() {
+        @Override
+        public short get(int docID) {
+          return (short) valuesIn.get(docID);
+        }
+      };
+    } else {
+      return (Shorts) caches.get(Short.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
+    }
   }
 
   // nocommit move up?
@@ -477,47 +490,37 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      final NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
-      if (valuesIn != null) {
-        return new Shorts() {
+      int maxDoc = reader.maxDoc();
+      final short[] values;
+      final ShortParser parser = (ShortParser) key.custom;
+      if (parser == null) {
+        // Confusing: must delegate to wrapper (vs simply
+        // setting parser = DEFAULT_SHORT_PARSER) so cache
+        // key includes DEFAULT_SHORT_PARSER:
+        return wrapper.getShorts(reader, key.field, DEFAULT_SHORT_PARSER, setDocsWithField);
+      }
+
+      values = new short[maxDoc];
+      Uninvert u = new Uninvert() {
+          private short currentValue;
+
           @Override
-          public short get(int docID) {
-            return (short) valuesIn.get(docID);
+          public void visitTerm(BytesRef term) {
+            currentValue = parser.parseShort(term);
+          }
+
+          @Override
+          public void visitDoc(int docID) {
+            values[docID] = currentValue;
           }
         };
-      } else {
-        int maxDoc = reader.maxDoc();
-        final short[] values;
-        final ShortParser parser = (ShortParser) key.custom;
-        if (parser == null) {
-          // Confusing: must delegate to wrapper (vs simply
-          // setting parser = DEFAULT_SHORT_PARSER) so cache
-          // key includes DEFAULT_SHORT_PARSER:
-          return wrapper.getShorts(reader, key.field, DEFAULT_SHORT_PARSER, setDocsWithField);
-        }
 
-        values = new short[maxDoc];
-        Uninvert u = new Uninvert() {
-            private short currentValue;
+      u.uninvert(reader, key.field, setDocsWithField);
 
-            @Override
-            public void visitTerm(BytesRef term) {
-              currentValue = parser.parseShort(term);
-            }
-
-            @Override
-            public void visitDoc(int docID) {
-              values[docID] = currentValue;
-            }
-          };
-
-        u.uninvert(reader, key.field, setDocsWithField);
-
-        if (setDocsWithField) {
-          wrapper.setDocsWithField(reader, key.field, u.docsWithField);
-        }
-        return new ShortsFromArray(values);
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, key.field, u.docsWithField);
       }
+      return new ShortsFromArray(values);
     }
   }
 
@@ -529,7 +532,19 @@ class FieldCacheImpl implements FieldCache {
   // inherit javadocs
   public Ints getInts(AtomicReader reader, String field, IntParser parser, boolean setDocsWithField)
       throws IOException {
-    return (Ints) caches.get(Integer.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
+    final NumericDocValues valuesIn = reader.getNumericDocValues(field);
+    if (valuesIn != null) {
+      // Not cached here by FieldCacheImpl (cached instead
+      // per-thread by SegmentReader):
+      return new Ints() {
+        @Override
+        public int get(int docID) {
+          return (int) valuesIn.get(docID);
+        }
+      };
+    } else {
+      return (Ints) caches.get(Integer.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
+    }
   }
 
   // nocommit move up?
@@ -555,55 +570,45 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      final NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
-      if (valuesIn != null) {
-        return new Ints() {
+      final int[] values;
+      final IntParser parser = (IntParser) key.custom;
+      if (parser == null) {
+        // Confusing: must delegate to wrapper (vs simply
+        // setting parser =
+        // DEFAULT_INT_PARSER/NUMERIC_UTILS_INT_PARSER) so
+        // cache key includes
+        // DEFAULT_INT_PARSER/NUMERIC_UTILS_INT_PARSER:
+        try {
+          return wrapper.getInts(reader, key.field, DEFAULT_INT_PARSER, setDocsWithField);
+        } catch (NumberFormatException ne) {
+          return wrapper.getInts(reader, key.field, NUMERIC_UTILS_INT_PARSER, setDocsWithField);
+        }
+      }
+
+      // nocommit how to avoid double alloc in numeric field
+      // case ...
+      values = new int[reader.maxDoc()];
+
+      Uninvert u = new Uninvert() {
+          private int currentValue;
+
           @Override
-          public int get(int docID) {
-            return (int) valuesIn.get(docID);
+          public void visitTerm(BytesRef term) {
+            currentValue = parser.parseInt(term);
+          }
+
+          @Override
+          public void visitDoc(int docID) {
+            values[docID] = currentValue;
           }
         };
-      } else {
-        final int[] values;
-        final IntParser parser = (IntParser) key.custom;
-        if (parser == null) {
-          // Confusing: must delegate to wrapper (vs simply
-          // setting parser =
-          // DEFAULT_INT_PARSER/NUMERIC_UTILS_INT_PARSER) so
-          // cache key includes
-          // DEFAULT_INT_PARSER/NUMERIC_UTILS_INT_PARSER:
-          try {
-            return wrapper.getInts(reader, key.field, DEFAULT_INT_PARSER, setDocsWithField);
-          } catch (NumberFormatException ne) {
-            return wrapper.getInts(reader, key.field, NUMERIC_UTILS_INT_PARSER, setDocsWithField);
-          }
-        }
 
-        // nocommit how to avoid double alloc in numeric field
-        // case ...
-        values = new int[reader.maxDoc()];
+      u.uninvert(reader, key.field, setDocsWithField);
 
-        Uninvert u = new Uninvert() {
-            private int currentValue;
-
-            @Override
-            public void visitTerm(BytesRef term) {
-              currentValue = parser.parseInt(term);
-            }
-
-            @Override
-            public void visitDoc(int docID) {
-              values[docID] = currentValue;
-            }
-          };
-
-        u.uninvert(reader, key.field, setDocsWithField);
-
-        if (setDocsWithField) {
-          wrapper.setDocsWithField(reader, key.field, u.docsWithField);
-        }
-        return new IntsFromArray(values);
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, key.field, u.docsWithField);
       }
+      return new IntsFromArray(values);
     }
   }
 
@@ -679,7 +684,19 @@ class FieldCacheImpl implements FieldCache {
   // inherit javadocs
   public Floats getFloats(AtomicReader reader, String field, FloatParser parser, boolean setDocsWithField)
     throws IOException {
-    return (Floats) caches.get(Float.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
+    final NumericDocValues valuesIn = reader.getNumericDocValues(field);
+    if (valuesIn != null) {
+      // Not cached here by FieldCacheImpl (cached instead
+      // per-thread by SegmentReader):
+      return new Floats() {
+        @Override
+        public float get(int docID) {
+          return Float.intBitsToFloat((int) valuesIn.get(docID));
+        }
+      };
+    } else {
+      return (Floats) caches.get(Float.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
+    }
   }
 
   // nocommit move up?
@@ -705,56 +722,46 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      final NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
-      if (valuesIn != null) {
-        return new Floats() {
+      final float[] values;
+      final FloatParser parser = (FloatParser) key.custom;
+      if (parser == null) {
+        // Confusing: must delegate to wrapper (vs simply
+        // setting parser =
+        // DEFAULT_FLOAT_PARSER/NUMERIC_UTILS_FLOAT_PARSER) so
+        // cache key includes
+        // DEFAULT_FLOAT_PARSER/NUMERIC_UTILS_FLOAT_PARSER:
+        try {
+          return wrapper.getFloats(reader, key.field, DEFAULT_FLOAT_PARSER, setDocsWithField);
+        } catch (NumberFormatException ne) {
+          return wrapper.getFloats(reader, key.field, NUMERIC_UTILS_FLOAT_PARSER, setDocsWithField);
+        }
+      }
+
+      // nocommit how to avoid double alloc in numeric field
+      // case ...
+      values = new float[reader.maxDoc()];
+
+      Uninvert u = new Uninvert() {
+          private float currentValue;
+
           @Override
-          public float get(int docID) {
-            return Float.intBitsToFloat((int) valuesIn.get(docID));
+          public void visitTerm(BytesRef term) {
+            currentValue = parser.parseFloat(term);
+          }
+
+          @Override
+          public void visitDoc(int docID) {
+            values[docID] = currentValue;
           }
         };
-      } else {
-        final float[] values;
-        final FloatParser parser = (FloatParser) key.custom;
-        if (parser == null) {
-          // Confusing: must delegate to wrapper (vs simply
-          // setting parser =
-          // DEFAULT_FLOAT_PARSER/NUMERIC_UTILS_FLOAT_PARSER) so
-          // cache key includes
-          // DEFAULT_FLOAT_PARSER/NUMERIC_UTILS_FLOAT_PARSER:
-          try {
-            return wrapper.getFloats(reader, key.field, DEFAULT_FLOAT_PARSER, setDocsWithField);
-          } catch (NumberFormatException ne) {
-            return wrapper.getFloats(reader, key.field, NUMERIC_UTILS_FLOAT_PARSER, setDocsWithField);
-          }
-        }
 
-        // nocommit how to avoid double alloc in numeric field
-        // case ...
-        values = new float[reader.maxDoc()];
+      u.uninvert(reader, key.field, setDocsWithField);
 
-        Uninvert u = new Uninvert() {
-            private float currentValue;
-
-            @Override
-            public void visitTerm(BytesRef term) {
-              currentValue = parser.parseFloat(term);
-            }
-
-            @Override
-            public void visitDoc(int docID) {
-              values[docID] = currentValue;
-            }
-          };
-
-        u.uninvert(reader, key.field, setDocsWithField);
-
-        if (setDocsWithField) {
-          wrapper.setDocsWithField(reader, key.field, u.docsWithField);
-        }
-
-        return new FloatsFromArray(values);
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, key.field, u.docsWithField);
       }
+
+      return new FloatsFromArray(values);
     }
   }
 
@@ -766,7 +773,19 @@ class FieldCacheImpl implements FieldCache {
   // inherit javadocs
   public Longs getLongs(AtomicReader reader, String field, FieldCache.LongParser parser, boolean setDocsWithField)
       throws IOException {
-    return (Longs) caches.get(Long.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
+    final NumericDocValues valuesIn = reader.getNumericDocValues(field);
+    if (valuesIn != null) {
+      // Not cached here by FieldCacheImpl (cached instead
+      // per-thread by SegmentReader):
+      return new Longs() {
+        @Override
+        public long get(int docID) {
+          return valuesIn.get(docID);
+        }
+      };
+    } else {
+      return (Longs) caches.get(Long.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
+    }
   }
 
   // nocommit move up?
@@ -792,55 +811,45 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      final NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
-      if (valuesIn != null) {
-        return new Longs() {
+      final long[] values;
+      final LongParser parser = (LongParser) key.custom;
+      if (parser == null) {
+        // Confusing: must delegate to wrapper (vs simply
+        // setting parser =
+        // DEFAULT_LONG_PARSER/NUMERIC_UTILS_LONG_PARSER) so
+        // cache key includes
+        // DEFAULT_LONG_PARSER/NUMERIC_UTILS_LONG_PARSER:
+        try {
+          return wrapper.getLongs(reader, key.field, DEFAULT_LONG_PARSER, setDocsWithField);
+        } catch (NumberFormatException ne) {
+          return wrapper.getLongs(reader, key.field, NUMERIC_UTILS_LONG_PARSER, setDocsWithField);
+        }
+      }
+
+      // nocommit how to avoid double alloc in numeric field
+      // case ...
+      values = new long[reader.maxDoc()];
+
+      Uninvert u = new Uninvert() {
+          private long currentValue;
+
           @Override
-          public long get(int docID) {
-            return valuesIn.get(docID);
+          public void visitTerm(BytesRef term) {
+            currentValue = parser.parseLong(term);
+          }
+
+          @Override
+          public void visitDoc(int docID) {
+            values[docID] = currentValue;
           }
         };
-      } else {
-        final long[] values;
-        final LongParser parser = (LongParser) key.custom;
-        if (parser == null) {
-          // Confusing: must delegate to wrapper (vs simply
-          // setting parser =
-          // DEFAULT_LONG_PARSER/NUMERIC_UTILS_LONG_PARSER) so
-          // cache key includes
-          // DEFAULT_LONG_PARSER/NUMERIC_UTILS_LONG_PARSER:
-          try {
-            return wrapper.getLongs(reader, key.field, DEFAULT_LONG_PARSER, setDocsWithField);
-          } catch (NumberFormatException ne) {
-            return wrapper.getLongs(reader, key.field, NUMERIC_UTILS_LONG_PARSER, setDocsWithField);
-          }
-        }
 
-        // nocommit how to avoid double alloc in numeric field
-        // case ...
-        values = new long[reader.maxDoc()];
+      u.uninvert(reader, key.field, setDocsWithField);
 
-        Uninvert u = new Uninvert() {
-            private long currentValue;
-
-            @Override
-            public void visitTerm(BytesRef term) {
-              currentValue = parser.parseLong(term);
-            }
-
-            @Override
-            public void visitDoc(int docID) {
-              values[docID] = currentValue;
-            }
-          };
-
-        u.uninvert(reader, key.field, setDocsWithField);
-
-        if (setDocsWithField) {
-          wrapper.setDocsWithField(reader, key.field, u.docsWithField);
-        }
-        return new LongsFromArray(values);
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, key.field, u.docsWithField);
       }
+      return new LongsFromArray(values);
     }
   }
 
@@ -853,7 +862,19 @@ class FieldCacheImpl implements FieldCache {
   // inherit javadocs
   public Doubles getDoubles(AtomicReader reader, String field, FieldCache.DoubleParser parser, boolean setDocsWithField)
       throws IOException {
-    return (Doubles) caches.get(Double.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
+    final NumericDocValues valuesIn = reader.getNumericDocValues(field);
+    if (valuesIn != null) {
+      // Not cached here by FieldCacheImpl (cached instead
+      // per-thread by SegmentReader):
+      return new Doubles() {
+        @Override
+        public double get(int docID) {
+          return Double.longBitsToDouble(valuesIn.get(docID));
+        }
+      };
+    } else {
+      return (Doubles) caches.get(Double.TYPE).get(reader, new CacheKey(field, parser), setDocsWithField);
+    }
   }
 
   // nocommit move up?
@@ -879,55 +900,45 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      final NumericDocValues valuesIn = reader.getNumericDocValues(key.field);
-      if (valuesIn != null) {
-        return new Doubles() {
+      final double[] values;
+      final DoubleParser parser = (DoubleParser) key.custom;
+      if (parser == null) {
+        // Confusing: must delegate to wrapper (vs simply
+        // setting parser =
+        // DEFAULT_DOUBLE_PARSER/NUMERIC_UTILS_DOUBLE_PARSER) so
+        // cache key includes
+        // DEFAULT_DOUBLE_PARSER/NUMERIC_UTILS_DOUBLE_PARSER:
+        try {
+          return wrapper.getDoubles(reader, key.field, DEFAULT_DOUBLE_PARSER, setDocsWithField);
+        } catch (NumberFormatException ne) {
+          return wrapper.getDoubles(reader, key.field, NUMERIC_UTILS_DOUBLE_PARSER, setDocsWithField);
+        }
+      }
+
+      // nocommit how to avoid double alloc in numeric field
+      // case ...
+      values = new double[reader.maxDoc()];
+
+      Uninvert u = new Uninvert() {
+          private double currentValue;
+
           @Override
-          public double get(int docID) {
-            return Double.longBitsToDouble(valuesIn.get(docID));
+          public void visitTerm(BytesRef term) {
+            currentValue = parser.parseDouble(term);
+          }
+
+          @Override
+          public void visitDoc(int docID) {
+            values[docID] = currentValue;
           }
         };
-      } else {
-        final double[] values;
-        final DoubleParser parser = (DoubleParser) key.custom;
-        if (parser == null) {
-          // Confusing: must delegate to wrapper (vs simply
-          // setting parser =
-          // DEFAULT_DOUBLE_PARSER/NUMERIC_UTILS_DOUBLE_PARSER) so
-          // cache key includes
-          // DEFAULT_DOUBLE_PARSER/NUMERIC_UTILS_DOUBLE_PARSER:
-          try {
-            return wrapper.getDoubles(reader, key.field, DEFAULT_DOUBLE_PARSER, setDocsWithField);
-          } catch (NumberFormatException ne) {
-            return wrapper.getDoubles(reader, key.field, NUMERIC_UTILS_DOUBLE_PARSER, setDocsWithField);
-          }
-        }
 
-        // nocommit how to avoid double alloc in numeric field
-        // case ...
-        values = new double[reader.maxDoc()];
+      u.uninvert(reader, key.field, setDocsWithField);
 
-        Uninvert u = new Uninvert() {
-            private double currentValue;
-
-            @Override
-            public void visitTerm(BytesRef term) {
-              currentValue = parser.parseDouble(term);
-            }
-
-            @Override
-            public void visitDoc(int docID) {
-              values[docID] = currentValue;
-            }
-          };
-
-        u.uninvert(reader, key.field, setDocsWithField);
-
-        if (setDocsWithField) {
-          wrapper.setDocsWithField(reader, key.field, u.docsWithField);
-        }
-        return new DoublesFromArray(values);
+      if (setDocsWithField) {
+        wrapper.setDocsWithField(reader, key.field, u.docsWithField);
       }
+      return new DoublesFromArray(values);
     }
   }
 
@@ -1118,7 +1129,14 @@ class FieldCacheImpl implements FieldCache {
   }
 
   public SortedDocValues getTermsIndex(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException {
-    return (SortedDocValues) caches.get(SortedDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
+    SortedDocValues valuesIn = reader.getSortedDocValues(field);
+    if (valuesIn != null) {
+      // Not cached here by FieldCacheImpl (cached instead
+      // per-thread by SegmentReader):
+      return valuesIn;
+    } else {
+      return (SortedDocValues) caches.get(SortedDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
+    }
   }
 
   static class SortedDocValuesCache extends Cache {
@@ -1131,107 +1149,99 @@ class FieldCacheImpl implements FieldCache {
         throws IOException {
 
       final int maxDoc = reader.maxDoc();
-      SortedDocValues valuesIn = reader.getSortedDocValues(key.field);
-      if (valuesIn != null) {
-        // nocommit we need thread DV test that would
-        // uncover this bug!!
-        // nocommit we should not cache in this case?
-        return valuesIn;
+
+      Terms terms = reader.terms(key.field);
+
+      final float acceptableOverheadRatio = ((Float) key.custom).floatValue();
+
+      final PagedBytes bytes = new PagedBytes(15);
+
+      int startBytesBPV;
+      int startTermsBPV;
+      int startNumUniqueTerms;
+
+      final int termCountHardLimit;
+      if (maxDoc == Integer.MAX_VALUE) {
+        termCountHardLimit = Integer.MAX_VALUE;
       } else {
+        termCountHardLimit = maxDoc+1;
+      }
 
-        Terms terms = reader.terms(key.field);
-
-        final float acceptableOverheadRatio = ((Float) key.custom).floatValue();
-
-        final PagedBytes bytes = new PagedBytes(15);
-
-        int startBytesBPV;
-        int startTermsBPV;
-        int startNumUniqueTerms;
-
-        final int termCountHardLimit;
-        if (maxDoc == Integer.MAX_VALUE) {
-          termCountHardLimit = Integer.MAX_VALUE;
-        } else {
-          termCountHardLimit = maxDoc+1;
-        }
-
-        // TODO: use Uninvert?
-        if (terms != null) {
-          // Try for coarse estimate for number of bits; this
-          // should be an underestimate most of the time, which
-          // is fine -- GrowableWriter will reallocate as needed
-          long numUniqueTerms = terms.size();
-          if (numUniqueTerms != -1L) {
-            if (numUniqueTerms > termCountHardLimit) {
-              // app is misusing the API (there is more than
-              // one term per doc); in this case we make best
-              // effort to load what we can (see LUCENE-2142)
-              numUniqueTerms = termCountHardLimit;
-            }
-
-            startBytesBPV = PackedInts.bitsRequired(numUniqueTerms*4);
-            startTermsBPV = PackedInts.bitsRequired(numUniqueTerms);
-
-            startNumUniqueTerms = (int) numUniqueTerms;
-          } else {
-            startBytesBPV = 1;
-            startTermsBPV = 1;
-            startNumUniqueTerms = 1;
+      // TODO: use Uninvert?
+      if (terms != null) {
+        // Try for coarse estimate for number of bits; this
+        // should be an underestimate most of the time, which
+        // is fine -- GrowableWriter will reallocate as needed
+        long numUniqueTerms = terms.size();
+        if (numUniqueTerms != -1L) {
+          if (numUniqueTerms > termCountHardLimit) {
+            // app is misusing the API (there is more than
+            // one term per doc); in this case we make best
+            // effort to load what we can (see LUCENE-2142)
+            numUniqueTerms = termCountHardLimit;
           }
+
+          startBytesBPV = PackedInts.bitsRequired(numUniqueTerms*4);
+          startTermsBPV = PackedInts.bitsRequired(numUniqueTerms);
+
+          startNumUniqueTerms = (int) numUniqueTerms;
         } else {
           startBytesBPV = 1;
           startTermsBPV = 1;
           startNumUniqueTerms = 1;
         }
+      } else {
+        startBytesBPV = 1;
+        startTermsBPV = 1;
+        startNumUniqueTerms = 1;
+      }
 
-        GrowableWriter termOrdToBytesOffset = new GrowableWriter(startBytesBPV, 1+startNumUniqueTerms, acceptableOverheadRatio);
-        final GrowableWriter docToTermOrd = new GrowableWriter(startTermsBPV, maxDoc, acceptableOverheadRatio);
+      GrowableWriter termOrdToBytesOffset = new GrowableWriter(startBytesBPV, 1+startNumUniqueTerms, acceptableOverheadRatio);
+      final GrowableWriter docToTermOrd = new GrowableWriter(startTermsBPV, maxDoc, acceptableOverheadRatio);
 
-        int termOrd = 0;
+      int termOrd = 0;
 
-        // TODO: use Uninvert?
+      // TODO: use Uninvert?
 
-        if (terms != null) {
-          final TermsEnum termsEnum = terms.iterator(null);
-          DocsEnum docs = null;
+      if (terms != null) {
+        final TermsEnum termsEnum = terms.iterator(null);
+        DocsEnum docs = null;
 
-          while(true) {
-            final BytesRef term = termsEnum.next();
-            if (term == null) {
-              break;
-            }
-            if (termOrd >= termCountHardLimit) {
-              break;
-            }
-
-            if (termOrd == termOrdToBytesOffset.size()) {
-              // NOTE: this code only runs if the incoming
-              // reader impl doesn't implement
-              // size (which should be uncommon)
-              termOrdToBytesOffset = termOrdToBytesOffset.resize(ArrayUtil.oversize(1+termOrd, 1));
-            }
-            termOrdToBytesOffset.set(termOrd, bytes.copyUsingLengthPrefix(term));
-            docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
-            while (true) {
-              final int docID = docs.nextDoc();
-              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-                break;
-              }
-              // Store 1+ ord into packed bits
-              docToTermOrd.set(docID, 1+termOrd);
-            }
-            termOrd++;
+        while(true) {
+          final BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          if (termOrd >= termCountHardLimit) {
+            break;
           }
 
-          if (termOrdToBytesOffset.size() > termOrd) {
-            termOrdToBytesOffset = termOrdToBytesOffset.resize(termOrd);
+          if (termOrd == termOrdToBytesOffset.size()) {
+            // NOTE: this code only runs if the incoming
+            // reader impl doesn't implement
+            // size (which should be uncommon)
+            termOrdToBytesOffset = termOrdToBytesOffset.resize(ArrayUtil.oversize(1+termOrd, 1));
           }
+          termOrdToBytesOffset.set(termOrd, bytes.copyUsingLengthPrefix(term));
+          docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
+          while (true) {
+            final int docID = docs.nextDoc();
+            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
+              break;
+            }
+            // Store 1+ ord into packed bits
+            docToTermOrd.set(docID, 1+termOrd);
+          }
+          termOrd++;
         }
 
-        // maybe an int-only impl?
-        return new SortedDocValuesImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
+        if (termOrdToBytesOffset.size() > termOrd) {
+          termOrdToBytesOffset = termOrdToBytesOffset.resize(termOrd);
+        }
       }
+
+      // maybe an int-only impl?
+      return new SortedDocValuesImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
     }
   }
 
@@ -1264,6 +1274,18 @@ class FieldCacheImpl implements FieldCache {
   }
 
   public BinaryDocValues getTerms(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException {
+    BinaryDocValues valuesIn = reader.getBinaryDocValues(field);
+    if (valuesIn == null) {
+      // nocommit is this auto-fallback ... OK?
+      valuesIn = reader.getSortedDocValues(field);
+    }
+
+    if (valuesIn != null) {
+      // Not cached here by FieldCacheImpl (cached instead
+      // per-thread by SegmentReader):
+      return valuesIn;
+    }
+
     return (BinaryDocValues) caches.get(BinaryDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
   }
 
@@ -1276,80 +1298,70 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
         throws IOException {
 
-      BinaryDocValues valuesIn = reader.getBinaryDocValues(key.field);
-      if (valuesIn == null) {
-        // nocommit is this auto-fallback ... OK?
-        valuesIn = reader.getSortedDocValues(key.field);
-      }
+      final int maxDoc = reader.maxDoc();
+      Terms terms = reader.terms(key.field);
 
-      if (valuesIn != null) {
-        return valuesIn;
-      } else {
-        final int maxDoc = reader.maxDoc();
-        Terms terms = reader.terms(key.field);
+      final float acceptableOverheadRatio = ((Float) key.custom).floatValue();
 
-        final float acceptableOverheadRatio = ((Float) key.custom).floatValue();
+      final int termCountHardLimit = maxDoc;
 
-        final int termCountHardLimit = maxDoc;
+      // Holds the actual term data, expanded.
+      final PagedBytes bytes = new PagedBytes(15);
 
-        // Holds the actual term data, expanded.
-        final PagedBytes bytes = new PagedBytes(15);
+      int startBPV;
 
-        int startBPV;
-
-        if (terms != null) {
-          // Try for coarse estimate for number of bits; this
-          // should be an underestimate most of the time, which
-          // is fine -- GrowableWriter will reallocate as needed
-          long numUniqueTerms = terms.size();
-          if (numUniqueTerms != -1L) {
-            if (numUniqueTerms > termCountHardLimit) {
-              numUniqueTerms = termCountHardLimit;
-            }
-            startBPV = PackedInts.bitsRequired(numUniqueTerms*4);
-          } else {
-            startBPV = 1;
+      if (terms != null) {
+        // Try for coarse estimate for number of bits; this
+        // should be an underestimate most of the time, which
+        // is fine -- GrowableWriter will reallocate as needed
+        long numUniqueTerms = terms.size();
+        if (numUniqueTerms != -1L) {
+          if (numUniqueTerms > termCountHardLimit) {
+            numUniqueTerms = termCountHardLimit;
           }
+          startBPV = PackedInts.bitsRequired(numUniqueTerms*4);
         } else {
           startBPV = 1;
         }
+      } else {
+        startBPV = 1;
+      }
 
-        final GrowableWriter docToOffset = new GrowableWriter(startBPV, maxDoc, acceptableOverheadRatio);
+      final GrowableWriter docToOffset = new GrowableWriter(startBPV, maxDoc, acceptableOverheadRatio);
       
-        // pointer==0 means not set
-        bytes.copyUsingLengthPrefix(new BytesRef());
+      // pointer==0 means not set
+      bytes.copyUsingLengthPrefix(new BytesRef());
 
-        if (terms != null) {
-          int termCount = 0;
-          final TermsEnum termsEnum = terms.iterator(null);
-          DocsEnum docs = null;
-          while(true) {
-            if (termCount++ == termCountHardLimit) {
-              // app is misusing the API (there is more than
-              // one term per doc); in this case we make best
-              // effort to load what we can (see LUCENE-2142)
+      if (terms != null) {
+        int termCount = 0;
+        final TermsEnum termsEnum = terms.iterator(null);
+        DocsEnum docs = null;
+        while(true) {
+          if (termCount++ == termCountHardLimit) {
+            // app is misusing the API (there is more than
+            // one term per doc); in this case we make best
+            // effort to load what we can (see LUCENE-2142)
+            break;
+          }
+
+          final BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          final long pointer = bytes.copyUsingLengthPrefix(term);
+          docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
+          while (true) {
+            final int docID = docs.nextDoc();
+            if (docID == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
-
-            final BytesRef term = termsEnum.next();
-            if (term == null) {
-              break;
-            }
-            final long pointer = bytes.copyUsingLengthPrefix(term);
-            docs = termsEnum.docs(null, docs, DocsEnum.FLAG_NONE);
-            while (true) {
-              final int docID = docs.nextDoc();
-              if (docID == DocIdSetIterator.NO_MORE_DOCS) {
-                break;
-              }
-              docToOffset.set(docID, pointer);
-            }
+            docToOffset.set(docID, pointer);
           }
         }
-
-        // maybe an int-only impl?
-        return new BinaryDocValuesImpl(bytes.freeze(true), docToOffset.getMutable());
       }
+
+      // maybe an int-only impl?
+      return new BinaryDocValuesImpl(bytes.freeze(true), docToOffset.getMutable());
     }
   }
 
