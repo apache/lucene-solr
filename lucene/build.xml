@@ -205,6 +205,7 @@
         <exclude name="queryparser/classes/java/org/apache/lucene/queryparser/classic/QueryParserTokenManager.class"/>
         <exclude name="queryparser/classes/java/org/apache/lucene/queryparser/flexible/standard/parser/StandardSyntaxParserTokenManager.class"/>
         <exclude name="queryparser/classes/java/org/apache/lucene/queryparser/surround/parser/QueryParserTokenManager.class"/>
+        <exclude name="facet/classes/java/org/apache/lucene/facet/util/PrintTaxonomyStats.class"/>
       </fileset>
     </forbidden-apis>
   </target>
