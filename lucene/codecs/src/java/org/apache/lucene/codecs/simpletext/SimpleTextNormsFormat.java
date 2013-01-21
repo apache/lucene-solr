@@ -22,8 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat.SimpleTextDocValuesReader;
-import org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat.SimpleTextDocValuesWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
