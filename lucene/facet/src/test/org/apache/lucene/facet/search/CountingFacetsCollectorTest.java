@@ -39,6 +39,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.collections.ObjectToIntMap;
 import org.apache.lucene.util.encoding.IntEncoder;
 import org.apache.lucene.util.encoding.VInt8IntEncoder;
@@ -63,6 +64,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
+@SuppressCodecs("Lucene3x")
 public class CountingFacetsCollectorTest extends LuceneTestCase {
   
   private static final Term A = new Term("f", "a");
