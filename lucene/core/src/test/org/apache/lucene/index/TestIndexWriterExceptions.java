@@ -27,9 +27,12 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.LongDocValuesField;
+import org.apache.lucene.document.SortedBytesDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -49,7 +52,6 @@ import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
-//nocommit: make this tests DV2.0
 public class TestIndexWriterExceptions extends LuceneTestCase {
 
   private static class DocCopyIterator implements Iterable<Document> {
@@ -138,6 +140,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       doc.add(newTextField(r, "content4", "aaa bbb ccc ddd", Field.Store.NO));
       doc.add(newStringField(r, "content5", "aaa bbb ccc ddd", Field.Store.NO));
+      doc.add(new LongDocValuesField("numericdv", 5));
+      doc.add(new BinaryDocValuesField("binarydv", new BytesRef("hello")));
+      doc.add(new SortedBytesDocValuesField("sorteddv", new BytesRef("world")));
 
       doc.add(newField(r, "content7", "aaa bbb ccc ddd", DocCopyIterator.custom4));
 
