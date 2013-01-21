@@ -1133,6 +1133,9 @@ class FieldCacheImpl implements FieldCache {
       final int maxDoc = reader.maxDoc();
       SortedDocValues valuesIn = reader.getSortedDocValues(key.field);
       if (valuesIn != null) {
+        // nocommit we need thread DV test that would
+        // uncover this bug!!
+        // nocommit we should not cache in this case?
         return valuesIn;
       } else {
 

@@ -41,6 +41,14 @@ public abstract class SortedDocValues extends BinaryDocValues {
     }
   }
 
+  // nocommit make this final, and impl seekExact(term) to
+  // fwd to lookupTerm
+
+  // nocommit should we nuke this?  the iterator can be
+  // efficiently built "on top" since ord is part of the
+  // API?  why must it be impl'd here...?
+  // SortedDocValuesTermsEnum.
+
   public TermsEnum getTermsEnum() {
     // nocommit who tests this base impl ...
     // Default impl just uses the existing API; subclasses
@@ -161,6 +169,8 @@ public abstract class SortedDocValues extends BinaryDocValues {
    *  @param key Key to look up
    *  @param spare Spare BytesRef
    **/
+  // nocommit make this protected so codecs can impl better
+  // version ...
   public int lookupTerm(BytesRef key, BytesRef spare) {
 
     int low = 0;

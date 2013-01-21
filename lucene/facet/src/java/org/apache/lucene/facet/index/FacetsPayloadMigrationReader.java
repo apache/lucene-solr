@@ -27,10 +27,8 @@ import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValues.Source;
-import org.apache.lucene.index.DocValues.Type;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -45,9 +43,9 @@ import org.apache.lucene.util.BytesRef;
 
 /**
  * A {@link FilterAtomicReader} for migrating a facets index which encodes
- * category ordinals in a payload to {@link DocValues}. To migrate the index,
+ * category ordinals in a payload to {@link BinaryDocValues}. To migrate the index,
  * you should build a mapping from a field (String) to term ({@link Term}),
- * which denotes under which DocValues field to put the data encoded in the
+ * which denotes under which BinaryDocValues field to put the data encoded in the
  * matching term's payload. You can follow the code example below to migrate an
  * existing index:
  * 
