@@ -18,10 +18,10 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.facet.associations.CategoryAssociationsContainer;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 
 /**
@@ -29,42 +29,38 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
  * <p>
  * Supports the following parameters:
  * <ul>
- * <li><b>rand.seed</b> - defines the seed to initialize Random with (default: <b>13</b>).
+ * <li><b>rand.seed</b> - defines the seed to initialize {@link Random} with
+ * (default: <b>13</b>).
  * <li><b>max.doc.facets</b> - maximal #facets per doc (default: <b>10</b>).
- *    Actual number of facets in a certain doc would be anything between 1 and that number.
- * <li><b>max.facet.depth</b> - maximal #components in a facet (default: <b>3</b>).
- *    Actual number of components in a certain facet would be anything between 1 and that number.
+ * Actual number of facets in a certain doc would be anything between 1 and that
+ * number.
+ * <li><b>max.facet.depth</b> - maximal #components in a facet (default:
+ * <b>3</b>). Actual number of components in a certain facet would be anything
+ * between 1 and that number.
  * </ul>
  */
 public class RandomFacetSource extends FacetSource {
 
-  Random random;
-  
-  private int maxDocFacets = 10;
-  private int maxFacetDepth = 3;
+  private Random random;
+  private int maxDocFacets;
+  private int maxFacetDepth;
   private int maxValue = maxDocFacets * maxFacetDepth;
   
   @Override
-  public CategoryAssociationsContainer getNextFacets(CategoryAssociationsContainer facets) 
-      throws NoMoreDataException, IOException {
-    if (facets == null) {
-      facets = new CategoryAssociationsContainer();
-    } else {
-      facets.clear();
-    }
-    int numFacets = 1 + random.nextInt(maxDocFacets-1); // at least one facet to each doc
+  public void getNextFacets(List<CategoryPath> facets) throws NoMoreDataException, IOException {
+    facets.clear();
+    int numFacets = 1 + random.nextInt(maxDocFacets); // at least one facet to each doc
     for (int i = 0; i < numFacets; i++) {
-      int depth = 1 + random.nextInt(maxFacetDepth - 1); // depth 0 is not useful
+      int depth = 1 + random.nextInt(maxFacetDepth); // depth 0 is not useful
       String[] components = new String[depth];
       for (int k = 0; k < depth; k++) {
         components[k] = Integer.toString(random.nextInt(maxValue));
         addItem();
       }
       CategoryPath cp = new CategoryPath(components);
-      facets.setAssociation(cp, null);
+      facets.add(cp);
       addBytes(cp.toString().length()); // very rough approximation
     }
-    return facets;
   }
 
   @Override
@@ -76,8 +72,8 @@ public class RandomFacetSource extends FacetSource {
   public void setConfig(Config config) {
     super.setConfig(config);
     random = new Random(config.get("rand.seed", 13));
-    maxDocFacets = config.get("max.doc.facets", 200);
-    maxFacetDepth = config.get("max.facet.depth", 10);
+    maxDocFacets = config.get("max.doc.facets", 10);
+    maxFacetDepth = config.get("max.facet.depth", 3);
     maxValue = maxDocFacets * maxFacetDepth;
   }
 }
