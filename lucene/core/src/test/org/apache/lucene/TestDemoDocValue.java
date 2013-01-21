@@ -27,9 +27,8 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.PackedLongDocValuesField;
+import org.apache.lucene.document.LongDocValuesField;
 import org.apache.lucene.document.SortedBytesDocValuesField;
-import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
@@ -63,7 +62,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
-    doc.add(new PackedLongDocValuesField("dv", 5));
+    doc.add(new LongDocValuesField("dv", 5));
     iwriter.addDocument(doc);
     iwriter.close();
     
@@ -133,8 +132,8 @@ public class TestDemoDocValue extends LuceneTestCase {
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
-    doc.add(new PackedLongDocValuesField("dv1", 5));
-    doc.add(new PackedLongDocValuesField("dv2", 17));
+    doc.add(new LongDocValuesField("dv1", 5));
+    doc.add(new LongDocValuesField("dv2", 17));
     iwriter.addDocument(doc);
     iwriter.close();
     
@@ -171,8 +170,8 @@ public class TestDemoDocValue extends LuceneTestCase {
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
-    doc.add(new PackedLongDocValuesField("dv1", 5));
-    doc.add(new StraightBytesDocValuesField("dv2", new BytesRef("hello world")));
+    doc.add(new LongDocValuesField("dv1", 5));
+    doc.add(new BinaryDocValuesField("dv2", new BytesRef("hello world")));
     iwriter.addDocument(doc);
     iwriter.close();
     
@@ -212,8 +211,8 @@ public class TestDemoDocValue extends LuceneTestCase {
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
     doc.add(new SortedBytesDocValuesField("dv1", new BytesRef("hello hello")));
-    doc.add(new PackedLongDocValuesField("dv2", 5));
-    doc.add(new StraightBytesDocValuesField("dv3", new BytesRef("hello world")));
+    doc.add(new LongDocValuesField("dv2", 5));
+    doc.add(new BinaryDocValuesField("dv3", new BytesRef("hello world")));
     iwriter.addDocument(doc);
     iwriter.close();
     
@@ -256,9 +255,9 @@ public class TestDemoDocValue extends LuceneTestCase {
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
-    doc.add(new StraightBytesDocValuesField("dv1", new BytesRef("hello world")));
+    doc.add(new BinaryDocValuesField("dv1", new BytesRef("hello world")));
     doc.add(new SortedBytesDocValuesField("dv2", new BytesRef("hello hello")));
-    doc.add(new PackedLongDocValuesField("dv3", 5));
+    doc.add(new LongDocValuesField("dv3", 5));
     iwriter.addDocument(doc);
     iwriter.close();
     
@@ -300,10 +299,10 @@ public class TestDemoDocValue extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
-    doc.add(new PackedLongDocValuesField("dv", 1));
+    doc.add(new LongDocValuesField("dv", 1));
     iwriter.addDocument(doc);
     doc = new Document();
-    doc.add(new PackedLongDocValuesField("dv", 2));
+    doc.add(new LongDocValuesField("dv", 2));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     iwriter.close();
@@ -329,12 +328,12 @@ public class TestDemoDocValue extends LuceneTestCase {
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
     doc.add(newField("id", "0", StringField.TYPE_STORED));
-    doc.add(new PackedLongDocValuesField("dv", -10));
+    doc.add(new LongDocValuesField("dv", -10));
     iwriter.addDocument(doc);
     iwriter.commit();
     doc = new Document();
     doc.add(newField("id", "1", StringField.TYPE_STORED));
-    doc.add(new PackedLongDocValuesField("dv", 99));
+    doc.add(new LongDocValuesField("dv", 99));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     iwriter.close();
@@ -367,10 +366,10 @@ public class TestDemoDocValue extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
-    doc.add(new PackedLongDocValuesField("dv", Long.MIN_VALUE));
+    doc.add(new LongDocValuesField("dv", Long.MIN_VALUE));
     iwriter.addDocument(doc);
     doc = new Document();
-    doc.add(new PackedLongDocValuesField("dv", Long.MAX_VALUE));
+    doc.add(new LongDocValuesField("dv", Long.MAX_VALUE));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     iwriter.close();
@@ -395,10 +394,10 @@ public class TestDemoDocValue extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
-    doc.add(new PackedLongDocValuesField("dv", -8841491950446638677L));
+    doc.add(new LongDocValuesField("dv", -8841491950446638677L));
     iwriter.addDocument(doc);
     doc = new Document();
-    doc.add(new PackedLongDocValuesField("dv", 9062230939892376225L));
+    doc.add(new LongDocValuesField("dv", 9062230939892376225L));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     iwriter.close();
@@ -424,7 +423,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
-    doc.add(new StraightBytesDocValuesField("dv", new BytesRef("hello world")));
+    doc.add(new BinaryDocValuesField("dv", new BytesRef("hello world")));
     iwriter.addDocument(doc);
     iwriter.close();
     
@@ -461,12 +460,12 @@ public class TestDemoDocValue extends LuceneTestCase {
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
     doc.add(newField("id", "0", StringField.TYPE_STORED));
-    doc.add(new StraightBytesDocValuesField("dv", new BytesRef("hello world 1")));
+    doc.add(new BinaryDocValuesField("dv", new BytesRef("hello world 1")));
     iwriter.addDocument(doc);
     iwriter.commit();
     doc = new Document();
     doc.add(newField("id", "1", StringField.TYPE_STORED));
-    doc.add(new StraightBytesDocValuesField("dv", new BytesRef("hello 2")));
+    doc.add(new BinaryDocValuesField("dv", new BytesRef("hello 2")));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     iwriter.close();
@@ -653,7 +652,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
-    doc.add(new StraightBytesDocValuesField("dv", new BytesRef("hello\nworld\r1")));
+    doc.add(new BinaryDocValuesField("dv", new BytesRef("hello\nworld\r1")));
     iwriter.addDocument(doc);
     iwriter.close();
     
@@ -722,8 +721,8 @@ public class TestDemoDocValue extends LuceneTestCase {
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
-    doc.add(new PackedLongDocValuesField("dv1", 5));
-    doc.add(new StraightBytesDocValuesField("dv2", new BytesRef("hello world")));
+    doc.add(new LongDocValuesField("dv1", 5));
+    doc.add(new BinaryDocValuesField("dv2", new BytesRef("hello world")));
     iwriter.addDocument(doc);
     iwriter.close();
     

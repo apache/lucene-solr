@@ -23,10 +23,10 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.PackedLongDocValuesField;
+import org.apache.lucene.document.LongDocValuesField;
 import org.apache.lucene.document.SortedBytesDocValuesField;
-import org.apache.lucene.document.StraightBytesDocValuesField;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -39,7 +39,6 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
-    // nocommit binary, sorted too
     final List<Long> numbers = new ArrayList<Long>();
     final List<BytesRef> binary = new ArrayList<BytesRef>();
     final List<BytesRef> sorted = new ArrayList<BytesRef>();
@@ -47,9 +46,9 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
     for(int i=0;i<numDocs;i++) {
       Document d = new Document();
       long number = random().nextLong();
-      d.add(new PackedLongDocValuesField("number", number));
+      d.add(new LongDocValuesField("number", number));
       BytesRef bytes = new BytesRef(_TestUtil.randomRealisticUnicodeString(random()));
-      d.add(new StraightBytesDocValuesField("bytes", bytes));
+      d.add(new BinaryDocValuesField("bytes", bytes));
       binary.add(bytes);
       bytes = new BytesRef(_TestUtil.randomRealisticUnicodeString(random()));
       d.add(new SortedBytesDocValuesField("sorted", bytes));
