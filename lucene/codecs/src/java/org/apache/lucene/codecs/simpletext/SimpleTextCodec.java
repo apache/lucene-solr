@@ -39,11 +39,9 @@ public final class SimpleTextCodec extends Codec {
   private final SegmentInfoFormat segmentInfos = new SimpleTextSegmentInfoFormat();
   private final FieldInfosFormat fieldInfosFormat = new SimpleTextFieldInfosFormat();
   private final TermVectorsFormat vectorsFormat = new SimpleTextTermVectorsFormat();
-  private final NormsFormat simpleNormsFormat = new SimpleTextNormsFormat();
+  private final NormsFormat normsFormat = new SimpleTextNormsFormat();
   private final LiveDocsFormat liveDocs = new SimpleTextLiveDocsFormat();
-
-  // nocommit rename
-  private final DocValuesFormat simpleDVFormat = new SimpleTextDocValuesFormat();
+  private final DocValuesFormat dvFormat = new SimpleTextDocValuesFormat();
   
   public SimpleTextCodec() {
     super("SimpleText");
@@ -76,7 +74,7 @@ public final class SimpleTextCodec extends Codec {
 
   @Override
   public NormsFormat normsFormat() {
-    return simpleNormsFormat;
+    return normsFormat;
   }
   
   @Override
@@ -86,6 +84,6 @@ public final class SimpleTextCodec extends Codec {
 
   @Override
   public DocValuesFormat docValuesFormat() {
-    return simpleDVFormat;
+    return dvFormat;
   }
 }

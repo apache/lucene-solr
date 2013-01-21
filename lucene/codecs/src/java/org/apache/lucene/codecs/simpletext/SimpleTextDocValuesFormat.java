@@ -148,7 +148,7 @@ public class SimpleTextDocValuesFormat extends DocValuesFormat {
       //System.out.println("WRITE: " + IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext) + " " + state.segmentInfo.getDocCount() + " docs");
       data = state.directory.createOutput(IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, ext), state.context);
       numDocs = state.segmentInfo.getDocCount();
-      isNorms = ext.equals("slen");
+      isNorms = ext.equals("len");
     }
 
     // for asserting
@@ -422,7 +422,7 @@ public class SimpleTextDocValuesFormat extends DocValuesFormat {
         //System.out.println("  field=" + fieldName);
 
         // nocommit hack hack hack!!:
-        DocValuesType dvType = ext.equals("slen") ? DocValuesType.NUMERIC : fieldInfo.getDocValuesType();
+        DocValuesType dvType = ext.equals("len") ? DocValuesType.NUMERIC : fieldInfo.getDocValuesType();
         assert dvType != null;
         if (dvType == DocValuesType.NUMERIC) {
           readLine();

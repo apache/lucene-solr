@@ -705,8 +705,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     Directory directory = newDirectory();
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    // TODO: Fix the CFS/suffixing of Lucene41DocValues so it actually works with this
-    final DocValuesFormat fast = DocValuesFormat.forName("Memory");
+    final DocValuesFormat fast = DocValuesFormat.forName("Lucene41");
     final DocValuesFormat slow = DocValuesFormat.forName("SimpleText");
     iwc.setCodec(new Lucene41Codec() {
       @Override

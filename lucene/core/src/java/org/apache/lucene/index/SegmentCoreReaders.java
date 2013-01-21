@@ -54,8 +54,8 @@ final class SegmentCoreReaders {
   final FieldInfos fieldInfos;
   
   final FieldsProducer fields;
-  final DocValuesProducer simpleDVProducer;
-  final DocValuesProducer simpleNormsProducer;
+  final DocValuesProducer dvProducer;
+  final DocValuesProducer normsProducer;
 
   final int termsIndexDivisor;
   
@@ -67,7 +67,7 @@ final class SegmentCoreReaders {
 
   // TODO: make a single thread local w/ a
   // Thingy class holding fieldsReader, termVectorsReader,
-  // simpleNormsProducer, simpleDVProducer
+  // normsProducer, dvProducer
 
   final CloseableThreadLocal<StoredFieldsReader> fieldsReaderLocal = new CloseableThreadLocal<StoredFieldsReader>() {
     @Override
@@ -83,14 +83,14 @@ final class SegmentCoreReaders {
     }
   };
 
-  final CloseableThreadLocal<Map<String,Object>> simpleDocValuesLocal = new CloseableThreadLocal<Map<String,Object>>() {
+  final CloseableThreadLocal<Map<String,Object>> docValuesLocal = new CloseableThreadLocal<Map<String,Object>>() {
     @Override
     protected Map<String,Object> initialValue() {
       return new HashMap<String,Object>();
     }
   };
 
-  final CloseableThreadLocal<Map<String,Object>> simpleNormsLocal = new CloseableThreadLocal<Map<String,Object>>() {
+  final CloseableThreadLocal<Map<String,Object>> normsLocal = new CloseableThreadLocal<Map<String,Object>>() {
     @Override
     protected Map<String,Object> initialValue() {
       return new HashMap<String,Object>();
@@ -129,26 +129,19 @@ final class SegmentCoreReaders {
       // ask codec for its Norms: 
       // TODO: since we don't write any norms file if there are no norms,
       // kinda jaky to assume the codec handles the case of no norms file at all gracefully?!
-      // nocommit shouldn't need null check:
-      assert codec.docValuesFormat() != null;
-      if (codec.docValuesFormat() != null) {
-        if (fieldInfos.hasDocValues()) {
-          simpleDVProducer = codec.docValuesFormat().fieldsProducer(segmentReadState);
-        } else {
-          simpleDVProducer = null;
-        }
+
+      if (fieldInfos.hasDocValues()) {
+        dvProducer = codec.docValuesFormat().fieldsProducer(segmentReadState);
+        assert dvProducer != null;
       } else {
-        simpleDVProducer = null;
+        dvProducer = null;
       }
-      // nocommit shouldn't need null check:
-      if (codec.normsFormat() != null) {
-        if (fieldInfos.hasNorms()) {
-          simpleNormsProducer = codec.normsFormat().normsProducer(segmentReadState);
-        } else {
-          simpleNormsProducer = null;
-        }
+
+      if (fieldInfos.hasNorms()) {
+        normsProducer = codec.normsFormat().normsProducer(segmentReadState);
+        assert normsProducer != null;
       } else {
-        simpleNormsProducer = null;
+        normsProducer = null;
       }
   
       fieldsReaderOrig = si.info.getCodec().storedFieldsFormat().fieldsReader(cfsDir, si.info, fieldInfos, context);
@@ -192,16 +185,13 @@ final class SegmentCoreReaders {
       return null;
     }
 
-    // nocommit change to assert != null!!
-    if (simpleDVProducer == null) {
-      return null;
-    }
+    assert dvProducer != null;
 
-    Map<String,Object> dvFields = simpleDocValuesLocal.get();
+    Map<String,Object> dvFields = docValuesLocal.get();
 
     NumericDocValues dvs = (NumericDocValues) dvFields.get(field);
     if (dvs == null) {
-      dvs = simpleDVProducer.getNumeric(fi);
+      dvs = dvProducer.getNumeric(fi);
       dvFields.put(field, dvs);
     }
 
@@ -223,16 +213,13 @@ final class SegmentCoreReaders {
       return null;
     }
 
-    // nocommit change to assert != null!!
-    if (simpleDVProducer == null) {
-      return null;
-    }
+    assert dvProducer != null;
 
-    Map<String,Object> dvFields = simpleDocValuesLocal.get();
+    Map<String,Object> dvFields = docValuesLocal.get();
 
     BinaryDocValues dvs = (BinaryDocValues) dvFields.get(field);
     if (dvs == null) {
-      dvs = simpleDVProducer.getBinary(fi);
+      dvs = dvProducer.getBinary(fi);
       dvFields.put(field, dvs);
     }
 
@@ -254,18 +241,13 @@ final class SegmentCoreReaders {
       return null;
     }
 
-    assert simpleDVProducer != null;
+    assert dvProducer != null;
 
-    // nocommit change to assert != null!!
-    if (simpleDVProducer == null) {
-      return null;
-    }
-
-    Map<String,Object> dvFields = simpleDocValuesLocal.get();
+    Map<String,Object> dvFields = docValuesLocal.get();
 
     SortedDocValues dvs = (SortedDocValues) dvFields.get(field);
     if (dvs == null) {
-      dvs = simpleDVProducer.getSorted(fi);
+      dvs = dvProducer.getSorted(fi);
       dvFields.put(field, dvs);
     }
 
@@ -281,16 +263,14 @@ final class SegmentCoreReaders {
     if (!fi.hasNorms()) {
       return null;
     }
-    // nocommit change to assert != null!!
-    if (simpleNormsProducer == null) {
-      return null;
-    }
+   
+    assert normsProducer != null;
 
-    Map<String,Object> normFields = simpleNormsLocal.get();
+    Map<String,Object> normFields = normsLocal.get();
 
     NumericDocValues norms = (NumericDocValues) normFields.get(field);
     if (norms == null) {
-      norms = simpleNormsProducer.getNumeric(fi);
+      norms = normsProducer.getNumeric(fi);
       normFields.put(field, norms);
     }
 
@@ -299,8 +279,8 @@ final class SegmentCoreReaders {
 
   void decRef() throws IOException {
     if (ref.decrementAndGet() == 0) {
-      IOUtils.close(termVectorsLocal, fieldsReaderLocal, simpleDocValuesLocal, simpleNormsLocal, fields, simpleDVProducer,
-                    termVectorsReaderOrig, fieldsReaderOrig, cfsReader, simpleNormsProducer);
+      IOUtils.close(termVectorsLocal, fieldsReaderLocal, docValuesLocal, normsLocal, fields, dvProducer,
+                    termVectorsReaderOrig, fieldsReaderOrig, cfsReader, normsProducer);
       notifyCoreClosedListeners();
     }
   }

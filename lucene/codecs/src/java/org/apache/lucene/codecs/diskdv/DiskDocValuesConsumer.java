@@ -31,7 +31,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
 
-// nocommit fix exception handling (make sure tests find problems first)
 class DiskDocValuesConsumer extends DocValuesConsumer {
   final IndexOutput data, meta;
   final int maxDoc;

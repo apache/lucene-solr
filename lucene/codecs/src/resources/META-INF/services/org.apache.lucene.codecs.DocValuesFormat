@@ -14,5 +14,4 @@
 #  limitations under the License.
 
 org.apache.lucene.codecs.diskdv.DiskDocValuesFormat
-org.apache.lucene.codecs.memory.MemoryDocValuesFormat
 org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat
