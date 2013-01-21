@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -174,6 +175,9 @@ public class MultiDocValues {
       config.setCodec(Codec.forName("SimpleText"));
       IndexWriter writer = new IndexWriter(scratch, config);
       List<AtomicReader> newLeaves = new ArrayList<AtomicReader>();
+      // fake up fieldinfos
+      FieldInfo fi = new FieldInfo(field, false, 0, false, false, false, null, DocValuesType.SORTED, null, null);
+      final FieldInfos fis = new FieldInfos(new FieldInfo[] { fi });
       for (AtomicReaderContext ctx : leaves) {
         final AtomicReader a = ctx.reader();
         newLeaves.add(new FilterAtomicReader(a) {
@@ -188,6 +192,22 @@ public class MultiDocValues {
           @Override
           public boolean hasDeletions() {
             return false; // lie
+          }
+          @Override
+          public FieldInfos getFieldInfos() {
+            return fis;
+          }
+          @Override
+          public Fields getTermVectors(int docID) throws IOException {
+            return null; // lie
+          }
+          @Override
+          public void document(int docID, StoredFieldVisitor visitor) throws IOException {
+            // lie
+          }
+          @Override
+          public Fields fields() throws IOException {
+            return null; // lie
           }
         });
       }
