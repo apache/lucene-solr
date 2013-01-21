@@ -202,7 +202,7 @@ public class FacetsPayloadMigrationReader extends FilterAtomicReader {
   private final Map<String,Term> fieldTerms;
   
   /**
-   * Wraps an {@link AtomicReader} and migrates the payload to {@link DocValues}
+   * Wraps an {@link AtomicReader} and migrates the payload to {@link BinaryDocValues}
    * fields by using the given mapping.
    */
   public FacetsPayloadMigrationReader(AtomicReader in, Map<String,Term> fieldTerms) {

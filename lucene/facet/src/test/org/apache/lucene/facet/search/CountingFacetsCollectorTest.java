@@ -427,7 +427,7 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     
     FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(CP_A, NUM_CHILDREN_CP_A), 
         new CountFacetRequest(CP_B, NUM_CHILDREN_CP_B));
-    FacetsCollector fc = new CountingFacetsCollector(fsp , taxoReader, new FacetArrays(taxoReader.getSize()), true);
+    FacetsCollector fc = new CountingFacetsCollector(fsp , taxoReader, new FacetArrays(taxoReader.getSize()));
     searcher.search(new MatchAllDocsQuery(), fc);
     
     List<FacetResult> facetResults = fc.getFacetResults();

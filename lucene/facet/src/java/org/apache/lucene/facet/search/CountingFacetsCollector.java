@@ -63,12 +63,9 @@ import org.apache.lucene.util.encoding.DGapVInt8IntDecoder;
  * </ul>
  * 
  * <p>
- * <b>NOTE:</b> this colletro uses {@link DocValues#getSource()} by default,
+ * <b>NOTE:</b> this collector uses {@link BinaryDocValues} by default,
  * which pre-loads the values into memory. If your application cannot afford the
- * RAM, you should use
- * {@link #CountingFacetsCollector(FacetSearchParams, TaxonomyReader, FacetArrays, boolean)}
- * and specify to use a direct source (corresponds to
- * {@link DocValues#getDirectSource()}).
+ * RAM, you should pick a codec which keeps the values (or parts of them) on disk.
  * 
  * <p>
  * <b>NOTE:</b> this collector supports category lists that were indexed with
@@ -87,18 +84,16 @@ public class CountingFacetsCollector extends FacetsCollector {
   private final FacetArrays facetArrays;
   private final int[] counts;
   private final String facetsField;
-  private final boolean useDirectSource;
   private final HashMap<BinaryDocValues,FixedBitSet> matchingDocs = new HashMap<BinaryDocValues,FixedBitSet>();
   
   private BinaryDocValues facetsValues;
   private FixedBitSet bits;
   
   public CountingFacetsCollector(FacetSearchParams fsp, TaxonomyReader taxoReader) {
-    this(fsp, taxoReader, new FacetArrays(taxoReader.getSize()), false);
+    this(fsp, taxoReader, new FacetArrays(taxoReader.getSize()));
   }
   
-  public CountingFacetsCollector(FacetSearchParams fsp, TaxonomyReader taxoReader, FacetArrays facetArrays, 
-      boolean useDirectSource) {
+  public CountingFacetsCollector(FacetSearchParams fsp, TaxonomyReader taxoReader, FacetArrays facetArrays) {
     assert facetArrays.arrayLength >= taxoReader.getSize() : "too small facet array";
     assert assertParams(fsp) == null : assertParams(fsp);
     
@@ -107,7 +102,6 @@ public class CountingFacetsCollector extends FacetsCollector {
     this.facetArrays = facetArrays;
     this.counts = facetArrays.getIntArray();
     this.facetsField = fsp.indexingParams.getCategoryListParams(null).field;
-    this.useDirectSource = useDirectSource;
   }
   
   /**
