@@ -57,7 +57,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LongsRef;
-import org.apache.lucene.util.packed.BlockPackedReader;
+import org.apache.lucene.util.packed.BlockPackedReaderIterator;
 import org.apache.lucene.util.packed.PackedInts;
 
 
@@ -76,7 +76,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
   private final int chunkSize;
   private final int numDocs;
   private boolean closed;
-  private final BlockPackedReader reader;
+  private final BlockPackedReaderIterator reader;
 
   // used by clone
   private CompressingTermVectorsReader(CompressingTermVectorsReader reader) {
@@ -88,7 +88,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     this.decompressor = reader.decompressor.clone();
     this.chunkSize = reader.chunkSize;
     this.numDocs = reader.numDocs;
-    this.reader = new BlockPackedReader(vectorsStream, packedIntsVersion, BLOCK_SIZE, 0);
+    this.reader = new BlockPackedReaderIterator(vectorsStream, packedIntsVersion, BLOCK_SIZE, 0);
     this.closed = false;
   }
 
@@ -119,7 +119,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
       packedIntsVersion = vectorsStream.readVInt();
       chunkSize = vectorsStream.readVInt();
       decompressor = compressionMode.newDecompressor();
-      this.reader = new BlockPackedReader(vectorsStream, packedIntsVersion, BLOCK_SIZE, 0);
+      this.reader = new BlockPackedReaderIterator(vectorsStream, packedIntsVersion, BLOCK_SIZE, 0);
 
       success = true;
     } finally {

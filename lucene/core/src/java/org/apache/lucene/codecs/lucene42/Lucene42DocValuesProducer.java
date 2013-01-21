@@ -42,6 +42,7 @@ import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
+import org.apache.lucene.util.packed.BlockPackedReader;
 import org.apache.lucene.util.packed.PackedInts;
 
 class Lucene42DocValuesProducer extends DocValuesProducer {
@@ -139,9 +140,10 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       for (int i = 0; i < decode.length; i++) {
         decode[i] = data.readLong();
       }
-      final long minValue = data.readLong();
-      assert minValue == 0;
-      final PackedInts.Reader reader = PackedInts.getReader(data);
+      final int packedIntsVersion = data.readVInt();
+      final int count = data.readVInt();
+      final int bitsPerValue = data.readVInt();
+      final PackedInts.Reader reader = PackedInts.getReaderNoHeader(data, PackedInts.Format.PACKED, packedIntsVersion, count, bitsPerValue);
       return new NumericDocValues() {
         @Override
         public long get(int docID) {
@@ -149,12 +151,14 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         }
       };
     } else {
-      final long minValue = data.readLong();
-      final PackedInts.Reader reader = PackedInts.getReader(data);
+      final int packedIntsVersion = data.readVInt();
+      final int count = data.readVInt();
+      final int blockSize = data.readVInt();
+      final BlockPackedReader reader = new BlockPackedReader(data, packedIntsVersion, blockSize, count, false);
       return new NumericDocValues() {
         @Override
         public long get(int docID) {
-          return minValue + reader.get(docID);
+          return reader.get(docID);
         }
       };
     }

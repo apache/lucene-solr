@@ -30,7 +30,7 @@ import org.apache.lucene.store.DataOutput;
  * using as few bits as possible. Memory usage of this class is proportional to
  * the block size. Each block has an overhead between 1 and 10 bytes to store
  * the minimum value and the number of bits per value of the block.
- * @see BlockPackedReader
+ * @see BlockPackedReaderIterator
  * @lucene.internal
  */
 public final class BlockPackedWriter {
@@ -43,8 +43,11 @@ public final class BlockPackedWriter {
     if (blockSize <= 0 || blockSize > MAX_BLOCK_SIZE) {
       throw new IllegalArgumentException("blockSize must be > 0 and < " + MAX_BLOCK_SIZE + ", got " + blockSize);
     }
-    if (blockSize % 64 != 0) {
-      throw new IllegalArgumentException("blockSize must be a multiple of 64, got " + blockSize);
+    if (blockSize < 64) {
+      throw new IllegalArgumentException("blockSize must be >= 64, got " + blockSize);
+    }
+    if ((blockSize & (blockSize - 1)) != 0) {
+      throw new IllegalArgumentException("blockSize must be a power of two, got " + blockSize);
     }
   }
 

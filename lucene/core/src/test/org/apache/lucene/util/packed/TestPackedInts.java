@@ -877,10 +877,11 @@ public class TestPackedInts extends LuceneTestCase {
     in.close();
     dir.close();
   }
+
   public void testBlockPackedReaderWriter() throws IOException {
     final int iters = atLeast(2);
     for (int iter = 0; iter < iters; ++iter) {
-      final int blockSize = 64 * _TestUtil.nextInt(random(), 1, 1 << 12);
+      final int blockSize = 1 << _TestUtil.nextInt(random(), 6, 18);
       final int valueCount = random().nextInt(1 << 18);
       final long[] values = new long[valueCount];
       long minValue = 0;
@@ -912,30 +913,29 @@ public class TestPackedInts extends LuceneTestCase {
       final long fp = out.getFilePointer();
       out.close();
 
-      DataInput in = dir.openInput("out.bin", IOContext.DEFAULT);
-      if (random().nextBoolean()) {
-        byte[] buf = new byte[(int) fp];
-        in.readBytes(buf, 0, (int) fp);
-        ((IndexInput) in).close();
-        in = new ByteArrayDataInput(buf);
-      }
-      final BlockPackedReader reader = new BlockPackedReader(in, PackedInts.VERSION_CURRENT, blockSize, valueCount);
+      IndexInput in1 = dir.openInput("out.bin", IOContext.DEFAULT);
+      byte[] buf = new byte[(int) fp];
+      in1.readBytes(buf, 0, (int) fp);
+      in1.seek(0L);
+      ByteArrayDataInput in2 = new ByteArrayDataInput(buf);
+      final DataInput in = random().nextBoolean() ? in1 : in2;
+      final BlockPackedReaderIterator it = new BlockPackedReaderIterator(in, PackedInts.VERSION_CURRENT, blockSize, valueCount);
       for (int i = 0; i < valueCount; ) {
         if (random().nextBoolean()) {
-          assertEquals("" + i, values[i], reader.next());
+          assertEquals("" + i, values[i], it.next());
           ++i;
         } else {
-          final LongsRef nextValues = reader.next(_TestUtil.nextInt(random(), 1, 1024));
+          final LongsRef nextValues = it.next(_TestUtil.nextInt(random(), 1, 1024));
           for (int j = 0; j < nextValues.length; ++j) {
             assertEquals("" + (i + j), values[i + j], nextValues.longs[nextValues.offset + j]);
           }
           i += nextValues.length;
         }
-        assertEquals(i, reader.ord());
+        assertEquals(i, it.ord());
       }
       assertEquals(fp, in instanceof ByteArrayDataInput ? ((ByteArrayDataInput) in).getPosition() : ((IndexInput) in).getFilePointer());
       try {
-        reader.next();
+        it.next();
         assertTrue(false);
       } catch (IOException e) {
         // OK
@@ -946,31 +946,35 @@ public class TestPackedInts extends LuceneTestCase {
       } else {
         ((IndexInput) in).seek(0L);
       }
-      final BlockPackedReader reader2 = new BlockPackedReader(in, PackedInts.VERSION_CURRENT, blockSize, valueCount);
+      final BlockPackedReaderIterator it2 = new BlockPackedReaderIterator(in, PackedInts.VERSION_CURRENT, blockSize, valueCount);
       int i = 0;
       while (true) {
         final int skip = _TestUtil.nextInt(random(), 0, valueCount - i);
-        reader2.skip(skip);
+        it2.skip(skip);
         i += skip;
-        assertEquals(i, reader2.ord());
+        assertEquals(i, it2.ord());
         if (i == valueCount) {
           break;
         } else {
-          assertEquals(values[i], reader2.next());
+          assertEquals(values[i], it2.next());
           ++i;
         }
       }
       assertEquals(fp, in instanceof ByteArrayDataInput ? ((ByteArrayDataInput) in).getPosition() : ((IndexInput) in).getFilePointer());
       try {
-        reader2.skip(1);
+        it2.skip(1);
         assertTrue(false);
       } catch (IOException e) {
         // OK
       }
 
-      if (in instanceof IndexInput) {
-        ((IndexInput) in).close();
+      in1.seek(0L);
+      final BlockPackedReader reader = new BlockPackedReader(in1, PackedInts.VERSION_CURRENT, blockSize, valueCount, random().nextBoolean());
+      for (i = 0; i < valueCount; ++i) {
+        assertEquals("i=" + i, values[i], reader.get(i));
       }
+      assertEquals(in1.getFilePointer(), in1.length());
+      in1.close();
       dir.close();
     }
   }

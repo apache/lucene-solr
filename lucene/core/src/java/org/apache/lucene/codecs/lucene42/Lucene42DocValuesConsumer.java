@@ -36,6 +36,7 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.INPUT_TYPE;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
+import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -53,7 +54,9 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
   static final byte NUMBER = 0;
   static final byte BYTES = 1;
   static final byte FST = 2;
-  
+
+  static final int BLOCK_SIZE = 4096;
+
   final IndexOutput data, meta;
   
   Lucene42DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
@@ -97,15 +100,10 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
       }
     }
 
-    long delta = maxValue - minValue;
-    final int bitsPerValue;
-    if (delta < 0) {
-      bitsPerValue = 64;
-      meta.writeByte((byte)0); // delta-compressed
-    } else if (uniqueValues != null && PackedInts.bitsRequired(uniqueValues.size()-1) < PackedInts.bitsRequired(delta)) {
+    final long delta = maxValue - minValue;
+    if (uniqueValues != null && (delta < 0 || PackedInts.bitsRequired(uniqueValues.size()-1) < PackedInts.bitsRequired(delta))) {
       // smaller to tableize
-      bitsPerValue = PackedInts.bitsRequired(uniqueValues.size()-1);
-      minValue = 0; // we will write indexes into the table instead of values
+      final int bitsPerValue = PackedInts.bitsRequired(uniqueValues.size()-1);
       meta.writeByte((byte)1); // table-compressed
       Long[] decode = uniqueValues.toArray(new Long[uniqueValues.size()]);
       final HashMap<Long,Integer> encode = new HashMap<Long,Integer>();
@@ -114,39 +112,29 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
         data.writeLong(decode[i]);
         encode.put(decode[i], i);
       }
-      final Iterable<Number> original = values;
-      values = new Iterable<Number>() {
-        @Override
-        public Iterator<Number> iterator() {
-          final Iterator<Number> inner = original.iterator();
-          return new Iterator<Number>() {
-            @Override
-            public boolean hasNext() {
-              return inner.hasNext();
-            }
 
-            @Override
-            public Number next() {
-              return encode.get(inner.next());
-            }
+      data.writeVInt(PackedInts.VERSION_CURRENT);
+      data.writeVInt(count);
+      data.writeVInt(bitsPerValue);
 
-            @Override
-            public void remove() { throw new UnsupportedOperationException(); }
-          };
-        }
-      };
+      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, PackedInts.Format.PACKED, count, bitsPerValue, PackedInts.DEFAULT_BUFFER_SIZE);
+      for(Number nv : values) {
+        writer.add(encode.get(nv));
+      }
+      writer.finish();
     } else {
-      bitsPerValue = PackedInts.bitsRequired(delta);
       meta.writeByte((byte)0); // delta-compressed
-    }
 
-    data.writeLong(minValue);
+      data.writeVInt(PackedInts.VERSION_CURRENT);
+      data.writeVInt(count);
+      data.writeVInt(BLOCK_SIZE);
 
-    final PackedInts.Writer writer = PackedInts.getWriter(data, count, bitsPerValue, PackedInts.COMPACT);
-    for(Number nv : values) {
-      writer.add(nv.longValue() - minValue);
+      final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
+      for (Number nv : values) {
+        writer.add(nv.longValue());
+      }
+      writer.finish();
     }
-    writer.finish();
   }
   
   @Override
