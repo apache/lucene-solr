@@ -47,7 +47,7 @@ public class SpatialArgs {
   /**
    * Computes the distance given a shape and the {@code distErrPct}.  The
    * algorithm is the fraction of the distance from the center of the query
-   * shape to its furthest bounding box corner.
+   * shape to its closest bounding box corner.
    *
    * @param shape Mandatory.
    * @param distErrPct 0 to 0.5
@@ -62,11 +62,13 @@ public class SpatialArgs {
       return 0;
     }
     Rectangle bbox = shape.getBoundingBox();
-    //The diagonal distance should be the same computed from any opposite corner,
-    // and this is the longest distance that might be occurring within the shape.
-    double diagonalDist = ctx.getDistCalc().distance(
-        ctx.makePoint(bbox.getMinX(), bbox.getMinY()), bbox.getMaxX(), bbox.getMaxY());
-    return diagonalDist * 0.5 * distErrPct;
+    //Compute the distance from the center to a corner.  Because the distance
+    // to a bottom corner vs a top corner can vary in a geospatial scenario,
+    // take the closest one (greater precision).
+    Point ctr = bbox.getCenter();
+    double y = (ctr.getY() >= 0 ? bbox.getMaxY() : bbox.getMinY());
+    double diagonalDist = ctx.getDistCalc().distance(ctr, bbox.getMaxX(), y);
+    return diagonalDist * distErrPct;
   }
 
   /**
