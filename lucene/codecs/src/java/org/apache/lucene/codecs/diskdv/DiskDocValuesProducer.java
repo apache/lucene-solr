@@ -35,7 +35,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.BlockPackedReader;
 
 class DiskDocValuesProducer extends DocValuesProducer {
   private final Map<Integer,NumericEntry> numerics;
@@ -110,9 +110,10 @@ class DiskDocValuesProducer extends DocValuesProducer {
   
   static NumericEntry readNumericEntry(IndexInput meta) throws IOException {
     NumericEntry entry = new NumericEntry();
-    entry.minValue = meta.readLong();
-    entry.header = PackedInts.readHeader(meta);
+    entry.packedIntsVersion = meta.readVInt();
     entry.offset = meta.readLong();
+    entry.count = meta.readVInt();
+    entry.blockSize = meta.readVInt();
     return entry;
   }
   
@@ -134,11 +135,12 @@ class DiskDocValuesProducer extends DocValuesProducer {
   private NumericDocValues getNumeric(FieldInfo field, final NumericEntry entry) throws IOException {
     final IndexInput data = this.data.clone();
     data.seek(entry.offset);
-    final PackedInts.Reader reader = PackedInts.getDirectReaderNoHeader(data, entry.header);
+
+    final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, true);
     return new NumericDocValues() {
       @Override
       public long get(int docID) {
-        return entry.minValue + reader.get(docID);
+        return reader.get(docID);
       }
     };
   }
@@ -229,9 +231,10 @@ class DiskDocValuesProducer extends DocValuesProducer {
   
   static class NumericEntry {
     long offset;
-    
-    long minValue;
-    PackedInts.Header header;
+
+    int packedIntsVersion;
+    int count;
+    int blockSize;
   }
   
   static class BinaryEntry {

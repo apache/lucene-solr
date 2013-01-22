@@ -28,10 +28,13 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
-import org.apache.lucene.util.packed.PackedInts.FormatAndBits;
 
 class DiskDocValuesConsumer extends DocValuesConsumer {
+
+  static final int BLOCK_SIZE = 16384;
+
   final IndexOutput data, meta;
   final int maxDoc;
   
@@ -57,38 +60,20 @@ class DiskDocValuesConsumer extends DocValuesConsumer {
   
   @Override
   public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
-    meta.writeVInt(field.number);
-    long minValue = Long.MAX_VALUE;
-    long maxValue = Long.MIN_VALUE;
     int count = 0;
-    for(Number nv : values) {
-      long v = nv.longValue();
-      minValue = Math.min(minValue, v);
-      maxValue = Math.max(maxValue, v);
-      count++;
+    for (@SuppressWarnings("unused") Number nv : values) {
+      ++count;
     }
-    meta.writeLong(minValue);
-    long delta = maxValue - minValue;
-    final int bitsPerValue;
-    if (delta < 0) {
-      bitsPerValue = 64;
-    } else {
-      bitsPerValue = PackedInts.bitsRequired(delta);
-    }
-    FormatAndBits formatAndBits = PackedInts.fastestFormatAndBits(count, bitsPerValue, PackedInts.COMPACT);
-    
-    // nocommit: refactor this crap in PackedInts.java
-    // e.g. Header.load()/save() or something rather than how it works now.
-    CodecUtil.writeHeader(meta, PackedInts.CODEC_NAME, PackedInts.VERSION_CURRENT);
-    meta.writeVInt(bitsPerValue);
-    meta.writeVInt(count);
-    meta.writeVInt(formatAndBits.format.getId());
-    
+
+    meta.writeVInt(field.number);
+    meta.writeVInt(PackedInts.VERSION_CURRENT);
     meta.writeLong(data.getFilePointer());
-    
-    final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, formatAndBits.format, count, formatAndBits.bitsPerValue, 0);
-    for(Number nv : values) {
-      writer.add(nv.longValue() - minValue);
+    meta.writeVInt(count);
+    meta.writeVInt(BLOCK_SIZE);
+
+    final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
+    for (Number nv : values) {
+      writer.add(nv.longValue());
     }
     writer.finish();
   }
