@@ -91,11 +91,20 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         }
         // DV Types are packed in one byte
         byte val = input.readByte();
-        final DocValuesType docValuesType = getDocValuesTypeFake((byte) (val & 0x0F));
-        final DocValuesType normsType = getDocValuesTypeFake((byte) ((val >>> 4) & 0x0F));
-        final Map<String,String> attributes = input.readStringStringMap();
+        final LegacyDocValuesType oldValuesType = getDocValuesType((byte) (val & 0x0F));
+        final LegacyDocValuesType oldNormsType = getDocValuesType((byte) ((val >>> 4) & 0x0F));
+        final Map<String,String> attributes = input.readStringStringMap();;
+        if (oldValuesType.mapping != null) {
+          attributes.put(LEGACY_DV_TYPE_KEY, oldValuesType.name());
+        }
+        if (oldNormsType.mapping != null) {
+          if (oldNormsType.mapping != DocValuesType.NUMERIC) {
+            throw new CorruptIndexException("invalid norm type: " + oldNormsType);
+          }
+          attributes.put(LEGACY_NORM_TYPE_KEY, oldNormsType.name());
+        }
         infos[i] = new FieldInfo(name, isIndexed, fieldNumber, storeTermVector, 
-          omitNorms, storePayloads, indexOptions, docValuesType, normsType, Collections.unmodifiableMap(attributes));
+          omitNorms, storePayloads, indexOptions, oldValuesType.mapping, oldNormsType.mapping, Collections.unmodifiableMap(attributes));
       }
 
       if (input.getFilePointer() != input.length()) {
@@ -113,53 +122,34 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
     }
   }
   
-  // nocommit: this is not actually how 4.0 was encoded
-  private static DocValuesType getDocValuesTypeFake(byte b) {
-    if (b == 0) {
-      return null;
-    } else if (b == 1) {
-      return DocValuesType.NUMERIC;
-    } else if (b == 2) {
-      return DocValuesType.BINARY;
-    } else if (b == 3) {
-      return DocValuesType.SORTED;
-    } else {
-      throw new AssertionError();
+  static final String LEGACY_DV_TYPE_KEY = Lucene40FieldInfosReader.class.getSimpleName() + ".dvtype";
+  static final String LEGACY_NORM_TYPE_KEY = Lucene40FieldInfosReader.class.getSimpleName() + ".normtype";
+  
+  // mapping of 4.0 types -> 4.2 types
+  static enum LegacyDocValuesType {
+    NONE(null),
+    VAR_INTS(DocValuesType.NUMERIC),
+    FLOAT_32(DocValuesType.NUMERIC),
+    FLOAT_64(DocValuesType.NUMERIC),
+    BYTES_FIXED_STRAIGHT(DocValuesType.BINARY),
+    BYTES_FIXED_DEREF(DocValuesType.BINARY),
+    BYTES_VAR_STRAIGHT(DocValuesType.BINARY),
+    BYTES_VAR_DEREF(DocValuesType.BINARY),
+    FIXED_INTS_16(DocValuesType.NUMERIC),
+    FIXED_INTS_32(DocValuesType.NUMERIC),
+    FIXED_INTS_64(DocValuesType.NUMERIC),
+    FIXED_INTS_8(DocValuesType.NUMERIC),
+    BYTES_FIXED_SORTED(DocValuesType.SORTED),
+    BYTES_VAR_SORTED(DocValuesType.SORTED);
+    
+    final DocValuesType mapping;
+    LegacyDocValuesType(DocValuesType mapping) {
+      this.mapping = mapping;
     }
   }
-/*
-  private static DocValues.Type getDocValuesType(final byte b) {
-    switch(b) {
-      case 0:
-        return null;
-      case 1:
-        return DocValues.Type.VAR_INTS;
-      case 2:
-        return DocValues.Type.FLOAT_32;
-      case 3:
-        return DocValues.Type.FLOAT_64;
-      case 4:
-        return DocValues.Type.BYTES_FIXED_STRAIGHT;
-      case 5:
-        return DocValues.Type.BYTES_FIXED_DEREF;
-      case 6:
-        return DocValues.Type.BYTES_VAR_STRAIGHT;
-      case 7:
-        return DocValues.Type.BYTES_VAR_DEREF;
-      case 8:
-        return DocValues.Type.FIXED_INTS_16;
-      case 9:
-        return DocValues.Type.FIXED_INTS_32;
-      case 10:
-        return DocValues.Type.FIXED_INTS_64;
-      case 11:
-        return DocValues.Type.FIXED_INTS_8;
-      case 12:
-        return DocValues.Type.BYTES_FIXED_SORTED;
-      case 13:
-        return DocValues.Type.BYTES_VAR_SORTED;
-      default:
-        throw new IllegalStateException("unhandled indexValues type " + b);
-    }
-  }*/
+  
+  // decodes a 4.0 type
+  private static LegacyDocValuesType getDocValuesType(byte b) {
+    return LegacyDocValuesType.values()[b];
+  }
 }

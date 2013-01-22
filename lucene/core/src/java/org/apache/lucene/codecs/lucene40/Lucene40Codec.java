@@ -87,17 +87,16 @@ public class Lucene40Codec extends Codec {
     return infosFormat;
   }
   
-  // nocommit need a read-only Lucene40DVFormat / read-write in the impersonator
-  private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Disk");
+  //nocommit need a read-only Lucene40DocValuesFormat / read-write in the impersonator
+  private final DocValuesFormat defaultDVFormat = new Lucene40DocValuesFormat();
 
   @Override
   public final DocValuesFormat docValuesFormat() {
-    // nocommit
     return defaultDVFormat;
   }
 
   // nocommit need a read-only Lucene40NormsFormat / read-write in the impersonator
-  private final NormsFormat normsFormat = new Lucene42NormsFormat();
+  private final NormsFormat normsFormat = new Lucene40NormsFormat();
 
   @Override
   public final NormsFormat normsFormat() {
