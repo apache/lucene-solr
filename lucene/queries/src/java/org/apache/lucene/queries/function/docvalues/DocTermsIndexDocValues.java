@@ -26,6 +26,7 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.UnicodeUtil;
@@ -33,11 +34,12 @@ import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
 /**
- * Internal class, subject to change.
  * Serves as base class for FunctionValues based on DocTermsIndex.
+ * @lucene.internal
  */
 public abstract class DocTermsIndexDocValues extends FunctionValues {
   protected final SortedDocValues termsIndex;
+  protected final Bits valid;
   protected final ValueSource vs;
   protected final MutableValueStr val = new MutableValueStr();
   protected final BytesRef spare = new BytesRef();
@@ -46,40 +48,42 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
   public DocTermsIndexDocValues(ValueSource vs, AtomicReaderContext context, String field) throws IOException {
     try {
       termsIndex = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
+      valid = FieldCache.DEFAULT.getDocsWithField(context.reader(), field);
     } catch (RuntimeException e) {
       throw new DocTermsIndexException(field, e);
     }
     this.vs = vs;
   }
 
-  public SortedDocValues getSortedDocValues() {
-    return termsIndex;
-  }
-
   protected abstract String toTerm(String readableValue);
 
   @Override
   public boolean exists(int doc) {
-    return termsIndex.getOrd(doc) != -1;
+    return valid.get(doc);
   }
 
+  @Override
+  public int ordVal(int doc) {
+    return termsIndex.getOrd(doc);
+  }
+
+  @Override
+  public int numOrd() {
+    return termsIndex.getValueCount();
+  }
 
   @Override
   public boolean bytesVal(int doc, BytesRef target) {
-    int ord=termsIndex.getOrd(doc);
-    if (ord==-1) {
-      target.length = 0;
-      return false;
-    }
-    termsIndex.lookupOrd(ord, target);
-    return true;
+    termsIndex.get(doc, target);
+    return target.length > 0;
   }
 
   @Override
   public String strVal(int doc) {
-    int ord=termsIndex.getOrd(doc);
-    if (ord==-1) return null;
-    termsIndex.lookupOrd(ord, spare);
+    termsIndex.get(doc, spare);
+    if (spare.length == 0) {
+      return null;
+    }
     UnicodeUtil.UTF8toUTF16(spare, spareChars);
     return spareChars.toString();
   }
@@ -149,13 +153,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
 
       @Override
       public void fillValue(int doc) {
-        int ord = termsIndex.getOrd(doc);
-        mval.exists = ord != -1;
-        if (!mval.exists) {
-          mval.value.length = 0;
-        } else {
-          termsIndex.lookupOrd(ord, mval.value);
-        }
+        termsIndex.get(doc, mval.value);
       }
     };
   }

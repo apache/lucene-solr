@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,14 +28,12 @@ import java.util.WeakHashMap;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocTermOrds;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.ArrayUtil;
@@ -628,10 +625,21 @@ class FieldCacheImpl implements FieldCache {
     @Override
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
     throws IOException {
-      final String field = key.field;      
+      final String field = key.field;
+      final FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
+      final int maxDoc = reader.maxDoc();
+
+      if (fieldInfo == null) {
+        // field does not exist or has no value
+        return new Bits.MatchNoBits(maxDoc);
+      } else if (fieldInfo.hasDocValues()) {
+        // doc values are dense
+        return new Bits.MatchAllBits(maxDoc);
+      }
+
+      // Visit all docs that have terms for this field
       FixedBitSet res = null;
       Terms terms = reader.terms(field);
-      final int maxDoc = reader.maxDoc();
       if (terms != null) {
         final int termsDocCount = terms.getDocCount();
         assert termsDocCount <= maxDoc;

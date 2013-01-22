@@ -37,7 +37,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
-import org.junit.Ignore;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
@@ -71,11 +70,13 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
 
     RandomIndexWriter iw = new RandomIndexWriter(random(), d, iwConfig);
     for (int i = 0; i < nDocs; ++i) {
-      id.setIntValue(i);
+      id.setLongValue(i);
       switch (type) {
         case SORTED:
         case BINARY:
-          vals[i] = _TestUtil.randomSimpleString(random(), 20);
+          do {
+            vals[i] = _TestUtil.randomSimpleString(random(), 20);
+          } while (((String) vals[i]).isEmpty());
           f.setBytesValue(new BytesRef((String) vals[i]));
           break;
         case NUMERIC:
@@ -115,7 +116,6 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
         } else if (vs instanceof LongFieldSource) {
           assertTrue(values.objectVal(i) instanceof Long);
           assertTrue(values.bytesVal(i, bytes));
-          assertEquals(8, bytes.length);
         } else {
           throw new AssertionError();
         }
@@ -143,8 +143,6 @@ public class TestDocValuesFieldSources extends LuceneTestCase {
     d.close();
   }
 
-  // nocommit
-  @Ignore("fix this test")
   public void test() throws IOException {
     for (DocValuesType type : DocValuesType.values()) {
       test(type);
