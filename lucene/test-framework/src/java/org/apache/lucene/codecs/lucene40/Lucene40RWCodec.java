@@ -1,12 +1,9 @@
-package org.apache.lucene.codecs.lucene41;
+package org.apache.lucene.codecs.lucene40;
 
 import java.io.IOException;
 
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
-import org.apache.lucene.codecs.StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosWriter;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,11 +22,8 @@ import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosWriter;
  * limitations under the License.
  */
 
-/**
- * Read-write version of {@link Lucene41Codec} for testing.
- */
-public class Lucene41RWCodec extends Lucene41Codec {
-  private final StoredFieldsFormat fieldsFormat = new Lucene41StoredFieldsFormat();
+/** Read-write version of Lucene40Codec for testing */
+public final class Lucene40RWCodec extends Lucene40Codec {
   private final FieldInfosFormat fieldInfos = new Lucene40FieldInfosFormat() {
     @Override
     public FieldInfosWriter getFieldInfosWriter() throws IOException {
@@ -40,10 +34,5 @@ public class Lucene41RWCodec extends Lucene41Codec {
   @Override
   public FieldInfosFormat fieldInfosFormat() {
     return fieldInfos;
-  }
-
-  @Override
-  public StoredFieldsFormat storedFieldsFormat() {
-    return fieldsFormat;
   }
 }

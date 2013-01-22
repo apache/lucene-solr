@@ -95,7 +95,7 @@ public class Lucene41Codec extends Codec {
   }
   
   @Override
-  public final FieldInfosFormat fieldInfosFormat() {
+  public FieldInfosFormat fieldInfosFormat() {
     return fieldInfosFormat;
   }
   

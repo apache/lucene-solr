@@ -37,21 +37,6 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.experimental
  */
 public class Lucene40FieldInfosWriter extends FieldInfosWriter {
-  
-  /** Extension of field infos */
-  static final String FIELD_INFOS_EXTENSION = "fnm";
-  
-  static final String CODEC_NAME = "Lucene40FieldInfos";
-  static final int FORMAT_START = 0;
-  static final int FORMAT_CURRENT = FORMAT_START;
-  
-  static final byte IS_INDEXED = 0x1;
-  static final byte STORE_TERMVECTOR = 0x2;
-  static final byte STORE_OFFSETS_IN_POSTINGS = 0x4;
-  static final byte OMIT_NORMS = 0x10;
-  static final byte STORE_PAYLOADS = 0x20;
-  static final byte OMIT_TERM_FREQ_AND_POSITIONS = 0x40;
-  static final byte OMIT_POSITIONS = -128;
 
   /** Sole constructor. */
   public Lucene40FieldInfosWriter() {
@@ -59,27 +44,27 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
   
   @Override
   public void write(Directory directory, String segmentName, FieldInfos infos, IOContext context) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segmentName, "", FIELD_INFOS_EXTENSION);
+    final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene40FieldInfosFormat.FIELD_INFOS_EXTENSION);
     IndexOutput output = directory.createOutput(fileName, context);
     boolean success = false;
     try {
-      CodecUtil.writeHeader(output, CODEC_NAME, FORMAT_CURRENT);
+      CodecUtil.writeHeader(output, Lucene40FieldInfosFormat.CODEC_NAME, Lucene40FieldInfosFormat.FORMAT_CURRENT);
       output.writeVInt(infos.size());
       for (FieldInfo fi : infos) {
         IndexOptions indexOptions = fi.getIndexOptions();
         byte bits = 0x0;
-        if (fi.hasVectors()) bits |= STORE_TERMVECTOR;
-        if (fi.omitsNorms()) bits |= OMIT_NORMS;
-        if (fi.hasPayloads()) bits |= STORE_PAYLOADS;
+        if (fi.hasVectors()) bits |= Lucene40FieldInfosFormat.STORE_TERMVECTOR;
+        if (fi.omitsNorms()) bits |= Lucene40FieldInfosFormat.OMIT_NORMS;
+        if (fi.hasPayloads()) bits |= Lucene40FieldInfosFormat.STORE_PAYLOADS;
         if (fi.isIndexed()) {
-          bits |= IS_INDEXED;
+          bits |= Lucene40FieldInfosFormat.IS_INDEXED;
           assert indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0 || !fi.hasPayloads();
           if (indexOptions == IndexOptions.DOCS_ONLY) {
-            bits |= OMIT_TERM_FREQ_AND_POSITIONS;
+            bits |= Lucene40FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS;
           } else if (indexOptions == IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS) {
-            bits |= STORE_OFFSETS_IN_POSTINGS;
+            bits |= Lucene40FieldInfosFormat.STORE_OFFSETS_IN_POSTINGS;
           } else if (indexOptions == IndexOptions.DOCS_AND_FREQS) {
-            bits |= OMIT_POSITIONS;
+            bits |= Lucene40FieldInfosFormat.OMIT_POSITIONS;
           }
         }
         output.writeString(fi.name);
@@ -105,7 +90,7 @@ public class Lucene40FieldInfosWriter extends FieldInfosWriter {
   }
   
   /** this is not actually how 4.0 wrote this! */
-  // nocommit: make a 4.1 fieldinfos writer
+  // nocommit: make a 4.0 fieldinfos writer
   public byte docValuesByteFake(DocValuesType type) {
     if (type == null) {
       return 0;

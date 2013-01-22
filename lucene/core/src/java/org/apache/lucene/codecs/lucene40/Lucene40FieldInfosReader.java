@@ -39,7 +39,9 @@ import org.apache.lucene.util.IOUtils;
  * 
  * @lucene.experimental
  * @see Lucene40FieldInfosFormat
+ * @deprecated Only for reading old 4.0 and 4.1 segments
  */
+@Deprecated
 public class Lucene40FieldInfosReader extends FieldInfosReader {
 
   /** Sole constructor. */
@@ -48,14 +50,14 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
 
   @Override
   public FieldInfos read(Directory directory, String segmentName, IOContext iocontext) throws IOException {
-    final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene40FieldInfosWriter.FIELD_INFOS_EXTENSION);
+    final String fileName = IndexFileNames.segmentFileName(segmentName, "", Lucene40FieldInfosFormat.FIELD_INFOS_EXTENSION);
     IndexInput input = directory.openInput(fileName, iocontext);
     
     boolean success = false;
     try {
-      CodecUtil.checkHeader(input, Lucene40FieldInfosWriter.CODEC_NAME, 
-                                   Lucene40FieldInfosWriter.FORMAT_START, 
-                                   Lucene40FieldInfosWriter.FORMAT_CURRENT);
+      CodecUtil.checkHeader(input, Lucene40FieldInfosFormat.CODEC_NAME, 
+                                   Lucene40FieldInfosFormat.FORMAT_START, 
+                                   Lucene40FieldInfosFormat.FORMAT_CURRENT);
 
       final int size = input.readVInt(); //read in the size
       FieldInfo infos[] = new FieldInfo[size];
@@ -64,18 +66,18 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
         String name = input.readString();
         final int fieldNumber = input.readVInt();
         byte bits = input.readByte();
-        boolean isIndexed = (bits & Lucene40FieldInfosWriter.IS_INDEXED) != 0;
-        boolean storeTermVector = (bits & Lucene40FieldInfosWriter.STORE_TERMVECTOR) != 0;
-        boolean omitNorms = (bits & Lucene40FieldInfosWriter.OMIT_NORMS) != 0;
-        boolean storePayloads = (bits & Lucene40FieldInfosWriter.STORE_PAYLOADS) != 0;
+        boolean isIndexed = (bits & Lucene40FieldInfosFormat.IS_INDEXED) != 0;
+        boolean storeTermVector = (bits & Lucene40FieldInfosFormat.STORE_TERMVECTOR) != 0;
+        boolean omitNorms = (bits & Lucene40FieldInfosFormat.OMIT_NORMS) != 0;
+        boolean storePayloads = (bits & Lucene40FieldInfosFormat.STORE_PAYLOADS) != 0;
         final IndexOptions indexOptions;
         if (!isIndexed) {
           indexOptions = null;
-        } else if ((bits & Lucene40FieldInfosWriter.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
+        } else if ((bits & Lucene40FieldInfosFormat.OMIT_TERM_FREQ_AND_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_ONLY;
-        } else if ((bits & Lucene40FieldInfosWriter.OMIT_POSITIONS) != 0) {
+        } else if ((bits & Lucene40FieldInfosFormat.OMIT_POSITIONS) != 0) {
           indexOptions = IndexOptions.DOCS_AND_FREQS;
-        } else if ((bits & Lucene40FieldInfosWriter.STORE_OFFSETS_IN_POSTINGS) != 0) {
+        } else if ((bits & Lucene40FieldInfosFormat.STORE_OFFSETS_IN_POSTINGS) != 0) {
           indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
         } else {
           indexOptions = IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
@@ -111,6 +113,7 @@ public class Lucene40FieldInfosReader extends FieldInfosReader {
     }
   }
   
+  // nocommit: this is not actually how 4.0 was encoded
   private static DocValuesType getDocValuesTypeFake(byte b) {
     if (b == 0) {
       return null;

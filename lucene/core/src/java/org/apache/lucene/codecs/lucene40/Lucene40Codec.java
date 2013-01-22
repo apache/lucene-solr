@@ -43,7 +43,7 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 // if they are backwards compatible or smallish we can probably do the backwards in the postingsreader
 // (it writes a minor version, etc).
 @Deprecated
-public final class Lucene40Codec extends Codec {
+public class Lucene40Codec extends Codec {
   private final StoredFieldsFormat fieldsFormat = new Lucene40StoredFieldsFormat();
   private final TermVectorsFormat vectorsFormat = new Lucene40TermVectorsFormat();
   private final FieldInfosFormat fieldInfosFormat = new Lucene40FieldInfosFormat();
@@ -78,7 +78,7 @@ public final class Lucene40Codec extends Codec {
   }
   
   @Override
-  public final FieldInfosFormat fieldInfosFormat() {
+  public FieldInfosFormat fieldInfosFormat() {
     return fieldInfosFormat;
   }
   
