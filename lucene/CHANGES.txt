@@ -64,6 +64,11 @@ New Features
 * LUCENE-4599: New oal.codecs.compressing.CompressingTermVectorsFormat which
   compresses term vectors into chunks of documents similarly to
   CompressingStoredFieldsFormat. (Adrien Grand)
+  
+Bug Fixes
+
+* LUCENE-4705: Pass on FilterStrategy in FilteredQuery if the filtered query is 
+  rewritten. (Simon Willnauer)
 
 ======================= Lucene 4.1.0 =======================
 
