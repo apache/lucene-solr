@@ -1,5 +1,7 @@
 package org.apache.lucene.document;
 
+import org.apache.lucene.search.FieldCache;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,41 +19,30 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.FieldInfo;
-
 /**
+ * Syntactic sugar for encoding floats as NumericDocValues
+ * via {@link Float#floatToRawIntBits(float)}.
  * <p>
- * Field that stores a per-document <code>float</code> value for scoring, 
- * sorting or value retrieval. Here's an example usage:
- * 
- * <pre class="prettyprint">
- *   document.add(new FloatDocValuesField(name, 22f));
- * </pre>
- * 
+ * Per-document floating point values can be retrieved via
+ * {@link FieldCache#getFloats(org.apache.lucene.index.AtomicReader, String, boolean)}.
  * <p>
- * If you also need to store the value, you should add a
- * separate {@link StoredField} instance.
- * */
+ * <b>NOTE</b>: In most all cases this will be rather inefficient,
+ * requiring four bytes per document. Consider encoding floating
+ * point values yourself with only as much precision as you require.
+ */
+public class FloatDocValuesField extends NumericDocValuesField {
 
-public class FloatDocValuesField extends StoredField {
-
-  /**
-   * Type for 32-bit float DocValues.
-   */
-  public static final FieldType TYPE = new FieldType();
-  static {
-    TYPE.setDocValueType(FieldInfo.DocValuesType.NUMERIC);
-    TYPE.freeze();
+  public FloatDocValuesField(String name, float value) {
+    super(name, Float.floatToRawIntBits(value));
   }
 
-  /** 
-   * Creates a new DocValues field with the specified 32-bit float value 
-   * @param name field name
-   * @param value 32-bit float value
-   * @throws IllegalArgumentException if the field name is null
-   */
-  public FloatDocValuesField(String name, float value) {
-    super(name, TYPE);
-    fieldsData = value;
+  @Override
+  public void setFloatValue(float value) {
+    super.setLongValue(Float.floatToRawIntBits(value));
+  }
+  
+  @Override
+  public void setLongValue(long value) {
+    throw new IllegalArgumentException("cannot change value type from Float to Long");
   }
 }

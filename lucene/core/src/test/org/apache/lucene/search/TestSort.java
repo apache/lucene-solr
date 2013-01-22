@@ -31,15 +31,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.DerefBytesDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.PackedLongDocValuesField;
-import org.apache.lucene.document.SortedBytesDocValuesField;
-import org.apache.lucene.document.StraightBytesDocValuesField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -61,7 +58,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util._TestUtil;
@@ -156,7 +152,7 @@ public class TestSort extends LuceneTestCase {
         doc.add(new TextField("contents", data[i][1], Field.Store.NO));
         if (data[i][2] != null) {
           doc.add(new StringField("int", data[i][2], Field.Store.NO));
-          doc.add(new PackedLongDocValuesField("int_dv", Integer.parseInt(data[i][2])));
+          doc.add(new NumericDocValuesField("int_dv", Integer.parseInt(data[i][2])));
         }
         if (data[i][3] != null) {
           doc.add(new StringField("float", data[i][3], Field.Store.NO));
@@ -166,7 +162,7 @@ public class TestSort extends LuceneTestCase {
           doc.add(new StringField("string", data[i][4], Field.Store.NO));
           switch(stringDVType) {
             case SORTED:
-              doc.add(new SortedBytesDocValuesField("string_dv", new BytesRef(data[i][4])));
+              doc.add(new SortedDocValuesField("string_dv", new BytesRef(data[i][4])));
               break;
             case BINARY:
               doc.add(new BinaryDocValuesField("string_dv", new BytesRef(data[i][4])));
@@ -180,7 +176,7 @@ public class TestSort extends LuceneTestCase {
         if (data[i][7] != null) doc.add(new StringField("long",     data[i][7], Field.Store.NO));
         if (data[i][8] != null) {
           doc.add(new StringField("double", data[i][8], Field.Store.NO));
-          doc.add(new DoubleDocValuesField("double_dv", Double.parseDouble(data[i][8])));
+          doc.add(new NumericDocValuesField("double_dv", Double.doubleToRawLongBits(Double.parseDouble(data[i][8]))));
         }
         if (data[i][9] != null) doc.add(new StringField("short",     data[i][9], Field.Store.NO));
         if (data[i][10] != null) doc.add(new StringField("byte",     data[i][10], Field.Store.NO));
@@ -225,16 +221,16 @@ public class TestSort extends LuceneTestCase {
       //doc.add(new Field("contents", Integer.toString(i), Field.Store.NO, Field.Index.ANALYZED));
       doc.add(new StringField("string", num, Field.Store.NO));
       if (dvStringSorted) {
-        doc.add(new SortedBytesDocValuesField("string_dv", new BytesRef(num)));
+        doc.add(new SortedDocValuesField("string_dv", new BytesRef(num)));
       } else {
-        doc.add(new DerefBytesDocValuesField("string_dv", new BytesRef(num)));
+        doc.add(new BinaryDocValuesField("string_dv", new BytesRef(num)));
       }
       String num2 = getRandomCharString(getRandomNumber(1, 4), 48, 50);
       doc.add(new StringField("string2", num2, Field.Store.NO));
       if (dvStringSorted) {
-        doc.add(new SortedBytesDocValuesField("string2_dv", new BytesRef(num2)));
+        doc.add(new SortedDocValuesField("string2_dv", new BytesRef(num2)));
       } else {
-        doc.add(new DerefBytesDocValuesField("string2_dv", new BytesRef(num2)));
+        doc.add(new BinaryDocValuesField("string2_dv", new BytesRef(num2)));
       }
       doc.add(new Field("tracer2", num2, onlyStored));
       for(IndexableField f2 : doc.getFields()) {
@@ -248,16 +244,16 @@ public class TestSort extends LuceneTestCase {
       //doc.add(new Field("contents", Integer.toString(i), Field.Store.NO, Field.Index.ANALYZED));
       doc.add(new StringField("string_fixed", numFixed, Field.Store.NO));
       if (dvStringSorted) {
-        doc.add(new SortedBytesDocValuesField("string_fixed_dv", new BytesRef(numFixed), true));
+        doc.add(new SortedDocValuesField("string_fixed_dv", new BytesRef(numFixed)));
       } else {
-        doc.add(new DerefBytesDocValuesField("string_fixed_dv", new BytesRef(numFixed), true));
+        doc.add(new BinaryDocValuesField("string_fixed_dv", new BytesRef(numFixed)));
       }
       String num2Fixed = getRandomCharString(fixedLen2, 48, 52);
       doc.add(new StringField("string2_fixed", num2Fixed, Field.Store.NO));
       if (dvStringSorted) {
-        doc.add(new SortedBytesDocValuesField("string2_fixed_dv", new BytesRef(num2Fixed), true));
+        doc.add(new SortedDocValuesField("string2_fixed_dv", new BytesRef(num2Fixed)));
       } else {
-        doc.add(new DerefBytesDocValuesField("string2_fixed_dv", new BytesRef(num2Fixed), true));
+        doc.add(new BinaryDocValuesField("string2_fixed_dv", new BytesRef(num2Fixed)));
       }
       doc.add(new Field("tracer2_fixed", num2Fixed, onlyStored));
 
@@ -1423,9 +1419,9 @@ public class TestSort extends LuceneTestCase {
       }
       
       final Document doc = new Document();
-      doc.add(new SortedBytesDocValuesField("stringdv", br));
+      doc.add(new SortedDocValuesField("stringdv", br));
       doc.add(newStringField("string", s, Field.Store.NO));
-      doc.add(new PackedLongDocValuesField("id", numDocs));
+      doc.add(new NumericDocValuesField("id", numDocs));
       docValues.add(br);
       writer.addDocument(doc);
       numDocs++;

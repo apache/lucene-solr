@@ -64,12 +64,10 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
         addBinaryField(fieldInfo, docID, field.binaryValue());
       } else if (dvType == DocValuesType.SORTED) {
         addSortedField(fieldInfo, docID, field.binaryValue());
-        // nocommit: hack
-      } else if (dvType == DocValuesType.NUMERIC && field.numericValue() instanceof Float) {
-        addNumericField(fieldInfo, docID, field.numericValue().floatValue());
-      } else if (dvType == DocValuesType.NUMERIC && field.numericValue() instanceof Double) {
-        addNumericField(fieldInfo, docID, field.numericValue().doubleValue());
       } else if (dvType == DocValuesType.NUMERIC) {
+        if (!(field.numericValue() instanceof Long)) {
+          throw new IllegalArgumentException("illegal type " + field.numericValue().getClass() + ": DocValues types must be Long");
+        }
         addNumericField(fieldInfo, docID, field.numericValue().longValue());
       } else {
         assert false: "unrecognized DocValues.Type: " + dvType;
@@ -140,34 +138,6 @@ final class DocValuesProcessor extends StoredFieldsConsumer {
       numericWriter = (NumberDVWriter) writer;
     }
     numericWriter.addValue(docID, value);
-  }
-
-  void addNumericField(FieldInfo fieldInfo, int docID, float value) {
-    DocValuesWriter writer = writers.get(fieldInfo.name);
-    NumberDVWriter numericWriter;
-    if (writer == null) {
-      numericWriter = new NumberDVWriter(fieldInfo, bytesUsed);
-      writers.put(fieldInfo.name, numericWriter);
-    } else if (!(writer instanceof NumberDVWriter)) {
-      throw new IllegalArgumentException("Incompatible DocValues type: field \"" + fieldInfo.name + "\" changed from " + getTypeDesc(writer) + " to numeric");
-    } else {
-      numericWriter = (NumberDVWriter) writer;
-    }
-    numericWriter.addValue(docID, Float.floatToRawIntBits(value));
-  }
-
-  void addNumericField(FieldInfo fieldInfo, int docID, double value) {
-    DocValuesWriter writer = writers.get(fieldInfo.name);
-    NumberDVWriter numericWriter;
-    if (writer == null) {
-      numericWriter = new NumberDVWriter(fieldInfo, bytesUsed);
-      writers.put(fieldInfo.name, numericWriter);
-    } else if (!(writer instanceof NumberDVWriter)) {
-      throw new IllegalArgumentException("Incompatible DocValues type: field \"" + fieldInfo.name + "\" changed from " + getTypeDesc(writer) + " to numeric");
-    } else {
-      numericWriter = (NumberDVWriter) writer;
-    }
-    numericWriter.addValue(docID, Double.doubleToRawLongBits(value));
   }
 
   private String getTypeDesc(DocValuesWriter obj) {

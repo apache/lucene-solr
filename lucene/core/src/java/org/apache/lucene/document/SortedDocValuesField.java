@@ -17,18 +17,17 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.AtomicReader;      // javadocs
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * <p>
- * Field that stores a per-document <code>long</code> value 
- * for scoring, sorting or value retrieval.  The values are 
- * encoded in the index an in RAM (when loaded via 
- * {@link AtomicReader#getNumericDocValues(String)})
- * using packed ints. Here's an example usage:
+ * Field that stores
+ * a per-document {@link BytesRef} value, indexed for
+ * sorting.  Here's an example usage:
  * 
  * <pre class="prettyprint">
- *   document.add(new PackedLongDocValuesField(name, 22L));
+ *   document.add(new SortedBytesDocValuesField(name, new BytesRef("hello")));
  * </pre>
  * 
  * <p>
@@ -37,16 +36,25 @@ import org.apache.lucene.index.AtomicReader;      // javadocs
  * 
  * */
 
-@Deprecated
-public class PackedLongDocValuesField extends LongDocValuesField {
+public class SortedDocValuesField extends StoredField {
 
-  /** 
-   * Creates a new DocValues field with the specified long value 
+  /**
+   * Type for sorted bytes DocValues
+   */
+  public static final FieldType TYPE = new FieldType();
+  static {
+    TYPE.setDocValueType(FieldInfo.DocValuesType.SORTED);
+    TYPE.freeze();
+  }
+
+  /**
+   * Create a new sorted DocValues field.
    * @param name field name
-   * @param value 64-bit long value
+   * @param bytes binary content
    * @throws IllegalArgumentException if the field name is null
    */
-  public PackedLongDocValuesField(String name, long value) {
-    super(name, value);
+  public SortedDocValuesField(String name, BytesRef bytes) {
+    super(name, TYPE);
+    fieldsData = bytes;
   }
 }

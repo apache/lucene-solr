@@ -212,10 +212,10 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       if (canUseIDV) {
         switch(valueType) {
         case BINARY:
-          valuesField = new StraightBytesDocValuesField("group_dv", new BytesRef());
+          valuesField = new BinaryDocValuesField("group_dv", new BytesRef());
           break;
         case SORTED:
-          valuesField = new SortedBytesDocValuesField("group_dv", new BytesRef());
+          valuesField = new SortedDocValuesField("group_dv", new BytesRef());
           break;
         default:
           fail("unhandled type");
@@ -537,10 +537,10 @@ public class AllGroupHeadsCollectorTest extends LuceneTestCase {
       Field valuesField = null;
       switch(valueType) {
       case BINARY:
-        valuesField = new StraightBytesDocValuesField(groupField + "_dv", new BytesRef(value));
+        valuesField = new BinaryDocValuesField(groupField + "_dv", new BytesRef(value));
         break;
       case SORTED:
-        valuesField = new SortedBytesDocValuesField(groupField + "_dv", new BytesRef(value));
+        valuesField = new SortedDocValuesField(groupField + "_dv", new BytesRef(value));
         break;
       default:
         fail("unhandled type");

@@ -27,8 +27,8 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.LongDocValuesField;
-import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
@@ -62,7 +62,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
-    doc.add(new LongDocValuesField("dv", 5));
+    doc.add(new NumericDocValuesField("dv", 5));
     iwriter.addDocument(doc);
     iwriter.close();
     
@@ -132,8 +132,8 @@ public class TestDemoDocValue extends LuceneTestCase {
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
-    doc.add(new LongDocValuesField("dv1", 5));
-    doc.add(new LongDocValuesField("dv2", 17));
+    doc.add(new NumericDocValuesField("dv1", 5));
+    doc.add(new NumericDocValuesField("dv2", 17));
     iwriter.addDocument(doc);
     iwriter.close();
     
@@ -170,7 +170,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
-    doc.add(new LongDocValuesField("dv1", 5));
+    doc.add(new NumericDocValuesField("dv1", 5));
     doc.add(new BinaryDocValuesField("dv2", new BytesRef("hello world")));
     iwriter.addDocument(doc);
     iwriter.close();
@@ -210,8 +210,8 @@ public class TestDemoDocValue extends LuceneTestCase {
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
-    doc.add(new SortedBytesDocValuesField("dv1", new BytesRef("hello hello")));
-    doc.add(new LongDocValuesField("dv2", 5));
+    doc.add(new SortedDocValuesField("dv1", new BytesRef("hello hello")));
+    doc.add(new NumericDocValuesField("dv2", 5));
     doc.add(new BinaryDocValuesField("dv3", new BytesRef("hello world")));
     iwriter.addDocument(doc);
     iwriter.close();
@@ -256,8 +256,8 @@ public class TestDemoDocValue extends LuceneTestCase {
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
     doc.add(new BinaryDocValuesField("dv1", new BytesRef("hello world")));
-    doc.add(new SortedBytesDocValuesField("dv2", new BytesRef("hello hello")));
-    doc.add(new LongDocValuesField("dv3", 5));
+    doc.add(new SortedDocValuesField("dv2", new BytesRef("hello hello")));
+    doc.add(new NumericDocValuesField("dv3", 5));
     iwriter.addDocument(doc);
     iwriter.close();
     
@@ -299,10 +299,10 @@ public class TestDemoDocValue extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
-    doc.add(new LongDocValuesField("dv", 1));
+    doc.add(new NumericDocValuesField("dv", 1));
     iwriter.addDocument(doc);
     doc = new Document();
-    doc.add(new LongDocValuesField("dv", 2));
+    doc.add(new NumericDocValuesField("dv", 2));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     iwriter.close();
@@ -328,12 +328,12 @@ public class TestDemoDocValue extends LuceneTestCase {
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
     doc.add(newField("id", "0", StringField.TYPE_STORED));
-    doc.add(new LongDocValuesField("dv", -10));
+    doc.add(new NumericDocValuesField("dv", -10));
     iwriter.addDocument(doc);
     iwriter.commit();
     doc = new Document();
     doc.add(newField("id", "1", StringField.TYPE_STORED));
-    doc.add(new LongDocValuesField("dv", 99));
+    doc.add(new NumericDocValuesField("dv", 99));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     iwriter.close();
@@ -366,10 +366,10 @@ public class TestDemoDocValue extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
-    doc.add(new LongDocValuesField("dv", Long.MIN_VALUE));
+    doc.add(new NumericDocValuesField("dv", Long.MIN_VALUE));
     iwriter.addDocument(doc);
     doc = new Document();
-    doc.add(new LongDocValuesField("dv", Long.MAX_VALUE));
+    doc.add(new NumericDocValuesField("dv", Long.MAX_VALUE));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     iwriter.close();
@@ -394,10 +394,10 @@ public class TestDemoDocValue extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
-    doc.add(new LongDocValuesField("dv", -8841491950446638677L));
+    doc.add(new NumericDocValuesField("dv", -8841491950446638677L));
     iwriter.addDocument(doc);
     doc = new Document();
-    doc.add(new LongDocValuesField("dv", 9062230939892376225L));
+    doc.add(new NumericDocValuesField("dv", 9062230939892376225L));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     iwriter.close();
@@ -501,7 +501,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
-    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world")));
+    doc.add(new SortedDocValuesField("dv", new BytesRef("hello world")));
     iwriter.addDocument(doc);
     iwriter.close();
     
@@ -537,10 +537,10 @@ public class TestDemoDocValue extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
-    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world 1")));
+    doc.add(new SortedDocValuesField("dv", new BytesRef("hello world 1")));
     iwriter.addDocument(doc);
     doc = new Document();
-    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world 2")));
+    doc.add(new SortedDocValuesField("dv", new BytesRef("hello world 2")));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     iwriter.close();
@@ -568,13 +568,13 @@ public class TestDemoDocValue extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
-    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world 1")));
+    doc.add(new SortedDocValuesField("dv", new BytesRef("hello world 1")));
     iwriter.addDocument(doc);
     doc = new Document();
-    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world 2")));
+    doc.add(new SortedDocValuesField("dv", new BytesRef("hello world 2")));
     iwriter.addDocument(doc);
     doc = new Document();
-    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world 1")));
+    doc.add(new SortedDocValuesField("dv", new BytesRef("hello world 1")));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     iwriter.close();
@@ -607,12 +607,12 @@ public class TestDemoDocValue extends LuceneTestCase {
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
     doc.add(newField("id", "0", StringField.TYPE_STORED));
-    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world 1")));
+    doc.add(new SortedDocValuesField("dv", new BytesRef("hello world 1")));
     iwriter.addDocument(doc);
     iwriter.commit();
     doc = new Document();
     doc.add(newField("id", "1", StringField.TYPE_STORED));
-    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world 2")));
+    doc.add(new SortedDocValuesField("dv", new BytesRef("hello world 2")));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     iwriter.close();
@@ -677,7 +677,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
-    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("hello world 2")));
+    doc.add(new SortedDocValuesField("dv", new BytesRef("hello world 2")));
     iwriter.addDocument(doc);
     // 2nd doc missing the DV field
     iwriter.addDocument(new Document());
@@ -721,7 +721,7 @@ public class TestDemoDocValue extends LuceneTestCase {
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
-    doc.add(new LongDocValuesField("dv1", 5));
+    doc.add(new NumericDocValuesField("dv1", 5));
     doc.add(new BinaryDocValuesField("dv2", new BytesRef("hello world")));
     iwriter.addDocument(doc);
     iwriter.close();
@@ -760,10 +760,10 @@ public class TestDemoDocValue extends LuceneTestCase {
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
-    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("")));
+    doc.add(new SortedDocValuesField("dv", new BytesRef("")));
     iwriter.addDocument(doc);
     doc = new Document();
-    doc.add(new SortedBytesDocValuesField("dv", new BytesRef("")));
+    doc.add(new SortedDocValuesField("dv", new BytesRef("")));
     iwriter.addDocument(doc);
     iwriter.forceMerge(1);
     iwriter.close();
@@ -810,6 +810,55 @@ public class TestDemoDocValue extends LuceneTestCase {
     assertEquals("", scratch.utf8ToString());
 
     ireader.close();
+    directory.close();
+  }
+  
+  // nocommit: test exactly 32766, also add field-level check so you get exc faster
+  // same for sorted bytes
+  public void testTooLargeBytes() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    Directory directory = newDirectory();
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    byte bytes[] = new byte[100000];
+    BytesRef b = new BytesRef(bytes);
+    random().nextBytes(bytes);
+    doc.add(new BinaryDocValuesField("dv", b));
+    try {
+      iwriter.addDocument(doc);
+      fail("did not get expected exception");
+    } catch (IllegalArgumentException expected) {
+      // expected
+    }
+    iwriter.close();
+
+    directory.close();
+  }
+  
+  public void testTooLargeSortedBytes() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    Directory directory = newDirectory();
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    byte bytes[] = new byte[100000];
+    BytesRef b = new BytesRef(bytes);
+    random().nextBytes(bytes);
+    doc.add(new SortedDocValuesField("dv", b));
+    try {
+      iwriter.addDocument(doc);
+      fail("did not get expected exception");
+    } catch (IllegalArgumentException expected) {
+      // expected
+    }
+    iwriter.close();
     directory.close();
   }
 }

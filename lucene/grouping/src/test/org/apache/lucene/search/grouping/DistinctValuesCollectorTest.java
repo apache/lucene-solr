@@ -354,16 +354,16 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     Field valuesField = null;
     switch (type) {
       case NUMERIC:
-        valuesField = new PackedLongDocValuesField(dvField, Integer.parseInt(value));
+        valuesField = new NumericDocValuesField(dvField, Integer.parseInt(value));
         break;
       /* nocommit: case FLOAT_64:
         valuesField = new DoubleDocValuesField(dvField, Double.parseDouble(value));
         break; */
       case BINARY:
-        valuesField = new StraightBytesDocValuesField(dvField, new BytesRef(value));
+        valuesField = new BinaryDocValuesField(dvField, new BytesRef(value));
         break;
       case SORTED:
-        valuesField = new SortedBytesDocValuesField(dvField, new BytesRef(value));
+        valuesField = new SortedDocValuesField(dvField, new BytesRef(value));
         break;
     }
     doc.add(valuesField);

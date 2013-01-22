@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
+
 import java.io.IOException;
 import java.util.Iterator;
 
@@ -49,6 +51,9 @@ class BytesDVWriter extends DocValuesWriter {
     if (value == null) {
       // nocommit improve message
       throw new IllegalArgumentException("null binaryValue not allowed (field=" + fieldInfo.name + ")");
+    }
+    if (value.length > (BYTE_BLOCK_SIZE - 2)) {
+      throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" is too large, must be <= " + (BYTE_BLOCK_SIZE - 2));
     }
     
     // Fill in any holes:

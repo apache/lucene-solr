@@ -151,11 +151,12 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
       codec = Codec.forName("Lucene41");
       assert codec instanceof Lucene41RWCodec : "fix your classpath to have tests-framework.jar before lucene-core.jar";
     } else if (("random".equals(TEST_POSTINGSFORMAT) == false) || ("random".equals(TEST_DOCVALUESFORMAT) == false)) {
-      // the user wired postings or DV
+      // the user wired postings or DV: this is messy
+      // refactor into RandomCodec....
       
       final PostingsFormat format;
-      if ("MockRandom".equals(TEST_POSTINGSFORMAT) || "random".equals(TEST_POSTINGSFORMAT)) {
-        format = new MockRandomPostingsFormat(random);
+      if ("random".equals(TEST_POSTINGSFORMAT)) {
+        format = PostingsFormat.forName("Lucene41");
       } else {
         format = PostingsFormat.forName(TEST_POSTINGSFORMAT);
       }

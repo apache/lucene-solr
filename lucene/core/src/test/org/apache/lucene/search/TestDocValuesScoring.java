@@ -31,7 +31,6 @@ import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -49,7 +48,7 @@ public class TestDocValuesScoring extends LuceneTestCase {
     Document doc = new Document();
     Field field = newTextField("foo", "", Field.Store.NO);
     doc.add(field);
-    Field dvField = new FloatDocValuesField("foo_boost", 0.0f);
+    Field dvField = new FloatDocValuesField("foo_boost", 0.0F);
     doc.add(dvField);
     Field field2 = newTextField("bar", "", Field.Store.NO);
     doc.add(field2);

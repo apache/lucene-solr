@@ -19,8 +19,6 @@ package org.apache.lucene.search.similarities;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.ByteDocValuesField; // javadoc
-import org.apache.lucene.document.FloatDocValuesField; // javadoc
 import org.apache.lucene.index.AtomicReader; // javadoc
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.FieldInvertState;
@@ -68,8 +66,7 @@ import org.apache.lucene.util.SmallFloat; // javadoc
  * depending upon whether the average should reflect field sparsity.
  * <p>
  * Additional scoring factors can be stored in named
- * <code>*DocValuesField</code>s (such as {@link
- * ByteDocValuesField} or {@link FloatDocValuesField}), and accessed
+ * <code>NumericDocValuesField</code>s and accessed
  * at query-time with {@link AtomicReader#getNumericDocValues(String)}.
  * <p>
  * Finally, using index-time boosts (either via folding into the normalization byte or

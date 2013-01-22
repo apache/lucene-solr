@@ -19,16 +19,16 @@ package org.apache.lucene.search;
 
 import java.util.Arrays;
 
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.FloatField;
-import org.apache.lucene.document.IntDocValuesField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
-import org.apache.lucene.document.SortedBytesDocValuesField;
-import org.apache.lucene.document.StraightBytesDocValuesField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -67,11 +67,11 @@ public class TestSearchAfter extends LuceneTestCase {
       document.add(newStringField("bytesval", _TestUtil.randomRealisticUnicodeString(random()), Field.Store.NO));
       document.add(new DoubleField("double", random().nextDouble(), Field.Store.NO));
 
-      document.add(new IntDocValuesField("intdocvalues", random().nextInt()));
+      document.add(new NumericDocValuesField("intdocvalues", random().nextInt()));
       document.add(new FloatDocValuesField("floatdocvalues", random().nextFloat()));
-      document.add(new SortedBytesDocValuesField("sortedbytesdocvalues", new BytesRef(_TestUtil.randomRealisticUnicodeString(random()))));
-      document.add(new SortedBytesDocValuesField("sortedbytesdocvaluesval", new BytesRef(_TestUtil.randomRealisticUnicodeString(random()))));
-      document.add(new StraightBytesDocValuesField("straightbytesdocvalues", new BytesRef(_TestUtil.randomRealisticUnicodeString(random()))));
+      document.add(new SortedDocValuesField("sortedbytesdocvalues", new BytesRef(_TestUtil.randomRealisticUnicodeString(random()))));
+      document.add(new SortedDocValuesField("sortedbytesdocvaluesval", new BytesRef(_TestUtil.randomRealisticUnicodeString(random()))));
+      document.add(new BinaryDocValuesField("straightbytesdocvalues", new BytesRef(_TestUtil.randomRealisticUnicodeString(random()))));
 
       iw.addDocument(document);
     }

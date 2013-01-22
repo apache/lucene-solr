@@ -25,8 +25,8 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.LongDocValuesField;
-import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -46,12 +46,12 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
     for(int i=0;i<numDocs;i++) {
       Document d = new Document();
       long number = random().nextLong();
-      d.add(new LongDocValuesField("number", number));
+      d.add(new NumericDocValuesField("number", number));
       BytesRef bytes = new BytesRef(_TestUtil.randomRealisticUnicodeString(random()));
       d.add(new BinaryDocValuesField("bytes", bytes));
       binary.add(bytes);
       bytes = new BytesRef(_TestUtil.randomRealisticUnicodeString(random()));
-      d.add(new SortedBytesDocValuesField("sorted", bytes));
+      d.add(new SortedDocValuesField("sorted", bytes));
       sorted.add(bytes);
       w.addDocument(d);
       numbers.add(number);

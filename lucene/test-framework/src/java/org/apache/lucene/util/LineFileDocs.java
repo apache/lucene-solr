@@ -36,7 +36,7 @@ import java.util.zip.GZIPInputStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 
@@ -184,7 +184,7 @@ public class LineFileDocs implements Closeable {
       doc.add(date);
 
       if (useDocValues) {
-        titleDV = new SortedBytesDocValuesField("titleDV", new BytesRef());
+        titleDV = new SortedDocValuesField("titleDV", new BytesRef());
         doc.add(titleDV);
       } else {
         titleDV = null;

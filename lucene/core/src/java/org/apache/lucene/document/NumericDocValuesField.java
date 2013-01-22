@@ -18,56 +18,40 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.util.BytesRef;
 
 /**
  * <p>
- * Field that stores
- * a per-document {@link BytesRef} value, indexed for
- * sorting.  Here's an example usage:
+ * Field that stores a per-document <code>long</code> value for scoring, 
+ * sorting or value retrieval. Here's an example usage:
  * 
  * <pre class="prettyprint">
- *   document.add(new SortedBytesDocValuesField(name, new BytesRef("hello")));
+ *   document.add(new LongDocValuesField(name, 22L));
  * </pre>
  * 
  * <p>
  * If you also need to store the value, you should add a
  * separate {@link StoredField} instance.
- * 
  * */
 
-public class SortedBytesDocValuesField extends StoredField {
+public class NumericDocValuesField extends StoredField {
 
   /**
-   * Type for sorted bytes DocValues: all with the same length
+   * Type for numeric DocValues.
    */
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDocValueType(FieldInfo.DocValuesType.SORTED);
+    TYPE.setDocValueType(FieldInfo.DocValuesType.NUMERIC);
     TYPE.freeze();
   }
 
-  /**
-   * Create a new sorted DocValues field.
+  /** 
+   * Creates a new DocValues field with the specified 64-bit long value 
    * @param name field name
-   * @param bytes binary content
+   * @param value 64-bit long value
    * @throws IllegalArgumentException if the field name is null
    */
-  public SortedBytesDocValuesField(String name, BytesRef bytes) {
+  public NumericDocValuesField(String name, long value) {
     super(name, TYPE);
-    fieldsData = bytes;
-  }
-
-  /**
-   * Create a new fixed or variable length sorted DocValues field.
-   * @param name field name
-   * @param bytes binary content
-   * @param isFixedLength true if all values have the same length.
-   * @throws IllegalArgumentException if the field name is null
-   */
-  @Deprecated
-  public SortedBytesDocValuesField(String name, BytesRef bytes, boolean isFixedLength) {
-    super(name, TYPE);
-    fieldsData = bytes;
+    fieldsData = Long.valueOf(value);
   }
 }

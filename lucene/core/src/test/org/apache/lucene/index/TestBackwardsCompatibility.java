@@ -30,21 +30,16 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.ByteDocValuesField;
-import org.apache.lucene.document.DerefBytesDocValuesField;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatDocValuesField;
-import org.apache.lucene.document.IntDocValuesField;
 import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongDocValuesField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.LongField;
-import org.apache.lucene.document.PackedLongDocValuesField;
-import org.apache.lucene.document.ShortDocValuesField;
-import org.apache.lucene.document.SortedBytesDocValuesField;
-import org.apache.lucene.document.StraightBytesDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
@@ -697,23 +692,23 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     doc.add(new IntField("trieInt", id, Field.Store.NO));
     doc.add(new LongField("trieLong", (long) id, Field.Store.NO));
     // add docvalues fields
-    doc.add(new ByteDocValuesField("dvByte", (byte) id));
+    doc.add(new NumericDocValuesField("dvByte", (byte) id));
     byte bytes[] = new byte[] {
       (byte)(id >>> 24), (byte)(id >>> 16),(byte)(id >>> 8),(byte)id
     };
     BytesRef ref = new BytesRef(bytes);
-    doc.add(new DerefBytesDocValuesField("dvBytesDerefFixed", ref, true));
-    doc.add(new DerefBytesDocValuesField("dvBytesDerefVar", ref, false));
-    doc.add(new SortedBytesDocValuesField("dvBytesSortedFixed", ref, true));
-    doc.add(new SortedBytesDocValuesField("dvBytesSortedVar", ref, false));
-    doc.add(new StraightBytesDocValuesField("dvBytesStraightFixed", ref, true));
-    doc.add(new StraightBytesDocValuesField("dvBytesStraightVar", ref, false));
+    doc.add(new SortedDocValuesField("dvBytesDerefFixed", ref));
+    doc.add(new SortedDocValuesField("dvBytesDerefVar", ref));
+    doc.add(new SortedDocValuesField("dvBytesSortedFixed", ref));
+    doc.add(new SortedDocValuesField("dvBytesSortedVar", ref));
+    doc.add(new BinaryDocValuesField("dvBytesStraightFixed", ref));
+    doc.add(new BinaryDocValuesField("dvBytesStraightVar", ref));
     doc.add(new DoubleDocValuesField("dvDouble", (double)id));
     doc.add(new FloatDocValuesField("dvFloat", (float)id));
-    doc.add(new IntDocValuesField("dvInt", id));
-    doc.add(new LongDocValuesField("dvLong", id));
-    doc.add(new PackedLongDocValuesField("dvPacked", id));
-    doc.add(new ShortDocValuesField("dvShort", (short)id));
+    doc.add(new NumericDocValuesField("dvInt", id));
+    doc.add(new NumericDocValuesField("dvLong", id));
+    doc.add(new NumericDocValuesField("dvPacked", id));
+    doc.add(new NumericDocValuesField("dvShort", (short)id));
     // a field with both offsets and term vectors for a cross-check
     FieldType customType3 = new FieldType(TextField.TYPE_STORED);
     customType3.setStoreTermVectors(true);

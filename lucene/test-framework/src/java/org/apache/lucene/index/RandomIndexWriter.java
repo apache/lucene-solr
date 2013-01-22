@@ -26,18 +26,10 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.ByteDocValuesField; 
-import org.apache.lucene.document.DerefBytesDocValuesField; 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoubleDocValuesField; 
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatDocValuesField; 
-import org.apache.lucene.document.IntDocValuesField; 
-import org.apache.lucene.document.LongDocValuesField; 
-import org.apache.lucene.document.PackedLongDocValuesField; 
-import org.apache.lucene.document.ShortDocValuesField; 
-import org.apache.lucene.document.SortedBytesDocValuesField; 
-import org.apache.lucene.document.StraightBytesDocValuesField; 
+import org.apache.lucene.document.NumericDocValuesField; 
+import org.apache.lucene.document.SortedDocValuesField; 
 import org.apache.lucene.index.FieldInfo.DocValuesType;
 import org.apache.lucene.index.IndexWriter; // javadoc
 import org.apache.lucene.search.Query;
@@ -234,10 +226,10 @@ public class RandomIndexWriter implements Closeable {
       f = new BinaryDocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(r, 20)));
       break;
     case SORTED:
-      f = new SortedBytesDocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(r, 20)));
+      f = new SortedDocValuesField(name, new BytesRef(_TestUtil.randomUnicodeString(r, 20)));
       break;
     case NUMERIC:
-      f = new LongDocValuesField(name, r.nextLong());
+      f = new NumericDocValuesField(name, r.nextLong());
       break;
     default:
       throw new IllegalArgumentException("no such type: " + type);

@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -176,7 +176,7 @@ public class GroupingSearchTest extends LuceneTestCase {
   private void addGroupField(Document doc, String groupField, String value, boolean canUseIDV) {
     doc.add(new TextField(groupField, value, Field.Store.YES));
     if (canUseIDV) {
-      doc.add(new SortedBytesDocValuesField(groupField, new BytesRef(value)));
+      doc.add(new SortedDocValuesField(groupField, new BytesRef(value)));
     }
   }
 

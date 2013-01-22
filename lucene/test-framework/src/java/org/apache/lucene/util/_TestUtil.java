@@ -47,12 +47,10 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.ByteDocValuesField;
-import org.apache.lucene.document.DerefBytesDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LongDocValuesField;
-import org.apache.lucene.document.SortedBytesDocValuesField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
@@ -863,13 +861,13 @@ public class _TestUtil {
         switch(dvType) {
           // nocommit: not quite right!
         case NUMERIC:
-          field2 = new LongDocValuesField(field1.name(), field1.numericValue().longValue());
+          field2 = new NumericDocValuesField(field1.name(), field1.numericValue().longValue());
           break;
         case BINARY:
           field2 = new BinaryDocValuesField(field1.name(), field1.binaryValue());
           break;
         case SORTED:
-          field2 = new SortedBytesDocValuesField(field1.name(), field1.binaryValue());
+          field2 = new SortedDocValuesField(field1.name(), field1.binaryValue());
           break;
         default:
           throw new IllegalStateException("unknown Type: " + dvType);
