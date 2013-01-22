@@ -27,7 +27,6 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
@@ -36,7 +35,8 @@ import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /**
- * Implements the Lucene 4.2 index format, with configurable per-field postings formats.
+ * Implements the Lucene 4.2 index format, with configurable per-field postings
+ * and docvalues formats.
  * <p>
  * If you want to reuse functionality of this codec in another codec, extend
  * {@link FilterCodec}.
@@ -50,7 +50,7 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 public class Lucene42Codec extends Codec {
   private final StoredFieldsFormat fieldsFormat = new Lucene41StoredFieldsFormat();
   private final TermVectorsFormat vectorsFormat = new Lucene40TermVectorsFormat();
-  private final FieldInfosFormat fieldInfosFormat = new Lucene40FieldInfosFormat();
+  private final FieldInfosFormat fieldInfosFormat = new Lucene42FieldInfosFormat();
   private final SegmentInfoFormat infosFormat = new Lucene40SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene40LiveDocsFormat();
   

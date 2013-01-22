@@ -1,6 +1,7 @@
 package org.apache.lucene.document;
 
-import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.index.AtomicReader; // javadocs
+import org.apache.lucene.search.FieldCache; // javadocs
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,7 +25,7 @@ import org.apache.lucene.search.FieldCache;
  * via {@link Float#floatToRawIntBits(float)}.
  * <p>
  * Per-document floating point values can be retrieved via
- * {@link FieldCache#getFloats(org.apache.lucene.index.AtomicReader, String, boolean)}.
+ * {@link FieldCache#getFloats(AtomicReader, String, boolean)}.
  * <p>
  * <b>NOTE</b>: In most all cases this will be rather inefficient,
  * requiring four bytes per document. Consider encoding floating
