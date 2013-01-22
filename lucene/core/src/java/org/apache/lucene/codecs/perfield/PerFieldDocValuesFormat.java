@@ -182,9 +182,6 @@ public abstract class PerFieldDocValuesFormat extends DocValuesFormat {
     }
   }
 
-  // nocommit what if SimpleNormsFormat wants to use this
-  // ...?  we have a "boolean isNorms" issue...?  I guess we
-  // just need to make a PerFieldNormsFormat?
   private class FieldsReader extends DocValuesProducer {
 
     private final Map<String,DocValuesProducer> fields = new TreeMap<String,DocValuesProducer>();

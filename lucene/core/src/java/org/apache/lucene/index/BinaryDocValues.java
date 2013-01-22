@@ -19,6 +19,9 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.util.BytesRef;
 
+/**
+ * A per-document byte[]
+ */
 public abstract class BinaryDocValues {
 
   /** Lookup the value for document.
@@ -29,8 +32,12 @@ public abstract class BinaryDocValues {
    *  "private" instance should be used for each source. */
   public abstract void get(int docID, BytesRef result);
 
+  /**
+   * Indicates the value was missing for the document.
+   */
   public static final byte[] MISSING = new byte[0];
   
+  /** An empty BinaryDocValues which returns empty bytes for every document */
   public static final BinaryDocValues EMPTY = new BinaryDocValues() {
     @Override
     public void get(int docID, BytesRef result) {

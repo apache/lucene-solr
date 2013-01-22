@@ -17,9 +17,18 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+/**
+ * A per-document numeric value.
+ */
 public abstract class NumericDocValues {
+  /**
+   * Returns the numeric value for the specified document ID.
+   * @param docID document ID to lookup
+   * @return numeric value
+   */
   public abstract long get(int docID);
 
+  /** An empty NumericDocValues which returns zero for every document */
   public static final NumericDocValues EMPTY = new NumericDocValues() {
     @Override
     public long get(int docID) {

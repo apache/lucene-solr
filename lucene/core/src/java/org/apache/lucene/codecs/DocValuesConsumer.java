@@ -37,10 +37,7 @@ import org.apache.lucene.util.PriorityQueue;
 
 // prototype streaming DV api
 public abstract class DocValuesConsumer implements Closeable {
-  // TODO: are any of these params too "infringing" on codec?
-  // we want codec to get necessary stuff from IW, but trading off against merge complexity.
 
-  // nocommit should we pass SegmentWriteState...?
   public abstract void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException;    
 
   public abstract void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException;

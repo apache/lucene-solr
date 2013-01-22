@@ -175,10 +175,10 @@ public abstract class AtomicReader extends IndexReader {
    *  used by a single thread. */
   public abstract SortedDocValues getSortedDocValues(String field) throws IOException;
 
-  // nocommit document that these are thread-private:
   /** Returns {@link NumericDocValues} representing norms
    *  for this field, or null if no {@link NumericDocValues}
-   *  were indexed. */
+   *  were indexed. The returned instance should only be
+   *  used by a single thread. */
   public abstract NumericDocValues getNormValues(String field) throws IOException;
 
   /**

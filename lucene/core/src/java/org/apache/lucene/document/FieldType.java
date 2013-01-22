@@ -416,7 +416,7 @@ public class FieldType implements IndexableFieldType  {
    * {@inheritDoc}
    * <p>
    * The default is <code>null</code> (no docValues) 
-   * @see #setDocValueType(DocValuesType)
+   * @see #setDocValueType(org.apache.lucene.index.FieldInfo.DocValuesType)
    */
   @Override
   public DocValuesType docValueType() {

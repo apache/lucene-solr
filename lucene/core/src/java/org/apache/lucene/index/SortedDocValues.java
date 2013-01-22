@@ -19,11 +19,35 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.util.BytesRef;
 
+/**
+ * A per-document byte[] with presorted values.
+ * <p>
+ * Per-Document values in a SortedDocValues are deduplicated, dereferenced,
+ * and sorted into a dictionary of unique values. A pointer to the
+ * dictionary value (ordinal) can be retrieved for each document. Ordinals
+ * are dense and in increasing sorted order.
+ */
 public abstract class SortedDocValues extends BinaryDocValues {
+  /**
+   * Returns the ordinal for the specified docID.
+   * @param  docID document ID to lookup
+   * @return ordinal for the document: this is dense, starts at 0, then
+   *         increments by 1 for the next value in sorted order. 
+   */
   public abstract int getOrd(int docID);
 
+  /** Retrieves the value for the specified ordinal.
+   * @param ord ordinal to lookup
+   * @param result will be populated with the ordinal's value
+   * @see #getOrd(int) 
+   */
   public abstract void lookupOrd(int ord, BytesRef result);
 
+  /**
+   * Returns the number of unique values.
+   * @return number of unique values in this SortedDocValues. This is
+   *         also equivalent to one plus the maximum ordinal.
+   */
   public abstract int getValueCount();
 
   @Override
@@ -37,6 +61,7 @@ public abstract class SortedDocValues extends BinaryDocValues {
     }
   }
 
+  /** An empty SortedDocValues which returns empty bytes for every document */
   public static final SortedDocValues EMPTY = new SortedDocValues() {
     @Override
     public int getOrd(int docID) {
