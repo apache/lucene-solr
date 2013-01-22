@@ -873,22 +873,7 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
     }
 
     @Override
-    public DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags)
-        throws IOException {
-      return docsAndPositions(liveDocs, reuse, flags);
-    }
-
-    @Override
-    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs,
-        DocsAndPositionsEnum reuse, int flags) throws IOException {
-      if ((flags & POSITIONS) == 0 && (flags & OFFSETS) == 0) {
-        return null;
-      }
-      return docsAndPositions(liveDocs, (DocsEnum) reuse, flags);
-    }
-
-    private DocsAndPositionsEnum docsAndPositions(Bits liveDocs,
-        DocsEnum reuse, int ignoredFlags) throws IOException {
+    public final DocsEnum docs(Bits liveDocs, DocsEnum reuse, int flags) throws IOException {
       final TVDocsEnum docsEnum;
       if (reuse != null && reuse instanceof TVDocsEnum) {
         docsEnum = (TVDocsEnum) reuse;
@@ -898,6 +883,15 @@ public final class CompressingTermVectorsReader extends TermVectorsReader implem
 
       docsEnum.reset(liveDocs, termFreqs[ord], positionIndex[ord], positions, startOffsets, lengths, payloads, payloadIndex);
       return docsEnum;
+    }
+
+    @Override
+    public DocsAndPositionsEnum docsAndPositions(Bits liveDocs, DocsAndPositionsEnum reuse, int flags) throws IOException {
+      if (positions == null && startOffsets == null) {
+        return null;
+      }
+      // TODO: slightly sheisty
+      return (DocsAndPositionsEnum) docs(liveDocs, reuse, flags);
     }
 
   }
