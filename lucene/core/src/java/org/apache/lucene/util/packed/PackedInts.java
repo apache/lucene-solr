@@ -24,7 +24,6 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.LongsRef;
-import org.apache.lucene.util.packed.PackedInts.Format;
 
 /**
  * Simplistic compression for array of unsigned long values.
@@ -654,6 +653,53 @@ public class PackedInts {
       }
       writer.finish();
     }
+  }
+
+  /** A {@link Reader} which has all its values equal to 0 (bitsPerValue = 0). */
+  public static final class NullReader implements Reader {
+
+    private final int valueCount;
+
+    /** Sole constructor. */
+    public NullReader(int valueCount) {
+      this.valueCount = valueCount;
+    }
+
+    @Override
+    public long get(int index) {
+      return 0;
+    }
+
+    @Override
+    public int get(int index, long[] arr, int off, int len) {
+      return 0;
+    }
+
+    @Override
+    public int getBitsPerValue() {
+      return 0;
+    }
+
+    @Override
+    public int size() {
+      return valueCount;
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return 0;
+    }
+
+    @Override
+    public Object getArray() {
+      return null;
+    }
+
+    @Override
+    public boolean hasArray() {
+      return false;
+    }
+
   }
 
   /** A write-once Writer.

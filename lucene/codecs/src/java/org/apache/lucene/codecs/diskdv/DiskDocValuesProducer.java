@@ -33,9 +33,11 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.BlockPackedReader;
+import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 
 class DiskDocValuesProducer extends DocValuesProducer {
   private final Map<Integer,NumericEntry> numerics;
@@ -81,28 +83,14 @@ class DiskDocValuesProducer extends DocValuesProducer {
       } else if (type == DocValuesType.BINARY) {
         BinaryEntry b = readBinaryEntry(meta);
         binaries.put(fieldNumber, b);
-        if (b.minLength != b.maxLength) {
-          if (meta.readVInt() != fieldNumber) {
-            throw new CorruptIndexException("binary entry for field: " + fieldNumber + " is corrupt");
-          }
-          // variable length byte[]: read addresses as a numeric dv field
-          numerics.put(fieldNumber, readNumericEntry(meta));
-        }
       } else if (type == DocValuesType.SORTED) {
         BinaryEntry b = readBinaryEntry(meta);
         binaries.put(fieldNumber, b);
-        if (b.minLength != b.maxLength) {
-          if (meta.readVInt() != fieldNumber) {
-            throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt");
-          }
-          // variable length byte[]: read addresses as a numeric dv field
-          numerics.put(fieldNumber, readNumericEntry(meta));
-        }
-        // sorted byte[]: read ords as a numeric dv field
         if (meta.readVInt() != fieldNumber) {
           throw new CorruptIndexException("sorted entry for field: " + fieldNumber + " is corrupt");
         }
-        ords.put(fieldNumber, readNumericEntry(meta));
+        NumericEntry n = readNumericEntry(meta);
+        ords.put(fieldNumber, n);
       }
       fieldNumber = meta.readVInt();
     }
@@ -123,6 +111,11 @@ class DiskDocValuesProducer extends DocValuesProducer {
     entry.maxLength = meta.readVInt();
     entry.count = meta.readVInt();
     entry.offset = meta.readLong();
+    if (entry.minLength != entry.maxLength) {
+      entry.addressesOffset = meta.readLong();
+      entry.packedIntsVersion = meta.readVInt();
+      entry.blockSize = meta.readVInt();
+    }
     return entry;
   }
 
@@ -157,6 +150,7 @@ class DiskDocValuesProducer extends DocValuesProducer {
   
   private BinaryDocValues getFixedBinary(FieldInfo field, final BinaryEntry bytes) {
     final IndexInput data = this.data.clone();
+
     return new BinaryDocValues() {
       @Override
       public void get(int docID, BytesRef result) {
@@ -178,18 +172,20 @@ class DiskDocValuesProducer extends DocValuesProducer {
   
   private BinaryDocValues getVariableBinary(FieldInfo field, final BinaryEntry bytes) throws IOException {
     final IndexInput data = this.data.clone();
-    final NumericDocValues addresses = getNumeric(field);
+    data.seek(bytes.addressesOffset);
+
+    final MonotonicBlockPackedReader addresses = new MonotonicBlockPackedReader(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count, true);
     return new BinaryDocValues() {
       @Override
       public void get(int docID, BytesRef result) {
-        long startAddress = docID == 0 ? bytes.offset : bytes.offset + addresses.get(docID-1);
+        long startAddress = bytes.offset + (docID == 0 ? 0 : + addresses.get(docID-1));
         long endAddress = bytes.offset + addresses.get(docID);
         int length = (int) (endAddress - startAddress);
         try {
           data.seek(startAddress);
           if (result.bytes.length < length) {
             result.offset = 0;
-            result.bytes = new byte[length];
+            result.bytes = new byte[ArrayUtil.oversize(length, 1)];
           }
           data.readBytes(result.bytes, result.offset, length);
           result.length = length;
@@ -243,5 +239,8 @@ class DiskDocValuesProducer extends DocValuesProducer {
     int count;
     int minLength;
     int maxLength;
+    long addressesOffset;
+    int packedIntsVersion;
+    int blockSize;
   }
 }

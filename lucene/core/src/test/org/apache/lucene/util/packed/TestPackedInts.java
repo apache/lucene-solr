@@ -979,4 +979,45 @@ public class TestPackedInts extends LuceneTestCase {
     }
   }
 
+  public void testMonotonicBlockPackedReaderWriter() throws IOException {
+    final int iters = atLeast(2);
+    for (int iter = 0; iter < iters; ++iter) {
+      final int blockSize = 1 << _TestUtil.nextInt(random(), 6, 18);
+      final int valueCount = random().nextInt(1 << 18);
+      final long[] values = new long[valueCount];
+      if (valueCount > 0) {
+        values[0] = random().nextBoolean() ? random().nextInt(10) : random().nextInt(Integer.MAX_VALUE);
+        int maxDelta = random().nextInt(64);
+        for (int i = 1; i < valueCount; ++i) {
+          if (random().nextDouble() < 0.1d) {
+            maxDelta = random().nextInt(64);
+          }
+          values[i] = Math.max(0, values[i-1] + _TestUtil.nextInt(random(), -16, maxDelta));
+        }
+      }
+
+      final Directory dir = newDirectory();
+      final IndexOutput out = dir.createOutput("out.bin", IOContext.DEFAULT);
+      final MonotonicBlockPackedWriter writer = new MonotonicBlockPackedWriter(out, blockSize);
+      for (int i = 0; i < valueCount; ++i) {
+        assertEquals(i, writer.ord());
+        writer.add(values[i]);
+      }
+      assertEquals(valueCount, writer.ord());
+      writer.finish();
+      assertEquals(valueCount, writer.ord());
+      final long fp = out.getFilePointer();
+      out.close();
+
+      final IndexInput in = dir.openInput("out.bin", IOContext.DEFAULT);
+      final MonotonicBlockPackedReader reader = new MonotonicBlockPackedReader(in, PackedInts.VERSION_CURRENT, blockSize, valueCount, random().nextBoolean());
+      assertEquals(fp, in.getFilePointer());
+      for (int i = 0; i < valueCount; ++i) {
+        assertEquals("i=" +i, values[i], reader.get(i));
+      }
+      in.close();
+      dir.close();
+    }
+  }
+
 }

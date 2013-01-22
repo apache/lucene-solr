@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.lucene42;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
@@ -37,6 +36,7 @@ import org.apache.lucene.util.fst.FST.INPUT_TYPE;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
 import org.apache.lucene.util.packed.BlockPackedWriter;
+import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
@@ -113,8 +113,8 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
         encode.put(decode[i], i);
       }
 
-      data.writeVInt(PackedInts.VERSION_CURRENT);
-      data.writeVInt(count);
+      meta.writeVInt(PackedInts.VERSION_CURRENT);
+      meta.writeVInt(count);
       data.writeVInt(bitsPerValue);
 
       final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, PackedInts.Format.PACKED, count, bitsPerValue, PackedInts.DEFAULT_BUFFER_SIZE);
@@ -125,8 +125,8 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
     } else {
       meta.writeByte((byte)0); // delta-compressed
 
-      data.writeVInt(PackedInts.VERSION_CURRENT);
-      data.writeVInt(count);
+      meta.writeVInt(PackedInts.VERSION_CURRENT);
+      meta.writeVInt(count);
       data.writeVInt(BLOCK_SIZE);
 
       final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
@@ -164,11 +164,14 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     final long startFP = data.getFilePointer();
+    int count = 0;
     for(BytesRef v : values) {
       minLength = Math.min(minLength, v.length);
       maxLength = Math.max(maxLength, v.length);
       data.writeBytes(v.bytes, v.offset, v.length);
+      ++count;
     }
+    meta.writeVInt(count);
     meta.writeLong(startFP);
     meta.writeLong(data.getFilePointer() - startFP);
     meta.writeVInt(minLength);
@@ -176,32 +179,17 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
     
     // if minLength == maxLength, its a fixed-length byte[], we are done (the addresses are implicit)
     // otherwise, we need to record the length fields...
-    // TODO: make this more efficient. this is just as inefficient as 4.0 codec.... we can do much better.
     if (minLength != maxLength) {
-      addNumericField(field, new Iterable<Number>() {
-        @Override
-        public Iterator<Number> iterator() {
-          final Iterator<BytesRef> inner = values.iterator();
-          return new Iterator<Number>() {
-            long addr = 0;
+      meta.writeVInt(PackedInts.VERSION_CURRENT);
+      meta.writeVInt(BLOCK_SIZE);
 
-            @Override
-            public boolean hasNext() {
-              return inner.hasNext();
-            }
-
-            @Override
-            public Number next() {
-              BytesRef b = inner.next();
-              addr += b.length;
-              return Long.valueOf(addr);
-            }
-
-            @Override
-            public void remove() { throw new UnsupportedOperationException(); } 
-          };
-        }
-      });
+      final MonotonicBlockPackedWriter writer = new MonotonicBlockPackedWriter(data, BLOCK_SIZE);
+      long addr = 0;
+      for (BytesRef v : values) {
+        addr += v.length;
+        writer.add(addr);
+      }
+      writer.finish();
     }
   }
 

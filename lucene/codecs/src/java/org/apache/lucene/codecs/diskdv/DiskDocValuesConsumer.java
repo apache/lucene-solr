@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.diskdv;
  */
 
 import java.io.IOException;
-import java.util.Iterator;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
@@ -29,6 +28,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.BlockPackedWriter;
+import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
 class DiskDocValuesConsumer extends DocValuesConsumer {
@@ -99,32 +99,18 @@ class DiskDocValuesConsumer extends DocValuesConsumer {
     
     // if minLength == maxLength, its a fixed-length byte[], we are done (the addresses are implicit)
     // otherwise, we need to record the length fields...
-    // TODO: make this more efficient. this is just as inefficient as 4.0 codec.... we can do much better.
     if (minLength != maxLength) {
-      addNumericField(field, new Iterable<Number>() {
-        @Override
-        public Iterator<Number> iterator() {
-          final Iterator<BytesRef> inner = values.iterator();
-          return new Iterator<Number>() {
-            long addr = 0;
+      meta.writeLong(data.getFilePointer());
+      meta.writeVInt(PackedInts.VERSION_CURRENT);
+      meta.writeVInt(BLOCK_SIZE);
 
-            @Override
-            public boolean hasNext() {
-              return inner.hasNext();
-            }
-
-            @Override
-            public Number next() {
-              BytesRef b = inner.next();
-              addr += b.length;
-              return Long.valueOf(addr);
-            }
-
-            @Override
-            public void remove() { throw new UnsupportedOperationException(); } 
-          };
-        }
-      });
+      final MonotonicBlockPackedWriter writer = new MonotonicBlockPackedWriter(data, BLOCK_SIZE);
+      long addr = 0;
+      for (BytesRef v : values) {
+        addr += v.length;
+        writer.add(addr);
+      }
+      writer.finish();
     }
   }
 

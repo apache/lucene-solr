@@ -17,29 +17,28 @@ package org.apache.lucene.util.packed;
  * limitations under the License.
  */
 
-import static org.apache.lucene.util.packed.BlockPackedReaderIterator.readVLong;
+import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.checkBlockSize;
 import static org.apache.lucene.util.packed.BlockPackedReaderIterator.zigZagDecode;
-import static org.apache.lucene.util.packed.BlockPackedWriter.BPV_SHIFT;
-import static org.apache.lucene.util.packed.BlockPackedWriter.MIN_VALUE_EQUALS_0;
-import static org.apache.lucene.util.packed.BlockPackedWriter.checkBlockSize;
 
 import java.io.IOException;
 
 import org.apache.lucene.store.IndexInput;
 
 /**
- * Provides random access to a stream written with {@link BlockPackedWriter}.
+ * Provides random access to a stream written with
+ * {@link MonotonicBlockPackedWriter}.
  * @lucene.internal
  */
-public final class BlockPackedReader {
+public final class MonotonicBlockPackedReader {
 
   private final int blockShift, blockMask;
   private final long valueCount;
   private final long[] minValues;
+  private final float[] averages;
   private final PackedInts.Reader[] subReaders;
 
   /** Sole constructor. */
-  public BlockPackedReader(IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct) throws IOException {
+  public MonotonicBlockPackedReader(IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct) throws IOException {
     checkBlockSize(blockSize);
     this.valueCount = valueCount;
     blockShift = Integer.numberOfTrailingZeros(blockSize);
@@ -48,19 +47,15 @@ public final class BlockPackedReader {
     if (numBlocks * blockSize < valueCount) {
       throw new IllegalArgumentException("valueCount is too large for this block size");
     }
-    long[] minValues = null;
+    minValues = new long[numBlocks];
+    averages = new float[numBlocks];
     subReaders = new PackedInts.Reader[numBlocks];
     for (int i = 0; i < numBlocks; ++i) {
-      final int token = in.readByte() & 0xFF;
-      final int bitsPerValue = token >>> BPV_SHIFT;
+      minValues[i] = in.readVLong();
+      averages[i] = Float.intBitsToFloat(in.readInt());
+      final int bitsPerValue = in.readVInt();
       if (bitsPerValue > 64) {
         throw new IOException("Corrupted");
-      }
-      if ((token & MIN_VALUE_EQUALS_0) == 0) {
-        if (minValues == null) {
-          minValues = new long[numBlocks];
-        }
-        minValues[i] = zigZagDecode(1L + readVLong(in));
       }
       if (bitsPerValue == 0) {
         subReaders[i] = new PackedInts.NullReader(blockSize);
@@ -75,7 +70,6 @@ public final class BlockPackedReader {
         }
       }
     }
-    this.minValues = minValues;
   }
 
   /** Get value at <code>index</code>. */
@@ -83,7 +77,7 @@ public final class BlockPackedReader {
     assert index >= 0 && index < valueCount;
     final int block = (int) (index >>> blockShift);
     final int idx = (int) (index & blockMask);
-    return (minValues == null ? 0 : minValues[block]) + subReaders[block].get(idx);
+    return minValues[block] + (long) (idx * averages[block]) + zigZagDecode(subReaders[block].get(idx));
   }
 
 }
