@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.TimeZone;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.compressing.CompressingCodec;
@@ -137,23 +138,37 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     int randomVal = random.nextInt(10);
     if ("Lucene40".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
                                           "random".equals(TEST_POSTINGSFORMAT) &&
+                                          "random".equals(TEST_DOCVALUESFORMAT) &&
                                           randomVal == 0 &&
                                           !shouldAvoidCodec("Lucene40"))) {
       codec = Codec.forName("Lucene40");
       assert (PostingsFormat.forName("Lucene40") instanceof Lucene40RWPostingsFormat) : "fix your classpath to have tests-framework.jar before lucene-core.jar";
     } else if ("Lucene41".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) &&
                                                  "random".equals(TEST_POSTINGSFORMAT) &&
+                                                 "random".equals(TEST_DOCVALUESFORMAT) &&
                                                  randomVal == 1 &&
                                                  !shouldAvoidCodec("Lucene41"))) { 
       codec = Codec.forName("Lucene41");
       assert codec instanceof Lucene41RWCodec : "fix your classpath to have tests-framework.jar before lucene-core.jar";
-    } else if (!"random".equals(TEST_POSTINGSFORMAT)) {
+    } else if (("random".equals(TEST_POSTINGSFORMAT) == false) || ("random".equals(TEST_DOCVALUESFORMAT) == false)) {
+      // the user wired postings or DV
+      
       final PostingsFormat format;
-      if ("MockRandom".equals(TEST_POSTINGSFORMAT)) {
+      if ("MockRandom".equals(TEST_POSTINGSFORMAT) || "random".equals(TEST_POSTINGSFORMAT)) {
         format = new MockRandomPostingsFormat(random);
       } else {
         format = PostingsFormat.forName(TEST_POSTINGSFORMAT);
       }
+      
+      final DocValuesFormat dvFormat;
+      if ("random".equals(TEST_DOCVALUESFORMAT)) {
+        // pick one from SPI
+        String formats[] = DocValuesFormat.availableDocValuesFormats().toArray(new String[0]);
+        dvFormat = DocValuesFormat.forName(formats[random.nextInt(formats.length)]);
+      } else {
+        dvFormat = DocValuesFormat.forName(TEST_DOCVALUESFORMAT);
+      }
+      
       codec = new Lucene42Codec() {       
         @Override
         public PostingsFormat getPostingsFormatForField(String field) {
@@ -161,8 +176,13 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
         }
 
         @Override
+        public DocValuesFormat getDocValuesFormatForField(String field) {
+          return dvFormat;
+        }
+
+        @Override
         public String toString() {
-          return super.toString() + ": " + format.toString();
+          return super.toString() + ": " + format.toString() + ", " + dvFormat.toString();
         }
       };
     } else if ("SimpleText".equals(TEST_CODEC) || ("random".equals(TEST_CODEC) && randomVal == 9 && !shouldAvoidCodec("SimpleText"))) {

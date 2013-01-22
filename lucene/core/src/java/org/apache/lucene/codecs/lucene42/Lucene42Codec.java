@@ -123,7 +123,7 @@ public class Lucene42Codec extends Codec {
   }
   
   @Override
-  public DocValuesFormat docValuesFormat() {
+  public final DocValuesFormat docValuesFormat() {
     return docValuesFormat;
   }
 
@@ -133,7 +133,7 @@ public class Lucene42Codec extends Codec {
   private final NormsFormat normsFormat = new Lucene42NormsFormat();
 
   @Override
-  public NormsFormat normsFormat() {
+  public final NormsFormat normsFormat() {
     return normsFormat;
   }
 }
