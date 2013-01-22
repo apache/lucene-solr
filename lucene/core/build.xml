@@ -63,12 +63,16 @@
   	<sequential>
       <exec dir="src/java/org/apache/lucene/util/automaton"
             executable="${python.exe}" failonerror="true">
+	 <!-- Tell Python not to write any bytecode cache into the filesystem: -->
+	 <arg value="-B"/>
         <arg value="createLevAutomata.py"/>
         <arg value="@{n}"/>
         <arg value="True"/>
       </exec>
       <exec dir="src/java/org/apache/lucene/util/automaton"
             executable="${python.exe}" failonerror="true">
+	 <!-- Tell Python not to write any bytecode cache into the filesystem: -->
+	 <arg value="-B"/>
         <arg value="createLevAutomata.py"/>
         <arg value="@{n}"/>
         <arg value="False"/>
@@ -80,18 +84,26 @@
   <target name="createPackedIntSources">
     <exec dir="src/java/org/apache/lucene/util/packed"
           executable="${python.exe}" failonerror="true">
+      <!-- Tell Python not to write any bytecode cache into the filesystem: -->
+      <arg value="-B"/>
       <arg value="gen_BulkOperation.py"/>
     </exec>
     <exec dir="src/java/org/apache/lucene/util/packed"
           executable="${python.exe}" failonerror="true">
+      <!-- Tell Python not to write any bytecode cache into the filesystem: -->
+      <arg value="-B"/>
       <arg value="gen_Direct.py"/>
     </exec>
     <exec dir="src/java/org/apache/lucene/util/packed"
           executable="${python.exe}" failonerror="true">
+      <!-- Tell Python not to write any bytecode cache into the filesystem: -->
+      <arg value="-B"/>
       <arg value="gen_Packed64SingleBlock.py"/>
     </exec>
     <exec dir="src/java/org/apache/lucene/util/packed"
           executable="${python.exe}" failonerror="true">
+      <!-- Tell Python not to write any bytecode cache into the filesystem: -->
+      <arg value="-B"/>
       <arg value="gen_PackedThreeBlocks.py"/>
     </exec>
     <fixcrlf srcdir="src/java/org/apache/lucene/util/packed" includes="BulkOperation*.java,Direct*.java,Packed64SingleBlock.java,Packed*ThreeBlocks.py" encoding="UTF-8"/>

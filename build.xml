@@ -287,6 +287,8 @@
    <makeurl file="${fakeRelease}" validate="false" property="fakeRelease.uri"/>
    <exec executable="${python32.exe}" failonerror="true">
      <arg value="-u"/>
+     <!-- Tell Python not to write any bytecode cache into the filesystem: -->
+     <arg value="-B"/>
      <arg file="dev-tools/scripts/smokeTestRelease.py"/>
      <arg value="${fakeRelease.uri}"/>
      <arg value="${fakeReleaseVersion}"/>
