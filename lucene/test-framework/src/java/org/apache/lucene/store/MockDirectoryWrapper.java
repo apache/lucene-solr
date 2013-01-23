@@ -439,7 +439,12 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       }
     }
     //System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
-    IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name, LuceneTestCase.newIOContext(randomState, context)), name);
+    IndexOutput delegateOutput = delegate.createOutput(name, LuceneTestCase.newIOContext(randomState, context));
+    if (randomState.nextInt(10) == 0){
+      // once in a while wrap the IO in a Buffered IO with random buffer sizes
+      delegateOutput = new BufferedIndexOutputWrapper(1+randomState.nextInt(BufferedIndexOutput.DEFAULT_BUFFER_SIZE), delegateOutput);
+    } 
+    final IndexOutput io = new MockIndexOutputWrapper(this, delegateOutput, name);
     addFileHandle(io, name, Handle.Output);
     openFilesForWrite.add(name);
     
@@ -897,5 +902,48 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     };
     addFileHandle(handle, name, Handle.Slice);
     return handle;
+  }
+  
+  final class BufferedIndexOutputWrapper extends BufferedIndexOutput {
+    private final IndexOutput io;
+    
+    public BufferedIndexOutputWrapper(int bufferSize, IndexOutput io) {
+      super(bufferSize);
+      this.io = io;
+    }
+    
+    @Override
+    public long length() throws IOException {
+      return io.length();
+    }
+    
+    @Override
+    protected void flushBuffer(byte[] b, int offset, int len) throws IOException {
+      io.writeBytes(b, offset, len);
+    }
+
+    @Override
+    public void seek(long pos) throws IOException {
+      flush();
+      io.seek(pos);
+    }
+
+    @Override
+    public void flush() throws IOException {
+      try {
+        super.flush();
+      } finally { 
+        io.flush();
+      }
+    }
+    
+    @Override
+    public void close() throws IOException {
+      try {
+        super.close();
+      } finally {
+        io.close();
+      }
+    }
   }
 }
