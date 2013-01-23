@@ -77,6 +77,9 @@ Optimizations
 * SOLR-4339: Admin UI - Display Field-Flags on Schema-Browser
   (steffkes)
 
+* SOLR-4340: Admin UI - Analysis's Button Spinner goes wild
+  (steffkes)
+
 Other Changes
 ----------------------
 

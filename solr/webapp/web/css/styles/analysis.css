@@ -82,10 +82,9 @@
   float: right;
 }
 
-#content #analysis .settings button.loader
+#content #analysis .settings button span
 {
-  background-position: 2px 50%;
-  padding-left: 21px;
+  background-image: url( ../../img/ico/funnel.png );
 }
 
 #content #analysis .settings .verbose_output
