@@ -266,9 +266,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
           tosOrdinal = siblings[tosOrdinal];
         }
         // now it is inside. Run it and all its siblings inside the partition through a heap
-        // and in doing so, count them, find best K, and sum into residue
-        double residue = 0f;  // the sum of all the siblings from this partition that do not make 
-        // it to top K
+        // and in doing so, count them, find best K
         pq.clear();
 
         //reusables are consumed as from a stack. The stack starts full and returns full.
@@ -286,10 +284,6 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
             ac.value = value; 
             ac = pq.insertWithOverflow(ac);
             if (null != ac) {
-              residue += ac.value;
-              // TODO (Facet): could it be that we need to do something
-              // else, not add, depending on the aggregator?
-
               /* when a facet is excluded from top K, because already in this partition it has
                * K better siblings, it is only recursed for count only.
                */ 
@@ -320,7 +314,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
         // and add ords to sibling stack, and make a note in siblingExplored that these are to 
         // be visited now
         if (ords.length > 0) {
-          AACOsOfOnePartition.put(ordinalStack[localDepth-1], new AACO(ords,vals,residue));
+          AACOsOfOnePartition.put(ordinalStack[localDepth-1], new AACO(ords,vals));
           bestSignlingsStack[localDepth] = ords;
           siblingExplored[localDepth] = ords.length-1;
           ordinalStack[localDepth] = ords[ords.length-1];
@@ -449,8 +443,7 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
       IntToObjectMap<AACO> tmpToReturnMapToACCOs = tmpToReturn.mapToAACOs;
       IntToObjectMap<AACO> tfrMapToACCOs = tfr.mapToAACOs;
       IntIterator tfrIntIterator = tfrMapToACCOs.keyIterator();
-      //iterate over all ordinals in tfr that are maps to their children (and the residue over 
-      // non included chilren)
+      //iterate over all ordinals in tfr that are maps to their children
       while (tfrIntIterator.hasNext()) {
         int tfrkey = tfrIntIterator.next();
         AACO tmpToReturnAACO = null;
@@ -467,7 +460,6 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
           }
           int[] resOrds = new int [resLength];
           double[] resVals = new double [resLength];
-          double resResidue = tmpToReturnAACO.residue + tfrAACO.residue;
           int indexIntoTmpToReturn = 0;
           int indexIntoTFR = 0;
           ACComparator merger = getSuitableACComparator(); // by facet Request
@@ -504,15 +496,9 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
           // altogether yielding no more that best K kids for tfrkey, not to appear in the new shape of 
           // tmpToReturn
 
-          while (indexIntoTmpToReturn < tmpToReturnAACO.ordinals.length) {
-            resResidue += tmpToReturnAACO.values[indexIntoTmpToReturn++];
-          }
-          while (indexIntoTFR < tfrAACO.ordinals.length) {
-            resResidue += tfrAACO.values[indexIntoTFR++];
-          }
           //update the list of best kids of tfrkey as appear in tmpToReturn
-          tmpToReturnMapToACCOs.put(tfrkey, new AACO(resOrds, resVals, resResidue));
-        } // endof need to merge both AACO -- children and residue for same ordinal
+          tmpToReturnMapToACCOs.put(tfrkey, new AACO(resOrds, resVals));
+        } // endof need to merge both AACO -- children for same ordinal
 
       } // endof loop over all ordinals in tfr 
     } // endof loop over all temporary facet results to merge
@@ -682,19 +668,15 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
    * potential nodes of the {@link FacetResult} tree  
    * (i.e., the descendants of the root node, no deeper than the specified depth).
    * No more than K ( = {@link FacetRequest#getNumResults()}) 
-   * siblings are enumerated, and  
-   * <i>residue</i> holds the sum of values of the siblings rejected from the 
-   * enumerated top K.
+   * siblings are enumerated.
    * @lucene.internal
    */
   protected static final class AACO {
     int [] ordinals; // ordinals of the best K children, sorted from best to least
     double [] values; // the respective values for these children
-    double residue; // sum of values of all other children, that did not get into top K
-    AACO (int[] ords, double[] vals, double r) {
+    AACO (int[] ords, double[] vals) {
       this.ordinals = ords;
       this.values = vals;
-      this.residue = r;
     }
   }
 
@@ -787,7 +769,6 @@ public class TopKInEachNodeHandler extends FacetResultsHandler {
       list.add(generateNode(aaco.ordinals[i], aaco.values[i], mapToAACOs));
     }
     node.subResults = list;
-    node.residue = aaco.residue;
     return node;  
   }
 

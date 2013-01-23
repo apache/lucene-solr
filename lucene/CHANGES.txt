@@ -64,6 +64,10 @@ New Features
 * LUCENE-4599: New oal.codecs.compressing.CompressingTermVectorsFormat which
   compresses term vectors into chunks of documents similarly to
   CompressingStoredFieldsFormat. (Adrien Grand)
+
+API Changes
+
+* LUCENE-4709: FacetResultNode no longer has a residue field. (Shai Erera)
   
 Bug Fixes
 

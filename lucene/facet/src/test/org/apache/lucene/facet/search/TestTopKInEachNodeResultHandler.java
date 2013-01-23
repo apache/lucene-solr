@@ -182,39 +182,34 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       assertEquals(9, fr.getNumValidDescendants());
       FacetResultNode parentRes = fr.getFacetResultNode();
       assertEquals(16.0, parentRes.value, Double.MIN_VALUE);
-      assertEquals(2.0, parentRes.residue, Double.MIN_VALUE);
       assertEquals(2, parentRes.subResults.size());
       // two nodes sorted by descending values: a/b with 8  and a/c with 6
-      // a/b has residue 2 and two children a/b/2 with value 3, and a/b/1 with value 2. 
-      // a/c has residue 0, and one child a/c/1 with value 1.
-      double [] expectedValues0 = { 8.0, 2.0, 3.0, 0.0, 2.0, 0.0, 6.0, 0.0, 1.0, 0.0 };
+      // a/b has two children a/b/2 with value 3, and a/b/1 with value 2. 
+      // a/c has one child a/c/1 with value 1.
+      double [] expectedValues0 = { 8.0, 3.0, 2.0, 6.0, 1.0 };
       int i = 0;
       for (FacetResultNode node : parentRes.subResults) {
         assertEquals(expectedValues0[i++], node.value, Double.MIN_VALUE);
-        assertEquals(expectedValues0[i++], node.residue, Double.MIN_VALUE);
         for (FacetResultNode node2 : node.subResults) {
           assertEquals(expectedValues0[i++], node2.value, Double.MIN_VALUE);
-          assertEquals(expectedValues0[i++], node2.residue, Double.MIN_VALUE);
         }
       }
 
       // now just change the value of the first child of the root to 5, and then rearrange
-      // expected are: first a/c of value 6 and residue 0, and one child a/c/1 with value 1
-      // then a/b with value 5 and residue 2, and both children: a/b/2 with value 3, and a/b/1 with value 2.
+      // expected are: first a/c of value 6, and one child a/c/1 with value 1
+      // then a/b with value 5, and both children: a/b/2 with value 3, and a/b/1 with value 2.
       for (FacetResultNode node : parentRes.subResults) {
         node.value = 5.0;
         break;
       }
       // now rearrange
-      double [] expectedValues00 = { 6.0, 0.0, 1.0, 0.0, 5.0, 2.0, 3.0, 0.0, 2.0, 0.0 };
+      double [] expectedValues00 = { 6.0, 1.0, 5.0, 3.0, 2.0 };
       fr = cfra23.createFacetResultsHandler(tr).rearrangeFacetResult(fr);
       i = 0;
       for (FacetResultNode node : parentRes.subResults) {
         assertEquals(expectedValues00[i++], node.value, Double.MIN_VALUE);
-        assertEquals(expectedValues00[i++], node.residue, Double.MIN_VALUE);
         for (FacetResultNode node2 : node.subResults) {
           assertEquals(expectedValues00[i++], node2.value, Double.MIN_VALUE);
-          assertEquals(expectedValues00[i++], node2.residue, Double.MIN_VALUE);
         }
       }
 
@@ -223,18 +218,15 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       assertEquals(9, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
       assertEquals(16.0, parentRes.value, Double.MIN_VALUE);
-      assertEquals(2.0, parentRes.residue, Double.MIN_VALUE);
       assertEquals(2, parentRes.subResults.size());
       // two nodes sorted by descending values: a/b with 8  and a/c with 6
-      // a/b has residue 2 and two children a/b/2 with value 3, and a/b/1 with value 2. 
-      // a/c has residue 0, and one child a/c/1 with value 1.
+      // a/b has two children a/b/2 with value 3, and a/b/1 with value 2. 
+      // a/c has one child a/c/1 with value 1.
       i = 0;
       for (FacetResultNode node : parentRes.subResults) {
         assertEquals(expectedValues0[i++], node.value, Double.MIN_VALUE);
-        assertEquals(expectedValues0[i++], node.residue, Double.MIN_VALUE);
         for (FacetResultNode node2 : node.subResults) {
           assertEquals(expectedValues0[i++], node2.value, Double.MIN_VALUE);
-          assertEquals(expectedValues0[i++], node2.residue, Double.MIN_VALUE);
         }
       }
 
@@ -243,16 +235,13 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       assertEquals(4, fr.getNumValidDescendants(), 4);
       parentRes = fr.getFacetResultNode();
       assertEquals(16.0, parentRes.value, Double.MIN_VALUE);
-      assertEquals(2.0, parentRes.residue, Double.MIN_VALUE);
       assertEquals(2, parentRes.subResults.size());
       // two nodes sorted by descending values: 
-      // a/b with value 8 and residue 0 (because no children considered),  
-      //  and a/c with value 6 and residue 0 (because no children considered)
-      double [] expectedValues2 = { 8.0, 0.0, 6.0, 0.0 };
+      // a/b with value 8 and a/c with value 6
+      double [] expectedValues2 = { 8.0, 6.0, 0.0};
       i = 0;
       for (FacetResultNode node : parentRes.subResults) {
         assertEquals(expectedValues2[i++], node.value, Double.MIN_VALUE);
-        assertEquals(expectedValues2[i++], node.residue, Double.MIN_VALUE);
         assertEquals(node.subResults.size(), 0);
       }
       
@@ -261,13 +250,11 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       assertEquals(4, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
       assertEquals(8.0, parentRes.value, Double.MIN_VALUE);
-      assertEquals(2.0, parentRes.residue, Double.MIN_VALUE);
       assertEquals(2, parentRes.subResults.size());
       double [] expectedValues3 = { 3.0, 2.0 };
       i = 0;
       for (FacetResultNode node : parentRes.subResults) {
         assertEquals(expectedValues3[i++], node.value, Double.MIN_VALUE);
-        assertEquals(0.0, node.residue, Double.MIN_VALUE);
         assertEquals(0, node.subResults.size());
       }
 
@@ -276,12 +263,10 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       assertEquals(4, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
       assertEquals(8.0, parentRes.value, Double.MIN_VALUE);
-      assertEquals(2.0, parentRes.residue, Double.MIN_VALUE);
       assertEquals(2, parentRes.subResults.size());
       i = 0;
       for (FacetResultNode node : parentRes.subResults) {
         assertEquals(expectedValues3[i++], node.value, Double.MIN_VALUE);
-        assertEquals(0.0, node.residue, Double.MIN_VALUE);
         assertEquals(0, node.subResults.size());
       }
 
@@ -290,12 +275,10 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       assertEquals(4, fr.getNumValidDescendants());
       parentRes = fr.getFacetResultNode();
       assertEquals(8.0, parentRes.value, Double.MIN_VALUE);
-      assertEquals(2.0, parentRes.residue, Double.MIN_VALUE);
       assertEquals(2, parentRes.subResults.size());
       i = 0;
       for (FacetResultNode node : parentRes.subResults) {
         assertEquals(expectedValues3[i++], node.value, Double.MIN_VALUE);
-        assertEquals(0.0, node.residue, Double.MIN_VALUE);
         assertEquals(0, node.subResults.size());
       }
       
@@ -304,7 +287,6 @@ public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
       assertEquals(0, fr.getNumValidDescendants()); // 0 descendants but rootnode
       parentRes = fr.getFacetResultNode();
       assertEquals(8.0, parentRes.value, Double.MIN_VALUE);
-      assertEquals(0.0, parentRes.residue, Double.MIN_VALUE);
       assertEquals(0, parentRes.subResults.size());
       hasDoctor |= "Doctor".equals(fr.getFacetRequest().categoryPath.components[0]);
 

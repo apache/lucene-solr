@@ -62,7 +62,6 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
         value = facetRequest.getValueOf(facetArrays, ordinal % partitionSize);
       }
       
-      // TODO (Facet): should initial value of "residue" depend on aggregator if not sum?
       FacetResultNode parentResultNode = new FacetResultNode(ordinal, value);
       
       Heap<FacetResultNode> heap = ResultSortUtils.createSuitableHeap(facetRequest);
@@ -97,11 +96,7 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
       }
       // bring sub results from heap of tmp res into result heap
       for (int i = tmpHeap.size(); i > 0; i--) {
-        
-        FacetResultNode a = heap.insertWithOverflow(tmpHeap.pop());
-        if (a != null) {
-          resNode.residue += a.residue;
-        }
+        heap.insertWithOverflow(tmpHeap.pop());
       }
     }
     
@@ -177,14 +172,9 @@ public class TopKFacetResultsHandler extends FacetResultsHandler {
             reusable.value = value;
             reusable.subResults.clear();
             reusable.label = null;
-            reusable.residue = 0;
           }
           ++childrenCounter;
           reusable = pq.insertWithOverflow(reusable);
-          if (reusable != null) {
-            // TODO (Facet): is other logic (not add) needed, per aggregator?
-            parentResultNode.residue += reusable.value;
-          }
         }
       }
       if (localDepth < depth) {

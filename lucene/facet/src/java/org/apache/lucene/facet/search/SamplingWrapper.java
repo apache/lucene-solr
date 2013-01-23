@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.search.sampling.Sampler;
 import org.apache.lucene.facet.search.sampling.Sampler.SampleResult;
 
@@ -32,8 +31,7 @@ import org.apache.lucene.facet.search.sampling.Sampler.SampleResult;
  * <p>
  * Note: Sampling accumulation (Accumulation over a sampled-set of the results),
  * does not guarantee accurate values for
- * {@link FacetResult#getNumValidDescendants()} and
- * {@link FacetResultNode#residue}.
+ * {@link FacetResult#getNumValidDescendants()}.
  * 
  * @lucene.experimental
  */

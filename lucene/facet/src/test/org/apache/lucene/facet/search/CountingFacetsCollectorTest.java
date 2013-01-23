@@ -328,39 +328,6 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     for (FacetResult res : facetResults) {
       FacetResultNode root = res.getFacetResultNode();
       assertEquals("wrong count for " + root.label, termExpectedCounts.get(root.label), (int) root.value);
-      assertEquals("invalid residue", 0, (int) root.residue);
-      for (FacetResultNode child : root.subResults) {
-        assertEquals("wrong count for " + child.label, termExpectedCounts.get(child.label), (int) child.value);
-      }
-    }
-    
-    IOUtils.close(indexReader, taxoReader);
-  }
-  
-  @Test
-  public void testResidue() throws Exception {
-    // test the collector's handling of residue
-    DirectoryReader indexReader = DirectoryReader.open(indexDir);
-    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    IndexSearcher searcher = new IndexSearcher(indexReader);
-    
-    // asking for top 1 is the only way to guarantee there will be a residue
-    // provided that enough children were indexed (see below)
-    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(CP_A, 1), new CountFacetRequest(CP_B, 1));
-    FacetsCollector fc = new CountingFacetsCollector(fsp , taxoReader);
-    TermQuery q = new TermQuery(A);
-    searcher.search(q, fc);
-    
-    List<FacetResult> facetResults = fc.getFacetResults();
-    assertEquals("invalid number of facet results", 2, facetResults.size());
-    for (FacetResult res : facetResults) {
-      FacetResultNode root = res.getFacetResultNode();
-      assertEquals("wrong count for " + root.label, termExpectedCounts.get(root.label), (int) root.value);
-      // make sure randomness didn't pick only one child of root (otherwise there's no residue)
-      int numChildrenIndexed = res.getFacetRequest().categoryPath == CP_A ? numChildrenIndexedA : numChildrenIndexedB;
-      if (numChildrenIndexed > 1) {
-        assertTrue("expected residue", root.residue > 0);
-      }
       for (FacetResultNode child : root.subResults) {
         assertEquals("wrong count for " + child.label, termExpectedCounts.get(child.label), (int) child.value);
       }
@@ -385,7 +352,6 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     for (FacetResult res : facetResults) {
       FacetResultNode root = res.getFacetResultNode();
       assertEquals("wrong count for " + root.label, allExpectedCounts.get(root.label), (int) root.value);
-      assertEquals("invalid residue", 0, (int) root.residue);
       for (FacetResultNode child : root.subResults) {
         assertEquals("wrong count for " + child.label, allExpectedCounts.get(child.label), (int) child.value);
       }
@@ -410,7 +376,6 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     for (FacetResult res : facetResults) {
       FacetResultNode root = res.getFacetResultNode();
       assertEquals("wrong count for " + root.label, allExpectedCounts.get(root.label), (int) root.value);
-      assertEquals("invalid residue", 0, (int) root.residue);
       for (FacetResultNode child : root.subResults) {
         assertEquals("wrong count for " + child.label, allExpectedCounts.get(child.label), (int) child.value);
       }
@@ -435,7 +400,6 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     for (FacetResult res : facetResults) {
       FacetResultNode root = res.getFacetResultNode();
       assertEquals("wrong count for " + root.label, allExpectedCounts.get(root.label), (int) root.value);
-      assertEquals("invalid residue", 0, (int) root.residue);
       for (FacetResultNode child : root.subResults) {
         assertEquals("wrong count for " + child.label, allExpectedCounts.get(child.label), (int) child.value);
       }
@@ -501,7 +465,6 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     for (FacetResult res : facetResults) {
       FacetResultNode root = res.getFacetResultNode();
       assertEquals("wrong count for " + root.label, expCounts.get(root.label), (int) root.value);
-      assertEquals("invalid residue", 0, (int) root.residue);
       for (FacetResultNode child : root.subResults) {
         assertEquals("wrong count for " + child.label, expCounts.get(child.label), (int) child.value);
       }
