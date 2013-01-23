@@ -36,9 +36,36 @@ import org.apache.lucene.util.encoding.UniqueValuesIntEncoder;
  */
 public class CategoryListParams implements Serializable {
 
+  /** OrdinalPolicy defines which ordinals are encoded for every document. */
+  public static enum OrdinalPolicy {
+    /**
+     * Encodes only the ordinal of leaf nodes. That is, the category A/B/C will
+     * not encode the ordinals of A and A/B.
+     * 
+     * <p>
+     * <b>NOTE:</b> this {@link OrdinalPolicy} requires a special collector or
+     * accumulator, which will fix the parents' counts, unless you are not
+     * interested in the parents counts.
+     */
+    NO_PARENTS,
+    
+    /**
+     * Encodes the ordinals of all path components. That is, the category A/B/C
+     * will encode the ordinals of A and A/B as well. This is the default
+     * {@link OrdinalPolicy}.
+     */
+    ALL_PARENTS
+  }
+  
   /** The default field used to store the facets information. */
   public static final String DEFAULT_FIELD = "$facets";
 
+  /**
+   * The default {@link OrdinalPolicy} that's used when encoding a document's
+   * category ordinals.
+   */
+  public static final OrdinalPolicy DEFAULT_ORDINAL_POLICY = OrdinalPolicy.ALL_PARENTS;
+  
   public final String field;
 
   private final int hashCode;
@@ -92,6 +119,7 @@ public class CategoryListParams implements Serializable {
     if (this.hashCode != other.hashCode) {
       return false;
     }
+    
     // The above hashcodes might equal each other in the case of a collision,
     // so at this point only directly term equality testing will settle
     // the equality test.
@@ -108,6 +136,11 @@ public class CategoryListParams implements Serializable {
     String categoryListTermStr = PartitionsUtils.partitionName(partition);
     String docValuesField = field + categoryListTermStr;
     return new DocValuesCategoryListIterator(docValuesField, createEncoder().createMatchingDecoder());
+  }
+  
+  /** Returns the {@link OrdinalPolicy} to use for this {@link CategoryListParams}. */
+  public OrdinalPolicy getOrdinalPolicy() {
+    return DEFAULT_ORDINAL_POLICY;
   }
   
 }
