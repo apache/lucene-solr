@@ -231,11 +231,39 @@
   color: #00f;
 }
 
+#content #cloud #legend
+{
+  border: 1px solid #f0f0f0;
+  padding: 10px;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+
+#content #cloud #legend li
+{
+  padding-left: 15px;
+  position: relative;
+}
+
+#content #cloud #legend li svg
+{
+  position: absolute;
+  left: 0;
+  top: 2px;
+}
+
+#content #graph-content
+{
+  min-height: 400px;
+}
+
 #content #graph-content .node
 {
   fill: #333;
 }
 
+#content #cloud #legend circle,
 #content #graph-content .node circle
 {
   fill: #fff;
@@ -265,6 +293,7 @@
   stroke-width: 1.5px;
 }
 
+#content #cloud #legend .gone circle,
 #content #graph-content .node.gone circle,
 #content #graph-content .link.gone
 {
@@ -276,8 +305,16 @@
   fill: #f0f0f0;
 }
 
+#content #cloud #legend ul .gone
+{
+  color: #e0e0e0;
+}
+
+#content #cloud #legend .recovery_failed,
+#content #cloud #legend .recovery_failed circle,
 #content #graph-content .node.recovery_failed circle
 {
+  color: #C43C35;
   stroke: #C43C35;
 }
 
@@ -286,8 +323,11 @@
   fill: #C43C35;
 }
 
+#content #cloud #legend .down,
+#content #cloud #legend .down circle,
 #content #graph-content .node.down circle
 {
+  color: #c48f00;
   stroke: #c48f00;
 }
 
@@ -296,8 +336,11 @@
   fill: #c48f00;
 }
 
+#content #cloud #legend .recovering,
+#content #cloud #legend .recovering circle,
 #content #graph-content .node.recovering circle
 {
+  color: #d5dd00;
   stroke: #d5dd00;
 }
 
@@ -306,8 +349,11 @@
   fill: #d5dd00;
 }
 
+#content #cloud #legend .active,
+#content #cloud #legend .active circle,
 #content #graph-content .node.active circle
 {
+  color: #57A957;
   stroke: #57A957;
 }
 
@@ -316,9 +362,15 @@
   fill: #57A957;
 }
 
+#content #cloud #legend .leader circle,
 #content #graph-content .node.leader circle
 {
   fill: #000;
+}
+
+#content #cloud #legend .leader circle
+{
+  stroke: #fff;
 }
 
 #content #graph-content .link.lvl-2,
