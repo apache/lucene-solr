@@ -83,7 +83,7 @@ class Lucene40DocValuesReader extends DocValuesProducer {
           instance = loadDoubleField(field);
           break;
         default: 
-          throw new AssertionError(); // nocommit, implement the other types
+          throw new AssertionError();
       }
       numericInstances.put(field.number, instance);
     }

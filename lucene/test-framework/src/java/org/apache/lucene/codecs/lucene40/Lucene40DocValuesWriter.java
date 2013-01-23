@@ -47,14 +47,31 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
   
   @Override
   public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
-    // TODO: examine the values: and simulate all the possibilities.
-    // e.g. if all values fit in a byte, write a fixed_8 etc.
-    field.putAttribute(legacyKey, LegacyDocValuesType.VAR_INTS.name());
+    // examine the values to determine best type to use
+    long minValue = Long.MAX_VALUE;
+    long maxValue = Long.MIN_VALUE;
+    for (Number n : values) {
+      long v = n.longValue();
+      minValue = Math.min(minValue, v);
+      maxValue = Math.max(maxValue, v);
+    }
+    
     String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
     IndexOutput data = dir.createOutput(fileName, state.context);
     boolean success = false;
     try {
-      addVarIntsField(data, values);
+      if (minValue >= Byte.MIN_VALUE && maxValue <= Byte.MAX_VALUE && PackedInts.bitsRequired(maxValue-minValue) > 4) {
+        // fits in a byte[], would be more than 4bpv, just write byte[]
+        addBytesField(field, data, values);
+      } else if (minValue >= Short.MIN_VALUE && maxValue <= Short.MAX_VALUE && PackedInts.bitsRequired(maxValue-minValue) > 8) {
+        // fits in a short[], would be more than 8bpv, just write short[]
+        addShortsField(field, data, values);
+      } else if (minValue >= Integer.MIN_VALUE && maxValue <= Integer.MAX_VALUE && PackedInts.bitsRequired(maxValue-minValue) > 16) {
+        // fits in a int[], would be more than 16bpv, just write int[]
+        addIntsField(field, data, values);
+      } else {
+        addVarIntsField(field, data, values);
+      }
       success = true;
     } finally {
       if (success) {
@@ -80,7 +97,41 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     dir.close();
   }
   
-  private void addVarIntsField(IndexOutput output, Iterable<Number> values) throws IOException {
+  private void addBytesField(FieldInfo field, IndexOutput output, Iterable<Number> values) throws IOException {
+    field.putAttribute(legacyKey, LegacyDocValuesType.FIXED_INTS_8.name());
+    CodecUtil.writeHeader(output, 
+                          Lucene40DocValuesFormat.INTS_CODEC_NAME, 
+                          Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
+    output.writeInt(1); // size
+    for (Number n : values) {
+      output.writeByte(n.byteValue());
+    }
+  }
+  
+  private void addShortsField(FieldInfo field, IndexOutput output, Iterable<Number> values) throws IOException {
+    field.putAttribute(legacyKey, LegacyDocValuesType.FIXED_INTS_16.name());
+    CodecUtil.writeHeader(output, 
+                          Lucene40DocValuesFormat.INTS_CODEC_NAME, 
+                          Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
+    output.writeInt(2); // size
+    for (Number n : values) {
+      output.writeShort(n.shortValue());
+    }
+  }
+  
+  private void addIntsField(FieldInfo field, IndexOutput output, Iterable<Number> values) throws IOException {
+    field.putAttribute(legacyKey, LegacyDocValuesType.FIXED_INTS_32.name());
+    CodecUtil.writeHeader(output, 
+                          Lucene40DocValuesFormat.INTS_CODEC_NAME, 
+                          Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
+    output.writeInt(4); // size
+    for (Number n : values) {
+      output.writeInt(n.intValue());
+    }
+  }
+  
+  private void addVarIntsField(FieldInfo field, IndexOutput output, Iterable<Number> values) throws IOException {
+    field.putAttribute(legacyKey, LegacyDocValuesType.VAR_INTS.name());
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
     for (Number n : values) {
