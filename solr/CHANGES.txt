@@ -80,6 +80,9 @@ Optimizations
 * SOLR-4340: Admin UI - Analysis's Button Spinner goes wild
   (steffkes)
 
+* SOLR-4341: Admin UI - Plugins/Stats Page contains loooong
+  Values which result in horizontal Scrollbar (steffkes)
+
 Other Changes
 ----------------------
 
