@@ -74,6 +74,9 @@ Bug Fixes
 * LUCENE-4705: Pass on FilterStrategy in FilteredQuery if the filtered query is 
   rewritten. (Simon Willnauer)
 
+* LUCENE-4712: MemoryIndex#normValues() throws NPE if field doesn't exist. 
+  (Simon Willnauer, Ricky Pritchett)
+
 * LUCENE-4550: Shapes wider than 180 degrees would use too much accuracy for the
   PrefixTree based SpatialStrategy. For a pathological case of nearly 360
   degrees and barely any height, it would generate so many indexed terms

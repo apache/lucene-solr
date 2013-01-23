@@ -1138,7 +1138,8 @@ public class MemoryIndex {
     
     @Override
     public DocValues normValues(String field) {
-      if (fieldInfos.get(field).omitsNorms())
+      FieldInfo fieldInfo = fieldInfos.get(field);
+      if (fieldInfo == null || fieldInfo.omitsNorms())
         return null;
       DocValues norms = cachedNormValues;
       Similarity sim = getSimilarity();
