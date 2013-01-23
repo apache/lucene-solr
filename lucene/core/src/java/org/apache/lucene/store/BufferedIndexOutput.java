@@ -21,6 +21,7 @@ import java.io.IOException;
 
 /** Base implementation class for buffered {@link IndexOutput}. */
 public abstract class BufferedIndexOutput extends IndexOutput {
+  /** The default buffer size in bytes ({@value #DEFAULT_BUFFER_SIZE}). */
   public static final int DEFAULT_BUFFER_SIZE = 16384;
 
   private final int bufferSize;
@@ -30,7 +31,7 @@ public abstract class BufferedIndexOutput extends IndexOutput {
 
   /**
    * Creates a new {@link BufferedIndexOutput} with the default buffer size
-   * {@value BufferedIndexOutput#DEFAULT_BUFFER_SIZE}
+   * ({@value #DEFAULT_BUFFER_SIZE} bytes see {@link #DEFAULT_BUFFER_SIZE})
    */
   public BufferedIndexOutput() {
     this(DEFAULT_BUFFER_SIZE);
