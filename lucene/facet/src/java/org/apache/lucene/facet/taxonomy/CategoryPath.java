@@ -1,5 +1,7 @@
 package org.apache.lucene.facet.taxonomy;
 
+import org.apache.lucene.util.Constants;
+
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,6 +28,10 @@ package org.apache.lucene.facet.taxonomy;
  */
 public class CategoryPath implements Comparable<CategoryPath> {
 
+  // TODO: revisit when IBM releases Java 7 newer than SR3 (with a fix)
+  // to validate, run e.g. TestAssociationExample with -Dtests.iters=1000
+  private static final boolean IS_J9_JAVA7 = Constants.JRE_IS_MINIMUM_JAVA7 && Constants.JVM_VENDOR.contains("IBM");
+
   /** An empty {@link CategoryPath} */
   public static final CategoryPath EMPTY = new CategoryPath();
 
@@ -47,7 +53,7 @@ public class CategoryPath implements Comparable<CategoryPath> {
   }
 
   // Used by subpath
-  private CategoryPath(CategoryPath copyFrom, int prefixLen) {
+  private CategoryPath(final CategoryPath copyFrom, final int prefixLen) {
     // while the code which calls this method is safe, at some point a test
     // tripped on AIOOBE in toString, but we failed to reproduce. adding the
     // assert as a safety check.
@@ -59,14 +65,23 @@ public class CategoryPath implements Comparable<CategoryPath> {
   }
   
   /** Construct from the given path components. */
-  public CategoryPath(String... components) {
+  public CategoryPath(final String... components) {
     assert components.length > 0 : "use CategoryPath.EMPTY to create an empty path";
-    this.components = components;
+    if (IS_J9_JAVA7) {
+      // On IBM J9 Java 1.7.0, if we do 'this.components = components', then
+      // at some point its length becomes 0 ... quite unexpectedly. If JIT is
+      // disabled, it doesn't happen. This bypasses the bug by copying the 
+      // array (note, Arrays.copyOf did not help either!).
+      this.components = new String[components.length];
+      System.arraycopy(components, 0, this.components, 0, components.length);
+    } else {
+      this.components = components;
+    }
     length = components.length;
   }
 
   /** Construct from a given path, separating path components with {@code delimiter}. */
-  public CategoryPath(String pathString, char delimiter) {
+  public CategoryPath(final String pathString, final char delimiter) {
     String[] comps = pathString.split(Character.toString(delimiter));
     if (comps.length == 1 && comps[0].isEmpty()) {
       components = EMPTY.components;
@@ -186,7 +201,7 @@ public class CategoryPath implements Comparable<CategoryPath> {
   }
 
   /** Returns a sub-path of this path up to {@code length} components. */
-  public CategoryPath subpath(int length) {
+  public CategoryPath subpath(final int length) {
     if (length >= this.length || length < 0) {
       return this;
     } else if (length == 0) {
