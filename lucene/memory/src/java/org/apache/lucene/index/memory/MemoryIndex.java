@@ -253,8 +253,7 @@ public class MemoryIndex {
   }
   
   /**
-   * Expert: This constructor accepts a byte and int block allocator that is used internally to allocate 
-   * int & byte blocks for term and posting storage.  
+   * Expert: This constructor accepts an upper limit for the number of bytes that should be reused if this instance is {@link #reset()}.
    * @param storeOffsets <code>true</code> if offsets should be stored
    * @param maxReusedBytes the number of bytes that should remain in the internal memory pools after {@link #reset()} is called
    */
