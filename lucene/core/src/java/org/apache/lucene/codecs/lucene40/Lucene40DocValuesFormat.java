@@ -20,52 +20,38 @@ package org.apache.lucene.codecs.lucene40;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosReader.LegacyDocValuesType;
-import org.apache.lucene.codecs.lucene42.Lucene42DocValuesFormat;
-import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.BytesRef;
 
-// nocommit: still a lie, but allows javadocs @links to work
-// nocommit: make read-only and move to impersonator
-public class Lucene40DocValuesFormat extends Lucene42DocValuesFormat {
-
+// NOTE: not registered in SPI, doesnt respect segment suffix, etc
+// for back compat only!
+public class Lucene40DocValuesFormat extends DocValuesFormat {
+  
+  public Lucene40DocValuesFormat() {
+    super("Lucene40");
+  }
+  
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    final DocValuesConsumer delegate = super.fieldsConsumer(state);
-    return new DocValuesConsumer() {
-
-      @Override
-      public void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException {
-        // hack: here we would examine the numerics and simulate in the impersonator the best we can
-        // e.g. if they are all in byte/int range write fixed, otherwise write packed or whatever
-        field.putAttribute(Lucene40FieldInfosReader.LEGACY_DV_TYPE_KEY, LegacyDocValuesType.VAR_INTS.name());
-        delegate.addNumericField(field, values);
-      }
-
-      @Override
-      public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
-        field.putAttribute(Lucene40FieldInfosReader.LEGACY_DV_TYPE_KEY, LegacyDocValuesType.BYTES_VAR_STRAIGHT.name());
-        delegate.addBinaryField(field, values);
-      }
-
-      @Override
-      public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
-        field.putAttribute(Lucene40FieldInfosReader.LEGACY_DV_TYPE_KEY, LegacyDocValuesType.BYTES_VAR_SORTED.name());
-        delegate.addSortedField(field, values, docToOrd);
-      }
-      
-      @Override
-      public void close() throws IOException {
-        delegate.close();
-      }
-    };
+    throw new UnsupportedOperationException("this codec can only be used for reading");
   }
-
+  
   @Override
   public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return super.fieldsProducer(state);
+    String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
+                                                     "dv", 
+                                                     IndexFileNames.COMPOUND_FILE_EXTENSION);
+    return new Lucene40DocValuesReader(state, filename, Lucene40FieldInfosReader.LEGACY_DV_TYPE_KEY);
   }
+  
+  // constants for VAR_INTS
+  static final String VAR_INTS_CODEC_NAME = "PackedInts";
+  static final int VAR_INTS_VERSION_START = 0;
+  static final int VAR_INTS_VERSION_CURRENT = VAR_INTS_VERSION_START;
+  
+  static final byte VAR_INTS_PACKED = 0x00;
+  static final byte VAR_INTS_FIXED_64 = 0x01;
 }

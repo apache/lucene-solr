@@ -32,13 +32,12 @@ import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsFormat;
 import org.apache.lucene.codecs.compressing.CompressionMode;
-import org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40LyingDocValuesFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40NormsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40SegmentInfoFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40TermVectorsFormat;
-import org.apache.lucene.codecs.lucene42.Lucene42NormsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
@@ -121,18 +120,16 @@ public class Lucene41Codec extends Codec {
   }
   
   @Override
-  public final DocValuesFormat docValuesFormat() {
+  public DocValuesFormat docValuesFormat() {
     return dvFormat;
   }
 
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
-  // nocommit need a read-only Lucene40DocValuesFormat / read-write in the impersonator
-  private final DocValuesFormat dvFormat = new Lucene40DocValuesFormat();
-  // nocommit need a read-only Lucene40NormsFormat / read-write in the impersonator
+  private final DocValuesFormat dvFormat = new Lucene40LyingDocValuesFormat();
   private final NormsFormat normsFormat = new Lucene40NormsFormat();
 
   @Override
-  public final NormsFormat normsFormat() {
+  public NormsFormat normsFormat() {
     return normsFormat;
   }
 }

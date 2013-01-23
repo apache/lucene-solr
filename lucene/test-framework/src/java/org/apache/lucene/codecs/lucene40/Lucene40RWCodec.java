@@ -2,8 +2,10 @@ package org.apache.lucene.codecs.lucene40;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldInfosWriter;
+import org.apache.lucene.codecs.NormsFormat;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,8 +33,21 @@ public final class Lucene40RWCodec extends Lucene40Codec {
     }
   };
   
+  private final DocValuesFormat docValues = new Lucene40LyingRWDocValuesFormat();
+  private final NormsFormat norms = new Lucene40RWNormsFormat();
+  
   @Override
   public FieldInfosFormat fieldInfosFormat() {
     return fieldInfos;
+  }
+
+  @Override
+  public DocValuesFormat docValuesFormat() {
+    return docValues;
+  }
+
+  @Override
+  public NormsFormat normsFormat() {
+    return norms;
   }
 }

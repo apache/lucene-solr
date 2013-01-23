@@ -21,23 +21,21 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesProducer;
-import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.codecs.lucene42.Lucene42DocValuesFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
-public class Lucene40NormsFormat extends NormsFormat {
+// nocommit: still a lie, but allows javadocs @links to work
+// nocommit: make read-only and move to impersonator
+public class Lucene40LyingDocValuesFormat extends Lucene42DocValuesFormat {
 
   @Override
-  public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
+  public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     throw new UnsupportedOperationException("this codec can only be used for reading");
   }
 
   @Override
-  public DocValuesProducer normsProducer(SegmentReadState state) throws IOException {
-    String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, 
-                                                     "nrm", 
-                                                     IndexFileNames.COMPOUND_FILE_EXTENSION);
-    return new Lucene40DocValuesReader(state, filename, Lucene40FieldInfosReader.LEGACY_NORM_TYPE_KEY);
+  public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
+    return super.fieldsProducer(state);
   }
 }
