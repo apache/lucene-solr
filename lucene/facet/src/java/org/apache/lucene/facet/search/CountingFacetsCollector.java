@@ -262,7 +262,6 @@ public class CountingFacetsCollector extends FacetsCollector {
             }
             child = siblings[child];
           }
-          root.residue = 0;
           root.subResults = nodes;
           res.add(new FacetResult(fr, root, nodes.size()));
           continue;
@@ -273,17 +272,13 @@ public class CountingFacetsCollector extends FacetsCollector {
         FacetResultNode top = pq.top();
         int child = children[rootOrd];
         int numResults = 0; // count the number of results
-        int residue = 0;
         while (child != TaxonomyReader.INVALID_ORDINAL) {
           int count = counts[child];
           if (count > top.value) {
-            residue += top.value;
             top.value = count;
             top.ordinal = child;
             top = pq.updateTop();
             ++numResults;
-          } else {
-            residue += count;
           }
           child = siblings[child];
         }
@@ -300,7 +295,6 @@ public class CountingFacetsCollector extends FacetsCollector {
           node.label = taxoReader.getPath(node.ordinal);
           subResults[i] = node;
         }
-        root.residue = residue;
         root.subResults = Arrays.asList(subResults);
         res.add(new FacetResult(fr, root, size));
       }

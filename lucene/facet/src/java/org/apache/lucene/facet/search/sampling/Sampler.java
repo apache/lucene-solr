@@ -39,8 +39,7 @@ import org.apache.lucene.index.IndexReader;
  * <p>
  * Note: Sampling accumulation (Accumulation over a sampled-set of the results),
  * does not guarantee accurate values for
- * {@link FacetResult#getNumValidDescendants()} &
- * {@link FacetResultNode#residue}.
+ * {@link FacetResult#getNumValidDescendants()}.
  * 
  * @lucene.experimental
  */
@@ -185,17 +184,6 @@ public abstract class Sampler {
       FacetResultNode trimmedNode = node.subResults.get(i);
       trimSubResults(trimmedNode, size);
       trimmed.add(trimmedNode);
-    }
-    
-    /*
-     * If we are trimming, it means Sampling is in effect and the extra
-     * (over-sampled) results are being trimmed. Although the residue is not
-     * guaranteed to be accurate for Sampling, we try our best to fix it.
-     * The node's residue now will take under account the sub-nodes we're
-     * trimming.
-     */
-    for (int i = size; i < node.subResults.size(); i++) {
-      node.residue += node.subResults.get(i).value;
     }
     
     node.subResults = trimmed;
