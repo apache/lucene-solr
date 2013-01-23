@@ -1,10 +1,7 @@
 package org.apache.lucene.facet.index.params;
 
-import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
-import org.apache.lucene.facet.index.categorypolicy.PathPolicy;
 import org.apache.lucene.facet.search.DrillDown;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
@@ -64,37 +61,6 @@ public class FacetIndexingParamsTest extends LuceneTestCase {
     CategoryListParams clp = new CategoryListParams("clp");
     FacetIndexingParams dfip = new FacetIndexingParams(clp);
     assertEquals("Expected default category list field is " + clp.field, clp.field, dfip.getCategoryListParams(null).field);
-  }
-
-  @Test
-  public void testCategoryPolicies() {
-    FacetIndexingParams dfip = FacetIndexingParams.ALL_PARENTS;
-    // check path policy
-    CategoryPath cp = CategoryPath.EMPTY;
-    PathPolicy pathPolicy = PathPolicy.ALL_CATEGORIES;
-    assertEquals("path policy does not match default for root", pathPolicy.shouldAdd(cp), dfip.getPathPolicy().shouldAdd(cp));
-    for (int i = 0; i < 30; i++) {
-      int nComponents = random().nextInt(10) + 1;
-      String[] components = new String[nComponents];
-      for (int j = 0; j < components.length; j++) {
-        components[j] = (Integer.valueOf(random().nextInt(30))).toString();
-      }
-      cp = new CategoryPath(components);
-      assertEquals("path policy does not match default for " + cp.toString('/'), 
-          pathPolicy.shouldAdd(cp), dfip.getPathPolicy().shouldAdd(cp));
-    }
-
-    // check ordinal policy
-    OrdinalPolicy ordinalPolicy = OrdinalPolicy.ALL_PARENTS;
-    assertEquals("ordinal policy does not match default for root", 
-        ordinalPolicy.shouldAdd(TaxonomyReader.ROOT_ORDINAL), 
-        dfip.getOrdinalPolicy().shouldAdd(TaxonomyReader.ROOT_ORDINAL));
-    for (int i = 0; i < 30; i++) {
-      int ordinal = random().nextInt();
-      assertEquals("ordinal policy does not match default for " + ordinal, 
-          ordinalPolicy.shouldAdd(ordinal),
-          dfip.getOrdinalPolicy().shouldAdd(ordinal));
-    }
   }
 
 }

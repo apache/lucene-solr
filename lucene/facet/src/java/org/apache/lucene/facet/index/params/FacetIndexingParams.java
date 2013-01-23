@@ -3,8 +3,7 @@ package org.apache.lucene.facet.index.params;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
-import org.apache.lucene.facet.index.categorypolicy.PathPolicy;
+import org.apache.lucene.facet.index.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.search.FacetArrays;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 
@@ -47,9 +46,8 @@ public class FacetIndexingParams {
   protected static final CategoryListParams DEFAULT_CATEGORY_LIST_PARAMS = new CategoryListParams();
 
   /**
-   * A {@link FacetIndexingParams} which fixes {@link OrdinalPolicy} to
-   * {@link OrdinalPolicy#ALL_PARENTS}. This is a singleton equivalent to new
-   * {@link #FacetIndexingParams()}.
+   * A {@link FacetIndexingParams} which fixes a single
+   * {@link CategoryListParams} with {@link OrdinalPolicy#ALL_PARENTS}.
    */
   public static final FacetIndexingParams ALL_PARENTS = new FacetIndexingParams();
   
@@ -62,8 +60,6 @@ public class FacetIndexingParams {
    */
   public static final char DEFAULT_FACET_DELIM_CHAR = '\uF749';
   
-  private final OrdinalPolicy ordinalPolicy = OrdinalPolicy.ALL_PARENTS;
-  private final PathPolicy pathPolicy = PathPolicy.ALL_CATEGORIES;
   private final int partitionSize = Integer.MAX_VALUE;
 
   protected final CategoryListParams clParams;
@@ -130,32 +126,12 @@ public class FacetIndexingParams {
     return Collections.singletonList(clParams);
   }
 
-  /**
-   * Returns the {@link OrdinalPolicy} that is used during indexing. By default
-   * returns {@link OrdinalPolicy#ALL_PARENTS} which means that the full
-   * hierarchy will be stored for every document.
-   */
-  public OrdinalPolicy getOrdinalPolicy() {
-    return ordinalPolicy;
-  }
-
-  /**
-   * Returns the {@link PathPolicy} that is used during indexing. By default
-   * returns {@link PathPolicy#ALL_CATEGORIES} which means that the full
-   * hierarchy is added as drill-down terms for every document.
-   */
-  public PathPolicy getPathPolicy() {
-    return pathPolicy;
-  }
-
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
     result = prime * result + ((clParams == null) ? 0 : clParams.hashCode());
-    result = prime * result + ((ordinalPolicy == null) ? 0 : ordinalPolicy.hashCode());
     result = prime * result + partitionSize;
-    result = prime * result + ((pathPolicy == null) ? 0 : pathPolicy.hashCode());
     
     for (CategoryListParams clp : getAllCategoryListParams()) {
       result ^= clp.hashCode();
@@ -183,21 +159,7 @@ public class FacetIndexingParams {
     } else if (!clParams.equals(other.clParams)) {
       return false;
     }
-    if (ordinalPolicy == null) {
-      if (other.ordinalPolicy != null) {
-        return false;
-      }
-    } else if (!ordinalPolicy.equals(other.ordinalPolicy)) {
-      return false;
-    }
     if (partitionSize != other.partitionSize) {
-      return false;
-    }
-    if (pathPolicy == null) {
-      if (other.pathPolicy != null) {
-        return false;
-      }
-    } else if (!pathPolicy.equals(other.pathPolicy)) {
       return false;
     }
     

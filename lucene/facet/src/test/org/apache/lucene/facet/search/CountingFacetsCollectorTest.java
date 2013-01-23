@@ -12,7 +12,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
@@ -423,8 +422,13 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
     FacetIndexingParams fip = new FacetIndexingParams() {
       @Override
-      public OrdinalPolicy getOrdinalPolicy() {
-        return OrdinalPolicy.NO_PARENTS;
+      public CategoryListParams getCategoryListParams(CategoryPath category) {
+        return new CategoryListParams() {
+          @Override
+          public OrdinalPolicy getOrdinalPolicy() {
+            return OrdinalPolicy.NO_PARENTS;
+          }
+        };
       }
     };
     FacetFields facetFields = new FacetFields(taxoWriter, fip);

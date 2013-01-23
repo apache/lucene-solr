@@ -7,8 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
 import org.apache.lucene.facet.index.params.CategoryListParams;
+import org.apache.lucene.facet.index.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest;
@@ -83,6 +83,7 @@ import org.apache.lucene.util.encoding.DGapVInt8IntDecoder;
 public class CountingFacetsCollector extends FacetsCollector {
   
   private final FacetSearchParams fsp;
+  private final OrdinalPolicy ordinalPolicy;
   private final TaxonomyReader taxoReader;
   private final BytesRef buf = new BytesRef(32);
   private final FacetArrays facetArrays;
@@ -104,10 +105,12 @@ public class CountingFacetsCollector extends FacetsCollector {
     assert assertParams(fsp) == null : assertParams(fsp);
     
     this.fsp = fsp;
+    CategoryListParams clp = fsp.indexingParams.getCategoryListParams(null);
+    this.ordinalPolicy = clp.getOrdinalPolicy();
     this.taxoReader = taxoReader;
     this.facetArrays = facetArrays;
     this.counts = facetArrays.getIntArray();
-    this.facetsField = fsp.indexingParams.getCategoryListParams(null).field;
+    this.facetsField = clp.field;
     this.useDirectSource = useDirectSource;
   }
   
@@ -230,7 +233,7 @@ public class CountingFacetsCollector extends FacetsCollector {
       
       ParallelTaxonomyArrays arrays = taxoReader.getParallelTaxonomyArrays();
 
-      if (fsp.indexingParams.getOrdinalPolicy() == OrdinalPolicy.NO_PARENTS) {
+      if (ordinalPolicy == OrdinalPolicy.NO_PARENTS) {
         // need to count parents
         countParents(arrays.parents());
       }

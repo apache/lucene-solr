@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
 import org.apache.lucene.facet.index.params.CategoryListParams;
+import org.apache.lucene.facet.index.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
@@ -120,7 +120,7 @@ public class CountingListBuilder implements CategoryListBuilder {
   public CountingListBuilder(CategoryListParams categoryListParams, FacetIndexingParams indexingParams, 
       TaxonomyWriter taxoWriter) {
     this.taxoWriter = taxoWriter;
-    this.ordinalPolicy = indexingParams.getOrdinalPolicy();
+    this.ordinalPolicy = categoryListParams.getOrdinalPolicy();
     if (indexingParams.getPartitionSize() == Integer.MAX_VALUE) {
       ordinalsEncoder = new NoPartitionsOrdinalsEncoder(categoryListParams);
     } else {
@@ -143,14 +143,14 @@ public class CountingListBuilder implements CategoryListBuilder {
   public Map<String,BytesRef> build(IntsRef ordinals, Iterable<CategoryPath> categories) throws IOException {
     int upto = ordinals.length; // since we add ordinals to IntsRef, iterate upto original length
     
-    for (int i = 0; i < upto; i++) {
-      int ordinal = ordinals.ints[i];
-      int parent = taxoWriter.getParent(ordinal);
-      while (parent > 0) {
-        if (ordinalPolicy.shouldAdd(parent)) {
+    if (ordinalPolicy == OrdinalPolicy.ALL_PARENTS) { // add all parents too
+      for (int i = 0; i < upto; i++) {
+        int ordinal = ordinals.ints[i];
+        int parent = taxoWriter.getParent(ordinal);
+        while (parent > 0) {
           ordinals.ints[ordinals.length++] = parent;
+          parent = taxoWriter.getParent(parent);
         }
-        parent = taxoWriter.getParent(parent);
       }
     }
     return ordinalsEncoder.encode(ordinals);
