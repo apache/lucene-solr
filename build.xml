@@ -252,7 +252,7 @@
   <property name="python32.exe" value="python3.2" />
   <property name="fakeRelease" location="lucene/build/fakeRelease"/>
   <property name="fakeReleaseTmp" location="lucene/build/fakeReleaseTmp"/>
-  <property name="fakeReleaseVersion" value="4.1.0"/> <!-- *not* -SNAPSHOT, the real version -->
+  <property name="fakeReleaseVersion" value="4.1.1"/> <!-- *not* -SNAPSHOT, the real version -->
 
   <target name="-load-env">
      <!-- load the properties only here, so not on every invocation /usr/bin/env is called: -->

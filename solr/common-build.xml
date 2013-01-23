@@ -67,7 +67,7 @@
        By default, this should be set to "X.Y.M.${dateversion}"
        where X.Y.M is the last version released (on this branch).
     -->
-  <property name="solr.spec.version" value="4.1.0.${dateversion}" />
+  <property name="solr.spec.version" value="4.1.1.${dateversion}" />
 
   <path id="solr.lucene.libs">
     <!-- List of jars that will be used as the foundation for both
