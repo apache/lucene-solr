@@ -22,7 +22,11 @@ $Id$
 
 ==================  4.1.1 ==================
 
-(No Changes)
+Bug Fixes
+----------------------
+
+* SOLR-4330: group.sort is ignored when using group.truncate and ex/tag
+  local params together (koji)
 
 ==================  4.1.0 ==================
 
