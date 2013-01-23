@@ -713,52 +713,6 @@ sammy.get
         data_element
           .show();
 
-        var keystring_to_list = function( keystring, element_class )
-        {
-          var key_list = keystring.replace( /-/g, '' ).split( '' );
-          var list = [];
-
-          for( var i in key_list )
-          {
-            var option_key = schema_browser_data.key[key_list[i]];
-
-            if( !option_key )
-            {
-              option_key = schema_browser_data.key[key_list[i].toLowerCase()];
-            }
-
-            if( !option_key )
-            {
-              option_key = schema_browser_data.key[key_list[i].toUpperCase()];
-            }
-
-            if( option_key )
-            {
-              list.push
-              (
-                '<dd ' + ( element_class ? ' class="' + element_class + '"' : '' ) + '>' +
-                option_key +
-                ',</dd>'
-              );
-            }
-          }
-
-          list[list.length-1] = list[key_list.length-1].replace( /,/, '' );
-
-          return list;
-        }
-
-        var flags = null;
-
-        if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].flags )
-        {
-          flags = schema_browser_data.fields[field].flags;
-        }
-        else if( is_df && schema_browser_data.dynamic_fields[field] && schema_browser_data.dynamic_fields[field].flags )
-        {
-          flags = schema_browser_data.dynamic_fields[field].flags;
-        }
-
         // -- head
 
         var head_element = $( '.head', data_element );
@@ -785,72 +739,6 @@ sammy.get
 
         $( '.partial', data_element )
           .toggle( partial_state );
-
-        // -- properties
-        var properties_element = $( 'dt.properties', options_element );
-        if( flags )
-        {
-          var properties_keys = keystring_to_list( flags, 'properties' );
-
-          $( 'dd.properties', options_element )
-            .remove();
-
-          properties_element
-            .show()
-            .after( properties_keys.join( "\n" ) );
-        }
-        else
-        {
-          $( '.properties', options_element )
-            .hide();
-        }
-
-        // -- schema
-        var schema_element = $( 'dt.schema', options_element );
-        if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].schema )
-        {
-          var schema_keys = keystring_to_list( schema_browser_data.fields[field].schema, 'schema' );
-
-          $( 'dd.schema', options_element )
-            .remove();
-
-          schema_element
-            .show()
-            .after( schema_keys.join( "\n" ) );
-        }
-        else
-        {
-          $( '.schema', options_element )
-            .hide();
-        }
-
-        // -- index
-        var index_element = $( 'dt.index', options_element );
-        if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].index )
-        {
-          var index_keys = [];
-
-          if( 0 === schema_browser_data.fields[field].index.indexOf( '(' ) )
-          {
-            index_keys.push( '<dd class="index">' + schema_browser_data.fields[field].index + '</dd>' );
-          }
-          else
-          {
-            index_keys = keystring_to_list( schema_browser_data.fields[field].index, 'index' );
-          }
-
-          $( 'dd.index', options_element )
-            .remove();
-
-          index_element
-            .show()
-            .after( index_keys.join( "\n" ) );
-        }
-        else
-        {
-          $( '.index', options_element )
-            .hide();
-        }
 
         // -- docs
         var docs_element = $( 'dt.docs', options_element );
@@ -918,6 +806,103 @@ sammy.get
             }
         } else {
             $( '.similarity', options_element ).hide();
+        }
+
+
+        // -- flags table
+        var flags_table = $( 'table.flags', data_element );
+
+        var flags_arr = [];
+        for( var key in schema_browser_data.key )
+        {
+          flags_arr.push( '<th data-key="' + key + '">' + schema_browser_data.key[key] + '</th>' );
+        }
+
+        $( 'thead tr', flags_table )
+          .append( flags_arr.join( "\n" ) );
+
+
+        var flags_body = $( 'tbody', flags_table );
+        flags_body.empty();
+
+        var generate_flags_row = function generate_flags_row( flags_str, title )
+        {
+          var flags_arr = [ '<th>' + title.esc() + '</th>' ];
+
+          if( 0 === flags_str.indexOf( '(' ) )
+          {
+            flags_arr.push( '<td colspan="2" class="text">' + flags_str + '</td>' );
+          }
+          else
+          {
+            var i = 0;
+            for( var key in schema_browser_data.key )
+            {
+              var flag_match = key === flags_str[i];
+
+              var flag_cell = '<td '
+                            + ' data-key="' + key + '"'
+                            + ' class="' + ( flag_match ? 'check' : '' ) + '"'
+                            + '>'
+                            + ( flag_match ? '<span>√</span>' : '&nbsp;' )
+                            + '</td>';
+
+              flags_arr.push( flag_cell );
+              i++;
+            }
+          }
+
+          flags_body
+            .append( '<tr>' + flags_arr.join( "\n" ) + '</tr>' );
+        };
+
+        var flags = null;
+        if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].flags )
+        {
+          flags = schema_browser_data.fields[field].flags;
+        }
+        else if( is_df && schema_browser_data.dynamic_fields[field] && schema_browser_data.dynamic_fields[field].flags )
+        {
+          flags = schema_browser_data.dynamic_fields[field].flags;
+        }
+
+        if( flags )
+        {
+          generate_flags_row( flags, 'Properties' );
+        }
+
+        if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].schema )
+        {
+          generate_flags_row( schema_browser_data.fields[field].schema, 'Schema' );
+        }
+
+        if( is_f && schema_browser_data.fields[field] && schema_browser_data.fields[field].index )
+        {
+          generate_flags_row( schema_browser_data.fields[field].index, 'Index' );
+        }
+
+
+        if( 0 !== $( 'tr', flags_body ).size() )
+        {
+          var col_count = 0;
+          for( var key in schema_browser_data.key )
+          {
+            var cols = $( '[data-key="' + key + '"]', flags_table );
+            
+            var col_used = 0 !== cols.filter( '.check' ).size();
+            col_count += col_used;
+
+            cols.toggle( col_used );
+          }
+
+          $( 'td[colspan]', flags_body )
+            .attr( 'colspan', col_count );
+
+          flags_table.show();
+        }
+        else
+        {
+          flags_table.hide();
         }
 
         var analyzer_element = $( '.analyzer', data_element );

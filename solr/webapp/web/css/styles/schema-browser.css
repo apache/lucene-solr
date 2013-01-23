@@ -45,6 +45,11 @@
   padding-bottom: 15px;
 }
 
+#content #schema-browser #related .ukf-dsf dt
+{
+  display: none;
+}
+
 #content #schema-browser #related dl
 {
   margin-top: 15px;
@@ -140,11 +145,60 @@
   width: 100px;
 }
 
-#content #schema-browser #data #field .field-options .options dd
+#content #schema-browser #data #field .field-options .flags
 {
-  margin-right: 5px;
+  margin-top: 10px;
+  margin-bottom: 20px;
 }
 
+#content #schema-browser #data #field .field-options .flags thead td
+{
+  color: #c0c0c0;
+  padding-right: 5px;
+  width: 100px;
+}
+
+#content #schema-browser #data #field .field-options .flags tbody td,
+#content #schema-browser #data #field .field-options .flags th
+{
+  padding: 2px 5px;
+}
+
+#content #schema-browser #data #field .field-options .flags thead td,
+#content #schema-browser #data #field .field-options .flags tbody th
+{
+  padding-left: 0;
+}
+
+#content #schema-browser #data #field .field-options .flags thead th,
+#content #schema-browser #data #field .field-options .flags tbody td
+{
+  border-left: 1px solid #f0f0f0;
+}
+
+#content #schema-browser #data #field .field-options .flags tbody th,
+#content #schema-browser #data #field .field-options .flags tbody td
+{
+  border-top: 1px solid #f0f0f0;
+}
+
+#content #schema-browser #data #field .field-options .flags tbody .check
+{
+  background-color: #fafdfa;
+  background-image: url( ../../img/ico/tick.png );
+  background-position: 50% 50%;
+  text-align: center;
+}
+
+#content #schema-browser #data #field .field-options .flags tbody .check span
+{
+  display: none;
+}
+
+#content #schema-browser #data #field .field-options .flags tbody .text
+{
+  color: #c0c0c0;
+}
 
 #content #schema-browser #data #field .field-options .analyzer,
 #content #schema-browser #data #field .field-options .analyzer li,
