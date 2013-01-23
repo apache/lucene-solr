@@ -54,4 +54,14 @@ public class Lucene40DocValuesFormat extends DocValuesFormat {
   
   static final byte VAR_INTS_PACKED = 0x00;
   static final byte VAR_INTS_FIXED_64 = 0x01;
+  
+  // constants for FIXED_INTS_8, FIXED_INTS_16, FIXED_INTS_32, FIXED_INTS_64
+  static final String INTS_CODEC_NAME = "Ints";
+  static final int INTS_VERSION_START = 0;
+  static final int INTS_VERSION_CURRENT = INTS_VERSION_START;
+  
+  // constants for FLOAT_32, FLOAT_64
+  static final String FLOATS_CODEC_NAME = "Floats";
+  static final int FLOATS_VERSION_START = 0;
+  static final int FLOATS_VERSION_CURRENT = FLOATS_VERSION_START;
 }
