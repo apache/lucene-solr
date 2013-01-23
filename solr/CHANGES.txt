@@ -83,6 +83,8 @@ Optimizations
 * SOLR-4341: Admin UI - Plugins/Stats Page contains loooong
   Values which result in horizontal Scrollbar (steffkes)
 
+* SOLR-3915: Color Legend for Cloud UI (steffkes)
+
 Other Changes
 ----------------------
 
