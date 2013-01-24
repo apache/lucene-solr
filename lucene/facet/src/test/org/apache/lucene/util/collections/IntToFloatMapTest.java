@@ -1,14 +1,10 @@
 package org.apache.lucene.util.collections;
 
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.collections.FloatIterator;
-import org.apache.lucene.util.collections.IntIterator;
-import org.apache.lucene.util.collections.IntToFloatMap;
-
 import java.util.HashSet;
 import java.util.Random;
+
+import org.apache.lucene.facet.FacetTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,7 +23,8 @@ import java.util.Random;
  * limitations under the License.
  */
 
-public class IntToFloatMapTest extends LuceneTestCase {
+public class IntToFloatMapTest extends FacetTestCase {
+  
   private static void assertGround(float value) {
     assertEquals(IntToFloatMap.GROUND, value, Float.MAX_VALUE);
   }

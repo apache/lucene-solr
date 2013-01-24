@@ -1,10 +1,10 @@
 package org.apache.lucene.facet.index.params;
 
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.search.DrillDown;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -24,7 +24,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class FacetIndexingParamsTest extends LuceneTestCase {
+public class FacetIndexingParamsTest extends FacetTestCase {
 
   @Test
   public void testDefaultSettings() {

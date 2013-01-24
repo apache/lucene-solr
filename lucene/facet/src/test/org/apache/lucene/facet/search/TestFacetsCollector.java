@@ -7,6 +7,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.params.ScoreFacetRequest;
@@ -24,7 +25,6 @@ import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -44,7 +44,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestFacetsCollector extends LuceneTestCase {
+public class TestFacetsCollector extends FacetTestCase {
 
   @Test
   public void testFacetsWithDocScore() throws Exception {

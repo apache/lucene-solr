@@ -8,6 +8,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
@@ -32,7 +33,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -52,7 +52,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestStandardFacetsAccumulator extends LuceneTestCase {
+public class TestStandardFacetsAccumulator extends FacetTestCase {
   
   private void indexTwoDocs(IndexWriter indexWriter, FacetFields facetFields, boolean withContent) throws Exception {
     for (int i = 0; i < 2; i++) {

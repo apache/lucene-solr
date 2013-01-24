@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetTestUtils;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
@@ -40,13 +41,12 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 
-public class TestDemoFacets extends LuceneTestCase {
+public class TestDemoFacets extends FacetTestCase {
 
   private DirectoryTaxonomyWriter taxoWriter;
   private RandomIndexWriter writer;
-  private FacetFields docBuilder;
+  private FacetFields facetFields;
 
   private void add(String ... categoryPaths) throws IOException {
     Document doc = new Document();
@@ -55,7 +55,7 @@ public class TestDemoFacets extends LuceneTestCase {
     for(String categoryPath : categoryPaths) {
       paths.add(new CategoryPath(categoryPath, '/'));
     }
-    docBuilder.addFields(doc, paths);
+    facetFields.addFields(doc, paths);
     writer.addDocument(doc);
   }
 
@@ -70,7 +70,7 @@ public class TestDemoFacets extends LuceneTestCase {
 
     // Reused across documents, to add the necessary facet
     // fields:
-    docBuilder = new FacetFields(taxoWriter);
+    facetFields = new FacetFields(taxoWriter);
 
     add("Author/Bob", "Publish Date/2010/10/15");
     add("Author/Lisa", "Publish Date/2010/10/20");

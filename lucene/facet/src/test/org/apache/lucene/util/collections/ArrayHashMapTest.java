@@ -4,10 +4,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 
+import org.apache.lucene.facet.FacetTestCase;
 import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.collections.ArrayHashMap;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,7 +24,7 @@ import org.apache.lucene.util.collections.ArrayHashMap;
  * limitations under the License.
  */
 
-public class ArrayHashMapTest extends LuceneTestCase {
+public class ArrayHashMapTest extends FacetTestCase {
 
   public static final int RANDOM_TEST_NUM_ITERATIONS = 100; // set to 100,000 for deeper test
   

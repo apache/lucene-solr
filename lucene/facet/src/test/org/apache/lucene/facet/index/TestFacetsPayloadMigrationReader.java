@@ -21,6 +21,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
@@ -61,7 +62,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -82,7 +82,7 @@ import org.junit.Test;
  */
 
 /** Tests facets index migration from payload to DocValues.*/
-public class TestFacetsPayloadMigrationReader extends LuceneTestCase {
+public class TestFacetsPayloadMigrationReader extends FacetTestCase {
   
   private static class PayloadFacetFields extends FacetFields {
 

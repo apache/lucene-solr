@@ -9,6 +9,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
@@ -30,7 +31,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -50,7 +50,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestTopKInEachNodeResultHandler extends LuceneTestCase {
+public class TestTopKInEachNodeResultHandler extends FacetTestCase {
 
   //TODO (Facet): Move to extend BaseTestTopK and separate to several smaller test cases (methods) - see TestTopKResultsHandler
   

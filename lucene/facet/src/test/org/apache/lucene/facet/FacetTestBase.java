@@ -42,7 +42,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
@@ -66,7 +65,7 @@ import org.junit.BeforeClass;
  */
 
 @SuppressCodecs({"SimpleText"})
-public abstract class FacetTestBase extends LuceneTestCase {
+public abstract class FacetTestBase extends FacetTestCase {
   
   /** Holds a search and taxonomy Directories pair. */
   private static final class SearchTaxoDirPair {
@@ -92,7 +91,7 @@ public abstract class FacetTestBase extends LuceneTestCase {
   @BeforeClass
   public static void beforeClassFacetTestBase() {
     TEST_DIR = _TestUtil.getTempDir("facets");
-    dirsPerPartitionSize = new HashMap<Integer, FacetTestBase.SearchTaxoDirPair>(); 
+    dirsPerPartitionSize = new HashMap<Integer, FacetTestBase.SearchTaxoDirPair>();
   }
   
   @AfterClass
@@ -181,8 +180,10 @@ public abstract class FacetTestBase extends LuceneTestCase {
     return newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
   }
 
-  /** Returns a default facet indexing params */
+  /** Returns a {@link FacetIndexingParams} per the given partition size. */
   protected FacetIndexingParams getFacetIndexingParams(final int partSize) {
+    // several of our encoders don't support the value 0, 
+    // which is one of the values encoded when dealing w/ partitions.
     return new FacetIndexingParams() {
       @Override
       public int getPartitionSize() {

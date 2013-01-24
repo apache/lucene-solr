@@ -4,19 +4,19 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -36,7 +36,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestDirectoryTaxonomyReader extends LuceneTestCase {
+public class TestDirectoryTaxonomyReader extends FacetTestCase {
 
   @Test
   public void testCloseAfterIncRef() throws Exception {

@@ -123,15 +123,10 @@ public class TestFacetsAccumulatorWithComplement extends FacetTestBase {
     
   }
   
-  private FacetSearchParams getFacetSearchParams() {
-    return new FacetSearchParams(new CountFacetRequest(new CategoryPath("root","a"), 10));
-  }
-  
   /** compute facets with certain facet requests and docs */
   private List<FacetResult> findFacets(ScoredDocIDs sDocids, boolean withComplement) throws IOException {
-    
-    FacetsAccumulator fAccumulator = 
-      new StandardFacetsAccumulator(getFacetSearchParams(), indexReader, taxoReader);
+    FacetSearchParams fsp = new FacetSearchParams(getFacetIndexingParams(Integer.MAX_VALUE), new CountFacetRequest(new CategoryPath("root","a"), 10));
+    FacetsAccumulator fAccumulator = new StandardFacetsAccumulator(fsp, indexReader, taxoReader);
     
     fAccumulator.setComplementThreshold(
         withComplement ? 

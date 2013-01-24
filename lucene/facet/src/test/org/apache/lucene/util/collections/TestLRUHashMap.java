@@ -1,9 +1,7 @@
 package org.apache.lucene.util.collections;
 
+import org.apache.lucene.facet.FacetTestCase;
 import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.collections.LRUHashMap;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,7 +20,7 @@ import org.apache.lucene.util.collections.LRUHashMap;
  * limitations under the License.
  */
 
-public class TestLRUHashMap extends LuceneTestCase {
+public class TestLRUHashMap extends FacetTestCase {
   // testLRU() tests that the specified size limit is indeed honored, and
   // the remaining objects in the map are indeed those that have been most
   // recently used

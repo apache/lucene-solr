@@ -1,9 +1,7 @@
 package org.apache.lucene.util.collections;
 
+import org.apache.lucene.facet.FacetTestCase;
 import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.collections.IntArray;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,7 +20,7 @@ import org.apache.lucene.util.collections.IntArray;
  * limitations under the License.
  */
 
-public class IntArrayTest extends LuceneTestCase {
+public class IntArrayTest extends FacetTestCase {
   
   @Test
   public void test0() {

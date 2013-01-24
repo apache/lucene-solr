@@ -5,7 +5,9 @@ import java.util.Collections;
 
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
+import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.FacetsAccumulator;
 import org.apache.lucene.facet.search.FacetsCollector;
 import org.apache.lucene.facet.search.StandardFacetsCollector;
@@ -20,7 +22,6 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -28,9 +29,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -50,16 +49,18 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class OversampleWithDepthTest extends LuceneTestCase {
+public class OversampleWithDepthTest extends FacetTestCase {
   
   @Test
   public void testCountWithdepthUsingSampling() throws Exception, IOException {
     Directory indexDir = newDirectory();
     Directory taxoDir = newDirectory();
     
+    FacetIndexingParams fip = new FacetIndexingParams(randomCategoryListParams());
+    
     // index 100 docs, each with one category: ["root", docnum/10, docnum]
     // e.g. root/8/87
-    index100Docs(indexDir, taxoDir);
+    index100Docs(indexDir, taxoDir, fip);
     
     DirectoryReader r = DirectoryReader.open(indexDir);
     TaxonomyReader tr = new DirectoryTaxonomyReader(taxoDir);
@@ -69,7 +70,7 @@ public class OversampleWithDepthTest extends LuceneTestCase {
     facetRequest.setDepth(2);
     facetRequest.setResultMode(ResultMode.PER_NODE_IN_TREE);
 
-    FacetSearchParams fsp = new FacetSearchParams(facetRequest);
+    FacetSearchParams fsp = new FacetSearchParams(fip, facetRequest);
     
     // Craft sampling params to enforce sampling
     final SamplingParams params = new SamplingParams();
@@ -93,13 +94,12 @@ public class OversampleWithDepthTest extends LuceneTestCase {
     IOUtils.close(r, tr, indexDir, taxoDir);
   }
 
-  private void index100Docs(Directory indexDir, Directory taxoDir)
-      throws CorruptIndexException, LockObtainFailedException, IOException {
+  private void index100Docs(Directory indexDir, Directory taxoDir, FacetIndexingParams fip) throws IOException {
     IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer());
     IndexWriter w = new IndexWriter(indexDir, iwc);
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
     
-    FacetFields facetFields = new FacetFields(tw);
+    FacetFields facetFields = new FacetFields(tw, fip);
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       CategoryPath cp = new CategoryPath("root",Integer.toString(i / 10), Integer.toString(i));

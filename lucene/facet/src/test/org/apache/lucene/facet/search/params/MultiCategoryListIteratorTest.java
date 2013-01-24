@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Random;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
@@ -22,7 +23,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.encoding.IntDecoder;
 import org.junit.Test;
 
@@ -43,7 +43,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class MultiCategoryListIteratorTest extends LuceneTestCase {
+public class MultiCategoryListIteratorTest extends FacetTestCase {
 
   @Test
   public void testMultipleCategoryLists() throws Exception {
@@ -58,7 +58,7 @@ public class MultiCategoryListIteratorTest extends LuceneTestCase {
     HashMap<CategoryPath,CategoryListParams> clps = new HashMap<CategoryPath,CategoryListParams>();
     for (String dim : dimensions) {
       CategoryPath cp = new CategoryPath(dim);
-      CategoryListParams clp = new CategoryListParams("$" + dim);
+      CategoryListParams clp = randomCategoryListParams("$" + dim);
       clps.put(cp, clp);
     }
     PerDimensionIndexingParams indexingParams = new PerDimensionIndexingParams(clps);

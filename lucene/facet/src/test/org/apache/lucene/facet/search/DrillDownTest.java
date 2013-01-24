@@ -10,6 +10,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
@@ -27,7 +28,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -49,9 +49,9 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class DrillDownTest extends LuceneTestCase {
+public class DrillDownTest extends FacetTestCase {
   
-  private FacetIndexingParams defaultParams = FacetIndexingParams.ALL_PARENTS;
+  private FacetIndexingParams defaultParams;
   private PerDimensionIndexingParams nonDefaultParams;
   private static IndexReader reader;
   private static DirectoryTaxonomyReader taxo;
@@ -60,9 +60,10 @@ public class DrillDownTest extends LuceneTestCase {
   
   public DrillDownTest() {
     Map<CategoryPath,CategoryListParams> paramsMap = new HashMap<CategoryPath,CategoryListParams>();
-    paramsMap.put(new CategoryPath("a"), new CategoryListParams("testing_facets_a"));
-    paramsMap.put(new CategoryPath("b"), new CategoryListParams("testing_facets_b"));
+    paramsMap.put(new CategoryPath("a"), randomCategoryListParams("testing_facets_a"));
+    paramsMap.put(new CategoryPath("b"), randomCategoryListParams("testing_facets_b"));
     nonDefaultParams = new PerDimensionIndexingParams(paramsMap);
+    defaultParams = new FacetIndexingParams(randomCategoryListParams(CategoryListParams.DEFAULT_FIELD));
   }
 
   @BeforeClass

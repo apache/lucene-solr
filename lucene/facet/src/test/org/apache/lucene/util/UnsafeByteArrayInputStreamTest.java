@@ -3,10 +3,8 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.facet.FacetTestCase;
 import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.UnsafeByteArrayInputStream;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,7 +23,7 @@ import org.apache.lucene.util.UnsafeByteArrayInputStream;
  * limitations under the License.
  */
 
-public class UnsafeByteArrayInputStreamTest extends LuceneTestCase {
+public class UnsafeByteArrayInputStreamTest extends FacetTestCase {
 
   @Test
   public void testSimple() throws IOException {

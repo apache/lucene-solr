@@ -9,6 +9,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.search.ScoredDocIDs;
 import org.apache.lucene.facet.search.ScoredDocIDsIterator;
 import org.apache.lucene.facet.search.ScoredDocIdCollector;
@@ -25,7 +26,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -45,7 +45,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestScoredDocIDsUtils extends LuceneTestCase {
+public class TestScoredDocIDsUtils extends FacetTestCase {
 
   @Test
   public void testComplementIterator() throws Exception {

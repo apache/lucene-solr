@@ -86,7 +86,7 @@ public class FourFlagsIntDecoder extends IntDecoder {
 
   @Override
   public String toString() {
-    return "FourFlags(VInt8)";
+    return "FourFlags(VInt)";
   }
 
 }

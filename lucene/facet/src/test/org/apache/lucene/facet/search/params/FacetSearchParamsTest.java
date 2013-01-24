@@ -1,6 +1,6 @@
 package org.apache.lucene.facet.search.params;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.facet.FacetTestCase;
 import org.junit.Test;
 
 /*
@@ -20,7 +20,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class FacetSearchParamsTest extends LuceneTestCase {
+public class FacetSearchParamsTest extends FacetTestCase {
 
   @Test
   public void testSearchParamsWithNullRequest() throws Exception {
