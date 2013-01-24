@@ -149,6 +149,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
   @Override
   public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
     // examine the values to determine best type to use
+    // TODO: would be cool to write the deref types in this impersonator too
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     for (BytesRef b : values) {
@@ -172,8 +173,24 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
         }
       }
     } else {
-      // not yet
-      assert false;
+      // variable byte[]
+      boolean success = false;
+      IndexOutput data = null;
+      IndexOutput index = null;
+      String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
+      String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "idx");
+      try {
+        data = dir.createOutput(dataName, state.context);
+        index = dir.createOutput(indexName, state.context);
+        addVarStraightBytesField(field, data, index, values);
+        success = true;
+      } finally {
+        if (success) {
+          IOUtils.close(data, index);
+        } else {
+          IOUtils.closeWhileHandlingException(data, index);
+        }
+      }
     }
   }
   
@@ -188,6 +205,42 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     for (BytesRef v : values) {
       output.writeBytes(v.bytes, v.offset, v.length);
     }
+  }
+  
+  // NOTE: 4.0 file format docs are crazy/wrong here...
+  private void addVarStraightBytesField(FieldInfo field, IndexOutput data, IndexOutput index, Iterable<BytesRef> values) throws IOException {
+    field.putAttribute(legacyKey, LegacyDocValuesType.BYTES_VAR_STRAIGHT.name());
+    
+    CodecUtil.writeHeader(data, 
+                          Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_CODEC_NAME_DAT,
+                          Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_VERSION_CURRENT);
+    
+    CodecUtil.writeHeader(index, 
+                          Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_CODEC_NAME_IDX,
+                          Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_VERSION_CURRENT);
+    
+    final long startPos = data.getFilePointer();
+    
+    for (BytesRef v : values) {
+      data.writeBytes(v.bytes, v.offset, v.length);
+    }
+    
+    final long maxAddress = data.getFilePointer() - startPos;
+    index.writeVLong(maxAddress);
+    
+    final int maxDoc = state.segmentInfo.getDocCount();
+    assert maxDoc != Integer.MAX_VALUE; // unsupported by the 4.0 impl
+    
+    final PackedInts.Writer w = PackedInts.getWriter(index, maxDoc+1, PackedInts.bitsRequired(maxAddress), PackedInts.DEFAULT);
+    long currentPosition = 0;
+    for (BytesRef v : values) {
+      w.add(currentPosition);
+      currentPosition += v.length;
+    }
+    // write sentinel
+    assert currentPosition == maxAddress;
+    w.add(currentPosition);
+    w.finish();
   }
 
   @Override

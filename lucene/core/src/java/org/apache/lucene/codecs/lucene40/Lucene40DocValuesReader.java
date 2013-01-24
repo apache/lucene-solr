@@ -272,6 +272,9 @@ class Lucene40DocValuesReader extends DocValuesProducer {
         case BYTES_FIXED_STRAIGHT:
           instance = loadBytesFixedStraight(field);
           break;
+        case BYTES_VAR_STRAIGHT:
+          instance = loadBytesVarStraight(field);
+          break;
         default:
           throw new AssertionError();
       }
@@ -292,6 +295,7 @@ class Lucene40DocValuesReader extends DocValuesProducer {
       // nocommit? can the current impl even handle > 2G?
       final byte bytes[] = new byte[state.segmentInfo.getDocCount() * fixedLength];
       input.readBytes(bytes, 0, bytes.length);
+      success = true;
       return new BinaryDocValues() {
         @Override
         public void get(int docID, BytesRef result) {
@@ -305,6 +309,46 @@ class Lucene40DocValuesReader extends DocValuesProducer {
         IOUtils.close(input);
       } else {
         IOUtils.closeWhileHandlingException(input);
+      }
+    }
+  }
+  
+  private BinaryDocValues loadBytesVarStraight(FieldInfo field) throws IOException {
+    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
+    String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "idx");
+    IndexInput data = null;
+    IndexInput index = null;
+    boolean success = false;
+    try {
+      data = dir.openInput(dataName, state.context);
+      CodecUtil.checkHeader(data, Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_CODEC_NAME_DAT, 
+                                  Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_VERSION_START, 
+                                  Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_VERSION_CURRENT);
+      index = dir.openInput(indexName, state.context);
+      CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_CODEC_NAME_IDX, 
+                                   Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_VERSION_START, 
+                                   Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_VERSION_CURRENT);
+      // nocommit? can the current impl even handle > 2G?
+      long totalBytes = index.readVLong();
+      final byte bytes[] = new byte[(int)totalBytes];
+      data.readBytes(bytes, 0, bytes.length);
+      final PackedInts.Reader reader = PackedInts.getReader(index);
+      success = true;
+      return new BinaryDocValues() {
+        @Override
+        public void get(int docID, BytesRef result) {
+          long startAddress = reader.get(docID);
+          long endAddress = reader.get(docID+1);
+          result.bytes = bytes;
+          result.offset = (int)startAddress;
+          result.length = (int)(endAddress - startAddress);
+        }
+      };
+    } finally {
+      if (success) {
+        IOUtils.close(data, index);
+      } else {
+        IOUtils.closeWhileHandlingException(data, index);
       }
     }
   }

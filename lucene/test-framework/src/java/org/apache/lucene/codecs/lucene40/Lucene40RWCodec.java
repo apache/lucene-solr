@@ -33,6 +33,7 @@ public final class Lucene40RWCodec extends Lucene40Codec {
     }
   };
   
+  //private final DocValuesFormat docValues = new Lucene40RWDocValuesFormat();
   private final DocValuesFormat docValues = new Lucene40LyingRWDocValuesFormat();
   private final NormsFormat norms = new Lucene40RWNormsFormat();
   
