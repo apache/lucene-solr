@@ -75,6 +75,8 @@ Bug Fixes
   when more unused nodes are available. 
   (Eric Falcao, Brett Hoerner, Mark Miller)
 
+* SOLR-4345 : Solr Admin UI dosent work in IE 10 (steffkes)
+
 Optimizations
 ----------------------
 
