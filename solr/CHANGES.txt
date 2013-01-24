@@ -88,7 +88,8 @@ Optimizations
 Other Changes
 ----------------------
 
-
+* SOLR-4348: Make the lock type configurable by system property by default.
+  (Mark Miller)
 
 ==================  4.1.0 ==================
 
