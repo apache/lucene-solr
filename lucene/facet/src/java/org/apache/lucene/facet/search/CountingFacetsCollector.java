@@ -3,6 +3,8 @@ package org.apache.lucene.facet.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -265,6 +267,17 @@ public class CountingFacetsCollector extends FacetsCollector {
             }
             child = siblings[child];
           }
+          Collections.sort(nodes, new Comparator<FacetResultNode>() {
+            @Override
+            public int compare(FacetResultNode o1, FacetResultNode o2) {
+              int value = (int) (o2.value - o1.value);
+              if (value == 0) {
+                value = o2.ordinal - o1.ordinal;
+              }
+              return value;
+            }
+          });
+          
           root.subResults = nodes;
           res.add(new FacetResult(fr, root, nodes.size()));
           continue;
