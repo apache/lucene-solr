@@ -250,7 +250,7 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
       
       for (int i = 1; i <= numSlices; i++) {
         for (int j = 1; j <= repFactor; j++) {
-          String nodeName = nodeList.get(((i - 1) + (j - 1)) % nodeList.size());
+          String nodeName = nodeList.get((repFactor * (i - 1) + (j - 1)) % nodeList.size());
           String sliceName = "shard" + i;
           String shardName = collectionName + "_" + sliceName + "_replica" + j;
           log.info("Creating shard " + shardName + " as part of slice "
