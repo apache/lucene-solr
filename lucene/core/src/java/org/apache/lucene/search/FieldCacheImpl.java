@@ -45,8 +45,6 @@ import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
-// nocommit rename to UninvertFieldCacheImpl or something ...
-
 /**
  * Expert: The default cache implementation, storing all values in memory.
  * A WeakHashMap is used for storage.
@@ -145,7 +143,6 @@ class FieldCacheImpl implements FieldCache {
   /** Expert: Internal cache. */
   abstract static class Cache {
 
-    // nocommit why wrapper vs non-static class...?
     Cache(FieldCacheImpl wrapper) {
       this.wrapper = wrapper;
     }
@@ -382,7 +379,6 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  // nocommit move up?
   static class BytesFromArray extends Bytes {
     private final byte[] values;
 
@@ -464,7 +460,6 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  // nocommit move up?
   static class ShortsFromArray extends Shorts {
     private final short[] values;
 
@@ -544,7 +539,6 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  // nocommit move up?
   static class IntsFromArray extends Ints {
     private final int[] values;
 
@@ -558,6 +552,18 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
+  private static class HoldsOneThing<T> {
+    private T it;
+
+    public void set(T it) {
+      this.it = it;
+    }
+
+    public T get() {
+      return it;
+    }
+  }
+
   static final class IntCache extends Cache {
     IntCache(FieldCacheImpl wrapper) {
       super(wrapper);
@@ -567,7 +573,6 @@ class FieldCacheImpl implements FieldCache {
     protected Object createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      final int[] values;
       final IntParser parser = (IntParser) key.custom;
       if (parser == null) {
         // Confusing: must delegate to wrapper (vs simply
@@ -582,16 +587,23 @@ class FieldCacheImpl implements FieldCache {
         }
       }
 
-      // nocommit how to avoid double alloc in numeric field
-      // case ...
-      values = new int[reader.maxDoc()];
+      final HoldsOneThing<int[]> valuesRef = new HoldsOneThing<int[]>();
 
       Uninvert u = new Uninvert() {
           private int currentValue;
+          private int[] values;
 
           @Override
           public void visitTerm(BytesRef term) {
             currentValue = parser.parseInt(term);
+            if (values == null) {
+              // Lazy alloc so for the numeric field case
+              // (which will hit a NumberFormatException
+              // when we first try the DEFAULT_INT_PARSER),
+              // we don't double-alloc:
+              values = new int[reader.maxDoc()];
+              valuesRef.set(values);
+            }
           }
 
           @Override
@@ -605,13 +617,14 @@ class FieldCacheImpl implements FieldCache {
       if (setDocsWithField) {
         wrapper.setDocsWithField(reader, key.field, u.docsWithField);
       }
+      int[] values = valuesRef.get();
+      if (values == null) {
+        values = new int[reader.maxDoc()];
+      }
       return new IntsFromArray(values);
     }
   }
 
-  // nocommit must advertise that this does NOT work if you
-  // index only doc values for the field ... it will say no
-  // doc exists...
   public Bits getDocsWithField(AtomicReader reader, String field)
       throws IOException {
     return (Bits) caches.get(DocsWithFieldCache.class).get(reader, new CacheKey(field, null), false);
@@ -707,7 +720,6 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  // nocommit move up?
   static class FloatsFromArray extends Floats {
     private final float[] values;
 
@@ -727,10 +739,9 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
+    protected Object createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      final float[] values;
       final FloatParser parser = (FloatParser) key.custom;
       if (parser == null) {
         // Confusing: must delegate to wrapper (vs simply
@@ -745,16 +756,23 @@ class FieldCacheImpl implements FieldCache {
         }
       }
 
-      // nocommit how to avoid double alloc in numeric field
-      // case ...
-      values = new float[reader.maxDoc()];
+      final HoldsOneThing<float[]> valuesRef = new HoldsOneThing<float[]>();
 
       Uninvert u = new Uninvert() {
           private float currentValue;
+          private float[] values;
 
           @Override
           public void visitTerm(BytesRef term) {
             currentValue = parser.parseFloat(term);
+            if (values == null) {
+              // Lazy alloc so for the numeric field case
+              // (which will hit a NumberFormatException
+              // when we first try the DEFAULT_INT_PARSER),
+              // we don't double-alloc:
+              values = new float[reader.maxDoc()];
+              valuesRef.set(values);
+            }
           }
 
           @Override
@@ -769,6 +787,10 @@ class FieldCacheImpl implements FieldCache {
         wrapper.setDocsWithField(reader, key.field, u.docsWithField);
       }
 
+      float[] values = valuesRef.get();
+      if (values == null) {
+        values = new float[reader.maxDoc()];
+      }
       return new FloatsFromArray(values);
     }
   }
@@ -796,7 +818,6 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  // nocommit move up?
   static class LongsFromArray extends Longs {
     private final long[] values;
 
@@ -816,10 +837,9 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
+    protected Object createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      final long[] values;
       final LongParser parser = (LongParser) key.custom;
       if (parser == null) {
         // Confusing: must delegate to wrapper (vs simply
@@ -834,16 +854,23 @@ class FieldCacheImpl implements FieldCache {
         }
       }
 
-      // nocommit how to avoid double alloc in numeric field
-      // case ...
-      values = new long[reader.maxDoc()];
+      final HoldsOneThing<long[]> valuesRef = new HoldsOneThing<long[]>();
 
       Uninvert u = new Uninvert() {
           private long currentValue;
+          private long[] values;
 
           @Override
           public void visitTerm(BytesRef term) {
             currentValue = parser.parseLong(term);
+            if (values == null) {
+              // Lazy alloc so for the numeric field case
+              // (which will hit a NumberFormatException
+              // when we first try the DEFAULT_INT_PARSER),
+              // we don't double-alloc:
+              values = new long[reader.maxDoc()];
+              valuesRef.set(values);
+            }
           }
 
           @Override
@@ -856,6 +883,10 @@ class FieldCacheImpl implements FieldCache {
 
       if (setDocsWithField) {
         wrapper.setDocsWithField(reader, key.field, u.docsWithField);
+      }
+      long[] values = valuesRef.get();
+      if (values == null) {
+        values = new long[reader.maxDoc()];
       }
       return new LongsFromArray(values);
     }
@@ -885,7 +916,6 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  // nocommit move up?
   static class DoublesFromArray extends Doubles {
     private final double[] values;
 
@@ -905,10 +935,9 @@ class FieldCacheImpl implements FieldCache {
     }
 
     @Override
-    protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField)
+    protected Object createValue(final AtomicReader reader, CacheKey key, boolean setDocsWithField)
         throws IOException {
 
-      final double[] values;
       final DoubleParser parser = (DoubleParser) key.custom;
       if (parser == null) {
         // Confusing: must delegate to wrapper (vs simply
@@ -923,16 +952,23 @@ class FieldCacheImpl implements FieldCache {
         }
       }
 
-      // nocommit how to avoid double alloc in numeric field
-      // case ...
-      values = new double[reader.maxDoc()];
+      final HoldsOneThing<double[]> valuesRef = new HoldsOneThing<double[]>();
 
       Uninvert u = new Uninvert() {
           private double currentValue;
+          private double[] values;
 
           @Override
           public void visitTerm(BytesRef term) {
             currentValue = parser.parseDouble(term);
+            if (values == null) {
+              // Lazy alloc so for the numeric field case
+              // (which will hit a NumberFormatException
+              // when we first try the DEFAULT_INT_PARSER),
+              // we don't double-alloc:
+              values = new double[reader.maxDoc()];
+              valuesRef.set(values);
+            }
           }
 
           @Override
@@ -945,6 +981,10 @@ class FieldCacheImpl implements FieldCache {
 
       if (setDocsWithField) {
         wrapper.setDocsWithField(reader, key.field, u.docsWithField);
+      }
+      double[] values = valuesRef.get();
+      if (values == null) {
+        values = new double[reader.maxDoc()];
       }
       return new DoublesFromArray(values);
     }
@@ -984,12 +1024,6 @@ class FieldCacheImpl implements FieldCache {
       bytes.fill(ret, termOrdToBytesOffset.get(ord));
     }
   }
-
-  // nocommit for DV if you ask for sorted or binary we
-  // should check sorted first?
-
-  // nocommit woudl be nice if .getTErms would return a
-  // DocTermsIndex if one already existed
 
   public SortedDocValues getTermsIndex(AtomicReader reader, String field) throws IOException {
     return getTermsIndex(reader, field, PackedInts.FAST);
@@ -1143,7 +1177,6 @@ class FieldCacheImpl implements FieldCache {
   public BinaryDocValues getTerms(AtomicReader reader, String field, float acceptableOverheadRatio) throws IOException {
     BinaryDocValues valuesIn = reader.getBinaryDocValues(field);
     if (valuesIn == null) {
-      // nocommit is this auto-fallback ... OK?
       valuesIn = reader.getSortedDocValues(field);
     }
 
@@ -1164,6 +1197,10 @@ class FieldCacheImpl implements FieldCache {
     @Override
     protected Object createValue(AtomicReader reader, CacheKey key, boolean setDocsWithField /* ignored */)
         throws IOException {
+
+      // TODO: would be nice to first check if DocTermsIndex
+      // was already cached for this field and then return
+      // that instead, to avoid insanity
 
       final int maxDoc = reader.maxDoc();
       Terms terms = reader.terms(key.field);
