@@ -275,8 +275,14 @@ class Lucene40DocValuesReader extends DocValuesProducer {
         case BYTES_VAR_STRAIGHT:
           instance = loadBytesVarStraight(field);
           break;
+        case BYTES_FIXED_DEREF:
+          instance = loadBytesFixedDeref(field);
+          break;
+        case BYTES_VAR_DEREF:
+          instance = loadBytesVarDeref(field);
+          break;
         default:
-          throw new AssertionError(); // nocommit
+          throw new AssertionError();
       }
       binaryInstances.put(field.number, instance);
     }
@@ -351,6 +357,51 @@ class Lucene40DocValuesReader extends DocValuesProducer {
         IOUtils.closeWhileHandlingException(data, index);
       }
     }
+  }
+  
+  private BinaryDocValues loadBytesFixedDeref(FieldInfo field) throws IOException {
+    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
+    String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "idx");
+    IndexInput data = null;
+    IndexInput index = null;
+    boolean success = false;
+    try {
+      data = dir.openInput(dataName, state.context);
+      CodecUtil.checkHeader(data, Lucene40DocValuesFormat.BYTES_FIXED_DEREF_CODEC_NAME_DAT, 
+                                  Lucene40DocValuesFormat.BYTES_FIXED_DEREF_VERSION_START, 
+                                  Lucene40DocValuesFormat.BYTES_FIXED_DEREF_VERSION_CURRENT);
+      index = dir.openInput(indexName, state.context);
+      CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_FIXED_DEREF_CODEC_NAME_IDX, 
+                                   Lucene40DocValuesFormat.BYTES_FIXED_DEREF_VERSION_START, 
+                                   Lucene40DocValuesFormat.BYTES_FIXED_DEREF_VERSION_CURRENT);
+      
+      final int fixedLength = data.readInt();
+      final int valueCount = index.readInt();
+      // nocommit? can the current impl even handle > 2G?
+      final byte bytes[] = new byte[fixedLength * valueCount];
+      data.readBytes(bytes, 0, bytes.length);
+      final PackedInts.Reader reader = PackedInts.getReader(index);
+      success = true;
+      return new BinaryDocValues() {
+        @Override
+        public void get(int docID, BytesRef result) {
+          int ord = (int)reader.get(docID);
+          result.bytes = bytes;
+          result.offset = ord * fixedLength;
+          result.length = fixedLength;
+        }
+      };
+    } finally {
+      if (success) {
+        IOUtils.close(data, index);
+      } else {
+        IOUtils.closeWhileHandlingException(data, index);
+      }
+    }
+  }
+  
+  private BinaryDocValues loadBytesVarDeref(FieldInfo field) throws IOException {
+    throw new AssertionError(); // nocommit
   }
 
   @Override

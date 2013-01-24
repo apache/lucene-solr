@@ -75,6 +75,18 @@ public class Lucene40DocValuesFormat extends DocValuesFormat {
   static final int BYTES_VAR_STRAIGHT_VERSION_START = 0;
   static final int BYTES_VAR_STRAIGHT_VERSION_CURRENT = BYTES_VAR_STRAIGHT_VERSION_START;
   
+  // constants for BYTES_FIXED_DEREF
+  static final String BYTES_FIXED_DEREF_CODEC_NAME_IDX = "FixedDerefBytesIdx";
+  static final String BYTES_FIXED_DEREF_CODEC_NAME_DAT = "FixedDerefBytesDat";
+  static final int BYTES_FIXED_DEREF_VERSION_START = 0;
+  static final int BYTES_FIXED_DEREF_VERSION_CURRENT = BYTES_FIXED_DEREF_VERSION_START;
+  
+  // constants for BYTES_VAR_DEREF
+  static final String BYTES_VAR_DEREF_CODEC_NAME_IDX = "VarDerefBytesIdx";
+  static final String BYTES_VAR_DEREF_CODEC_NAME_DAT = "VarDerefBytesDat";
+  static final int BYTES_VAR_DEREF_VERSION_START = 0;
+  static final int BYTES_VAR_DEREF_VERSION_CURRENT = BYTES_VAR_DEREF_VERSION_START;
+  
   // constants for BYTES_FIXED_SORTED
   static final String BYTES_FIXED_SORTED_CODEC_NAME_IDX = "FixedSortedBytesIdx";
   static final String BYTES_FIXED_SORTED_CODEC_NAME_DAT = "FixedSortedBytesDat";

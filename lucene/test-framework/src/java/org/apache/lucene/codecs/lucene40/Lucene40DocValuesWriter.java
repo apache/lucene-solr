@@ -18,6 +18,8 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.TreeSet;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
@@ -149,31 +151,28 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
   @Override
   public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
     // examine the values to determine best type to use
-    // TODO: would be cool to write the deref types in this impersonator too
+    HashSet<BytesRef> uniqueValues = new HashSet<BytesRef>();
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     for (BytesRef b : values) {
       minLength = Math.min(minLength, b.length);
       maxLength = Math.max(maxLength, b.length);
-    }
-    
-    if (minLength == maxLength) {
-      // fixed byte[]
-      String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
-      IndexOutput data = dir.createOutput(fileName, state.context);
-      boolean success = false;
-      try {
-        addFixedStraightBytesField(field, data, values, minLength);
-        success = true;
-      } finally {
-        if (success) {
-          IOUtils.close(data);
-        } else {
-          IOUtils.closeWhileHandlingException(data);
+      if (uniqueValues != null) {
+        if (uniqueValues.add(BytesRef.deepCopyOf(b))) {
+          if (uniqueValues.size() > 256) {
+            uniqueValues = null;
+          }
         }
       }
-    } else {
-      // variable byte[]
+    }
+    
+    int maxDoc = state.segmentInfo.getDocCount();
+    final boolean fixed = minLength == maxLength;
+    // nocommit
+    final boolean dedup = fixed && (uniqueValues != null && uniqueValues.size() * 2 < maxDoc);
+    
+    if (dedup) {
+      // we will deduplicate and deref values
       boolean success = false;
       IndexOutput data = null;
       IndexOutput index = null;
@@ -182,13 +181,54 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
       try {
         data = dir.createOutput(dataName, state.context);
         index = dir.createOutput(indexName, state.context);
-        addVarStraightBytesField(field, data, index, values);
+        if (fixed) {
+          addFixedDerefBytesField(field, data, index, values, minLength);
+        } else {
+          assert false; // nocommit
+        }
         success = true;
       } finally {
         if (success) {
           IOUtils.close(data, index);
         } else {
           IOUtils.closeWhileHandlingException(data, index);
+        }
+      }
+    } else {
+      // we dont deduplicate, just write values straight
+      if (fixed) {
+        // fixed byte[]
+        String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
+        IndexOutput data = dir.createOutput(fileName, state.context);
+        boolean success = false;
+        try {
+          addFixedStraightBytesField(field, data, values, minLength);
+          success = true;
+        } finally {
+          if (success) {
+            IOUtils.close(data);
+          } else {
+            IOUtils.closeWhileHandlingException(data);
+          }
+        }
+      } else {
+        // variable byte[]
+        boolean success = false;
+        IndexOutput data = null;
+        IndexOutput index = null;
+        String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
+        String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "idx");
+        try {
+          data = dir.createOutput(dataName, state.context);
+          index = dir.createOutput(indexName, state.context);
+          addVarStraightBytesField(field, data, index, values);
+          success = true;
+        } finally {
+          if (success) {
+            IOUtils.close(data, index);
+          } else {
+            IOUtils.closeWhileHandlingException(data, index);
+          }
         }
       }
     }
@@ -244,6 +284,43 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     // write sentinel
     assert currentPosition == maxAddress;
     w.add(currentPosition);
+    w.finish();
+  }
+  
+  private void addFixedDerefBytesField(FieldInfo field, IndexOutput data, IndexOutput index, Iterable<BytesRef> values, int length) throws IOException {
+    field.putAttribute(legacyKey, LegacyDocValuesType.BYTES_FIXED_DEREF.name());
+
+    CodecUtil.writeHeader(data, 
+                          Lucene40DocValuesFormat.BYTES_FIXED_DEREF_CODEC_NAME_DAT,
+                          Lucene40DocValuesFormat.BYTES_FIXED_DEREF_VERSION_CURRENT);
+    
+    CodecUtil.writeHeader(index, 
+                          Lucene40DocValuesFormat.BYTES_FIXED_DEREF_CODEC_NAME_IDX,
+                          Lucene40DocValuesFormat.BYTES_FIXED_DEREF_VERSION_CURRENT);
+    
+    // deduplicate
+    TreeSet<BytesRef> dictionary = new TreeSet<BytesRef>();
+    for (BytesRef v : values) {
+      dictionary.add(BytesRef.deepCopyOf(v));
+    }
+    
+    /* values */
+    data.writeInt(length);
+    for (BytesRef v : dictionary) {
+      data.writeBytes(v.bytes, v.offset, v.length);
+    }
+    
+    /* ordinals */
+    int valueCount = dictionary.size();
+    assert valueCount > 0;
+    index.writeInt(valueCount);
+    final int maxDoc = state.segmentInfo.getDocCount();
+    final PackedInts.Writer w = PackedInts.getWriter(index, maxDoc, PackedInts.bitsRequired(valueCount-1), PackedInts.DEFAULT);
+
+    for (BytesRef v : values) {
+      int ord = dictionary.headSet(v).size();
+      w.add(ord);
+    }
     w.finish();
   }
 
