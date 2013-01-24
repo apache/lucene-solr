@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.associations.AssociationsFacetFields;
 import org.apache.lucene.facet.associations.CategoryAssociationsContainer;
 import org.apache.lucene.facet.associations.CategoryFloatAssociation;
@@ -24,8 +25,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -47,8 +46,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-@SuppressCodecs("Lucene3x")
-public class AssociationsFacetRequestTest extends LuceneTestCase {
+public class AssociationsFacetRequestTest extends FacetTestCase {
 
   private static Directory dir;
   private static IndexReader reader;

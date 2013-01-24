@@ -143,4 +143,9 @@ public class CategoryListParams implements Serializable {
     return DEFAULT_ORDINAL_POLICY;
   }
   
+  @Override
+  public String toString() {
+    return "field=" + field + " encoder=" + createEncoder() + " ordinalPolicy=" + getOrdinalPolicy();
+  }
+  
 }

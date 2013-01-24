@@ -1,30 +1,17 @@
 package org.apache.lucene.facet;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.facet.index.params.FacetIndexingParams;
-import org.apache.lucene.facet.search.FacetsCollector;
-import org.apache.lucene.facet.search.params.CountFacetRequest;
-import org.apache.lucene.facet.search.params.FacetRequest;
-import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
-import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.MultiCollector;
-import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -107,30 +94,6 @@ public class FacetTestUtils {
       pairs[i] = pair;
     }
     return pairs;
-  }
-
-  public static Collector[] search(IndexSearcher searcher, TaxonomyReader taxonomyReader, FacetIndexingParams iParams, 
-      int k, String... facetNames) throws IOException {
-    
-    Collector[] collectors = new Collector[2];
-    
-    List<FacetRequest> fRequests = new ArrayList<FacetRequest>();
-    for (String facetName : facetNames) {
-      CategoryPath cp = new CategoryPath(facetName);
-      FacetRequest fq = new CountFacetRequest(cp, k);
-      fRequests.add(fq);
-    }
-    FacetSearchParams facetSearchParams = new FacetSearchParams(fRequests, iParams);
-
-    TopScoreDocCollector topDocsCollector = TopScoreDocCollector.create(searcher.getIndexReader().maxDoc(), true);
-    FacetsCollector facetsCollector = FacetsCollector.create(facetSearchParams, searcher.getIndexReader(), taxonomyReader);
-    Collector mColl = MultiCollector.wrap(topDocsCollector, facetsCollector);
-    
-    collectors[0] = topDocsCollector;
-    collectors[1] = facetsCollector;
-
-    searcher.search(new MatchAllDocsQuery(), mColl);
-    return collectors;
   }
 
   public static String toSimpleString(FacetResult fr) {

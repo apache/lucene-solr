@@ -2,10 +2,8 @@ package org.apache.lucene.util.collections;
 
 import java.util.HashSet;
 
+import org.apache.lucene.facet.FacetTestCase;
 import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.collections.IntHashSet;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,7 +22,7 @@ import org.apache.lucene.util.collections.IntHashSet;
  * limitations under the License.
  */
 
-public class IntHashSetTest extends LuceneTestCase {
+public class IntHashSetTest extends FacetTestCase {
 
   @Test
   public void test0() {

@@ -8,14 +8,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import org.junit.Test;
-
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
-import org.apache.lucene.facet.taxonomy.writercache.cl2o.CompactLabelToOrdinal;
-import org.apache.lucene.facet.taxonomy.writercache.cl2o.LabelToOrdinal;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util._TestUtil;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -34,7 +31,7 @@ import org.apache.lucene.facet.taxonomy.writercache.cl2o.LabelToOrdinal;
  * limitations under the License.
  */
 
-public class TestCompactLabelToOrdinal extends LuceneTestCase {
+public class TestCompactLabelToOrdinal extends FacetTestCase {
 
   @Test
   public void testL2O() throws Exception {

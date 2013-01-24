@@ -45,17 +45,17 @@ public class TaxonomyMergeUtils {
    * opens {@link DirectoryTaxonomyWriter} and {@link IndexWriter} on the
    * respective destination indexes. Therefore if you have a writer open on any
    * of them, it should be closed, or you should use
-   * {@link #merge(Directory, Directory, IndexWriter, DirectoryTaxonomyWriter)}
+   * {@link #merge(Directory, Directory, IndexWriter, DirectoryTaxonomyWriter, FacetIndexingParams)}
    * instead.
    * 
-   * @see #merge(Directory, Directory, IndexWriter, DirectoryTaxonomyWriter)
+   * @see #merge(Directory, Directory, IndexWriter, DirectoryTaxonomyWriter, FacetIndexingParams)
    */
-  public static void merge(Directory srcIndexDir, Directory srcTaxDir,
-                            Directory destIndexDir, Directory destTaxDir) throws IOException {
+  public static void merge(Directory srcIndexDir, Directory srcTaxDir, Directory destIndexDir, Directory destTaxDir, 
+      FacetIndexingParams params) throws IOException {
     IndexWriter destIndexWriter = new IndexWriter(destIndexDir,
         new IndexWriterConfig(ExampleUtils.EXAMPLE_VER, null));
     DirectoryTaxonomyWriter destTaxWriter = new DirectoryTaxonomyWriter(destTaxDir);
-    merge(srcIndexDir, srcTaxDir, new MemoryOrdinalMap(), destIndexWriter, destTaxWriter);
+    merge(srcIndexDir, srcTaxDir, new MemoryOrdinalMap(), destIndexWriter, destTaxWriter, params);
     destTaxWriter.close();
     destIndexWriter.close();
   }
@@ -64,30 +64,26 @@ public class TaxonomyMergeUtils {
    * Merges the given taxonomy and index directories and commits the changes to
    * the given writers. This method uses {@link MemoryOrdinalMap} to store the
    * mapped ordinals. If you cannot afford the memory, you can use
-   * {@link #merge(Directory, Directory, DirectoryTaxonomyWriter.OrdinalMap, IndexWriter, DirectoryTaxonomyWriter)}
+   * {@link #merge(Directory, Directory, DirectoryTaxonomyWriter.OrdinalMap, IndexWriter, DirectoryTaxonomyWriter, FacetIndexingParams)}
    * by passing {@link DiskOrdinalMap}.
    * 
-   * @see #merge(Directory, Directory, DirectoryTaxonomyWriter.OrdinalMap, IndexWriter, DirectoryTaxonomyWriter)
+   * @see #merge(Directory, Directory, DirectoryTaxonomyWriter.OrdinalMap,
+   *      IndexWriter, DirectoryTaxonomyWriter, FacetIndexingParams)
    */
-  public static void merge(Directory srcIndexDir, Directory srcTaxDir,
-                            IndexWriter destIndexWriter, 
-                            DirectoryTaxonomyWriter destTaxWriter) throws IOException {
-    merge(srcIndexDir, srcTaxDir, new MemoryOrdinalMap(), destIndexWriter, destTaxWriter);
+  public static void merge(Directory srcIndexDir, Directory srcTaxDir, IndexWriter destIndexWriter, 
+      DirectoryTaxonomyWriter destTaxWriter, FacetIndexingParams params) throws IOException {
+    merge(srcIndexDir, srcTaxDir, new MemoryOrdinalMap(), destIndexWriter, destTaxWriter, params);
   }
   
   /**
    * Merges the given taxonomy and index directories and commits the changes to
    * the given writers.
    */
-  public static void merge(Directory srcIndexDir, Directory srcTaxDir,
-                            OrdinalMap map, IndexWriter destIndexWriter,
-                            DirectoryTaxonomyWriter destTaxWriter) throws IOException {
+  public static void merge(Directory srcIndexDir, Directory srcTaxDir, OrdinalMap map, IndexWriter destIndexWriter, 
+      DirectoryTaxonomyWriter destTaxWriter, FacetIndexingParams params) throws IOException {
     // merge the taxonomies
     destTaxWriter.addTaxonomy(srcTaxDir, map);
-
     int ordinalMap[] = map.getMap();
-    FacetIndexingParams params = FacetIndexingParams.ALL_PARENTS;
-
     DirectoryReader reader = DirectoryReader.open(srcIndexDir, -1);
     List<AtomicReaderContext> leaves = reader.leaves();
     int numReaders = leaves.size();

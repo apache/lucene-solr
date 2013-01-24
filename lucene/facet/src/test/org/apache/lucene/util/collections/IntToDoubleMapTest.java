@@ -1,14 +1,10 @@
 package org.apache.lucene.util.collections;
 
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.collections.DoubleIterator;
-import org.apache.lucene.util.collections.IntIterator;
-import org.apache.lucene.util.collections.IntToDoubleMap;
-
 import java.util.HashSet;
 import java.util.Random;
+
+import org.apache.lucene.facet.FacetTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,7 +23,8 @@ import java.util.Random;
  * limitations under the License.
  */
 
-public class IntToDoubleMapTest extends LuceneTestCase {
+public class IntToDoubleMapTest extends FacetTestCase {
+  
   private static void assertGround(double value) {
     assertEquals(IntToDoubleMap.GROUND, value, Double.MAX_VALUE);
   }
