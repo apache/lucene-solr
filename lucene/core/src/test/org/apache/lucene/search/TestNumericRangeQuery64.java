@@ -404,8 +404,8 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
         long a=lower; lower=upper; upper=a;
       }
       final BytesRef lowerBytes = new BytesRef(NumericUtils.BUF_SIZE_LONG), upperBytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
-      NumericUtils.longToPrefixCoded(lower, 0, lowerBytes);
-      NumericUtils.longToPrefixCoded(upper, 0, upperBytes);
+      NumericUtils.longToPrefixCodedBytes(lower, 0, lowerBytes);
+      NumericUtils.longToPrefixCodedBytes(upper, 0, upperBytes);
       
       // test inclusive range
       NumericRangeQuery<Long> tq=NumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true);

@@ -379,8 +379,8 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
         int a=lower; lower=upper; upper=a;
       }
       final BytesRef lowerBytes = new BytesRef(NumericUtils.BUF_SIZE_INT), upperBytes = new BytesRef(NumericUtils.BUF_SIZE_INT);
-      NumericUtils.intToPrefixCoded(lower, 0, lowerBytes);
-      NumericUtils.intToPrefixCoded(upper, 0, upperBytes);
+      NumericUtils.intToPrefixCodedBytes(lower, 0, lowerBytes);
+      NumericUtils.intToPrefixCodedBytes(upper, 0, upperBytes);
 
       // test inclusive range
       NumericRangeQuery<Integer> tq=NumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true);
