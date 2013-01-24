@@ -73,8 +73,6 @@ import org.junit.Ignore;
 // we won't even be running the actual code, only the impostor
 // @SuppressCodecs("Lucene4x")
 // Sep codec cannot yet handle the offsets in our 4.x index!
-// nocommit re-enable!!
-@Ignore("Lucene40 codec lies about its norms 2.0 / dv 2.0 format")
 @SuppressCodecs({"MockFixedIntBlock", "MockVariableIntBlock", "MockSep", "MockRandom"})
 public class TestBackwardsCompatibility extends LuceneTestCase {
 
@@ -697,8 +695,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       (byte)(id >>> 24), (byte)(id >>> 16),(byte)(id >>> 8),(byte)id
     };
     BytesRef ref = new BytesRef(bytes);
-    doc.add(new SortedDocValuesField("dvBytesDerefFixed", ref));
-    doc.add(new SortedDocValuesField("dvBytesDerefVar", ref));
+    doc.add(new BinaryDocValuesField("dvBytesDerefFixed", ref));
+    doc.add(new BinaryDocValuesField("dvBytesDerefVar", ref));
     doc.add(new SortedDocValuesField("dvBytesSortedFixed", ref));
     doc.add(new SortedDocValuesField("dvBytesSortedVar", ref));
     doc.add(new BinaryDocValuesField("dvBytesStraightFixed", ref));

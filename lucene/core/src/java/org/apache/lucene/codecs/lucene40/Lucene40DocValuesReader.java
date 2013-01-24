@@ -42,6 +42,7 @@ class Lucene40DocValuesReader extends DocValuesProducer {
   private final Directory dir;
   private final SegmentReadState state;
   private final String legacyKey;
+  private static final String segmentSuffix = "dv";
 
   // ram instances we have already loaded
   private final Map<Integer,NumericDocValues> numericInstances = 
@@ -79,7 +80,7 @@ class Lucene40DocValuesReader extends DocValuesProducer {
   public synchronized NumericDocValues getNumeric(FieldInfo field) throws IOException {
     NumericDocValues instance = numericInstances.get(field.number);
     if (instance == null) {
-      String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
+      String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "dat");
       IndexInput input = dir.openInput(fileName, state.context);
       boolean success = false;
       try {
@@ -290,7 +291,7 @@ class Lucene40DocValuesReader extends DocValuesProducer {
   }
   
   private BinaryDocValues loadBytesFixedStraight(FieldInfo field) throws IOException {
-    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
+    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "dat");
     IndexInput input = dir.openInput(fileName, state.context);
     boolean success = false;
     try {
@@ -320,8 +321,8 @@ class Lucene40DocValuesReader extends DocValuesProducer {
   }
   
   private BinaryDocValues loadBytesVarStraight(FieldInfo field) throws IOException {
-    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
-    String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "idx");
+    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "dat");
+    String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "idx");
     IndexInput data = null;
     IndexInput index = null;
     boolean success = false;
@@ -360,8 +361,8 @@ class Lucene40DocValuesReader extends DocValuesProducer {
   }
   
   private BinaryDocValues loadBytesFixedDeref(FieldInfo field) throws IOException {
-    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
-    String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "idx");
+    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "dat");
+    String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "idx");
     IndexInput data = null;
     IndexInput index = null;
     boolean success = false;
@@ -401,8 +402,8 @@ class Lucene40DocValuesReader extends DocValuesProducer {
   }
   
   private BinaryDocValues loadBytesVarDeref(FieldInfo field) throws IOException {
-    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
-    String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "idx");
+    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "dat");
+    String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "idx");
     IndexInput data = null;
     IndexInput index = null;
     boolean success = false;
@@ -451,8 +452,8 @@ class Lucene40DocValuesReader extends DocValuesProducer {
   public synchronized SortedDocValues getSorted(FieldInfo field) throws IOException {
     SortedDocValues instance = sortedInstances.get(field.number);
     if (instance == null) {
-      String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
-      String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "idx");
+      String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "dat");
+      String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "idx");
       IndexInput data = null;
       IndexInput index = null;
       boolean success = false;

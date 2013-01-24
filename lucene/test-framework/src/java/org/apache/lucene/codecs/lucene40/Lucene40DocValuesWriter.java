@@ -39,9 +39,9 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
   private final Directory dir;
   private final SegmentWriteState state;
   private final String legacyKey;
+  private final static String segmentSuffix = "dv";
 
   // note: intentionally ignores seg suffix
-  // String filename = IndexFileNames.segmentFileName(state.segmentInfo.name, "dv", IndexFileNames.COMPOUND_FILE_EXTENSION);
   Lucene40DocValuesWriter(SegmentWriteState state, String filename, String legacyKey) throws IOException {
     this.state = state;
     this.legacyKey = legacyKey;
@@ -59,7 +59,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
       maxValue = Math.max(maxValue, v);
     }
     
-    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
+    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "dat");
     IndexOutput data = dir.createOutput(fileName, state.context);
     boolean success = false;
     try {
@@ -176,8 +176,8 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
       boolean success = false;
       IndexOutput data = null;
       IndexOutput index = null;
-      String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
-      String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "idx");
+      String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "dat");
+      String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "idx");
       try {
         data = dir.createOutput(dataName, state.context);
         index = dir.createOutput(indexName, state.context);
@@ -198,7 +198,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
       // we dont deduplicate, just write values straight
       if (fixed) {
         // fixed byte[]
-        String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
+        String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "dat");
         IndexOutput data = dir.createOutput(fileName, state.context);
         boolean success = false;
         try {
@@ -216,8 +216,8 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
         boolean success = false;
         IndexOutput data = null;
         IndexOutput index = null;
-        String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
-        String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "idx");
+        String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "dat");
+        String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "idx");
         try {
           data = dir.createOutput(dataName, state.context);
           index = dir.createOutput(indexName, state.context);
@@ -388,8 +388,8 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     boolean success = false;
     IndexOutput data = null;
     IndexOutput index = null;
-    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
-    String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "idx");
+    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "dat");
+    String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name + "_" + Integer.toString(field.number), segmentSuffix, "idx");
     
     try {
       data = dir.createOutput(dataName, state.context);
