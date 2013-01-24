@@ -107,12 +107,12 @@ public class CountingFacetsCollector extends FacetsCollector {
     assert assertParams(fsp) == null : assertParams(fsp);
     
     this.fsp = fsp;
-    CategoryListParams clp = fsp.indexingParams.getCategoryListParams(null);
+    CategoryListParams clp = fsp.indexingParams.getCategoryListParams(fsp.facetRequests.get(0).categoryPath);
     this.ordinalPolicy = clp.getOrdinalPolicy();
+    this.facetsField = clp.field;
     this.taxoReader = taxoReader;
     this.facetArrays = facetArrays;
     this.counts = facetArrays.getIntArray();
-    this.facetsField = clp.field;
     this.useDirectSource = useDirectSource;
   }
   
@@ -141,14 +141,21 @@ public class CountingFacetsCollector extends FacetsCollector {
       }
     }
     
-    // verify that there's only one CategoryListParams
-    List<CategoryListParams> clps = fsp.indexingParams.getAllCategoryListParams();
-    if (clps.size() != 1) {
-      return "this Collector supports only one CategoryListParams";
+    // verify that there's only one CategoryListParams for all FacetRequests
+    CategoryListParams clp = null;
+    for (FacetRequest fr : fsp.facetRequests) {
+      CategoryListParams cpclp = fsp.indexingParams.getCategoryListParams(fr.categoryPath);
+      if (clp == null) {
+        clp = cpclp;
+      } else if (clp != cpclp) {
+        return "all FacetRequests must belong to the same CategoryListParams";
+      }
+    }
+    if (clp == null) {
+      return "at least one FacetRequest must be defined";
     }
     
     // verify DGapVInt decoder
-    CategoryListParams clp = clps.get(0);
     if (clp.createEncoder().createMatchingDecoder().getClass() != DGapVInt8IntDecoder.class) {
       return "this Collector supports only DGap + VInt encoding";
     }
