@@ -170,6 +170,17 @@ public class TestSort extends LuceneTestCase {
             default:
               throw new IllegalStateException("unknown type " + stringDVType);
           }
+        } else {
+          switch(stringDVType) {
+            case SORTED:
+              doc.add(new SortedDocValuesField("string_dv", new BytesRef()));
+              break;
+            case BINARY:
+              doc.add(new BinaryDocValuesField("string_dv", new BytesRef()));
+              break;
+            default:
+              throw new IllegalStateException("unknown type " + stringDVType);
+          }
         }
         if (data[i][5] != null) doc.add(new StringField("custom",   data[i][5], Field.Store.NO));
         if (data[i][6] != null) doc.add(new StringField("i18n",     data[i][6], Field.Store.NO));
