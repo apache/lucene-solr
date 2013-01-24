@@ -276,7 +276,7 @@ class Lucene40DocValuesReader extends DocValuesProducer {
           instance = loadBytesVarStraight(field);
           break;
         default:
-          throw new AssertionError();
+          throw new AssertionError(); // nocommit
       }
       binaryInstances.put(field.number, instance);
     }
@@ -355,7 +355,113 @@ class Lucene40DocValuesReader extends DocValuesProducer {
 
   @Override
   public synchronized SortedDocValues getSorted(FieldInfo field) throws IOException {
-    throw new AssertionError();
+    SortedDocValues instance = sortedInstances.get(field.number);
+    if (instance == null) {
+      String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
+      String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "idx");
+      IndexInput data = null;
+      IndexInput index = null;
+      boolean success = false;
+      try {
+        data = dir.openInput(dataName, state.context);
+        index = dir.openInput(indexName, state.context);
+        switch(LegacyDocValuesType.valueOf(field.getAttribute(legacyKey))) {
+          case BYTES_FIXED_SORTED:
+            instance = loadBytesFixedSorted(field, data, index);
+            break;
+          case BYTES_VAR_SORTED:
+            instance = loadBytesVarSorted(field, data, index);
+            break;
+          default:
+            throw new AssertionError();
+        }
+        success = true;
+      } finally {
+        if (success) {
+          IOUtils.close(data, index);
+        } else {
+          IOUtils.closeWhileHandlingException(data, index);
+        }
+      }
+      sortedInstances.put(field.number, instance);
+    }
+    return instance;
+  }
+  
+  private SortedDocValues loadBytesFixedSorted(FieldInfo field, IndexInput data, IndexInput index) throws IOException {
+    CodecUtil.checkHeader(data, Lucene40DocValuesFormat.BYTES_FIXED_SORTED_CODEC_NAME_DAT, 
+                                Lucene40DocValuesFormat.BYTES_FIXED_SORTED_VERSION_START, 
+                                Lucene40DocValuesFormat.BYTES_FIXED_SORTED_VERSION_CURRENT);
+    CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_FIXED_SORTED_CODEC_NAME_IDX, 
+                                 Lucene40DocValuesFormat.BYTES_FIXED_SORTED_VERSION_START, 
+                                 Lucene40DocValuesFormat.BYTES_FIXED_SORTED_VERSION_CURRENT);
+    
+    final int fixedLength = data.readInt();
+    final int valueCount = index.readInt();
+    
+    // nocommit? can the current impl even handle > 2G?
+    final byte[] bytes = new byte[fixedLength*valueCount];
+    data.readBytes(bytes, 0, bytes.length);
+    final PackedInts.Reader reader = PackedInts.getReader(index);
+    
+    return new SortedDocValues() {
+      @Override
+      public int getOrd(int docID) {
+        return (int) reader.get(docID);
+      }
+
+      @Override
+      public void lookupOrd(int ord, BytesRef result) {
+        result.bytes = bytes;
+        result.offset = ord * fixedLength;
+        result.length = fixedLength;
+      }
+
+      @Override
+      public int getValueCount() {
+        return valueCount;
+      }
+    };
+  }
+  
+  private SortedDocValues loadBytesVarSorted(FieldInfo field, IndexInput data, IndexInput index) throws IOException {
+    CodecUtil.checkHeader(data, Lucene40DocValuesFormat.BYTES_VAR_SORTED_CODEC_NAME_DAT, 
+                                Lucene40DocValuesFormat.BYTES_VAR_SORTED_VERSION_START, 
+                                Lucene40DocValuesFormat.BYTES_VAR_SORTED_VERSION_CURRENT);
+    CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_VAR_SORTED_CODEC_NAME_IDX, 
+                                 Lucene40DocValuesFormat.BYTES_VAR_SORTED_VERSION_START, 
+                                 Lucene40DocValuesFormat.BYTES_VAR_SORTED_VERSION_CURRENT);
+  
+    long maxAddress = index.readLong();
+    // nocommit? can the current impl even handle > 2G?
+    final byte[] bytes = new byte[(int)maxAddress];
+    data.readBytes(bytes, 0, bytes.length);
+    
+    final PackedInts.Reader addressReader = PackedInts.getReader(index);
+    final PackedInts.Reader ordsReader = PackedInts.getReader(index);
+    
+    final int valueCount = addressReader.size() - 1;
+    
+    return new SortedDocValues() {
+      @Override
+      public int getOrd(int docID) {
+        return (int)ordsReader.get(docID);
+      }
+
+      @Override
+      public void lookupOrd(int ord, BytesRef result) {
+        long startAddress = addressReader.get(ord);
+        long endAddress = addressReader.get(ord+1);
+        result.bytes = bytes;
+        result.offset = (int)startAddress;
+        result.length = (int)(endAddress - startAddress);
+      }
+
+      @Override
+      public int getValueCount() {
+        return valueCount;
+      }
+    };
   }
   
   @Override

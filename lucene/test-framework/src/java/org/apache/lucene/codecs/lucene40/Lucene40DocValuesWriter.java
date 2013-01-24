@@ -219,11 +219,15 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
                           Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_CODEC_NAME_IDX,
                           Lucene40DocValuesFormat.BYTES_VAR_STRAIGHT_VERSION_CURRENT);
     
+    /* values */
+    
     final long startPos = data.getFilePointer();
     
     for (BytesRef v : values) {
       data.writeBytes(v.bytes, v.offset, v.length);
     }
+    
+    /* addresses */
     
     final long maxAddress = data.getFilePointer() - startPos;
     index.writeVLong(maxAddress);
@@ -245,8 +249,121 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
 
   @Override
   public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
-    assert false;
-  }  
+    // examine the values to determine best type to use
+    int minLength = Integer.MAX_VALUE;
+    int maxLength = Integer.MIN_VALUE;
+    for (BytesRef b : values) {
+      minLength = Math.min(minLength, b.length);
+      maxLength = Math.max(maxLength, b.length);
+    }
+    
+    boolean success = false;
+    IndexOutput data = null;
+    IndexOutput index = null;
+    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
+    String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "idx");
+    
+    try {
+      data = dir.createOutput(dataName, state.context);
+      index = dir.createOutput(indexName, state.context);
+      if (minLength == maxLength) {
+        // fixed byte[]
+        addFixedSortedBytesField(field, data, index, values, docToOrd, minLength);
+      } else {
+        // var byte[]
+        addVarSortedBytesField(field, data, index, values, docToOrd);
+      }
+      success = true;
+    } finally {
+      if (success) {
+        IOUtils.close(data, index);
+      } else {
+        IOUtils.closeWhileHandlingException(data, index);
+      }
+    }
+  }
+  
+  private void addFixedSortedBytesField(FieldInfo field, IndexOutput data, IndexOutput index, Iterable<BytesRef> values, Iterable<Number> docToOrd, int length) throws IOException {
+    field.putAttribute(legacyKey, LegacyDocValuesType.BYTES_FIXED_SORTED.name());
+
+    CodecUtil.writeHeader(data, 
+                          Lucene40DocValuesFormat.BYTES_FIXED_SORTED_CODEC_NAME_DAT,
+                          Lucene40DocValuesFormat.BYTES_FIXED_SORTED_VERSION_CURRENT);
+    
+    CodecUtil.writeHeader(index, 
+                          Lucene40DocValuesFormat.BYTES_FIXED_SORTED_CODEC_NAME_IDX,
+                          Lucene40DocValuesFormat.BYTES_FIXED_SORTED_VERSION_CURRENT);
+    
+    /* values */
+    
+    data.writeInt(length);
+    int valueCount = 0;
+    for (BytesRef v : values) {
+      data.writeBytes(v.bytes, v.offset, v.length);
+      valueCount++;
+    }
+    
+    /* ordinals */
+    
+    index.writeInt(valueCount);
+    int maxDoc = state.segmentInfo.getDocCount();
+    assert valueCount > 0;
+    final PackedInts.Writer w = PackedInts.getWriter(index, maxDoc, PackedInts.bitsRequired(valueCount-1), PackedInts.DEFAULT);
+    for (Number n : docToOrd) {
+      w.add(n.longValue());
+    }
+    w.finish();
+  }
+  
+  private void addVarSortedBytesField(FieldInfo field, IndexOutput data, IndexOutput index, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+    field.putAttribute(legacyKey, LegacyDocValuesType.BYTES_VAR_SORTED.name());
+    
+    CodecUtil.writeHeader(data, 
+                          Lucene40DocValuesFormat.BYTES_VAR_SORTED_CODEC_NAME_DAT,
+                          Lucene40DocValuesFormat.BYTES_VAR_SORTED_VERSION_CURRENT);
+
+    CodecUtil.writeHeader(index, 
+                          Lucene40DocValuesFormat.BYTES_VAR_SORTED_CODEC_NAME_IDX,
+                          Lucene40DocValuesFormat.BYTES_VAR_SORTED_VERSION_CURRENT);
+
+    /* values */
+    
+    final long startPos = data.getFilePointer();
+    
+    int valueCount = 0;
+    for (BytesRef v : values) {
+      data.writeBytes(v.bytes, v.offset, v.length);
+      valueCount++;
+    }
+    
+    /* addresses */
+    
+    final long maxAddress = data.getFilePointer() - startPos;
+    index.writeLong(maxAddress);
+    
+    assert valueCount != Integer.MAX_VALUE; // unsupported by the 4.0 impl
+    
+    final PackedInts.Writer w = PackedInts.getWriter(index, valueCount+1, PackedInts.bitsRequired(maxAddress), PackedInts.DEFAULT);
+    long currentPosition = 0;
+    for (BytesRef v : values) {
+      w.add(currentPosition);
+      currentPosition += v.length;
+    }
+    // write sentinel
+    assert currentPosition == maxAddress;
+    w.add(currentPosition);
+    w.finish();
+    
+    /* ordinals */
+    
+    final int maxDoc = state.segmentInfo.getDocCount();
+    assert valueCount > 0;
+    final PackedInts.Writer ords = PackedInts.getWriter(index, maxDoc, PackedInts.bitsRequired(valueCount-1), PackedInts.DEFAULT);
+    for (Number n : docToOrd) {
+      ords.add(n.longValue());
+    }
+    ords.finish();
+  }
   
   @Override
   public void close() throws IOException {

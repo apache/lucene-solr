@@ -87,7 +87,7 @@ public class Lucene40Codec extends Codec {
     return infosFormat;
   }
   
-  private final DocValuesFormat defaultDVFormat = new Lucene40LyingDocValuesFormat();
+  private final DocValuesFormat defaultDVFormat = new Lucene40DocValuesFormat();
 
   @Override
   public DocValuesFormat docValuesFormat() {

@@ -32,7 +32,7 @@ import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.compressing.CompressingStoredFieldsFormat;
 import org.apache.lucene.codecs.compressing.CompressionMode;
-import org.apache.lucene.codecs.lucene40.Lucene40LyingDocValuesFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40DocValuesFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40LiveDocsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40NormsFormat;
@@ -125,7 +125,7 @@ public class Lucene41Codec extends Codec {
   }
 
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene41");
-  private final DocValuesFormat dvFormat = new Lucene40LyingDocValuesFormat();
+  private final DocValuesFormat dvFormat = new Lucene40DocValuesFormat();
   private final NormsFormat normsFormat = new Lucene40NormsFormat();
 
   @Override

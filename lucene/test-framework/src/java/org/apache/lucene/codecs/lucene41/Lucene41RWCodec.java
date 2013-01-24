@@ -9,7 +9,7 @@ import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40FieldInfosWriter;
-import org.apache.lucene.codecs.lucene40.Lucene40LyingRWDocValuesFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40RWDocValuesFormat;
 import org.apache.lucene.codecs.lucene40.Lucene40RWNormsFormat;
 
 /*
@@ -41,7 +41,7 @@ public class Lucene41RWCodec extends Lucene41Codec {
     }
   };
   
-  private final DocValuesFormat docValues = new Lucene40LyingRWDocValuesFormat();
+  private final DocValuesFormat docValues = new Lucene40RWDocValuesFormat();
   private final NormsFormat norms = new Lucene40RWNormsFormat();
   
   @Override

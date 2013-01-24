@@ -51,7 +51,6 @@ public class Lucene40DocValuesFormat extends DocValuesFormat {
   static final String VAR_INTS_CODEC_NAME = "PackedInts";
   static final int VAR_INTS_VERSION_START = 0;
   static final int VAR_INTS_VERSION_CURRENT = VAR_INTS_VERSION_START;
-  
   static final byte VAR_INTS_PACKED = 0x00;
   static final byte VAR_INTS_FIXED_64 = 0x01;
   
@@ -75,4 +74,17 @@ public class Lucene40DocValuesFormat extends DocValuesFormat {
   static final String BYTES_VAR_STRAIGHT_CODEC_NAME_DAT = "VarStraightBytesDat";
   static final int BYTES_VAR_STRAIGHT_VERSION_START = 0;
   static final int BYTES_VAR_STRAIGHT_VERSION_CURRENT = BYTES_VAR_STRAIGHT_VERSION_START;
+  
+  // constants for BYTES_FIXED_SORTED
+  static final String BYTES_FIXED_SORTED_CODEC_NAME_IDX = "FixedSortedBytesIdx";
+  static final String BYTES_FIXED_SORTED_CODEC_NAME_DAT = "FixedSortedBytesDat";
+  static final int BYTES_FIXED_SORTED_VERSION_START = 0;
+  static final int BYTES_FIXED_SORTED_VERSION_CURRENT = BYTES_FIXED_SORTED_VERSION_START;
+  
+  // constants for BYTES_VAR_SORTED
+  // NOTE THIS IS NOT A BUG! 4.0 actually screwed this up (VAR_SORTED and VAR_DEREF have same codec header)
+  static final String BYTES_VAR_SORTED_CODEC_NAME_IDX = "VarDerefBytesIdx";
+  static final String BYTES_VAR_SORTED_CODEC_NAME_DAT = "VarDerefBytesDat";
+  static final int BYTES_VAR_SORTED_VERSION_START = 0;
+  static final int BYTES_VAR_SORTED_VERSION_CURRENT = BYTES_VAR_SORTED_VERSION_START;
 }
