@@ -360,6 +360,29 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     );
   }
 
+  @Test
+  public void testGroupingGroupedBasedFacetingWithTaggedFilter() throws Exception {
+    assertU(add(doc("id", "1", "cat_sI", "a", "bday", "2012-11-20T00:00:00Z")));
+    assertU(add(doc("id", "2", "cat_sI", "b", "bday", "2012-11-21T00:00:00Z")));
+    assertU(add(doc("id", "3", "cat_sI", "a", "bday", "2012-11-20T00:00:00Z")));
+    assertU(add(doc("id", "4", "cat_sI", "b", "bday", "2013-01-15T00:00:00Z")));
+    assertU(add(doc("id", "5", "cat_sI", "a", "bday", "2013-01-14T00:00:00Z")));
+    assertU(commit());
+
+    // Facet counts based on groups
+    SolrQueryRequest req = req("q", "*:*", "rows", "1", "group", "true", "group.field", "cat_sI",
+        "sort", "cat_sI asc", "fl", "id", "fq", "{!tag=chk}bday:[2012-12-18T00:00:00Z TO 2013-01-17T23:59:59Z]",
+        "facet", "true", "group.truncate", "true", "group.sort", "bday desc",
+        "facet.query", "{!ex=chk key=LW1}bday:[2013-01-11T00:00:00Z TO 2013-01-17T23:59:59Z]",
+        "facet.query", "{!ex=chk key=LM1}bday:[2012-12-18T00:00:00Z TO 2013-01-17T23:59:59Z]",
+        "facet.query", "{!ex=chk key=LM3}bday:[2012-10-18T00:00:00Z TO 2013-01-17T23:59:59Z]");
+    assertJQ(
+        req,
+        "/grouped=={'cat_sI':{'matches':2,'groups':[{'groupValue':'a','doclist':{'numFound':1,'start':0,'docs':[{'id':'5'}]}}]}}",
+        "/facet_counts=={'facet_queries':{'LW1':2,'LM1':2,'LM3':2},'facet_fields':{},'facet_dates':{},'facet_ranges':{}}"
+    );
+  }
+
   static String f = "foo_i";
   static String f2 = "foo2_i";
 

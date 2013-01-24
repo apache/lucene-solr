@@ -3,12 +3,14 @@ package org.apache.lucene.facet.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
 import org.apache.lucene.facet.index.params.CategoryListParams;
+import org.apache.lucene.facet.index.params.CategoryListParams.OrdinalPolicy;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest.SortBy;
@@ -79,6 +81,7 @@ import org.apache.lucene.util.encoding.DGapVInt8IntDecoder;
 public class CountingFacetsCollector extends FacetsCollector {
   
   private final FacetSearchParams fsp;
+  private final OrdinalPolicy ordinalPolicy;
   private final TaxonomyReader taxoReader;
   private final BytesRef buf = new BytesRef(32);
   private final FacetArrays facetArrays;
@@ -98,10 +101,12 @@ public class CountingFacetsCollector extends FacetsCollector {
     assert assertParams(fsp) == null : assertParams(fsp);
     
     this.fsp = fsp;
+    CategoryListParams clp = fsp.indexingParams.getCategoryListParams(fsp.facetRequests.get(0).categoryPath);
+    this.ordinalPolicy = clp.getOrdinalPolicy();
+    this.facetsField = clp.field;
     this.taxoReader = taxoReader;
     this.facetArrays = facetArrays;
     this.counts = facetArrays.getIntArray();
-    this.facetsField = fsp.indexingParams.getCategoryListParams(null).field;
   }
   
   /**
@@ -129,14 +134,21 @@ public class CountingFacetsCollector extends FacetsCollector {
       }
     }
     
-    // verify that there's only one CategoryListParams
-    List<CategoryListParams> clps = fsp.indexingParams.getAllCategoryListParams();
-    if (clps.size() != 1) {
-      return "this Collector supports only one CategoryListParams";
+    // verify that there's only one CategoryListParams for all FacetRequests
+    CategoryListParams clp = null;
+    for (FacetRequest fr : fsp.facetRequests) {
+      CategoryListParams cpclp = fsp.indexingParams.getCategoryListParams(fr.categoryPath);
+      if (clp == null) {
+        clp = cpclp;
+      } else if (clp != cpclp) {
+        return "all FacetRequests must belong to the same CategoryListParams";
+      }
+    }
+    if (clp == null) {
+      return "at least one FacetRequest must be defined";
     }
     
     // verify DGapVInt decoder
-    CategoryListParams clp = clps.get(0);
     if (clp.createEncoder().createMatchingDecoder().getClass() != DGapVInt8IntDecoder.class) {
       return "this Collector supports only DGap + VInt encoding";
     }
@@ -222,7 +234,7 @@ public class CountingFacetsCollector extends FacetsCollector {
       
       ParallelTaxonomyArrays arrays = taxoReader.getParallelTaxonomyArrays();
 
-      if (fsp.indexingParams.getOrdinalPolicy() == OrdinalPolicy.NO_PARENTS) {
+      if (ordinalPolicy == OrdinalPolicy.NO_PARENTS) {
         // need to count parents
         countParents(arrays.parents());
       }
@@ -254,7 +266,17 @@ public class CountingFacetsCollector extends FacetsCollector {
             }
             child = siblings[child];
           }
-          root.residue = 0;
+          Collections.sort(nodes, new Comparator<FacetResultNode>() {
+            @Override
+            public int compare(FacetResultNode o1, FacetResultNode o2) {
+              int value = (int) (o2.value - o1.value);
+              if (value == 0) {
+                value = o2.ordinal - o1.ordinal;
+              }
+              return value;
+            }
+          });
+          
           root.subResults = nodes;
           res.add(new FacetResult(fr, root, nodes.size()));
           continue;
@@ -265,17 +287,13 @@ public class CountingFacetsCollector extends FacetsCollector {
         FacetResultNode top = pq.top();
         int child = children[rootOrd];
         int numResults = 0; // count the number of results
-        int residue = 0;
         while (child != TaxonomyReader.INVALID_ORDINAL) {
           int count = counts[child];
           if (count > top.value) {
-            residue += top.value;
             top.value = count;
             top.ordinal = child;
             top = pq.updateTop();
             ++numResults;
-          } else {
-            residue += count;
           }
           child = siblings[child];
         }
@@ -292,7 +310,6 @@ public class CountingFacetsCollector extends FacetsCollector {
           node.label = taxoReader.getPath(node.ordinal);
           subResults[i] = node;
         }
-        root.residue = residue;
         root.subResults = Arrays.asList(subResults);
         res.add(new FacetResult(fr, root, size));
       }

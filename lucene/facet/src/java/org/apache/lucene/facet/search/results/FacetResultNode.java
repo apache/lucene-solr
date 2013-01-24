@@ -59,14 +59,6 @@ public class FacetResultNode {
   public double value;
 
   /**
-   * The total value of screened out sub results. If only part of the results
-   * were returned (usually because only the top-K categories are requested),
-   * then this provides information on "what else is there under this result 
-   * node".
-   */
-  public double residue;
-  
-  /**
    * The sub-results of this result. If {@link FacetRequest#getResultMode()} is
    * {@link ResultMode#PER_NODE_IN_TREE}, every sub result denotes an immediate
    * child of this node. Otherwise, it is a descendant of any level.
@@ -100,9 +92,6 @@ public class FacetResultNode {
       sb.append(label.toString());
     }
     sb.append(" (").append(Double.toString(value)).append(")");
-    if (residue > 0) {
-      sb.append(" (residue=").append(residue).append(")");
-    }
     for (FacetResultNode sub : subResults) {
       sb.append("\n").append(prefix).append(sub.toString(prefix + "  "));
     }

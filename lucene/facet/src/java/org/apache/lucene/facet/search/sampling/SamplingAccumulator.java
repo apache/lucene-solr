@@ -12,7 +12,6 @@ import org.apache.lucene.facet.search.ScoredDocIDs;
 import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.results.FacetResult;
-import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.search.sampling.Sampler.SampleResult;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
@@ -48,8 +47,7 @@ import org.apache.lucene.index.IndexReader;
  * <p>
  * Note: Sampling accumulation (Accumulation over a sampled-set of the results),
  * does not guarantee accurate values for
- * {@link FacetResult#getNumValidDescendants()} &
- * {@link FacetResultNode#residue}.
+ * {@link FacetResult#getNumValidDescendants()}.
  * 
  * @see Sampler
  * @lucene.experimental

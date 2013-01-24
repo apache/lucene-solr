@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -12,9 +14,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.index.FacetFields;
-import org.apache.lucene.facet.index.categorypolicy.OrdinalPolicy;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
+import org.apache.lucene.facet.index.params.PerDimensionIndexingParams;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest;
 import org.apache.lucene.facet.search.params.FacetRequest.SortBy;
@@ -67,8 +69,11 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
   
   private static final Term A = new Term("f", "a");
   private static final CategoryPath CP_A = new CategoryPath("A"), CP_B = new CategoryPath("B");
+  private static final CategoryPath CP_C = new CategoryPath("C"), CP_D = new CategoryPath("D"); // indexed w/ NO_PARENTS
   private static final int NUM_CHILDREN_CP_A = 5, NUM_CHILDREN_CP_B = 3;
+  private static final int NUM_CHILDREN_CP_C = 5, NUM_CHILDREN_CP_D = 5;
   private static final CategoryPath[] CATEGORIES_A, CATEGORIES_B;
+  private static final CategoryPath[] CATEGORIES_C, CATEGORIES_D;
   static {
     CATEGORIES_A = new CategoryPath[NUM_CHILDREN_CP_A];
     for (int i = 0; i < NUM_CHILDREN_CP_A; i++) {
@@ -78,11 +83,24 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     for (int i = 0; i < NUM_CHILDREN_CP_B; i++) {
       CATEGORIES_B[i] = new CategoryPath(CP_B.components[0], Integer.toString(i));
     }
+    
+    // NO_PARENTS categories
+    CATEGORIES_C = new CategoryPath[NUM_CHILDREN_CP_C];
+    for (int i = 0; i < NUM_CHILDREN_CP_C; i++) {
+      CATEGORIES_C[i] = new CategoryPath(CP_C.components[0], Integer.toString(i));
+    }
+    
+    // Multi-level categories
+    CATEGORIES_D = new CategoryPath[NUM_CHILDREN_CP_D];
+    for (int i = 0; i < NUM_CHILDREN_CP_D; i++) {
+      String val = Integer.toString(i);
+      CATEGORIES_D[i] = new CategoryPath(CP_D.components[0], val, val + val); // e.g. D/1/11, D/2/22...
+    }
   }
   
-  protected static Directory indexDir, taxoDir;
-  protected static ObjectToIntMap<CategoryPath> allExpectedCounts, termExpectedCounts;
-  protected static int numChildrenIndexedA, numChildrenIndexedB;
+  private static Directory indexDir, taxoDir;
+  private static ObjectToIntMap<CategoryPath> allExpectedCounts, termExpectedCounts;
+  private static FacetIndexingParams fip;
 
   @AfterClass
   public static void afterClassCountingFacetsCollectorTest() throws Exception {
@@ -104,6 +122,11 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     ArrayList<CategoryPath> categories = new ArrayList<CategoryPath>();
     categories.addAll(categories_a.subList(0, numFacetsA));
     categories.addAll(categories_b.subList(0, numFacetsB));
+    
+    // add the NO_PARENT categories
+    categories.add(CATEGORIES_C[random().nextInt(NUM_CHILDREN_CP_C)]);
+    categories.add(CATEGORIES_D[random().nextInt(NUM_CHILDREN_CP_D)]);
+
     return categories;
   }
 
@@ -115,6 +138,9 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
       throws IOException {
     List<CategoryPath> docCategories = randomCategories(random());
     for (CategoryPath cp : docCategories) {
+      if (cp.components[0].equals(CP_D.components[0])) {
+        cp = cp.subpath(2); // we'll get counts for the 2nd level only
+      }
       allExpectedCounts.put(cp, allExpectedCounts.get(cp) + 1);
       if (updateTermExpectedCounts) {
         termExpectedCounts.put(cp, termExpectedCounts.get(cp) + 1);
@@ -123,9 +149,13 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     // add 1 to each dimension
     allExpectedCounts.put(CP_A, allExpectedCounts.get(CP_A) + 1);
     allExpectedCounts.put(CP_B, allExpectedCounts.get(CP_B) + 1);
+    allExpectedCounts.put(CP_C, allExpectedCounts.get(CP_C) + 1);
+    allExpectedCounts.put(CP_D, allExpectedCounts.get(CP_D) + 1);
     if (updateTermExpectedCounts) {
       termExpectedCounts.put(CP_A, termExpectedCounts.get(CP_A) + 1);
       termExpectedCounts.put(CP_B, termExpectedCounts.get(CP_B) + 1);
+      termExpectedCounts.put(CP_C, termExpectedCounts.get(CP_C) + 1);
+      termExpectedCounts.put(CP_D, termExpectedCounts.get(CP_D) + 1);
     }
     
     facetFields.addFields(doc, docCategories);
@@ -145,7 +175,7 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
       ObjectToIntMap<CategoryPath> expectedCounts) throws IOException {
     Random random = random();
     int numDocs = atLeast(random, 2);
-    FacetFields facetFields = new FacetFields(taxoWriter);
+    FacetFields facetFields = new FacetFields(taxoWriter, fip);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       addFacets(doc, facetFields, false);
@@ -158,7 +188,7 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
       ObjectToIntMap<CategoryPath> expectedCounts) throws IOException {
     Random random = random();
     int numDocs = atLeast(random, 2);
-    FacetFields facetFields = new FacetFields(taxoWriter);
+    FacetFields facetFields = new FacetFields(taxoWriter, fip);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       addFacets(doc, facetFields, true);
@@ -172,7 +202,7 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
       ObjectToIntMap<CategoryPath> expectedCounts) throws IOException {
     Random random = random();
     int numDocs = atLeast(random, 2);
-    FacetFields facetFields = new FacetFields(taxoWriter);
+    FacetFields facetFields = new FacetFields(taxoWriter, fip);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       boolean hasContent = random.nextBoolean();
@@ -190,11 +220,19 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     ObjectToIntMap<CategoryPath> counts = new ObjectToIntMap<CategoryPath>();
     counts.put(CP_A, 0);
     counts.put(CP_B, 0);
+    counts.put(CP_C, 0);
+    counts.put(CP_D, 0);
     for (CategoryPath cp : CATEGORIES_A) {
       counts.put(cp, 0);
     }
     for (CategoryPath cp : CATEGORIES_B) {
       counts.put(cp, 0);
+    }
+    for (CategoryPath cp : CATEGORIES_C) {
+      counts.put(cp, 0);
+    }
+    for (CategoryPath cp : CATEGORIES_D) {
+      counts.put(cp.subpath(2), 0);
     }
     return counts;
   }
@@ -214,6 +252,19 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES); // prevent merges, so we can control the index segments
     IndexWriter indexWriter = new IndexWriter(indexDir, conf);
     TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
+    CategoryListParams allParents = new CategoryListParams();
+    CategoryListParams noParents = new CategoryListParams("no_parents") {
+      @Override
+      public OrdinalPolicy getOrdinalPolicy() {
+        return OrdinalPolicy.NO_PARENTS;
+      }
+    };
+    Map<CategoryPath,CategoryListParams> params = new HashMap<CategoryPath,CategoryListParams>();
+    params.put(CP_A, allParents);
+    params.put(CP_B, allParents);
+    params.put(CP_C, noParents);
+    params.put(CP_D, noParents);
+    fip = new PerDimensionIndexingParams(params);
     
     allExpectedCounts = newCounts();
     termExpectedCounts = newCounts();
@@ -230,23 +281,11 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     // segment w/ categories and some content
     indexDocsWithFacetsAndSomeTerms(indexWriter, taxoWriter, allExpectedCounts);
     
-    // set num children indexed from each dimension
-    for (CategoryPath cp : CATEGORIES_A) {
-      if (termExpectedCounts.get(cp) > 0) {
-        ++numChildrenIndexedA;
-      }
-    }
-    for (CategoryPath cp : CATEGORIES_B) {
-      if (termExpectedCounts.get(cp) > 0) {
-        ++numChildrenIndexedB;
-      }
-    }
-    
     IOUtils.close(indexWriter, taxoWriter);
   }
   
   @Test
-  public void testInvalidValidParams() throws Exception {
+  public void testInvalidParams() throws Exception {
     final CategoryPath dummyCP = new CategoryPath("a");
     final FacetRequest dummyFR = new CountFacetRequest(dummyCP, 10);
 
@@ -274,13 +313,14 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     cfr.setNumLabel(2);
     assertNotNull("numToLabel should not be allowed", CountingFacetsCollector.assertParams(new FacetSearchParams(cfr)));
     
-    FacetIndexingParams fip = new FacetIndexingParams(new CategoryListParams("moo")) {
+    FacetIndexingParams fip = new FacetIndexingParams() {
       @Override
-      public List<CategoryListParams> getAllCategoryListParams() {
-        return Arrays.asList(new CategoryListParams[] { clParams, clParams });
+      public CategoryListParams getCategoryListParams(CategoryPath category) {
+        return new CategoryListParams();
       }
     };
-    assertNotNull("only one CLP should be allowed", CountingFacetsCollector.assertParams(new FacetSearchParams(fip, dummyFR)));
+    assertNotNull("only one CLP should be allowed", CountingFacetsCollector.assertParams(new FacetSearchParams(fip, dummyFR, 
+        new CountFacetRequest(new CategoryPath("moo"), 10))));
     
     fip = new FacetIndexingParams(new CategoryListParams("moo")) {
       final CategoryListParams clp = new CategoryListParams() {
@@ -328,39 +368,6 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     for (FacetResult res : facetResults) {
       FacetResultNode root = res.getFacetResultNode();
       assertEquals("wrong count for " + root.label, termExpectedCounts.get(root.label), (int) root.value);
-      assertEquals("invalid residue", 0, (int) root.residue);
-      for (FacetResultNode child : root.subResults) {
-        assertEquals("wrong count for " + child.label, termExpectedCounts.get(child.label), (int) child.value);
-      }
-    }
-    
-    IOUtils.close(indexReader, taxoReader);
-  }
-  
-  @Test
-  public void testResidue() throws Exception {
-    // test the collector's handling of residue
-    DirectoryReader indexReader = DirectoryReader.open(indexDir);
-    TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
-    IndexSearcher searcher = new IndexSearcher(indexReader);
-    
-    // asking for top 1 is the only way to guarantee there will be a residue
-    // provided that enough children were indexed (see below)
-    FacetSearchParams fsp = new FacetSearchParams(new CountFacetRequest(CP_A, 1), new CountFacetRequest(CP_B, 1));
-    FacetsCollector fc = new CountingFacetsCollector(fsp , taxoReader);
-    TermQuery q = new TermQuery(A);
-    searcher.search(q, fc);
-    
-    List<FacetResult> facetResults = fc.getFacetResults();
-    assertEquals("invalid number of facet results", 2, facetResults.size());
-    for (FacetResult res : facetResults) {
-      FacetResultNode root = res.getFacetResultNode();
-      assertEquals("wrong count for " + root.label, termExpectedCounts.get(root.label), (int) root.value);
-      // make sure randomness didn't pick only one child of root (otherwise there's no residue)
-      int numChildrenIndexed = res.getFacetRequest().categoryPath == CP_A ? numChildrenIndexedA : numChildrenIndexedB;
-      if (numChildrenIndexed > 1) {
-        assertTrue("expected residue", root.residue > 0);
-      }
       for (FacetResultNode child : root.subResults) {
         assertEquals("wrong count for " + child.label, termExpectedCounts.get(child.label), (int) child.value);
       }
@@ -385,9 +392,16 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     for (FacetResult res : facetResults) {
       FacetResultNode root = res.getFacetResultNode();
       assertEquals("wrong count for " + root.label, allExpectedCounts.get(root.label), (int) root.value);
-      assertEquals("invalid residue", 0, (int) root.residue);
+      int prevValue = Integer.MAX_VALUE;
+      int prevOrdinal = Integer.MAX_VALUE;
       for (FacetResultNode child : root.subResults) {
         assertEquals("wrong count for " + child.label, allExpectedCounts.get(child.label), (int) child.value);
+        assertTrue("wrong sort order of sub results: child.value=" + child.value + " prevValue=" + prevValue, child.value <= prevValue);
+        if (child.value == prevValue) {
+          assertTrue("wrong sort order of sub results", child.ordinal < prevOrdinal);
+        }
+        prevValue = (int) child.value;
+        prevOrdinal = child.ordinal;
       }
     }
     
@@ -410,7 +424,6 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     for (FacetResult res : facetResults) {
       FacetResultNode root = res.getFacetResultNode();
       assertEquals("wrong count for " + root.label, allExpectedCounts.get(root.label), (int) root.value);
-      assertEquals("invalid residue", 0, (int) root.residue);
       for (FacetResultNode child : root.subResults) {
         assertEquals("wrong count for " + child.label, allExpectedCounts.get(child.label), (int) child.value);
       }
@@ -435,7 +448,6 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     for (FacetResult res : facetResults) {
       FacetResultNode root = res.getFacetResultNode();
       assertEquals("wrong count for " + root.label, allExpectedCounts.get(root.label), (int) root.value);
-      assertEquals("invalid residue", 0, (int) root.residue);
       for (FacetResultNode child : root.subResults) {
         assertEquals("wrong count for " + child.label, allExpectedCounts.get(child.label), (int) child.value);
       }
@@ -446,70 +458,25 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
 
   @Test
   public void testNoParents() throws Exception {
-    // TODO: when OrdinalPolicy is on CLP, index the NO_PARENTS categories into
-    // their own dimension, and avoid this index creation
-    Directory indexDir = newDirectory();
-    Directory taxoDir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(random()));
-    conf.setMaxBufferedDocs(2);
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
-    IndexWriter indexWriter = new IndexWriter(indexDir, conf);
-    TaxonomyWriter taxoWriter = new DirectoryTaxonomyWriter(taxoDir);
-    FacetIndexingParams fip = new FacetIndexingParams() {
-      @Override
-      public OrdinalPolicy getOrdinalPolicy() {
-        return OrdinalPolicy.NO_PARENTS;
-      }
-    };
-    FacetFields facetFields = new FacetFields(taxoWriter, fip);
-    ObjectToIntMap<CategoryPath> expCounts = newCounts();
-
-    // index few docs with categories, not sharing parents.
-    int numDocs = atLeast(10);
-    final CategoryPath cpc = new CategoryPath("L1", "L2", "L3");
-    for (int i = 0; i < numDocs; i++) {
-      Document doc = new Document();
-      ArrayList<CategoryPath> categories = new ArrayList<CategoryPath>();
-      CategoryPath cpa = CATEGORIES_A[random().nextInt(NUM_CHILDREN_CP_A)];
-      CategoryPath cpb = CATEGORIES_B[random().nextInt(NUM_CHILDREN_CP_B)];
-      categories.add(cpa);
-      categories.add(cpb);
-      categories.add(cpc);
-      expCounts.put(cpa, expCounts.get(cpa) + 1);
-      expCounts.put(cpb, expCounts.get(cpb) + 1);
-      facetFields.addFields(doc, categories);
-      indexWriter.addDocument(doc);
-    }
-    expCounts.put(CP_A, numDocs);
-    expCounts.put(CP_B, numDocs);
-    for (int i = 0; i < cpc.length; i++) {
-      expCounts.put(cpc.subpath(i+1), numDocs);
-    }
-    
-    IOUtils.close(indexWriter, taxoWriter);
-
     DirectoryReader indexReader = DirectoryReader.open(indexDir);
     TaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoDir);
     IndexSearcher searcher = new IndexSearcher(indexReader);
-    FacetSearchParams fsp = new FacetSearchParams(fip, new CountFacetRequest(CP_A, NUM_CHILDREN_CP_A), 
-        new CountFacetRequest(CP_B, NUM_CHILDREN_CP_B), new CountFacetRequest(cpc.subpath(1), 10));
+    FacetSearchParams fsp = new FacetSearchParams(fip, new CountFacetRequest(CP_C, NUM_CHILDREN_CP_C), 
+        new CountFacetRequest(CP_D, NUM_CHILDREN_CP_D));
     FacetsCollector fc = new CountingFacetsCollector(fsp , taxoReader);
     searcher.search(new MatchAllDocsQuery(), fc);
     
     List<FacetResult> facetResults = fc.getFacetResults();
-    assertEquals("invalid number of facet results", 3, facetResults.size());
+    assertEquals("invalid number of facet results", fsp.facetRequests.size(), facetResults.size());
     for (FacetResult res : facetResults) {
       FacetResultNode root = res.getFacetResultNode();
-      assertEquals("wrong count for " + root.label, expCounts.get(root.label), (int) root.value);
-      assertEquals("invalid residue", 0, (int) root.residue);
+      assertEquals("wrong count for " + root.label, allExpectedCounts.get(root.label), (int) root.value);
       for (FacetResultNode child : root.subResults) {
-        assertEquals("wrong count for " + child.label, expCounts.get(child.label), (int) child.value);
+        assertEquals("wrong count for " + child.label, allExpectedCounts.get(child.label), (int) child.value);
       }
     }
     
     IOUtils.close(indexReader, taxoReader);
-    
-    IOUtils.close(indexDir, taxoDir);
   }
   
 }

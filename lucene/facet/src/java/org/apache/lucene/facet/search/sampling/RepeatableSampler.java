@@ -279,8 +279,13 @@ public class RepeatableSampler extends Sampler {
      * into a bounded PQ (retains only sampleSize highest weights).
      */
     ScoredDocIDsIterator it = collection.iterator();
+    MI mi = null;
     while (it.next()) {
-      pq.insertWithReuse((int)(it.getDocID() * PHI_32) & 0x7FFFFFFF);
+      if (mi == null) {
+        mi = new MI();
+      }
+      mi.value = (int) (it.getDocID() * PHI_32) & 0x7FFFFFFF;
+      mi = pq.insertWithOverflow(mi);
     }
     if (returnTimings) {
       times[1] = System.currentTimeMillis();
@@ -290,18 +295,26 @@ public class RepeatableSampler extends Sampler {
      */
     Object[] heap = pq.getHeap();
     for (int si = 0; si < sampleSize; si++) {
-      sample[si] = (int)(((IntPriorityQueue.MI)(heap[si+1])).value * PHI_32I) & 0x7FFFFFFF;
+      sample[si] = (int)(((MI) heap[si+1]).value * PHI_32I) & 0x7FFFFFFF;
     }
     if (returnTimings) {
       times[2] = System.currentTimeMillis();
     }
+  }
+  
+  /**
+   * A mutable integer that lets queue objects be reused once they start overflowing.
+   */
+  private static class MI {
+    MI() { }
+    public int value;
   }
 
   /**
    * A bounded priority queue for Integers, to retain a specified number of
    * the highest-weighted values for return as a random sample.
    */
-  private static class IntPriorityQueue extends PriorityQueue<Object> {
+  private static class IntPriorityQueue extends PriorityQueue<MI> {
 
     /**
      * Creates a bounded PQ of size <code>size</code>.
@@ -309,17 +322,6 @@ public class RepeatableSampler extends Sampler {
      */
     public IntPriorityQueue(int size) {
       super(size);
-    }
-
-    /**
-     * Inserts an integer with overflow and object reuse.
-     */
-    public void insertWithReuse(int intval) {
-      if (this.mi == null) {
-        this.mi = new MI();
-      }
-      this.mi.value = intval;
-      this.mi = (MI)this.insertWithOverflow(this.mi);
     }
 
     /**
@@ -338,22 +340,9 @@ public class RepeatableSampler extends Sampler {
      * @return True if <code>o1</code> weighs less than <code>o2</code>.
      */
     @Override
-    public boolean lessThan(Object o1, Object o2) {
-      return ((MI)o1).value < ((MI)o2).value;
+    public boolean lessThan(MI o1, MI o2) {
+      return o1.value < o2.value;
     }
-
-    /**
-     * A mutable integer that lets queue objects be reused once they start overflowing.
-     */
-    private static class MI {
-      MI() { }
-      public int value;
-    }
-
-    /**
-     * The mutable integer instance for reuse after first overflow.
-     */
-    private MI mi;
 
   }
 

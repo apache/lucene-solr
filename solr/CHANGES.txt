@@ -68,8 +68,22 @@ Bug Fixes
 
 * SOLR-4309: /browse: Improve JQuery autosuggest behavior (janhoy)
 
+* SOLR-4330: group.sort is ignored when using group.truncate and ex/tag
+  local params together (koji)
+
 Optimizations
 ----------------------
+
+* SOLR-4339: Admin UI - Display Field-Flags on Schema-Browser
+  (steffkes)
+
+* SOLR-4340: Admin UI - Analysis's Button Spinner goes wild
+  (steffkes)
+
+* SOLR-4341: Admin UI - Plugins/Stats Page contains loooong
+  Values which result in horizontal Scrollbar (steffkes)
+
+* SOLR-3915: Color Legend for Cloud UI (steffkes)
 
 Other Changes
 ----------------------

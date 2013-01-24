@@ -37,6 +37,11 @@ Changes in backwards compatibility policy
   FacetsCollector) and CountingFacetsCollector. FacetsCollector.create()
   returns the most optimized collector for the given parameters.
   (Shai Erera, Michael McCandless)
+  
+* LUCENE-4700: OrdinalPolicy is now per CategoryListParams, and is no longer
+  an interface, but rather an enum with values NO_PARENTS and ALL_PARENTS.
+  PathPolicy was removed, you should extend FacetFields and DrillDownStream
+  to control which categories are added as drill-down terms. (Shai Erera)
 
 Optimizations
 
@@ -64,6 +69,23 @@ New Features
 * LUCENE-4599: New oal.codecs.compressing.CompressingTermVectorsFormat which
   compresses term vectors into chunks of documents similarly to
   CompressingStoredFieldsFormat. (Adrien Grand)
+
+API Changes
+
+* LUCENE-4709: FacetResultNode no longer has a residue field. (Shai Erera)
+  
+Bug Fixes
+
+* LUCENE-4705: Pass on FilterStrategy in FilteredQuery if the filtered query is 
+  rewritten. (Simon Willnauer)
+
+* LUCENE-4712: MemoryIndex#normValues() throws NPE if field doesn't exist. 
+  (Simon Willnauer, Ricky Pritchett)
+
+* LUCENE-4550: Shapes wider than 180 degrees would use too much accuracy for the
+  PrefixTree based SpatialStrategy. For a pathological case of nearly 360
+  degrees and barely any height, it would generate so many indexed terms
+  (> 500k) that it could even cause an OutOfMemoryError. Fixed. (David Smiley)
 
 ======================= Lucene 4.1.0 =======================
 

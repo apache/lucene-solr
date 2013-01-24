@@ -269,7 +269,7 @@ sammy.get
                   dataType : 'json',
                   beforeSend : function( xhr, settings )
                   {
-                    loader.show( button );
+                    loader.show( $( 'span', button ) );
                     button.attr( 'disabled', true );
                   },
                   success : function( response, status_text, xhr, form )
@@ -325,7 +325,7 @@ sammy.get
                   },
                   complete : function()
                   {
-                    loader.hide( $( 'button', analysis_form ) );
+                    loader.hide( $( 'span', button ) );
                     button.removeAttr( 'disabled' );
                   }
                 }

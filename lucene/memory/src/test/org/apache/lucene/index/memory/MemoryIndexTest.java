@@ -380,6 +380,17 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     assertTrue("posGap" + mockAnalyzer.getPositionIncrementGap("field") , mindex.search(query) > 0.0001);
   }
   
+  public void testNonExistingsField() throws IOException {
+    MemoryIndex mindex = new MemoryIndex(random().nextBoolean(),  random().nextInt(50) * 1024 * 1024);
+    MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
+    mindex.addField("field", "the quick brown fox", mockAnalyzer);
+    AtomicReader reader = (AtomicReader) mindex.createSearcher().getIndexReader();
+    assertNull(reader.getNumericDocValues("not-in-index"));
+    assertNull(reader.getNormValues("not-in-index"));
+    assertNull(reader.termDocsEnum(new Term("not-in-index", "foo")));
+    assertNull(reader.termPositionsEnum(new Term("not-in-index", "foo")));
+    assertNull(reader.terms("not-in-index"));
+  }
   
   public void testDuellMemIndex() throws IOException {
     LineFileDocs lineFileDocs = new LineFileDocs(random());

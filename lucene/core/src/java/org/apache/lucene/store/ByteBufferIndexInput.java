@@ -272,6 +272,7 @@ abstract class ByteBufferIndexInput extends IndexInput {
       // make local copy, then un-set early
       final ByteBuffer[] bufs = buffers;
       unsetBuffers();
+      clones.remove(this);
       
       if (isClone) return;
       
