@@ -499,7 +499,7 @@ class Lucene40DocValuesReader extends DocValuesProducer {
     data.readBytes(bytes, 0, bytes.length);
     final PackedInts.Reader reader = PackedInts.getReader(index);
     
-    return new SortedDocValues() {
+    return correctBuggyOrds(new SortedDocValues() {
       @Override
       public int getOrd(int docID) {
         return (int) reader.get(docID);
@@ -516,7 +516,7 @@ class Lucene40DocValuesReader extends DocValuesProducer {
       public int getValueCount() {
         return valueCount;
       }
-    };
+    });
   }
   
   private SortedDocValues loadBytesVarSorted(FieldInfo field, IndexInput data, IndexInput index) throws IOException {
@@ -537,7 +537,7 @@ class Lucene40DocValuesReader extends DocValuesProducer {
     
     final int valueCount = addressReader.size() - 1;
     
-    return new SortedDocValues() {
+    return correctBuggyOrds(new SortedDocValues() {
       @Override
       public int getOrd(int docID) {
         return (int)ordsReader.get(docID);
@@ -555,6 +555,34 @@ class Lucene40DocValuesReader extends DocValuesProducer {
       @Override
       public int getValueCount() {
         return valueCount;
+      }
+    });
+  }
+  
+  // detects and corrects LUCENE-4717 in old indexes
+  private SortedDocValues correctBuggyOrds(final SortedDocValues in) {
+    final int maxDoc = state.segmentInfo.getDocCount();
+    for (int i = 0; i < maxDoc; i++) {
+      if (in.getOrd(i) == 0) {
+        return in; // ok
+      }
+    }
+    
+    // we had ord holes, return an ord-shifting-impl that corrects the bug
+    return new SortedDocValues() {
+      @Override
+      public int getOrd(int docID) {
+        return in.getOrd(docID) - 1;
+      }
+
+      @Override
+      public void lookupOrd(int ord, BytesRef result) {
+        in.lookupOrd(ord+1, result);
+      }
+
+      @Override
+      public int getValueCount() {
+        return in.getValueCount() - 1;
       }
     };
   }
