@@ -130,7 +130,7 @@ sammy.get
  
               var fieldsets = $( '> fieldset', query_form );
  
-              var fields = fieldsets.first().formToArray();
+              var fields = fieldsets.first().formToArray( true );
               add_to_form_values( fields );
 
               fieldsets.not( '.common' )
@@ -140,7 +140,7 @@ sammy.get
                   {
                     if( $( 'legend input', set ).is( ':checked' ) )
                     {
-                      var fields = $( set ).formToArray();
+                      var fields = $( set ).formToArray( true );
                       add_to_form_values( fields );
                     }
                   }
