@@ -22,7 +22,6 @@ import org.apache.lucene.index.Term;
 /**
  * TestExplanations subclass focusing on basic query types
  */
-// nocommit: WTF ant test  -Dtestcase=TestSimpleExplanations -Dtests.method=testFQ2 -Dtests.seed=ED13809D5BBA6703 -Dtests.slow=true -Dtests.locale=fr_CH -Dtests.timezone=Brazil/Acre -Dtests.file.encoding=US-ASCII
 public class TestSimpleExplanations extends TestExplanations {
 
   // we focus on queries that don't rewrite to other queries.

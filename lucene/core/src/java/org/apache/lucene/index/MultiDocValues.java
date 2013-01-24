@@ -144,6 +144,7 @@ public class MultiDocValues {
             values.get(docID - leaves.get(subIndex).docBase, result);
           } else {
             result.length = 0;
+            result.offset = 0;
             result.bytes = BinaryDocValues.MISSING;
           }
         }
