@@ -1305,11 +1305,13 @@ public class CheckIndex {
       // check sorted bytes
       SortedSource sortedValues = values.asSortedSource();
       Comparator<BytesRef> comparator = sortedValues.getComparator();
+      int maxOrd = sortedValues.getValueCount() - 1;
+      FixedBitSet seenOrds = new FixedBitSet(sortedValues.getValueCount());
       int lastOrd = -1;
       BytesRef lastBytes = new BytesRef();
       for (int i = 0; i < expectedDocs; i++) {
         int ord = sortedValues.ord(i);
-        if (ord < 0 || ord > expectedDocs) {
+        if (ord < 0 || ord > maxOrd) {
           throw new RuntimeException("field: " + fieldName + " ord is out of bounds: " + ord);
         }
         BytesRef bytes = new BytesRef();
@@ -1323,6 +1325,13 @@ public class CheckIndex {
         }
         lastOrd = ord;
         lastBytes = bytes;
+        seenOrds.set(ord);
+      }
+      if (seenOrds.cardinality() != sortedValues.getValueCount()) {
+        // TODO: find the bug here and figure out a workaround (we can implement in LUCENE-4547's back compat layer maybe)
+        // basically ord 0 is unused by any docs: so the sortedbytes ords are all off-by-one
+        // does it always happen? e.g. maybe only if there are missing values? or a bug in its merge optimizations?
+        // throw new RuntimeException("dv for field: " + fieldName + " has holes in its ords, valueCount=" + sortedValues.getValueCount() + " but only used: " + seenOrds.cardinality());
       }
     }
   }
