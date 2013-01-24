@@ -16,11 +16,9 @@ package org.apache.lucene.util;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import java.io.IOException;
+
 import java.util.Arrays;
 import java.util.List;
-
-import org.apache.lucene.store.DataOutput;
 
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
 
@@ -297,18 +295,6 @@ public final class ByteBlockPool {
     assert term.length >= 0;
     return term;
   }
-  /**
-   * Dereferences the byte block according to {@link BytesRef} offset. The offset 
-   * is interpreted as the absolute offset into the {@link ByteBlockPool}.
-   */
-  public final BytesRef deref(BytesRef bytes) {
-    final int offset = bytes.offset;
-    byte[] buffer = buffers[offset >> BYTE_BLOCK_SHIFT];
-    int pos = offset & BYTE_BLOCK_MASK;
-    bytes.bytes = buffer;
-    bytes.offset = pos;
-    return bytes;
-  }
   
   /**
    * Copies the given {@link BytesRef} at the current positions (
@@ -364,19 +350,6 @@ public final class ByteBlockPool {
       }
     } while (true);
     return bytes;
-  }
-  
-  /**
-   * Writes the pools content to the given {@link DataOutput}
-   */
-  public final void writePool(final DataOutput out) throws IOException {
-    int bytesOffset = byteOffset;
-    int block = 0;
-    while (bytesOffset > 0) {
-      out.writeBytes(buffers[block++], BYTE_BLOCK_SIZE);
-      bytesOffset -= BYTE_BLOCK_SIZE;
-    }
-    out.writeBytes(buffers[block], byteUpto);
   }
 }
 
