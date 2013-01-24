@@ -330,9 +330,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  // nocommit put this back!  this test fails because the
-  // old codec does not have a SimpleNorms impl...
-  @Ignore("nocommit put me back")
   public void testIndexOldIndex() throws IOException {
     for (String name : oldNames) {
       if (VERBOSE) {
@@ -402,27 +399,25 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       }
     }
 
-    // nocommit re-enable if/when we backport DV 2.0 to 4.0
-    /*
     if (is40Index) {
       // check docvalues fields
-      Source dvByte = MultiDocValues.getDocValues(reader, "dvByte").getSource();
-      Source dvBytesDerefFixed = MultiDocValues.getDocValues(reader, "dvBytesDerefFixed").getSource();
-      Source dvBytesDerefVar = MultiDocValues.getDocValues(reader, "dvBytesDerefVar").getSource();
-      Source dvBytesSortedFixed = MultiDocValues.getDocValues(reader, "dvBytesSortedFixed").getSource();
-      Source dvBytesSortedVar = MultiDocValues.getDocValues(reader, "dvBytesSortedVar").getSource();
-      Source dvBytesStraightFixed = MultiDocValues.getDocValues(reader, "dvBytesStraightFixed").getSource();
-      Source dvBytesStraightVar = MultiDocValues.getDocValues(reader, "dvBytesStraightVar").getSource();
-      Source dvDouble = MultiDocValues.getDocValues(reader, "dvDouble").getSource();
-      Source dvFloat = MultiDocValues.getDocValues(reader, "dvFloat").getSource();
-      Source dvInt = MultiDocValues.getDocValues(reader, "dvInt").getSource();
-      Source dvLong = MultiDocValues.getDocValues(reader, "dvLong").getSource();
-      Source dvPacked = MultiDocValues.getDocValues(reader, "dvPacked").getSource();
-      Source dvShort = MultiDocValues.getDocValues(reader, "dvShort").getSource();
+      NumericDocValues dvByte = MultiDocValues.getNumericValues(reader, "dvByte");
+      BinaryDocValues dvBytesDerefFixed = MultiDocValues.getBinaryValues(reader, "dvBytesDerefFixed");
+      BinaryDocValues dvBytesDerefVar = MultiDocValues.getBinaryValues(reader, "dvBytesDerefVar");
+      SortedDocValues dvBytesSortedFixed = MultiDocValues.getSortedValues(reader, "dvBytesSortedFixed");
+      SortedDocValues dvBytesSortedVar = MultiDocValues.getSortedValues(reader, "dvBytesSortedVar");
+      BinaryDocValues dvBytesStraightFixed = MultiDocValues.getBinaryValues(reader, "dvBytesStraightFixed");
+      BinaryDocValues dvBytesStraightVar = MultiDocValues.getBinaryValues(reader, "dvBytesStraightVar");
+      NumericDocValues dvDouble = MultiDocValues.getNumericValues(reader, "dvDouble");
+      NumericDocValues dvFloat = MultiDocValues.getNumericValues(reader, "dvFloat");
+      NumericDocValues dvInt = MultiDocValues.getNumericValues(reader, "dvInt");
+      NumericDocValues dvLong = MultiDocValues.getNumericValues(reader, "dvLong");
+      NumericDocValues dvPacked = MultiDocValues.getNumericValues(reader, "dvPacked");
+      NumericDocValues dvShort = MultiDocValues.getNumericValues(reader, "dvShort");
       
       for (int i=0;i<35;i++) {
         int id = Integer.parseInt(reader.document(i).get("id"));
-        assertEquals((byte)id, dvByte.getInt(i));
+        assertEquals(id, dvByte.get(i));
         
         byte bytes[] = new byte[] {
             (byte)(id >>> 24), (byte)(id >>> 16),(byte)(id >>> 8),(byte)id
@@ -430,22 +425,27 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         BytesRef expectedRef = new BytesRef(bytes);
         BytesRef scratch = new BytesRef();
         
-        assertEquals(expectedRef, dvBytesDerefFixed.getBytes(i, scratch));
-        assertEquals(expectedRef, dvBytesDerefVar.getBytes(i, scratch));
-        assertEquals(expectedRef, dvBytesSortedFixed.getBytes(i, scratch));
-        assertEquals(expectedRef, dvBytesSortedVar.getBytes(i, scratch));
-        assertEquals(expectedRef, dvBytesStraightFixed.getBytes(i, scratch));
-        assertEquals(expectedRef, dvBytesStraightVar.getBytes(i, scratch));
+        dvBytesDerefFixed.get(i, scratch);
+        assertEquals(expectedRef, scratch);
+        dvBytesDerefVar.get(i, scratch);
+        assertEquals(expectedRef, scratch);
+        dvBytesSortedFixed.get(i, scratch);
+        assertEquals(expectedRef, scratch);
+        dvBytesSortedVar.get(i, scratch);
+        assertEquals(expectedRef, scratch);
+        dvBytesStraightFixed.get(i, scratch);
+        assertEquals(expectedRef, scratch);
+        dvBytesStraightVar.get(i, scratch);
+        assertEquals(expectedRef, scratch);
         
-        assertEquals((double)id, dvDouble.getFloat(i), 0D);
-        assertEquals((float)id, dvFloat.getFloat(i), 0F);
-        assertEquals(id, dvInt.getInt(i));
-        assertEquals(id, dvLong.getInt(i));
-        assertEquals(id, dvPacked.getInt(i));
-        assertEquals(id, dvShort.getInt(i));
+        assertEquals((double)id, Double.longBitsToDouble(dvDouble.get(i)), 0D);
+        assertEquals((float)id, Float.intBitsToFloat((int)dvFloat.get(i)), 0F);
+        assertEquals(id, dvInt.get(i));
+        assertEquals(id, dvLong.get(i));
+        assertEquals(id, dvPacked.get(i));
+        assertEquals(id, dvShort.get(i));
       }
     }
-    */
     
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term(new String("content"), "aaa")), null, 1000).scoreDocs;
 
