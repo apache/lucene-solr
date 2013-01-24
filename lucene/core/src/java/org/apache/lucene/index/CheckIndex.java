@@ -769,6 +769,8 @@ public class CheckIndex {
           break;
         }
         
+        checkBounds(term);
+        
         // make sure terms arrive in order according to
         // the comp
         if (lastTerm == null) {
@@ -856,6 +858,9 @@ public class CheckIndex {
               }
               lastPos = pos;
               BytesRef payload = postings.getPayload();
+              if (payload != null) {
+                checkBounds(payload);
+              }
               if (payload != null && payload.length < 1) {
                 throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " payload length is out of bounds " + payload.length);
               }
@@ -1288,6 +1293,32 @@ public class CheckIndex {
     BytesRef scratch = new BytesRef();
     for (int i = 0; i < reader.maxDoc(); i++) {
       dv.get(i, scratch);
+      checkBounds(scratch);
+    }
+  }
+  
+  // basic value checks
+  private static void checkBounds(BytesRef b) {
+    if (b.bytes == null) {
+      throw new RuntimeException("bytes is null");
+    }
+    if (b.length < 0) {
+      throw new RuntimeException("length is negative: " + b.length);
+    }
+    if (b.length > b.bytes.length) {
+      throw new RuntimeException("length is out of bounds: " + b.length + ", bytes.length=" + b.bytes.length);
+    }
+    if (b.offset < 0) {
+      throw new RuntimeException("offset is negative: " + b.offset);
+    }
+    if (b.offset > b.bytes.length) {
+      throw new RuntimeException("offset out of bounds: " + b.offset + ", length=" + b.length);
+    }
+    if (b.offset + b.length < 0) {
+      throw new RuntimeException("offset+length is negative: offset=" + b.offset + ",length=" + b.length);
+    }
+    if (b.offset + b.length > b.bytes.length) {
+      throw new RuntimeException("offset+length out of bounds: offset=" + b.offset + ",length=" + b.length + ",bytes.length=" + b.bytes.length);
     }
   }
   
@@ -1315,6 +1346,7 @@ public class CheckIndex {
     BytesRef scratch = new BytesRef();
     for (int i = 0; i <= maxOrd; i++) {
       dv.lookupOrd(i, scratch);
+      checkBounds(scratch);
       if (lastValue != null) {
         if (scratch.compareTo(lastValue) <= 0) {
           throw new RuntimeException("dv for field: " + fieldName + " has ords out of order: " + lastValue + " >=" + scratch);
