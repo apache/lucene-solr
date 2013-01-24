@@ -58,6 +58,9 @@ Optimizations
 * LUCENE-3298: FST can now be larger than 2.1 GB / 2.1 B nodes.
   (James Dyer, Mike McCandless)
 
+* LUCENE-4690: Performance improvements and non-hashing versions
+  of NumericUtils.*ToPrefixCoded() (yonik)
+
 New Features
 
 * LUCENE-4686: New specialized DGapVInt8IntEncoder for facets (now the 
