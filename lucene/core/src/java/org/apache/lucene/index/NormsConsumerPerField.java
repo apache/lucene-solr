@@ -25,7 +25,7 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
   private final DocumentsWriterPerThread.DocState docState;
   private final Similarity similarity;
   private final FieldInvertState fieldState;
-  private NumberDVWriter consumer;
+  private NumericDocValuesWriter consumer;
   
   public NormsConsumerPerField(final DocInverterPerField docInverterPerField, final FieldInfo fieldInfo, NormsConsumer parent) {
     this.fieldInfo = fieldInfo;
@@ -46,7 +46,7 @@ final class NormsConsumerPerField extends InvertedDocEndConsumerPerField impleme
         // nocommit wrongish?  what about the
         // only-doc-with-norms-enabled-hits-exc case?
         fieldInfo.setNormValueType(FieldInfo.DocValuesType.NUMERIC);
-        consumer = new NumberDVWriter(fieldInfo, docState.docWriter.bytesUsed);
+        consumer = new NumericDocValuesWriter(fieldInfo, docState.docWriter.bytesUsed);
       }
       consumer.addValue(docState.docID, similarity.computeNorm(fieldState));
     }

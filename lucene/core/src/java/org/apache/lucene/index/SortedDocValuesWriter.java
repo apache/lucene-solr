@@ -34,9 +34,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 /** Buffers up pending byte[] per doc, deref and sorting via
  *  int ord, then flushes when segment flushes. */
-// nocommit name?
-// nocommit make this a consumer in the chain?
-class SortedBytesDVWriter extends DocValuesWriter {
+class SortedDocValuesWriter extends DocValuesWriter {
   final BytesRefHash hash;
   private int[] pending = new int[DEFAULT_PENDING_SIZE];
   private int pendingIndex = 0;
@@ -46,7 +44,7 @@ class SortedBytesDVWriter extends DocValuesWriter {
   private static final BytesRef EMPTY = new BytesRef(BytesRef.EMPTY_BYTES);
   private static final int DEFAULT_PENDING_SIZE = 16;
 
-  public SortedBytesDVWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+  public SortedDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
     hash = new BytesRefHash(
@@ -62,8 +60,7 @@ class SortedBytesDVWriter extends DocValuesWriter {
       throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
     }
     if (value == null) {
-      // nocommit improve message
-      throw new IllegalArgumentException("null sortedValue not allowed (field=" + fieldInfo.name + ")");
+      throw new IllegalArgumentException("field \"" + fieldInfo.name + "\": null value not allowed");
     }
     if (value.length > (BYTE_BLOCK_SIZE - 2)) {
       throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" is too large, must be <= " + (BYTE_BLOCK_SIZE - 2));
@@ -184,8 +181,7 @@ class SortedBytesDVWriter extends DocValuesWriter {
                                         ord = emptyOrd;
                                       }
                                       docUpto++;
-                                      // nocommit make
-                                      // resuable Number?
+                                      // TODO: make reusable Number
                                       return ordMap[ord];
                                     }
                                   };
@@ -193,17 +189,23 @@ class SortedBytesDVWriter extends DocValuesWriter {
                               });
     
     iwBytesUsed.addAndGet(-sortedValueRamUsage);
-    reset();
+    // nocommit
+    //reset();
   }
 
+  @Override
   public void abort() {
-    reset();
+    // nocommit
+    //reset();
   }
 
   private void reset() {
+    // nocommit
+    /*
     iwBytesUsed.addAndGet((pending.length - DEFAULT_PENDING_SIZE) * RamUsageEstimator.NUM_BYTES_INT);
     pending = ArrayUtil.shrink(pending, DEFAULT_PENDING_SIZE);
     pendingIndex = 0;
     hash.clear();
+    */
   }
 }

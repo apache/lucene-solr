@@ -28,9 +28,7 @@ import org.apache.lucene.util.packed.AppendingLongBuffer;
 
 /** Buffers up pending long per doc, then flushes when
  *  segment flushes. */
-// nocommit rename to NumericDVWriter?
-// nocommit make this a consumer in the chain?
-class NumberDVWriter extends DocValuesWriter {
+class NumericDocValuesWriter extends DocValuesWriter {
 
   private final static long MISSING = 0L;
 
@@ -39,7 +37,7 @@ class NumberDVWriter extends DocValuesWriter {
   private long bytesUsed;
   private final FieldInfo fieldInfo;
 
-  public NumberDVWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
+  public NumericDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     pending = new AppendingLongBuffer();
     bytesUsed = pending.ramBytesUsed();
     this.fieldInfo = fieldInfo;
@@ -97,8 +95,6 @@ class NumberDVWriter extends DocValuesWriter {
 
                                      @Override
                                      public Number next() {
-                                       // nocommit make
-                                       // mutable Number:
                                        long value;
                                        if (upto < pending.size()) {
                                          value =  iter.next();
@@ -106,23 +102,28 @@ class NumberDVWriter extends DocValuesWriter {
                                          value = 0;
                                        }
                                        upto++;
+                                       // TODO: make reusable Number
                                        return value;
                                      }
                                    };
                                  }
                                });
 
-    reset();
+    // nocommit
+    //reset();
   }
 
+  @Override
   public void abort() {
-    reset();
+    // nocommit
+    //reset();
   }
 
   // nocommit do we really need this...?  can't/doesn't parent alloc
   // a new instance after flush?
   void reset() {
-    pending = new AppendingLongBuffer();
-    updateBytesUsed();
+    // nocommit
+    //pending = new AppendingLongBuffer();
+    //updateBytesUsed();
   }
 }

@@ -30,16 +30,16 @@ import org.apache.lucene.util.Counter;
 
 /** Buffers up pending byte[] per doc, then flushes when
  *  segment flushes. */
-// nocommit name?
-// nocommit make this a consumer in the chain?
-class BytesDVWriter extends DocValuesWriter {
+class BinaryDocValuesWriter extends DocValuesWriter {
 
   private final BytesRefArray bytesRefArray;
   private final FieldInfo fieldInfo;
   private int addedValues = 0;
   private final BytesRef emptyBytesRef = new BytesRef();
 
-  public BytesDVWriter(FieldInfo fieldInfo, Counter counter) {
+  // nocommit this needs to update bytesUsed?
+
+  public BinaryDocValuesWriter(FieldInfo fieldInfo, Counter counter) {
     this.fieldInfo = fieldInfo;
     this.bytesRefArray = new BytesRefArray(counter);
   }
@@ -49,8 +49,7 @@ class BytesDVWriter extends DocValuesWriter {
       throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
     }
     if (value == null) {
-      // nocommit improve message
-      throw new IllegalArgumentException("null binaryValue not allowed (field=" + fieldInfo.name + ")");
+      throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\": null value not allowed");
     }
     if (value.length > (BYTE_BLOCK_SIZE - 2)) {
       throw new IllegalArgumentException("DocValuesField \"" + fieldInfo.name + "\" is too large, must be <= " + (BYTE_BLOCK_SIZE - 2));
@@ -94,8 +93,6 @@ class BytesDVWriter extends DocValuesWriter {
 
                                      @Override
                                      public BytesRef next() {
-                                       // nocommit make
-                                       // mutable Number:
                                        if (upto < bytesRefArray.size()) {
                                          bytesRefArray.get(value, upto);
                                        } else {
@@ -108,14 +105,18 @@ class BytesDVWriter extends DocValuesWriter {
                                  }
                                });
 
-    reset();
+    // nocommit
+    //reset();
   }
 
+  @Override
   public void abort() {
-    reset();
+    // nocommit
+    //reset();
   }
 
   private void reset() {
-    bytesRefArray.clear();
+    // nocommit
+    //bytesRefArray.clear();
   }
 }
