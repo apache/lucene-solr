@@ -70,6 +70,10 @@ Bug Fixes
 
 * SOLR-4330: group.sort is ignored when using group.truncate and ex/tag
   local params together (koji)
+  
+* SOLR-4321: Collections API will sometimes use a node more than once, even
+  when more unused nodes are available. 
+  (Eric Falcao, Brett Hoerner, Mark Miller)
 
 Optimizations
 ----------------------
