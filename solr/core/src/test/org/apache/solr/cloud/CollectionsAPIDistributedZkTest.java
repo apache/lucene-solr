@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -148,7 +149,8 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
 
     // would be better if these where all separate tests - but much, much
     // slower
-
+    
+    testNodesUsedByCreate();
     testCollectionsAPI();
 
     // Thread.sleep(10000000000L);
@@ -157,6 +159,51 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     }
   }
 
+  private void testNodesUsedByCreate() throws Exception {
+    // we can use this client because we just want base url
+    final String baseUrl = ((HttpSolrServer) clients.get(0)).getBaseURL().substring(
+        0,
+        ((HttpSolrServer) clients.get(0)).getBaseURL().length()
+            - DEFAULT_COLLECTION.length() - 1);
+    
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionAction.CREATE.toString());
+
+    params.set("numShards", 2);
+    params.set(OverseerCollectionProcessor.REPLICATION_FACTOR, 2);
+    String collectionName = "nodes_used_collection";
+
+    params.set("name", collectionName);
+    QueryRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+    createNewSolrServer("", baseUrl).request(request);
+    
+    List<Integer> numShardsNumReplicaList = new ArrayList<Integer>();
+    numShardsNumReplicaList.add(2);
+    numShardsNumReplicaList.add(2);
+    checkForCollection("nodes_used_collection", numShardsNumReplicaList , null);
+    
+    List<String> createNodeList = new ArrayList<String>();
+
+    Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState()
+        .getLiveNodes();
+    
+    for (String node : liveNodes) {
+      createNodeList.add(node);
+    }
+    
+    DocCollection col = cloudClient.getZkStateReader().getClusterState().getCollection("nodes_used_collection");
+    Collection<Slice> slices = col.getSlices();
+    for (Slice slice : slices) {
+      Collection<Replica> replicas = slice.getReplicas();
+      for (Replica replica : replicas) {
+        createNodeList.remove(replica.getNodeName());
+      }
+    }
+    assertEquals(createNodeList.toString(), 1, createNodeList.size());
+
+  }
+  
   private void testCollectionsAPI() throws Exception {
  
     // TODO: fragile - because we dont pass collection.confName, it will only

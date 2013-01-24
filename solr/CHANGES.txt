@@ -70,6 +70,15 @@ Bug Fixes
 
 * SOLR-4330: group.sort is ignored when using group.truncate and ex/tag
   local params together (koji)
+  
+* SOLR-4321: Collections API will sometimes use a node more than once, even
+  when more unused nodes are available. 
+  (Eric Falcao, Brett Hoerner, Mark Miller)
+
+* SOLR-4345 : Solr Admin UI dosent work in IE 10 (steffkes)
+
+* SOLR-4349 : Admin UI - Query Interface does not work in IE
+  (steffkes)
 
 Optimizations
 ----------------------
@@ -88,7 +97,8 @@ Optimizations
 Other Changes
 ----------------------
 
-
+* SOLR-4348: Make the lock type configurable by system property by default.
+  (Mark Miller)
 
 ==================  4.1.0 ==================
 
