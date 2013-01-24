@@ -401,7 +401,50 @@ class Lucene40DocValuesReader extends DocValuesProducer {
   }
   
   private BinaryDocValues loadBytesVarDeref(FieldInfo field) throws IOException {
-    throw new AssertionError(); // nocommit
+    String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
+    String indexName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "idx");
+    IndexInput data = null;
+    IndexInput index = null;
+    boolean success = false;
+    try {
+      data = dir.openInput(dataName, state.context);
+      CodecUtil.checkHeader(data, Lucene40DocValuesFormat.BYTES_VAR_DEREF_CODEC_NAME_DAT, 
+                                  Lucene40DocValuesFormat.BYTES_VAR_DEREF_VERSION_START, 
+                                  Lucene40DocValuesFormat.BYTES_VAR_DEREF_VERSION_CURRENT);
+      index = dir.openInput(indexName, state.context);
+      CodecUtil.checkHeader(index, Lucene40DocValuesFormat.BYTES_VAR_DEREF_CODEC_NAME_IDX, 
+                                   Lucene40DocValuesFormat.BYTES_VAR_DEREF_VERSION_START, 
+                                   Lucene40DocValuesFormat.BYTES_VAR_DEREF_VERSION_CURRENT);
+      
+      final long totalBytes = index.readLong();
+      // nocommit? can the current impl even handle > 2G?
+      final byte bytes[] = new byte[(int)totalBytes];
+      data.readBytes(bytes, 0, bytes.length);
+      final PackedInts.Reader reader = PackedInts.getReader(index);
+      success = true;
+      return new BinaryDocValues() {
+        @Override
+        public void get(int docID, BytesRef result) {
+          int startAddress = (int)reader.get(docID);
+          result.bytes = bytes;
+          result.offset = startAddress;
+          if ((bytes[startAddress] & 128) == 0) {
+            // length is 1 byte
+            result.offset++;
+            result.length = bytes[startAddress];
+          } else {
+            result.offset += 2;
+            result.length = ((bytes[startAddress] & 0x7f) << 8) | ((bytes[startAddress+1] & 0xff));
+          }
+        }
+      };
+    } finally {
+      if (success) {
+        IOUtils.close(data, index);
+      } else {
+        IOUtils.closeWhileHandlingException(data, index);
+      }
+    }
   }
 
   @Override

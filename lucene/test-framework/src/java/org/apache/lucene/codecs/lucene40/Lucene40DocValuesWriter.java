@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene40;
  */
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.TreeSet;
 
@@ -168,8 +169,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     
     int maxDoc = state.segmentInfo.getDocCount();
     final boolean fixed = minLength == maxLength;
-    // nocommit
-    final boolean dedup = fixed && (uniqueValues != null && uniqueValues.size() * 2 < maxDoc);
+    final boolean dedup = uniqueValues != null && uniqueValues.size() * 2 < maxDoc;
     
     if (dedup) {
       // we will deduplicate and deref values
@@ -184,7 +184,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
         if (fixed) {
           addFixedDerefBytesField(field, data, index, values, minLength);
         } else {
-          assert false; // nocommit
+          addVarDerefBytesField(field, data, index, values);
         }
         success = true;
       } finally {
@@ -322,6 +322,57 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
       w.add(ord);
     }
     w.finish();
+  }
+  
+  private void addVarDerefBytesField(FieldInfo field, IndexOutput data, IndexOutput index, Iterable<BytesRef> values) throws IOException {
+    field.putAttribute(legacyKey, LegacyDocValuesType.BYTES_VAR_DEREF.name());
+
+    CodecUtil.writeHeader(data, 
+                          Lucene40DocValuesFormat.BYTES_VAR_DEREF_CODEC_NAME_DAT,
+                          Lucene40DocValuesFormat.BYTES_VAR_DEREF_VERSION_CURRENT);
+    
+    CodecUtil.writeHeader(index, 
+                          Lucene40DocValuesFormat.BYTES_VAR_DEREF_CODEC_NAME_IDX,
+                          Lucene40DocValuesFormat.BYTES_VAR_DEREF_VERSION_CURRENT);
+    
+    // deduplicate
+    TreeSet<BytesRef> dictionary = new TreeSet<BytesRef>();
+    for (BytesRef v : values) {
+      dictionary.add(BytesRef.deepCopyOf(v));
+    }
+    
+    /* values */
+    long startPosition = data.getFilePointer();
+    long currentAddress = 0;
+    HashMap<BytesRef,Long> valueToAddress = new HashMap<BytesRef,Long>();
+    for (BytesRef v : dictionary) {
+      currentAddress = data.getFilePointer() - startPosition;
+      valueToAddress.put(v, currentAddress);
+      writeVShort(data, v.length);
+      data.writeBytes(v.bytes, v.offset, v.length);
+    }
+    
+    /* ordinals */
+    long totalBytes = data.getFilePointer() - startPosition;
+    index.writeLong(totalBytes);
+    final int maxDoc = state.segmentInfo.getDocCount();
+    final PackedInts.Writer w = PackedInts.getWriter(index, maxDoc, PackedInts.bitsRequired(currentAddress), PackedInts.DEFAULT);
+
+    for (BytesRef v : values) {
+      w.add(valueToAddress.get(v));
+    }
+    w.finish();
+  }
+  
+  // the little vint encoding used for var-deref
+  private static void writeVShort(IndexOutput o, int i) throws IOException {
+    assert i >= 0 && i <= Short.MAX_VALUE;
+    if (i < 128) {
+      o.writeByte((byte)i);
+    } else {
+      o.writeByte((byte) (0x80 | (i >> 8)));
+      o.writeByte((byte) (i & 0xff));
+    }
   }
 
   @Override
