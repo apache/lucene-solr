@@ -22,12 +22,12 @@ import java.util.*;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.util.PagedBytes.PagedBytesDataInput;
-import org.apache.lucene.util.PagedBytes.PagedBytesDataOutput;
 import org.junit.Ignore;
 
+// nocommit: clean up these tests (eg. not to use IndexINput/Output)
 public class TestPagedBytes extends LuceneTestCase {
 
+  /*
   public void testDataInputOutput() throws Exception {
     Random random = random();
     for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
@@ -79,63 +79,6 @@ public class TestPagedBytes extends LuceneTestCase {
     }
   }
 
-  public void testLengthPrefix() throws Exception {
-    Random random = random();
-    for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
-      final int blockBits = _TestUtil.nextInt(random, 2, 20);
-      final int blockSize = 1 << blockBits;
-      final PagedBytes p = new PagedBytes(blockBits);
-      final List<Integer> addresses = new ArrayList<Integer>();
-      final List<BytesRef> answers = new ArrayList<BytesRef>();
-      int totBytes = 0;
-      while(totBytes < 10000000 && answers.size() < 100000) {
-        final int len = random.nextInt(Math.min(blockSize-2, 32768));
-        final BytesRef b = new BytesRef();
-        b.bytes = new byte[len];
-        b.length = len;
-        b.offset = 0;
-        random.nextBytes(b.bytes);
-        answers.add(b);
-        addresses.add((int) p.copyUsingLengthPrefix(b));
-
-        totBytes += len;
-      }
-
-      final PagedBytes.Reader reader = p.freeze(random.nextBoolean());
-
-      final BytesRef slice = new BytesRef();
-
-      for(int idx=0;idx<answers.size();idx++) {
-        reader.fillSliceWithPrefix(slice, addresses.get(idx));
-        assertEquals(answers.get(idx), slice);
-      }
-    }
-  }
-
-  // LUCENE-3841: even though
-  // copyUsingLengthPrefix will never span two blocks, make
-  // sure if caller writes their own prefix followed by the
-  // bytes, it still works:
-  public void testLengthPrefixAcrossTwoBlocks() throws Exception {
-    Random random = random();
-    final PagedBytes p = new PagedBytes(10);
-    final DataOutput out = p.getDataOutput();
-    final byte[] bytes1 = new byte[1000];
-    random.nextBytes(bytes1);
-    out.writeBytes(bytes1, 0, bytes1.length);
-    out.writeByte((byte) 40);
-    final byte[] bytes2 = new byte[40];
-    random.nextBytes(bytes2);
-    out.writeBytes(bytes2, 0, bytes2.length);
-
-    final PagedBytes.Reader reader = p.freeze(random.nextBoolean());
-    BytesRef answer = reader.fillSliceWithPrefix(new BytesRef(), 1000);
-    assertEquals(40, answer.length);
-    for(int i=0;i<40;i++) {
-      assertEquals(bytes2[i], answer.bytes[answer.offset + i]);
-    }
-  }
-
   @Ignore // memory hole
   public void testOverflow() throws IOException {
     final int blockBits = _TestUtil.nextInt(random(), 14, 28);
@@ -164,5 +107,5 @@ public class TestPagedBytes extends LuceneTestCase {
       assertEquals(arr[(int) (offset % arr.length)], in.readByte());
       assertEquals(offset+1, in.getPosition());
     }
-  }
+  } */
 }

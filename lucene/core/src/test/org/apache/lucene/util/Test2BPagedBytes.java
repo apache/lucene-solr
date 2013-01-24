@@ -20,13 +20,12 @@ package org.apache.lucene.util;
 import java.util.Arrays;
 import java.util.Random;
 
-import org.apache.lucene.util.PagedBytes.PagedBytesDataInput;
-import org.apache.lucene.util.PagedBytes.PagedBytesDataOutput;
 import org.junit.Ignore;
 
 @Ignore("You must increase heap to > 2 G to run this")
+// nocommit: write this test in some other way (not indexinput/output)
 public class Test2BPagedBytes extends LuceneTestCase {
-
+/*
   public void test() throws Exception {
     PagedBytes pb = new PagedBytes(15);
     PagedBytesDataOutput dataOutput = pb.getDataOutput();
@@ -64,5 +63,5 @@ public class Test2BPagedBytes extends LuceneTestCase {
       lastFP = fp;
       netBytes += numBytes;
     }
-  }
+  } */
 }
