@@ -34,6 +34,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.store.CompoundFileDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -54,184 +55,78 @@ class Lucene40DocValuesReader extends DocValuesProducer {
     this.state = state;
     this.legacyKey = legacyKey;
     this.dir = new CompoundFileDirectory(state.directory, filename, state.context, false);
+    // nocommit: uncomment to debug
+    /*
+    if (legacyKey.equals(Lucene40FieldInfosReader.LEGACY_DV_TYPE_KEY)) {
+      System.out.println("dv READER:");
+      for (FieldInfo fi : state.fieldInfos) {
+        if (fi.hasDocValues()) {
+          System.out.println(fi.name + " -> " + fi.getAttribute(legacyKey) + " -> " + fi.getDocValuesType());
+        }
+      }
+    } else {
+      System.out.println("nrm READER:");
+      for (FieldInfo fi : state.fieldInfos) {
+        if (fi.hasNorms()) {
+          System.out.println(fi.name + " -> " + fi.getAttribute(legacyKey) + " -> " + fi.getNormType());
+        }
+      }
+    }
+    */
   }
   
   @Override
   public synchronized NumericDocValues getNumeric(FieldInfo field) throws IOException {
     NumericDocValues instance = numericInstances.get(field.number);
     if (instance == null) {
-      switch(LegacyDocValuesType.valueOf(field.getAttribute(legacyKey))) {
-        case VAR_INTS:
-          instance = loadVarIntsField(field);
-          break;
-        case FIXED_INTS_8:
-          instance = loadByteField(field);
-          break;
-        case FIXED_INTS_16:
-          instance = loadShortField(field);
-          break;
-        case FIXED_INTS_32:
-          instance = loadIntField(field);
-          break;
-        case FIXED_INTS_64:
-          instance = loadLongField(field);
-          break;
-        case FLOAT_32:
-          instance = loadFloatField(field);
-          break;
-        case FLOAT_64:
-          instance = loadDoubleField(field);
-          break;
-        default: 
-          throw new AssertionError();
+      String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
+      IndexInput input = dir.openInput(fileName, state.context);
+      boolean success = false;
+      try {
+        switch(LegacyDocValuesType.valueOf(field.getAttribute(legacyKey))) {
+          case VAR_INTS:
+            instance = loadVarIntsField(field, input);
+            break;
+          case FIXED_INTS_8:
+            instance = loadByteField(field, input);
+            break;
+          case FIXED_INTS_16:
+            instance = loadShortField(field, input);
+            break;
+          case FIXED_INTS_32:
+            instance = loadIntField(field, input);
+            break;
+          case FIXED_INTS_64:
+            instance = loadLongField(field, input);
+            break;
+          case FLOAT_32:
+            instance = loadFloatField(field, input);
+            break;
+          case FLOAT_64:
+            instance = loadDoubleField(field, input);
+            break;
+          default: 
+            throw new AssertionError();
+        }
+        success = true;
+      } finally {
+        if (success) {
+          IOUtils.close(input);
+        } else {
+          IOUtils.closeWhileHandlingException(input);
+        }
       }
       numericInstances.put(field.number, instance);
     }
     return instance;
   }
   
-  private NumericDocValues loadVarIntsField(FieldInfo field) throws IOException {
-    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
-    IndexInput input = dir.openInput(fileName, state.context);
-    boolean success = false;
-    try {
-      CodecUtil.checkHeader(input, Lucene40DocValuesFormat.VAR_INTS_CODEC_NAME, 
-                                   Lucene40DocValuesFormat.VAR_INTS_VERSION_START, 
-                                   Lucene40DocValuesFormat.VAR_INTS_VERSION_CURRENT);
-      byte header = input.readByte();
-      if (header == Lucene40DocValuesFormat.VAR_INTS_FIXED_64) {
-        int maxDoc = state.segmentInfo.getDocCount();
-        final long values[] = new long[maxDoc];
-        for (int i = 0; i < values.length; i++) {
-          values[i] = input.readLong();
-        }
-        return new NumericDocValues() {
-          @Override
-          public long get(int docID) {
-            return values[docID];
-          }
-        };
-      } else if (header == Lucene40DocValuesFormat.VAR_INTS_PACKED) {
-        final long minValue = input.readLong();
-        final long defaultValue = input.readLong();
-        final PackedInts.Reader reader = PackedInts.getReader(input);
-        return new NumericDocValues() {
-          @Override
-          public long get(int docID) {
-            final long value = reader.get(docID);
-            if (value == defaultValue) {
-              return 0;
-            } else {
-              return minValue + value;
-            }
-          }
-        };
-      } else {
-        throw new CorruptIndexException("invalid VAR_INTS header byte: " + header + " (resource=" + input + ")");
-      }
-    } finally {
-      if (success) {
-        IOUtils.close(input);
-      } else {
-        IOUtils.closeWhileHandlingException(input);
-      }
-    }
-  }
-  
-  private NumericDocValues loadByteField(FieldInfo field) throws IOException {
-    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
-    IndexInput input = dir.openInput(fileName, state.context);
-    boolean success = false;
-    try {
-      CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
-                                   Lucene40DocValuesFormat.INTS_VERSION_START, 
-                                   Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
-      input.readInt();
-      int maxDoc = state.segmentInfo.getDocCount();
-      final byte values[] = new byte[maxDoc];
-      input.readBytes(values, 0, values.length);
-      return new NumericDocValues() {
-        @Override
-        public long get(int docID) {
-          return values[docID];
-        }
-      };
-    } finally {
-      if (success) {
-        IOUtils.close(input);
-      } else {
-        IOUtils.closeWhileHandlingException(input);
-      }
-    }
-  }
-  
-  private NumericDocValues loadShortField(FieldInfo field) throws IOException {
-    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
-    IndexInput input = dir.openInput(fileName, state.context);
-    boolean success = false;
-    try {
-      CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
-                                   Lucene40DocValuesFormat.INTS_VERSION_START, 
-                                   Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
-      input.readInt();
-      int maxDoc = state.segmentInfo.getDocCount();
-      final short values[] = new short[maxDoc];
-      for (int i = 0; i < values.length; i++) {
-        values[i] = input.readShort();
-      }
-      return new NumericDocValues() {
-        @Override
-        public long get(int docID) {
-          return values[docID];
-        }
-      };
-    } finally {
-      if (success) {
-        IOUtils.close(input);
-      } else {
-        IOUtils.closeWhileHandlingException(input);
-      }
-    }
-  }
-  
-  private NumericDocValues loadIntField(FieldInfo field) throws IOException {
-    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
-    IndexInput input = dir.openInput(fileName, state.context);
-    boolean success = false;
-    try {
-      CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
-                                   Lucene40DocValuesFormat.INTS_VERSION_START, 
-                                   Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
-      input.readInt();
-      int maxDoc = state.segmentInfo.getDocCount();
-      final int values[] = new int[maxDoc];
-      for (int i = 0; i < values.length; i++) {
-        values[i] = input.readInt();
-      }
-      return new NumericDocValues() {
-        @Override
-        public long get(int docID) {
-          return values[docID];
-        }
-      };
-    } finally {
-      if (success) {
-        IOUtils.close(input);
-      } else {
-        IOUtils.closeWhileHandlingException(input);
-      }
-    }
-  }
-  
-  private NumericDocValues loadLongField(FieldInfo field) throws IOException {
-    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
-    IndexInput input = dir.openInput(fileName, state.context);
-    boolean success = false;
-    try {
-      CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
-                                   Lucene40DocValuesFormat.INTS_VERSION_START, 
-                                   Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
-      input.readInt();
+  private NumericDocValues loadVarIntsField(FieldInfo field, IndexInput input) throws IOException {
+    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.VAR_INTS_CODEC_NAME, 
+                                 Lucene40DocValuesFormat.VAR_INTS_VERSION_START, 
+                                 Lucene40DocValuesFormat.VAR_INTS_VERSION_CURRENT);
+    byte header = input.readByte();
+    if (header == Lucene40DocValuesFormat.VAR_INTS_FIXED_64) {
       int maxDoc = state.segmentInfo.getDocCount();
       final long values[] = new long[maxDoc];
       for (int i = 0; i < values.length; i++) {
@@ -243,76 +138,175 @@ class Lucene40DocValuesReader extends DocValuesProducer {
           return values[docID];
         }
       };
-    } finally {
-      if (success) {
-        IOUtils.close(input);
-      } else {
-        IOUtils.closeWhileHandlingException(input);
-      }
-    }
-  }
-  
-  private NumericDocValues loadFloatField(FieldInfo field) throws IOException {
-    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
-    IndexInput input = dir.openInput(fileName, state.context);
-    boolean success = false;
-    try {
-      CodecUtil.checkHeader(input, Lucene40DocValuesFormat.FLOATS_CODEC_NAME, 
-                                   Lucene40DocValuesFormat.FLOATS_VERSION_START, 
-                                   Lucene40DocValuesFormat.FLOATS_VERSION_CURRENT);
-      input.readInt();
-      int maxDoc = state.segmentInfo.getDocCount();
-      final int values[] = new int[maxDoc];
-      for (int i = 0; i < values.length; i++) {
-        values[i] = input.readInt();
-      }
+    } else if (header == Lucene40DocValuesFormat.VAR_INTS_PACKED) {
+      final long minValue = input.readLong();
+      final long defaultValue = input.readLong();
+      final PackedInts.Reader reader = PackedInts.getReader(input);
       return new NumericDocValues() {
         @Override
         public long get(int docID) {
-          return values[docID];
+          final long value = reader.get(docID);
+          if (value == defaultValue) {
+            return 0;
+          } else {
+            return minValue + value;
+          }
         }
       };
-    } finally {
-      if (success) {
-        IOUtils.close(input);
-      } else {
-        IOUtils.closeWhileHandlingException(input);
-      }
+    } else {
+      throw new CorruptIndexException("invalid VAR_INTS header byte: " + header + " (resource=" + input + ")");
     }
   }
   
-  private NumericDocValues loadDoubleField(FieldInfo field) throws IOException {
-    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
-    IndexInput input = dir.openInput(fileName, state.context);
-    boolean success = false;
-    try {
-      CodecUtil.checkHeader(input, Lucene40DocValuesFormat.FLOATS_CODEC_NAME, 
-                                   Lucene40DocValuesFormat.FLOATS_VERSION_START, 
-                                   Lucene40DocValuesFormat.FLOATS_VERSION_CURRENT);
-      input.readInt();
-      int maxDoc = state.segmentInfo.getDocCount();
-      final long values[] = new long[maxDoc];
-      for (int i = 0; i < values.length; i++) {
-        values[i] = input.readLong();
+  private NumericDocValues loadByteField(FieldInfo field, IndexInput input) throws IOException {
+    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
+                                 Lucene40DocValuesFormat.INTS_VERSION_START, 
+                                 Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
+    input.readInt();
+    int maxDoc = state.segmentInfo.getDocCount();
+    final byte values[] = new byte[maxDoc];
+    input.readBytes(values, 0, values.length);
+    return new NumericDocValues() {
+      @Override
+      public long get(int docID) {
+        return values[docID];
       }
-      return new NumericDocValues() {
-        @Override
-        public long get(int docID) {
-          return values[docID];
-        }
-      };
-    } finally {
-      if (success) {
-        IOUtils.close(input);
-      } else {
-        IOUtils.closeWhileHandlingException(input);
-      }
+    };
+  }
+  
+  private NumericDocValues loadShortField(FieldInfo field, IndexInput input) throws IOException {
+    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
+                                 Lucene40DocValuesFormat.INTS_VERSION_START, 
+                                 Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
+    input.readInt();
+    int maxDoc = state.segmentInfo.getDocCount();
+    final short values[] = new short[maxDoc];
+    for (int i = 0; i < values.length; i++) {
+      values[i] = input.readShort();
     }
+    return new NumericDocValues() {
+      @Override
+      public long get(int docID) {
+        return values[docID];
+      }
+    };
+  }
+  
+  private NumericDocValues loadIntField(FieldInfo field, IndexInput input) throws IOException {
+    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
+                                 Lucene40DocValuesFormat.INTS_VERSION_START, 
+                                 Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
+    input.readInt();
+    int maxDoc = state.segmentInfo.getDocCount();
+    final int values[] = new int[maxDoc];
+    for (int i = 0; i < values.length; i++) {
+      values[i] = input.readInt();
+    }
+    return new NumericDocValues() {
+      @Override
+      public long get(int docID) {
+        return values[docID];
+      }
+    };
+  }
+  
+  private NumericDocValues loadLongField(FieldInfo field, IndexInput input) throws IOException {
+    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
+                                 Lucene40DocValuesFormat.INTS_VERSION_START, 
+                                 Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
+    input.readInt();
+    int maxDoc = state.segmentInfo.getDocCount();
+    final long values[] = new long[maxDoc];
+    for (int i = 0; i < values.length; i++) {
+      values[i] = input.readLong();
+    }
+    return new NumericDocValues() {
+      @Override
+      public long get(int docID) {
+        return values[docID];
+      }
+    };
+  }
+  
+  private NumericDocValues loadFloatField(FieldInfo field, IndexInput input) throws IOException {
+    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.FLOATS_CODEC_NAME, 
+                                 Lucene40DocValuesFormat.FLOATS_VERSION_START, 
+                                 Lucene40DocValuesFormat.FLOATS_VERSION_CURRENT);
+    input.readInt();
+    int maxDoc = state.segmentInfo.getDocCount();
+    final int values[] = new int[maxDoc];
+    for (int i = 0; i < values.length; i++) {
+      values[i] = input.readInt();
+    }
+    return new NumericDocValues() {
+      @Override
+      public long get(int docID) {
+        return values[docID];
+      }
+    };
+  }
+  
+  private NumericDocValues loadDoubleField(FieldInfo field, IndexInput input) throws IOException {
+    CodecUtil.checkHeader(input, Lucene40DocValuesFormat.FLOATS_CODEC_NAME, 
+                                 Lucene40DocValuesFormat.FLOATS_VERSION_START, 
+                                 Lucene40DocValuesFormat.FLOATS_VERSION_CURRENT);
+    input.readInt();
+    int maxDoc = state.segmentInfo.getDocCount();
+    final long values[] = new long[maxDoc];
+    for (int i = 0; i < values.length; i++) {
+      values[i] = input.readLong();
+    }
+    return new NumericDocValues() {
+      @Override
+      public long get(int docID) {
+        return values[docID];
+      }
+    };
   }
 
   @Override
   public synchronized BinaryDocValues getBinary(FieldInfo field) throws IOException {
-    throw new AssertionError();
+    BinaryDocValues instance = binaryInstances.get(field.number);
+    if (instance == null) {
+      switch(LegacyDocValuesType.valueOf(field.getAttribute(legacyKey))) {
+        case BYTES_FIXED_STRAIGHT:
+          instance = loadBytesFixedStraight(field);
+          break;
+        default:
+          throw new AssertionError();
+      }
+      binaryInstances.put(field.number, instance);
+    }
+    return instance;
+  }
+  
+  private BinaryDocValues loadBytesFixedStraight(FieldInfo field) throws IOException {
+    String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
+    IndexInput input = dir.openInput(fileName, state.context);
+    boolean success = false;
+    try {
+      CodecUtil.checkHeader(input, Lucene40DocValuesFormat.BYTES_FIXED_STRAIGHT_CODEC_NAME, 
+                                   Lucene40DocValuesFormat.BYTES_FIXED_STRAIGHT_VERSION_START, 
+                                   Lucene40DocValuesFormat.BYTES_FIXED_STRAIGHT_VERSION_CURRENT);
+      final int fixedLength = input.readInt();
+      // nocommit? can the current impl even handle > 2G?
+      final byte bytes[] = new byte[state.segmentInfo.getDocCount() * fixedLength];
+      input.readBytes(bytes, 0, bytes.length);
+      return new BinaryDocValues() {
+        @Override
+        public void get(int docID, BytesRef result) {
+          result.bytes = bytes;
+          result.offset = docID * fixedLength;
+          result.length = fixedLength;
+        }
+      };
+    } finally {
+      if (success) {
+        IOUtils.close(input);
+      } else {
+        IOUtils.closeWhileHandlingException(input);
+      }
+    }
   }
 
   @Override

@@ -64,4 +64,9 @@ public class Lucene40DocValuesFormat extends DocValuesFormat {
   static final String FLOATS_CODEC_NAME = "Floats";
   static final int FLOATS_VERSION_START = 0;
   static final int FLOATS_VERSION_CURRENT = FLOATS_VERSION_START;
+  
+  // constants for BYTES_FIXED_STRAIGHT
+  static final String BYTES_FIXED_STRAIGHT_CODEC_NAME = "FixedStraightBytes";
+  static final int BYTES_FIXED_STRAIGHT_VERSION_START = 0;
+  static final int BYTES_FIXED_STRAIGHT_VERSION_CURRENT = BYTES_FIXED_STRAIGHT_VERSION_START;
 }

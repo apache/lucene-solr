@@ -70,7 +70,7 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
         // fits in a int[], would be more than 16bpv, just write int[]
         addIntsField(field, data, values);
       } else {
-        addVarIntsField(field, data, values);
+        addVarIntsField(field, data, values, minValue, maxValue);
       }
       success = true;
     } finally {
@@ -82,21 +82,6 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     }
   }
 
-  @Override
-  public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
-    assert false;
-  }
-
-  @Override
-  public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
-    assert false;
-  }
-  
-  @Override
-  public void close() throws IOException {
-    dir.close();
-  }
-  
   private void addBytesField(FieldInfo field, IndexOutput output, Iterable<Number> values) throws IOException {
     field.putAttribute(legacyKey, LegacyDocValuesType.FIXED_INTS_8.name());
     CodecUtil.writeHeader(output, 
@@ -130,15 +115,8 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
     }
   }
   
-  private void addVarIntsField(FieldInfo field, IndexOutput output, Iterable<Number> values) throws IOException {
+  private void addVarIntsField(FieldInfo field, IndexOutput output, Iterable<Number> values, long minValue, long maxValue) throws IOException {
     field.putAttribute(legacyKey, LegacyDocValuesType.VAR_INTS.name());
-    long minValue = Long.MAX_VALUE;
-    long maxValue = Long.MIN_VALUE;
-    for (Number n : values) {
-      long v = n.longValue();
-      minValue = Math.min(minValue, v);
-      maxValue = Math.max(maxValue, v);
-    }
     
     CodecUtil.writeHeader(output, 
                           Lucene40DocValuesFormat.VAR_INTS_CODEC_NAME, 
@@ -166,5 +144,59 @@ class Lucene40DocValuesWriter extends DocValuesConsumer {
       }
       writer.finish();
     }
+  }
+
+  @Override
+  public void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException {
+    // examine the values to determine best type to use
+    int minLength = Integer.MAX_VALUE;
+    int maxLength = Integer.MIN_VALUE;
+    for (BytesRef b : values) {
+      minLength = Math.min(minLength, b.length);
+      maxLength = Math.max(maxLength, b.length);
+    }
+    
+    if (minLength == maxLength) {
+      // fixed byte[]
+      String fileName = IndexFileNames.segmentFileName(state.segmentInfo.name, Integer.toString(field.number), "dat");
+      IndexOutput data = dir.createOutput(fileName, state.context);
+      boolean success = false;
+      try {
+        addFixedStraightBytesField(field, data, values, minLength);
+        success = true;
+      } finally {
+        if (success) {
+          IOUtils.close(data);
+        } else {
+          IOUtils.closeWhileHandlingException(data);
+        }
+      }
+    } else {
+      // not yet
+      assert false;
+    }
+  }
+  
+  private void addFixedStraightBytesField(FieldInfo field, IndexOutput output, Iterable<BytesRef> values, int length) throws IOException {
+    field.putAttribute(legacyKey, LegacyDocValuesType.BYTES_FIXED_STRAIGHT.name());
+
+    CodecUtil.writeHeader(output, 
+                          Lucene40DocValuesFormat.BYTES_FIXED_STRAIGHT_CODEC_NAME,
+                          Lucene40DocValuesFormat.BYTES_FIXED_STRAIGHT_VERSION_CURRENT);
+    
+    output.writeInt(length);
+    for (BytesRef v : values) {
+      output.writeBytes(v.bytes, v.offset, v.length);
+    }
+  }
+
+  @Override
+  public void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException {
+    assert false;
+  }  
+  
+  @Override
+  public void close() throws IOException {
+    dir.close();
   }
 }
