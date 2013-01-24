@@ -129,7 +129,7 @@ public final class BytesRefHash {
    * order to reuse this {@link BytesRefHash} instance.
    * </p>
    */
-  public int[] compact() {
+  private int[] compact() {
     assert bytesStart != null : "Bytesstart is null - not initialized";
     int upto = 0;
     for (int i = 0; i < hashSize; i++) {
@@ -532,50 +532,6 @@ public final class BytesRefHash {
      *         by this {@link BytesStartArray}.
      */
     public abstract Counter bytesUsed();
-  }
-  
-  /** A simple {@link BytesStartArray} that tracks all
-   *  memory allocation using a shared {@link Counter}
-   *  instance.  */
-  public static class TrackingDirectBytesStartArray extends BytesStartArray {
-    protected final int initSize;
-    private int[] bytesStart;
-    protected final Counter bytesUsed;
-    
-    public TrackingDirectBytesStartArray(int initSize, Counter bytesUsed) {
-      this.initSize = initSize;
-      this.bytesUsed = bytesUsed;
-    }
-
-    @Override
-    public int[] clear() {
-      if (bytesStart != null) {
-        bytesUsed.addAndGet(-bytesStart.length * RamUsageEstimator.NUM_BYTES_INT);
-      }
-      return bytesStart = null;
-    }
-
-    @Override
-    public int[] grow() {
-      assert bytesStart != null;
-      final int oldSize = bytesStart.length;
-      bytesStart = ArrayUtil.grow(bytesStart, bytesStart.length + 1);
-      bytesUsed.addAndGet((bytesStart.length - oldSize) * RamUsageEstimator.NUM_BYTES_INT);
-      return bytesStart;
-    }
-
-    @Override
-    public int[] init() {
-      bytesStart = new int[ArrayUtil.oversize(initSize,
-          RamUsageEstimator.NUM_BYTES_INT)];
-      bytesUsed.addAndGet((bytesStart.length) * RamUsageEstimator.NUM_BYTES_INT);
-      return bytesStart;
-    }
-
-    @Override
-    public Counter bytesUsed() {
-      return bytesUsed;
-    }
   }
 
   /** A simple {@link BytesStartArray} that tracks
