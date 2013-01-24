@@ -154,6 +154,7 @@ public abstract class DocTermsIndexDocValues extends FunctionValues {
       @Override
       public void fillValue(int doc) {
         termsIndex.get(doc, mval.value);
+        mval.exists = mval.value.bytes != SortedDocValues.MISSING;
       }
     };
   }

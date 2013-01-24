@@ -56,6 +56,7 @@ public abstract class SortedDocValues extends BinaryDocValues {
     if (ord == -1) {
       result.bytes = MISSING;
       result.length = 0;
+      result.offset = 0;
     } else {
       lookupOrd(ord, result);
     }
