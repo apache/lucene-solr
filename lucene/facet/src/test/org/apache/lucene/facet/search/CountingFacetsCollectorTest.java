@@ -351,8 +351,16 @@ public class CountingFacetsCollectorTest extends LuceneTestCase {
     for (FacetResult res : facetResults) {
       FacetResultNode root = res.getFacetResultNode();
       assertEquals("wrong count for " + root.label, allExpectedCounts.get(root.label), (int) root.value);
+      int prevValue = Integer.MAX_VALUE;
+      int prevOrdinal = Integer.MAX_VALUE;
       for (FacetResultNode child : root.subResults) {
         assertEquals("wrong count for " + child.label, allExpectedCounts.get(child.label), (int) child.value);
+        assertTrue("wrong sort order of sub results: child.value=" + child.value + " prevValue=" + prevValue, child.value <= prevValue);
+        if (child.value == prevValue) {
+          assertTrue("wrong sort order of sub results", child.ordinal < prevOrdinal);
+        }
+        prevValue = (int) child.value;
+        prevOrdinal = child.ordinal;
       }
     }
     
