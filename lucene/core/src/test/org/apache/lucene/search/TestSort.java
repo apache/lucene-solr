@@ -449,7 +449,11 @@ public class TestSort extends LuceneTestCase {
   }
 
   private SortField.Type getDVStringSortType() {
-    if (dvStringSorted) {
+    return getDVStringSortType(true);
+  }
+
+  private SortField.Type getDVStringSortType(boolean allowSorted) {
+    if (dvStringSorted && allowSorted) {
       // If you index as sorted source you can still sort by
       // value instead:
       return random().nextBoolean() ? SortField.Type.STRING : SortField.Type.STRING_VAL;
@@ -702,14 +706,14 @@ public class TestSort extends LuceneTestCase {
     sort.setSort(new SortField("float_dv", SortField.Type.FLOAT), new SortField("string", SortField.Type.STRING));
     assertMatches(empty, queryX, sort, "");
 
-    sort.setSort(new SortField("string_dv", getDVStringSortType(), true), SortField.FIELD_DOC);
+    sort.setSort(new SortField("string_dv", getDVStringSortType(false), true), SortField.FIELD_DOC);
     assertMatches(empty, queryX, sort, "");
 
     sort.setSort(new SortField("float_dv", SortField.Type.FLOAT),
-                  new SortField("string_dv", getDVStringSortType()));
+                  new SortField("string_dv", getDVStringSortType(false)));
     assertMatches(empty, queryX, sort, "");
     
-    sort.setSort(new SortField("float_dv", SortField.Type.FLOAT), new SortField("string_dv", getDVStringSortType()));
+    sort.setSort(new SortField("float_dv", SortField.Type.FLOAT), new SortField("string_dv", getDVStringSortType(false)));
     assertMatches(empty, queryX, sort, "");
   }
 
