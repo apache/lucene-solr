@@ -23,7 +23,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
 /**
- * format for normalization factors
+ * Encodes/decodes per-document score normalization values.
  */
 public abstract class NormsFormat {
   /** Sole constructor. (For invocation by subclass 

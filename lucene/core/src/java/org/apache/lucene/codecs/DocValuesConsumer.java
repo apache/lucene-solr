@@ -29,22 +29,67 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.PriorityQueue;
 
-// prototype streaming DV api
+/** 
+ * Abstract API that consumes numeric, binary and
+ * sorted docvalues.  Concrete implementations of this
+ * actually do "something" with the docvalues (write it into
+ * the index in a specific format).
+ * <p>
+ * The lifecycle is:
+ * <ol>
+ *   <li>DocValuesConsumer is created by 
+ *       {@link DocValuesFormat#fieldsConsumer(SegmentWriteState)} or
+ *       {@link NormsFormat#normsConsumer(SegmentWriteState)}.
+ *   <li>{@link #addNumericField}, {@link #addBinaryField},
+ *       or {@link #addSortedField} are called for each Numeric,
+ *       Binary, or Sorted docvalues field. The API is a "pull" rather
+ *       than "push", and the implementation is free to iterate over the 
+ *       values multiple times ({@link Iterable#iterator()}).
+ *   <li>After all fields are added, the consumer is {@link #close}d.
+ * </ol>
+ *
+ * @lucene.experimental
+ */
 public abstract class DocValuesConsumer implements Closeable {
 
+  /**
+   * Writes numeric docvalues for a field.
+   * @param field field information
+   * @param values Iterable of numeric values (one for each document).
+   * @throws IOException if an I/O error occurred.
+   */
   public abstract void addNumericField(FieldInfo field, Iterable<Number> values) throws IOException;    
 
+  /**
+   * Writes binary docvalues for a field.
+   * @param field field information
+   * @param values Iterable of binary values (one for each document).
+   * @throws IOException if an I/O error occurred.
+   */
   public abstract void addBinaryField(FieldInfo field, Iterable<BytesRef> values) throws IOException;
 
+  /**
+   * Writes pre-sorted binary docvalues for a field.
+   * @param field field information
+   * @param values Iterable of binary values in sorted order (deduplicated).
+   * @param docToOrd Iterable of ordinals (one for each document).
+   * @throws IOException if an I/O error occurred.
+   */
   public abstract void addSortedField(FieldInfo field, Iterable<BytesRef> values, Iterable<Number> docToOrd) throws IOException;
 
-  // dead simple impl: codec can optimize
+  /**
+   * Merges the numeric docvalues from <code>toMerge</code>.
+   * <p>
+   * The default implementation calls {@link #addNumericField}, passing
+   * an Iterable that merges and filters deleted documents on the fly.
+   */
   public void mergeNumericField(FieldInfo fieldInfo, final MergeState mergeState, final List<NumericDocValues> toMerge) throws IOException {
 
     addNumericField(fieldInfo,
@@ -113,7 +158,12 @@ public abstract class DocValuesConsumer implements Closeable {
                     });
   }
   
-  // dead simple impl: codec can optimize
+  /**
+   * Merges the binary docvalues from <code>toMerge</code>.
+   * <p>
+   * The default implementation calls {@link #addBinaryField}, passing
+   * an Iterable that merges and filters deleted documents on the fly.
+   */
   public void mergeBinaryField(FieldInfo fieldInfo, final MergeState mergeState, final List<BinaryDocValues> toMerge) throws IOException {
 
     addBinaryField(fieldInfo,
@@ -319,6 +369,12 @@ public abstract class DocValuesConsumer implements Closeable {
     */
   }
 
+  /**
+   * Merges the sorted docvalues from <code>toMerge</code>.
+   * <p>
+   * The default implementation calls {@link #addSortedField}, passing
+   * an Iterable that merges ordinals and values and filters deleted documents .
+   */
   public void mergeSortedField(FieldInfo fieldInfo, final MergeState mergeState, List<SortedDocValues> toMerge) throws IOException {
     final SortedBytesMerger merger = new SortedBytesMerger();
 

@@ -18,12 +18,26 @@ package org.apache.lucene.codecs;
  */
 
 import java.io.IOException;
+import java.util.ServiceLoader;
 import java.util.Set;
 
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.NamedSPILoader;
 
+/** 
+ * Encodes/decodes per-document values.
+ * <p>
+ * Note, when extending this class, the name ({@link #getName}) may
+ * written into the index in certain configurations. In order for the segment 
+ * to be read, the name must resolve to your implementation via {@link #forName(String)}.
+ * This method uses Java's 
+ * {@link ServiceLoader Service Provider Interface} (SPI) to resolve format names.
+ * <p>
+ * If you implement your own format, make sure that it has a no-arg constructor
+ * so SPI can load it.
+ * @see ServiceLoader
+ * @lucene.experimental */
 public abstract class DocValuesFormat implements NamedSPILoader.NamedSPI {
   
   private static final NamedSPILoader<DocValuesFormat> loader =
