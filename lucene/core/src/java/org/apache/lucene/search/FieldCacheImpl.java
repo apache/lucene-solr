@@ -1036,6 +1036,13 @@ class FieldCacheImpl implements FieldCache {
       // per-thread by SegmentReader):
       return valuesIn;
     } else {
+      final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
+      if (info != null && !info.isIndexed() && info.hasDocValues()) {
+        // we don't try to build a sorted instance from numeric/binary doc
+        // values because dedup can be very costly
+        throw new IllegalArgumentException("Cannot get terms index for \"" + field
+            + "\": it isn't indexed and doesn't have sorted doc values");
+      }
       return (SortedDocValues) caches.get(SortedDocValues.class).get(reader, new CacheKey(field, acceptableOverheadRatio), false);
     }
   }
