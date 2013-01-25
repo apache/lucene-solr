@@ -38,6 +38,12 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
+/**
+ * Reads the 4.0 format of norms/docvalues
+ * @lucene.experimental
+ * @deprecated Only for reading old 4.0 and 4.1 segments
+ */
+@Deprecated
 class Lucene40DocValuesReader extends DocValuesProducer {
   private final Directory dir;
   private final SegmentReadState state;
@@ -56,24 +62,6 @@ class Lucene40DocValuesReader extends DocValuesProducer {
     this.state = state;
     this.legacyKey = legacyKey;
     this.dir = new CompoundFileDirectory(state.directory, filename, state.context, false);
-    // nocommit: uncomment to debug
-    /*
-    if (legacyKey.equals(Lucene40FieldInfosReader.LEGACY_DV_TYPE_KEY)) {
-      System.out.println("dv READER:");
-      for (FieldInfo fi : state.fieldInfos) {
-        if (fi.hasDocValues()) {
-          System.out.println(fi.name + " -> " + fi.getAttribute(legacyKey) + " -> " + fi.getDocValuesType());
-        }
-      }
-    } else {
-      System.out.println("nrm READER:");
-      for (FieldInfo fi : state.fieldInfos) {
-        if (fi.hasNorms()) {
-          System.out.println(fi.name + " -> " + fi.getAttribute(legacyKey) + " -> " + fi.getNormType());
-        }
-      }
-    }
-    */
   }
   
   @Override
@@ -108,6 +96,9 @@ class Lucene40DocValuesReader extends DocValuesProducer {
             break;
           default: 
             throw new AssertionError();
+        }
+        if (input.getFilePointer() != input.length()) {
+          throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
         }
         success = true;
       } finally {
@@ -163,7 +154,10 @@ class Lucene40DocValuesReader extends DocValuesProducer {
     CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
                                  Lucene40DocValuesFormat.INTS_VERSION_START, 
                                  Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
-    input.readInt();
+    int valueSize = input.readInt();
+    if (valueSize != 1) {
+      throw new CorruptIndexException("invalid valueSize: " + valueSize);
+    }
     int maxDoc = state.segmentInfo.getDocCount();
     final byte values[] = new byte[maxDoc];
     input.readBytes(values, 0, values.length);
@@ -179,7 +173,10 @@ class Lucene40DocValuesReader extends DocValuesProducer {
     CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
                                  Lucene40DocValuesFormat.INTS_VERSION_START, 
                                  Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
-    input.readInt();
+    int valueSize = input.readInt();
+    if (valueSize != 2) {
+      throw new CorruptIndexException("invalid valueSize: " + valueSize);
+    }
     int maxDoc = state.segmentInfo.getDocCount();
     final short values[] = new short[maxDoc];
     for (int i = 0; i < values.length; i++) {
@@ -197,7 +194,10 @@ class Lucene40DocValuesReader extends DocValuesProducer {
     CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
                                  Lucene40DocValuesFormat.INTS_VERSION_START, 
                                  Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
-    input.readInt();
+    int valueSize = input.readInt();
+    if (valueSize != 4) {
+      throw new CorruptIndexException("invalid valueSize: " + valueSize);
+    }
     int maxDoc = state.segmentInfo.getDocCount();
     final int values[] = new int[maxDoc];
     for (int i = 0; i < values.length; i++) {
@@ -215,7 +215,10 @@ class Lucene40DocValuesReader extends DocValuesProducer {
     CodecUtil.checkHeader(input, Lucene40DocValuesFormat.INTS_CODEC_NAME, 
                                  Lucene40DocValuesFormat.INTS_VERSION_START, 
                                  Lucene40DocValuesFormat.INTS_VERSION_CURRENT);
-    input.readInt();
+    int valueSize = input.readInt();
+    if (valueSize != 8) {
+      throw new CorruptIndexException("invalid valueSize: " + valueSize);
+    }
     int maxDoc = state.segmentInfo.getDocCount();
     final long values[] = new long[maxDoc];
     for (int i = 0; i < values.length; i++) {
@@ -233,7 +236,10 @@ class Lucene40DocValuesReader extends DocValuesProducer {
     CodecUtil.checkHeader(input, Lucene40DocValuesFormat.FLOATS_CODEC_NAME, 
                                  Lucene40DocValuesFormat.FLOATS_VERSION_START, 
                                  Lucene40DocValuesFormat.FLOATS_VERSION_CURRENT);
-    input.readInt();
+    int valueSize = input.readInt();
+    if (valueSize != 4) {
+      throw new CorruptIndexException("invalid valueSize: " + valueSize);
+    }
     int maxDoc = state.segmentInfo.getDocCount();
     final int values[] = new int[maxDoc];
     for (int i = 0; i < values.length; i++) {
@@ -251,7 +257,10 @@ class Lucene40DocValuesReader extends DocValuesProducer {
     CodecUtil.checkHeader(input, Lucene40DocValuesFormat.FLOATS_CODEC_NAME, 
                                  Lucene40DocValuesFormat.FLOATS_VERSION_START, 
                                  Lucene40DocValuesFormat.FLOATS_VERSION_CURRENT);
-    input.readInt();
+    int valueSize = input.readInt();
+    if (valueSize != 8) {
+      throw new CorruptIndexException("invalid valueSize: " + valueSize);
+    }
     int maxDoc = state.segmentInfo.getDocCount();
     final long values[] = new long[maxDoc];
     for (int i = 0; i < values.length; i++) {
@@ -302,6 +311,9 @@ class Lucene40DocValuesReader extends DocValuesProducer {
       // nocommit? can the current impl even handle > 2G?
       final byte bytes[] = new byte[state.segmentInfo.getDocCount() * fixedLength];
       input.readBytes(bytes, 0, bytes.length);
+      if (input.getFilePointer() != input.length()) {
+        throw new CorruptIndexException("did not read all bytes from file \"" + fileName + "\": read " + input.getFilePointer() + " vs size " + input.length() + " (resource: " + input + ")");
+      }
       success = true;
       return new BinaryDocValues() {
         @Override
@@ -340,6 +352,12 @@ class Lucene40DocValuesReader extends DocValuesProducer {
       final byte bytes[] = new byte[(int)totalBytes];
       data.readBytes(bytes, 0, bytes.length);
       final PackedInts.Reader reader = PackedInts.getReader(index);
+      if (data.getFilePointer() != data.length()) {
+        throw new CorruptIndexException("did not read all bytes from file \"" + dataName + "\": read " + data.getFilePointer() + " vs size " + data.length() + " (resource: " + data + ")");
+      }
+      if (index.getFilePointer() != index.length()) {
+        throw new CorruptIndexException("did not read all bytes from file \"" + indexName + "\": read " + index.getFilePointer() + " vs size " + index.length() + " (resource: " + index + ")");
+      }
       success = true;
       return new BinaryDocValues() {
         @Override
@@ -382,6 +400,12 @@ class Lucene40DocValuesReader extends DocValuesProducer {
       final byte bytes[] = new byte[fixedLength * valueCount];
       data.readBytes(bytes, 0, bytes.length);
       final PackedInts.Reader reader = PackedInts.getReader(index);
+      if (data.getFilePointer() != data.length()) {
+        throw new CorruptIndexException("did not read all bytes from file \"" + dataName + "\": read " + data.getFilePointer() + " vs size " + data.length() + " (resource: " + data + ")");
+      }
+      if (index.getFilePointer() != index.length()) {
+        throw new CorruptIndexException("did not read all bytes from file \"" + indexName + "\": read " + index.getFilePointer() + " vs size " + index.length() + " (resource: " + index + ")");
+      }
       success = true;
       return new BinaryDocValues() {
         @Override
@@ -422,6 +446,12 @@ class Lucene40DocValuesReader extends DocValuesProducer {
       final byte bytes[] = new byte[(int)totalBytes];
       data.readBytes(bytes, 0, bytes.length);
       final PackedInts.Reader reader = PackedInts.getReader(index);
+      if (data.getFilePointer() != data.length()) {
+        throw new CorruptIndexException("did not read all bytes from file \"" + dataName + "\": read " + data.getFilePointer() + " vs size " + data.length() + " (resource: " + data + ")");
+      }
+      if (index.getFilePointer() != index.length()) {
+        throw new CorruptIndexException("did not read all bytes from file \"" + indexName + "\": read " + index.getFilePointer() + " vs size " + index.length() + " (resource: " + index + ")");
+      }
       success = true;
       return new BinaryDocValues() {
         @Override
@@ -469,6 +499,12 @@ class Lucene40DocValuesReader extends DocValuesProducer {
             break;
           default:
             throw new AssertionError();
+        }
+        if (data.getFilePointer() != data.length()) {
+          throw new CorruptIndexException("did not read all bytes from file \"" + dataName + "\": read " + data.getFilePointer() + " vs size " + data.length() + " (resource: " + data + ")");
+        }
+        if (index.getFilePointer() != index.length()) {
+          throw new CorruptIndexException("did not read all bytes from file \"" + indexName + "\": read " + index.getFilePointer() + " vs size " + index.length() + " (resource: " + index + ")");
         }
         success = true;
       } finally {

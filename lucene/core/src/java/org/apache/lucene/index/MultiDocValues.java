@@ -31,9 +31,24 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.Version;
 
+/**
+ * A wrapper for CompositeIndexReader providing access to DocValues.
+ * 
+ * <p><b>NOTE</b>: for multi readers, you'll get better
+ * performance by gathering the sub readers using
+ * {@link IndexReader#getContext()} to get the
+ * atomic leaves and then operate per-AtomicReader,
+ * instead of using this class.
+ * 
+ * <p><b>NOTE</b>: This is very costly.
+ *
+ * @lucene.experimental
+ * @lucene.internal
+ */
 // nocommit move this back to test-framework!!!
 public class MultiDocValues {
   
+  /** returns a NumericDocValues for a reader's norms (potentially merging on-the-fly) */
   // moved to src/java so SlowWrapper can use it... uggggggh
   public static NumericDocValues getNormValues(final IndexReader r, final String field) throws IOException {
     final List<AtomicReaderContext> leaves = r.leaves();
@@ -74,6 +89,7 @@ public class MultiDocValues {
     };
   }
 
+  /** returns a NumericDocValues for a reader's docvalues (potentially merging on-the-fly) */
   public static NumericDocValues getNumericValues(final IndexReader r, final String field) throws IOException {
     final List<AtomicReaderContext> leaves = r.leaves();
     if (leaves.size() == 1) {
@@ -111,6 +127,7 @@ public class MultiDocValues {
     }
   }
 
+  /** returns a BinaryDocValues for a reader's docvalues (potentially merging on-the-fly) */
   public static BinaryDocValues getBinaryValues(final IndexReader r, final String field) throws IOException {
     final List<AtomicReaderContext> leaves = r.leaves();
     if (leaves.size() == 1) {
@@ -152,6 +169,7 @@ public class MultiDocValues {
     }
   }
   
+  /** returns a SortedDocValues for a reader's docvalues (potentially doing extremely slow things) */
   public static SortedDocValues getSortedValues(final IndexReader r, final String field) throws IOException {
     final List<AtomicReaderContext> leaves = r.leaves();
     if (leaves.size() == 1) {

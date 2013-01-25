@@ -81,9 +81,26 @@ public final class FieldInfo {
     DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS,
   };
   
+  /**
+   * DocValues types.
+   * Note that DocValues is strongly typed, so a field cannot have different types
+   * across different documents.
+   */
   public static enum DocValuesType {
+    /** 
+     * A per-document Number
+     */
     NUMERIC,
+    /**
+     * A per-document byte[].
+     */
     BINARY,
+    /** 
+     * A pre-sorted byte[]. Fields with this type only store distinct byte values 
+     * and store an additional offset pointer per document to dereference the shared 
+     * byte[]. The stored byte[] is presorted and allows access via document id, 
+     * ordinal and by-value.
+     */
     SORTED
   };
 

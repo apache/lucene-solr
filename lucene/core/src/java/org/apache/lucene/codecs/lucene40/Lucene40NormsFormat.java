@@ -25,9 +25,29 @@ import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.CompoundFileDirectory;
 
+/**
+ * Lucene 4.0 Norms Format.
+ * <p>
+ * Files:
+ * <ul>
+ *   <li><tt>.nrm.cfs</tt>: {@link CompoundFileDirectory compound container}</li>
+ *   <li><tt>.nrm.cfe</tt>: {@link CompoundFileDirectory compound entries}</li>
+ * </ul>
+ * Norms are implemented as DocValues, so other than file extension, norms are 
+ * written exactly the same way as {@link Lucene40DocValuesFormat DocValues}.
+ * 
+ * @see Lucene40DocValuesFormat
+ * @lucene.experimental
+ * @deprecated Only for reading old 4.0 and 4.1 segments
+ */
+@Deprecated
 public class Lucene40NormsFormat extends NormsFormat {
 
+  /** Sole constructor. */
+  public Lucene40NormsFormat() {}
+  
   @Override
   public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
     throw new UnsupportedOperationException("this codec can only be used for reading");
