@@ -25,8 +25,24 @@ import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
+/**
+ * Lucene 4.2 score normalization format.
+ * <p>
+ * NOTE: this uses the same format as {@link Lucene42DocValuesFormat}
+ * Numeric DocValues, but with different file extensions.
+ * <p>
+ * Files:
+ * <ul>
+ *   <li><tt>.nvd</tt>: DocValues data</li>
+ *   <li><tt>.nvm</tt>: DocValues metadata</li>
+ * </ul>
+ * @see Lucene42DocValuesFormat
+ */
 public class Lucene42NormsFormat extends NormsFormat {
 
+  /** Sole constructor */
+  public Lucene42NormsFormat() {}
+  
   @Override
   public DocValuesConsumer normsConsumer(SegmentWriteState state) throws IOException {
     return new Lucene42DocValuesConsumer(state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);

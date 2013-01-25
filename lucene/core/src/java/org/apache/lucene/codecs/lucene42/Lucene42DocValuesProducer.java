@@ -46,6 +46,9 @@ import org.apache.lucene.util.packed.BlockPackedReader;
 import org.apache.lucene.util.packed.MonotonicBlockPackedReader;
 import org.apache.lucene.util.packed.PackedInts;
 
+/**
+ * Reader for {@link Lucene42DocValuesFormat}
+ */
 class Lucene42DocValuesProducer extends DocValuesProducer {
   // metadata maps (just file pointers and minimal stuff)
   private final Map<Integer,NumericEntry> numerics;
@@ -56,12 +59,8 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   // ram instances we have already loaded
   private final Map<Integer,NumericDocValues> numericInstances = 
       new HashMap<Integer,NumericDocValues>();
-  
-  // if this thing needs some TL state then we might put something
-  // else in this map.
   private final Map<Integer,BinaryDocValues> binaryInstances =
       new HashMap<Integer,BinaryDocValues>();
-  
   private final Map<Integer,FST<Long>> fstInstances =
       new HashMap<Integer,FST<Long>>();
   

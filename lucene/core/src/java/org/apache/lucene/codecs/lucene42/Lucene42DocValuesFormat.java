@@ -19,14 +19,92 @@ package org.apache.lucene.codecs.lucene42;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
+import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.BlockPackedWriter;
 
+/**
+ * Lucene 4.2 DocValues format.
+ * <p>
+ * Encodes the three per-document value types (Numeric,Binary,Sorted) with five basic strategies.
+ * <p>
+ * <ul>
+ *    <li>Delta-compressed Numerics: per-document integers written in blocks of 4096. For each block
+ *        the minimum value is encoded, and each entry is a delta from that minimum value.
+ *    <li>Table-compressed Numerics: when the number of unique values is very small, a lookup table
+ *        is written instead. Each per-document entry is instead the ordinal to this table.
+ *    <li>Fixed-width Binary: one large concatenated byte[] is written, along with the fixed length.
+ *        Each document's value can be addressed by maxDoc*length. 
+ *    <li>Variable-width Binary: one large concatenated byte[] is written, along with end addresses 
+ *        for each document. The addresses are written in blocks of 4096, with the current absolute
+ *        start for the block, and the average (expected) delta per entry. For each document the 
+ *        deviation from the delta (actual - expected) is written.
+ *    <li>Sorted: an FST mapping deduplicated terms to ordinals is written, along with the per-document
+ *        ordinals written using one of the numeric stratgies above.
+ * </ul>
+ * <p>
+ * Files:
+ * <ol>
+ *   <li><tt>.dvd</tt>: DocValues data</li>
+ *   <li><tt>.dvm</tt>: DocValues metadata</li>
+ * </ol>
+ * <ol>
+ *   <li><a name="dvm" id="dvm"></a>
+ *   <p>The DocValues metadata or .dvm file.</p>
+ *   <p>For DocValues field, this stores metadata, such as the offset into the 
+ *      DocValues data (.dvd)</p>
+ *   <p>DocValues metadata (.dvm) --&gt; Header,&lt;FieldNumber,EntryType,Entry&gt;<sup>NumFields</sup></p>
+ *   <ul>
+ *     <li>Entry --&gt; NumericEntry | BinaryEntry | SortedEntry</li>
+ *     <li>NumericEntry --&gt; DataOffset,CompressionType,PackedVersion</li>
+ *     <li>BinaryEntry --&gt; DataOffset,DataLength,MinLength,MaxLength,PackedVersion?,BlockSize?</li>
+ *     <li>SortedEntry --&gt; DataOffset,ValueCount</li>
+ *     <li>FieldNumber,PackedVersion,MinLength,MaxLength,BlockSize,ValueCount --&gt; {@link DataOutput#writeVInt VInt}</li>
+ *     <li>DataOffset,DataLength --&gt; {@link DataOutput#writeLong Int64}</li>
+ *     <li>EntryType,CompressionType --&gt; {@link DataOutput#writeByte Byte}</li>
+ *     <li>Header --&gt; {@link CodecUtil#writeHeader CodecHeader}</li>
+ *   </ul>
+ *   <p>Sorted fields have two entries: a SortedEntry with the FST metadata,
+ *      and an ordinary NumericEntry for the document-to-ord metadata.</p>
+ *   <p>FieldNumber of -1 indicates the end of metadata.</p>
+ *   <p>EntryType is a 0 (NumericEntry), 1 (BinaryEntry, or 2 (SortedEntry)</p>
+ *   <p>DataOffset is the pointer to the start of the data in the DocValues data (.dvd)</p>
+ *   <p>CompressionType indicates how Numeric values will be compressed:
+ *      <ul>
+ *         <li>0 --&gt; delta-compressed. For each block of 4096 integers, every integer is delta-encoded
+ *             from the minimum value within the block. 
+ *         <li>1 --&gt; table-compressed. When the number of unique numeric values is small and it would save space,
+ *             a lookup table of unique values is written, followed by the ordinal for each document.
+ *      </ul>
+ *   <p>MinLength and MaxLength represent the min and max byte[] value lengths for Binary values.
+ *      If they are equal, then all values are of a fixed size, and can be addressed as DataOffset + (docID * length).
+ *      Otherwise, the binary values are of variable size, and packed integer metadata (PackedVersion,BlockSize)
+ *      is written for the addresses.
+ *   <li><a name="dvd" id="dvd"></a>
+ *   <p>The DocValues data or .dvd file.</p>
+ *   <p>For DocValues field, this stores the actual per-document data (the heavy-lifting)</p>
+ *   <p>DocValues data (.dvd) --&gt; Header,&lt;NumericData | BinaryData | SortedData&gt;<sup>NumFields</sup></p>
+ *   <ul>
+ *     <li>NumericData --&gt; DeltaCompressedNumerics | TableCompressedNumerics</li>
+ *     <li>BinaryData --&gt;  {@link DataOutput#writeByte Byte}<sup>DataLength</sup>,Addresses</li>
+ *     <li>SortedData --&gt; {@link FST FST&lt;Int64&gt;}</li>
+ *     <li>DeltaCompressedNumerics --&gt; {@link BlockPackedWriter BlockPackedInts(blockSize=4096)}</li>
+ *     <li>TableCompressedNumerics --&gt; TableSize,{@link DataOutput#writeLong Int64}<sup>TableSize</sup>,{@link PackedInts PackedInts}</li>
+ *     <li>Addresses --&gt; {@link MonotonicBlockPackedWriter MonotonicBlockPackedInts(blockSize=4096)}</li>
+ *   </ul>
+ * </ol>
+ */
 public class Lucene42DocValuesFormat extends DocValuesFormat {
 
+  /** Sole constructor */
   public Lucene42DocValuesFormat() {
     super("Lucene42");
   }
