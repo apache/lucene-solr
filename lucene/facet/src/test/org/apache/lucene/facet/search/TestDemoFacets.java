@@ -40,6 +40,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 
 public class TestDemoFacets extends FacetTestCase {
@@ -111,7 +112,7 @@ public class TestDemoFacets extends FacetTestCase {
     
     // Now user drills down on Publish Date/2010:
     fsp = new FacetSearchParams(new CountFacetRequest(new CategoryPath("Author"), 10));
-    Query q2 = DrillDown.query(fsp, new MatchAllDocsQuery(), new CategoryPath("Publish Date/2010", '/'));
+    Query q2 = DrillDown.query(fsp, new MatchAllDocsQuery(), Occur.MUST, new CategoryPath("Publish Date/2010", '/'));
     c = FacetsCollector.create(fsp, searcher.getIndexReader(), taxoReader);
     searcher.search(q2, c);
     results = c.getFacetResults();

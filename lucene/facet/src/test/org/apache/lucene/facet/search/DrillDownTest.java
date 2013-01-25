@@ -27,6 +27,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -129,25 +130,25 @@ public class DrillDownTest extends FacetTestCase {
     IndexSearcher searcher = newSearcher(reader);
 
     // Making sure the query yields 25 documents with the facet "a"
-    Query q = DrillDown.query(defaultParams, null, new CategoryPath("a"));
+    Query q = DrillDown.query(defaultParams, null, Occur.MUST, new CategoryPath("a"));
     TopDocs docs = searcher.search(q, 100);
     assertEquals(25, docs.totalHits);
     
     // Making sure the query yields 5 documents with the facet "b" and the
     // previous (facet "a") query as a base query
-    Query q2 = DrillDown.query(defaultParams, q, new CategoryPath("b"));
+    Query q2 = DrillDown.query(defaultParams, q, Occur.MUST, new CategoryPath("b"));
     docs = searcher.search(q2, 100);
     assertEquals(5, docs.totalHits);
 
     // Making sure that a query of both facet "a" and facet "b" yields 5 results
-    Query q3 = DrillDown.query(defaultParams, null, new CategoryPath("a"), new CategoryPath("b"));
+    Query q3 = DrillDown.query(defaultParams, null, Occur.MUST, new CategoryPath("a"), new CategoryPath("b"));
     docs = searcher.search(q3, 100);
     assertEquals(5, docs.totalHits);
     
     // Check that content:foo (which yields 50% results) and facet/b (which yields 20%)
     // would gather together 10 results (10%..) 
     Query fooQuery = new TermQuery(new Term("content", "foo"));
-    Query q4 = DrillDown.query(defaultParams, fooQuery, new CategoryPath("b"));
+    Query q4 = DrillDown.query(defaultParams, fooQuery, Occur.MUST, new CategoryPath("b"));
     docs = searcher.search(q4, 100);
     assertEquals(10, docs.totalHits);
   }
@@ -157,18 +158,18 @@ public class DrillDownTest extends FacetTestCase {
     IndexSearcher searcher = newSearcher(reader);
 
     // Create the base query to start with
-    Query q = DrillDown.query(defaultParams, null, new CategoryPath("a"));
+    Query q = DrillDown.query(defaultParams, null, Occur.MUST, new CategoryPath("a"));
     
     // Making sure the query yields 5 documents with the facet "b" and the
     // previous (facet "a") query as a base query
-    Query q2 = DrillDown.query(defaultParams, q, new CategoryPath("b"));
+    Query q2 = DrillDown.query(defaultParams, q, Occur.MUST, new CategoryPath("b"));
     TopDocs docs = searcher.search(q2, 100);
     assertEquals(5, docs.totalHits);
 
     // Check that content:foo (which yields 50% results) and facet/b (which yields 20%)
     // would gather together 10 results (10%..) 
     Query fooQuery = new TermQuery(new Term("content", "foo"));
-    Query q4 = DrillDown.query(defaultParams, fooQuery, new CategoryPath("b"));
+    Query q4 = DrillDown.query(defaultParams, fooQuery, Occur.MUST, new CategoryPath("b"));
     docs = searcher.search(q4, 100);
     assertEquals(10, docs.totalHits);
   }
@@ -203,7 +204,7 @@ public class DrillDownTest extends FacetTestCase {
     }
     
     // create a drill-down query with category "a", scores should not change
-    q = DrillDown.query(defaultParams, q, new CategoryPath("a"));
+    q = DrillDown.query(defaultParams, q, Occur.MUST, new CategoryPath("a"));
     docs = searcher.search(q, reader.maxDoc()); // fetch all available docs to this query
     for (ScoreDoc sd : docs.scoreDocs) {
       assertEquals("score of doc=" + sd.doc + " modified", scores[sd.doc], sd.score, 0f);
@@ -215,11 +216,21 @@ public class DrillDownTest extends FacetTestCase {
     // verify that drill-down queries (with no base query) returns 0.0 score
     IndexSearcher searcher = newSearcher(reader);
     
-    Query q = DrillDown.query(defaultParams, null, new CategoryPath("a"));
+    Query q = DrillDown.query(defaultParams, null, Occur.MUST, new CategoryPath("a"));
     TopDocs docs = searcher.search(q, reader.maxDoc()); // fetch all available docs to this query
     for (ScoreDoc sd : docs.scoreDocs) {
       assertEquals(0f, sd.score, 0f);
     }
+  }
+  
+  @Test
+  public void testOrQuery() throws Exception {
+    IndexSearcher searcher = newSearcher(reader);
+
+    // Making sure that a query of facet "a" or facet "b" yields 0 results
+    Query q = DrillDown.query(defaultParams, null, Occur.SHOULD, new CategoryPath("a"), new CategoryPath("b"));
+    TopDocs docs = searcher.search(q, 100);
+    assertEquals(40, docs.totalHits);
   }
     
 }

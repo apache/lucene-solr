@@ -59,18 +59,23 @@ public final class DrillDown {
   }
   
   /**
-   * Wraps a given {@link Query} as a drill-down query over the given
-   * categories, assuming all are required (e.g. {@code AND}). You can construct
-   * a query with different modes (such as {@code OR} or {@code AND} of
-   * {@code ORs}) by creating a {@link BooleanQuery} and call this method
-   * several times. Make sure to wrap the query in that case by
-   * {@link ConstantScoreQuery} and set the boost to 0.0f, so that it doesn't
-   * affect scoring.
+   * Wraps a given {@link Query} by a drill-down query over the given
+   * categories. {@link Occur} defines the relationship between the cateories
+   * (e.g. {@code OR} or {@code AND}. If you need to construct a more
+   * complicated relationship, e.g. {@code AND} of {@code ORs}), call this
+   * method with every group of categories with the same relationship and then
+   * construct a {@link BooleanQuery} which will wrap all returned queries. It
+   * is advised to construct that boolean query with coord disabled, and also
+   * wrap the final query with {@link ConstantScoreQuery} and set its boost to
+   * {@code 0.0f}.
+   * <p>
+   * <b>NOTE:</b> {@link Occur} only makes sense when there is more than one
+   * {@link CategoryPath} given.
    * <p>
    * <b>NOTE:</b> {@code baseQuery} can be {@code null}, in which case only the
    * {@link Query} over the categories will is returned.
    */
-  public static final Query query(FacetIndexingParams iParams, Query baseQuery, CategoryPath... paths) {
+  public static final Query query(FacetIndexingParams iParams, Query baseQuery, Occur occur, CategoryPath... paths) {
     if (paths == null || paths.length == 0) {
       throw new IllegalArgumentException("Empty category path not allowed for drill down query!");
     }
@@ -81,7 +86,7 @@ public final class DrillDown {
     } else {
       BooleanQuery bq = new BooleanQuery(true); // disable coord
       for (CategoryPath cp : paths) {
-        bq.add(new TermQuery(term(iParams, cp)), Occur.MUST);
+        bq.add(new TermQuery(term(iParams, cp)), occur);
       }
       q = bq;
     }
@@ -100,10 +105,10 @@ public final class DrillDown {
   }
 
   /**
-   * @see #query(FacetIndexingParams, Query, CategoryPath...)
+   * @see #query
    */
-  public static final Query query(FacetSearchParams sParams, Query baseQuery, CategoryPath... paths) {
-    return query(sParams.indexingParams, baseQuery, paths);
+  public static final Query query(FacetSearchParams sParams, Query baseQuery, Occur occur, CategoryPath... paths) {
+    return query(sParams.indexingParams, baseQuery, occur, paths);
   }
 
 }
