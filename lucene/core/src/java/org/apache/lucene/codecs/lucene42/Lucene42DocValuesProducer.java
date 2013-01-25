@@ -64,8 +64,11 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   
   private final Map<Integer,FST<Long>> fstInstances =
       new HashMap<Integer,FST<Long>>();
+  
+  private final int maxDoc;
     
   Lucene42DocValuesProducer(SegmentReadState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+    maxDoc = state.segmentInfo.getDocCount();
     String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
     // read in the entries from the metadata file.
     IndexInput in = state.directory.openInput(metaName, state.context);
@@ -107,7 +110,6 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         numerics.put(fieldNumber, entry);
       } else if (fieldType == Lucene42DocValuesConsumer.BYTES) {
         BinaryEntry entry = new BinaryEntry();
-        entry.count = meta.readVInt();
         entry.offset = meta.readLong();
         entry.numBytes = meta.readLong();
         entry.minLength = meta.readVInt();
@@ -195,7 +197,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         }
       };
     } else {
-      final MonotonicBlockPackedReader addresses = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, entry.count, false);
+      final MonotonicBlockPackedReader addresses = new MonotonicBlockPackedReader(data, entry.packedIntsVersion, entry.blockSize, maxDoc, false);
       return new BinaryDocValues() {
         @Override
         public void get(int docID, BytesRef result) {
@@ -284,7 +286,6 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
   }
   
   static class BinaryEntry {
-    int count;
     long offset;
     long numBytes;
     int minLength;

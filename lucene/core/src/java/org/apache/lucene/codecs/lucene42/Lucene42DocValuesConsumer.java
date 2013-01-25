@@ -164,14 +164,11 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     final long startFP = data.getFilePointer();
-    int count = 0;
     for(BytesRef v : values) {
       minLength = Math.min(minLength, v.length);
       maxLength = Math.max(maxLength, v.length);
       data.writeBytes(v.bytes, v.offset, v.length);
-      ++count;
     }
-    meta.writeVInt(count);
     meta.writeLong(startFP);
     meta.writeLong(data.getFilePointer() - startFP);
     meta.writeVInt(minLength);
