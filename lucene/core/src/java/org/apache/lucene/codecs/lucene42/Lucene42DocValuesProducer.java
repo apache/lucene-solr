@@ -106,7 +106,6 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         entry.offset = meta.readLong();
         entry.tableized = meta.readByte() != 0;
         entry.packedIntsVersion = meta.readVInt();
-        entry.count = meta.readVInt();
         numerics.put(fieldNumber, entry);
       } else if (fieldType == Lucene42DocValuesConsumer.BYTES) {
         BinaryEntry entry = new BinaryEntry();
@@ -151,7 +150,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
         decode[i] = data.readLong();
       }
       final int bitsPerValue = data.readVInt();
-      final PackedInts.Reader reader = PackedInts.getReaderNoHeader(data, PackedInts.Format.PACKED, entry.packedIntsVersion, entry.count, bitsPerValue);
+      final PackedInts.Reader reader = PackedInts.getReaderNoHeader(data, PackedInts.Format.PACKED, entry.packedIntsVersion, maxDoc, bitsPerValue);
       return new NumericDocValues() {
         @Override
         public long get(int docID) {
@@ -160,7 +159,7 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
       };
     } else {
       final int blockSize = data.readVInt();
-      final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, blockSize, entry.count, false);
+      final BlockPackedReader reader = new BlockPackedReader(data, entry.packedIntsVersion, blockSize, maxDoc, false);
       return new NumericDocValues() {
         @Override
         public long get(int docID) {
@@ -282,7 +281,6 @@ class Lucene42DocValuesProducer extends DocValuesProducer {
     long offset;
     boolean tableized;
     int packedIntsVersion;
-    int count;
   }
   
   static class BinaryEntry {

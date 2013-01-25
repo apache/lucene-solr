@@ -58,10 +58,12 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
   static final int BLOCK_SIZE = 4096;
 
   final IndexOutput data, meta;
+  final int maxDoc;
   
   Lucene42DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     boolean success = false;
     try {
+      maxDoc = state.segmentInfo.getDocCount();
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.createOutput(dataName, state.context);
       CodecUtil.writeHeader(data, dataCodec, VERSION_CURRENT);
@@ -83,14 +85,12 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
     meta.writeLong(data.getFilePointer());
     long minValue = Long.MAX_VALUE;
     long maxValue = Long.MIN_VALUE;
-    int count = 0;
     // TODO: more efficient?
     HashSet<Long> uniqueValues = new HashSet<Long>();
     for(Number nv : values) {
       long v = nv.longValue();
       minValue = Math.min(minValue, v);
       maxValue = Math.max(maxValue, v);
-      count++;
       if (uniqueValues != null) {
         if (uniqueValues.add(v)) {
           if (uniqueValues.size() > 256) {
@@ -114,10 +114,9 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
       }
 
       meta.writeVInt(PackedInts.VERSION_CURRENT);
-      meta.writeVInt(count);
       data.writeVInt(bitsPerValue);
 
-      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, PackedInts.Format.PACKED, count, bitsPerValue, PackedInts.DEFAULT_BUFFER_SIZE);
+      final PackedInts.Writer writer = PackedInts.getWriterNoHeader(data, PackedInts.Format.PACKED, maxDoc, bitsPerValue, PackedInts.DEFAULT_BUFFER_SIZE);
       for(Number nv : values) {
         writer.add(encode.get(nv));
       }
@@ -126,7 +125,6 @@ class Lucene42DocValuesConsumer extends DocValuesConsumer {
       meta.writeByte((byte)0); // delta-compressed
 
       meta.writeVInt(PackedInts.VERSION_CURRENT);
-      meta.writeVInt(count);
       data.writeVInt(BLOCK_SIZE);
 
       final BlockPackedWriter writer = new BlockPackedWriter(data, BLOCK_SIZE);
