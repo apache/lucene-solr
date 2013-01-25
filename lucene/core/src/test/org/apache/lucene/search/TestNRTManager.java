@@ -423,8 +423,13 @@ public class TestNRTManager extends ThreadedIndexingAndSearchingTestCase {
     NRTManager sm = new NRTManager(new NRTManager.TrackingIndexWriter(iw),new SearcherFactory());
     sm.addListener(new ReferenceManager.RefreshListener() {
       @Override
-      public void afterRefresh() {
-        afterRefreshCalled.set(true);
+      public void beforeRefresh() {
+      }
+      @Override
+      public void afterRefresh(boolean didRefresh) {
+        if (didRefresh) {
+          afterRefreshCalled.set(true);
+        }
       }
     });
     iw.addDocument(new Document());
