@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.cloud.DistributedQueue.QueueEvent;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClosableThread;
@@ -36,6 +38,7 @@ import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
@@ -94,47 +97,33 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
   
   @Override
   public void run() {
-    log.info("Process current queue of collection messages");
-    while (amILeader() && !isClosed) {
-      try {
-        byte[] head = workQueue.peek(true);
-        
-        //if (head != null) {    // should not happen since we block above
-          final ZkNodeProps message = ZkNodeProps.load(head);
-          final String operation = message.getStr(QUEUE_OPERATION);
-        try {
-          boolean success = processMessage(message, operation);
-          if (!success) {
-            // TODO: what to do on failure / partial failure
-            // if we fail, do we clean up then ?
-            SolrException.log(log,
-                "Collection " + operation + " of " + message.getStr("name")
-                    + " failed");
-          }
-        } catch(Throwable t) {
-          SolrException.log(log,
-              "Collection " + operation + " of " + message.getStr("name")
-                  + " failed", t);
-        }
-        //}
-        
-        
-        workQueue.poll();
-       
-      } catch (KeeperException e) {
-        if (e.code() == KeeperException.Code.SESSIONEXPIRED
-            || e.code() == KeeperException.Code.CONNECTIONLOSS) {
-          log.warn("Overseer cannot talk to ZK");
-          return;
-        }
-        SolrException.log(log, "", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
-            e);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        return;
-      }
-    }
+       log.info("Process current queue of collection creations");
+       while (amILeader() && !isClosed) {
+         try {
+           QueueEvent head = workQueue.peek(true);
+           final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
+           log.info("Overseer Collection Processor: Get the message id:" + head.getId() + " message:" + message.toString());
+           final String operation = message.getStr(QUEUE_OPERATION);
+           SolrResponse response = processMessage(message, operation);
+           head.setBytes(SolrResponse.serializable(response));
+           workQueue.remove(head);
+          log.info("Overseer Collection Processor: Message id:" + head.getId() + " complete, response:"+ response.getResponse().toString());
+        } catch (KeeperException e) {
+          if (e.code() == KeeperException.Code.SESSIONEXPIRED
+              || e.code() == KeeperException.Code.CONNECTIONLOSS) {
+             log.warn("Overseer cannot talk to ZK");
+             return;
+           }
+           SolrException.log(log, "", e);
+           throw new ZooKeeperException(
+               SolrException.ErrorCode.SERVER_ERROR, "", e);
+         } catch (InterruptedException e) {
+           Thread.currentThread().interrupt();
+           return;
+         } catch (Throwable e) {
+           SolrException.log(log, "", e);
+         }
+       }
   }
   
   public void close() {
@@ -157,21 +146,49 @@ public class OverseerCollectionProcessor implements Runnable, ClosableThread {
     return false;
   }
   
-  protected boolean processMessage(ZkNodeProps message, String operation) {
-    if (CREATECOLLECTION.equals(operation)) {
-      return createCollection(zkStateReader.getClusterState(), message);
-    } else if (DELETECOLLECTION.equals(operation)) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
-      params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
-      return collectionCmd(zkStateReader.getClusterState(), message, params);
-    } else if (RELOADCOLLECTION.equals(operation)) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
-      return collectionCmd(zkStateReader.getClusterState(), message, params);
+  
+  protected SolrResponse processMessage(ZkNodeProps message, String operation) {
+    
+    NamedList results = new NamedList();
+    try {
+      if (CREATECOLLECTION.equals(operation)) {
+        createCollection(zkStateReader.getClusterState(), message);
+      } else if (DELETECOLLECTION.equals(operation)) {
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
+        params.set(CoreAdminParams.DELETE_INSTANCE_DIR, true);
+        collectionCmd(zkStateReader.getClusterState(), message, params);
+      } else if (RELOADCOLLECTION.equals(operation)) {
+        ModifiableSolrParams params = new ModifiableSolrParams();
+        params.set(CoreAdminParams.ACTION, CoreAdminAction.RELOAD.toString());
+        collectionCmd(zkStateReader.getClusterState(), message, params);
+      } else {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Unknow the operation:"
+            + operation);
+      }
+      int failed = 0;
+      ShardResponse srsp;
+      
+      do {
+        srsp = shardHandler.takeCompletedIncludingErrors();
+        if (srsp != null) {
+          Throwable e = srsp.getException();
+          if (e != null) {
+            failed++;
+            log.error("Error talking to shard: " + srsp.getShard(), e);
+            results.add(srsp.getShard(), e);
+          } else {
+            results.add(srsp.getShard(), srsp.getSolrResponse().getResponse());
+          }
+        }
+      } while (srsp != null);
+    } catch (SolrException ex) {
+      SolrException.log(log, "Collection " + operation + " of " + operation
+          + " failed");
+      results.add("Operation " + operation + " cause exception:", ex);
+    } finally {
+      return new OverseerSolrResponse(results);
     }
-    // unknown command, toss it from our queue
-    return true;
   }
 
   private boolean createCollection(ClusterState clusterState, ZkNodeProps message) {

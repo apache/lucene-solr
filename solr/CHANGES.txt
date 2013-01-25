@@ -63,6 +63,9 @@ Detailed Change List
 New Features
 ----------------------
 
+* SOLR-4043: Add ability to get success/failure responses from Collections API.
+  (Raintung Li, Mark Miller)
+
 Bug Fixes
 ----------------------
 
