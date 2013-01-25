@@ -19,22 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.AtomicReader;
-import org.apache.lucene.index.AtomicReaderContext;
-import org.apache.lucene.index.IndexDocument;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.util.Counter;
 
 /** Tracks live field values across NRT reader reopens.
  *  This holds a map for all updated ids since
