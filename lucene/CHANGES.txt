@@ -76,6 +76,9 @@ New Features
 API Changes
 
 * LUCENE-4709: FacetResultNode no longer has a residue field. (Shai Erera)
+
+* LUCENE-4716: DrillDown.query now takes Occur, allowing to specify if
+  categories should be OR'ed or AND'ed. (Shai Erera)
   
 Bug Fixes
 

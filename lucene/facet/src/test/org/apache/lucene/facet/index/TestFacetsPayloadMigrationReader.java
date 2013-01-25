@@ -58,6 +58,7 @@ import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHitCountCollector;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -284,7 +285,7 @@ public class TestFacetsPayloadMigrationReader extends FacetTestCase {
     for (String dim : expectedCounts.keySet()) {
       CategoryPath drillDownCP = new CategoryPath(dim);
       FacetSearchParams fsp = new FacetSearchParams(fip, new CountFacetRequest(drillDownCP, 10));
-      Query drillDown = DrillDown.query(fsp, new MatchAllDocsQuery(), drillDownCP);
+      Query drillDown = DrillDown.query(fsp, new MatchAllDocsQuery(), Occur.MUST, drillDownCP);
       TotalHitCountCollector total = new TotalHitCountCollector();
       FacetsCollector fc = FacetsCollector.create(fsp, indexReader, taxoReader);
       searcher.search(drillDown, MultiCollector.wrap(fc, total));

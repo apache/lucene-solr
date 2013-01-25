@@ -1,6 +1,5 @@
 package org.apache.lucene.facet.example.simple;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -17,6 +16,7 @@ import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
@@ -153,7 +153,7 @@ public class SimpleSearcher {
     CategoryPath categoryOfInterest = resIterator.next().label;
     
     // drill-down preparation: turn the base query into a drill-down query for the category of interest
-    Query q2 = DrillDown.query(indexingParams, baseQuery, categoryOfInterest);
+    Query q2 = DrillDown.query(indexingParams, baseQuery, Occur.MUST, categoryOfInterest);
     
     // that's it - search with the new query and we're done!
     // only documents both matching the base query AND containing the 
