@@ -83,6 +83,10 @@ Bug Fixes
 * SOLR-4349 : Admin UI - Query Interface does not work in IE
   (steffkes)
 
+* SOLR-4359: The RecentUpdates#update method should treat a problem reading the
+  next record the same as a problem parsing the record - log the exception and
+  break. (Mark Miller)
+
 Optimizations
 ----------------------
 
