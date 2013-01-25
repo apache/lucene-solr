@@ -96,6 +96,20 @@ abstract class AbstractBlockPackedWriter {
     ++ord;
   }
 
+  // For testing only
+  void addBlockOfZeros() throws IOException {
+    checkNotFinished();
+    if (off != 0 && off != values.length) {
+      throw new IllegalStateException("" + off);
+    }
+    if (off == values.length) {
+      flush();
+    }
+    Arrays.fill(values, 0);
+    off = values.length;
+    ord += values.length;
+  }
+
   /** Flush all buffered data to disk. This instance is not usable anymore
    *  after this method has been called until {@link #reset(DataOutput)} has
    *  been called. */

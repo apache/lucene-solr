@@ -44,7 +44,7 @@ public final class MonotonicBlockPackedReader {
     blockShift = Integer.numberOfTrailingZeros(blockSize);
     blockMask = blockSize - 1;
     final int numBlocks = (int) (valueCount / blockSize) + (valueCount % blockSize == 0 ? 0 : 1);
-    if (numBlocks * blockSize < valueCount) {
+    if ((long) numBlocks * blockSize < valueCount) {
       throw new IllegalArgumentException("valueCount is too large for this block size");
     }
     minValues = new long[numBlocks];

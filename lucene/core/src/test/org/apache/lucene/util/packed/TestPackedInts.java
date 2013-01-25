@@ -36,11 +36,10 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.packed.PackedInts.Reader;
-
 import org.junit.Ignore;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
@@ -1018,6 +1017,49 @@ public class TestPackedInts extends LuceneTestCase {
       in.close();
       dir.close();
     }
+  }
+
+  @Nightly
+  public void testBlockReaderOverflow() throws IOException {
+    final long valueCount = _TestUtil.nextLong(random(), 1L + Integer.MAX_VALUE, (long) Integer.MAX_VALUE * 2);
+    final int blockSize = 1 << _TestUtil.nextInt(random(), 20, 22);
+    final Directory dir = newDirectory();
+    final IndexOutput out = dir.createOutput("out.bin", IOContext.DEFAULT);
+    final BlockPackedWriter writer = new BlockPackedWriter(out, blockSize);
+    long value = random().nextInt() & 0xFFFFFFFFL;
+    long valueOffset = _TestUtil.nextLong(random(), 0, valueCount - 1);
+    for (long i = 0; i < valueCount; ) {
+      assertEquals(i, writer.ord());
+      if ((i & (blockSize - 1)) == 0 && (i + blockSize < valueOffset || i > valueOffset && i + blockSize < valueCount)) {
+        writer.addBlockOfZeros();
+        i += blockSize;
+      } else if (i == valueOffset) {
+        writer.add(value);
+        ++i;
+      } else {
+        writer.add(0);
+        ++i;
+      }
+    }
+    writer.finish();
+    out.close();
+    final IndexInput in = dir.openInput("out.bin", IOContext.DEFAULT);
+    final BlockPackedReaderIterator it = new BlockPackedReaderIterator(in, PackedInts.VERSION_CURRENT, blockSize, valueCount);
+    it.skip(valueOffset);
+    assertEquals(value, it.next());
+    in.seek(0L);
+    final BlockPackedReader reader = new BlockPackedReader(in, PackedInts.VERSION_CURRENT, blockSize, valueCount, random().nextBoolean());
+    assertEquals(value, reader.get(valueOffset));
+    for (int i = 0; i < 5; ++i) {
+      final long offset = _TestUtil.nextLong(random(), 0, valueCount - 1);
+      if (offset == valueOffset) {
+        assertEquals(value, reader.get(offset));
+      } else {
+        assertEquals(0, reader.get(offset));
+      }
+    }
+    in.close();
+    dir.close();
   }
 
 }
