@@ -73,12 +73,23 @@ New Features
   compresses term vectors into chunks of documents similarly to
   CompressingStoredFieldsFormat. (Adrien Grand)
 
+* LUCENE-4695: Added LiveFieldValues utility class, for getting the
+  current (live, real-time) value for any indexed doc/field.  The
+  class buffers recently indexed doc/field values until a new
+  near-real-time reader is opened that contains those changes.
+  (Robert Muir, Mike McCandless)
+
 API Changes
 
 * LUCENE-4709: FacetResultNode no longer has a residue field. (Shai Erera)
 
 * LUCENE-4716: DrillDown.query now takes Occur, allowing to specify if
   categories should be OR'ed or AND'ed. (Shai Erera)
+
+* LUCENE-4695: ReferenceManager.RefreshListener.afterRefresh now takes
+  a boolean indicating whether a new reference was in fact opened, and
+  a new beforeRefresh method notifies you when a refresh attempt is
+  starting.  (Robert Muir, Mike McCandless)
   
 Bug Fixes
 
