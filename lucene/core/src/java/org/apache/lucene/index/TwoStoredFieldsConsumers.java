@@ -62,12 +62,7 @@ class TwoStoredFieldsConsumers extends StoredFieldsConsumer {
 
   @Override
   void finishDocument() throws IOException {
-    // nocommit must this be a try/finally...?  i'd prefer
-    // not ...
-    try {
-      first.finishDocument();
-    } finally {
-      second.finishDocument();
-    }
+    first.finishDocument();
+    second.finishDocument();
   }
 }

@@ -77,7 +77,7 @@ public abstract class DocValuesConsumer implements Closeable {
                             }
                             assert nextIsSet;
                             nextIsSet = false;
-                            // nocommit make a mutable number
+                            // TODO: make a mutable number
                             return nextValue;
                           }
 
@@ -146,7 +146,7 @@ public abstract class DocValuesConsumer implements Closeable {
                            }
                            assert nextIsSet;
                            nextIsSet = false;
-                           // nocommit make a mutable number
+                           // TODO: make a mutable number
                            return nextValue;
                          }
 

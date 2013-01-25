@@ -30,8 +30,9 @@ import org.apache.lucene.util.IOUtils;
 
 final class DocValuesProcessor extends StoredFieldsConsumer {
 
-  // nocommit wasteful we also keep a map ... double the
-  // hash lookups ... would be better if DFP had "the one map"?
+  // TODO: somewhat wasteful we also keep a map here; would
+  // be more efficient if we could "reuse" the map/hash
+  // lookup DocFieldProcessor already did "above"
   private final Map<String,DocValuesWriter> writers = new HashMap<String,DocValuesWriter>();
   private final Counter bytesUsed;
 
