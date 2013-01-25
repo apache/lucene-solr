@@ -100,6 +100,8 @@ Other Changes
 * SOLR-4348: Make the lock type configurable by system property by default.
   (Mark Miller)
 
+* SOLR-4353: Renamed example jetty context file to reduce confusion (hossman)
+
 ==================  4.1.0 ==================
 
 Versions of Major Components
