@@ -102,7 +102,7 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
  *   </ul>
  * </ol>
  */
-public class Lucene42DocValuesFormat extends DocValuesFormat {
+public final class Lucene42DocValuesFormat extends DocValuesFormat {
 
   /** Sole constructor */
   public Lucene42DocValuesFormat() {

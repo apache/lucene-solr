@@ -37,7 +37,7 @@ import org.apache.lucene.util.IOUtils;
  * @see Lucene42FieldInfosFormat
  * @lucene.experimental
  */
-public class Lucene42FieldInfosWriter extends FieldInfosWriter {
+final class Lucene42FieldInfosWriter extends FieldInfosWriter {
   
   /** Sole constructor. */
   public Lucene42FieldInfosWriter() {

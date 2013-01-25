@@ -44,7 +44,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * @deprecated Only for reading old 4.0 and 4.1 segments
  */
 @Deprecated
-class Lucene40DocValuesReader extends DocValuesProducer {
+final class Lucene40DocValuesReader extends DocValuesProducer {
   private final Directory dir;
   private final SegmentReadState state;
   private final String legacyKey;

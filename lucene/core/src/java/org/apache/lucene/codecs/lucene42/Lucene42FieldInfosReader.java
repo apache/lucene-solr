@@ -40,7 +40,7 @@ import org.apache.lucene.util.IOUtils;
  * @lucene.experimental
  * @see Lucene42FieldInfosFormat
  */
-public class Lucene42FieldInfosReader extends FieldInfosReader {
+final class Lucene42FieldInfosReader extends FieldInfosReader {
 
   /** Sole constructor. */
   public Lucene42FieldInfosReader() {

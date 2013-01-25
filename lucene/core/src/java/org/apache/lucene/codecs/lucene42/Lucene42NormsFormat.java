@@ -38,7 +38,7 @@ import org.apache.lucene.index.SegmentWriteState;
  * </ul>
  * @see Lucene42DocValuesFormat
  */
-public class Lucene42NormsFormat extends NormsFormat {
+public final class Lucene42NormsFormat extends NormsFormat {
 
   /** Sole constructor */
   public Lucene42NormsFormat() {}

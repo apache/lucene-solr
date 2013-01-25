@@ -42,7 +42,7 @@ import org.apache.lucene.util.IOUtils;
  * @deprecated Only for reading old 4.0 and 4.1 segments
  */
 @Deprecated
-public class Lucene40FieldInfosReader extends FieldInfosReader {
+class Lucene40FieldInfosReader extends FieldInfosReader {
 
   /** Sole constructor. */
   public Lucene40FieldInfosReader() {

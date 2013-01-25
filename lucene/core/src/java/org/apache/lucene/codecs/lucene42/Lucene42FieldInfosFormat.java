@@ -84,7 +84,7 @@ import org.apache.lucene.store.DataOutput; // javadoc
  *
  * @lucene.experimental
  */
-public class Lucene42FieldInfosFormat extends FieldInfosFormat {
+public final class Lucene42FieldInfosFormat extends FieldInfosFormat {
   private final FieldInfosReader reader = new Lucene42FieldInfosReader();
   private final FieldInfosWriter writer = new Lucene42FieldInfosWriter();
   
