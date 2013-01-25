@@ -970,10 +970,10 @@ public class TestPackedInts extends LuceneTestCase {
 
       in1.seek(0L);
       final BlockPackedReader reader = new BlockPackedReader(in1, PackedInts.VERSION_CURRENT, blockSize, valueCount, random().nextBoolean());
+      assertEquals(in1.getFilePointer(), in1.length());
       for (i = 0; i < valueCount; ++i) {
         assertEquals("i=" + i, values[i], reader.get(i));
       }
-      assertEquals(in1.getFilePointer(), in1.length());
       in1.close();
       dir.close();
     }
