@@ -18,11 +18,17 @@
 package org.apache.solr.client.solrj;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrQuery.SortClause;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 
 import junit.framework.Assert;
 import org.apache.solr.common.util.DateUtil;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -98,6 +104,169 @@ public class SolrQueryTest extends LuceneTestCase {
     // System.out.println(q);
   }
   
+  /*
+   * Verifies that the old (deprecated) sort methods
+   * allows mix-and-match between the raw field and
+   * the itemized apis.
+   */
+  public void testSortFieldRawStringAndMethods() {
+    SolrQuery q = new SolrQuery("dog");
+    q.set("sort", "price asc,date desc,qty desc");
+    q.removeSortField("date", SolrQuery.ORDER.desc);
+    Assert.assertEquals(2, q.getSortFields().length);
+    q.set("sort", "price asc, date desc, qty desc");
+    q.removeSortField("date", SolrQuery.ORDER.desc);
+    Assert.assertEquals(2, q.getSortFields().length);
+  }
+
+  /*
+   *  Verifies that you can use removeSortField() twice, which
+   *  did not work in 4.0
+   */
+  public void testSortFieldRemoveAfterRemove() {
+    SolrQuery q = new SolrQuery("dog");
+    q.addSortField("price", SolrQuery.ORDER.asc);
+    q.addSortField("date", SolrQuery.ORDER.desc);
+    q.addSortField("qty", SolrQuery.ORDER.desc);
+    q.removeSortField("date", SolrQuery.ORDER.desc);
+    Assert.assertEquals(2, q.getSortFields().length);
+    q.removeSortField("qty", SolrQuery.ORDER.desc);
+    Assert.assertEquals(1, q.getSortFields().length);
+  }
+
+  /*
+   * Verifies that you can remove the last sort field, which
+   * did not work in 4.0
+   */
+  public void testSortFieldRemoveLast() {
+    SolrQuery q = new SolrQuery("dog");
+    q.addSortField("date", SolrQuery.ORDER.desc);
+    q.addSortField("qty", SolrQuery.ORDER.desc);
+    q.removeSortField("qty", SolrQuery.ORDER.desc);
+    Assert.assertEquals("date desc", q.getSortField());
+  }
+
+  /*
+   * Verifies that getSort() returns an immutable map,
+   * for both empty and non-empty situations
+   */
+  public void testGetSortImmutable() {
+    SolrQuery q = new SolrQuery("dog");
+
+    try {
+      q.getSorts().add(new SortClause("price",  SolrQuery.ORDER.asc));
+      fail("The returned (empty) map should be immutable; put() should fail!");
+    } catch (UnsupportedOperationException uoe) {
+      // pass
+    }
+
+    q.addSort("qty", SolrQuery.ORDER.desc);
+    try {
+      q.getSorts().add(new SortClause("price",  SolrQuery.ORDER.asc));
+      fail("The returned (non-empty) map should be immutable; put() should fail!");
+    } catch (UnsupportedOperationException uoe) {
+      // pass
+    }
+
+    // Should work even when setSorts passes an Immutable List
+    q.setSorts(Arrays.asList(new SortClause("price",  SolrQuery.ORDER.asc)));
+    q.addSort(new SortClause("price",  SolrQuery.ORDER.asc));
+  }
+
+  public void testSortClause() {
+    new SolrQuery.SortClause("rating", SolrQuery.ORDER.desc);
+    new SolrQuery.SortClause("rating", SolrQuery.ORDER.valueOf("desc"));
+    new SolrQuery.SortClause("rating", SolrQuery.ORDER.valueOf("desc"));
+    SolrQuery.SortClause.create("rating", SolrQuery.ORDER.desc);
+    SolrQuery.SortClause.create("rating", SolrQuery.ORDER.desc);
+    SolrQuery.SortClause.create("rating", SolrQuery.ORDER.desc);
+
+    SolrQuery.SortClause sc1a = SolrQuery.SortClause.asc("sc1");
+    SolrQuery.SortClause sc1b = SolrQuery.SortClause.asc("sc1");
+    Assert.assertEquals(sc1a, sc1b);
+    Assert.assertEquals(sc1a.hashCode(), sc1b.hashCode());
+
+    SolrQuery.SortClause sc2a = SolrQuery.SortClause.asc("sc2");
+    SolrQuery.SortClause sc2b = SolrQuery.SortClause.desc("sc2");
+    Assert.assertFalse(sc2a.equals(sc2b));
+
+    SolrQuery.SortClause sc3a = SolrQuery.SortClause.asc("sc2");
+    SolrQuery.SortClause sc3b = SolrQuery.SortClause.asc("not sc2");
+    Assert.assertFalse(sc3a.equals(sc3b));
+  }
+
+  /*
+   * Verifies the symbolic sort operations
+   */
+  public void testSort() throws IOException {
+
+    SolrQuery q = new SolrQuery("dog");
+
+    // Simple adds
+    q.addSort("price", SolrQuery.ORDER.asc);
+    q.addSort("date", SolrQuery.ORDER.desc);
+    q.addSort("qty", SolrQuery.ORDER.desc);
+    Assert.assertEquals(3, q.getSorts().size());
+    Assert.assertEquals("price asc,date desc,qty desc", q.get(CommonParams.SORT));
+
+    // Remove one (middle)
+    q.removeSort("date");
+    Assert.assertEquals(2, q.getSorts().size());
+    Assert.assertEquals("price asc,qty desc", q.get(CommonParams.SORT));
+
+    // Remove remaining (last, first)
+    q.removeSort("price");
+    q.removeSort("qty");
+    Assert.assertTrue(q.getSorts().isEmpty());
+    Assert.assertNull(q.get(CommonParams.SORT));
+
+    // Clear sort
+    q.addSort("price", SolrQuery.ORDER.asc);
+    q.clearSorts();
+    Assert.assertTrue(q.getSorts().isEmpty());
+    Assert.assertNull(q.get(CommonParams.SORT));
+
+    // Add vs update
+    q.clearSorts();
+    q.addSort("1", SolrQuery.ORDER.asc);
+    q.addSort("2", SolrQuery.ORDER.asc);
+    q.addSort("3", SolrQuery.ORDER.asc);
+    q.addOrUpdateSort("2", SolrQuery.ORDER.desc);
+    q.addOrUpdateSort("4", SolrQuery.ORDER.desc);
+    Assert.assertEquals("1 asc,2 desc,3 asc,4 desc", q.get(CommonParams.SORT));
+
+    // Using SortClause
+    q.clearSorts();
+    q.addSort(new SortClause("1", SolrQuery.ORDER.asc));
+    q.addSort(new SortClause("2", SolrQuery.ORDER.asc));
+    q.addSort(new SortClause("3", SolrQuery.ORDER.asc));
+    q.addOrUpdateSort(SortClause.desc("2"));
+    q.addOrUpdateSort(SortClause.asc("4"));
+    Assert.assertEquals("1 asc,2 desc,3 asc,4 asc", q.get(CommonParams.SORT));
+    q.setSort(SortClause.asc("A"));
+    q.addSort(SortClause.asc("B"));
+    q.addSort(SortClause.asc("C"));
+    q.addSort(SortClause.asc("D"));
+    Assert.assertEquals("A asc,B asc,C asc,D asc", q.get(CommonParams.SORT));
+
+    // removeSort should ignore the ORDER
+    q.setSort(SortClause.asc("A"));
+    q.addSort(SortClause.asc("B"));
+    q.addSort(SortClause.asc("C"));
+    q.addSort(SortClause.asc("D"));
+    q.removeSort("A");
+    q.removeSort(SortClause.asc("C"));
+    q.removeSort(SortClause.desc("B"));
+    Assert.assertEquals("D asc", q.get(CommonParams.SORT));
+
+    // Verify that a query containing a SortClause is serializable
+    q.clearSorts();
+    q.addSort("1", SolrQuery.ORDER.asc);
+    ObjectOutputStream out = new ObjectOutputStream(new ByteArrayOutputStream());
+    out.writeObject(q);
+    out.close();
+  }
+
   public void testFacetSort() {
     SolrQuery q = new SolrQuery("dog");
     assertEquals("count", q.getFacetSortString());
