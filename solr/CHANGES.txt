@@ -89,6 +89,9 @@ Bug Fixes
 
 * SOLR-4225: Term info page under schema browser shows incorrect count of terms
   (steffkes)
+  
+* SOLR-3926: Solr should support better way of finding active sorts (Eirik Lygre via
+  (Erick Erickson)
 
 Optimizations
 ----------------------
