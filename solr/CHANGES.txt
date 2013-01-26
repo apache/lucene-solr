@@ -91,7 +91,7 @@ Bug Fixes
   (steffkes)
   
 * SOLR-3926: Solr should support better way of finding active sorts (Eirik Lygre via
-  (Erick Erickson)
+  Erick Erickson)
 
 Optimizations
 ----------------------
