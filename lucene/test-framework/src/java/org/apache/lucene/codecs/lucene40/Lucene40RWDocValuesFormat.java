@@ -23,6 +23,7 @@ import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 
+/** Read-write version of {@link Lucene40DocValuesFormat} for testing */
 public class Lucene40RWDocValuesFormat extends Lucene40DocValuesFormat {
 
   @Override

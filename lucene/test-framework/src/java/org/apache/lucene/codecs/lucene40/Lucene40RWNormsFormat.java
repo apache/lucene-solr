@@ -1,11 +1,5 @@
 package org.apache.lucene.codecs.lucene40;
 
-import java.io.IOException;
-
-import org.apache.lucene.codecs.DocValuesConsumer;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.SegmentWriteState;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,6 +17,13 @@ import org.apache.lucene.index.SegmentWriteState;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
+import org.apache.lucene.codecs.DocValuesConsumer;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.SegmentWriteState;
+
+/** Read-write version of {@link Lucene40NormsFormat} for testing */
 public class Lucene40RWNormsFormat extends Lucene40NormsFormat {
 
   @Override

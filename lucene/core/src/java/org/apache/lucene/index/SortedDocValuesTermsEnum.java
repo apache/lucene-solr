@@ -31,6 +31,7 @@ public class SortedDocValuesTermsEnum extends TermsEnum {
   private int currentOrd = -1;
   private final BytesRef term = new BytesRef();
 
+  /** Creates a new TermsEnum over the provided values */
   public SortedDocValuesTermsEnum(SortedDocValues values) {
     this.values = values;
   }

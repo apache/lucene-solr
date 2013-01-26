@@ -23,6 +23,10 @@ import org.apache.lucene.util.BytesRef;
  * A per-document byte[]
  */
 public abstract class BinaryDocValues {
+  
+  /** Sole constructor. (For invocation by subclass 
+   * constructors, typically implicit.) */
+  protected BinaryDocValues() {}
 
   /** Lookup the value for document.
    *

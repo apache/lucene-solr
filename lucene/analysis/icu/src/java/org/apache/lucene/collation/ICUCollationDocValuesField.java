@@ -19,13 +19,20 @@ package org.apache.lucene.collation;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.search.FieldCacheRangeFilter;
 import org.apache.lucene.util.BytesRef;
 
 import com.ibm.icu.text.Collator;
 import com.ibm.icu.text.RawCollationKey;
 
 /**
- * nocommit
+ * Indexes collation keys as a single-valued {@link SortedDocValuesField}.
+ * <p>
+ * This is more efficient that {@link ICUCollationKeyAnalyzer} if the field 
+ * only has one value: no uninversion is necessary to sort on the field, 
+ * locale-sensitive range queries can still work via {@link FieldCacheRangeFilter}, 
+ * and the underlying data structures built at index-time are likely more efficient 
+ * and use less memory than FieldCache.
  */
 public final class ICUCollationDocValuesField extends Field {
   private final String name;
@@ -33,6 +40,17 @@ public final class ICUCollationDocValuesField extends Field {
   private final BytesRef bytes = new BytesRef();
   private final RawCollationKey key = new RawCollationKey();
   
+  /**
+   * Create a new ICUCollationDocValuesField.
+   * <p>
+   * NOTE: you should not create a new one for each document, instead
+   * just make one and reuse it during your indexing process, setting
+   * the value via {@link #setStringValue(String)}.
+   * @param name field name
+   * @param collator Collator for generating collation keys.
+   */
+  // TODO: can we make this trap-free? maybe just synchronize on the collator
+  // instead? 
   public ICUCollationDocValuesField(String name, Collator collator) {
     super(name, SortedDocValuesField.TYPE);
     this.name = name;
@@ -48,6 +66,7 @@ public final class ICUCollationDocValuesField extends Field {
     return name;
   }
   
+  @Override
   public void setStringValue(String value) {
     collator.getRawCollationKey(value, key);
     bytes.bytes = key.bytes;
@@ -60,5 +79,5 @@ public final class ICUCollationDocValuesField extends Field {
     return bytes;
   }
   
-  // nocommit: make this thing trap-free
+  // nocommit: UOE the other field methods? or set to empty bytesref initially so this just works...
 }

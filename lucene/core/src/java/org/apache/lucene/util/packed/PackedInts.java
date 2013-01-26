@@ -1184,6 +1184,7 @@ public class PackedInts {
     return new Header(format, valueCount, bitsPerValue, version);
   }
   
+  /** Header identifying the structure of a packed integer array. */
   public static class Header {
 
     private final Format format;

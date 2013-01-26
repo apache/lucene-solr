@@ -25,16 +25,29 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 
-// nocommit add javadocs stating that this must open all
-// necessary files "on init", not later eg in .getXXX, else
-// an IW that deletes a commit will cause an SR to hit
-// exceptions....
-
+/** Abstract API that produces numeric, binary and
+ * sorted docvalues.
+ *
+ * @lucene.experimental
+ */
 public abstract class DocValuesProducer implements Closeable {
+  
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected DocValuesProducer() {}
 
+  /** Returns {@link NumericDocValues} for this field.
+   *  The returned instance need not be thread-safe: it will only be
+   *  used by a single thread. */
   public abstract NumericDocValues getNumeric(FieldInfo field) throws IOException;
 
+  /** Returns {@link BinaryDocValues} for this field.
+   *  The returned instance need not be thread-safe: it will only be
+   *  used by a single thread. */
   public abstract BinaryDocValues getBinary(FieldInfo field) throws IOException;
 
+  /** Returns {@link SortedDocValues} for this field.
+   *  The returned instance need not be thread-safe: it will only be
+   *  used by a single thread. */
   public abstract SortedDocValues getSorted(FieldInfo field) throws IOException;
 }

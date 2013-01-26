@@ -28,6 +28,11 @@ import org.apache.lucene.util.BytesRef;
  * are dense and in increasing sorted order.
  */
 public abstract class SortedDocValues extends BinaryDocValues {
+  
+  /** Sole constructor. (For invocation by subclass 
+   * constructors, typically implicit.) */
+  protected SortedDocValues() {}
+
   /**
    * Returns the ordinal for the specified docID.
    * @param  docID document ID to lookup

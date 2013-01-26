@@ -58,6 +58,10 @@ import org.apache.lucene.util.PriorityQueue;
  * @lucene.experimental
  */
 public abstract class DocValuesConsumer implements Closeable {
+  
+  /** Sole constructor. (For invocation by subclass 
+   *  constructors, typically implicit.) */
+  protected DocValuesConsumer() {}
 
   /**
    * Writes numeric docvalues for a field.
@@ -232,7 +236,7 @@ public abstract class DocValuesConsumer implements Closeable {
                    });
   }
 
-  public static class SortedBytesMerger {
+  static class SortedBytesMerger {
 
     public int numMergedTerms;
 

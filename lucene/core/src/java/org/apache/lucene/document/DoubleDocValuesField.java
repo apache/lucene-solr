@@ -1,8 +1,5 @@
 package org.apache.lucene.document;
 
-import org.apache.lucene.index.AtomicReader; // javadocs
-import org.apache.lucene.search.FieldCache; // javadocs
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,6 +17,9 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * limitations under the License.
  */
 
+import org.apache.lucene.index.AtomicReader; // javadocs
+import org.apache.lucene.search.FieldCache; // javadocs
+
 /**
  * Syntactic sugar for encoding doubles as NumericDocValues
  * via {@link Double#doubleToRawLongBits(double)}.
@@ -33,6 +33,12 @@ import org.apache.lucene.search.FieldCache; // javadocs
  */
 public class DoubleDocValuesField extends NumericDocValuesField {
 
+  /** 
+   * Creates a new DocValues field with the specified 64-bit double value 
+   * @param name field name
+   * @param value 64-bit double value
+   * @throws IllegalArgumentException if the field name is null
+   */
   public DoubleDocValuesField(String name, double value) {
     super(name, Double.doubleToRawLongBits(value));
   }

@@ -48,6 +48,9 @@ import org.apache.lucene.util.Version;
 // nocommit move this back to test-framework!!!
 public class MultiDocValues {
   
+  /** No instantiation */
+  private MultiDocValues() {}
+  
   /** returns a NumericDocValues for a reader's norms (potentially merging on-the-fly) */
   // moved to src/java so SlowWrapper can use it... uggggggh
   public static NumericDocValues getNormValues(final IndexReader r, final String field) throws IOException {

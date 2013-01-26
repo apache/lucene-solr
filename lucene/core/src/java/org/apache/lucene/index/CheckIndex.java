@@ -1257,6 +1257,10 @@ public class CheckIndex {
     return status;
   }
   
+  /**
+   * Test docvalues.
+   * @lucene.experimental
+   */
   public static Status.DocValuesStatus testDocValues(AtomicReader reader,
                                                      PrintStream infoStream) {
     final Status.DocValuesStatus status = new Status.DocValuesStatus();

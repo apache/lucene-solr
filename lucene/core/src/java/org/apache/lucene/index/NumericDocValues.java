@@ -21,6 +21,11 @@ package org.apache.lucene.index;
  * A per-document numeric value.
  */
 public abstract class NumericDocValues {
+  
+  /** Sole constructor. (For invocation by subclass 
+   * constructors, typically implicit.) */
+  protected NumericDocValues() {}
+
   /**
    * Returns the numeric value for the specified document ID.
    * @param docID document ID to lookup

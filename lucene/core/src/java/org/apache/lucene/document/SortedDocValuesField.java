@@ -27,7 +27,7 @@ import org.apache.lucene.util.BytesRef;
  * sorting.  Here's an example usage:
  * 
  * <pre class="prettyprint">
- *   document.add(new SortedBytesDocValuesField(name, new BytesRef("hello")));
+ *   document.add(new SortedDocValuesField(name, new BytesRef("hello")));
  * </pre>
  * 
  * <p>

@@ -25,7 +25,7 @@ import org.apache.lucene.index.FieldInfo;
  * sorting or value retrieval. Here's an example usage:
  * 
  * <pre class="prettyprint">
- *   document.add(new LongDocValuesField(name, 22L));
+ *   document.add(new NumericDocValuesField(name, 22L));
  * </pre>
  * 
  * <p>

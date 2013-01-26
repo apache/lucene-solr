@@ -46,27 +46,39 @@ import org.apache.lucene.util.RamUsageEstimator;
  */
 public interface FieldCache {
 
+  /** Field values as 8-bit signed bytes */
   public static abstract class Bytes {
+    /** Return a single Byte representation of this field's value. */
     public abstract byte get(int docID);
   }
 
+  /** Field values as 16-bit signed shorts */
   public static abstract class Shorts {
+    /** Return a short representation of this field's value. */
     public abstract short get(int docID);
   }
 
+  /** Field values as 32-bit signed integers */
   public static abstract class Ints {
+    /** Return an integer representation of this field's value. */
     public abstract int get(int docID);
   }
 
+  /** Field values as 32-bit signed long integers */
   public static abstract class Longs {
+    /** Return an long representation of this field's value. */
     public abstract long get(int docID);
   }
 
+  /** Field values as 32-bit floats */
   public static abstract class Floats {
+    /** Return an float representation of this field's value. */
     public abstract float get(int docID);
   }
 
+  /** Field values as 64-bit doubles */
   public static abstract class Doubles {
+    /** Return an double representation of this field's value. */
     public abstract double get(int docID);
   }
 
@@ -138,7 +150,7 @@ public interface FieldCache {
    * @see FieldCache#getDoubles(AtomicReader, String, FieldCache.DoubleParser, boolean)
    */
   public interface DoubleParser extends Parser {
-    /** Return an long representation of this field's value. */
+    /** Return an double representation of this field's value. */
     public double parseDouble(BytesRef term);
   }
 
