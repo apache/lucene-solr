@@ -616,6 +616,9 @@ Bug Fixes
 * SOLR-4266: HttpSolrServer does not release connection properly on exception
   when no response parser is used. (Steve Molloy via Mark Miller)
 
+* SOLR-2298: Updated JavaDoc for SolrDocument.addField and SolrInputDocument.addField
+  to have more information on name and value parameters. (Siva Natarajan)
+
 Other Changes
 ----------------------
 

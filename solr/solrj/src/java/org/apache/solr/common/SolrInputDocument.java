@@ -63,9 +63,12 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
   /** 
    * Add a field with implied null value for boost.
    * 
+   * The class type of value and the name parameter should match schema.xml. 
+   * schema.xml can be found in conf directory under the solr home by default.
+   * 
+   * @param name Name of the field, should match one of the field names defined under "fields" tag in schema.xml.
+   * @param value Value of the field, should be of same class type as defined by "type" attribute of the corresponding field in schema.xml. 
    * @see #addField(String, Object, float)
-   * @param name name of the field to add
-   * @param value value of the field
    */
   public void addField(String name, Object value) 
   {
@@ -132,8 +135,11 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
    * field, with the new boost. If the value is a collection, then each of its
    * values will be added to the field.
    *
-   * @param name Name of the field to add
-   * @param value Value of the field
+   * The class type of value and the name parameter should match schema.xml. 
+   * schema.xml can be found in conf directory under the solr home by default.
+   * 
+   * @param name Name of the field, should match one of the field names defined under "fields" tag in schema.xml.
+   * @param value Value of the field, should be of same class type as defined by "type" attribute of the corresponding field in schema.xml. 
    * @param boost Boost value for the field
    */
   public void addField(String name, Object value, float boost ) 
