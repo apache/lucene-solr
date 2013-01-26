@@ -25,7 +25,6 @@ require
     'lib/order!lib/jquery.form',
     'lib/order!lib/jquery.jstree',
     'lib/order!lib/jquery.sammy',
-    'lib/order!lib/jquery.sparkline',
     'lib/order!lib/jquery.timeago',
     'lib/order!lib/jquery.blockUI',
     'lib/order!lib/highlight',

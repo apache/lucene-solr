@@ -66,9 +66,7 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
       },
       success : function( response, text_status, xhr )
       {
-        $( 'span', trigger_element )
-          .removeClass( 'loader' );
-
+        var additional_styles = [];
         var field_data = response.fields[field];
 
         if( !field_data || !( field_data.topTerms && field_data.histogram ) )
@@ -77,6 +75,11 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
             .addClass( 'disabled' );
 
           return false;
+        }
+
+        var get_width = function get_width()
+        {
+          return $( this ).width();
         }
 
         var topterms_holder_element = $( '.topterms-holder', data_element );
@@ -111,7 +114,7 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
 
               topterms_frq_last = topterms[i+1];
               topterms_content += '<li class="clearfix">'
-                               +  '<p><span>' + topterms_frq_last.esc() + '</span></p>' + "\n"
+                               +  '<p><span>' + app.format_number( topterms_frq_last ) + '</span></p>' + "\n"
                                +  '<ul>' + "\n";
             }
 
@@ -128,6 +131,13 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
 
           topterms_table_element
             .html( topterms_content );
+
+          var max_width = 10 + Math.max.apply( Math, $( 'p', topterms_table_element ).map( get_width ).get() );
+          additional_styles.push
+          (
+            topterms_table_element.selector + ' p { width: ' + max_width + 'px !important; }' + "\n" +
+            topterms_table_element.selector + ' ul { margin-left: ' + ( max_width + 5 ) + 'px !important; }'
+          );
 
           topterms_count_element
             .val( topterms_count );
@@ -152,52 +162,57 @@ var load_terminfo = function( trigger_element, core_basepath, field, data_elemen
           histogram_holder_element
             .show();
 
-          var histogram_element = $( '.histogram', histogram_holder_element );
-
           var histogram_values = luke_array_to_hash( field_data.histogram );
-          var histogram_legend = '';
-
-          histogram_holder_element
-            .show();
+          var histogram_entries = [];
+          
+          var histogram_max = null;
+          for( var key in histogram_values )
+          {
+            histogram_max = Math.max( histogram_max, histogram_values[key] );
+          }
 
           for( var key in histogram_values )
           {
-            histogram_legend += '<dt><span>' + key + '</span></dt>' + "\n" +
-                    '<dd title="' + key + '">' +
-                    '<span>' + histogram_values[key] + '</span>' +
-                    '</dd>' + "\n";
+            histogram_entries.push
+            (
+              '<li>' + "\n" +
+              '  <dl class="clearfix" style="width: ' +  ( ( histogram_values[key] / histogram_max ) * 100 ) + '%;">' + "\n" +
+              '    <dt><span>' + app.format_number( key ) + '</span></dt>' + "\n" +
+              '    <dd><span>' + app.format_number( histogram_values[key] ) + '</span></dd>' + "\n" +
+              '  </dl>' + "\n" +
+              '</li>'
+            );
           }
 
-          $( 'dl', histogram_holder_element )
-            .html( histogram_legend );
+          $( 'ul', histogram_holder_element )
+            .html( histogram_entries.join( "\n" ) );
 
-          var histogram_values = luke_array_to_struct( field_data.histogram ).values;
+          $( 'ul li:even', histogram_holder_element )
+            .addClass( 'odd' );
 
-          histogram_element
-            .sparkline
-            (
-              histogram_values,
-              {
-                type : 'bar',
-                barColor : '#c0c0c0',
-                zeroColor : '#000000',
-                height : histogram_element.height(),
-                barWidth : 46,
-                barSpacing : 3
-              }
-            );
-
-          1 === histogram_values.length
-            ? histogram_element.addClass( 'single' )
-            : histogram_element.removeClass( 'single' );
+          var max_width = 10 + Math.max.apply( Math, $( 'dt', histogram_holder_element ).map( get_width ).get() );
+          additional_styles.push
+          (
+            histogram_holder_element.selector + ' ul { margin-left: ' + max_width + 'px !important; }' + "\n" +
+            histogram_holder_element.selector + ' li dt { left: ' + ( max_width * -1 ) + 'px !important; width: ' + max_width + 'px !important; }'
+          );
         }
 
+        if( additional_styles )
+        {
+          terminfo_element
+            .prepend( '<style type="text/css">' + additional_styles.join( "\n" ) + '</style>' );
+        }
       },
       error : function( xhr, text_status, error_thrown)
       {
+        terminfo_element
+          .addClass( 'disabled' );
       },
       complete : function( xhr, text_status )
       {
+        $( 'span', trigger_element )
+          .removeClass( 'loader' );
       }
     }
   );

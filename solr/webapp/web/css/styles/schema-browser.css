@@ -390,7 +390,8 @@
   color: #333;
 }
 
-#content #schema-browser #data #field .topterms-holder
+#content #schema-browser #data #field .topterms-holder,
+#content #schema-browser #data #field .histogram-holder
 {
   border-left: 1px solid #f0f0f0;
   display: none;
@@ -448,12 +449,12 @@
   margin-bottom: 5px;
 }
 
+/* possible overwrite with inline style */
 #content #schema-browser .topterms-holder li p
 {
   background-color:  #999;
   color: #fff;
   float: left;
-  width: 25px;
 }
 
 #content #schema-browser .topterms-holder li p span
@@ -463,6 +464,7 @@
   text-align: right;
 }
 
+/* possible overwrite with inline style */
 #content #schema-browser .topterms-holder li ul
 {
   margin-left: 30px;
@@ -492,51 +494,65 @@
   background-color: #c0c0c0;
 }
 
-#content #schema-browser #data #field .histogram-holder
+#content #schema-browser #data #field .histogram-holder ul
 {
-  border-left: 1px solid #f0f0f0;
-  display: none;
-  float: left;
-  padding-left: 20px;
-  padding-right: 20px;
+  margin-left: 25px;
 }
 
-#content #schema-browser #data #field .histogram-holder .histogram
+#content #schema-browser #data #field .histogram-holder li
 {
-  height: 150px;
+  margin-bottom: 2px;
+  position: relative;
+  width: 150px;
 }
 
-#content #schema-browser #data #field .histogram-holder .histogram.single canvas
-{
-  background-color: #c0c0c0;
-}
-
-#content #schema-browser #data #field .histogram-holder dt,
-#content #schema-browser #data #field .histogram-holder dd
-{
-  float: left;
-  font-size: 10px;
-  text-align: center;
-}
-
-#content #schema-browser #data #field .histogram-holder span
+#content #schema-browser #data #field .histogram-holder li.odd
 {
   background-color: #f0f0f0;
+}
+
+#content #schema-browser #data #field .histogram-holder li dl,
+#content #schema-browser #data #field .histogram-holder li dt
+{
+  padding-top: 1px;
+  padding-bottom: 1px;
+}
+
+#content #schema-browser #data #field .histogram-holder li dl
+{
+  background-color: #c0c0c0;
+  min-width: 1px;
+}
+
+#content #schema-browser #data #field .histogram-holder li dt
+{
+  color: #a0a0a0;
+  position: absolute;
+  overflow: hidden;
+  left: -25px;
+  top: 0px;
+}
+
+#content #schema-browser #data #field .histogram-holder li dt span
+{
   display: block;
-  width: 20px;
+  padding-right: 4px;
+  text-align: right;
 }
 
-#content #schema-browser #data #field .histogram-holder dt
+#content #schema-browser #data #field .histogram-holder li dd
 {
-  padding-right: 1px;
+  clear: left;
+  float: left;
+  margin-left: 2px;
 }
 
-#content #schema-browser #data #field .histogram-holder dd
+#content #schema-browser #data #field .histogram-holder li:hover dl
 {
-  padding-right: 3px;
+  background-color: #b0b0b0;
 }
 
-#content #schema-browser #data #field .histogram-holder dd span
+#content #schema-browser #data #field .histogram-holder li:hover dt
 {
-  width: 25px;
+  color: #333;
 }

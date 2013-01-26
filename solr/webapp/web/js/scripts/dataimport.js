@@ -440,11 +440,6 @@ sammy.get
                 var messages_count = 0;
                 for( var key in messages ) { messages_count++; }
 
-                var format_number = function format_number( number )
-                {
-                  return ( number || 0 ).toString().replace( /\B(?=(\d{3})+(?!\d))/g, '\'' );
-                };
-
                 function dataimport_compute_details( response, details_element, elapsed_seconds )
                 {
                   details_element
@@ -464,10 +459,10 @@ sammy.get
                   {
                     var value = parseInt( response.statusMessages[document_config[key]], 10 );
 
-                    var detail = '<abbr title="' + document_config[key].esc() + '">' + key.esc() + '</abbr>: ' +  format_number( value ).esc();
+                    var detail = '<abbr title="' + document_config[key].esc() + '">' + key.esc() + '</abbr>: ' +  app.format_number( value ).esc();
                     if( elapsed_seconds && 'skipped' !== key.toLowerCase() )
                     {
-                      detail += ' <span>(' + format_number( Math.round( value / elapsed_seconds ) ).esc() + '/s)</span>'
+                      detail += ' <span>(' + app.format_number( Math.round( value / elapsed_seconds ) ).esc() + '/s)</span>'
                     }
 
                     document_details.push( detail );
@@ -523,7 +518,7 @@ sammy.get
                     /\d{4,}/g,
                     function( match, position, string )
                     {
-                      return format_number( parseInt( match, 10 ) );
+                      return app.format_number( parseInt( match, 10 ) );
                     }
                   );
 
