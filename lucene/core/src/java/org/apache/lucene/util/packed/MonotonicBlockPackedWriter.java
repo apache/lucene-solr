@@ -24,10 +24,30 @@ import org.apache.lucene.store.DataOutput;
 /**
  * A writer for large monotonically increasing sequences of positive longs.
  * <p>
- * The sequence is divided into fixed-size blocks and for each block, the
- * average value per ord is computed, followed by the delta from the expected
- * value for every ord, using as few bits as possible. Each block has an
- * overhead between 6 and 14 bytes.
+ * The sequence is divided into fixed-size blocks and for each block, values
+ * are modeled after a linear function f: x &rarr; A &times; x + B. The block
+ * encodes deltas from the expected values computed from this function using as
+ * few bits as possible. Each block has an overhead between 6 and 14 bytes.
+ * <p>
+ * Format:
+ * <ul>
+ * <li>&lt;BLock&gt;<sup>BlockCount</sup>
+ * <li>BlockCount: &lceil; ValueCount / BlockSize &rceil;
+ * <li>Block: &lt;Header, (Ints)&gt;
+ * <li>Header: &lt;B, A, BitsPerValue&gt;
+ * <li>B: the B from f: x &rarr; A &times; x + B using a
+ *     {@link DataOutput#writeVLong(long) variable-length long}
+ * <li>A: the A from f: x &rarr; A &times; x + B encoded using
+ *     {@link Float#floatToIntBits(float)} on
+ *     {@link DataOutput#writeInt(int) 4 bytes}
+ * <li>BitsPerValue: a {@link DataOutput#writeVInt(int) variable-length int}
+ * <li>Ints: if BitsPerValue is <tt>0</tt>, then there is nothing to read and
+ *     all values perfectly match the result of the function. Otherwise, these
+ *     are the
+ *     <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">zigzag-encoded</a>
+ *     {@link PackedInts packed} deltas from the expected value (computed from
+ *     the function) using exaclty BitsPerValue bits per value
+ * </ul>
  * @see MonotonicBlockPackedReader
  * @lucene.internal
  */
