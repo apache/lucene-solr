@@ -360,7 +360,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
               "finishDocument".equals(trace[i].getMethodName())) {
             sawAbortOrFlushDoc = true;
           }
-          if ("merge".equals(trace[i])) {
+          if ("merge".equals(trace[i].getMethodName())) {
             sawMerge = true;
           }
           if ("close".equals(trace[i].getMethodName())) {
