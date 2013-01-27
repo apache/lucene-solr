@@ -104,6 +104,9 @@ Bug Fixes
   degrees and barely any height, it would generate so many indexed terms
   (> 500k) that it could even cause an OutOfMemoryError. Fixed. (David Smiley)
 
+* LUCENE-4704: Make join queries override hashcode and equals methods.
+  (Martijn van Groningen)
+
 ======================= Lucene 4.1.0 =======================
 
 Changes in backwards compatibility policy

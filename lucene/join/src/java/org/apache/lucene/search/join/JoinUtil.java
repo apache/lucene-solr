@@ -71,7 +71,7 @@ public final class JoinUtil {
       case None:
         TermsCollector termsCollector = TermsCollector.create(fromField, multipleValuesPerDocument);
         fromSearcher.search(fromQuery, termsCollector);
-        return new TermsQuery(toField, termsCollector.getCollectorTerms());
+        return new TermsQuery(toField, fromQuery, termsCollector.getCollectorTerms());
       case Total:
       case Max:
       case Avg:
