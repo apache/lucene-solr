@@ -93,6 +93,35 @@ class TermsIncludingScoreQuery extends Query {
   }
 
   @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    } if (!super.equals(obj)) {
+      return false;
+    } if (getClass() != obj.getClass()) {
+      return false;
+    }
+
+    TermsIncludingScoreQuery other = (TermsIncludingScoreQuery) obj;
+    if (!field.equals(other.field)) {
+      return false;
+    }
+    if (!unwrittenOriginalQuery.equals(other.unwrittenOriginalQuery)) {
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result += prime * field.hashCode();
+    result += prime * unwrittenOriginalQuery.hashCode();
+    return result;
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher) throws IOException {
     final Weight originalWeight = originalQuery.createWeight(searcher);
     return new Weight() {
