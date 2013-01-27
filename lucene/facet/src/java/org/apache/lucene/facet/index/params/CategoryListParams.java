@@ -1,7 +1,6 @@
 package org.apache.lucene.facet.index.params;
 
 import java.io.IOException;
-import java.io.Serializable;
 
 import org.apache.lucene.facet.search.CategoryListIterator;
 import org.apache.lucene.facet.search.DocValuesCategoryListIterator;
@@ -34,7 +33,7 @@ import org.apache.lucene.util.encoding.UniqueValuesIntEncoder;
  * 
  * @lucene.experimental
  */
-public class CategoryListParams implements Serializable {
+public class CategoryListParams {
 
   /** OrdinalPolicy defines which ordinals are encoded for every document. */
   public static enum OrdinalPolicy {
