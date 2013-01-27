@@ -813,8 +813,6 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  // nocommit: test exactly 32766, also add field-level check so you get exc faster
-  // same for sorted bytes
   public void testTooLargeBytes() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
@@ -859,6 +857,61 @@ public class TestDemoDocValue extends LuceneTestCase {
       // expected
     }
     iwriter.close();
+    directory.close();
+  }
+  
+  public void testVeryLargeButLegalBytes() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    Directory directory = newDirectory();
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    byte bytes[] = new byte[32766];
+    BytesRef b = new BytesRef(bytes);
+    random().nextBytes(bytes);
+    doc.add(new BinaryDocValuesField("dv", b));
+    iwriter.addDocument(doc);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    assert ireader.leaves().size() == 1;
+    BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv");
+    BytesRef scratch = new BytesRef();
+    dv.get(0, scratch);
+    assertEquals(new BytesRef(bytes), scratch);
+
+    ireader.close();
+    directory.close();
+  }
+  
+  public void testVeryLargeButLegalSortedBytes() throws IOException {
+    Analyzer analyzer = new MockAnalyzer(random());
+
+    Directory directory = newDirectory();
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
+    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    Document doc = new Document();
+    byte bytes[] = new byte[32766];
+    BytesRef b = new BytesRef(bytes);
+    random().nextBytes(bytes);
+    doc.add(new SortedDocValuesField("dv", b));
+    iwriter.addDocument(doc);
+    iwriter.close();
+    
+    // Now search the index:
+    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
+    assert ireader.leaves().size() == 1;
+    BinaryDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
+    BytesRef scratch = new BytesRef();
+    dv.get(0, scratch);
+    assertEquals(new BytesRef(bytes), scratch);
+    ireader.close();
     directory.close();
   }
 }
