@@ -44,9 +44,9 @@ class BinaryDocValuesWriter extends DocValuesWriter {
   public BinaryDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
     this.bytesRefArray = new BytesRefArray(iwBytesUsed);
-    bytesUsed = bytesRefArray.bytesUsed();
+    bytesUsed = bytesRefArray.bytesUsed(); // nocommit: totally wrong!!!!
     this.iwBytesUsed = iwBytesUsed;
-    iwBytesUsed.addAndGet(bytesUsed);
+    //nocommit WRONG iwBytesUsed.addAndGet(bytesUsed);
   }
 
   public void addValue(int docID, BytesRef value) {
@@ -72,7 +72,7 @@ class BinaryDocValuesWriter extends DocValuesWriter {
 
   private void updateBytesUsed() {
     final long newBytesUsed = bytesRefArray.bytesUsed();
-    iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
+    // nocommit: WRONG iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
     bytesUsed = newBytesUsed;
   }
 
