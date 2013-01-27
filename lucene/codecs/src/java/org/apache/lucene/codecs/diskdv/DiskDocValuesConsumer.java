@@ -122,12 +122,10 @@ class DiskDocValuesConsumer extends DocValuesConsumer {
   
   @Override
   public void close() throws IOException {
-    // nocommit: just write this to a RAMfile or something and flush it here, with #fields first.
-    // this meta is a tiny file so this hurts nobody
     boolean success = false;
     try {
       if (meta != null) {
-        meta.writeVInt(-1);
+        meta.writeVInt(-1); // write EOF marker
       }
       success = true;
     } finally {
