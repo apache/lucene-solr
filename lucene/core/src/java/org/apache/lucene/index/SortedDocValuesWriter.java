@@ -39,6 +39,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
   private int[] pending = new int[DEFAULT_PENDING_SIZE];
   private int pendingIndex = 0;
   private final Counter iwBytesUsed;
+  private long bytesUsed;
   private final FieldInfo fieldInfo;
 
   private static final BytesRef EMPTY = new BytesRef(BytesRef.EMPTY_BYTES);
@@ -85,7 +86,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
     int ord = hash.add(value);
     if (ord < 0) {
       ord = -ord-1;
-    } 
+    }
     
     if (pendingIndex <= pending.length) {
       int pendingLen = pending.length;
@@ -116,7 +117,6 @@ class SortedDocValuesWriter extends DocValuesWriter {
 
     final int[] sortedValues = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
     final int sortedValueRamUsage = RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + RamUsageEstimator.NUM_BYTES_INT*valueCount;
-    iwBytesUsed.addAndGet(sortedValueRamUsage);
     final int[] ordMap = new int[valueCount];
 
     for(int ord=0;ord<valueCount;ord++) {
@@ -187,25 +187,9 @@ class SortedDocValuesWriter extends DocValuesWriter {
                                   };
                                 }
                               });
-    
-    iwBytesUsed.addAndGet(-sortedValueRamUsage);
-    // nocommit
-    //reset();
   }
 
   @Override
   public void abort() {
-    // nocommit
-    //reset();
-  }
-
-  private void reset() {
-    // nocommit
-    /*
-    iwBytesUsed.addAndGet((pending.length - DEFAULT_PENDING_SIZE) * RamUsageEstimator.NUM_BYTES_INT);
-    pending = ArrayUtil.shrink(pending, DEFAULT_PENDING_SIZE);
-    pendingIndex = 0;
-    hash.clear();
-    */
   }
 }

@@ -64,6 +64,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
+// nocommit fails: ant test  -Dtestcase=TestBackwardsCompatibility -Dtests.method=testExactFileNames -Dtests.seed=F5A14C72AFCA024E -Dtests.slow=true -Dtests.locale=pl_PL -Dtests.timezone=America/Argentina/La_Rioja -Dtests.file.encoding=ISO-8859-1
+
 /*
   Verify we can read the pre-5.0 file format, do searches
   against it, and add documents to it.

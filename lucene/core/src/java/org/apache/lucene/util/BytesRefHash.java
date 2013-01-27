@@ -208,8 +208,7 @@ public final class BytesRefHash {
       newSize /= 2;
     }
     if (newSize != hashSize) {
-      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT
-          * -(hashSize - newSize));
+      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT * -(hashSize - newSize));
       hashSize = newSize;
       ords = new int[hashSize];
       Arrays.fill(ords, -1);
@@ -248,8 +247,7 @@ public final class BytesRefHash {
   public void close() {
     clear(true);
     ords = null;
-    bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT
-        * -hashSize);
+    bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT * -hashSize);
   }
 
   /**

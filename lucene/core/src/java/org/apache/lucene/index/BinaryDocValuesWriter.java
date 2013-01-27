@@ -36,12 +36,17 @@ class BinaryDocValuesWriter extends DocValuesWriter {
   private final FieldInfo fieldInfo;
   private int addedValues = 0;
   private final BytesRef emptyBytesRef = new BytesRef();
+  private final Counter iwBytesUsed;
+  private long bytesUsed;
 
   // nocommit this needs to update bytesUsed?
 
-  public BinaryDocValuesWriter(FieldInfo fieldInfo, Counter counter) {
+  public BinaryDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
-    this.bytesRefArray = new BytesRefArray(counter);
+    this.bytesRefArray = new BytesRefArray(iwBytesUsed);
+    bytesUsed = bytesRefArray.bytesUsed();
+    this.iwBytesUsed = iwBytesUsed;
+    iwBytesUsed.addAndGet(bytesUsed);
   }
 
   public void addValue(int docID, BytesRef value) {
@@ -62,6 +67,13 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     }
     addedValues++;
     bytesRefArray.append(value);
+    updateBytesUsed();
+  }
+
+  private void updateBytesUsed() {
+    final long newBytesUsed = bytesRefArray.bytesUsed();
+    iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
+    bytesUsed = newBytesUsed;
   }
 
   @Override
@@ -104,19 +116,9 @@ class BinaryDocValuesWriter extends DocValuesWriter {
                                    };
                                  }
                                });
-
-    // nocommit
-    //reset();
   }
 
   @Override
   public void abort() {
-    // nocommit
-    //reset();
-  }
-
-  private void reset() {
-    // nocommit
-    //bytesRefArray.clear();
   }
 }

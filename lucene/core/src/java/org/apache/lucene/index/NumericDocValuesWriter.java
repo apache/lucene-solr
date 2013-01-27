@@ -42,6 +42,7 @@ class NumericDocValuesWriter extends DocValuesWriter {
     bytesUsed = pending.ramBytesUsed();
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
+    iwBytesUsed.addAndGet(bytesUsed);
   }
 
   public void addValue(int docID, long value) {
@@ -108,22 +109,9 @@ class NumericDocValuesWriter extends DocValuesWriter {
                                    };
                                  }
                                });
-
-    // nocommit
-    //reset();
   }
 
   @Override
   public void abort() {
-    // nocommit
-    //reset();
-  }
-
-  // nocommit do we really need this...?  can't/doesn't parent alloc
-  // a new instance after flush?
-  void reset() {
-    // nocommit
-    //pending = new AppendingLongBuffer();
-    //updateBytesUsed();
   }
 }
