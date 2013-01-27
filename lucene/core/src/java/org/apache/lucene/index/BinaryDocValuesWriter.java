@@ -36,17 +36,12 @@ class BinaryDocValuesWriter extends DocValuesWriter {
   private final FieldInfo fieldInfo;
   private int addedValues = 0;
   private final BytesRef emptyBytesRef = new BytesRef();
-  private final Counter iwBytesUsed;
-  private long bytesUsed;
 
   // nocommit this needs to update bytesUsed?
 
   public BinaryDocValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
-    this.bytesRefArray = new BytesRefArray(iwBytesUsed);
-    bytesUsed = bytesRefArray.bytesUsed(); // nocommit: totally wrong!!!!
-    this.iwBytesUsed = iwBytesUsed;
-    //nocommit WRONG iwBytesUsed.addAndGet(bytesUsed);
+    this.bytesRefArray = new BytesRefArray(iwBytesUsed); // nocommit: test that this thing really accounts correctly
   }
 
   public void addValue(int docID, BytesRef value) {
@@ -67,13 +62,6 @@ class BinaryDocValuesWriter extends DocValuesWriter {
     }
     addedValues++;
     bytesRefArray.append(value);
-    updateBytesUsed();
-  }
-
-  private void updateBytesUsed() {
-    final long newBytesUsed = bytesRefArray.bytesUsed();
-    // nocommit: WRONG iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
-    bytesUsed = newBytesUsed;
   }
 
   @Override
