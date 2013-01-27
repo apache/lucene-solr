@@ -4,24 +4,18 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.junit.Before;
-import org.junit.Test;
-
 import org.apache.lucene.facet.FacetTestBase;
-import org.apache.lucene.facet.search.FacetsAccumulator;
-import org.apache.lucene.facet.search.ScoredDocIDs;
-import org.apache.lucene.facet.search.ScoredDocIDsIterator;
-import org.apache.lucene.facet.search.ScoredDocIdCollector;
-import org.apache.lucene.facet.search.StandardFacetsAccumulator;
 import org.apache.lucene.facet.search.params.CountFacetRequest;
 import org.apache.lucene.facet.search.params.FacetSearchParams;
 import org.apache.lucene.facet.search.params.ScoreFacetRequest;
 import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.junit.Before;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -65,8 +59,7 @@ public class TestScoredDocIdCollector extends FacetTestBase {
       System.out.println("Query: " + q);
     }
     float constScore = 17.0f;
-    ScoredDocIdCollector dCollector = ScoredDocIdCollector.create(indexReader
-        .maxDoc(), false); // scoring is disabled
+    ScoredDocIdCollector dCollector = ScoredDocIdCollector.create(indexReader.maxDoc(), false); // scoring is disabled
     dCollector.setDefaultScore(constScore);
     searcher.search(q, dCollector);
 
@@ -75,13 +68,16 @@ public class TestScoredDocIdCollector extends FacetTestBase {
     assertEquals("Wrong number of matching documents!", 2, scoredDocIDs.size());
     ScoredDocIDsIterator docItr = scoredDocIDs.iterator();
     while (docItr.next()) {
-      assertEquals("Wrong score for doc " + docItr.getDocID(), constScore,
-          docItr.getScore(), Double.MIN_VALUE);
+      assertEquals("Wrong score for doc " + docItr.getDocID(), constScore, docItr.getScore(), Double.MIN_VALUE);
     }
 
     // verify by facet values
-    List<FacetResult> countRes = findFacets(scoredDocIDs, getFacetSearchParams());
-    List<FacetResult> scoreRes = findFacets(scoredDocIDs, sumScoreSearchParams());
+    CategoryPath cp = new CategoryPath("root","a");
+    FacetSearchParams countFSP = new FacetSearchParams(getFacetIndexingParams(Integer.MAX_VALUE), new CountFacetRequest(cp, 10));
+    FacetSearchParams scoreFSP = new FacetSearchParams(getFacetIndexingParams(Integer.MAX_VALUE), new ScoreFacetRequest(cp, 10));
+    
+    List<FacetResult> countRes = findFacets(scoredDocIDs, countFSP);
+    List<FacetResult> scoreRes = findFacets(scoredDocIDs, scoreFSP);
 
     assertEquals("Wrong number of facet count results!", 1, countRes.size());
     assertEquals("Wrong number of facet score results!", 1, scoreRes.size());
@@ -149,16 +145,6 @@ public class TestScoredDocIdCollector extends FacetTestBase {
     for (int i = 0; iter.next(); i++) {
       assertEquals("expected doc " + docs[i], docs[i], iter.getDocID());
     }
-  }
-
-  /* use a scoring aggregator */
-  private FacetSearchParams sumScoreSearchParams() {
-    // this will use default faceted indexing params, not altering anything about indexing
-    return new FacetSearchParams(new ScoreFacetRequest(new CategoryPath("root", "a"), 10));
-  }
-
-  private FacetSearchParams getFacetSearchParams() {
-    return new FacetSearchParams(new CountFacetRequest(new CategoryPath("root","a"), 10));
   }
 
 }

@@ -19,10 +19,11 @@ package org.apache.solr.cloud;
 
 import static org.easymock.EasyMock.capture;
 import static org.easymock.EasyMock.createMock;
-import static org.easymock.EasyMock.reset;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.replay;
+import static org.easymock.EasyMock.anyObject;
+import static org.easymock.EasyMock.reset;
 import static org.easymock.EasyMock.verify;
 
 import java.util.ArrayList;
@@ -36,6 +37,8 @@ import java.util.Queue;
 import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.cloud.DistributedQueue.QueueEvent;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -43,11 +46,13 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.easymock.Capture;
+import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.After;
@@ -71,12 +76,12 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
   private OverseerCollectionProcessorToBeTested underTest;
   
   private Thread thread;
-  private Queue<byte[]> queue = new BlockingArrayQueue<byte[]>();
+  private Queue<QueueEvent> queue = new BlockingArrayQueue<QueueEvent>();
   
   private class OverseerCollectionProcessorToBeTested extends
       OverseerCollectionProcessor {
     
-    private boolean lastProcessMessageResult = true;
+    private SolrResponse lastProcessMessageResult;
     
     public OverseerCollectionProcessorToBeTested(ZkStateReader zkStateReader,
         String myId, ShardHandler shardHandler, String adminPath,
@@ -85,7 +90,7 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     }
     
     @Override
-    protected boolean processMessage(ZkNodeProps message, String operation) {
+    protected SolrResponse processMessage(ZkNodeProps message, String operation) {
       lastProcessMessageResult = super.processMessage(message, operation);
       return lastProcessMessageResult;
     }
@@ -147,11 +152,12 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
       }
     }).anyTimes();
     
-    workQueueMock.remove();
+    workQueueMock.remove(anyObject(QueueEvent.class));
     expectLastCall().andAnswer(new IAnswer<Object>() {
       @Override
       public Object answer() throws Throwable {
-        return queue.poll();
+        queue.remove((QueueEvent)EasyMock.getCurrentArguments()[0]);
+        return null;
       }
     }).anyTimes();
     
@@ -273,7 +279,8 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
           OverseerCollectionProcessor.MAX_SHARDS_PER_NODE,
           maxShardsPerNode.toString());
     }
-    queue.add(ZkStateReader.toJSON(props));
+    QueueEvent qe = new QueueEvent("id", ZkStateReader.toJSON(props), null);
+    queue.add(qe);
   }
   
   protected void verifySubmitCaptures(List<SubmitCapture> submitCaptures,
@@ -443,7 +450,9 @@ public class OverseerCollectionProcessorTest extends SolrTestCaseJ4 {
     
     waitForEmptyQueue(10000);
     
-    assertEquals(collectionExceptedToBeCreated, underTest.lastProcessMessageResult);
+    if (collectionExceptedToBeCreated) {
+      assertNotNull(underTest.lastProcessMessageResult.getResponse().toString(), underTest.lastProcessMessageResult);
+    }
     verify(shardHandlerMock);
     
     if (collectionExceptedToBeCreated) {

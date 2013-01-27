@@ -13,6 +13,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.CategoryListParams;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
@@ -40,7 +41,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.collections.ObjectToIntMap;
 import org.apache.lucene.util.encoding.IntEncoder;
 import org.apache.lucene.util.encoding.VInt8IntEncoder;
@@ -65,7 +65,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class CountingFacetsCollectorTest extends LuceneTestCase {
+public class CountingFacetsCollectorTest extends FacetTestCase {
   
   private static final Term A = new Term("f", "a");
   private static final CategoryPath CP_A = new CategoryPath("A"), CP_B = new CategoryPath("B");

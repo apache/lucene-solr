@@ -1,7 +1,4 @@
-package org.apache.lucene.facet.search.params;
-
-import org.apache.lucene.facet.FacetTestCase;
-import org.junit.Test;
+package org.apache.solr.cloud;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,14 +17,31 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class FacetSearchParamsTest extends FacetTestCase {
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.common.util.NamedList;
 
-  @Test
-  public void testSearchParamsWithNullRequest() throws Exception {
-    try {
-      assertNull(new FacetSearchParams());
-      fail("FacetSearchParams should throw IllegalArgumentException when not adding requests");
-    } catch (IllegalArgumentException e) {
-    }
+public class OverseerSolrResponse extends SolrResponse {
+  
+  NamedList responseList = null;
+  
+  public OverseerSolrResponse(NamedList list) {
+    responseList = list;
   }
+  
+  @Override
+  public long getElapsedTime() {
+    // TODO Auto-generated method stub
+    return 0;
+  }
+  
+  @Override
+  public void setResponse(NamedList<Object> rsp) {
+    this.responseList = rsp;
+  }
+  
+  @Override
+  public NamedList<Object> getResponse() {
+    return responseList;
+  }
+  
 }

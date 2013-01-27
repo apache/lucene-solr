@@ -4,13 +4,13 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetTestUtils;
 import org.apache.lucene.facet.FacetTestUtils.IndexTaxonomyReaderPair;
 import org.apache.lucene.facet.FacetTestUtils.IndexTaxonomyWriterPair;
 import org.apache.lucene.facet.index.params.FacetIndexingParams;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
 
@@ -31,7 +31,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestTotalFacetCounts extends LuceneTestCase {
+public class TestTotalFacetCounts extends FacetTestCase {
 
   private static void initCache(int numEntries) {
     TotalFacetCountsCache.getSingleton().clear();
@@ -53,8 +53,7 @@ public class TestTotalFacetCounts extends LuceneTestCase {
     // Create temporary RAMDirectories
     Directory[][] dirs = FacetTestUtils.createIndexTaxonomyDirs(1);
     // Create our index/taxonomy writers
-    IndexTaxonomyWriterPair[] writers = FacetTestUtils
-    .createIndexTaxonomyWriterPair(dirs);
+    IndexTaxonomyWriterPair[] writers = FacetTestUtils.createIndexTaxonomyWriterPair(dirs);
     FacetIndexingParams iParams = new FacetIndexingParams() {
       @Override
       public int getPartitionSize() {

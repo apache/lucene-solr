@@ -63,6 +63,9 @@ Detailed Change List
 New Features
 ----------------------
 
+* SOLR-4043: Add ability to get success/failure responses from Collections API.
+  (Raintung Li, Mark Miller)
+
 Bug Fixes
 ----------------------
 
@@ -79,6 +82,16 @@ Bug Fixes
 
 * SOLR-4349 : Admin UI - Query Interface does not work in IE
   (steffkes)
+
+* SOLR-4359: The RecentUpdates#update method should treat a problem reading the
+  next record the same as a problem parsing the record - log the exception and
+  break. (Mark Miller)
+
+* SOLR-4225: Term info page under schema browser shows incorrect count of terms
+  (steffkes)
+  
+* SOLR-3926: Solr should support better way of finding active sorts (Eirik Lygre via
+  Erick Erickson)
 
 Optimizations
 ----------------------
@@ -99,6 +112,8 @@ Other Changes
 
 * SOLR-4348: Make the lock type configurable by system property by default.
   (Mark Miller)
+
+* SOLR-4353: Renamed example jetty context file to reduce confusion (hossman)
 
 ==================  4.1.0 ==================
 
@@ -606,6 +621,9 @@ Bug Fixes
   
 * SOLR-4266: HttpSolrServer does not release connection properly on exception
   when no response parser is used. (Steve Molloy via Mark Miller)
+
+* SOLR-2298: Updated JavaDoc for SolrDocument.addField and SolrInputDocument.addField
+  to have more information on name and value parameters. (Siva Natarajan)
 
 Other Changes
 ----------------------

@@ -29,8 +29,6 @@ import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
-import org.apache.lucene.index.GeneralField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.StorableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
@@ -48,7 +46,6 @@ import org.apache.solr.analysis.TrieTokenizerFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.function.*;
 
 /**
  * Provides field types to support for Lucene's {@link
@@ -311,19 +308,19 @@ public class TrieField extends PrimitiveFieldType {
     String s = val.toString();
     switch (type) {
       case INTEGER:
-        NumericUtils.intToPrefixCoded(Integer.parseInt(s), 0, result);
+        NumericUtils.intToPrefixCodedBytes(Integer.parseInt(s), 0, result);
         break;
       case FLOAT:
-        NumericUtils.intToPrefixCoded(NumericUtils.floatToSortableInt(Float.parseFloat(s)), 0, result);
+        NumericUtils.intToPrefixCodedBytes(NumericUtils.floatToSortableInt(Float.parseFloat(s)), 0, result);
         break;
       case LONG:
-        NumericUtils.longToPrefixCoded(Long.parseLong(s), 0, result);
+        NumericUtils.longToPrefixCodedBytes(Long.parseLong(s), 0, result);
         break;
       case DOUBLE:
-        NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(Double.parseDouble(s)), 0, result);
+        NumericUtils.longToPrefixCodedBytes(NumericUtils.doubleToSortableLong(Double.parseDouble(s)), 0, result);
         break;
       case DATE:
-        NumericUtils.longToPrefixCoded(dateField.parseMath(null, s).getTime(), 0, result);
+        NumericUtils.longToPrefixCodedBytes(dateField.parseMath(null, s).getTime(), 0, result);
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
@@ -419,17 +416,17 @@ public class TrieField extends PrimitiveFieldType {
     if (val != null) {
       switch (type) {
         case INTEGER:
-          NumericUtils.intToPrefixCoded(val.intValue(), 0, bytes);
+          NumericUtils.intToPrefixCodedBytes(val.intValue(), 0, bytes);
           break;
         case FLOAT:
-          NumericUtils.intToPrefixCoded(NumericUtils.floatToSortableInt(val.floatValue()), 0, bytes);
+          NumericUtils.intToPrefixCodedBytes(NumericUtils.floatToSortableInt(val.floatValue()), 0, bytes);
           break;
         case LONG: //fallthrough!
         case DATE:
-          NumericUtils.longToPrefixCoded(val.longValue(), 0, bytes);
+          NumericUtils.longToPrefixCodedBytes(val.longValue(), 0, bytes);
           break;
         case DOUBLE:
-          NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(val.doubleValue()), 0, bytes);
+          NumericUtils.longToPrefixCodedBytes(NumericUtils.doubleToSortableLong(val.doubleValue()), 0, bytes);
           break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
@@ -441,7 +438,7 @@ public class TrieField extends PrimitiveFieldType {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
       switch (type) {
         case INTEGER:
-          NumericUtils.intToPrefixCoded(toInt(bytesRef.bytes, bytesRef.offset), 0, bytes);
+          NumericUtils.intToPrefixCodedBytes(toInt(bytesRef.bytes, bytesRef.offset), 0, bytes);
           break;
         case FLOAT: {
           // WARNING: Code Duplication! Keep in sync with o.a.l.util.NumericUtils!
@@ -449,12 +446,12 @@ public class TrieField extends PrimitiveFieldType {
           // code in next 2 lines is identical to: int v = NumericUtils.floatToSortableInt(Float.intBitsToFloat(toInt(arr)));
           int v = toInt(bytesRef.bytes, bytesRef.offset);
           if (v<0) v ^= 0x7fffffff;
-          NumericUtils.intToPrefixCoded(v, 0, bytes);
+          NumericUtils.intToPrefixCodedBytes(v, 0, bytes);
           break;
         }
         case LONG: //fallthrough!
         case DATE:
-          NumericUtils.longToPrefixCoded(toLong(bytesRef.bytes, bytesRef.offset), 0, bytes);
+          NumericUtils.longToPrefixCodedBytes(toLong(bytesRef.bytes, bytesRef.offset), 0, bytes);
           break;
         case DOUBLE: {
           // WARNING: Code Duplication! Keep in sync with o.a.l.util.NumericUtils!
@@ -462,7 +459,7 @@ public class TrieField extends PrimitiveFieldType {
           // code in next 2 lines is identical to: long v = NumericUtils.doubleToSortableLong(Double.longBitsToDouble(toLong(arr)));
           long v = toLong(bytesRef.bytes, bytesRef.offset);
           if (v<0) v ^= 0x7fffffffffffffffL;
-          NumericUtils.longToPrefixCoded(v, 0, bytes);
+          NumericUtils.longToPrefixCodedBytes(v, 0, bytes);
           break;
         }
         default:

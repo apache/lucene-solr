@@ -151,6 +151,7 @@ public abstract class ReferenceManager<G> implements Closeable {
     try {
       final G reference = acquire();
       try {
+        notifyRefreshListenersBefore();
         G newReference = refreshIfNeeded(reference);
         if (newReference != null) {
           assert newReference != reference : "refreshIfNeeded should return null if refresh wasn't needed";
@@ -165,11 +166,9 @@ public abstract class ReferenceManager<G> implements Closeable {
         }
       } finally {
         release(reference);
+        notifyRefreshListenersRefreshed(refreshed);
       }
       afterMaybeRefresh();
-      if (refreshed) {
-        notifyRefreshListeners();
-      }
     } finally {
       refreshLock.unlock();
     }
@@ -254,9 +253,15 @@ public abstract class ReferenceManager<G> implements Closeable {
     decRef(reference);
   }
 
-  private void notifyRefreshListeners() {
+  private void notifyRefreshListenersBefore() throws IOException {
     for (RefreshListener refreshListener : refreshListeners) {
-      refreshListener.afterRefresh();
+      refreshListener.beforeRefresh();
+    }
+  }
+
+  private void notifyRefreshListenersRefreshed(boolean didRefresh) throws IOException {
+    for (RefreshListener refreshListener : refreshListeners) {
+      refreshListener.afterRefresh(didRefresh);
     }
   }
 
@@ -284,9 +289,13 @@ public abstract class ReferenceManager<G> implements Closeable {
    *  finished.  See {@link #addListener}. */
   public interface RefreshListener {
 
-    /**
-     * Called after a successful refresh and a new reference has been installed. When this is called {@link #acquire()} is guaranteed to return a new instance.
-     */
-    void afterRefresh();
+    /** Called right before a refresh attempt starts. */
+    void beforeRefresh() throws IOException;
+
+    /** Called after the attempted refresh; if the refresh
+     * did open a new reference then didRefresh will be true
+     * and {@link #acquire()} is guaranteed to return the new
+     * reference. */
+    void afterRefresh(boolean didRefresh) throws IOException;
   }
 }

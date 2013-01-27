@@ -917,10 +917,11 @@ public class UpdateLog implements PluginInfoInitialized {
           reader = oldLog.getReverseReader();
 
           while (numUpdates < numRecordsToKeep) {
-            Object o = reader.next();
-            if (o==null) break;
+            Object o = null;
             try {
-
+              o = reader.next();
+              if (o==null) break;
+              
               // should currently be a List<Oper,Ver,Doc/Id>
               List entry = (List)o;
 

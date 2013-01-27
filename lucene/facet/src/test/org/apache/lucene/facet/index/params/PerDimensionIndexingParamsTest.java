@@ -2,11 +2,11 @@ package org.apache.lucene.facet.index.params;
 
 import java.util.Collections;
 
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.search.DrillDown;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.util.PartitionsUtils;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -26,7 +26,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class PerDimensionIndexingParamsTest extends LuceneTestCase {
+public class PerDimensionIndexingParamsTest extends FacetTestCase {
 
   @Test
   public void testTopLevelSettings() {
@@ -41,7 +41,6 @@ public class PerDimensionIndexingParamsTest extends LuceneTestCase {
     assertEquals("3 characters should be written", 3, numchars);
     assertEquals("wrong drill-down term text", expectedDDText, new String(buf, 0, numchars));
     
-    CategoryListParams clParams = ifip.getCategoryListParams(null);
     assertEquals("partition for all ordinals is the first", "", PartitionsUtils.partitionNameByOrdinal(ifip, 250));
     assertEquals("for partition 0, the same name should be returned", "", PartitionsUtils.partitionName(0));
     assertEquals("for any other, it's the concatenation of name + partition", PartitionsUtils.PART_NAME_PREFIX + "1", PartitionsUtils.partitionName(1));

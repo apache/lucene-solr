@@ -28,7 +28,7 @@ public class TestNumericUtils extends LuceneTestCase {
     // generate a series of encoded longs, each numerical one bigger than the one before
     BytesRef last=null, act=new BytesRef(NumericUtils.BUF_SIZE_LONG);
     for (long l=-100000L; l<100000L; l++) {
-      NumericUtils.longToPrefixCoded(l, 0, act);
+      NumericUtils.longToPrefixCodedBytes(l, 0, act);
       if (last!=null) {
         // test if smaller
         assertTrue("actual bigger than last (BytesRef)", last.compareTo(act) < 0 );
@@ -46,7 +46,7 @@ public class TestNumericUtils extends LuceneTestCase {
     // generate a series of encoded ints, each numerical one bigger than the one before
     BytesRef last=null, act=new BytesRef(NumericUtils.BUF_SIZE_INT);
     for (int i=-100000; i<100000; i++) {
-      NumericUtils.intToPrefixCoded(i, 0, act);
+      NumericUtils.intToPrefixCodedBytes(i, 0, act);
       if (last!=null) {
         // test if smaller
         assertTrue("actual bigger than last (BytesRef)", last.compareTo(act) < 0 );
@@ -69,7 +69,7 @@ public class TestNumericUtils extends LuceneTestCase {
     
     for (int i=0; i<vals.length; i++) {
       prefixVals[i] = new BytesRef(NumericUtils.BUF_SIZE_LONG);
-      NumericUtils.longToPrefixCoded(vals[i], 0, prefixVals[i]);
+      NumericUtils.longToPrefixCodedBytes(vals[i], 0, prefixVals[i]);
       
       // check forward and back conversion
       assertEquals( "forward and back conversion should generate same long", vals[i], NumericUtils.prefixCodedToLong(prefixVals[i]) );
@@ -92,7 +92,7 @@ public class TestNumericUtils extends LuceneTestCase {
     final BytesRef ref = new BytesRef(NumericUtils.BUF_SIZE_LONG);
     for (int i=0; i<vals.length; i++) {
       for (int j=0; j<64; j++) {
-        NumericUtils.longToPrefixCoded(vals[i], j, ref);
+        NumericUtils.longToPrefixCodedBytes(vals[i], j, ref);
         long prefixVal=NumericUtils.prefixCodedToLong(ref);
         long mask=(1L << j) - 1L;
         assertEquals( "difference between prefix val and original value for "+vals[i]+" with shift="+j, vals[i] & mask, vals[i]-prefixVal );
@@ -109,7 +109,7 @@ public class TestNumericUtils extends LuceneTestCase {
     
     for (int i=0; i<vals.length; i++) {
       prefixVals[i] = new BytesRef(NumericUtils.BUF_SIZE_INT);
-      NumericUtils.intToPrefixCoded(vals[i], 0, prefixVals[i]);
+      NumericUtils.intToPrefixCodedBytes(vals[i], 0, prefixVals[i]);
       
       // check forward and back conversion
       assertEquals( "forward and back conversion should generate same int", vals[i], NumericUtils.prefixCodedToInt(prefixVals[i]) );
@@ -132,7 +132,7 @@ public class TestNumericUtils extends LuceneTestCase {
     final BytesRef ref = new BytesRef(NumericUtils.BUF_SIZE_LONG);
     for (int i=0; i<vals.length; i++) {
       for (int j=0; j<32; j++) {
-        NumericUtils.intToPrefixCoded(vals[i], j, ref);
+        NumericUtils.intToPrefixCodedBytes(vals[i], j, ref);
         int prefixVal=NumericUtils.prefixCodedToInt(ref);
         int mask=(1 << j) - 1;
         assertEquals( "difference between prefix val and original value for "+vals[i]+" with shift="+j, vals[i] & mask, vals[i]-prefixVal );

@@ -468,6 +468,11 @@ var solr_admin = function( app_config )
     return json_str;
   };
 
+  this.format_number = function format_number( number )
+  {
+    return ( number || 0 ).toString().replace( /\B(?=(\d{3})+(?!\d))/g, ' ' );
+  };
+
 };
 
 var app = new solr_admin( app_config );

@@ -6,6 +6,7 @@ import java.util.Random;
 
 import org.junit.Test;
 
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.collections.IntIterator;
 import org.apache.lucene.util.collections.ObjectToIntMap;
@@ -27,7 +28,7 @@ import org.apache.lucene.util.collections.ObjectToIntMap;
  * limitations under the License.
  */
 
-public class ObjectToIntMapTest extends LuceneTestCase {
+public class ObjectToIntMapTest extends FacetTestCase {
 
   @Test
   public void test0() {

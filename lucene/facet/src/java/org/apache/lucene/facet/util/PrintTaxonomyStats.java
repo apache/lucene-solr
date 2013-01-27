@@ -30,6 +30,7 @@ import org.apache.lucene.store.FSDirectory;
 
 /** Prints how many ords are under each dimension. */
 
+// java -cp ../build/core/classes/java:../build/facet/classes/java org.apache.lucene.facet.util.PrintTaxonomyStats -printTree /s2/scratch/indices/wikibig.trunk.noparents.facets.Lucene41.nd1M/facets
 public class PrintTaxonomyStats {
 
   public static void main(String[] args) throws IOException {

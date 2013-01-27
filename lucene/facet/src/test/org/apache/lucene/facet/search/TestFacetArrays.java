@@ -1,6 +1,6 @@
 package org.apache.lucene.facet.search;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.facet.FacetTestCase;
 import org.junit.Test;
 
 /*
@@ -20,7 +20,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestFacetArrays extends LuceneTestCase {
+public class TestFacetArrays extends FacetTestCase {
 
   @Test
   public void testFacetArrays() {

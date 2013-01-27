@@ -13,6 +13,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetTestUtils;
 import org.apache.lucene.facet.index.FacetFields;
 import org.apache.lucene.facet.index.params.CategoryListParams;
@@ -41,7 +42,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -61,7 +61,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestMultipleCategoryLists extends LuceneTestCase {
+public class TestMultipleCategoryLists extends FacetTestCase {
 
   private static final CategoryPath[] CATEGORIES = new CategoryPath[] {
     new CategoryPath("Author", "Mark Twain"),

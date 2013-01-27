@@ -1,15 +1,14 @@
 package org.apache.lucene.facet.search.params;
 
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.store.Directory;
-import org.junit.Test;
-
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.search.FacetResultsHandler;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.Directory;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -28,7 +27,7 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
  * limitations under the License.
  */
 
-public class FacetRequestTest extends LuceneTestCase {
+public class FacetRequestTest extends FacetTestCase {
 
   @Test(expected=IllegalArgumentException.class)
   public void testIllegalNumResults() throws Exception {

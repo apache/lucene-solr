@@ -7,6 +7,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
@@ -21,7 +22,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /*
@@ -41,7 +41,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestDirectoryTaxonomyWriter extends LuceneTestCase {
+public class TestDirectoryTaxonomyWriter extends FacetTestCase {
 
   // A No-Op TaxonomyWriterCache which always discards all given categories, and
   // always returns true in put(), to indicate some cache entries were cleared.

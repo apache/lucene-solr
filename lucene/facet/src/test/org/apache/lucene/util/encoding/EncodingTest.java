@@ -3,9 +3,9 @@ package org.apache.lucene.util.encoding;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -26,7 +26,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class EncodingTest extends LuceneTestCase {
+public class EncodingTest extends FacetTestCase {
 
   private static IntsRef uniqueSortedData, data;
   

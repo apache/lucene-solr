@@ -8,6 +8,7 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.FacetTestUtils;
 import org.apache.lucene.facet.FacetTestUtils.IndexTaxonomyReaderPair;
 import org.apache.lucene.facet.FacetTestUtils.IndexTaxonomyWriterPair;
@@ -32,7 +33,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SlowRAMDirectory;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Before;
@@ -55,7 +55,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class TestTotalFacetCountsCache extends LuceneTestCase {
+public class TestTotalFacetCountsCache extends FacetTestCase {
 
   static final TotalFacetCountsCache TFC = TotalFacetCountsCache.getSingleton();
 

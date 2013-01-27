@@ -1,6 +1,6 @@
 package org.apache.lucene.facet.index.params;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.util.encoding.DGapVInt8IntEncoder;
 import org.apache.lucene.util.encoding.IntDecoder;
 import org.apache.lucene.util.encoding.IntEncoder;
@@ -25,7 +25,7 @@ import org.junit.Test;
  * limitations under the License.
  */
 
-public class CategoryListParamsTest extends LuceneTestCase {
+public class CategoryListParamsTest extends FacetTestCase {
 
   @Test
   public void testDefaultSettings() {

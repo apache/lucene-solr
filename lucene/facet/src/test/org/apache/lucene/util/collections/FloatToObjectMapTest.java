@@ -1,13 +1,11 @@
 package org.apache.lucene.util.collections;
 
-import org.junit.Test;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.collections.FloatIterator;
-import org.apache.lucene.util.collections.FloatToObjectMap;
+import org.apache.lucene.facet.FacetTestCase;
+import org.junit.Test;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,7 +24,7 @@ import org.apache.lucene.util.collections.FloatToObjectMap;
  * limitations under the License.
  */
 
-public class FloatToObjectMapTest extends LuceneTestCase {
+public class FloatToObjectMapTest extends FacetTestCase {
 
   @Test
   public void test0() {

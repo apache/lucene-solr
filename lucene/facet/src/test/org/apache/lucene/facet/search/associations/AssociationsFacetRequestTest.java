@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.associations.AssociationsFacetFields;
 import org.apache.lucene.facet.associations.CategoryAssociationsContainer;
 import org.apache.lucene.facet.associations.CategoryFloatAssociation;
@@ -47,7 +48,7 @@ import org.junit.Test;
  */
 
 /** Test for associations */
-public class AssociationsFacetRequestTest extends LuceneTestCase {
+public class AssociationsFacetRequestTest extends FacetTestCase {
 
   private static Directory dir;
   private static IndexReader reader;
