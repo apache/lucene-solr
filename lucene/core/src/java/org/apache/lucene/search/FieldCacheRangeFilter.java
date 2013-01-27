@@ -139,6 +139,64 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   }
   
   /**
+   * Creates a BytesRef range filter using {@link FieldCache#getTermsIndex}. This works with all
+   * fields containing zero or one term in the field. The range can be half-open by setting one
+   * of the values to <code>null</code>.
+   */
+  // TODO: bogus that newStringRange doesnt share this code... generics hell
+  public static FieldCacheRangeFilter<BytesRef> newBytesRefRange(String field, BytesRef lowerVal, BytesRef upperVal, boolean includeLower, boolean includeUpper) {
+    return new FieldCacheRangeFilter<BytesRef>(field, null, lowerVal, upperVal, includeLower, includeUpper) {
+      @Override
+      public DocIdSet getDocIdSet(AtomicReaderContext context, Bits acceptDocs) throws IOException {
+        final SortedDocValues fcsi = FieldCache.DEFAULT.getTermsIndex(context.reader(), field);
+        final BytesRef spare = new BytesRef();
+        final int lowerPoint = lowerVal == null ? -1 : fcsi.lookupTerm(lowerVal, spare);
+        final int upperPoint = upperVal == null ? -1 : fcsi.lookupTerm(upperVal, spare);
+
+        final int inclusiveLowerPoint, inclusiveUpperPoint;
+
+        // Hints:
+        // * binarySearchLookup returns -1, if value was null.
+        // * the value is <0 if no exact hit was found, the returned value
+        //   is (-(insertion point) - 1)
+        if (lowerPoint == -1 && lowerVal == null) {
+          inclusiveLowerPoint = 0;
+        } else if (includeLower && lowerPoint >= 0) {
+          inclusiveLowerPoint = lowerPoint;
+        } else if (lowerPoint >= 0) {
+          inclusiveLowerPoint = lowerPoint + 1;
+        } else {
+          inclusiveLowerPoint = Math.max(0, -lowerPoint - 1);
+        }
+        
+        if (upperPoint == -1 && upperVal == null) {
+          inclusiveUpperPoint = Integer.MAX_VALUE;  
+        } else if (includeUpper && upperPoint >= 0) {
+          inclusiveUpperPoint = upperPoint;
+        } else if (upperPoint >= 0) {
+          inclusiveUpperPoint = upperPoint - 1;
+        } else {
+          inclusiveUpperPoint = -upperPoint - 2;
+        }      
+
+        if (inclusiveUpperPoint < 0 || inclusiveLowerPoint > inclusiveUpperPoint) {
+          return DocIdSet.EMPTY_DOCIDSET;
+        }
+        
+        assert inclusiveLowerPoint >= 0 && inclusiveUpperPoint >= 0;
+        
+        return new FieldCacheDocIdSet(context.reader().maxDoc(), acceptDocs) {
+          @Override
+          protected final boolean matchDoc(int doc) {
+            final int docOrd = fcsi.getOrd(doc);
+            return docOrd >= inclusiveLowerPoint && docOrd <= inclusiveUpperPoint;
+          }
+        };
+      }
+    };
+  }
+  
+  /**
    * Creates a numeric range filter using {@link FieldCache#getBytes(AtomicReader,String,boolean)}. This works with all
    * byte fields containing exactly one numeric term in the field. The range can be half-open by setting one
    * of the values to <code>null</code>.

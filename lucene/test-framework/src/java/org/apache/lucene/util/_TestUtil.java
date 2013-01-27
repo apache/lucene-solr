@@ -859,18 +859,17 @@ public class _TestUtil {
       final DocValuesType dvType = field1.fieldType().docValueType();
       if (dvType != null) {
         switch(dvType) {
-          // nocommit: not quite right!
-        case NUMERIC:
-          field2 = new NumericDocValuesField(field1.name(), field1.numericValue().longValue());
+          case NUMERIC:
+            field2 = new NumericDocValuesField(field1.name(), field1.numericValue().longValue());
+            break;
+          case BINARY:
+            field2 = new BinaryDocValuesField(field1.name(), field1.binaryValue());
           break;
-        case BINARY:
-          field2 = new BinaryDocValuesField(field1.name(), field1.binaryValue());
-          break;
-        case SORTED:
-          field2 = new SortedDocValuesField(field1.name(), field1.binaryValue());
-          break;
-        default:
-          throw new IllegalStateException("unknown Type: " + dvType);
+          case SORTED:
+            field2 = new SortedDocValuesField(field1.name(), field1.binaryValue());
+            break;
+          default:
+            throw new IllegalStateException("unknown Type: " + dvType);
         }
       } else {
         field2 = new Field(field1.name(), field1.stringValue(), field1.fieldType());

@@ -59,6 +59,7 @@ public final class ICUCollationDocValuesField extends Field {
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException(e);
     }
+    fieldsData = bytes; // so wrong setters cannot be called
   }
 
   @Override
@@ -73,11 +74,4 @@ public final class ICUCollationDocValuesField extends Field {
     bytes.offset = 0;
     bytes.length = key.size;
   }
-
-  @Override
-  public BytesRef binaryValue() {
-    return bytes;
-  }
-  
-  // nocommit: UOE the other field methods? or set to empty bytesref initially so this just works...
 }
