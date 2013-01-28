@@ -116,6 +116,9 @@ public class LiveIndexWriterConfig {
     writeLockTimeout = IndexWriterConfig.WRITE_LOCK_TIMEOUT;
     indexingChain = DocumentsWriterPerThread.defaultIndexingChain;
     codec = Codec.getDefault();
+    if (codec == null) {
+      throw new NullPointerException();
+    }
     infoStream = InfoStream.getDefault();
     mergePolicy = new TieredMergePolicy();
     flushPolicy = new FlushByRamOrCountsPolicy();

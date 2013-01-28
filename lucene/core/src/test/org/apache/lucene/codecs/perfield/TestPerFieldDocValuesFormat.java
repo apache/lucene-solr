@@ -55,8 +55,8 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
   
   @Override
   public void setUp() throws Exception {
-    super.setUp();
     codec = new RandomCodec(new Random(random().nextLong()), Collections.<String>emptySet());
+    super.setUp();
   }
   
   @Override
