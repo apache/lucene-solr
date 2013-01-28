@@ -111,12 +111,16 @@ public abstract class SortedDocValues extends BinaryDocValues {
         // pass this spare down to DiskDV, which will then
         // "use" our byte[] ...
         spare.bytes = BytesRef.EMPTY_BYTES;
+        spare.offset = 0;
+        spare.length = 0;
         return mid; // key found
       }
     }
 
     // nocommit is this the right way...
     spare.bytes = BytesRef.EMPTY_BYTES;
+    spare.offset = 0;
+    spare.length = 0;
     return -(low + 1);  // key not found.
   }
 }
