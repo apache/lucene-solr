@@ -342,7 +342,6 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
    * Performs internal consistency checks.
    * Always returns true (or throws IllegalStateException) 
    */
-  // TODO: also for the other *Ref classes
   public boolean isValid() {
     if (bytes == null) {
       throw new IllegalStateException("bytes is null");
@@ -351,13 +350,13 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
       throw new IllegalStateException("length is negative: " + length);
     }
     if (length > bytes.length) {
-      throw new IllegalStateException("length is out of bounds: " + length + ", bytes.length=" + bytes.length);
+      throw new IllegalStateException("length is out of bounds: " + length + ",bytes.length=" + bytes.length);
     }
     if (offset < 0) {
       throw new IllegalStateException("offset is negative: " + offset);
     }
     if (offset > bytes.length) {
-      throw new IllegalStateException("offset out of bounds: " + offset + ", length=" + bytes.length);
+      throw new IllegalStateException("offset out of bounds: " + offset + ",bytes.length=" + bytes.length);
     }
     if (offset + length < 0) {
       throw new IllegalStateException("offset+length is negative: offset=" + offset + ",length=" + length);
