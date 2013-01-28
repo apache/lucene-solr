@@ -20,12 +20,6 @@ sammy.bind
   'cores_load_data',
   function( event, params )
   {
-    if( app.cores_data )
-    {
-      params.callback( app.cores_data );
-      return true;
-    }
-
     $.ajax
     (
       {
@@ -335,7 +329,7 @@ sammy.get
                   .ajaxForm
                   (
                     {
-                      url : app.config.solr_path + app.config.core_admin_path + '?wt=json',
+                      url : app.config.solr_path + app.config.core_admin_path + '?wt=json&indexInfo=false',
                       dataType : 'json',
                       beforeSubmit : function( array, form, options )
                       {

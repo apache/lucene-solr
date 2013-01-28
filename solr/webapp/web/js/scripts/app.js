@@ -277,7 +277,7 @@ var solr_admin = function( app_config )
     $.ajax
     (
       {
-        url : config.solr_path + config.core_admin_path + '?wt=json',
+        url : config.solr_path + config.core_admin_path + '?wt=json&indexInfo=false',
         dataType : 'json',
         beforeSend : function( arr, form, options )
         {               
