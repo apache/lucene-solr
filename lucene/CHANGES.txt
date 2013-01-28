@@ -107,6 +107,11 @@ Bug Fixes
 * LUCENE-4704: Make join queries override hashcode and equals methods.
   (Martijn van Groningen)
 
+* LUCENE-4724: Fix bug in CategoryPath which allowed passing null or empty
+  string components. This is forbidden now (throws an exception). Note that if
+  you have a taxonomy index created with such strings, you should rebuild it.
+  (Michael McCandless, Shai Erera)
+
 ======================= Lucene 4.1.0 =======================
 
 Changes in backwards compatibility policy
