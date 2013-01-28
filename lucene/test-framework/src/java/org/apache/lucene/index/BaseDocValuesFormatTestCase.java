@@ -1,4 +1,4 @@
-package org.apache.lucene;
+package org.apache.lucene.index;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -30,34 +31,35 @@ import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * A very simple demo used in the API documentation (src/java/overview.html).
- *
- * Please try to keep src/java/overview.html up-to-date when making changes
- * to this class.
- */
-public class TestDemoDocValue extends LuceneTestCase {
+ * Abstract class to do basic tests for a docvalues format.
+ * NOTE: This test focuses on the docvalues impl, nothing else.
+ * The [stretch] goal is for this test to be
+ * so thorough in testing a new DocValuesFormat that if this
+ * test passes, then all Lucene/Solr tests should also pass.  Ie,
+ * if there is some bug in a given DocValuesFormat that this
+ * test fails to catch then this test needs to be improved! */
+public abstract class BaseDocValuesFormatTestCase extends LuceneTestCase {
+  
+  /** Returns the codec to run tests against */
+  protected abstract Codec getCodec();
 
-  public void testDemoNumber() throws IOException {
+  public void testOneNumber() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
@@ -87,12 +89,14 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
 
-  public void testDemoFloat() throws IOException {
+  public void testOneFloat() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
@@ -122,12 +126,14 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  public void testDemoTwoFieldsNumber() throws IOException {
+  public void testTwoNumbers() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
@@ -160,12 +166,14 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
 
-  public void testDemoTwoFieldsMixed() throws IOException {
+  public void testTwoFieldsMixed() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
@@ -200,12 +208,14 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  public void testDemoThreeFieldsMixed() throws IOException {
+  public void testThreeFieldsMixed() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
@@ -245,12 +255,14 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  public void testDemoThreeFieldsMixed2() throws IOException {
+  public void testThreeFieldsMixed2() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
@@ -294,10 +306,11 @@ public class TestDemoDocValue extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(new NumericDocValuesField("dv", 1));
     iwriter.addDocument(doc);
@@ -322,10 +335,11 @@ public class TestDemoDocValue extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(newField("id", "0", StringField.TYPE_STORED));
     doc.add(new NumericDocValuesField("dv", -10));
@@ -357,14 +371,15 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
 
-  public void testBigRange() throws IOException {
+  public void testBigNumericRange() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(new NumericDocValuesField("dv", Long.MIN_VALUE));
     iwriter.addDocument(doc);
@@ -385,14 +400,15 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  public void testRange2() throws IOException {
+  public void testBigNumericRange2() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(new NumericDocValuesField("dv", -8841491950446638677L));
     iwriter.addDocument(doc);
@@ -413,12 +429,14 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  public void testDemoBytes() throws IOException {
+  public void testBytes() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
@@ -454,10 +472,11 @@ public class TestDemoDocValue extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(newField("id", "0", StringField.TYPE_STORED));
     doc.add(new BinaryDocValuesField("dv", new BytesRef("hello world 1")));
@@ -491,12 +510,14 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
 
-  public void testDemoSortedBytes() throws IOException {
+  public void testSortedBytes() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriter iwriter = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
@@ -532,10 +553,11 @@ public class TestDemoDocValue extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(new SortedDocValuesField("dv", new BytesRef("hello world 1")));
     iwriter.addDocument(doc);
@@ -563,10 +585,11 @@ public class TestDemoDocValue extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(new SortedDocValuesField("dv", new BytesRef("hello world 1")));
     iwriter.addDocument(doc);
@@ -601,10 +624,11 @@ public class TestDemoDocValue extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(newField("id", "0", StringField.TYPE_STORED));
     doc.add(new SortedDocValuesField("dv", new BytesRef("hello world 1")));
@@ -647,10 +671,11 @@ public class TestDemoDocValue extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(new BinaryDocValuesField("dv", new BytesRef("hello\nworld\r1")));
     iwriter.addDocument(doc);
@@ -672,10 +697,11 @@ public class TestDemoDocValue extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(new SortedDocValuesField("dv", new BytesRef("hello world 2")));
     iwriter.addDocument(doc);
@@ -696,69 +722,15 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  // nocommit: if we are going to pass down suffixes to segmentread/writestate,
-  // then they should be respected by *all* codec apis!
-  public void testDemoTwoFieldsTwoFormats() throws IOException {
-    Analyzer analyzer = new MockAnalyzer(random());
-
-    Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    final DocValuesFormat fast = DocValuesFormat.forName("Lucene42");
-    final DocValuesFormat slow = DocValuesFormat.forName("SimpleText");
-    iwc.setCodec(new Lucene42Codec() {
-      @Override
-      public DocValuesFormat getDocValuesFormatForField(String field) {
-        if ("dv1".equals(field)) {
-          return fast;
-        } else {
-          return slow;
-        }
-      }
-    });
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
-    Document doc = new Document();
-    String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
-    String text = "This is the text to be indexed. " + longTerm;
-    doc.add(newTextField("fieldname", text, Field.Store.YES));
-    doc.add(new NumericDocValuesField("dv1", 5));
-    doc.add(new BinaryDocValuesField("dv2", new BytesRef("hello world")));
-    iwriter.addDocument(doc);
-    iwriter.close();
-    
-    // Now search the index:
-    IndexReader ireader = DirectoryReader.open(directory); // read-only=true
-    IndexSearcher isearcher = new IndexSearcher(ireader);
-
-    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
-    Query query = new TermQuery(new Term("fieldname", "text"));
-    TopDocs hits = isearcher.search(query, null, 1);
-    assertEquals(1, hits.totalHits);
-    BytesRef scratch = new BytesRef();
-    // Iterate through the results:
-    for (int i = 0; i < hits.scoreDocs.length; i++) {
-      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
-      assertEquals(text, hitDoc.get("fieldname"));
-      assert ireader.leaves().size() == 1;
-      NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv1");
-      assertEquals(5, dv.get(hits.scoreDocs[i].doc));
-      BinaryDocValues dv2 = ireader.leaves().get(0).reader().getBinaryDocValues("dv2");
-      dv2.get(hits.scoreDocs[i].doc, scratch);
-      assertEquals(new BytesRef("hello world"), scratch);
-    }
-
-    ireader.close();
-    directory.close();
-  }
-  
   public void testEmptySortedBytes() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(new SortedDocValuesField("dv", new BytesRef("")));
     iwriter.addDocument(doc);
@@ -786,10 +758,11 @@ public class TestDemoDocValue extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(new BinaryDocValuesField("dv", new BytesRef("")));
     iwriter.addDocument(doc);
@@ -813,61 +786,15 @@ public class TestDemoDocValue extends LuceneTestCase {
     directory.close();
   }
   
-  public void testTooLargeBytes() throws IOException {
-    Analyzer analyzer = new MockAnalyzer(random());
-
-    Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
-    Document doc = new Document();
-    byte bytes[] = new byte[100000];
-    BytesRef b = new BytesRef(bytes);
-    random().nextBytes(bytes);
-    doc.add(new BinaryDocValuesField("dv", b));
-    try {
-      iwriter.addDocument(doc);
-      fail("did not get expected exception");
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
-    iwriter.close();
-
-    directory.close();
-  }
-  
-  public void testTooLargeSortedBytes() throws IOException {
-    Analyzer analyzer = new MockAnalyzer(random());
-
-    Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
-    Document doc = new Document();
-    byte bytes[] = new byte[100000];
-    BytesRef b = new BytesRef(bytes);
-    random().nextBytes(bytes);
-    doc.add(new SortedDocValuesField("dv", b));
-    try {
-      iwriter.addDocument(doc);
-      fail("did not get expected exception");
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
-    iwriter.close();
-    directory.close();
-  }
-  
   public void testVeryLargeButLegalBytes() throws IOException {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     byte bytes[] = new byte[32766];
     BytesRef b = new BytesRef(bytes);
@@ -892,10 +819,11 @@ public class TestDemoDocValue extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     byte bytes[] = new byte[32766];
     BytesRef b = new BytesRef(bytes);
@@ -919,10 +847,11 @@ public class TestDemoDocValue extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(new BinaryDocValuesField("dv", new BytesRef("boo!")));
     iwriter.addDocument(doc);
@@ -946,10 +875,11 @@ public class TestDemoDocValue extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(new SortedDocValuesField("dv", new BytesRef("boo!")));
     iwriter.addDocument(doc);
@@ -973,10 +903,11 @@ public class TestDemoDocValue extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(new BinaryDocValuesField("dv", new BytesRef("foo!")));
     iwriter.addDocument(doc);
@@ -1007,10 +938,11 @@ public class TestDemoDocValue extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
 
     Directory directory = newDirectory();
-    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
-    IndexWriterConfig iwc = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
-    iwc.setMergePolicy(newLogMergePolicy());
-    IndexWriter iwriter = new IndexWriter(directory, iwc);
+    // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+    conf.setCodec(getCodec());
+    conf.setMergePolicy(newLogMergePolicy());
+    IndexWriter iwriter = new IndexWriter(directory, conf);
     Document doc = new Document();
     doc.add(new SortedDocValuesField("dv", new BytesRef("foo!")));
     iwriter.addDocument(doc);
@@ -1036,6 +968,4 @@ public class TestDemoDocValue extends LuceneTestCase {
     ireader.close();
     directory.close();
   }
-  
-  // nocommit: test add twice
 }

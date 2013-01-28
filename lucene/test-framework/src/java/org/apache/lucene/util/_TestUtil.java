@@ -43,6 +43,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene42.Lucene42Codec;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
@@ -703,6 +704,24 @@ public class _TestUtil {
     return new Lucene42Codec() {
       @Override
       public PostingsFormat getPostingsFormatForField(String field) {
+        return format;
+      }
+    };
+  }
+  
+  /** Return a Codec that can read any of the
+   *  default codecs and formats, but always writes in the specified
+   *  format. */
+  public static Codec alwaysDocValuesFormat(final DocValuesFormat format) {
+    // TODO: we really need for docvalues impls etc to announce themselves
+    // (and maybe their params, too) to infostream on flush and merge.
+    // otherwise in a real debugging situation we won't know whats going on!
+    if (LuceneTestCase.VERBOSE) {
+      System.out.println("forcing docvalues format to:" + format);
+    }
+    return new Lucene42Codec() {
+      @Override
+      public DocValuesFormat getDocValuesFormatForField(String field) {
         return format;
       }
     };
