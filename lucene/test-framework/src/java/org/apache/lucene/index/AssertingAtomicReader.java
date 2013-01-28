@@ -465,7 +465,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       assert fi.getDocValuesType() == FieldInfo.DocValuesType.NUMERIC;
       return new AssertingNumericDocValues(dv, maxDoc());
     } else {
-      assert fi == null || fi.hasDocValues() == false;
+      assert fi == null || fi.getDocValuesType() != FieldInfo.DocValuesType.NUMERIC;
       return null;
     }
   }
@@ -479,7 +479,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       assert fi.getDocValuesType() == FieldInfo.DocValuesType.BINARY;
       return new AssertingBinaryDocValues(dv, maxDoc());
     } else {
-      assert fi == null || fi.hasDocValues() == false;
+      assert fi == null || fi.getDocValuesType() != FieldInfo.DocValuesType.BINARY;
       return null;
     }
   }
@@ -493,7 +493,7 @@ public class AssertingAtomicReader extends FilterAtomicReader {
       assert fi.getDocValuesType() == FieldInfo.DocValuesType.SORTED;
       return new AssertingSortedDocValues(dv, maxDoc());
     } else {
-      assert fi == null || fi.hasDocValues() == false;
+      assert fi == null || fi.getDocValuesType() != FieldInfo.DocValuesType.SORTED;
       return null;
     }
   }
