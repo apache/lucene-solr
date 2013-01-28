@@ -17,9 +17,12 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -120,6 +123,101 @@ public class TestDocValuesWithThreads extends LuceneTestCase {
     }
 
     startingGun.countDown();
+
+    for(Thread thread : threads) {
+      thread.join();
+    }
+
+    r.close();
+    dir.close();
+  }
+  
+  public void test2() throws Exception {
+    Random random = random();
+    final int NUM_DOCS = atLeast(100);
+    final Directory dir = newDirectory();
+    final RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    final boolean allowDups = random.nextBoolean();
+    final Set<String> seen = new HashSet<String>();
+    if (VERBOSE) {
+      System.out.println("TEST: NUM_DOCS=" + NUM_DOCS + " allowDups=" + allowDups);
+    }
+    int numDocs = 0;
+    final List<BytesRef> docValues = new ArrayList<BytesRef>();
+
+    // TODO: deletions
+    while (numDocs < NUM_DOCS) {
+      final String s;
+      if (random.nextBoolean()) {
+        s = _TestUtil.randomSimpleString(random);
+      } else {
+        s = _TestUtil.randomUnicodeString(random);
+      }
+      final BytesRef br = new BytesRef(s);
+
+      if (!allowDups) {
+        if (seen.contains(s)) {
+          continue;
+        }
+        seen.add(s);
+      }
+
+      if (VERBOSE) {
+        System.out.println("  " + numDocs + ": s=" + s);
+      }
+      
+      final Document doc = new Document();
+      doc.add(new SortedDocValuesField("stringdv", br));
+      doc.add(new NumericDocValuesField("id", numDocs));
+      docValues.add(br);
+      writer.addDocument(doc);
+      numDocs++;
+
+      if (random.nextInt(40) == 17) {
+        // force flush
+        writer.getReader().close();
+      }
+    }
+
+    writer.forceMerge(1);
+    final DirectoryReader r = writer.getReader();
+    writer.close();
+    
+    final AtomicReader sr = getOnlySegmentReader(r);
+
+    final long END_TIME = System.currentTimeMillis() + (TEST_NIGHTLY ? 30 : 1);
+
+    final NumericDocValues docIDToID = sr.getNumericDocValues("id");
+
+    final int NUM_THREADS = _TestUtil.nextInt(random(), 1, 10);
+    Thread[] threads = new Thread[NUM_THREADS];
+    for(int thread=0;thread<NUM_THREADS;thread++) {
+      threads[thread] = new Thread() {
+          @Override
+          public void run() {
+            Random random = random();            
+            final SortedDocValues stringDVDirect;
+            try {
+              stringDVDirect = sr.getSortedDocValues("stringdv");
+              assertNotNull(stringDVDirect);
+            } catch (IOException ioe) {
+              throw new RuntimeException(ioe);
+            }
+            while(System.currentTimeMillis() < END_TIME) {
+              final SortedDocValues source;
+              source = stringDVDirect;
+              final BytesRef scratch = new BytesRef();
+
+              for(int iter=0;iter<100;iter++) {
+                final int docID = random.nextInt(sr.maxDoc());
+                source.get(docID, scratch);
+                assertEquals(docValues.get((int) docIDToID.get(docID)), scratch);
+              }
+            }
+          }
+        };
+      threads[thread].start();
+    }
 
     for(Thread thread : threads) {
       thread.join();
